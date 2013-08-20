@@ -45,6 +45,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private boolean enablePositionIncrements; // no init needed, as ctor enforces setting value!
   private boolean first = true;
+  private int skippedPositions;
 
   /**
    * Create a new {@link FilteringTokenFilter}.
@@ -77,7 +78,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (enablePositionIncrements) {
-      int skippedPositions = 0;
+      skippedPositions = 0;
       while (input.incrementToken()) {
         if (accept()) {
           if (skippedPositions != 0) {
@@ -109,6 +110,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     first = true;
+    skippedPositions = 0;
   }
 
   /**
@@ -139,5 +141,13 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   public void setEnablePositionIncrements(boolean enable) {
     checkPositionIncrement(version, enable);
     this.enablePositionIncrements = enable;
+  }
+
+  @Override
+  public void end() throws IOException {
+    super.end();
+    if (enablePositionIncrements) {
+      posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
+    }
   }
 }

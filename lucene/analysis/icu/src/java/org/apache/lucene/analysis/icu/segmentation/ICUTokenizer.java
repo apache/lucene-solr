@@ -120,7 +120,8 @@ public final class ICUTokenizer extends Tokenizer {
   }
   
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     final int finalOffset = (length < 0) ? offset : offset + length;
     offsetAtt.setOffset(correctOffset(finalOffset), correctOffset(finalOffset));
   }  

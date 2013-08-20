@@ -290,7 +290,8 @@ public final class CJKTokenizer extends Tokenizer {
     }
     
     @Override
-    public final void end() {
+    public final void end() throws IOException {
+      super.end();
       // set final offset
       final int finalOffset = correctOffset(offset);
       this.offsetAtt.setOffset(finalOffset, finalOffset);

@@ -217,13 +217,15 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     assert bufferStart <= bufferEnd;
     int endOffset = offset;
     for (int i = bufferStart; i < bufferEnd; ++i) {
       endOffset += Character.charCount(buffer[i]);
     }
     endOffset = correctOffset(endOffset);
+    // set final offset
     offsetAtt.setOffset(endOffset, endOffset);
   }
 

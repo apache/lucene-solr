@@ -265,7 +265,8 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
   }
   
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // set final offset
     final int finalOffset = correctOffset(charsRead);
     this.offsetAtt.setOffset(finalOffset, finalOffset);

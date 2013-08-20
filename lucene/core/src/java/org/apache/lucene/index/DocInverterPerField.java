@@ -175,7 +175,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
           // trigger streams to perform end-of-stream operations
           stream.end();
-
+          // TODO: maybe add some safety? then again, its already checked 
+          // when we come back around to the field...
+          fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
           success2 = true;
         } finally {

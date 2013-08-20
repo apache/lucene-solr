@@ -244,6 +244,7 @@ public class MockTokenizer extends Tokenizer {
 
   @Override
   public void end() throws IOException {
+    super.end();
     int finalOffset = correctOffset(off);
     offsetAtt.setOffset(finalOffset, finalOffset);
     // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.

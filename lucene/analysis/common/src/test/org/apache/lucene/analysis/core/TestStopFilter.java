@@ -99,6 +99,22 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StopFilter stpf01 = new StopFilter(TEST_VERSION_CURRENT, stpf0, stopSet1); // two stop filters concatenated!
     doTestStopPositons(stpf01,true);
   }
+
+  // LUCENE-3849: make sure after .end() we see the "ending" posInc
+  public void testEndStopword() throws Exception {
+    CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
+    StopFilter stpf = new StopFilter(Version.LUCENE_40, new MockTokenizer(new StringReader("test of"), MockTokenizer.WHITESPACE, false), stopSet);
+    assertTokenStreamContents(stpf, new String[] { "test" },
+                              new int[] {0},
+                              new int[] {4},
+                              null,
+                              new int[] {1},
+                              null,
+                              7,
+                              1,
+                              null,
+                              true);    
+  }
   
   private void doTestStopPositons(StopFilter stpf, boolean enableIcrements) throws IOException {
     log("---> test with enable-increments-"+(enableIcrements?"enabled":"disabled"));

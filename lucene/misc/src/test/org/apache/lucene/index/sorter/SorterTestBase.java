@@ -116,7 +116,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     
     public PositionsTokenStream() {
       term = addAttribute(CharTermAttribute.class);
-      term.append(DOC_POSITIONS_TERM);
       payload = addAttribute(PayloadAttribute.class);
       offset = addAttribute(OffsetAttribute.class);
     }
@@ -127,6 +126,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
         return false;
       }
       
+      clearAttributes();
+      term.append(DOC_POSITIONS_TERM);
       payload.setPayload(new BytesRef(Integer.toString(pos)));
       offset.setOffset(off, off);
       --pos;

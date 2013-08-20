@@ -309,7 +309,8 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // set final offset
     final int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     this.offsetAtt.setOffset(finalOffset, finalOffset);

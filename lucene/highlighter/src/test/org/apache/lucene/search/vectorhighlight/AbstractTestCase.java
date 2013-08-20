@@ -264,7 +264,8 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     }
     
     @Override
-    public final void end(){
+    public final void end() throws IOException {
+      super.end();
       offsetAtt.setOffset(getFinalOffset(),getFinalOffset());
     }
     

@@ -111,7 +111,8 @@ public final class SentenceTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // set final offset
     final int finalOffset = correctOffset(tokenEnd);
     offsetAtt.setOffset(finalOffset, finalOffset);

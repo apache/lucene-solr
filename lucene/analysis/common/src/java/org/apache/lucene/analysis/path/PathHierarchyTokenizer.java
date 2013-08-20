@@ -191,7 +191,8 @@ public class PathHierarchyTokenizer extends Tokenizer {
   }
 
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset
     int finalOffset = correctOffset(charsRead);
     offsetAtt.setOffset(finalOffset, finalOffset);

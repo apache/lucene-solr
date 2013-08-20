@@ -363,7 +363,8 @@ public final class PatternAnalyzer extends Analyzer {
     }
     
     @Override
-    public final void end() {
+    public final void end() throws IOException {
+      super.end();
       // set final offset
       final int finalOffset = correctOffset(str.length());
       this.offsetAtt.setOffset(finalOffset, finalOffset);
@@ -454,7 +455,8 @@ public final class PatternAnalyzer extends Analyzer {
     }
     
     @Override
-    public final void end() {
+    public final void end() throws IOException {
+      super.end();
       // set final offset
       final int finalOffset = str.length();
       this.offsetAtt.setOffset(correctOffset(finalOffset), correctOffset(finalOffset));
