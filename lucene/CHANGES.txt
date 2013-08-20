@@ -212,6 +212,10 @@ Optimizations
   transition from DWPT into IndexWriter is now done via an Event-Queue
   processed from within the IndexWriter in order to prevent suituations
   where DWPT or DW calling int IW causing deadlocks. (Simon Willnauer)
+
+* LUCENE-5182: Terminate phrase searches early if max phrase window is 
+  exceeded in FastVectorHighlighter to prevent very long running phrase
+  extraction if phrase terms are high frequent. (Simon Willnauer)
   
 Documentation
 
