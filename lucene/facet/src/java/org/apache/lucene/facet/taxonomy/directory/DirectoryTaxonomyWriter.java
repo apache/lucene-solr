@@ -555,12 +555,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     private CharTermAttribute termAtt;
     private PositionIncrementAttribute posIncrAtt;
     private boolean returned;
+    private int val;
+    private final String word;
+
     public SinglePositionTokenStream(String word) {
       termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-      termAtt.setEmpty().append(word);
+      this.word = word;
       returned = true;
     }
+
     /**
      * Set the value we want to keep, as the position increment.
      * Note that when TermPositions.nextPosition() is later used to
@@ -574,15 +578,21 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
      * This change is described in Lucene's JIRA: LUCENE-1542. 
      */
     public void set(int val) {
-      posIncrAtt.setPositionIncrement(val);
+      this.val = val;
       returned = false;
     }
+
     @Override
     public boolean incrementToken() throws IOException {
       if (returned) {
         return false;
       }
-      return returned = true;
+      clearAttributes();
+      posIncrAtt.setPositionIncrement(val);
+      termAtt.setEmpty();
+      termAtt.append(word);
+      returned = true;
+      return true;
     }
   }
 

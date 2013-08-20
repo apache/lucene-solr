@@ -126,6 +126,11 @@ Bug Fixes
   the default one) have their own limits (David Smiley, Robert Muir,
   Mike McCandless)
 
+* LUCENE-3849: TokenStreams now set the position increment in end(),
+  so we can handle trailing holes.  If you have a custom TokenStream
+  implementing end() then be sure it calls super.end().  (Robert Muir,
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

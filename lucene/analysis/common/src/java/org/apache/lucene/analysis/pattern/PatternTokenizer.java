@@ -130,7 +130,8 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     final int ofs = correctOffset(str.length());
     offsetAtt.setOffset(ofs, ofs);
   }

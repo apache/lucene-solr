@@ -50,7 +50,6 @@ public final class SuggestStopFilter extends TokenFilter {
   private final CharArraySet stopWords;
 
   private State endState;
-  private boolean ended;
 
   /** Sole constructor. */
   public SuggestStopFilter(TokenStream input, CharArraySet stopWords) {
@@ -61,28 +60,24 @@ public final class SuggestStopFilter extends TokenFilter {
   @Override
   public void reset() throws IOException {
     super.reset();
-    ended = false;
     endState = null;
   }
 
   @Override
   public void end() throws IOException {
-    if (!ended) {
+    if (endState == null) {
       super.end();
     } else {
       // NOTE: we already called .end() from our .next() when
       // the stream was complete, so we do not call
       // super.end() here
-
-      if (endState != null) {
-        restoreState(endState);
-      }
+      restoreState(endState);
     }
   }
 
   @Override
   public boolean incrementToken() throws IOException {
-    if (ended) {
+    if (endState != null) {
       return false;
     }
 
@@ -101,8 +96,9 @@ public final class SuggestStopFilter extends TokenFilter {
           // It was a stopword; skip it
           skippedPositions += posInc;
         } else {
+          clearAttributes();
           input.end();
-          ended = true;
+          endState = captureState();
           int finalEndOffset = offsetAtt.endOffset();
           assert finalEndOffset >= endOffset;
           if (finalEndOffset > endOffset) {
@@ -112,7 +108,6 @@ public final class SuggestStopFilter extends TokenFilter {
           } else {
             // No token separator after final token that
             // looked like a stop-word; don't filter it:
-            endState = captureState();
             restoreState(sav);
             posIncAtt.setPositionIncrement(skippedPositions + posIncAtt.getPositionIncrement());
             keywordAtt.setKeyword(true);
