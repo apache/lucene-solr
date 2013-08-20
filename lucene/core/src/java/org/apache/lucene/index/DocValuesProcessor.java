@@ -143,7 +143,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
     DocValuesWriter writer = writers.get(fieldInfo.name);
     NumericDocValuesWriter numericWriter;
     if (writer == null) {
-      numericWriter = new NumericDocValuesWriter(fieldInfo, bytesUsed);
+      numericWriter = new NumericDocValuesWriter(fieldInfo, bytesUsed, true);
       writers.put(fieldInfo.name, numericWriter);
     } else if (!(writer instanceof NumericDocValuesWriter)) {
       throw new IllegalArgumentException("Incompatible DocValues type: field \"" + fieldInfo.name + "\" changed from " + getTypeDesc(writer) + " to numeric");

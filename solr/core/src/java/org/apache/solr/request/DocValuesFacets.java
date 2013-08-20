@@ -218,11 +218,7 @@ public class DocValuesFacets {
   static NamedList<Integer> finalize(NamedList<Integer> res, SolrIndexSearcher searcher, SchemaField schemaField, DocSet docs, int missingCount, boolean missing) throws IOException {
     if (missing) {
       if (missingCount < 0) {
-        if (schemaField.multiValued()) {
-          missingCount = SimpleFacets.getFieldMissingCount(searcher,docs,schemaField.getName());
-        } else {
-          missingCount = 0; // single-valued dv is implicitly 0
-        }
+        missingCount = SimpleFacets.getFieldMissingCount(searcher,docs,schemaField.getName());
       }
       res.add(null, missingCount);
     }
@@ -231,12 +227,12 @@ public class DocValuesFacets {
   }
   
   /** accumulates per-segment single-valued facet counts, mapping to global ordinal space */
-  // specialized since the single-valued case is simpler: you don't have to deal with missing count, etc
+  // specialized since the single-valued case is different
   static void accumSingle(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term = si.getOrd(doc);
-      if (map != null) {
+      if (map != null && term >= 0) {
         term = (int) map.getGlobalOrd(subIndex, term);
       }
       int arrIdx = term-startTermIndex;

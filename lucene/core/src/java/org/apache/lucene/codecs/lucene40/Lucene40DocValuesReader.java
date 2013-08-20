@@ -35,6 +35,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
@@ -618,6 +619,11 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     throw new IllegalStateException("Lucene 4.0 does not support SortedSet: how did you pull this off?");
+  }
+
+  @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    return new Bits.MatchAllBits(state.segmentInfo.getDocCount());
   }
 
   @Override

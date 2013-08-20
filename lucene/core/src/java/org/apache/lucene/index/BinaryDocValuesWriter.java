@@ -26,6 +26,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
@@ -49,6 +51,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final Counter iwBytesUsed;
   private final AppendingDeltaPackedLongBuffer lengths;
+  private final OpenBitSet docsWithField;
   private final FieldInfo fieldInfo;
   private int addedValues;
   private long bytesUsed;
@@ -59,6 +62,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.bytesOut = bytes.getDataOutput();
     this.lengths = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
     this.iwBytesUsed = iwBytesUsed;
+    this.docsWithField = new OpenBitSet();
+    this.bytesUsed = docsWithFieldBytesUsed();
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -85,11 +91,17 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       // Should never happen!
       throw new RuntimeException(ioe);
     }
+    docsWithField.set(docID);
     updateBytesUsed();
+  }
+  
+  private long docsWithFieldBytesUsed() {
+    // size of the long[] + some overhead
+    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed();
+    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithFieldBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
@@ -138,6 +150,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
+      final BytesRef v;
       if (upto < size) {
         int length = (int) lengthsIterator.next();
         value.grow(length);
@@ -148,13 +161,16 @@ class BinaryDocValuesWriter extends DocValuesWriter {
           // Should never happen!
           throw new RuntimeException(ioe);
         }
+        if (docsWithField.get(upto)) {
+          v = value;
+        } else {
+          v = null;
+        }
       } else {
-        // This is to handle last N documents not having
-        // this DV field in the end of the segment:
-        value.length = 0;
+        v = null;
       }
       upto++;
-      return value;
+      return v;
     }
 
     @Override

@@ -488,7 +488,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary");
-    assertTrue(bits instanceof Bits.MatchAllBits);
+    assertTrue(bits.get(0));
     
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
     try {
@@ -518,7 +518,7 @@ public class TestFieldCache extends LuceneTestCase {
     assertEquals(1, sortedSet.getValueCount());
     
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sorted");
-    assertTrue(bits instanceof Bits.MatchAllBits);
+    assertTrue(bits.get(0));
     
     // Numeric type: can be retrieved via getInts() and so on
     Ints numeric = FieldCache.DEFAULT.getInts(ar, "numeric", false);
@@ -545,7 +545,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric");
-    assertTrue(bits instanceof Bits.MatchAllBits);
+    assertTrue(bits.get(0));
     
     // SortedSet type: can be retrieved via getDocTermOrds() 
     if (defaultCodecSupportsSortedSet()) {
@@ -577,7 +577,7 @@ public class TestFieldCache extends LuceneTestCase {
       assertEquals(2, sortedSet.getValueCount());
     
       bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
-      assertTrue(bits instanceof Bits.MatchAllBits);
+      assertTrue(bits.get(0));
     }
     
     ir.close();

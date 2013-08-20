@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 /** Tests basic sorting on docvalues fields.
  * These are mostly like TestSort's tests, except each test
  * indexes the field up-front as docvalues, and checks no fieldcaches were made */
-@SuppressCodecs("Lucene3x")
+@SuppressCodecs({"Lucene3x", "Appending", "Lucene40", "Lucene41", "Lucene42"}) // avoid codecs that don't support "missing"
 public class TestSortDocValues extends LuceneTestCase {
   
   @Override
@@ -429,6 +429,70 @@ public class TestSortDocValues extends LuceneTestCase {
     dir.close();
   }
   
+  /** Tests sorting on type int with a missing value */
+  public void testIntMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", -1));
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", 4));
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type int, specifying the missing value should be treated as Integer.MAX_VALUE */
+  public void testIntMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", -1));
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", 4));
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.INT);
+    sortField.setMissingValue(Integer.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a Integer.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   /** Tests sorting on type long */
   public void testLong() throws IOException {
     Directory dir = newDirectory();
@@ -497,6 +561,70 @@ public class TestSortDocValues extends LuceneTestCase {
     dir.close();
   }
   
+  /** Tests sorting on type long with a missing value */
+  public void testLongMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", -1));
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", 4));
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type long, specifying the missing value should be treated as Long.MAX_VALUE */
+  public void testLongMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", -1));
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new NumericDocValuesField("value", 4));
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.LONG);
+    sortField.setMissingValue(Long.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Long.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   /** Tests sorting on type float */
   public void testFloat() throws IOException {
     Directory dir = newDirectory();
@@ -560,6 +688,70 @@ public class TestSortDocValues extends LuceneTestCase {
     assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertNoFieldCaches();
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type float with a missing value */
+  public void testFloatMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatDocValuesField("value", -1.3F));
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatDocValuesField("value", 4.2F));
+    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
+  public void testFloatMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatDocValuesField("value", -1.3F));
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatDocValuesField("value", 4.2F));
+    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.FLOAT);
+    sortField.setMissingValue(Float.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Float.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
 
     ir.close();
     dir.close();
@@ -667,6 +859,80 @@ public class TestSortDocValues extends LuceneTestCase {
     assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
     assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
     assertNoFieldCaches();
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double with a missing value */
+  public void testDoubleMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", -1.3));
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
+    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
+    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as a 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double, specifying the missing value should be treated as Double.MAX_VALUE */
+  public void testDoubleMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", -1.3));
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
+    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
+    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.DOUBLE);
+    sortField.setMissingValue(Double.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as Double.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();
     dir.close();

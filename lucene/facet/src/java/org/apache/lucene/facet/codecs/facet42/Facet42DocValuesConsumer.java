@@ -68,7 +68,9 @@ public class Facet42DocValuesConsumer extends DocValuesConsumer {
 
     long totBytes = 0;
     for (BytesRef v : values) {
-      totBytes += v.length;
+      if (v != null) { 
+        totBytes += v.length;
+      }
     }
 
     if (totBytes > Integer.MAX_VALUE) {
@@ -78,7 +80,9 @@ public class Facet42DocValuesConsumer extends DocValuesConsumer {
     out.writeVInt((int) totBytes);
 
     for (BytesRef v : values) {
-      out.writeBytes(v.bytes, v.offset, v.length);
+      if (v != null) {
+        out.writeBytes(v.bytes, v.offset, v.length);
+      }
     }
 
     PackedInts.Writer w = PackedInts.getWriter(out, maxDoc+1, PackedInts.bitsRequired(totBytes+1), acceptableOverheadRatio);
@@ -86,7 +90,9 @@ public class Facet42DocValuesConsumer extends DocValuesConsumer {
     int address = 0;
     for(BytesRef v : values) {
       w.add(address);
-      address += v.length;
+      if (v != null) {
+        address += v.length;
+      }
     }
     w.add(address);
     w.finish();

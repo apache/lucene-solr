@@ -221,6 +221,27 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
   }
   
+  private static class SortingBits implements Bits {
+
+    private final Bits in;
+    private final Sorter.DocMap docMap;
+
+    public SortingBits(final Bits in, Sorter.DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+
+    @Override
+    public boolean get(int index) {
+      return in.get(docMap.newToOld(index));
+    }
+
+    @Override
+    public int length() {
+      return in.length();
+    }
+  }
+  
   private static class SortingSortedDocValues extends SortedDocValues {
     
     private final SortedDocValues in;
@@ -743,20 +764,9 @@ public class SortingAtomicReader extends FilterAtomicReader {
     final Bits inLiveDocs = in.getLiveDocs();
     if (inLiveDocs == null) {
       return null;
+    } else {
+      return new SortingBits(inLiveDocs, docMap);
     }
-    return new Bits() {
-
-      @Override
-      public boolean get(int index) {
-        return inLiveDocs.get(docMap.newToOld(index));
-      }
-
-      @Override
-      public int length() {
-        return inLiveDocs.length();
-      }
-
-    };
   }
   
   @Override
@@ -794,6 +804,16 @@ public class SortingAtomicReader extends FilterAtomicReader {
     } else {
       return new SortingSortedSetDocValues(sortedSetDV, docMap);
     }  
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits bits = in.getDocsWithField(field);
+    if (bits == null || bits instanceof Bits.MatchAllBits || bits instanceof Bits.MatchNoBits) {
+      return bits;
+    } else {
+      return new SortingBits(bits, docMap);
+    }
   }
 
   @Override

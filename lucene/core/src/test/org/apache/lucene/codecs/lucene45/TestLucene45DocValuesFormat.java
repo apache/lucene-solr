@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.lucene45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,15 +18,14 @@ package org.apache.lucene.codecs.diskdv;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.cheapbastard.CheapBastardDocValuesFormat;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * Tests CheapBastardDocValuesFormat
+ * Tests Lucene45DocValuesFormat
  */
-public class TestCheapBastardDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysDocValuesFormat(new CheapBastardDocValuesFormat());
+public class TestLucene45DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+  private final Codec codec = _TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat());
 
   @Override
   protected Codec getCodec() {

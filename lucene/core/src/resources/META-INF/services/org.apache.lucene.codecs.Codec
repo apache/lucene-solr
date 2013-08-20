@@ -17,3 +17,4 @@ org.apache.lucene.codecs.lucene40.Lucene40Codec
 org.apache.lucene.codecs.lucene3x.Lucene3xCodec
 org.apache.lucene.codecs.lucene41.Lucene41Codec
 org.apache.lucene.codecs.lucene42.Lucene42Codec
+org.apache.lucene.codecs.lucene45.Lucene45Codec
