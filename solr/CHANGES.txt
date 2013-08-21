@@ -155,6 +155,8 @@ Optimizations
 * SOLR-5134: Have HdfsIndexOutput extend BufferedIndexOutput. 
   (Mark Miller, Uwe Schindler)
 
+ * SOLR-5057: QueryResultCache should not related with the order of fq's list (Feihong Huang via Erick Erickson)
+
 Other Changes
 ----------------------
 
