@@ -259,7 +259,7 @@ public class AttributeSource {
    * already in this AttributeSource and returns it. Otherwise a
    * new instance is created, added to this AttributeSource and returned. 
    */
-  public final <A extends Attribute> A addAttribute(Class<A> attClass) {
+  public final <T extends Attribute> T addAttribute(Class<T> attClass) {
     AttributeImpl attImpl = attributes.get(attClass);
     if (attImpl == null) {
       if (!(attClass.isInterface() && Attribute.class.isAssignableFrom(attClass))) {
@@ -297,7 +297,7 @@ public class AttributeSource {
    *         available. If you want to only use the attribute, if it is available (to optimize
    *         consuming), use {@link #hasAttribute}.
    */
-  public final <A extends Attribute> A getAttribute(Class<A> attClass) {
+  public final <T extends Attribute> T getAttribute(Class<T> attClass) {
     AttributeImpl attImpl = attributes.get(attClass);
     if (attImpl == null) {
       throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass.getName() + "'.");
