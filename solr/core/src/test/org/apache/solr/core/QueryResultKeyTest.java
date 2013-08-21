@@ -56,4 +56,24 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertEquals(qrk1.hashCode(), qrk2.hashCode());
   }
 
+  @Test
+  public void testQueryResultKeySortedFilters() {
+    Query fq1 = new TermQuery(new Term("test1", "field1"));
+    Query fq2 = new TermQuery(new Term("test2", "field2"));
+
+    Query query = new TermQuery(new Term("test3", "field3"));
+    List<Query> filters = new ArrayList<Query>();
+    filters.add(fq1);
+    filters.add(fq2);
+
+    QueryResultKey key = new QueryResultKey(query, filters, null, 0);
+
+    List<Query> newFilters = new ArrayList<Query>();
+    newFilters.add(fq2);
+    newFilters.add(fq1);
+    QueryResultKey newKey = new QueryResultKey(query, newFilters, null, 0);
+
+    assertEquals(key, newKey);
+  }
+
 }

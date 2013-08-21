@@ -90,9 +90,36 @@ public final class QueryResultKey {
   }
 
 
-  private static boolean isEqual(Object o1, Object o2) {
-    if (o1==o2) return true;  // takes care of identity and null cases
-    if (o1==null || o2==null) return false;
-    return o1.equals(o2);
+  // Do fast version, expecting that filters are ordered and only
+  // fall back to unordered compare on the first non-equal elements.
+  // This will only be called if the hash code of the entire key already
+  // matched, so the slower unorderedCompare should pretty much never
+  // be called if filter lists are generally ordered.
+  private static boolean isEqual(List<Query> fqList1, List<Query> fqList2) {
+    if (fqList1 == fqList2) return true;  // takes care of identity and null cases
+    if (fqList1 == null || fqList2 == null) return false;
+    int sz = fqList1.size();
+    if (sz != fqList2.size()) return false;
+    for (int i = 0; i < sz; i++) {
+      if (!fqList1.get(i).equals(fqList2.get(i))) {
+        return unorderedCompare(fqList1, fqList2, i);
+      }
+    }
+    return true;
   }
+
+  private static boolean unorderedCompare(List<Query> fqList1, List<Query> fqList2, int start) {
+    int sz = fqList1.size();
+    outer:
+    for (int i = start; i < sz; i++) {
+      Query q1 = fqList1.get(i);
+      for (int j = start; j < sz; j++) {
+        if (q1.equals(fqList2.get(j)))
+          continue outer;
+      }
+      return false;
+    }
+    return true;
+  }
+
 }
