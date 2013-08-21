@@ -176,6 +176,9 @@ Other Changes
 * The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
   The old parameter should continue to work for another release  (Noble Paul)
 
+* SOLR-5173: Solr-core's Maven configuration includes test-only Hadoop
+  dependencies as indirect compile-time dependencies.
+  (Chris Collins, Steve Rowe)
 
 ==================  4.4.0 ==================
 
