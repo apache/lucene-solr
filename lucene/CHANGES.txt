@@ -101,6 +101,9 @@ New features
   loads no datastructures into RAM. Both of these also support missing values.
   Added DiskNormsFormat (in case you want norms entirely on disk).  (Robert Muir)
 
+* LUCENE-2750: Added PForDeltaDocIdSet, an in-memory doc id set implementation
+  based on the PFOR encoding. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
