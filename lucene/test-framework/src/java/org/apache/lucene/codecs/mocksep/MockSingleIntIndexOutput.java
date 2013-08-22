@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.mocksep;
  */
 
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -86,7 +87,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
       }
     }
     @Override
-    public void write(IndexOutput indexOut, boolean absolute)
+    public void write(DataOutput indexOut, boolean absolute)
       throws IOException {
       if (absolute) {
         indexOut.writeVLong(fp);
