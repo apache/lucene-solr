@@ -123,6 +123,9 @@ public class TestMultiDocValues extends LuceneTestCase {
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
       ref.copyChars(_TestUtil.randomUnicodeString(random()));
+      if (random().nextInt(7) == 0) {
+        iw.addDocument(new Document());
+      }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -142,7 +145,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       // check ord
       assertEquals(single.getOrd(i), multi.getOrd(i));
-      // check ord value
+      // check value
       single.get(i, expected);
       multi.get(i, actual);
       assertEquals(expected, actual);
