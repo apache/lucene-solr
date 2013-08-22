@@ -36,7 +36,7 @@ public class TestLRUCache extends LuceneTestCase {
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "100%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -69,7 +69,7 @@ public class TestLRUCache extends LuceneTestCase {
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
     params.put("autowarmCount", percentage + "%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 1; i <= limit; i++) {
@@ -98,7 +98,7 @@ public class TestLRUCache extends LuceneTestCase {
     Map<String, String> params = new HashMap<String, String>();
     params.put("size", "100");
     params.put("initialSize", "10");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = lruCache.init(params, null, cr);
     lruCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -120,18 +120,5 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals(null, lruCacheNew.get(90));
     assertEquals(null, lruCacheNew.get(50));
     lruCacheNew.close();
-  }
-  
-  private CacheRegenerator createCodeRegenerator() {
-    CacheRegenerator cr = new CacheRegenerator() {
-      @Override
-      @SuppressWarnings("unchecked")
-      public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                    SolrCache oldCache, Object oldKey, Object oldVal) {
-        newCache.put(oldKey, oldVal);
-        return true;
-      }
-    };
-    return cr;
   }
 }
