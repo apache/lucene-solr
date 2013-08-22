@@ -100,6 +100,9 @@ New Features
   Additionally they work with sortMissingFirst, sortMissingLast, facet.missing, 
   exists() in function queries, etc.  (Robert Muir)
 
+* SOLR-5182: Add NoOpRegenerator, a regenerator for custom per-segment caches
+  where items are preserved across commits.  (Robert Muir)
+
 Bug Fixes
 ----------------------
 
