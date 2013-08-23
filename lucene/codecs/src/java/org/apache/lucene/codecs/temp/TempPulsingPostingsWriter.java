@@ -61,7 +61,7 @@ public final class TempPulsingPostingsWriter extends TempPostingsWriterBase {
   // change VERSION_CURRENT to point to your new version:
   final static int VERSION_START = 0;
 
-  final static int VERSION_META_ARRAY = 0;
+  final static int VERSION_META_ARRAY = 1;
 
   final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
