@@ -327,7 +327,8 @@ public abstract class LuceneTestCase extends Assert {
     "MockRandom",
     "TempSep",
     "TempFixedIntBlock",
-    "TempVariableIntBlock"
+    "TempVariableIntBlock",
+    "TempRandom"
   ));
   
   // -----------------------------------------------------------------

@@ -40,6 +40,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
 import org.apache.lucene.search.RandomSimilarityProvider;
@@ -168,6 +169,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       final PostingsFormat format;
       if ("random".equals(TEST_POSTINGSFORMAT)) {
         format = PostingsFormat.forName("Lucene41");
+      } else if ("TempRandom".equals(TEST_POSTINGSFORMAT)) {
+        format = new MockRandomPostingsFormat(new Random(random.nextLong()));
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }
