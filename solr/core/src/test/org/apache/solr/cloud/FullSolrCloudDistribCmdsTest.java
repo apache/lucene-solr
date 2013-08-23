@@ -44,7 +44,6 @@ import org.junit.Ignore;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-@Ignore // failing on certain jenkins since block join commit - needs investigation.
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   
@@ -242,7 +241,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private long testIndexQueryDeleteHierarchical(long docId) throws Exception {
     //index
     int topDocsNum = atLeast(10);
-    int childsNum = atLeast(10);
+    int childsNum = 5+random().nextInt(5);
     for (int i = 0; i < topDocsNum; ++i) {
       UpdateRequest uReq = new UpdateRequest();
       SolrInputDocument topDocument = new SolrInputDocument();
