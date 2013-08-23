@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.io.Closeable;
 
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.FieldInfo;
 
@@ -48,25 +49,31 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
   /** Called once after startup, before any terms have been
    *  added.  Implementations typically write a header to
    *  the provided {@code termsOut}. */
-  public abstract void start(IndexOutput termsOut) throws IOException;
+  public abstract void init(IndexOutput termsOut) throws IOException;
+
+  /** Return a newly created empty TermState */
+  public abstract BlockTermState newTermState() throws IOException;
 
   /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(TermStats)} is done, only if the term has at least one
+   *  #finishTerm(long[], DataOutput, TermStats)} is done, only if the term has at least one
    *  document. */
   public abstract void startTerm() throws IOException;
 
-  /** Flush count terms starting at start "backwards", as a
-   *  block. start is a negative offset from the end of the
-   *  terms stack, ie bigger start means further back in
-   *  the stack. */
-  public abstract void flushTermsBlock(int start, int count) throws IOException;
-
   /** Finishes the current term.  The provided {@link
-   *  TermStats} contains the term's summary statistics. */
-  public abstract void finishTerm(TermStats stats) throws IOException;
+   *  BlockTermState} contains the term's summary statistics, 
+   *  and will holds metadata from PBF when returned */
+  public abstract void finishTerm(BlockTermState state) throws IOException;
 
-  /** Called when the writing switches to another field. */
-  public abstract void setField(FieldInfo fieldInfo);
+  /**
+   * Encode metadata as long[] and byte[]. {@code absolute} controls 
+   * whether current term is delta encoded according to latest term.
+   */
+  public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
+
+  /** 
+   * Return the fixed length of longs,
+   * called when the writing switches to another field. */
+  public abstract int setField(FieldInfo fieldInfo);
 
   @Override
   public abstract void close() throws IOException;

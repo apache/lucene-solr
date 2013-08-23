@@ -183,12 +183,37 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
       }
-      postingsWriter = new PulsingPostingsWriter(totTFCutoff, postingsWriter);
+      postingsWriter = new PulsingPostingsWriter(state, totTFCutoff, postingsWriter);
     }
 
     final FieldsConsumer fields;
+    final int t1 = random.nextInt(2);
 
-    if (random.nextBoolean()) {
+    /*
+    final int t1 = random.nextInt(4);
+    if (t1 == 0) {
+      boolean success = false;
+      try {
+        fields = new TempFSTTermsWriter(state, postingsWriter);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsWriter.close();
+        }
+      }
+    } else if (t1 == 1) {
+      boolean success = false;
+      try {
+        fields = new TempFSTOrdTermsWriter(state, postingsWriter);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsWriter.close();
+        }
+      }
+    } else if (t1 == 2) {
+    */
+    if (t1 == 0) {
       // Use BlockTree terms dict
 
       if (LuceneTestCase.VERBOSE) {
@@ -322,12 +347,36 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
       }
-      postingsReader = new PulsingPostingsReader(postingsReader);
+      postingsReader = new PulsingPostingsReader(state, postingsReader);
     }
 
     final FieldsProducer fields;
-
-    if (random.nextBoolean()) {
+    final int t1 = random.nextInt(2);
+    /*
+    final int t1 = random.nextInt(4);
+    if (t1 == 0) {
+      boolean success = false;
+      try {
+        fields = new TempFSTTermsReader(state, postingsReader);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsReader.close();
+        }
+      }
+    } else if (t1 == 1) {
+      boolean success = false;
+      try {
+        fields = new TempFSTOrdTermsReader(state, postingsReader);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsReader.close();
+        }
+      }
+    } else if (t1 == 2) {
+    */
+    if (t1 == 0) {
       // Use BlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading BlockTree terms dict");

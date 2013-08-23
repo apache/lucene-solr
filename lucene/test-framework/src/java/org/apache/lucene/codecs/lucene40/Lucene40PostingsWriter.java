@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -67,7 +69,6 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
    */
   final int maxSkipLevels = 10;
   final int totalNumDocs;
-  IndexOutput termsOut;
 
   IndexOptions indexOptions;
   boolean storePayloads;
@@ -80,6 +81,9 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   int lastOffsetLength;
   int lastPosition;
   int lastOffset;
+
+  final static StandardTermState emptyState = new StandardTermState();
+  StandardTermState lastState;
 
   // private String segment;
 
@@ -134,13 +138,18 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   }
 
   @Override
-  public void start(IndexOutput termsOut) throws IOException {
-    this.termsOut = termsOut;
+  public void init(IndexOutput termsOut) throws IOException {
     CodecUtil.writeHeader(termsOut, Lucene40PostingsReader.TERMS_CODEC, Lucene40PostingsReader.VERSION_CURRENT);
     termsOut.writeInt(skipInterval);                // write skipInterval
     termsOut.writeInt(maxSkipLevels);               // write maxSkipLevels
     termsOut.writeInt(skipMinimum);                 // write skipMinimum
   }
+
+  @Override
+  public BlockTermState newTermState() {
+    return new StandardTermState();
+  }
+
 
   @Override
   public void startTerm() {
@@ -159,7 +168,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   // Currently, this instance is re-used across fields, so
   // our parent calls setField whenever the field changes
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     //System.out.println("SPW: setField");
     /*
     if (BlockTreeTermsWriter.DEBUG && fieldInfo.name.equals("id")) {
@@ -173,8 +182,10 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     
     storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
     storePayloads = fieldInfo.hasPayloads();
+    lastState = emptyState;
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
+    return 0;
   }
 
   int lastDocID;
@@ -265,94 +276,48 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   public void finishDoc() {
   }
 
-  private static class PendingTerm {
-    public final long freqStart;
-    public final long proxStart;
-    public final long skipOffset;
-
-    public PendingTerm(long freqStart, long proxStart, long skipOffset) {
-      this.freqStart = freqStart;
-      this.proxStart = proxStart;
-      this.skipOffset = skipOffset;
-    }
+  private static class StandardTermState extends BlockTermState {
+    public long freqStart;
+    public long proxStart;
+    public long skipOffset;
   }
-
-  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats) throws IOException {
-
+  public void finishTerm(BlockTermState _state) throws IOException {
+    StandardTermState state = (StandardTermState)_state;
     // if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
-    assert stats.docFreq > 0;
+    assert state.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
-    assert stats.docFreq == df;
-
-    final long skipOffset;
+    assert state.docFreq == df;
+    state.freqStart = freqStart;
+    state.proxStart = proxStart;
     if (df >= skipMinimum) {
-      skipOffset = skipListWriter.writeSkip(freqOut)-freqStart;
+      state.skipOffset = skipListWriter.writeSkip(freqOut)-freqStart;
     } else {
-      skipOffset = -1;
+      state.skipOffset = -1;
     }
-
-    pendingTerms.add(new PendingTerm(freqStart, proxStart, skipOffset));
-
     lastDocID = 0;
     df = 0;
   }
 
-  private final RAMOutputStream bytesWriter = new RAMOutputStream();
-
   @Override
-  public void flushTermsBlock(int start, int count) throws IOException {
-    //if (DEBUG) System.out.println("SPW: flushTermsBlock start=" + start + " count=" + count + " left=" + (pendingTerms.size()-count) + " pendingTerms.size()=" + pendingTerms.size());
-
-    if (count == 0) {
-      termsOut.writeByte((byte) 0);
-      return;
+  public void encodeTerm(long[] empty, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+    StandardTermState state = (StandardTermState)_state;
+    if (absolute) {
+      lastState = emptyState;
     }
-
-    assert start <= pendingTerms.size();
-    assert count <= start;
-
-    final int limit = pendingTerms.size() - start + count;
-    final PendingTerm firstTerm = pendingTerms.get(limit - count);
-    // First term in block is abs coded:
-    bytesWriter.writeVLong(firstTerm.freqStart);
-
-    if (firstTerm.skipOffset != -1) {
-      assert firstTerm.skipOffset > 0;
-      bytesWriter.writeVLong(firstTerm.skipOffset);
+    out.writeVLong(state.freqStart - lastState.freqStart);
+    if (state.skipOffset != -1) {
+      assert state.skipOffset > 0;
+      out.writeVLong(state.skipOffset);
     }
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-      bytesWriter.writeVLong(firstTerm.proxStart);
+      out.writeVLong(state.proxStart - lastState.proxStart);
     }
-    long lastFreqStart = firstTerm.freqStart;
-    long lastProxStart = firstTerm.proxStart;
-    for(int idx=limit-count+1; idx<limit; idx++) {
-      final PendingTerm term = pendingTerms.get(idx);
-      //if (DEBUG) System.out.println("  write term freqStart=" + term.freqStart);
-      // The rest of the terms term are delta coded:
-      bytesWriter.writeVLong(term.freqStart - lastFreqStart);
-      lastFreqStart = term.freqStart;
-      if (term.skipOffset != -1) {
-        assert term.skipOffset > 0;
-        bytesWriter.writeVLong(term.skipOffset);
-      }
-      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-        bytesWriter.writeVLong(term.proxStart - lastProxStart);
-        lastProxStart = term.proxStart;
-      }
-    }
-
-    termsOut.writeVInt((int) bytesWriter.getFilePointer());
-    bytesWriter.writeTo(termsOut);
-    bytesWriter.reset();
-
-    // Remove the terms we just wrote:
-    pendingTerms.subList(limit-count, limit).clear();
+    lastState = state;
   }
 
   @Override

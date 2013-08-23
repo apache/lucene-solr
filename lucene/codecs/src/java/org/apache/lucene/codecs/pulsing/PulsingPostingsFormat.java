@@ -79,7 +79,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
 
       // Terms that have <= freqCutoff number of docs are
       // "pulsed" (inlined):
-      pulsingWriter = new PulsingPostingsWriter(freqCutoff, docsWriter);
+      pulsingWriter = new PulsingPostingsWriter(state, freqCutoff, docsWriter);
       FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
       success = true;
       return ret;
@@ -98,7 +98,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
     boolean success = false;
     try {
       docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
-      pulsingReader = new PulsingPostingsReader(docsReader);
+      pulsingReader = new PulsingPostingsReader(state, docsReader);
       FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.directory, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,

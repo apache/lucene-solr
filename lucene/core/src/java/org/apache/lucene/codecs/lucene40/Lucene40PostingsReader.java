@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -121,11 +122,6 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     long proxOffset;
     long skipOffset;
 
-    // Only used by the "primary" TermState -- clones don't
-    // copy this (basically they are "transient"):
-    ByteArrayDataInput bytesReader;  // TODO: should this NOT be in the TermState...?
-    byte[] bytes;
-
     @Override
     public StandardTermState clone() {
       StandardTermState other = new StandardTermState();
@@ -140,11 +136,6 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       freqOffset = other.freqOffset;
       proxOffset = other.proxOffset;
       skipOffset = other.skipOffset;
-
-      // Do not copy bytes, bytesReader (else TermState is
-      // very heavy, ie drags around the entire block's
-      // byte[]).  On seek back, if next() is in fact used
-      // (rare!), they will be re-read from disk.
     }
 
     @Override
@@ -171,38 +162,18 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
   }
 
-  /* Reads but does not decode the byte[] blob holding
-     metadata for the current terms block */
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    final StandardTermState termState = (StandardTermState) _termState;
-
-    final int len = termsIn.readVInt();
-
-    // if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
-    if (termState.bytes == null) {
-      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-      termState.bytesReader = new ByteArrayDataInput();
-    } else if (termState.bytes.length < len) {
-      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-    }
-
-    termsIn.readBytes(termState.bytes, 0, len);
-    termState.bytesReader.reset(termState.bytes, 0, len);
-  }
-
-  @Override
-  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState)
+  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
     throws IOException {
     final StandardTermState termState = (StandardTermState) _termState;
     // if (DEBUG) System.out.println("SPR: nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
     final boolean isFirstTerm = termState.termBlockOrd == 0;
-
-    if (isFirstTerm) {
-      termState.freqOffset = termState.bytesReader.readVLong();
-    } else {
-      termState.freqOffset += termState.bytesReader.readVLong();
+    if (absolute) {
+      termState.freqOffset = 0;
+      termState.proxOffset = 0;
     }
+
+    termState.freqOffset += in.readVLong();
     /*
     if (DEBUG) {
       System.out.println("  dF=" + termState.docFreq);
@@ -212,7 +183,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
-      termState.skipOffset = termState.bytesReader.readVLong();
+      termState.skipOffset = in.readVLong();
       // if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
@@ -220,11 +191,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-      if (isFirstTerm) {
-        termState.proxOffset = termState.bytesReader.readVLong();
-      } else {
-        termState.proxOffset += termState.bytesReader.readVLong();
-      }
+      termState.proxOffset += in.readVLong();
       // if (DEBUG) System.out.println("  proxFP=" + termState.proxOffset);
     }
   }

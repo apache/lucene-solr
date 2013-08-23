@@ -104,13 +104,12 @@ import org.apache.lucene.util.packed.PackedInts;
  * and decoding the Postings Metadata and Term Metadata sections.</p>
  *
  * <ul>
- * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Metadata</i>, Block<sup>NumBlocks</sup>,
+ *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Header</i>, NodeBlock<sup>NumBlocks</sup>,
  *                               FieldSummary, DirOffset</li>
- *    <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
- *    <li>SuffixBlock --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup></li>
- *    <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
- *    <li>MetadataBlock --&gt; MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
+ *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata ? </i>&gt;<sup>EntryCount</sup></li>
+ *    <li>TermStats --&gt; DocFreq, TotalTermFreq </li>
  *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
  *                            SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
@@ -136,7 +135,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
  *    <li>PostingsMetadata and TermMetadata are plugged into by the specific postings implementation:
  *        these contain arbitrary per-file data (such as parameters or versioning information) 
- *        and per-term data (such as pointers to inverted files).
+ *        and per-term data (such as pointers to inverted files).</li>
+ *    <li>For inner nodes of the tree, every entry will steal one bit to mark whether it points
+ *        to child nodes(sub-block). If so, the corresponding TermStats and TermMetaData are omitted </li>
  * </ul>
  * <a name="Termindex" id="Termindex"></a>
  * <h3>Term Index</h3>
@@ -237,8 +238,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
+    private final int longsSize;
 
-    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
@@ -248,6 +250,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
+      this.longsSize = longsSize;
     }
   }
 
@@ -300,7 +303,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
       // System.out.println("BTW.init seg=" + state.segmentName);
 
-      postingsWriter.start(out);                          // have consumer write its format/header
+      postingsWriter.init(out);                          // have consumer write its format/header
       success = true;
     } finally {
       if (!success) {
@@ -354,12 +357,13 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   private static final class PendingTerm extends PendingEntry {
     public final BytesRef term;
-    public final TermStats stats;
+    // stats + metadata
+    public final BlockTermState state;
 
-    public PendingTerm(BytesRef term, TermStats stats) {
+    public PendingTerm(BytesRef term, BlockTermState state) {
       super(true);
       this.term = term;
-      this.stats = stats;
+      this.state = state;
     }
 
     @Override
@@ -480,6 +484,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
+    private final int longsSize;
     private long numTerms;
     long sumTotalTermFreq;
     long sumDocFreq;
@@ -839,11 +844,16 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       final List<FST<BytesRef>> subIndices;
 
       int termCount;
+
+      long[] longs = new long[longsSize];
+      boolean absolute = true;
+
       if (isLeafBlock) {
         subIndices = null;
         for (PendingEntry ent : slice) {
           assert ent.isTerm;
           PendingTerm term = (PendingTerm) ent;
+          BlockTermState state = term.state;
           final int suffix = term.term.length - prefixLength;
           // if (DEBUG) {
           //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -852,15 +862,25 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           //   System.out.println("    write term suffix=" + suffixBytes);
           // }
           // For leaf block we write suffix straight
-          bytesWriter.writeVInt(suffix);
-          bytesWriter.writeBytes(term.term.bytes, prefixLength, suffix);
+          suffixWriter.writeVInt(suffix);
+          suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
 
           // Write term stats, to separate byte[] blob:
-          bytesWriter2.writeVInt(term.stats.docFreq);
+          statsWriter.writeVInt(state.docFreq);
           if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            assert term.stats.totalTermFreq >= term.stats.docFreq: term.stats.totalTermFreq + " vs " + term.stats.docFreq;
-            bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
+            assert state.totalTermFreq >= state.docFreq: state.totalTermFreq + " vs " + state.docFreq;
+            statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
           }
+
+          // Write term meta data
+          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
+          for (int pos = 0; pos < longsSize; pos++) {
+            assert longs[pos] >= 0;
+            metaWriter.writeVLong(longs[pos]);
+          }
+          bytesWriter.writeTo(metaWriter);
+          bytesWriter.reset();
+          absolute = false;
         }
         termCount = length;
       } else {
@@ -869,6 +889,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         for (PendingEntry ent : slice) {
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
+            BlockTermState state = term.state;
             final int suffix = term.term.length - prefixLength;
             // if (DEBUG) {
             //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -878,15 +899,33 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             // }
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
-            bytesWriter.writeVInt(suffix<<1);
-            bytesWriter.writeBytes(term.term.bytes, prefixLength, suffix);
+            suffixWriter.writeVInt(suffix<<1);
+            suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
 
             // Write term stats, to separate byte[] blob:
-            bytesWriter2.writeVInt(term.stats.docFreq);
+            statsWriter.writeVInt(state.docFreq);
             if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-              assert term.stats.totalTermFreq >= term.stats.docFreq;
-              bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
+              assert state.totalTermFreq >= state.docFreq;
+              statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
             }
+
+            // TODO: now that terms dict "sees" these longs,
+            // we can explore better column-stride encodings
+            // to encode all long[0]s for this block at
+            // once, all long[1]s, etc., e.g. using
+            // Simple64.  Alternatively, we could interleave
+            // stats + meta ... no reason to have them
+            // separate anymore:
+
+            // Write term meta data
+            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
+            for (int pos = 0; pos < longsSize; pos++) {
+              assert longs[pos] >= 0;
+              metaWriter.writeVLong(longs[pos]);
+            }
+            bytesWriter.writeTo(metaWriter);
+            bytesWriter.reset();
+            absolute = false;
 
             termCount++;
           } else {
@@ -897,8 +936,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
-            bytesWriter.writeVInt((suffix<<1)|1);
-            bytesWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
+            suffixWriter.writeVInt((suffix<<1)|1);
+            suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
             assert block.fp < startFP;
 
             // if (DEBUG) {
@@ -908,7 +947,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             //   System.out.println("    write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
             // }
 
-            bytesWriter.writeVLong(startFP - block.fp);
+            suffixWriter.writeVLong(startFP - block.fp);
             subIndices.add(block.index);
           }
         }
@@ -921,17 +960,19 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       // search on lookup
 
       // Write suffixes byte[] blob to terms dict output:
-      out.writeVInt((int) (bytesWriter.getFilePointer() << 1) | (isLeafBlock ? 1:0));
-      bytesWriter.writeTo(out);
-      bytesWriter.reset();
+      out.writeVInt((int) (suffixWriter.getFilePointer() << 1) | (isLeafBlock ? 1:0));
+      suffixWriter.writeTo(out);
+      suffixWriter.reset();
 
       // Write term stats byte[] blob
-      out.writeVInt((int) bytesWriter2.getFilePointer());
-      bytesWriter2.writeTo(out);
-      bytesWriter2.reset();
+      out.writeVInt((int) statsWriter.getFilePointer());
+      statsWriter.writeTo(out);
+      statsWriter.reset();
 
-      // Have postings writer write block
-      postingsWriter.flushTermsBlock(futureTermCount+termCount, termCount);
+      // Write term meta data byte[] blob
+      out.writeVInt((int) metaWriter.getFilePointer());
+      metaWriter.writeTo(out);
+      metaWriter.reset();
 
       // Remove slice replaced by block:
       slice.clear();
@@ -967,7 +1008,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                                          PackedInts.COMPACT,
                                          true, 15);
 
-      postingsWriter.setField(fieldInfo);
+      this.longsSize = postingsWriter.setField(fieldInfo);
     }
     
     @Override
@@ -998,8 +1039,13 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
       blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
-      pending.add(new PendingTerm(BytesRef.deepCopyOf(text), stats));
-      postingsWriter.finishTerm(stats);
+      BlockTermState state = postingsWriter.newTermState();
+      state.docFreq = stats.docFreq;
+      state.totalTermFreq = stats.totalTermFreq;
+      postingsWriter.finishTerm(state);
+
+      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
+      pending.add(term);
       numTerms++;
     }
 
@@ -1038,7 +1084,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                                      indexStartFP,
                                      sumTotalTermFreq,
                                      sumDocFreq,
-                                     docCount));
+                                     docCount,
+                                     longsSize));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -1046,8 +1093,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       }
     }
 
+    private final RAMOutputStream suffixWriter = new RAMOutputStream();
+    private final RAMOutputStream statsWriter = new RAMOutputStream();
+    private final RAMOutputStream metaWriter = new RAMOutputStream();
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
-    private final RAMOutputStream bytesWriter2 = new RAMOutputStream();
   }
 
   @Override
@@ -1072,6 +1121,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
+        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);

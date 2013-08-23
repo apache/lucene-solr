@@ -169,7 +169,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       final PostingsFormat format;
       if ("random".equals(TEST_POSTINGSFORMAT)) {
         format = PostingsFormat.forName("Lucene41");
-      } else if ("TempRandom".equals(TEST_POSTINGSFORMAT)) {
+      } else if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
         format = new MockRandomPostingsFormat(new Random(random.nextLong()));
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
