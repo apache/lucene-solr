@@ -29,3 +29,4 @@ org.apache.lucene.codecs.temp.TempSepPostingsFormat
 org.apache.lucene.codecs.temp.TempFixedIntBlockPostingsFormat
 org.apache.lucene.codecs.temp.TempVariableIntBlockPostingsFormat
 org.apache.lucene.codecs.temp.TempRandomPostingsFormat
+org.apache.lucene.codecs.lucene40.Temp40RWPostingsFormat
