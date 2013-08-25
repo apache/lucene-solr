@@ -1092,6 +1092,11 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testRandomSortedBytes() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    if (!defaultCodecSupportsDocsWithField()) {
+      // if the codec doesnt support missing, we expect missing to be mapped to byte[]
+      // by the impersonator, but we have to give it a chance to merge them to this
+      cfg.setMergePolicy(newLogMergePolicy());
+    }
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, cfg);
     int numDocs = atLeast(100);
     BytesRefHash hash = new BytesRefHash();
@@ -1122,6 +1127,11 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     }
     if (rarely()) {
       w.commit();
+    }
+    if (!defaultCodecSupportsDocsWithField()) {
+      // if the codec doesnt support missing, we expect missing to be mapped to byte[]
+      // by the impersonator, but we have to give it a chance to merge them to this
+      w.forceMerge(1);
     }
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
