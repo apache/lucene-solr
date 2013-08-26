@@ -76,7 +76,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
   public void testBasics() throws Exception {
     // sanity check of norms writer
     // TODO: generalize
-    AtomicReader slow = new SlowCompositeReaderWrapper(reader);
+    AtomicReader slow = SlowCompositeReaderWrapper.wrap(reader);
     NumericDocValues fooNorms = slow.getNormValues("foo");
     NumericDocValues barNorms = slow.getNormValues("bar");
     for (int i = 0; i < slow.maxDoc(); i++) {

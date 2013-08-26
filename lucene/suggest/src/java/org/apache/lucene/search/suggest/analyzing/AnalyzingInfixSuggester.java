@@ -254,7 +254,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
       //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
 
-      r = new SlowCompositeReaderWrapper(DirectoryReader.open(w, false));
+      r = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(w, false));
       //long t1 = System.nanoTime();
       w.rollback();
 

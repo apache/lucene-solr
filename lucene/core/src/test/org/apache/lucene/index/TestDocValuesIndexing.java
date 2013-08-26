@@ -209,7 +209,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       writer.addDocument(doc);
     }
     DirectoryReader r = writer.getReader();
-    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(r);
+    AtomicReader slow = SlowCompositeReaderWrapper.wrap(r);
     FieldInfos fi = slow.getFieldInfos();
     FieldInfo dvInfo = fi.fieldInfo("dv");
     assertTrue(dvInfo.hasDocValues());

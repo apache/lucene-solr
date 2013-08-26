@@ -267,6 +267,9 @@ Changes in backwards compatibility policy
 * LUCENE-5170: Changed method signatures of Analyzer.ReuseStrategy to take
   Analyzer. Closeable interface was removed because the class was changed to
   be stateless.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5187: SlowCompositeReaderWrapper constructor is now private,
+  SlowCompositeReaderWrapper.wrap should be used instead. (Adrien Grand)
   
 Build
 

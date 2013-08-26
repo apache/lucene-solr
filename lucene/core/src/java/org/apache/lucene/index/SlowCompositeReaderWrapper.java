@@ -64,9 +64,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     }
   }
 
-  /** Sole constructor, wrapping the provided {@link
-   *  CompositeReader}. */
-  public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  private SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
