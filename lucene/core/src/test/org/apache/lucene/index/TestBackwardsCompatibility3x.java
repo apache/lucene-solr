@@ -1025,7 +1025,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     pq.add(new Term("field3", "text"));
     TopDocs td = is.search(pq, 10);
     assertEquals(1, td.totalHits);
-    SlowCompositeReaderWrapper wrapper = new SlowCompositeReaderWrapper(ir);
+    AtomicReader wrapper = SlowCompositeReaderWrapper.wrap(ir);
     DocsAndPositionsEnum de = wrapper.termPositionsEnum(new Term("field3", "broken"));
     assert de != null;
     assertEquals(0, de.nextDoc());
