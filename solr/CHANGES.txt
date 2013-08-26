@@ -148,6 +148,9 @@ Bug Fixes
 
 * SOLR-5174: Admin UI - Query View doesn't highlight (json) Result if it 
   contains HTML Tags (steffkes)
+  
+* SOLR-4817 Solr should not fall back to the back compat built in solr.xml in SolrCloud 
+  mode (Erick Erickson)
 
 Optimizations
 ----------------------

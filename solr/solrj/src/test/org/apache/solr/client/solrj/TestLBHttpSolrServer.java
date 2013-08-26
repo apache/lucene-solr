@@ -273,6 +273,11 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       return "solrj/solr/collection1/conf/solrconfig-slave1.xml";
     }
 
+    public String getSolrXmlFile() {
+      return "solrj/solr/solr.xml";
+    }
+
+
     public void setUp() throws Exception {
       File home = new File(LuceneTestCase.TEMP_DIR,
               getClass().getName() + "-" + System.currentTimeMillis());
@@ -285,6 +290,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       homeDir.mkdirs();
       dataDir.mkdirs();
       confDir.mkdirs();
+
+      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
 
       File f = new File(confDir, "solrconfig.xml");
       FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);

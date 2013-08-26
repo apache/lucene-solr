@@ -18,15 +18,18 @@ package org.apache.solr.core;
  */
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestSolrXmlPersistor {
+public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
 
   private static final List<CoreDescriptor> EMPTY_CD_LIST = ImmutableList.<CoreDescriptor>builder().build();
 
@@ -58,21 +61,33 @@ public class TestSolrXmlPersistor {
   }
 
   @Test
-  public void simpleCoreDescriptorIsPersisted() {
+  public void simpleCoreDescriptorIsPersisted() throws IOException {
 
     final String solrxml = "<solr><cores></cores></solr>";
 
-    SolrResourceLoader loader = new SolrResourceLoader("solr/example/solr");
-    CoreContainer cc = new CoreContainer(loader);
+    final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+    try {
+      if (solrHomeDirectory.exists()) {
+        FileUtils.deleteDirectory(solrHomeDirectory);
+      }
+      copyMinFullSetup(solrHomeDirectory);
 
-    final CoreDescriptor cd = new CoreDescriptor(cc, "testcore", "instance/dir/");
-    List<CoreDescriptor> cds = ImmutableList.of(cd);
+      CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
 
-    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-    assertEquals(persistor.buildSolrXML(cds),
+      final CoreDescriptor cd = new CoreDescriptor(cc, "testcore", "instance/dir/");
+      List<CoreDescriptor> cds = ImmutableList.of(cd);
+
+      SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
+      assertEquals(persistor.buildSolrXML(cds),
           "<solr><cores>" + SolrXMLCoresLocator.NEWLINE
-        + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>" + SolrXMLCoresLocator.NEWLINE
-        + "</cores></solr>");
+          + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>" + SolrXMLCoresLocator.NEWLINE
+          + "</cores></solr>");
+    } finally {
+      if (solrHomeDirectory.exists()) {
+        FileUtils.deleteDirectory(solrHomeDirectory);
+      }
+
+    }
   }
 
   @Test

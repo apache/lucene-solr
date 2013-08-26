@@ -49,7 +49,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
   private static final String SOURCE_CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
-  
+  private static final String ROOT_DIR = "dih" + File.separator + "solr" + File.separator;
+
   private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
@@ -293,7 +294,11 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     public String getSolrConfigFile() {
       return SOURCE_CONF_DIR + "dataimport-solrconfig.xml";
     }
-    
+
+    public String getSolrXmlFile() {
+      return ROOT_DIR + "solr.xml";
+    }
+
     public void setUp() throws Exception {
       
       File home = new File(TEMP_DIR, getClass().getName() + "-"
@@ -306,7 +311,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       homeDir.mkdirs();
       dataDir.mkdirs();
       confDir.mkdirs();
-      
+
+      FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
       File f = new File(confDir, "solrconfig.xml");
       FileUtils.copyFile(getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");

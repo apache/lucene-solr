@@ -202,7 +202,7 @@ public class SolrDispatchFilter implements Filter
     }
     
     if (this.cores == null) {
-      ((HttpServletResponse)response).sendError( 503, "Server is shutting down" );
+      ((HttpServletResponse)response).sendError( 503, "Server is shutting down or failed to initialize" );
       return;
     }
     CoreContainer cores = this.cores;

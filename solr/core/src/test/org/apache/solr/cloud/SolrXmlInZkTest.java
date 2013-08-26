@@ -33,6 +33,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
@@ -145,23 +146,23 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       setUpZkAndDiskXml(false, true);
       fail("Should have gotten an exception here!");
     } catch (InvocationTargetException ite) {
-      SolrException se = (SolrException) ite.getTargetException();
       assertEquals("Should have an exception here, file not in ZK.",
-          "Could not load solr.xml from zookeeper", se.getMessage());
+          "Could not load solr.xml from zookeeper", ite.getTargetException().getMessage());
     } finally {
       closeZK();
     }
   }
 
-  // TODO: Solr 5.0. when we remove the default solr.xml from configSolrXmlOld this should start failing.
   @Test
   public void testNotInZkOrOnDisk() throws Exception {
     try {
       System.clearProperty("solr.solrxml.location");
       System.setProperty("hostPort", "8787");
       setUpZkAndDiskXml(false, false); // solr.xml not on disk either
-      assertEquals("Should have gotten the default port from the hard-coded default solr.xml file via sys prop.",
-          cfg.getZkHostPort(), "8787");
+      fail("Should have thrown an exception here");
+    } catch (InvocationTargetException ite) {
+      assertTrue("Should be failing to create default solr.xml in code",
+          ite.getTargetException().getCause().getMessage().indexOf("solr.xml does not exist") != -1);
     } finally {
       closeZK();
     }
@@ -185,9 +186,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       setUpZkAndDiskXml(false, true);
       fail("Should have thrown exception in SolrXmlInZkTest.testBadSysProp");
     } catch (InvocationTargetException ite) {
-      SolrException se = (SolrException) ite.getTargetException();
       assertEquals("Should have an exception in SolrXmlInZkTest.testBadSysProp, sysprop set to bogus value.",
-          se.getMessage(), "Bad solr.solrxml.location set: solrHomeDir - should be 'solrhome' or 'zookeeper'");
+          ite.getTargetException().getMessage(), "Bad solr.solrxml.location set: solrHomeDir - should be 'solrhome' or 'zookeeper'");
     } finally {
       closeZK();
     }
@@ -208,9 +208,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       fail("Should have thrown an exception");
     } catch (InvocationTargetException ite) {
       assertTrue("Should be catching a SolrException", ite.getTargetException() instanceof SolrException);
-      String cause = ((SolrException) ite.getTargetException()).getMessage();
-
-      assertEquals("Caught Solr exception", cause,
+      assertEquals("Caught Solr exception", ite.getTargetException().getMessage(),
           "Could not load solr.xml from zookeeper: zkHost system property not set");
     }
   }
