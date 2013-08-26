@@ -54,11 +54,15 @@ public abstract class ConfigSolr {
     InputStream inputStream = null;
 
     try {
+
       if (!configFile.exists()) {
+        if (ZkContainer.isZkMode()) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
+        }
         log.info("{} does not exist, using default configuration", configFile.getAbsolutePath());
         inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(Charsets.UTF_8));
-      }
-      else {
+      } else {
         inputStream = new FileInputStream(configFile);
       }
       return fromInputStream(loader, inputStream);

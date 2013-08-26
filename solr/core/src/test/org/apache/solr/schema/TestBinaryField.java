@@ -17,20 +17,17 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.FileUtils;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.*;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.SolrJettyTestBase;
 import org.junit.BeforeClass;
 
@@ -48,6 +45,8 @@ public class TestBinaryField extends SolrJettyTestBase {
     collDir.mkdirs();
     dataDir.mkdirs();
     confDir.mkdirs();
+
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
 
     String src_dir = TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(src_dir, "schema-binaryfield.xml"), 

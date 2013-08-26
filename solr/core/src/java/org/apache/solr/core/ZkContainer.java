@@ -17,6 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
@@ -75,7 +76,15 @@ public class ZkContainer {
         config.getHost(), config.getLeaderVoteWait(), config.getGenericCoreNodeNames(),
         config.getDistributedConnectionTimeout(), config.getDistributedSocketTimeout());
   }
-  
+  // TODO: 5.0 remove this, it's only here for back-compat and only called from ConfigSolr.
+  public static boolean isZkMode() {
+    String test = System.getProperty("zkHost");
+    if (StringUtils.isBlank(test)) {
+      test = System.getProperty("zkRun");
+    }
+    return StringUtils.isNotBlank(test);
+  }
+
   public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
                             String hostContext, String host, int leaderVoteWait, boolean genericCoreNodeNames,
                             int distribUpdateConnTimeout, int distribUpdateSoTimeout) {

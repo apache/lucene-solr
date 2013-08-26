@@ -69,6 +69,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -139,7 +140,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.data.dir", instance.getDataDir());
-
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
 
     jetty.start();

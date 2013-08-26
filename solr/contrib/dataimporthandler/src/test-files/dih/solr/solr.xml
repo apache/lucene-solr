@@ -17,19 +17,13 @@
 -->
 
 <!--
- All (relative) paths are relative to the installation path
-  
-  persistent: Save changes made via the API to this file
-  sharedLib: path to a lib directory that will be shared across all cores
+ solr.xml mimicking the old default solr.xml
 -->
-<solr persistent="false">
 
-  <!--
-  adminPath: RequestHandler path to manage cores.  
-    If 'null' (or absent), cores will not be manageable via request handler
-  -->
-  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="${hostContext:solr}" zkClientTimeout="8000" genericCoreNodeNames="${genericCoreNodeNames:true}">
-    <core name="collection1" instanceDir="collection1" shard="${shard:}" collection="${collection:collection1}" />
-    <!--config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"/-->
+<solr persistent="false">
+  <cores adminPath="/admin/cores" defaultCoreName="collection1"
+         host="${host:}" hostPort="${hostPort:}" hostContext="${hostContext:}"
+         zkClientTimeout="${zkClientTimeout:15000}">
+    <core name="collection1" shard="${shard:}" collection="${collection:collection1}" instanceDir="collection1"/>
   </cores>
 </solr>
