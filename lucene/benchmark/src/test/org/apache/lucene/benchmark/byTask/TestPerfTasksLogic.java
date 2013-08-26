@@ -344,7 +344,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     DirectoryReader r = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    SortedDocValues idx = FieldCache.DEFAULT.getTermsIndex(new SlowCompositeReaderWrapper(r), "country");
+    SortedDocValues idx = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(r), "country");
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
     for(int i=0;i<1000;i++) {

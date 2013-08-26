@@ -176,7 +176,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
 
   private void duellReaders(CompositeReader other, AtomicReader memIndexReader)
       throws IOException {
-    AtomicReader competitor = new SlowCompositeReaderWrapper(other);
+    AtomicReader competitor = SlowCompositeReaderWrapper.wrap(other);
     Fields memFields = memIndexReader.fields();
     for (String field : competitor.fields()) {
       Terms memTerms = memFields.terms(field);

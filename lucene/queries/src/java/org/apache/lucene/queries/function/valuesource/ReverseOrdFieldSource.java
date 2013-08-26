@@ -69,9 +69,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-    final AtomicReader r = topReader instanceof CompositeReader 
-        ? new SlowCompositeReaderWrapper((CompositeReader)topReader) 
-        : (AtomicReader) topReader;
+    final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
     final int off = readerContext.docBase;
 
     final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);

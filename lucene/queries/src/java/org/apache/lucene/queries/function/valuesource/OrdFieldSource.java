@@ -70,9 +70,7 @@ public class OrdFieldSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-    final AtomicReader r = topReader instanceof CompositeReader 
-        ? new SlowCompositeReaderWrapper((CompositeReader)topReader) 
-        : (AtomicReader) topReader;
+    final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
     final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {

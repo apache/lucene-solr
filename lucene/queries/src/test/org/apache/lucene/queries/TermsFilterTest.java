@@ -74,7 +74,7 @@ public class TermsFilterTest extends LuceneTestCase {
       doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
       w.addDocument(doc);
     }
-    IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
     assertTrue(reader.getContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
     w.close();

@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
@@ -64,10 +65,10 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
 
   protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String classFieldName) throws Exception {
-    SlowCompositeReaderWrapper compositeReaderWrapper = null;
+    AtomicReader compositeReaderWrapper = null;
     try {
       populateIndex(analyzer);
-      compositeReaderWrapper = new SlowCompositeReaderWrapper(indexWriter.getReader());
+      compositeReaderWrapper = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
       classifier.train(compositeReaderWrapper, textFieldName, classFieldName, analyzer);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
