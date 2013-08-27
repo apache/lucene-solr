@@ -181,6 +181,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testLogWatcherEnabledByDefault() {
+    assertNotNull(h.getCoreContainer().getLogging());
+  }
+  
   private void SetUpHome(File solrHomeDirectory, String xmlFile) throws IOException {
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
