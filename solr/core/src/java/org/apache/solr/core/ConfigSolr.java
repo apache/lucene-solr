@@ -189,7 +189,7 @@ public abstract class ConfigSolr {
 
   public LogWatcherConfig getLogWatcherConfig() {
     return new LogWatcherConfig(
-        getBool(CfgProp.SOLR_LOGGING_ENABLED, false),
+        getBool(CfgProp.SOLR_LOGGING_ENABLED, true),
         get(CfgProp.SOLR_LOGGING_CLASS, null),
         get(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null),
         getInt(CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50)

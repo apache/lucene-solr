@@ -29,7 +29,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -193,7 +192,7 @@ public class CoreContainer {
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
-    logging = JulWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     shareSchema = cfg.hasSchemaCache();
 
