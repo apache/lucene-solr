@@ -20,7 +20,6 @@ package org.apache.solr.uima.processor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.lucene.analysis.uima.ae.AEProvider;
@@ -48,19 +47,16 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   SolrUIMAConfiguration solrUIMAConfiguration;
 
   private AEProvider aeProvider;
-  
-  private SolrCore solrCore;
 
-  public UIMAUpdateRequestProcessor(UpdateRequestProcessor next, SolrCore solrCore,
+  public UIMAUpdateRequestProcessor(UpdateRequestProcessor next, String coreName,
       SolrUIMAConfiguration config) {
     super(next);
-    initialize(solrCore, config);
+    initialize(coreName, config);
   }
 
-  private void initialize(SolrCore solrCore, SolrUIMAConfiguration config) {
-    this.solrCore = solrCore;
+  private void initialize(String coreName, SolrUIMAConfiguration config) {
     solrUIMAConfiguration = config;
-    aeProvider = AEProviderFactory.getInstance().getAEProvider(solrCore.getName(),
+    aeProvider = AEProviderFactory.getInstance().getAEProvider(coreName,
             solrUIMAConfiguration.getAePath(), solrUIMAConfiguration.getRuntimeParameters());
   }
 
