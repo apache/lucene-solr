@@ -60,7 +60,9 @@ public class BlockTermsWriter extends FieldsConsumer {
   // Initial format
   public static final int VERSION_START = 0;
   public static final int VERSION_APPEND_ONLY = 1;
+  public static final int VERSION_META_ARRAY = 2;
   public static final int VERSION_CURRENT = VERSION_APPEND_ONLY;
+  //public static final int VERSION_CURRENT = VERSION_META_ARRAY;
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tib";
@@ -136,9 +138,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
   @Override
   public void close() throws IOException {
-
     try {
-      
       final long dirStart = out.getFilePointer();
 
       out.writeVInt(fields.size());
@@ -151,7 +151,9 @@ public class BlockTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
-        out.writeVInt(field.longsSize);
+        if (VERSION_CURRENT >= VERSION_META_ARRAY) {
+          out.writeVInt(field.longsSize);
+        }
       }
       writeTrailer(dirStart);
     } finally {

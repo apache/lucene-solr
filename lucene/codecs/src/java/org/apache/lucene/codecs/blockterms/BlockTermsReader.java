@@ -142,7 +142,7 @@ public class BlockTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        final int longsSize = in.readVInt();
+        final int longsSize = version >= BlockTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
         }

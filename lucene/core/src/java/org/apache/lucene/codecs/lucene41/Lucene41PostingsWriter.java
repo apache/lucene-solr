@@ -66,13 +66,14 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   // Increment version to change it
   final static int VERSION_START = 0;
+  final static int VERSION_META_ARRAY = 1;
   final static int VERSION_CURRENT = VERSION_START;
+  //final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
   final IndexOutput docOut;
   final IndexOutput posOut;
   final IndexOutput payOut;
 
-  final static IntBlockTermState emptyState = new IntBlockTermState();
   IntBlockTermState lastState;
 
   // How current field indexes postings:
@@ -224,7 +225,10 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     fieldHasPayloads = fieldInfo.hasPayloads();
     skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
-    lastState = emptyState;
+    lastState = newTermState();
+    if (VERSION_CURRENT < VERSION_META_ARRAY) {
+      return 0;
+    }
     if (fieldHasPositions) {
       if (fieldHasPayloads || fieldHasOffsets) {
         return 3;  // doc + pos + pay FP
@@ -517,12 +521,16 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       //   System.out.println("  no skip: docCount=" + docCount);
       // }
     }
+    if (state.totalTermFreq >= BLOCK_SIZE) {
+      state.payTermStartFP = payTermStartFP;
+    } else {
+      state.payTermStartFP = -1;
+    }
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
     state.docTermStartFP = docTermStartFP;
     state.posTermStartFP = posTermStartFP;
-    state.payTermStartFP = payTermStartFP;
     state.singletonDocID = singletonDocID;
     state.skipOffset = skipOffset;
     state.lastPosBlockOffset = lastPosBlockOffset;
@@ -538,13 +546,23 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IntBlockTermState state = (IntBlockTermState)_state;
     if (absolute) {
-      lastState = emptyState;
+      lastState = newTermState();
+    }
+    //System.out.println("PW: state=" + state);
+    //System.out.println("     last=" + lastState);
+    if (VERSION_CURRENT < VERSION_META_ARRAY) {  // impersonation
+      _encodeTerm(out, fieldInfo, state);
+      return;
     }
     longs[0] = state.docTermStartFP - lastState.docTermStartFP;
     if (fieldHasPositions) {
       longs[1] = state.posTermStartFP - lastState.posTermStartFP;
       if (fieldHasPayloads || fieldHasOffsets) {
-        longs[2] = state.payTermStartFP - lastState.payTermStartFP;
+        if (state.payTermStartFP == -1) {
+          longs[2] = 0;
+        } else {
+          longs[2] = state.payTermStartFP - lastState.payTermStartFP;
+        }
       }
     }
     if (state.singletonDocID != -1) {
@@ -558,7 +576,32 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     if (state.skipOffset != -1) {
       out.writeVLong(state.skipOffset);
     }
+    if (state.payTermStartFP == -1) {
+      state.payTermStartFP = lastState.payTermStartFP;
+    }
     lastState = state;
+  }
+  public void _encodeTerm(DataOutput out, FieldInfo fieldInfo, IntBlockTermState state) throws IOException {
+    if (state.singletonDocID == -1) {
+      out.writeVLong(state.docTermStartFP - lastState.docTermStartFP);
+      lastState.docTermStartFP = state.docTermStartFP;
+    } else {
+      out.writeVInt(state.singletonDocID);
+    }
+    if (fieldHasPositions) {
+      out.writeVLong(state.posTermStartFP - lastState.posTermStartFP);
+      lastState.posTermStartFP = state.posTermStartFP;
+      if (state.lastPosBlockOffset != -1) {
+        out.writeVLong(state.lastPosBlockOffset);
+      }
+      if ((fieldHasPayloads || fieldHasOffsets) && state.payTermStartFP != -1) {
+        out.writeVLong(state.payTermStartFP - lastState.payTermStartFP);
+        lastState.payTermStartFP = state.payTermStartFP;
+      }
+    }
+    if (state.skipOffset != -1) {
+      out.writeVLong(state.skipOffset);
+    }
   }
 
   @Override

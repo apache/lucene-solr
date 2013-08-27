@@ -59,6 +59,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   private final IndexInput payIn;
 
   private final ForUtil forUtil;
+  private int version;
 
   // public static boolean DEBUG = false;
 
@@ -71,27 +72,21 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     try {
       docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.DOC_EXTENSION),
                             ioContext);
-      CodecUtil.checkHeader(docIn,
+      version = CodecUtil.checkHeader(docIn,
                             Lucene41PostingsWriter.DOC_CODEC,
-                            Lucene41PostingsWriter.VERSION_CURRENT,
+                            Lucene41PostingsWriter.VERSION_START,
                             Lucene41PostingsWriter.VERSION_CURRENT);
       forUtil = new ForUtil(docIn);
 
       if (fieldInfos.hasProx()) {
         posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
                               ioContext);
-        CodecUtil.checkHeader(posIn,
-                              Lucene41PostingsWriter.POS_CODEC,
-                              Lucene41PostingsWriter.VERSION_CURRENT,
-                              Lucene41PostingsWriter.VERSION_CURRENT);
+        CodecUtil.checkHeader(posIn, Lucene41PostingsWriter.POS_CODEC, version, version);
 
         if (fieldInfos.hasPayloads() || fieldInfos.hasOffsets()) {
           payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
                                 ioContext);
-          CodecUtil.checkHeader(payIn,
-                                Lucene41PostingsWriter.PAY_CODEC,
-                                Lucene41PostingsWriter.VERSION_CURRENT,
-                                Lucene41PostingsWriter.VERSION_CURRENT);
+          CodecUtil.checkHeader(payIn, Lucene41PostingsWriter.PAY_CODEC, version, version);
         }
       }
 
@@ -111,7 +106,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     // Make sure we are talking to the matching postings writer
     CodecUtil.checkHeader(termsIn,
                           Lucene41PostingsWriter.TERMS_CODEC,
-                          Lucene41PostingsWriter.VERSION_CURRENT,
+                          Lucene41PostingsWriter.VERSION_START,
                           Lucene41PostingsWriter.VERSION_CURRENT);
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
@@ -201,6 +196,10 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       termState.posStartFP = 0;
       termState.payStartFP = 0;
     }
+    if (version < Lucene41PostingsWriter.VERSION_META_ARRAY) {  // impersonation
+      _decodeTerm(in, fieldInfo, termState);
+      return;
+    }
     termState.docStartFP += longs[0];
     if (fieldHasPositions) {
       termState.posStartFP += longs[1];
@@ -220,12 +219,40 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         termState.lastPosBlockOffset = -1;
       }
     }
-
     if (termState.docFreq > BLOCK_SIZE) {
       termState.skipOffset = in.readVLong();
     } else {
       termState.skipOffset = -1;
     }
+  }
+  private void _decodeTerm(DataInput in, FieldInfo fieldInfo, IntBlockTermState termState) throws IOException {
+    final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    final boolean fieldHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    final boolean fieldHasPayloads = fieldInfo.hasPayloads();
+    if (termState.docFreq == 1) {
+      termState.singletonDocID = in.readVInt();
+    } else {
+      termState.singletonDocID = -1;
+      termState.docStartFP += in.readVLong();
+      System.out.println(termState.docStartFP);
+    }
+    if (fieldHasPositions) {
+      termState.posStartFP += in.readVLong();
+      if (termState.totalTermFreq > BLOCK_SIZE) {
+        termState.lastPosBlockOffset = in.readVLong();
+      } else {
+        termState.lastPosBlockOffset = -1;
+      }
+      if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= BLOCK_SIZE) {
+        termState.payStartFP += in.readVLong();
+      }
+    }
+    if (termState.docFreq > BLOCK_SIZE) {
+      termState.skipOffset = in.readVLong();
+    } else {
+      termState.skipOffset = -1;
+    }
+    //System.out.println("PR: state=" + termState);
   }
     
   @Override

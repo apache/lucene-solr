@@ -205,6 +205,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   /** Append-only */
   public static final int TERMS_VERSION_APPEND_ONLY = 1;
 
+  /** Meta data as array */
+  public static final int TERMS_VERSION_META_ARRAY = 2;
+
   /** Current terms format. */
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_APPEND_ONLY;
 
@@ -217,6 +220,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   
   /** Append-only */
   public static final int TERMS_INDEX_VERSION_APPEND_ONLY = 1;
+
+  /** Meta data as array */
+  public static final int TERMS_INDEX_VERSION_META_ARRAY = 2;
 
   /** Current index format. */
   public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_APPEND_ONLY;
@@ -1121,7 +1127,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
-        out.writeVInt(field.longsSize);
+        if (TERMS_VERSION_CURRENT >= TERMS_VERSION_META_ARRAY) {
+          out.writeVInt(field.longsSize);
+        }
         indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);
