@@ -27,6 +27,10 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testSegmentMergerWithoutReopen() throws Exception {
+      assertConfigs("bad-solrconfig-warmer-no-reopen.xml", "schema12.xml",
+                    "mergedSegmentWarmer");
+  }
   public void testMultipleDirectoryFactories() throws Exception {
       assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
                     "directoryFactory");
