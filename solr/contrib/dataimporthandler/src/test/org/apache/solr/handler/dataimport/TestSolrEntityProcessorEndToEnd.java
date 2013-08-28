@@ -62,7 +62,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     dbDoc.put("dbid_s", "1");
     dbDoc.put("dbdesc_s", "DbDescription");
     DB_DOCS.add(dbDoc);
-    
+
     Map<String,Object> solrDoc = new HashMap<String,Object>();
     solrDoc.put("id", "1");
     solrDoc.put("desc", "SolrDescription");
@@ -202,8 +202,19 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      MockDataSource.setIterator("select * from x", DB_DOCS.iterator());
-      addDocumentsToSolr(SOLR_DOCS);
+      List<Map<String,Object>> DOCS = new ArrayList<Map<String,Object>>(DB_DOCS);
+      Map<String, Object> doc = new HashMap<String, Object>();
+      doc.put("dbid_s", "2");
+      doc.put("dbdesc_s", "DbDescription2");
+      DOCS.add(doc);
+      MockDataSource.setIterator("select * from x", DOCS.iterator());
+
+      DOCS = new ArrayList<Map<String,Object>>(SOLR_DOCS);
+      Map<String,Object> solrDoc = new HashMap<String,Object>();
+      solrDoc.put("id", "2");
+      solrDoc.put("desc", "SolrDescription2");
+      DOCS.add(solrDoc);
+      addDocumentsToSolr(DOCS);
       runFullImport(getDihConfigTagsInnerEntity());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -212,12 +223,15 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       MockDataSource.clearCache();
     }
     
-    assertQ(req("*:*"), "//result[@numFound='1']");
+    assertQ(req("*:*"), "//result[@numFound='2']");
     assertQ(req("id:1"), "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='dbdesc_s'][.='DbDescription']",
         "//result/doc/str[@name='dbid_s'][.='1']",
         "//result/doc/arr[@name='desc'][.='SolrDescription']");
-    
+    assertQ(req("id:2"), "//result/doc/str[@name='id'][.='2']",
+        "//result/doc/str[@name='dbdesc_s'][.='DbDescription2']",
+        "//result/doc/str[@name='dbid_s'][.='2']",
+        "//result/doc/arr[@name='desc'][.='SolrDescription2']");
   }
   
   public void testFullImportWrongSolrUrl() {

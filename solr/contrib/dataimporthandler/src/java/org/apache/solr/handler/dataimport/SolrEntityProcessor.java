@@ -71,8 +71,6 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private String[] fields;
   private String requestHandler;// 'qt' param
   private int timeout = TIMEOUT_SECS;
-  
-  private boolean initDone = false;
 
   /**
    * Factory method that returns a {@link HttpClient} instance used for interfacing with a source Solr service.
@@ -122,28 +120,22 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * external synchronization. 
    */
   private void buildIterator() {
-    if (rowIterator == null) {
-      // We could use an AtomicBoolean but there's no need since this method
-      // would require anyway external synchronization
-      if (!initDone) {
-        initDone = true;
-        SolrDocumentList solrDocumentList = doQuery(0);
+    if (rowIterator != null)  {
+      SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
+      if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
+        SolrDocumentList solrDocumentList = doQuery(documentListIterator
+            .getStart() + documentListIterator.getSize());
         if (solrDocumentList != null) {
           rowIterator = new SolrDocumentListIterator(solrDocumentList);
         }
       }
-      return;
-    }
-    
-    SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
-    if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
-      SolrDocumentList solrDocumentList = doQuery(documentListIterator
-          .getStart() + documentListIterator.getSize());
+    } else  {
+      SolrDocumentList solrDocumentList = doQuery(0);
       if (solrDocumentList != null) {
         rowIterator = new SolrDocumentListIterator(solrDocumentList);
       }
+      return;
     }
-    
   }
   
   protected SolrDocumentList doQuery(int start) {
