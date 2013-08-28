@@ -155,6 +155,9 @@ Bug Fixes
 * SOLR-5112: Show full message in Admin UI Logging View (Matthew Keeney via
   steffkes)
 
+* SOLR-5190: SolrEntityProcessor substitutes variables only once in child entities
+  (Harsh Chawla, shalin)
+
 Optimizations
 ----------------------
 
