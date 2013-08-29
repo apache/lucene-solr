@@ -110,6 +110,11 @@ Bug Fixes
 * LUCENE-5192: IndexWriter could allow adding same field name with different
   DocValueTypes under some circumstances. (Shai Erera)
 
+* LUCENE-5191: SimpleHTMLEncoder in Highlighter module broke Unicode
+  outside BMP because it encoded UTF-16 chars instead of codepoints.
+  The escaping of codepoints > 127 was removed (not needed for valid HTML)
+  and missing escaping for ' and / was added.  (Uwe Schindler)
+  
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
