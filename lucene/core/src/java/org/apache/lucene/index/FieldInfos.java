@@ -288,6 +288,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
         if (docValues != null) {
           fi.setDocValuesType(docValues);
+          // must also update docValuesType map so it's aware of this field's DocValueType 
+          globalFieldNumbers.docValuesType.put(name, docValues);
         }
 
         if (!fi.omitsNorms() && normType != null) {

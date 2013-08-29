@@ -107,6 +107,9 @@ Bug Fixes
   implementing end() then be sure it calls super.end().  (Robert Muir,
   Mike McCandless)
 
+* LUCENE-5192: IndexWriter could allow adding same field name with different
+  DocValueTypes under some circumstances. (Shai Erera)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
