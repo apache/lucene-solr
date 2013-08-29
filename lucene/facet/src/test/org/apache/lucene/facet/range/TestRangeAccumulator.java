@@ -632,5 +632,44 @@ public class TestRangeAccumulator extends FacetTestCase {
     r.close();
     dir.close();
   }
-}
 
+  // LUCENE-5178
+  public void testMissingValues() throws Exception {
+    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
+    doc.add(field);
+    for(long l=0;l<100;l++) {
+      if (l % 5 == 0) {
+        // Every 5th doc is missing the value:
+        w.addDocument(new Document());
+        continue;
+      }
+      field.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    RangeAccumulator a = new RangeAccumulator(new RangeFacetRequest<LongRange>("field",
+        new LongRange("less than 10", 0L, true, 10L, false),
+        new LongRange("less than or equal to 10", 0L, true, 10L, true),
+        new LongRange("over 90", 90L, false, 100L, false),
+        new LongRange("90 or above", 90L, true, 100L, false),
+        new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false)));
+    
+    FacetsCollector fc = FacetsCollector.create(a);
+
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+    List<FacetResult> result = fc.getFacetResults();
+    assertEquals(1, result.size());
+    assertEquals("field (0)\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n", FacetTestUtils.toSimpleString(result.get(0)));
+    
+    r.close();
+    d.close();
+  }
+}
