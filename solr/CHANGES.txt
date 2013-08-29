@@ -71,6 +71,11 @@ Upgrading from Solr 4.4.0
   XXXXX and delete the ones that you do not wish to use.  See SOLR-4953 & 
   SOLR-5108 for more details.
 
+* The UniqFieldsUpdateProcessorFactory has been improved to support all of the
+  FieldMutatingUpdateProcessorFactory selector options.  The <lst named="fields"> 
+  init param option is now deprecated and should be replaced with the more standard
+  <arr name="fieldName">.  See SOLR-4249 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -102,6 +107,11 @@ New Features
 
 * SOLR-5182: Add NoOpRegenerator, a regenerator for custom per-segment caches
   where items are preserved across commits.  (Robert Muir)
+
+* SOLR-4249: UniqFieldsUpdateProcessorFactory now extends 
+  FieldMutatingUpdateProcessorFactory and supports all of it's selector options. Use
+  of the "fields" init param is now deprecated in favor of "fieldName" (hossman)
+  
 
 Bug Fixes
 ----------------------
