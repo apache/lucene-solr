@@ -26,9 +26,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -748,6 +750,32 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     assertTrue(bits.get(0));
     assertTrue(bits.get(1));
     r.close();
+    dir.close();
+  }
+
+  public void testSameFieldNameForPostingAndDocValue() throws Exception {
+    // LUCENE-5192: FieldInfos.Builder neglected to update
+    // globalFieldNumbers.docValuesType map if the field existed, resulting in
+    // potentially adding the same field with different DV types.
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("f", "mock-value", Store.NO));
+    doc.add(new NumericDocValuesField("f", 5));
+    writer.addDocument(doc);
+    writer.commit();
+    
+    doc = new Document();
+    doc.add(new BinaryDocValuesField("f", new BytesRef("mock")));
+    try {
+      writer.addDocument(doc);
+      fail("should not have succeeded to add a field with different DV type than what already exists");
+    } catch (IllegalArgumentException e) {
+      writer.rollback();
+    }
+    
     dir.close();
   }
 
