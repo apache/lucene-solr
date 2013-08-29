@@ -94,6 +94,28 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                  5.0F, d.getField("foo_s").getBoost(), 0.0F);
   }
 
+  public void testUniqValues() throws Exception {
+    final String chain = "uniq-values";
+    SolrInputDocument d = null;
+    d = processAdd(chain,
+                   doc(f("id", "1111"),
+                       f("name", "Hoss", "Man", "Hoss"),
+                       f("uniq_1_s", "Hoss", "Man", "Hoss"),
+                       f("uniq_2_s", "Foo", "Hoss", "Man", "Hoss", "Bar"),
+                       f("uniq_3_s", 5.0F, 23, "string", 5.0F)));
+    
+    assertNotNull(d);
+    
+    assertEquals(Arrays.asList("Hoss", "Man", "Hoss"),
+                 d.getFieldValues("name"));
+    assertEquals(Arrays.asList("Hoss","Man"), 
+                 d.getFieldValues("uniq_1_s"));
+    assertEquals(Arrays.asList("Foo","Hoss","Man","Bar"),
+                 d.getFieldValues("uniq_2_s"));
+    assertEquals(Arrays.asList(5.0F, 23, "string"),
+                 d.getFieldValues("uniq_3_s"));
+  }
+
   public void testTrimFields() throws Exception {
     for (String chain : Arrays.asList("trim-fields", "trim-fields-arr")) {
       SolrInputDocument d = null;

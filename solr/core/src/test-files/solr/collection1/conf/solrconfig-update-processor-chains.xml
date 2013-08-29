@@ -429,6 +429,12 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="uniq-values">
+    <processor class="solr.UniqFieldsUpdateProcessorFactory">
+      <str name="fieldRegex">uniq_.*</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="pre-analyzed-simple">
     <processor class="solr.PreAnalyzedUpdateProcessorFactory">
       <str name="fieldName">subject</str>
