@@ -67,22 +67,6 @@ public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProc
     return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
   }
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    // legacy init param support, will be removed in 5.0
-    // no idea why this was ever implimented as <lst> should have just been <arr>
-    NamedList<String> flst = (NamedList<String>) args.remove("fields");
-    if(flst != null){
-      log.warn("Use of the 'fields' init param in UniqFieldsUpdateProcessorFactory is deprecated, please use 'fieldName' (or another FieldMutatingUpdateProcessorFactory selector option) instead");
-      log.info("Replacing 'fields' init param with (individual) 'fieldName' params");
-      for (Map.Entry<String,String> entry : flst) {
-        args.add("fieldName", entry.getValue());
-      }
-    }
-    super.init(args);
-  }
-  
   @Override
   @SuppressWarnings("unchecked")
   public Collection pickSubset(Collection values) {
