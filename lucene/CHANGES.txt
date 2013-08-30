@@ -172,6 +172,9 @@ API Changes
   a value for the field. Previously it only did this if the SortedDocValues
   was produced by uninversion on the FieldCache.  (Robert Muir)
 
+* LUCENE-5183: remove BinaryDocValues.MISSING. In order to determine a document
+  is missing a field, use getDocsWithField instead.  (Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-5178: DocValues codec consumer APIs (iterables) return null values 

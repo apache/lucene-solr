@@ -129,7 +129,7 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
+      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
     }
 
     static class Avg extends SV {

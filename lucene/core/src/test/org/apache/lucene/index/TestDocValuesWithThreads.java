@@ -81,7 +81,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
               //NumericDocValues ndv = ar.getNumericDocValues("number");
               FieldCache.Longs ndv = FieldCache.DEFAULT.getLongs(ar, "number", false);
               //BinaryDocValues bdv = ar.getBinaryDocValues("bytes");
-              BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes");
+              BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes", false);
               SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
               startingGun.await();
               int iters = atLeast(1000);

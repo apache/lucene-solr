@@ -45,8 +45,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
     // To be sorted or not to be sorted, that is the question
     // TODO: do it cleaner?
     if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+      final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field, true);
       final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(readerContext.reader(), field);
-      final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field);
       return new FunctionValues() {
 
         @Override

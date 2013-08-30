@@ -24,6 +24,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /** Sorts by a field's value using the given Collator
@@ -39,6 +40,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   private final String[] values;
   private BinaryDocValues currentDocTerms;
+  private Bits docsWithField;
   private final String field;
   final Collator collator;
   private String bottom;
@@ -68,7 +70,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   @Override
   public int compareBottom(int doc) {
     currentDocTerms.get(doc, tempBR);
-    final String val2 = tempBR.bytes == BinaryDocValues.MISSING ? null : tempBR.utf8ToString();
+    final String val2 = tempBR.length == 0 && docsWithField.get(doc) == false ? null : tempBR.utf8ToString();
     if (bottom == null) {
       if (val2 == null) {
         return 0;
@@ -83,7 +85,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   @Override
   public void copy(int slot, int doc) {
     currentDocTerms.get(doc, tempBR);
-    if (tempBR.bytes == BinaryDocValues.MISSING) {
+    if (tempBR.length == 0 && docsWithField.get(doc) == false) {
       values[slot] = null;
     } else {
       values[slot] = tempBR.utf8ToString();
@@ -92,7 +94,8 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public FieldComparator<String> setNextReader(AtomicReaderContext context) throws IOException {
-    currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
+    currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, true);
+    docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
     return this;
   }
   
@@ -124,7 +127,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   public int compareDocToValue(int doc, String value) {
     currentDocTerms.get(doc, tempBR);
     final String docValue;
-    if (tempBR.bytes == BinaryDocValues.MISSING) {
+    if (tempBR.length == 0 && docsWithField.get(doc) == false) {
       docValue = null;
     } else {
       docValue = tempBR.utf8ToString();

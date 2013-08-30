@@ -56,7 +56,7 @@ public class TestFailOnFieldCacheInsanity extends WithNestedTests {
     public void testDummy() throws Exception {
       makeIndex();
       assertNotNull(FieldCache.DEFAULT.getTermsIndex(subR, "ints"));
-      assertNotNull(FieldCache.DEFAULT.getTerms(subR, "ints"));
+      assertNotNull(FieldCache.DEFAULT.getTerms(subR, "ints", false));
       // NOTE: do not close reader/directory, else it
       // purges FC entries
     }

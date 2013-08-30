@@ -148,8 +148,16 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
       @Override
       public void fillValue(int doc) {
-        termsIndex.get(doc, mval.value);
-        mval.exists = mval.value.bytes != SortedDocValues.MISSING;
+        int ord = termsIndex.getOrd(doc);
+        if (ord == -1) {
+          mval.value.bytes = BytesRef.EMPTY_BYTES;
+          mval.value.offset = 0;
+          mval.value.length = 0;
+          mval.exists = false;
+        } else {
+          termsIndex.lookupOrd(ord, mval.value);
+          mval.exists = true;
+        }
       }
     };
   }
