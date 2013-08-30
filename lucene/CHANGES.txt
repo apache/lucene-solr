@@ -242,6 +242,9 @@ Build
 * SOLR-5159: Manifest includes non-parsed maven variables. 
   (Artem Karpenko via Steve Rowe)
 
+* LUCENE-5193: Add jar-src as top-level target to generate all Lucene and Solr
+  *-src.jar. (Steve Rowe, Shai Erera)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy

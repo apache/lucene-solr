@@ -125,6 +125,13 @@
     </subant>
   </target>
 
+  <target name="jar-src" description="Build Lucene and Solr Source Jar files">
+    <subant target="jar-src" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml"/>
+      <fileset dir="solr" includes="build.xml"/>
+    </subant>
+  </target>
+
   <property name="version" value="4.5-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>

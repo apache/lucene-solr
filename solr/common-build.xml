@@ -297,8 +297,13 @@
     ]]></script>
   </target>
 
-  <target name="jar-src" depends="init">
-  	<solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar"/>
+  <target name="jar-src">
+    <sequential>
+      <mkdir dir="${build.dir}"/>
+      <solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+      </solr-jarify>
+    </sequential>
   </target>
 
   <target name="m2-deploy-solr-parent-pom" depends="filter-pom-templates"
