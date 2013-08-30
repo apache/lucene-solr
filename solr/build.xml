@@ -176,6 +176,14 @@
   <target name="jar" depends="jar-core,jar-solrj,jar-solr-test-framework,jar-contrib"
           description="Jar solr core, solrj, solr-test-framework, and all contribs"/>
 
+  <target name="jar-src" 
+          description="Create source jars for solr core, solrj, solr-test-framework, and all contribs">
+    <ant dir="core" target="jar-src" inheritAll="false"/>
+    <ant dir="solrj" target="jar-src" inheritAll="false"/>
+    <ant dir="test-framework" target="jar-src" inheritAll="false"/>
+    <contrib-crawl target="jar-src"/>
+  </target>
+
   <!-- Solr core targets -->
   <target name="test-solr-core" description="Test solr core">
     <ant dir="core" target="test" inheritAll="false">

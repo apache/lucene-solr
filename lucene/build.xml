@@ -597,6 +597,12 @@
     <modules-crawl target="jar-core"/>
   </target>
 
+  <target name="jar-src" description="create source jars for all modules">
+    <ant dir="${common.dir}/core" target="jar-src" inheritAll="false" />
+    <ant dir="${common.dir}/test-framework" target="jar-src" inheritAll="false" />
+    <modules-crawl target="jar-src"/>
+  </target>
+
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
