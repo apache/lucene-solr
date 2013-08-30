@@ -34,10 +34,27 @@ public abstract class AnalyzerWrapper extends Analyzer {
 
   /**
    * Creates a new AnalyzerWrapper.  Since the {@link Analyzer.ReuseStrategy} of
-   * the wrapped Analyzers are unknown, {@link Analyzer.PerFieldReuseStrategy} is assumed
+   * the wrapped Analyzers are unknown, {@link #PER_FIELD_REUSE_STRATEGY} is assumed.
+   * @deprecated Use {@link #AnalyzerWrapper(Analyzer.ReuseStrategy)}
+   * and specify a valid {@link Analyzer.ReuseStrategy}, probably retrieved from the
+   * wrapped analyzer using {@link #getReuseStrategy()}.
    */
+  @Deprecated
   protected AnalyzerWrapper() {
-    super(new PerFieldReuseStrategy());
+    this(PER_FIELD_REUSE_STRATEGY);
+  }
+
+  /**
+   * Creates a new AnalyzerWrapper with the given reuse strategy.
+   * <p>If you want to wrap a single delegate Analyzer you can probably
+   * reuse its strategy when instantiating this subclass:
+   * {@code super(delegate.getReuseStrategy());}.
+   * <p>If you choose different analyzers per field, use
+   * {@link #PER_FIELD_REUSE_STRATEGY}.
+   * @see #getReuseStrategy()
+   */
+  protected AnalyzerWrapper(ReuseStrategy reuseStrategy) {
+    super(reuseStrategy);
   }
 
   /**

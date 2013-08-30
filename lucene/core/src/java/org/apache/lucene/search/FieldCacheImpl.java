@@ -501,8 +501,7 @@ class FieldCacheImpl implements FieldCache {
       // field does not exist or has no value
       return new Bits.MatchNoBits(reader.maxDoc());
     } else if (fieldInfo.hasDocValues()) {
-      // doc values are dense
-      return new Bits.MatchAllBits(reader.maxDoc());
+      return reader.getDocsWithField(field);
     } else if (!fieldInfo.isIndexed()) {
       return new Bits.MatchNoBits(reader.maxDoc());
     }
@@ -944,13 +943,13 @@ class FieldCacheImpl implements FieldCache {
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return EMPTY_TERMSINDEX;
+        return SortedDocValues.EMPTY;
       } else if (info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return EMPTY_TERMSINDEX;
+        return SortedDocValues.EMPTY;
       }
       return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
     }

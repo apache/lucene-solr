@@ -45,7 +45,6 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
-
 ======================= Lucene 4.5.0 =======================
 
 New features
@@ -83,6 +82,31 @@ New features
   FacetsAggregator.createOrdinalValueResolver. This gives better options for
   resolving an ordinal's value by FacetAggregators. (Shai Erera)
 
+* LUCENE-5165: Add SuggestStopFilter, to be used with analyzing
+  suggesters, so that a stop word at the very end of the lookup query,
+  and without any trailing token characters, will be preserved.  This
+  enables query "a" to suggest apple; see 
+  http://blog.mikemccandless.com/2013/08/suggeststopfilter-carefully-removes.html
+  for details.
+
+* LUCENE-5178: Added support for missing values to DocValues fields.
+  AtomicReader.getDocsWithField returns a Bits of documents with a value,
+  and FieldCache.getDocsWithField forwards to that for DocValues fields. Things like 
+  SortField.setMissingValue, FunctionValues.exists, and FieldValueFilter now
+  work with DocValues fields.  (Robert Muir)
+
+* LUCENE-5124: Lucene 4.5 has a new Lucene45Codec with Lucene45DocValues,
+  supporting missing values and with most datastructures residing off-heap.
+  Added "Memory" docvalues format that works entirely in heap, and "Disk"
+  loads no datastructures into RAM. Both of these also support missing values.
+  Added DiskNormsFormat (in case you want norms entirely on disk).  (Robert Muir)
+
+* LUCENE-2750: Added PForDeltaDocIdSet, an in-memory doc id set implementation
+  based on the PFOR encoding. (Adrien Grand)
+
+* LUCENE-5186: Added CachingWrapperFilter.getFilter in order to be able to get
+  the wrapped filter. (Trejkaz via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
@@ -115,6 +139,24 @@ Bug Fixes
   boundary, made it into the top-N and went to the formatter.
   (Manuel Amoabeng, Michael McCandless, Robert Muir)
 
+* LUCENE-4583: Indexing core no longer enforces a limit on maximum
+  length binary doc values fields, but individual codecs (including
+  the default one) have their own limits (David Smiley, Robert Muir,
+  Mike McCandless)
+
+* LUCENE-3849: TokenStreams now set the position increment in end(),
+  so we can handle trailing holes.  If you have a custom TokenStream
+  implementing end() then be sure it calls super.end().  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-5192: IndexWriter could allow adding same field name with different
+  DocValueTypes under some circumstances. (Shai Erera)
+
+* LUCENE-5191: SimpleHTMLEncoder in Highlighter module broke Unicode
+  outside BMP because it encoded UTF-16 chars instead of codepoints.
+  The escaping of codepoints > 127 was removed (not needed for valid HTML)
+  and missing escaping for ' and / was added.  (Uwe Schindler)
+  
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
@@ -155,6 +197,28 @@ API Changes
   files. FSDirectory#setReadChunkSize() is now deprecated and will be removed
   in Lucene 5.0.  (Uwe Schindler, Robert Muir, gsingers)
 
+* LUCENE-5170: Analyzer.ReuseStrategy instances are now stateless and can
+  be reused in other Analyzer instances, which was not possible before.
+  Lucene ships now with stateless singletons for per field and global reuse.
+  Legacy code can still instantiate the deprecated implementation classes,
+  but new code should use the constants. Implementors of custom strategies
+  have to take care of new method signatures. AnalyzerWrapper can now be
+  configured to use a custom strategy, too, ideally the one from the wrapped
+  Analyzer. Analyzer adds a getter to retrieve the strategy for this use-case.
+  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5173: Lucene never writes segments with 0 documents anymore.
+  (Shai Erera, Uwe Schindler, Robert Muir)
+
+* LUCENE-5178: SortedDocValues always returns -1 ord when a document is missing
+  a value for the field. Previously it only did this if the SortedDocValues
+  was produced by uninversion on the FieldCache.  (Robert Muir)
+
+Changes in Runtime Behavior
+
+* LUCENE-5178: DocValues codec consumer APIs (iterables) return null values 
+  when the document has no value for the field. (Robert Muir)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
@@ -179,6 +243,20 @@ Optimizations
 * LUCENE-5159: Prefix-code the sorted/sortedset value dictionaries in DiskDV.
   (Robert Muir)
 
+* LUCENE-5170: Fixed several wrapper analyzers to inherit the reuse strategy
+  of the wrapped Analyzer.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5006: Simplified DocumentsWriter and DocumentsWriterPerThread
+  synchronization and concurrent interaction with IndexWriter. DWPT is now
+  only setup once and has no reset logic. All segment publishing and state
+  transition from DWPT into IndexWriter is now done via an Event-Queue
+  processed from within the IndexWriter in order to prevent suituations
+  where DWPT or DW calling int IW causing deadlocks. (Simon Willnauer)
+
+* LUCENE-5182: Terminate phrase searches early if max phrase window is 
+  exceeded in FastVectorHighlighter to prevent very long running phrase
+  extraction if phrase terms are high frequent. (Simon Willnauer)
+  
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
@@ -193,6 +271,18 @@ Changes in backwards compatibility policy
 * LUCENE-5089, SOLR-5126: Update to Morfologik 1.7.1. MorfologikAnalyzer and MorfologikFilter 
   no longer support multiple "dictionaries" as there is only one dictionary available.
   (Dawid Weiss)
+
+* LUCENE-5170: Changed method signatures of Analyzer.ReuseStrategy to take
+  Analyzer. Closeable interface was removed because the class was changed to
+  be stateless.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5187: SlowCompositeReaderWrapper constructor is now private,
+  SlowCompositeReaderWrapper.wrap should be used instead. (Adrien Grand)
+  
+Build
+
+* SOLR-5159: Manifest includes non-parsed maven variables. 
+  (Artem Karpenko via Steve Rowe)
 
 ======================= Lucene 4.4.0 =======================
 

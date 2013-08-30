@@ -172,7 +172,7 @@ public class SolrIndexSplitter {
 
       int hash = 0;
       if (hashRouter != null) {
-        hash = hashRouter.sliceHash(idString, null, null);
+        hash = hashRouter.sliceHash(idString, null, null, null);
       }
       // int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
 

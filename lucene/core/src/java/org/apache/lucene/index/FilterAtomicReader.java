@@ -414,4 +414,10 @@ public class FilterAtomicReader extends AtomicReader {
     return in.getNormValues(field);
   }
 
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return in.getDocsWithField(field);
+  }
+
 }

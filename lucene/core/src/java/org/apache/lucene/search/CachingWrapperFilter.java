@@ -49,6 +49,14 @@ public class CachingWrapperFilter extends Filter {
     this.filter = filter;
   }
 
+  /**
+   * Gets the contained filter.
+   * @return the contained filter.
+   */
+  public Filter getFilter() {
+    return filter;
+  }
+
   /** 
    *  Provide the DocIdSet to be cached, using the DocIdSet provided
    *  by the wrapped Filter. <p>This implementation returns the given {@link DocIdSet},

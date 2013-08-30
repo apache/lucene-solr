@@ -379,7 +379,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       riw.addDocument(doc);
     }
     CompositeReader ir = riw.getReader();
-    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(ir);
+    AtomicReader slow = SlowCompositeReaderWrapper.wrap(ir);
     FieldInfos fis = slow.getFieldInfos();
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
     slow.close();

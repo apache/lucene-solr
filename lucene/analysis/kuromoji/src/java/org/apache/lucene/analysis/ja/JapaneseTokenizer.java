@@ -280,7 +280,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // Set final offset
     int finalOffset = correctOffset(pos);
     offsetAtt.setOffset(finalOffset, finalOffset);

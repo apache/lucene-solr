@@ -232,31 +232,57 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return new OverseerSolrResponse(results);
   }
 
-  private void deleteCollection(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-    params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-    params.set(CoreAdminParams.DELETE_DATA_DIR, true);
-    collectionCmd(zkStateReader.getClusterState(), message, params, results, null);
-
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        Overseer.REMOVECOLLECTION, "name", message.getStr("name"));
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
-
-    // wait for a while until we don't see the collection
-    long now = System.currentTimeMillis();
-    long timeout = now + 30000;
-    boolean removed = false;
-    while (System.currentTimeMillis() < timeout) {
-      Thread.sleep(100);
-      removed = !zkStateReader.getClusterState().getCollections().contains(message.getStr("name"));
-      if (removed) {
-        Thread.sleep(100); // just a bit of time so it's more likely other readers see on return
-        break;
+  private void deleteCollection(ZkNodeProps message, NamedList results)
+      throws KeeperException, InterruptedException {
+    String collection = message.getStr("name");
+    try {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+      params.set(CoreAdminParams.DELETE_DATA_DIR, true);
+      collectionCmd(zkStateReader.getClusterState(), message, params, results,
+          null);
+      
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+          Overseer.REMOVECOLLECTION, "name", collection);
+      Overseer.getInQueue(zkStateReader.getZkClient()).offer(
+          ZkStateReader.toJSON(m));
+      
+      // wait for a while until we don't see the collection
+      long now = System.currentTimeMillis();
+      long timeout = now + 30000;
+      boolean removed = false;
+      while (System.currentTimeMillis() < timeout) {
+        Thread.sleep(100);
+        removed = !zkStateReader.getClusterState().getCollections()
+            .contains(message.getStr("name"));
+        if (removed) {
+          Thread.sleep(100); // just a bit of time so it's more likely other
+                             // readers see on return
+          break;
+        }
       }
-    }
-    if (!removed) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully remove collection: " + message.getStr("name"));
+      if (!removed) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Could not fully remove collection: " + message.getStr("name"));
+      }
+      
+    } finally {
+      
+      try {
+        if (zkStateReader.getZkClient().exists(
+            ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
+          zkStateReader.getZkClient().clean(
+              ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+        }
+      } catch (InterruptedException e) {
+        SolrException.log(log, "Cleaning up collection in zk was interrupted:"
+            + collection, e);
+        Thread.currentThread().interrupt();
+      } catch (KeeperException e) {
+        SolrException.log(log, "Problem cleaning up collection in zk:"
+            + collection, e);
+      }
     }
   }
 
@@ -991,11 +1017,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     String collectionName = message.getStr("name");
     
     DocCollection coll = clusterState.getCollection(collectionName);
-    
-    if (coll == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Could not find collection:" + collectionName);
-    }
     
     for (Map.Entry<String,Slice> entry : coll.getSlicesMap().entrySet()) {
       Slice slice = entry.getValue();

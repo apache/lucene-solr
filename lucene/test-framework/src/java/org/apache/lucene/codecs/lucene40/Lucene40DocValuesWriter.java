@@ -24,7 +24,9 @@ import java.util.TreeSet;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.MissingOrdRemapper;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosReader.LegacyDocValuesType;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -54,7 +56,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for (Number n : values) {
-      long v = n.longValue();
+      long v = n == null ? 0 : n.longValue();
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
     }
@@ -92,7 +94,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     output.writeInt(1); // size
     for (Number n : values) {
-      output.writeByte(n.byteValue());
+      output.writeByte(n == null ? 0 : n.byteValue());
     }
   }
   
@@ -103,7 +105,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     output.writeInt(2); // size
     for (Number n : values) {
-      output.writeShort(n.shortValue());
+      output.writeShort(n == null ? 0 : n.shortValue());
     }
   }
   
@@ -114,7 +116,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     output.writeInt(4); // size
     for (Number n : values) {
-      output.writeInt(n.intValue());
+      output.writeInt(n == null ? 0 : n.intValue());
     }
   }
   
@@ -131,7 +133,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       // writes longs
       output.writeByte(Lucene40DocValuesFormat.VAR_INTS_FIXED_64);
       for (Number n : values) {
-        output.writeLong(n.longValue());
+        output.writeLong(n == null ? 0 : n.longValue());
       }
     } else {
       // writes packed ints
@@ -143,7 +145,8 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                                                       PackedInts.bitsRequired(delta), 
                                                       PackedInts.DEFAULT);
       for (Number n : values) {
-        writer.add(n.longValue() - minValue);
+        long v = n == null ? 0 : n.longValue();
+        writer.add(v - minValue);
       }
       writer.finish();
     }
@@ -156,6 +159,12 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     for (BytesRef b : values) {
+      if (b == null) {
+        b = new BytesRef(); // 4.0 doesnt distinguish
+      }
+      if (b.length > Lucene40DocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
+        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + Lucene40DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+      }
       minLength = Math.min(minLength, b.length);
       maxLength = Math.max(maxLength, b.length);
       if (uniqueValues != null) {
@@ -243,7 +252,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     
     output.writeInt(length);
     for (BytesRef v : values) {
-      output.writeBytes(v.bytes, v.offset, v.length);
+      if (v != null) {
+        output.writeBytes(v.bytes, v.offset, v.length);
+      }
     }
   }
   
@@ -264,7 +275,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     final long startPos = data.getFilePointer();
     
     for (BytesRef v : values) {
-      data.writeBytes(v.bytes, v.offset, v.length);
+      if (v != null) {
+        data.writeBytes(v.bytes, v.offset, v.length);
+      }
     }
     
     /* addresses */
@@ -279,7 +292,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     long currentPosition = 0;
     for (BytesRef v : values) {
       w.add(currentPosition);
-      currentPosition += v.length;
+      if (v != null) {
+        currentPosition += v.length;
+      }
     }
     // write sentinel
     assert currentPosition == maxAddress;
@@ -301,7 +316,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     // deduplicate
     TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
     for (BytesRef v : values) {
-      dictionary.add(BytesRef.deepCopyOf(v));
+      dictionary.add(v == null ? new BytesRef() : BytesRef.deepCopyOf(v));
     }
     
     /* values */
@@ -318,6 +333,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
 
     for (BytesRef v : values) {
+      if (v == null) {
+        v = new BytesRef();
+      }
       int ord = dictionary.headSet(v).size();
       w.add(ord);
     }
@@ -338,7 +356,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     // deduplicate
     TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
     for (BytesRef v : values) {
-      dictionary.add(BytesRef.deepCopyOf(v));
+      dictionary.add(v == null ? new BytesRef() : BytesRef.deepCopyOf(v));
     }
     
     /* values */
@@ -359,7 +377,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(currentAddress), PackedInts.DEFAULT);
 
     for (BytesRef v : values) {
-      w.add(valueToAddress.get(v));
+      w.add(valueToAddress.get(v == null ? new BytesRef() : v));
     }
     w.finish();
   }
@@ -385,6 +403,15 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       maxLength = Math.max(maxLength, b.length);
     }
     
+    // but dont use fixed if there are missing values (we are simulating how lucene40 wrote dv...)
+    boolean anyMissing = false;
+    for (Number n : docToOrd) {
+      if (n.longValue() == -1) {
+        anyMissing = true;
+        break;
+      }
+    }
+    
     boolean success = false;
     IndexOutput data = null;
     IndexOutput index = null;
@@ -394,12 +421,22 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     try {
       data = dir.createOutput(dataName, state.context);
       index = dir.createOutput(indexName, state.context);
-      if (minLength == maxLength) {
+      if (minLength == maxLength && !anyMissing) {
         // fixed byte[]
         addFixedSortedBytesField(field, data, index, values, docToOrd, minLength);
       } else {
         // var byte[]
-        addVarSortedBytesField(field, data, index, values, docToOrd);
+        // three cases for simulating the old writer:
+        // 1. no missing
+        // 2. missing (and empty string in use): remap ord=-1 -> ord=0
+        // 3. missing (and empty string not in use): remap all ords +1, insert empty string into values
+        if (!anyMissing) {
+          addVarSortedBytesField(field, data, index, values, docToOrd);
+        } else if (minLength == 0) {
+          addVarSortedBytesField(field, data, index, values, MissingOrdRemapper.mapMissingToOrd0(docToOrd));
+        } else {
+          addVarSortedBytesField(field, data, index, MissingOrdRemapper.insertEmptyValue(values), MissingOrdRemapper.mapAllOrds(docToOrd));
+        }
       }
       success = true;
     } finally {

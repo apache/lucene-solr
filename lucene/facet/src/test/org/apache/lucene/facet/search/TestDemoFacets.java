@@ -22,13 +22,16 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
+import org.apache.lucene.facet.codecs.facet45.Facet45Codec;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
@@ -48,6 +51,8 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
 
 public class TestDemoFacets extends FacetTestCase {
 
@@ -247,5 +252,61 @@ public class TestDemoFacets extends FacetTestCase {
     taxoWriter.close();
     dir.close();
     taxoDir.close();
+  }
+  
+  // LUCENE-4583: make sure if we require > 32 KB for one
+  // document, we don't hit exc when using Facet42DocValuesFormat
+  public void testManyFacetsInOneDocument() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(new Facet45Codec());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetFields facetFields = new FacetFields(taxoWriter);
+
+    int numLabels = _TestUtil.nextInt(random(), 40000, 100000);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    for(int i=0;i<numLabels;i++) {
+      paths.add(new CategoryPath("dim", "" + i));
+    }
+    facetFields.addFields(doc, paths);
+    writer.addDocument(doc);
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+    
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("dim"), Integer.MAX_VALUE));
+
+    // Aggregate the facet counts:
+    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+
+    // MatchAllDocsQuery is for "browsing" (counts facets
+    // for all non-deleted docs in the index); normally
+    // you'd use a "normal" query, and use MultiCollector to
+    // wrap collecting the "normal" hits and also facets:
+    searcher.search(new MatchAllDocsQuery(), c);
+    List<FacetResult> results = c.getFacetResults();
+    assertEquals(1, results.size());
+    FacetResultNode root = results.get(0).getFacetResultNode();
+    assertEquals(numLabels, root.subResults.size());
+    Set<String> allLabels = new HashSet<String>();
+    for(FacetResultNode childNode : root.subResults) {
+      assertEquals(2, childNode.label.length);
+      allLabels.add(childNode.label.components[1]);
+      assertEquals(1, (int) childNode.value);
+    }
+    assertEquals(numLabels, allLabels.size());
+
+    IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 }

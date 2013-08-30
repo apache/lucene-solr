@@ -25,9 +25,9 @@
   <configurations>
     <!-- artifacts in the "compile" and "compile.hadoop" configurations will go into solr/core/lib/ -->
     <conf name="compile" transitive="false"/>
-    <conf name="test" transitive="false"/>
     <conf name="compile.hadoop" transitive="false"/>
     <!-- artifacts in the "test" and "test.DfsMiniCluster" configuration will go into solr/core/test-lib/ -->
+    <conf name="test" transitive="false"/>
     <conf name="test.DfsMiniCluster" transitive="false"/>
   </configurations>
 
@@ -49,6 +49,11 @@
     <dependency org="org.objenesis" name="objenesis" rev="1.2" conf="test->*"/>
 
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" conf="compile.hadoop->*"/>
+    <!--
+      hadoop-hdfs, hadoop-annotations and hadoop-auth are runtime dependencies,
+      so even though they are not compile-time dependencies, they are included
+      here as such so that they are included in the runtime distribution.
+     -->
     <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" conf="compile.hadoop->*"/>
     <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="&hadoop.version;" conf="compile.hadoop->*"/>
     <dependency org="org.apache.hadoop" name="hadoop-auth" rev="&hadoop.version;" conf="compile.hadoop->*"/>

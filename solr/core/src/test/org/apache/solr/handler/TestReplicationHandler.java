@@ -69,6 +69,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -139,7 +140,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.data.dir", instance.getDataDir());
-
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
 
     jetty.start();
@@ -346,6 +347,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testNoWriter() throws Exception {
     useFactory(null);    // force a persistent directory
 
+    // read-only setting (no opening from indexwriter)
+    System.setProperty("solr.tests.reopenReaders", "false");
+    try {
     // stop and start so they see the new directory setting
     slaveJetty.stop();
     masterJetty.stop();
@@ -356,6 +360,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.commit();
     slaveJetty.stop();
     slaveJetty.start(true);
+    } finally {
+      System.clearProperty("solr.tests.reopenReaders"); // dont mess with other tests
+    }
 
     // Currently we open a writer on-demand.  This is to test that we are correctly testing
     // the code path when SolrDeletionPolicy.getLatestCommit() returns null.

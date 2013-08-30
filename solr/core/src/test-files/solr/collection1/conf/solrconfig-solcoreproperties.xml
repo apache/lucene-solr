@@ -21,42 +21,15 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <!--  The DirectoryFactory to use for indexes.
-        solr.StandardDirectoryFactory, the default, is filesystem based.
-        solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <indexConfig>
-    <lockType>single</lockType>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
-  </updateHandler>
-
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-    <bool name="httpCaching">true</bool>
+  <requestHandler name="/select" class="solr.StandardRequestHandler">
+    <lst name="defaults">
+      <str name="p1">${foo.foo1}</str>
+      <str name="p2">${foo.foo2}</str>
+    </lst>
   </requestHandler>
-
-  <!-- test query parameter defaults -->
-  <requestHandler name="defaults" class="solr.StandardRequestHandler">
-
-  </requestHandler>
-  <tag1>${foo.foo1}</tag1>
-  <tag2>${foo.foo2}</tag2>
-
-  <!-- test query parameter defaults -->
-  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
-  </requestHandler>
-
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true">
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048"/>
-    <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
-      <cacheControl>max-age=30, public</cacheControl>
-    </httpCaching>
-  </requestDispatcher>
 
 </config>

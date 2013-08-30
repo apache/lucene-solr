@@ -73,6 +73,7 @@ public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer,
       Map<String, Analyzer> fieldAnalyzers) {
+    super(PER_FIELD_REUSE_STRATEGY);
     this.defaultAnalyzer = defaultAnalyzer;
     this.fieldAnalyzers = (fieldAnalyzers != null) ? fieldAnalyzers : Collections.<String, Analyzer>emptyMap();
   }

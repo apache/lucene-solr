@@ -234,7 +234,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     } else {
       termState.singletonDocID = -1;
       termState.docStartFP += in.readVLong();
-      System.out.println(termState.docStartFP);
     }
     if (fieldHasPositions) {
       termState.posStartFP += in.readVLong();
@@ -252,7 +251,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     } else {
       termState.skipOffset = -1;
     }
-    //System.out.println("PR: state=" + termState);
   }
     
   @Override

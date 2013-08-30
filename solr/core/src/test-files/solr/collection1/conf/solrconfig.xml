@@ -518,11 +518,11 @@
   </updateRequestProcessorChain>
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
-      <lst name="fields">
+      <arr name="fieldName">
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </lst>      
+      </arr>      
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>  

@@ -33,8 +33,13 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.x
 ----------------------
 
-The "file" attribute of infoStream in solrconfig.xml is removed. Control this 
-via your logging configuration (org.apache.solr.update.LoggingInfoStream) instead.
+* The "file" attribute of infoStream in solrconfig.xml is removed. Control this 
+  via your logging configuration (org.apache.solr.update.LoggingInfoStream) instead.
+
+* UniqFieldsUpdateProcessorFactory no longer supports the <lst named="fields"> init
+  param style that was deprecated in Solr 4.5.  If you are still using this syntax, 
+  update your configs to use <arr name="fieldName"> instead. See SOLR-4249 for more 
+  details.
 
 Detailed Change List
 ----------------------
@@ -66,9 +71,15 @@ Upgrading from Solr 4.4.0
   would be chosen arbitrarily and silently.  Starting with 4.5, configuration 
   parsing will fail with an error in situations like this.  If you see error 
   messages such as "solrconfig.xml contains more than one value for config path: 
-  indexConfig/infoStream" check your solrconfig.xml file for multiple occurrences 
-  of "infoStream" and delete the one that you do not wish to use.  See SOLR-4953
-  for more details.
+  XXXXX" or "Found Z configuration sections when at most 1 is allowed matching 
+  expression: XXXXX" check your solrconfig.xml file for multiple occurrences of 
+  XXXXX and delete the ones that you do not wish to use.  See SOLR-4953 & 
+  SOLR-5108 for more details.
+
+* The UniqFieldsUpdateProcessorFactory has been improved to support all of the
+  FieldMutatingUpdateProcessorFactory selector options.  The <lst named="fields"> 
+  init param option is now deprecated and should be replaced with the more standard
+  <arr name="fieldName">.  See SOLR-4249 for more details.
 
 Detailed Change List
 ----------------------
@@ -91,7 +102,21 @@ New Features
 * SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
 * SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
 * SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
-* SOLR-4222:create custom sharded collection via collections API (Noble Paul)
+* SOLR-4222: create custom sharded collection via collections API (Noble Paul)
+* SOLR-4718: Allow solr.xml to be stored in ZooKeeper
+* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
+
+* SOLR-5165: Single-valued docValues fields no longer require a default value.
+  Additionally they work with sortMissingFirst, sortMissingLast, facet.missing, 
+  exists() in function queries, etc.  (Robert Muir)
+
+* SOLR-5182: Add NoOpRegenerator, a regenerator for custom per-segment caches
+  where items are preserved across commits.  (Robert Muir)
+
+* SOLR-4249: UniqFieldsUpdateProcessorFactory now extends 
+  FieldMutatingUpdateProcessorFactory and supports all of it's selector options. Use
+  of the "fields" init param is now deprecated in favor of "fieldName" (hossman)
+  
 
 Bug Fixes
 ----------------------
@@ -116,12 +141,48 @@ Bug Fixes
   
 * SOLR-5119: Managed schema problems after adding fields via Schema Rest API.
   (Nils Kübler, Steve Rowe)
+  
+* SOLR-5133: HdfsUpdateLog can fail to close a FileSystem instance if init 
+  is called more than once. (Mark Miller)
+
+* SOLR-5135: Harden Collection API deletion of /collections/$collection 
+  ZooKeeper node. (Mark Miller)
+
+* SOLR-4764: When using NRT, just init the first reader from IndexWriter.
+  (Robert Muir, Mark Miller)
+  
+* SOLR-5122: Fixed bug in spellcheck.collateMaxCollectDocs.  Eliminates risk 
+  of divide by zero, and makes estimated hit counts meaningful in non-optimized
+  indexes.  (hossman)
+  
+* SOLR-3936: Fixed QueryElevationComponent sorting when used with Grouping
+  (Michael Garski via hossman)
+
+* SOLR-5171: SOLR Admin gui works in IE9, breaks in IE10. (Joseph L Howard via
+  steffkes)
+
+* SOLR-5174: Admin UI - Query View doesn't highlight (json) Result if it 
+  contains HTML Tags (steffkes)
+  
+* SOLR-4817 Solr should not fall back to the back compat built in solr.xml in SolrCloud 
+  mode (Erick Erickson)
+
+* SOLR-5112: Show full message in Admin UI Logging View (Matthew Keeney via
+  steffkes)
+
+* SOLR-5190: SolrEntityProcessor substitutes variables only once in child entities
+  (Harsh Chawla, shalin)
 
 Optimizations
 ----------------------
 
 * SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
   core (steffkes)
+
+* SOLR-5134: Have HdfsIndexOutput extend BufferedIndexOutput. 
+  (Mark Miller, Uwe Schindler)
+
+ * SOLR-5057: QueryResultCache should not related with the order of fq's list (Feihong Huang via Erick Erickson)
 
 Other Changes
 ----------------------
@@ -130,19 +191,23 @@ Other Changes
   The solr.clustering.enabled system property is set to 'true' by default.
   (ehatcher, Dawid Weiss)
 
-* SOLR-4914: Factor out core list persistence and discovery into a
-  new CoresLocator interface. (Alan Woodward)
+* SOLR-4914, SOLR-5162: Factor out core list persistence and discovery into a
+  new CoresLocator interface. (Alan Woodward, Shawn Heisey)
 
 * SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
 
 * SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
 
-* SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
-  nodes when only a single value is expected.  (hossman)
+* SOLR-4953, SOLR-5108: Make XML Configuration parsing fail if an xpath matches 
+  multiple nodes when only a single value or plugin instance is expected.  
+  (hossman)
 
 * The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
   The old parameter should continue to work for another release  (Noble Paul)
 
+* SOLR-5173: Solr-core's Maven configuration includes test-only Hadoop
+  dependencies as indirect compile-time dependencies.
+  (Chris Collins, Steve Rowe)
 
 ==================  4.4.0 ==================
 

@@ -23,17 +23,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.lucene.store.BufferedIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public class HdfsDirectory extends Directory {
         fileSystem.mkdirs(hdfsDirPath);
       }
     } catch (Exception e) {
-      IOUtils.closeQuietly(fileSystem);
+      org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
       throw new RuntimeException("Problem creating directory: " + hdfsDirPath,
           e);
     }
@@ -214,7 +215,7 @@ public class HdfsDirectory extends Directory {
     }
   }
   
-  static class HdfsIndexOutput extends IndexOutput {
+  static class HdfsIndexOutput extends BufferedIndexOutput {
     
     private HdfsFileWriter writer;
     
@@ -224,32 +225,25 @@ public class HdfsDirectory extends Directory {
     
     @Override
     public void close() throws IOException {
-      writer.close();
+      IOException priorE = null;
+      try {
+        super.close();
+      } catch (IOException ioe) {
+        priorE = ioe;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorE, writer);
+      }
     }
-    
+
     @Override
-    public void flush() throws IOException {
-      writer.flush();
+    protected void flushBuffer(byte[] b, int offset, int len)
+        throws IOException {
+      writer.writeBytes(b, offset, len);
     }
-    
+
     @Override
-    public long getFilePointer() {
-      return writer.getPosition();
-    }
-    
-    @Override
-    public long length() {
+    public long length() throws IOException {
       return writer.length();
-    }
-    
-    @Override
-    public void writeByte(byte b) throws IOException {
-      writer.writeByte(b);
-    }
-    
-    @Override
-    public void writeBytes(byte[] b, int offset, int length) throws IOException {
-      writer.writeBytes(b, offset, length);
     }
   }
   

@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import java.net.URL;
 import java.net.MalformedURLException;
 
@@ -498,6 +497,10 @@ public class JettySolrRunner {
 
   public void setCoreNodeName(String coreNodeName) {
     this.coreNodeName = coreNodeName;
+  }
+
+  public String getSolrHome() {
+    return solrHome;
   }
 }
 

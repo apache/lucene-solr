@@ -379,6 +379,7 @@ public class IndexSchema {
     protected final HashMap<String, Analyzer> analyzers;
 
     SolrIndexAnalyzer() {
+      super(PER_FIELD_REUSE_STRATEGY);
       analyzers = analyzerCache();
     }
 
@@ -400,6 +401,8 @@ public class IndexSchema {
   }
 
   private class SolrQueryAnalyzer extends SolrIndexAnalyzer {
+    SolrQueryAnalyzer() {}
+
     @Override
     protected HashMap<String, Analyzer> analyzerCache() {
       HashMap<String, Analyzer> cache = new HashMap<String, Analyzer>();

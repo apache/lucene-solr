@@ -173,7 +173,6 @@ public class TestHarness extends BaseTestHarness {
                                                  String solrConfig, String schema) {
     String solrxml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
         + "<solr persistent=\"false\">\n"
-        + "  <logging enabled=\"true\"/>\n"
         + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
         + ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME
         + "\""

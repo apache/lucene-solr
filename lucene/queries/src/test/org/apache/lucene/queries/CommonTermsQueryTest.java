@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -311,7 +312,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     createRandomIndex(atLeast(50), w, random().nextLong());
     DirectoryReader reader = w.getReader();
-    SlowCompositeReaderWrapper wrapper = new SlowCompositeReaderWrapper(reader);
+    AtomicReader wrapper = SlowCompositeReaderWrapper.wrap(reader);
     String field = "body";
     Terms terms = wrapper.terms(field);
     PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(

@@ -41,7 +41,6 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   private static final Logger logger = LoggerFactory.getLogger(SolrXMLCoresLocator.class);
 
-  private final File file;
   private final String solrXmlTemplate;
   private final ConfigSolrXmlOld cfg;
 
@@ -50,13 +49,11 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   /**
    * Create a new SolrXMLCoresLocator
-   * @param file          a File object representing the file to write out to
    * @param originalXML   the original content of the solr.xml file
    * @param cfg           the CoreContainer's config object
    */
-  public SolrXMLCoresLocator(File file, String originalXML, ConfigSolrXmlOld cfg) {
+  public SolrXMLCoresLocator(String originalXML, ConfigSolrXmlOld cfg) {
     this.solrXmlTemplate = buildTemplate(originalXML);
-    this.file = file;
     this.cfg = cfg;
   }
 
@@ -147,6 +144,7 @@ public class SolrXMLCoresLocator implements CoresLocator {
   }
 
   protected void doPersist(String xml) {
+    File file = new File(cfg.config.getResourceLoader().getInstanceDir(), ConfigSolr.SOLR_XML_FILE);
     try {
       Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
       writer.write(xml);
@@ -204,8 +202,8 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   public static class NonPersistingLocator extends SolrXMLCoresLocator {
 
-    public NonPersistingLocator(File file, String originalXML, ConfigSolrXmlOld cfg) {
-      super(file, originalXML, cfg);
+    public NonPersistingLocator(String originalXML, ConfigSolrXmlOld cfg) {
+      super(originalXML, cfg);
       this.xml = originalXML;
     }
 

@@ -30,7 +30,7 @@ import org.apache.lucene.util.Version;
  */
 public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
 
-  private final Analyzer defaultAnalyzer;
+  private final Analyzer delegate;
   private final int maxShingleSize;
   private final int minShingleSize;
   private final String tokenSeparator;
@@ -52,7 +52,7 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
   /**
    * Creates a new ShingleAnalyzerWrapper
    *
-   * @param defaultAnalyzer Analyzer whose TokenStream is to be filtered
+   * @param delegate Analyzer whose TokenStream is to be filtered
    * @param minShingleSize Min shingle (token ngram) size
    * @param maxShingleSize Max shingle size
    * @param tokenSeparator Used to separate input stream tokens in output shingles
@@ -65,13 +65,14 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
    *        regardless of whether any shingles are available.
    */
   public ShingleAnalyzerWrapper(
-      Analyzer defaultAnalyzer,
+      Analyzer delegate,
       int minShingleSize,
       int maxShingleSize,
       String tokenSeparator,
       boolean outputUnigrams,
       boolean outputUnigramsIfNoShingles) {
-    this.defaultAnalyzer = defaultAnalyzer;
+    super(delegate.getReuseStrategy());
+    this.delegate = delegate;
 
     if (maxShingleSize < 2) {
       throw new IllegalArgumentException("Max shingle size must be >= 2");
@@ -138,7 +139,7 @@ public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
 
   @Override
   protected Analyzer getWrappedAnalyzer(String fieldName) {
-    return defaultAnalyzer;
+    return delegate;
   }
 
   @Override

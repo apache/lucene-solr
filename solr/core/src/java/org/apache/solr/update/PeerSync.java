@@ -215,8 +215,7 @@ public class PeerSync  {
 
     if (startingVersions != null) {
       if (startingVersions.size() == 0) {
-        // no frame of reference to tell of we've missed updates
-        log.warn("no frame of reference to tell of we've missed updates");
+        log.warn("no frame of reference to tell if we've missed updates");
         return false;
       }
       Collections.sort(startingVersions, absComparator);

@@ -40,6 +40,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -219,6 +220,18 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
       // we shouldn't return null, even if the term does not exist or has no
       // payloads, since we already marked the field as having DocValues.
       return new PayloadMigratingBinaryDocValues(fields(), term);
+    }
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Term term = fieldTerms.get(field);
+    if (term == null) {
+      return super.getDocsWithField(field);
+    } else {
+      // we shouldn't return null, even if the term does not exist or has no
+      // payloads, since we already marked the field as having DocValues.
+      return new Bits.MatchAllBits(maxDoc());
     }
   }
 

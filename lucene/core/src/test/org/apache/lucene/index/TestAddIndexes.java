@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1060,7 +1060,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  private static final class CustomPerFieldCodec extends Lucene42Codec {
+  private static final class CustomPerFieldCodec extends Lucene45Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
     private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
@@ -1111,7 +1111,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene42Codec());
+      super("NotRegistered", new Lucene45Codec());
     }
   }
   
@@ -1229,17 +1229,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory src = newDirectory(), dest = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), src);
     w.addDocument(new Document());
-    IndexReader allDeletedReader = new FilterAtomicReader(w.getReader().leaves().get(0).reader()) {
-      @Override
-      public Bits getLiveDocs() {
-        return new Bits() {
-          @Override public int length() { return 1; }
-          @Override public boolean get(int index) { return false; }
-        };
-      }
-      @Override public boolean hasDeletions() { return true; }
-      @Override public int numDocs() { return 0; }
-    };
+    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
     w.close();
     
     w = new RandomIndexWriter(random(), dest);

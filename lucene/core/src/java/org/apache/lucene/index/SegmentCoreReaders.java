@@ -36,6 +36,7 @@ import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
@@ -85,6 +86,13 @@ final class SegmentCoreReaders {
     @Override
     protected Map<String,Object> initialValue() {
       return new HashMap<String,Object>();
+    }
+  };
+  
+  final CloseableThreadLocal<Map<String,Bits>> docsWithFieldLocal = new CloseableThreadLocal<Map<String,Bits>>() {
+    @Override
+    protected Map<String,Bits> initialValue() {
+      return new HashMap<String,Bits>();
     }
   };
 
@@ -274,6 +282,30 @@ final class SegmentCoreReaders {
 
     return dvs;
   }
+  
+  Bits getDocsWithField(String field) throws IOException {
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null) {
+      // Field does not exist
+      return null;
+    }
+    if (fi.getDocValuesType() == null) {
+      // Field was not indexed with doc values
+      return null;
+    }
+
+    assert dvProducer != null;
+
+    Map<String,Bits> dvFields = docsWithFieldLocal.get();
+
+    Bits dvs = dvFields.get(field);
+    if (dvs == null) {
+      dvs = dvProducer.getDocsWithField(fi);
+      dvFields.put(field, dvs);
+    }
+
+    return dvs;
+  }
 
   NumericDocValues getNormValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
@@ -300,8 +332,8 @@ final class SegmentCoreReaders {
 
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      IOUtils.close(termVectorsLocal, fieldsReaderLocal, docValuesLocal, normsLocal, fields, dvProducer,
-                    termVectorsReaderOrig, fieldsReaderOrig, cfsReader, normsProducer);
+      IOUtils.close(termVectorsLocal, fieldsReaderLocal, docValuesLocal, normsLocal, docsWithFieldLocal, fields, 
+                    dvProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, normsProducer);
       notifyCoreClosedListeners();
     }
   }

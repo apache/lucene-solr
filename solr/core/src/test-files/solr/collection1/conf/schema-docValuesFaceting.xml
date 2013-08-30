@@ -26,17 +26,16 @@
   <fields>
     <field name="id"    type="string" indexed="true"  stored="true"  docValues="false" multiValued="false" required="true"/>
     <field name="id_dv" type="string" indexed="false" stored="false" docValues="true"  multiValued="false" required="true"/>
-    <!-- TODO: improve this test so we don't have to make all these DV types multivalued (for missing values) -->
     <dynamicField name="*_i"     type="int"    indexed="true"  stored="false" docValues="false"/>
-    <dynamicField name="*_i_dv"  type="int"    indexed="false" stored="false" docValues="true"  multiValued="true"/>  
+    <dynamicField name="*_i_dv"  type="int"    indexed="false" stored="false" docValues="true"/>  
     <dynamicField name="*_is"    type="int"    indexed="true"  stored="false" docValues="false" multiValued="true"/>
     <dynamicField name="*_is_dv" type="int"    indexed="false" stored="false" docValues="true"  multiValued="true"/>
-    <dynamicField name="*_s"     type="string" indexed="true"  stored="false" docValues="false" multiValued="true"/>
-    <dynamicField name="*_s_dv"  type="string" indexed="false" stored="false" docValues="true"  multiValued="true"/>
+    <dynamicField name="*_s"     type="string" indexed="true"  stored="false" docValues="false"/>
+    <dynamicField name="*_s_dv"  type="string" indexed="false" stored="false" docValues="true"/>
     <dynamicField name="*_ss"    type="string" indexed="true"  stored="false" docValues="false" multiValued="true"/>
     <dynamicField name="*_ss_dv" type="string" indexed="false" stored="false" docValues="true"  multiValued="true"/>
     <dynamicField name="*_f"     type="float"  indexed="true"  stored="false" docValues="false"/>
-    <dynamicField name="*_f_dv"  type="float"  indexed="false" stored="false" docValues="true"  multiValued="true"/>
+    <dynamicField name="*_f_dv"  type="float"  indexed="false" stored="false" docValues="true"/>
   </fields>
 
   <defaultSearchField>id</defaultSearchField>

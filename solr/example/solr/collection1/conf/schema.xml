@@ -168,8 +168,10 @@
    <!--
      Some fields such as popularity and manu_exact could be modified to
      leverage doc values:
-     <field name="popularity" type="int" indexed="true" stored="true" docValues="true" default="0" />
-     <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" default="" />
+     <field name="popularity" type="int" indexed="true" stored="true" docValues="true" />
+     <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
+     <field name="cat" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+
 
      Although it would make indexing slightly slower and the index bigger, it
      would also make the index faster to load, more memory-efficient and more

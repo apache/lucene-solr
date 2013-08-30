@@ -1,4 +1,5 @@
 <?xml version="1.0" ?>
+
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -18,26 +19,19 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <indexConfig>
+    <!-- set some values to -1 to force the use of internal lucene defaults -->
+    <maxBufferedDocs>-1</maxBufferedDocs>
+    <ramBufferSizeMB>-1</ramBufferSizeMB>
+    <maxIndexingThreads>-1</maxIndexingThreads>
 
-  <schemaFactory class="ManagedIndexSchemaFactory">
-    <bool name="mutable">true</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
-  </schemaFactory>
+    <mergeFactor>11</mergeFactor>
+    <maxMergeDocs>456</maxMergeDocs>
+    <mergePolicy class="${solr.test.log.merge.policy}" />
+  </indexConfig>
 
-  <codecFactory class="solr.SchemaCodecFactory"/>
+  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
-  </updateHandler>
-
-  <queryResponseWriter name="xml" default="true"
-                       class="solr.XMLResponseWriter" />
-
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-    <bool name="httpCaching">true</bool>
-  </requestHandler>
-
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
-  
 </config>

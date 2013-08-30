@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -46,6 +46,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Basic tests of PerFieldDocValuesFormat
@@ -63,6 +64,11 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   protected Codec getCodec() {
     return codec;
   }
+
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return _TestUtil.fieldSupportsHugeBinaryDocValues(field);
+  }
   
   // just a simple trivial test
   // TODO: we should come up with a test that somehow checks that segment suffix
@@ -73,9 +79,9 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     Directory directory = newDirectory();
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    final DocValuesFormat fast = DocValuesFormat.forName("Lucene42");
+    final DocValuesFormat fast = DocValuesFormat.forName("Lucene45");
     final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
-    iwc.setCodec(new Lucene42Codec() {
+    iwc.setCodec(new Lucene45Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         if ("dv1".equals(field)) {

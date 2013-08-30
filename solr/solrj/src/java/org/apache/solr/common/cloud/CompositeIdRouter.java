@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
@@ -59,17 +60,33 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  public int sliceHash(String id, SolrInputDocument doc, SolrParams params) {
-    int idx = id.indexOf(separator);
-    if (idx < 0) {
-      return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+  public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
+    String shardFieldName = collection ==null? null: collection.getStr(DocRouter.ROUTE_FIELD);
+    String part1 = null;
+    int idx = 0;
+    int commaIdx = 0;
+
+    if(shardFieldName == null || doc == null) {
+      idx = id.indexOf(separator);
+      if (idx < 0) {
+        return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+      }
+      part1 = id.substring(0, idx);
+      commaIdx = part1.indexOf(bitsSeparator);
+
+    } else {
+      Object o = doc.getFieldValue(shardFieldName);
+      if (o != null) {
+        part1 = o.toString();
+        return Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
+      } else {
+        throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "No value for :"+shardFieldName + ". Unable to identify shard");
+      }
     }
 
     int m1 = mask1;
     int m2 = mask2;
 
-    String part1 = id.substring(0,idx);
-    int commaIdx = part1.indexOf(bitsSeparator);
     if (commaIdx > 0) {
       int firstBits = getBits(part1, commaIdx);
       if (firstBits >= 0) {

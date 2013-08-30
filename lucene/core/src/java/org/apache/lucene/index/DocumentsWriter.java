@@ -19,18 +19,18 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
-import org.apache.lucene.index.FieldInfos.FieldNumbers;
+import org.apache.lucene.index.IndexWriter.Event;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
@@ -100,19 +100,15 @@ import org.apache.lucene.util.InfoStream;
  */
 
 final class DocumentsWriter {
-  Directory directory;
+  private final Directory directory;
 
   private volatile boolean closed;
 
-  final InfoStream infoStream;
-  Similarity similarity;
+  private final InfoStream infoStream;
 
-  List<String> newFiles;
+  private final LiveIndexWriterConfig config;
 
-  final IndexWriter indexWriter;
-  final LiveIndexWriterConfig indexWriterConfig;
-
-  private AtomicInteger numDocsInRAM = new AtomicInteger(0);
+  private final AtomicInteger numDocsInRAM = new AtomicInteger(0);
 
   // TODO: cut over to BytesRefHash in BufferedDeletes
   volatile DocumentsWriterDeleteQueue deleteQueue = new DocumentsWriterDeleteQueue();
@@ -125,71 +121,70 @@ final class DocumentsWriter {
    */
   private volatile boolean pendingChangesInCurrentFullFlush;
 
-  private Collection<String> abortedFiles;               // List of files that were written before last abort()
-
-  final IndexingChain chain;
-
   final DocumentsWriterPerThreadPool perThreadPool;
   final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
-  
-  final Codec codec;
-  DocumentsWriter(Codec codec, LiveIndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumbers globalFieldNumbers,
-      BufferedDeletesStream bufferedDeletesStream) {
-    this.codec = codec;
-    this.directory = directory;
-    this.indexWriter = writer;
-    this.infoStream = config.getInfoStream();
-    this.similarity = config.getSimilarity();
-    this.indexWriterConfig = writer.getConfig();
-    this.perThreadPool = config.getIndexerThreadPool();
-    this.chain = config.getIndexingChain();
-    this.perThreadPool.initialize(this, globalFieldNumbers, config);
-    flushPolicy = config.getFlushPolicy();
-    assert flushPolicy != null;
-    flushPolicy.init(this);
-    flushControl = new DocumentsWriterFlushControl(this, config);
-  }
+  private final IndexWriter writer;
+  private final Queue<Event> events;
 
-  synchronized void deleteQueries(final Query... queries) throws IOException {
+  
+  DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directory) {
+    this.directory = directory;
+    this.config = config;
+    this.infoStream = config.getInfoStream();
+    this.perThreadPool = config.getIndexerThreadPool();
+    flushPolicy = config.getFlushPolicy();
+    this.writer = writer;
+    this.events = new ConcurrentLinkedQueue<Event>();
+    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedDeletesStream);
+  }
+  
+  synchronized boolean deleteQueries(final Query... queries) throws IOException {
+    // TODO why is this synchronized?
+    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(queries);
     flushControl.doOnDelete();
-    if (flushControl.doApplyAllDeletes()) {
-      applyAllDeletes(deleteQueue);
-    }
+    return applyAllDeletes(deleteQueue);
   }
 
   // TODO: we could check w/ FreqProxTermsWriter: if the
   // term doesn't exist, don't bother buffering into the
   // per-DWPT map (but still must go into the global map)
-  synchronized void deleteTerms(final Term... terms) throws IOException {
+  synchronized boolean deleteTerms(final Term... terms) throws IOException {
+    // TODO why is this synchronized?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(terms);
     flushControl.doOnDelete();
-    if (flushControl.doApplyAllDeletes()) {
-      applyAllDeletes(deleteQueue);
-    }
+    return applyAllDeletes( deleteQueue);
   }
 
   DocumentsWriterDeleteQueue currentDeleteSession() {
     return deleteQueue;
   }
   
-  private void applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    if (deleteQueue != null && !flushControl.isFullFlush()) {
-      ticketQueue.addDeletesAndPurge(this, deleteQueue);
+  private final boolean applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+    if (flushControl.doApplyAllDeletes()) {
+      if (deleteQueue != null && !flushControl.isFullFlush()) {
+        ticketQueue.addDeletes(deleteQueue);
+      }
+      putEvent(ApplyDeletesEvent.INSTANCE); // apply deletes event forces a purge
+      return true;
     }
-    indexWriter.applyAllDeletes();
-    indexWriter.flushCount.incrementAndGet();
+    return false;
   }
+  
+  final int purgeBuffer(IndexWriter writer, boolean forced) throws IOException {
+    if (forced) {
+      return ticketQueue.forcePurge(writer);
+    } else {
+      return ticketQueue.tryPurge(writer);
+    }
+  }
+  
 
   /** Returns how many docs are currently buffered in RAM. */
   int getNumDocs() {
     return numDocsInRAM.get();
-  }
-
-  Collection<String> abortedFiles() {
-    return abortedFiles;
   }
 
   private void ensureOpen() throws AlreadyClosedException {
@@ -202,45 +197,37 @@ final class DocumentsWriter {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  synchronized void abort() {
+  synchronized void abort(IndexWriter writer) {
+    assert !Thread.holdsLock(writer) : "IndexWriter lock should never be hold when aborting";
     boolean success = false;
-
+    final Set<String> newFilesSet = new HashSet<String>();
     try {
       deleteQueue.clear();
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "abort");
       }
-
       final int limit = perThreadPool.getActiveThreadState();
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
         try {
-          if (perThread.isActive()) { // we might be closed
-            try {
-              perThread.dwpt.abort();
-            } finally {
-              perThread.dwpt.checkAndResetHasAborted();
-              flushControl.doOnAbort(perThread);
-            }
-          } else {
-            assert closed;
-          }
+          abortThreadState(perThread, newFilesSet);
         } finally {
           perThread.unlock();
         }
       }
-      flushControl.abortPendingFlushes();
+      flushControl.abortPendingFlushes(newFilesSet);
+      putEvent(new DeleteNewFilesEvent(newFilesSet));
       flushControl.waitForFlush();
       success = true;
     } finally {
       if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "done abort; abortedFiles=" + abortedFiles + " success=" + success);
+        infoStream.message("DW", "done abort; abortedFiles=" + newFilesSet + " success=" + success);
       }
     }
   }
   
-  synchronized void lockAndAbortAll() {
+  synchronized void lockAndAbortAll(IndexWriter indexWriter) {
     assert indexWriter.holdsFullFlushLock();
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "lockAndAbortAll");
@@ -249,20 +236,15 @@ final class DocumentsWriter {
     try {
       deleteQueue.clear();
       final int limit = perThreadPool.getMaxThreadStates();
+      final Set<String> newFilesSet = new HashSet<String>();
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
-        if (perThread.isActive()) { // we might be closed or 
-          try {
-            perThread.dwpt.abort();
-          } finally {
-            perThread.dwpt.checkAndResetHasAborted();
-            flushControl.doOnAbort(perThread);
-          }
-        }
+        abortThreadState(perThread, newFilesSet);
       }
       deleteQueue.clear();
-      flushControl.abortPendingFlushes();
+      flushControl.abortPendingFlushes(newFilesSet);
+      putEvent(new DeleteNewFilesEvent(newFilesSet));
       flushControl.waitForFlush();
       success = true;
     } finally {
@@ -271,12 +253,31 @@ final class DocumentsWriter {
       }
       if (!success) {
         // if something happens here we unlock all states again
-        unlockAllAfterAbortAll();
+        unlockAllAfterAbortAll(indexWriter);
       }
     }
   }
+
+  private final void abortThreadState(final ThreadState perThread, Set<String> newFiles) {
+    assert perThread.isHeldByCurrentThread();
+    if (perThread.isActive()) { // we might be closed
+      if (perThread.isInitialized()) { 
+        try {
+          subtractFlushedNumDocs(perThread.dwpt.getNumDocsInRAM());
+          perThread.dwpt.abort(newFiles);
+        } finally {
+          perThread.dwpt.checkAndResetHasAborted();
+          flushControl.doOnAbort(perThread);
+        }
+      } else {
+        flushControl.doOnAbort(perThread);
+      }
+    } else {
+      assert closed;
+    }
+  }
   
-  final synchronized void unlockAllAfterAbortAll() {
+  final synchronized void unlockAllAfterAbortAll(IndexWriter indexWriter) {
     assert indexWriter.holdsFullFlushLock();
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "unlockAll");
@@ -334,7 +335,7 @@ final class DocumentsWriter {
 
   private boolean preUpdate() throws IOException {
     ensureOpen();
-    boolean maybeMerge = false;
+    boolean hasEvents = false;
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
       // Help out flushing any queued DWPTs so we can un-stall:
       if (infoStream.isEnabled("DW")) {
@@ -345,7 +346,7 @@ final class DocumentsWriter {
         DocumentsWriterPerThread flushingDWPT;
         while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
           // Don't push the delete here since the update could fail!
-          maybeMerge |= doFlush(flushingDWPT);
+          hasEvents |= doFlush(flushingDWPT);
         }
   
         if (infoStream.isEnabled("DW")) {
@@ -361,28 +362,35 @@ final class DocumentsWriter {
         infoStream.message("DW", "continue indexing after helping out flushing DocumentsWriter is healthy");
       }
     }
-    return maybeMerge;
+    return hasEvents;
   }
 
-  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean maybeMerge) throws IOException {
-    if (flushControl.doApplyAllDeletes()) {
-      applyAllDeletes(deleteQueue);
-    }
+  private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
+    hasEvents |= applyAllDeletes(deleteQueue);
     if (flushingDWPT != null) {
-      maybeMerge |= doFlush(flushingDWPT);
+      hasEvents |= doFlush(flushingDWPT);
     } else {
       final DocumentsWriterPerThread nextPendingFlush = flushControl.nextPendingFlush();
       if (nextPendingFlush != null) {
-        maybeMerge |= doFlush(nextPendingFlush);
+        hasEvents |= doFlush(nextPendingFlush);
       }
     }
 
-    return maybeMerge;
+    return hasEvents;
+  }
+  
+  private final void ensureInitialized(ThreadState state) {
+    if (state.isActive() && state.dwpt == null) {
+      final FieldInfos.Builder infos = new FieldInfos.Builder(
+          writer.globalFieldNumberMap);
+      state.dwpt = new DocumentsWriterPerThread(writer.newSegmentName(),
+          directory, config, infoStream, deleteQueue, infos);
+    }
   }
 
   boolean updateDocuments(final Iterable<? extends IndexDocument> docs, final Analyzer analyzer,
                           final Term delTerm) throws IOException {
-    boolean maybeMerge = preUpdate();
+    boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
@@ -392,13 +400,19 @@ final class DocumentsWriter {
         ensureOpen();
         assert false: "perThread is not active but we are still open";
       }
-       
+      ensureInitialized(perThread);
+      assert perThread.isInitialized();
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
+      final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         final int docCount = dwpt.updateDocuments(docs, analyzer, delTerm);
         numDocsInRAM.addAndGet(docCount);
       } finally {
         if (dwpt.checkAndResetHasAborted()) {
+          if (!dwpt.pendingFilesToDelete().isEmpty()) {
+            putEvent(new DeleteNewFilesEvent(dwpt.pendingFilesToDelete()));
+          }
+          subtractFlushedNumDocs(dwptNumDocs);
           flushControl.doOnAbort(perThread);
         }
       }
@@ -408,31 +422,35 @@ final class DocumentsWriter {
       perThread.unlock();
     }
 
-    return postUpdate(flushingDWPT, maybeMerge);
+    return postUpdate(flushingDWPT, hasEvents);
   }
 
   boolean updateDocument(final IndexDocument doc, final Analyzer analyzer,
       final Term delTerm) throws IOException {
 
-    boolean maybeMerge = preUpdate();
+    boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
 
     final DocumentsWriterPerThread flushingDWPT;
-    
     try {
-
       if (!perThread.isActive()) {
         ensureOpen();
-        throw new IllegalStateException("perThread is not active but we are still open");
+        assert false: "perThread is not active but we are still open";
       }
-       
+      ensureInitialized(perThread);
+      assert perThread.isInitialized();
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
+      final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         dwpt.updateDocument(doc, analyzer, delTerm); 
         numDocsInRAM.incrementAndGet();
       } finally {
         if (dwpt.checkAndResetHasAborted()) {
+          if (!dwpt.pendingFilesToDelete().isEmpty()) {
+            putEvent(new DeleteNewFilesEvent(dwpt.pendingFilesToDelete()));
+          }
+          subtractFlushedNumDocs(dwptNumDocs);
           flushControl.doOnAbort(perThread);
         }
       }
@@ -442,13 +460,13 @@ final class DocumentsWriter {
       perThread.unlock();
     }
 
-    return postUpdate(flushingDWPT, maybeMerge);
+    return postUpdate(flushingDWPT, hasEvents);
   }
 
   private  boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
-    boolean maybeMerge = false;
+    boolean hasEvents = false;
     while (flushingDWPT != null) {
-      maybeMerge = true;
+      hasEvents = true;
       boolean success = false;
       SegmentFlushTicket ticket = null;
       try {
@@ -474,9 +492,24 @@ final class DocumentsWriter {
           // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
           ticket = ticketQueue.addFlushTicket(flushingDWPT);
   
-          // flush concurrently without locking
-          final FlushedSegment newSegment = flushingDWPT.flush();
-          ticketQueue.addSegment(ticket, newSegment);
+          final int flushingDocsInRam = flushingDWPT.getNumDocsInRAM();
+          boolean dwptSuccess = false;
+          try {
+            // flush concurrently without locking
+            final FlushedSegment newSegment = flushingDWPT.flush();
+            ticketQueue.addSegment(ticket, newSegment);
+            dwptSuccess = true;
+          } finally {
+            subtractFlushedNumDocs(flushingDocsInRam);
+            if (!flushingDWPT.pendingFilesToDelete().isEmpty()) {
+              putEvent(new DeleteNewFilesEvent(flushingDWPT.pendingFilesToDelete()));
+              hasEvents = true;
+            }
+            if (!dwptSuccess) {
+              putEvent(new FlushFailedEvent(flushingDWPT.getSegmentInfo()));
+              hasEvents = true;
+            }
+          }
           // flush was successful once we reached this point - new seg. has been assigned to the ticket!
           success = true;
         } finally {
@@ -496,82 +529,43 @@ final class DocumentsWriter {
           // thread in innerPurge can't keep up with all
           // other threads flushing segments.  In this case
           // we forcefully stall the producers.
-          ticketQueue.forcePurge(this);
-        } else {
-          ticketQueue.tryPurge(this);
+          putEvent(ForcedPurgeEvent.INSTANCE);
+          break;
         }
-
       } finally {
         flushControl.doAfterFlush(flushingDWPT);
         flushingDWPT.checkAndResetHasAborted();
-        indexWriter.flushCount.incrementAndGet();
-        indexWriter.doAfterFlush();
       }
      
       flushingDWPT = flushControl.nextPendingFlush();
     }
-
+    if (hasEvents) {
+      putEvent(MergePendingEvent.INSTANCE);
+    }
     // If deletes alone are consuming > 1/2 our RAM
     // buffer, force them all to apply now. This is to
     // prevent too-frequent flushing of a long tail of
     // tiny segments:
-    final double ramBufferSizeMB = indexWriterConfig.getRAMBufferSizeMB();
+    final double ramBufferSizeMB = config.getRAMBufferSizeMB();
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
         flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "force apply deletes bytesUsed=" + flushControl.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*ramBufferSizeMB));
       }
-      applyAllDeletes(deleteQueue);
+      hasEvents = true;
+      if (!this.applyAllDeletes(deleteQueue)) {
+        putEvent(ApplyDeletesEvent.INSTANCE);
+      }
     }
 
-    return maybeMerge;
+    return hasEvents;
   }
   
-
-  void finishFlush(FlushedSegment newSegment, FrozenBufferedDeletes bufferedDeletes)
-      throws IOException {
-    // Finish the flushed segment and publish it to IndexWriter
-    if (newSegment == null) {
-      assert bufferedDeletes != null;
-      if (bufferedDeletes != null && bufferedDeletes.any()) {
-        indexWriter.publishFrozenDeletes(bufferedDeletes);
-        if (infoStream.isEnabled("DW")) {
-          infoStream.message("DW", "flush: push buffered deletes: " + bufferedDeletes);
-        }
-      }
-    } else {
-      publishFlushedSegment(newSegment, bufferedDeletes);  
-    }
-  }
-
   final void subtractFlushedNumDocs(int numFlushed) {
     int oldValue = numDocsInRAM.get();
     while (!numDocsInRAM.compareAndSet(oldValue, oldValue - numFlushed)) {
       oldValue = numDocsInRAM.get();
     }
-  }
-  
-  /**
-   * Publishes the flushed segment, segment private deletes (if any) and its
-   * associated global delete (if present) to IndexWriter.  The actual
-   * publishing operation is synced on IW -> BDS so that the {@link SegmentInfo}'s
-   * delete generation is always GlobalPacket_deleteGeneration + 1
-   */
-  private void publishFlushedSegment(FlushedSegment newSegment, FrozenBufferedDeletes globalPacket)
-      throws IOException {
-    assert newSegment != null;
-    assert newSegment.segmentInfo != null;
-    final FrozenBufferedDeletes segmentDeletes = newSegment.segmentDeletes;
-    //System.out.println("FLUSH: " + newSegment.segmentInfo.info.name);
-    if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "publishFlushedSegment seg-private deletes=" + segmentDeletes);  
-    }
-    
-    if (segmentDeletes != null && infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "flush: push buffered seg private deletes: " + segmentDeletes);
-    }
-    // now publish!
-    indexWriter.publishFlushedSegment(newSegment.segmentInfo, segmentDeletes, globalPacket);
   }
   
   // for asserts
@@ -588,7 +582,7 @@ final class DocumentsWriter {
    * two stage operation; the caller must ensure (in try/finally) that finishFlush
    * is called after this method, to release the flush lock in DWFlushControl
    */
-  final boolean flushAllThreads()
+  final boolean flushAllThreads(final IndexWriter indexWriter)
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
@@ -620,10 +614,9 @@ final class DocumentsWriter {
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
-        ticketQueue.addDeletesAndPurge(this, flushingDeleteQueue);
-      } else {
-        ticketQueue.forcePurge(this);
-      }
+        ticketQueue.addDeletes(flushingDeleteQueue);
+      } 
+      ticketQueue.forcePurge(indexWriter);
       assert !flushingDeleteQueue.anyChanges() && !ticketQueue.hasTickets();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
@@ -641,11 +634,94 @@ final class DocumentsWriter {
         // Release the flush lock
         flushControl.finishFullFlush();
       } else {
-        flushControl.abortFullFlushes();
+        Set<String> newFilesSet = new HashSet<>();
+        flushControl.abortFullFlushes(newFilesSet);
+        putEvent(new DeleteNewFilesEvent(newFilesSet));
+
       }
     } finally {
       pendingChangesInCurrentFullFlush = false;
     }
     
+  }
+
+  public LiveIndexWriterConfig getIndexWriterConfig() {
+    return config;
+  }
+  
+  private void putEvent(Event event) {
+    events.add(event);
+  }
+  
+  static final class ApplyDeletesEvent implements Event {
+    static final Event INSTANCE = new ApplyDeletesEvent();
+    private int instCount = 0;
+    private ApplyDeletesEvent() {
+      assert instCount == 0;
+      instCount++;
+    }
+    
+    @Override
+    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+      writer.applyDeletesAndPurge(true); // we always purge!
+    }
+  }
+  
+  static final class MergePendingEvent implements Event {
+    static final Event INSTANCE = new MergePendingEvent();
+    private int instCount = 0; 
+    private MergePendingEvent() {
+      assert instCount == 0;
+      instCount++;
+    }
+   
+    @Override
+    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+      writer.doAfterSegmentFlushed(triggerMerge, forcePurge);
+    }
+  }
+  
+  static final class ForcedPurgeEvent implements Event {
+    static final Event INSTANCE = new ForcedPurgeEvent();
+    private int instCount = 0;
+    private ForcedPurgeEvent() {
+      assert instCount == 0;
+      instCount++;
+    }
+    
+    @Override
+    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+      writer.purge(true);
+    }
+  }
+  
+  static class FlushFailedEvent implements Event {
+    private final SegmentInfo info;
+    
+    public FlushFailedEvent(SegmentInfo info) {
+      this.info = info;
+    }
+    
+    @Override
+    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+      writer.flushFailed(info);
+    }
+  }
+  
+  static class DeleteNewFilesEvent implements Event {
+    private final Collection<String>  files;
+    
+    public DeleteNewFilesEvent(Collection<String>  files) {
+      this.files = files;
+    }
+    
+    @Override
+    public void process(IndexWriter writer, boolean triggerMerge, boolean forcePurge) throws IOException {
+      writer.deleteNewFiles(files);
+    }
+  }
+
+  public Queue<Event> eventQueue() {
+    return events;
   }
 }

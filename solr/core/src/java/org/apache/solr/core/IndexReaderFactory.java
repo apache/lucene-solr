@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -54,5 +55,22 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract DirectoryReader newReader(Directory indexDir, SolrCore core)
+      throws IOException;
+  
+  /**
+   * Creates a new IndexReader instance using the given IndexWriter.
+   * <p>
+   * This is used for opening the initial reader in NRT mode ({@code reopenReaders=true}
+   * in solrconfig.xml)
+   * 
+   * @param writer IndexWriter
+   * @param core {@link SolrCore} instance where this reader will be used. NOTE:
+   * this SolrCore instance may not be fully configured yet, but basic things like
+   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getLatestSchema()} and
+   * {@link SolrCore#getSolrConfig()} are valid.
+   * @return An IndexReader instance
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract DirectoryReader newReader(IndexWriter writer, SolrCore core)
       throws IOException;
 }

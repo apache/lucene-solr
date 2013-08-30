@@ -17,46 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util._TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean.Category;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.SolrCmdDistributor.Request;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -77,7 +39,50 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
+
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCmdDistributor.Request;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**
  * Tests the Cloud Collections API.
@@ -147,12 +152,49 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testCollectionsAPI();
     testErrorHandling();
     deletePartiallyCreatedCollection();
+    deleteCollectionRemovesStaleZkCollectionsNode();
+    
+    // last
     deleteCollectionWithDownNodes();
     if (DEBUG) {
       super.printLayout();
     }
   }
   
+  private void deleteCollectionRemovesStaleZkCollectionsNode() throws Exception {
+    
+    // we can use this client because we just want base url
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    
+    String collectionName = "out_of_sync_collection";
+    
+    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>();
+    numShardsNumReplicaList.add(2);
+    numShardsNumReplicaList.add(1);
+    
+    
+    cloudClient.getZkStateReader().getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    try {
+      NamedList<Object> resp = createNewSolrServer("", baseUrl)
+          .request(request);
+      fail("Expected to fail, because collection is not in clusterstate");
+    } catch (RemoteSolrException e) {
+      
+    }
+    
+    checkForMissingCollection(collectionName);
+    
+    assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+    
+  }
+
   private void deletePartiallyCreatedCollection() throws Exception {
     final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     String collectionName = "halfdeletedcollection";
@@ -461,6 +503,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       waitForRecoveriesToFinish("awholynewcollection_" + j, zkStateReader, false);
     }
     
+    checkInstanceDirs(jettys.get(0)); 
+    
     List<String> collectionNameList = new ArrayList<String>();
     collectionNameList.addAll(collectionInfos.keySet());
     String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
@@ -617,6 +661,24 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
     
     checkNoTwoShardsUseTheSameIndexDir();
+  }
+
+  private void checkInstanceDirs(JettySolrRunner jetty) {
+    CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter()
+        .getFilter()).getCores();
+    Collection<SolrCore> theCores = cores.getCores();
+    for (SolrCore core : theCores) {
+      // look for core props file
+      assertTrue("Could not find expected core.properties file",
+          new File((String) core.getStatistics().get("instanceDir"),
+              "core.properties").exists());
+      
+      assertEquals(
+          SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
+              + core.getName()),
+          SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
+              "instanceDir")));
+    }
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {

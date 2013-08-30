@@ -85,18 +85,14 @@ public class Test2BPostings extends LuceneTestCase {
   
   public static final class MyTokenStream extends TokenStream {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    private final char buffer[];
     int index;
 
-    public MyTokenStream() {
-      termAtt.setLength(1);
-      buffer = termAtt.buffer();
-    }
-    
     @Override
     public boolean incrementToken() {
       if (index <= 'z') {
-        buffer[0] = (char) index++;
+        clearAttributes();
+        termAtt.setLength(1);
+        termAtt.buffer()[0] = (char) index++;
         return true;
       }
       return false;

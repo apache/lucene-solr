@@ -42,20 +42,16 @@ import org.apache.solr.util.IOUtils;
 /** @lucene.experimental */
 public class HdfsUpdateLog extends UpdateLog {
   
-  private FileSystem fs;
-  private Path tlogDir;
-  private String confDir;
+  private volatile FileSystem fs;
+  private volatile Path tlogDir;
+  private final String confDir;
 
   public HdfsUpdateLog() {
-    
+    this.confDir = null;
   }
   
   public HdfsUpdateLog(String confDir) {
     this.confDir = confDir;
-  }
-  
-  public FileSystem getFs() {
-    return fs;
   }
   
   // HACK
@@ -115,6 +111,14 @@ public class HdfsUpdateLog extends UpdateLog {
       } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
+    }
+    
+    try {
+      if (fs != null) {
+        fs.close();
+      }
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
     
     try {

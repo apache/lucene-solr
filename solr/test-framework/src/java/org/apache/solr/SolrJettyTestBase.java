@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -188,4 +189,21 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       return new EmbeddedSolrServer( h.getCoreContainer(), "" );
     }
   }
+
+  // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig from the test
+  // file directory are used, but some also require that the solr.xml file be explicitly there as of SOLR-4817
+  public static void setupJettyTestHome(File solrHome, String collection) throws Exception {
+    if (solrHome.exists()) {
+      FileUtils.deleteDirectory(solrHome);
+    }
+    copySolrHomeToTemp(solrHome, collection);
+  }
+
+  public static void cleanUpJettyHome(File solrHome) throws Exception {
+    if (solrHome.exists()) {
+      FileUtils.deleteDirectory(solrHome);
+    }
+  }
+
+
 }

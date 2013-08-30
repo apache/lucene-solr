@@ -42,7 +42,10 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
     extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
-    createJettyAndHarness(tmpSolrHome, "solrconfig-mutable-managed-schema.xml", "schema-rest.xml", "/solr", true, extraServlets);
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("enable.update.log", "false");
+
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }
 
   @After

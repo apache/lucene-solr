@@ -69,7 +69,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     FileUtils.write(solrXml, LOTS_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
     ConfigSolrXmlOld config = (ConfigSolrXmlOld) ConfigSolr.fromFile(loader, solrXml);
 
-    CoresLocator locator = new SolrXMLCoresLocator.NonPersistingLocator(solrXml, LOTS_SOLR_XML, config);
+    CoresLocator locator = new SolrXMLCoresLocator.NonPersistingLocator(LOTS_SOLR_XML, config);
 
 
     final CoreContainer cores = new CoreContainer(loader, config, locator);

@@ -17,15 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -49,6 +40,15 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 public class ShardSplitTest extends BasicDistributedZkTest {
 
@@ -289,7 +289,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int hash = 0;
     if (router instanceof HashBasedRouter) {
       HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
-      hash = hashBasedRouter.sliceHash(id, null, null);
+      hash = hashBasedRouter.sliceHash(id, null, null,null);
     }
     for (int i = 0; i < ranges.size(); i++) {
       DocRouter.Range range = ranges.get(i);

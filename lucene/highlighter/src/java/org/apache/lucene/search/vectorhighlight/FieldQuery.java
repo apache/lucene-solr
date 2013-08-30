@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -63,6 +62,8 @@ public class FieldQuery {
 
   // The maximum number of different matching terms accumulated from any one MultiTermQuery
   private static final int MAX_MTQ_TERMS = 1024;
+  
+  private int maxPhraseWindow = 1;
 
   FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
     this.fieldMatch = fieldMatch;
@@ -400,7 +401,7 @@ public class FieldQuery {
             return positions[i] - positions[j];
           }
         }.sort(0, terms.length);
-
+        
         addToMap(pq, terms, positions, 0, subMap, pq.getSlop());
       }
       else
@@ -474,7 +475,17 @@ public class FieldQuery {
         this.boost = boost;
         this.termOrPhraseNumber = fieldQuery.nextTermOrPhraseNumber();
         this.positions = positions;
+        if (positions != null) {
+          fieldQuery.maxPhraseWindow = Math.max(fieldQuery.maxPhraseWindow, slop + positions[positions.length-1] - positions[0]);
+        }
       }
+    }
+   
+    /**
+     * The max phrase window based on the actual phrase positions and slop.
+     */ 
+    int getMaxPhraseWindow() {
+      return fieldQuery.maxPhraseWindow;
     }
     
     public boolean isTerminal(){

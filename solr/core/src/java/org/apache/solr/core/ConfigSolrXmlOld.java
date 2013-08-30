@@ -50,20 +50,22 @@ public class ConfigSolrXmlOld extends ConfigSolr {
   
   private final CoresLocator persistor;
 
+  public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
+
   @Override
   protected String getShardHandlerFactoryConfigPath() {
     return "solr/cores/shardHandlerFactory";
   }
 
-  public ConfigSolrXmlOld(Config config, File configFile, String originalXML) {
+  public ConfigSolrXmlOld(Config config, String originalXML) {
     super(config);
     try {
       checkForIllegalConfig();
       fillPropMap();
       config.substituteProperties();
       initCoreList();
-      this.persistor = isPersistent() ? new SolrXMLCoresLocator(configFile, originalXML, this)
-                                      : new SolrXMLCoresLocator.NonPersistingLocator(configFile, originalXML, this);
+      this.persistor = isPersistent() ? new SolrXMLCoresLocator(originalXML, this)
+                                      : new SolrXMLCoresLocator.NonPersistingLocator(originalXML, this);
     }
     catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -273,19 +275,4 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     }
     return new Properties();
   }
-
-  public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
-
-  public static final String DEF_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-        + "<solr persistent=\"false\">\n"
-        + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
-        + DEFAULT_DEFAULT_CORE_NAME
-        + "\""
-        + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\" zkClientTimeout=\"${zkClientTimeout:15000}\""
-        + ">\n"
-        + "    <core name=\""
-        + DEFAULT_DEFAULT_CORE_NAME
-        + "\" shard=\"${shard:}\" collection=\"${collection:collection1}\" instanceDir=\"collection1\" />\n"
-        + "  </cores>\n" + "</solr>";
-
 }

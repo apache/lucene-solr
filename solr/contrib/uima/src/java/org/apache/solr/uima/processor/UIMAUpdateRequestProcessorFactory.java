@@ -41,7 +41,7 @@ public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFac
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp,
           UpdateRequestProcessor next) {
-    return new UIMAUpdateRequestProcessor(next, req.getCore(),
+    return new UIMAUpdateRequestProcessor(next, req.getCore().getName(),
             new SolrUIMAConfigurationReader(args).readSolrUIMAConfiguration());
   }
 

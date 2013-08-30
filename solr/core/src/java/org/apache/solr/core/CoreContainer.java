@@ -29,7 +29,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -193,7 +192,7 @@ public class CoreContainer {
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
-    logging = JulWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     shareSchema = cfg.hasSchemaCache();
 
@@ -480,7 +479,7 @@ public class CoreContainer {
     SolrResourceLoader solrLoader = null;
 
     SolrConfig config = null;
-    solrLoader = new SolrResourceLoader(instanceDir, loader.getClassLoader(), dcore.getCoreProperties());
+    solrLoader = new SolrResourceLoader(instanceDir, loader.getClassLoader(), dcore.getSubstitutableProperties());
     try {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
@@ -646,7 +645,7 @@ public class CoreContainer {
         SolrResourceLoader solrLoader;
         if(zkSys.getZkController() == null) {
           solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), loader.getClassLoader(),
-                                                cd.getCoreProperties());
+                                                cd.getSubstitutableProperties());
         } else {
           try {
             String collection = cd.getCloudDescriptor().getCollectionName();
@@ -659,7 +658,7 @@ public class CoreContainer {
                                            "Could not find config name for collection:" + collection);
             }
             solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, loader.getClassLoader(),
-                cd.getCoreProperties(), zkSys.getZkController());
+                cd.getSubstitutableProperties(), zkSys.getZkController());
           } catch (KeeperException e) {
             log.error("", e);
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,

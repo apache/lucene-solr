@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -44,24 +46,52 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
-    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "faith hope and love", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "faith hope and loaves")));
-    assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "fat hops and loaves")));
-    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "faith of homer", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "fat of homer")));
-    assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt1", "peace")));
-    assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "hyphenated word")));
-    assertNull(h.validateUpdate(adoc("id", "7", "teststop", "Jane filled out a form at Charles De Gaulle")));
-    assertNull(h.validateUpdate(adoc("id", "8", "teststop", "Dick flew from Heathrow")));
-    assertNull(h.validateUpdate(adoc("id", "9", "teststop", "Jane is stuck in customs because Spot chewed up the form")));
-    assertNull(h.validateUpdate(adoc("id", "10", "teststop", "Once in Paris Dick built a fire on the hearth")));
-    assertNull(h.validateUpdate(adoc("id", "11", "teststop", "Dick waited for Jane as he watched the sparks flow upward")));
-    assertNull(h.validateUpdate(adoc("id", "12", "teststop", "This June parisian rendez-vous is ruined because of a customs snafu")));
-    assertNull(h.validateUpdate(adoc("id", "13", "teststop", "partisan political machine", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(adoc("id", "14", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(adoc("id", "15", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(adoc("id", "16", "teststop", "metanoia")));
-    assertNull(h.validateUpdate(commit()));
+    assertU(adoc("id", "0", 
+                 "lowerfilt", "faith hope and love", 
+                 "teststop", "metanoia"));
+    assertU(adoc("id", "1", 
+                 "lowerfilt", "faith hope and loaves",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "2", 
+                 "lowerfilt", "fat hops and loaves"));
+    assertU(adoc("id", "3", 
+                 "lowerfilt", "faith of homer", 
+                 "teststop", "metanoia",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "4", 
+                 "lowerfilt", "fat of homer"));
+    assertU(adoc("id", "5", 
+                 "lowerfilt1", "peace",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "6", 
+                 "lowerfilt", "hyphenated word"));
+    assertU(adoc("id", "7", 
+                 "teststop", "Jane filled out a form at Charles De Gaulle",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "8", 
+                 "teststop", "Dick flew from Heathrow"));
+    assertU(adoc("id", "9", 
+                 "teststop", "Jane is stuck in customs because Spot chewed up the form",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "10", 
+                 "teststop", "Once in Paris Dick built a fire on the hearth"));
+    assertU(adoc("id", "11", 
+                 "teststop", "Dick waited for Jane as he watched the sparks flow upward",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "12", 
+                 "teststop", "This June parisian rendez-vous is ruined because of a customs snafu"));
+    assertU(adoc("id", "13", 
+                 "teststop", "partisan political machine", 
+                 "teststop", "metanoia",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "14", 
+                 "teststop", "metanoia"));
+    assertU(adoc("id", "15", 
+                 "teststop", "metanoia",
+                 "teststop", "everyother"));
+    assertU(adoc("id", "16", 
+                 "teststop", "metanoia"));
+    assertU(commit());
   }
 
   @Test
@@ -436,71 +466,66 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore("SOLR-5122: estimates don't seem to make any sense")
   public void testEstimatedHitCounts() throws Exception {
-   assertQ(
-        req(
-          SpellCheckComponent.COMPONENT_NAME, "true",
-          SpellCheckComponent.SPELLCHECK_DICT, "direct",
-          SpellingParams.SPELLCHECK_COUNT, "1",   
-          SpellingParams.SPELLCHECK_COLLATE, "true",
-          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
-          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",          
-          "qt", "spellCheckCompRH",          
-          CommonParams.Q, "teststop:metnoia"
-        ),
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=6"        
-      );
-    assertQ(
-        req(
-          SpellCheckComponent.COMPONENT_NAME, "true",
-          SpellCheckComponent.SPELLCHECK_DICT, "direct",
-          SpellingParams.SPELLCHECK_COUNT, "1",   
-          SpellingParams.SPELLCHECK_COLLATE, "true",
-          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
-          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
-          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "1",
-          "qt", "spellCheckCompRH",          
-          CommonParams.Q, "teststop:metnoia"
-        ),
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=17"        
-      );
-    assertQ(
-        req(
-          SpellCheckComponent.COMPONENT_NAME, "true",
-          SpellCheckComponent.SPELLCHECK_DICT, "direct",
-          SpellingParams.SPELLCHECK_COUNT, "1",   
-          SpellingParams.SPELLCHECK_COLLATE, "true",
-          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
-          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
-          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "3",
-          "qt", "spellCheckCompRH",          
-          CommonParams.Q, "teststop:metnoia"
-        ),
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=4"        
-      );
-    assertQ(
-        req(
-          SpellCheckComponent.COMPONENT_NAME, "true",
-          SpellCheckComponent.SPELLCHECK_DICT, "direct",
-          SpellingParams.SPELLCHECK_COUNT, "1",   
-          SpellingParams.SPELLCHECK_COLLATE, "true",
-          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
-          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
-          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "100",
-          "qt", "spellCheckCompRH",          
-          CommonParams.Q, "teststop:metnoia"
-        ),
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=6"        
-      );
+    final String xpathPrefix = 
+      "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/";
+    final SolrParams reusedParams = params
+      (SpellCheckComponent.COMPONENT_NAME, "true",
+       SpellCheckComponent.SPELLCHECK_DICT, "direct",
+       SpellingParams.SPELLCHECK_COUNT, "1",   
+       SpellingParams.SPELLCHECK_COLLATE, "true",
+       SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
+       SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+       SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",          
+       "qt", "spellCheckCompRH");       
+
+    // default case, no SPELLCHECK_COLLATE_MAX_COLLECT_DOCS should be exact num hits
+    assertQ(req(reusedParams, 
+                CommonParams.Q, "teststop:metnoia")
+            , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
+            , xpathPrefix + "int[@name='hits']=6"        
+            );
+
+    // specifying 0 means "exact" same as default, but specifing a value greater 
+    // then the total number of docs in the index should also result in it
+    // "estimating" and getting exact number as well.
+    for (String val : new String[] { "0", "30", "100", "10000" }) {
+      assertQ(req(reusedParams,
+                  CommonParams.Q, "teststop:metnoia",
+                  SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, val)
+              , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
+              , xpathPrefix + "int[@name='hits']=6"        
+              );
+    }
+
+    // values between 0 and the num docs in the index should not error, and should 
+    // produce an estimate no more then the total number of docs
+    final int iters = atLeast(10);
+    for (int iter = 0; iter < iters; iter++) {
+      final int val = _TestUtil.nextInt(random(), 1, 17);
+      assertQ(req(reusedParams,
+                  CommonParams.Q, "teststop:metnoia",
+                  SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
+              , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
+              , xpathPrefix + "int[@name='hits' and . <= 17 and 0 < .]"        
+              );
+    }
+
+    // "everYother" appears in every other doc in the index, so "everother" 
+    // should produce a "decent" aproximation of the number of hits (8)
+    // for any 5 <= SPELLCHECK_COLLATE_MAX_COLLECT_DOCS
+    //
+    // (we have to be kind of flexible with our definition of "decent"
+    // since we're dealing with a fairly small index here)
+    for (int val = 5; val <= 20; val++) {
+      assertQ(req(reusedParams,
+                  CommonParams.Q, "teststop:everother",
+                  SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
+              , xpathPrefix + "str[@name='collationQuery']='teststop:everyother'"
+              , xpathPrefix + "int[@name='hits' and 6 <= . and . <= 10]"        
+              );
+    }
+
   }  
   
 }

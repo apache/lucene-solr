@@ -178,7 +178,7 @@ For each field in each document, a value is stored
 that is multiplied into the score for hits on that field.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat Term Vectors}. 
+{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vectors}. 
 For each field in each document, the term vector (sometimes
 called document vector) may be stored. A term vector consists of term text and
 term frequency. To add Term Vectors to your index see the 
@@ -299,17 +299,17 @@ systems that frequently run out of file handles.</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat Term Vector Index}</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Index}</td>
 <td>.tvx</td>
 <td>Stores offset into the document data file</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat Term Vector Documents}</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Documents}</td>
 <td>.tvd</td>
 <td>Contains information about each document that has term vectors</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat Term Vector Fields}</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Fields}</td>
 <td>.tvf</td>
 <td>The field level info about term vectors</td>
 </tr>

@@ -135,7 +135,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     // LUCENE-5153: test that wrapping an analyzer's reader is allowed
     final Random random = random();
     
-    Analyzer a = new AnalyzerWrapper() {
+    final Analyzer delegate = new MockAnalyzer(random);
+    Analyzer a = new AnalyzerWrapper(delegate.getReuseStrategy()) {
       
       @Override
       protected Reader wrapReader(String fieldName, Reader reader) {
@@ -149,7 +150,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       
       @Override
       protected Analyzer getWrappedAnalyzer(String fieldName) {
-        return new MockAnalyzer(random);
+        return delegate;
       }
     };
     

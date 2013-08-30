@@ -1,4 +1,4 @@
-package org.apache.solr;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,25 +17,19 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrServerException;
-import org.junit.BeforeClass;
-import org.junit.Test;
-/**
- * <p> Test disabling components</p>
- *
- *
- * @since solr 1.4
- */
-public class TestPluginEnable extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-enableplugin.xml", "schema-replication1.xml");
-  }
-  
-  @Test
-  public void testSimple() throws SolrServerException {
-    assertNull(h.getCore().getRequestHandler("disabled"));
-    assertNotNull(h.getCore().getRequestHandler("enabled"));
+import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.SegmentWriteState;
+
+/**
+ * Read-write version of {@link Lucene42DocValuesFormat} for testing.
+ */
+public class Lucene42RWDocValuesFormat extends Lucene42DocValuesFormat {
+  
+  @Override
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
 }

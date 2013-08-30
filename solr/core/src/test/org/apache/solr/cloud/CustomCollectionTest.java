@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -62,6 +63,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
@@ -132,6 +134,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     testCustomCollectionsAPI();
+    testRouteFieldForHashRouter();
     if (DEBUG) {
       super.printLayout();
     }
@@ -242,8 +245,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     collectionClient.commit();
 
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","b")).getResults().getNumFound());
-    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","a")).getResults().getNumFound());
+    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"b")).getResults().getNumFound());
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"a")).getResults().getNumFound());
 
     collectionClient.deleteByQuery("*:*");
     collectionClient.commit(true,true);
@@ -263,8 +266,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     collectionClient.request(up);
 
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","a")).getResults().getNumFound());
-    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","c")).getResults().getNumFound());
+    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"a")).getResults().getNumFound());
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"c")).getResults().getNumFound());
 
     //Testing CREATESHARD
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -292,7 +295,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     collectionClient.add(getDoc(id, 66, i1, -600, tlong, 600, t1,
         "humpty dumpy sat on a wall", _ROUTE_,"x"));
     collectionClient.commit();
-    assertEquals(1, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","x")).getResults().getNumFound());
+    assertEquals(1, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"x")).getResults().getNumFound());
 
 
     int numShards = 4;
@@ -349,9 +352,67 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     collectionClient.commit();
 
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys","b")).getResults().getNumFound());
+    assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"b")).getResults().getNumFound());
     //TODO debug the following case
-    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam("shard.keys", "a")).getResults().getNumFound());
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
+
+
+  }
+
+  private void testRouteFieldForHashRouter()throws Exception{
+    String collectionName = "routeFieldColl";
+    int numShards = 4;
+    int replicationFactor = 2;
+    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
+        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    CloudSolrServer client = null;
+    String shard_fld = "shard_s";
+    try {
+      client = createCloudClient(null);
+      Map<String, Object> props = OverseerCollectionProcessor.asMap(
+          REPLICATION_FACTOR, replicationFactor,
+          MAX_SHARDS_PER_NODE, maxShardsPerNode,
+          NUM_SLICES,numShards,
+          DocRouter.ROUTE_FIELD, shard_fld);
+
+      createCollection(collectionInfos, collectionName,props,client);
+    } finally {
+      if (client != null) client.shutdown();
+    }
+
+    List<Integer> list = collectionInfos.get(collectionName);
+    checkForCollection(collectionName, list, null);
+
+
+    String url = getUrlFromZk(collectionName);
+
+    HttpSolrServer collectionClient = new HttpSolrServer(url);
+
+    // poll for a second - it can take a moment before we are ready to serve
+    waitForNon403or404or503(collectionClient);
+
+
+    collectionClient = new HttpSolrServer(url);
+
+
+    // lets try and use the solrj client to index a couple documents
+
+    collectionClient.add(getDoc(id, 6, i1, -600, tlong, 600, t1,
+        "humpty dumpy sat on a wall", shard_fld,"a"));
+
+    collectionClient.add(getDoc(id, 7, i1, -600, tlong, 600, t1,
+        "humpty dumpy3 sat on a walls", shard_fld,"a"));
+
+    collectionClient.add(getDoc(id, 8, i1, -600, tlong, 600, t1,
+        "humpty dumpy2 sat on a walled", shard_fld,"a"));
+
+    collectionClient.commit();
+
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    //TODO debug the following case
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
 
 
   }

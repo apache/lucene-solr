@@ -1372,6 +1372,16 @@ public abstract class LuceneTestCase extends Assert {
     }
     return true;
   }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  public static boolean defaultCodecSupportsDocsWithField() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assertReaderStatisticsEquals(info, leftReader, rightReader);
@@ -1964,6 +1974,20 @@ public abstract class LuceneTestCase extends Assert {
         } else {
           assertNull(info, leftValues);
           assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
+        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
+        if (leftBits != null && rightBits != null) {
+          assertEquals(info, leftBits.length(), rightBits.length());
+          for (int i = 0; i < leftBits.length(); i++) {
+            assertEquals(info, leftBits.get(i), rightBits.get(i));
+          }
+        } else {
+          assertNull(info, leftBits);
+          assertNull(info, rightBits);
         }
       }
     }

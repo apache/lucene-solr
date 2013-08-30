@@ -47,33 +47,27 @@ public class SimpleHTMLEncoder implements Encoder
     {
       char ch = plainText.charAt(index);
 
-      switch (ch)
-      {
+      switch (ch) {
       case '"':
         result.append("&quot;");
         break;
-
       case '&':
         result.append("&amp;");
         break;
-
       case '<':
         result.append("&lt;");
         break;
-
       case '>':
         result.append("&gt;");
         break;
-
+      case '\'':
+        result.append("&#x27;");
+        break;
+      case '/':
+        result.append("&#x2F;");
+        break;
       default:
-           if (ch < 128)
-           {
-                 result.append(ch);
-             }
-           else
-             {
-                 result.append("&#").append((int)ch).append(";");
-             }
+        result.append(ch);
       }
     }
 

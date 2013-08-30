@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.lucene45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.diskdv;
  * limitations under the License.
  */
 
+import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,8 +37,8 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link DiskDocValuesFormat} */
-public class DiskDocValuesConsumer extends DocValuesConsumer {
+/** writer for {@link Lucene45DocValuesFormat} */
+public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
@@ -59,15 +60,16 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;
   
-  public DiskDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  /** expert: Creates a new writer */
+  public Lucene45DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, DiskDocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(data, dataCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, DiskDocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -87,13 +89,20 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     long gcd = 0;
+    boolean missing = false;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (optimizeStorage) {
       uniqueValues = new HashSet<>();
 
       for (Number nv : values) {
-        final long v = nv.longValue();
+        final long v;
+        if (nv == null) {
+          v = 0;
+          missing = true;
+        } else {
+          v = nv.longValue();
+        }
 
         if (gcd != 1) {
           if (v < Long.MIN_VALUE / 2 || v > Long.MAX_VALUE / 2) {
@@ -138,8 +147,14 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       format = DELTA_COMPRESSED;
     }
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
+    if (missing) {
+      meta.writeLong(data.getFilePointer());
+      writeMissingBitset(values);
+    } else {
+      meta.writeLong(-1L);
+    }
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(count);
@@ -151,14 +166,15 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
         meta.writeLong(gcd);
         final BlockPackedWriter quotientWriter = new BlockPackedWriter(data, BLOCK_SIZE);
         for (Number nv : values) {
-          quotientWriter.add((nv.longValue() - minValue) / gcd);
+          long value = nv == null ? 0 : nv.longValue();
+          quotientWriter.add((value - minValue) / gcd);
         }
         quotientWriter.finish();
         break;
       case DELTA_COMPRESSED:
         final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
         for (Number nv : values) {
-          writer.add(nv.longValue());
+          writer.add(nv == null ? 0 : nv.longValue());
         }
         writer.finish();
         break;
@@ -173,7 +189,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
         final int bitsRequired = PackedInts.bitsRequired(uniqueValues.size() - 1);
         final PackedInts.Writer ordsWriter = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, (int) count, bitsRequired, PackedInts.DEFAULT_BUFFER_SIZE);
         for (Number nv : values) {
-          ordsWriter.add(encode.get(nv.longValue()));
+          ordsWriter.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
         ordsWriter.finish();
         break;
@@ -181,23 +197,60 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
         throw new AssertionError();
     }
   }
+  
+  // TODO: in some cases representing missing with minValue-1 wouldn't take up additional space and so on,
+  // but this is very simple, and algorithms only check this for values of 0 anyway (doesnt slow down normal decode)
+  void writeMissingBitset(Iterable<?> values) throws IOException {
+    byte bits = 0;
+    int count = 0;
+    for (Object v : values) {
+      if (count == 8) {
+        data.writeByte(bits);
+        count = 0;
+        bits = 0;
+      }
+      if (v != null) {
+        bits |= 1 << (count & 7);
+      }
+      count++;
+    }
+    if (count > 0) {
+      data.writeByte(bits);
+    }
+  }
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.BINARY);
+    meta.writeByte(Lucene45DocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
     long count = 0;
+    boolean missing = false;
     for(BytesRef v : values) {
-      minLength = Math.min(minLength, v.length);
-      maxLength = Math.max(maxLength, v.length);
-      data.writeBytes(v.bytes, v.offset, v.length);
+      final int length;
+      if (v == null) {
+        length = 0;
+        missing = true;
+      } else {
+        length = v.length;
+      }
+      minLength = Math.min(minLength, length);
+      maxLength = Math.max(maxLength, length);
+      if (v != null) {
+        data.writeBytes(v.bytes, v.offset, v.length);
+      }
       count++;
     }
     meta.writeVInt(minLength == maxLength ? BINARY_FIXED_UNCOMPRESSED : BINARY_VARIABLE_UNCOMPRESSED);
+    if (missing) {
+      meta.writeLong(data.getFilePointer());
+      writeMissingBitset(values);
+    } else {
+      meta.writeLong(-1L);
+    }
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
     meta.writeVLong(count);
@@ -213,13 +266,16 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
       long addr = 0;
       for (BytesRef v : values) {
-        addr += v.length;
+        if (v != null) {
+          addr += v.length;
+        }
         writer.add(addr);
       }
       writer.finish();
     }
   }
   
+  /** expert: writes a value dictionary for a sorted/sortedset field */
   protected void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
     // first check if its a "fixed-length" terms dict
     int minLength = Integer.MAX_VALUE;
@@ -234,8 +290,9 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     } else {
       // header
       meta.writeVInt(field.number);
-      meta.writeByte(DiskDocValuesFormat.BINARY);
+      meta.writeByte(Lucene45DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
+      meta.writeLong(-1L);
       // now write the bytes: sharing prefixes within a block
       final long startFP = data.getFilePointer();
       // currently, we have to store the delta from expected for every 1/nth term
@@ -279,7 +336,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.SORTED);
+    meta.writeByte(Lucene45DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
@@ -287,7 +344,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
     // write the ord -> byte[] as a binary field
     addTermsDict(field, values);
     // write the stream of ords as a numeric field
@@ -296,8 +353,9 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     
     // write the doc -> ord count as a absolute index to the stream
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(DELTA_COMPRESSED);
+    meta.writeLong(-1L);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(maxDoc);
