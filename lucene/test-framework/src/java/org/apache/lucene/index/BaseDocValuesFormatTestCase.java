@@ -2635,7 +2635,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
 
     AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
 
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
       StoredDocument doc = ar.document(docID);
       BytesRef bytes = new BytesRef();
@@ -2707,7 +2707,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
 
     AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
 
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
       StoredDocument doc = ar.document(docID);
       BytesRef bytes = new BytesRef();

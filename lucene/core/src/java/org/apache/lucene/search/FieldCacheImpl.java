@@ -1056,7 +1056,7 @@ class FieldCacheImpl implements FieldCache {
     public void get(int docID, BytesRef ret) {
       final int pointer = (int) docToOffset.get(docID);
       if (pointer == 0) {
-        ret.bytes = MISSING;
+        ret.bytes = BytesRef.EMPTY_BYTES;
         ret.offset = 0;
         ret.length = 0;
       } else {
@@ -1067,11 +1067,11 @@ class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
-  public BinaryDocValues getTerms(AtomicReader reader, String field) throws IOException {
-    return getTerms(reader, field, PackedInts.FAST);
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getTerms(reader, field, setDocsWithField, PackedInts.FAST);
   }
 
-  public BinaryDocValues getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
     if (valuesIn == null) {
       valuesIn = reader.getSortedDocValues(field);
@@ -1092,7 +1092,7 @@ class FieldCacheImpl implements FieldCache {
       return BinaryDocValues.EMPTY;
     }
 
-    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
   }
 
   static final class BinaryDocValuesCache extends Cache {
@@ -1101,7 +1101,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       // TODO: would be nice to first check if DocTermsIndex
@@ -1170,8 +1170,22 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
+      final PackedInts.Reader offsetReader = docToOffset.getMutable();
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, new Bits() {
+          @Override
+          public boolean get(int index) {
+            return offsetReader.get(index) != 0;
+          }
+
+          @Override
+          public int length() {
+            return maxDoc;
+          }
+        });
+      }
       // maybe an int-only impl?
-      return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
+      return new BinaryDocValuesImpl(bytes.freeze(true), offsetReader);
     }
   }
 

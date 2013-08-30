@@ -109,7 +109,7 @@ abstract class TermsCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
+      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
     }
   }
 

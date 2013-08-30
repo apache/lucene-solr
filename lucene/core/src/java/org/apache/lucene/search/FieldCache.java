@@ -378,18 +378,19 @@ public interface FieldCache {
    * method to retrieve the term (as a BytesRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
+   * @param setDocsWithField  If true then {@link #getDocsWithField} will
+   *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public BinaryDocValues getTerms (AtomicReader reader, String field)
-  throws IOException;
+  public BinaryDocValues getTerms (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
-  /** Expert: just like {@link #getTerms(AtomicReader,String)},
+  /** Expert: just like {@link #getTerms(AtomicReader,String,boolean)},
    *  but you can specify whether more RAM should be consumed in exchange for
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public BinaryDocValues getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
+  public BinaryDocValues getTerms (AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>

@@ -893,6 +893,9 @@ public abstract class FieldComparator<T> {
       return values[slot];
     }
   }
+  
+  // just used internally in this comparator
+  private static final byte[] MISSING_BYTES = new byte[0];
 
   /** Sorts by field's natural Term sort order.  All
    *  comparisons are done using BytesRef.compareTo, which is
@@ -902,6 +905,7 @@ public abstract class FieldComparator<T> {
 
     private BytesRef[] values;
     private BinaryDocValues docTerms;
+    private Bits docsWithField;
     private final String field;
     private BytesRef bottom;
     private final BytesRef tempBR = new BytesRef();
@@ -930,12 +934,15 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       docTerms.get(doc, tempBR);
-      if (bottom.bytes == BinaryDocValues.MISSING) {
-        if (tempBR.bytes == BinaryDocValues.MISSING) {
+      if (tempBR.length == 0 && docsWithField.get(doc) == false) {
+        tempBR.bytes = MISSING_BYTES;
+      }
+      if (bottom.bytes == MISSING_BYTES) {
+        if (tempBR.bytes == MISSING_BYTES) {
           return 0;
         }
         return -1;
-      } else if (tempBR.bytes == BinaryDocValues.MISSING) {
+      } else if (tempBR.bytes == MISSING_BYTES) {
         return 1;
       }
       return bottom.compareTo(tempBR);
@@ -947,11 +954,15 @@ public abstract class FieldComparator<T> {
         values[slot] = new BytesRef();
       }
       docTerms.get(doc, values[slot]);
+      if (values[slot].length == 0 && docsWithField.get(doc) == false) {
+        values[slot].bytes = MISSING_BYTES;
+      }
     }
 
     @Override
     public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
-      docTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
+      docTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, true);
+      docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
       return this;
     }
     
@@ -981,6 +992,9 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, BytesRef value) {
       docTerms.get(doc, tempBR);
+      if (tempBR.length == 0 && docsWithField.get(doc) == false) {
+        tempBR.bytes = MISSING_BYTES;
+      }
       return tempBR.compareTo(value);
     }
   }

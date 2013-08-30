@@ -182,7 +182,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field");
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field", false);
 
     BytesRef bytes1 = new BytesRef();
     s.get(0, bytes1);
