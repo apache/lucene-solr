@@ -34,7 +34,7 @@ public class BlockTermState extends OrdTermState {
   /** the term's ord in the current block */
   public int termBlockOrd;
   /** fp into the terms dict primary file (_X.tim) that holds this term */
-  // nocommit: update BTR to nuke this
+  // TODO: update BTR to nuke this
   public long blockFilePointer;
 
   /** Sole constructor. (For invocation by subclass 

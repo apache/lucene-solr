@@ -50,6 +50,10 @@ import org.apache.lucene.codecs.sep.IntIndexOutput;
 import org.apache.lucene.codecs.sep.IntStreamFactory;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
+import org.apache.lucene.codecs.temp.TempFSTTermsWriter;
+import org.apache.lucene.codecs.temp.TempFSTTermsReader;
+import org.apache.lucene.codecs.temp.TempFSTOrdTermsWriter;
+import org.apache.lucene.codecs.temp.TempFSTOrdTermsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -187,10 +191,8 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     final FieldsConsumer fields;
-    final int t1 = random.nextInt(2);
-
-    /*
     final int t1 = random.nextInt(4);
+
     if (t1 == 0) {
       boolean success = false;
       try {
@@ -212,8 +214,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         }
       }
     } else if (t1 == 2) {
-    */
-    if (t1 == 0) {
       // Use BlockTree terms dict
 
       if (LuceneTestCase.VERBOSE) {
@@ -351,8 +351,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     final FieldsProducer fields;
-    final int t1 = random.nextInt(2);
-    /*
     final int t1 = random.nextInt(4);
     if (t1 == 0) {
       boolean success = false;
@@ -375,8 +373,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         }
       }
     } else if (t1 == 2) {
-    */
-    if (t1 == 0) {
       // Use BlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading BlockTree terms dict");

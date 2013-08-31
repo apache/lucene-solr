@@ -50,7 +50,10 @@ import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
-import org.apache.lucene.codecs.temp.*;
+import org.apache.lucene.codecs.temp.TempFSTOrdPostingsFormat;
+import org.apache.lucene.codecs.temp.TempFSTOrdPulsing41PostingsFormat;
+import org.apache.lucene.codecs.temp.TempFSTPostingsFormat;
+import org.apache.lucene.codecs.temp.TempFSTPulsing41PostingsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -124,10 +127,12 @@ public class RandomCodec extends Lucene45Codec {
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
     int lowFreqCutoff = _TestUtil.nextInt(random, 2, 100);
 
-    // nocommit: temporary disable other format tests
-    /*
     add(avoidCodecs,
         new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new TempFSTPostingsFormat(),
+        new TempFSTOrdPostingsFormat(),
+        new TempFSTPulsing41PostingsFormat(1 + random.nextInt(20)),
+        new TempFSTOrdPulsing41PostingsFormat(1 + random.nextInt(20)),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
@@ -149,14 +154,7 @@ public class RandomCodec extends Lucene45Codec {
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),
         new MemoryPostingsFormat(false, random.nextFloat()));
-    */
-    add(avoidCodecs,
-        new TempBlockPostingsFormat(_TestUtil.nextInt(random, 1, 1000)),
-        new TempBlockTreePostingsFormat(minItemsPerBlock, maxItemsPerBlock),
-        new TempRandomPostingsFormat(random),
-        new TempNestedPulsingPostingsFormat(),
-        new TempPulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
-
+    
     addDocValues(avoidCodecs,
         new Lucene45DocValuesFormat(),
         new DiskDocValuesFormat(),

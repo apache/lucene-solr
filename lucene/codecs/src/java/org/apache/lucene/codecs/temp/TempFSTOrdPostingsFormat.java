@@ -23,16 +23,18 @@ import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.TempPostingsReaderBase;
-import org.apache.lucene.codecs.TempPostingsWriterBase;
+import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-public final class TempFSTPostingsFormat extends PostingsFormat {
-  public TempFSTPostingsFormat() {
-    super("TempFST");
+public final class TempFSTOrdPostingsFormat extends PostingsFormat {
+  public TempFSTOrdPostingsFormat() {
+    super("TempFSTOrd");
   }
 
   @Override
@@ -42,11 +44,11 @@ public final class TempFSTPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    TempPostingsWriterBase postingsWriter = new TempPostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state);
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new TempFSTTermsWriter(state, postingsWriter);
+      FieldsConsumer ret = new TempFSTOrdTermsWriter(state, postingsWriter);
       success = true;
       return ret;
     } finally {
@@ -58,14 +60,14 @@ public final class TempFSTPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    TempPostingsReaderBase postingsReader = new TempPostingsReader(state.directory,
+    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
                                                                 state.fieldInfos,
                                                                 state.segmentInfo,
                                                                 state.context,
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new TempFSTTermsReader(state, postingsReader);
+      FieldsProducer ret = new TempFSTOrdTermsReader(state, postingsReader);
       success = true;
       return ret;
     } finally {

@@ -21,9 +21,16 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.TempPostingsReaderBase;
-import org.apache.lucene.codecs.TempPostingsWriterBase;
+import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsBaseFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
+import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
@@ -32,22 +39,28 @@ import org.apache.lucene.util.IOUtils;
  *  @lucene.experimental */
 
 public class TempFSTOrdPulsing41PostingsFormat extends PostingsFormat {
-  private final TempPostingsBaseFormat wrappedPostingsBaseFormat;
-  
+  private final PostingsBaseFormat wrappedPostingsBaseFormat;
+  private final int freqCutoff;
+
   public TempFSTOrdPulsing41PostingsFormat() {
+    this(1);
+  }
+  
+  public TempFSTOrdPulsing41PostingsFormat(int freqCutoff) {
     super("TempFSTOrdPulsing41");
-    this.wrappedPostingsBaseFormat = new TempPostingsBaseFormat();
+    this.wrappedPostingsBaseFormat = new Lucene41PostingsBaseFormat();
+    this.freqCutoff = freqCutoff;
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    TempPostingsWriterBase docsWriter = null;
-    TempPostingsWriterBase pulsingWriter = null;
+    PostingsWriterBase docsWriter = null;
+    PostingsWriterBase pulsingWriter = null;
 
     boolean success = false;
     try {
       docsWriter = wrappedPostingsBaseFormat.postingsWriterBase(state);
-      pulsingWriter = new TempPulsingPostingsWriter(state, 1, docsWriter);
+      pulsingWriter = new PulsingPostingsWriter(state, freqCutoff, docsWriter);
       FieldsConsumer ret = new TempFSTOrdTermsWriter(state, pulsingWriter);
       success = true;
       return ret;
@@ -60,12 +73,12 @@ public class TempFSTOrdPulsing41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    TempPostingsReaderBase docsReader = null;
-    TempPostingsReaderBase pulsingReader = null;
+    PostingsReaderBase docsReader = null;
+    PostingsReaderBase pulsingReader = null;
     boolean success = false;
     try {
       docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
-      pulsingReader = new TempPulsingPostingsReader(state, docsReader);
+      pulsingReader = new PulsingPostingsReader(state, docsReader);
       FieldsProducer ret = new TempFSTOrdTermsReader(state, pulsingReader);
       success = true;
       return ret;

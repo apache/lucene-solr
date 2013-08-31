@@ -190,7 +190,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     final boolean fieldHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     final boolean fieldHasPayloads = fieldInfo.hasPayloads();
 
-    // nocommit: use old version
     if (absolute) {
       termState.docStartFP = 0;
       termState.posStartFP = 0;

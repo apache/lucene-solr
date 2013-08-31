@@ -56,16 +56,16 @@ import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.TempPostingsReaderBase;
+import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
 public class TempFSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
-  final TempPostingsReaderBase postingsReader;
+  final PostingsReaderBase postingsReader;
   final IndexInput in;
   //static boolean DEBUG = false;
 
-  public TempFSTTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
+  public TempFSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTTermsWriter.TERMS_EXTENSION);
 
     this.postingsReader = postingsReader;

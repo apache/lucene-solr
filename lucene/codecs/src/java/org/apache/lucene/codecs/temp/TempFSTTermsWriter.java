@@ -37,7 +37,7 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.TempPostingsWriterBase;
+import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -53,12 +53,12 @@ public class TempFSTTermsWriter extends FieldsConsumer {
   public static final int TERMS_VERSION_START = 0;
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
   
-  final TempPostingsWriterBase postingsWriter;
+  final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   final IndexOutput out;
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
 
-  public TempFSTTermsWriter(SegmentWriteState state, TempPostingsWriterBase postingsWriter) throws IOException {
+  public TempFSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
 
     this.postingsWriter = postingsWriter;

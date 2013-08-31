@@ -38,7 +38,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.TempPostingsWriterBase;
+import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -57,13 +57,13 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
   public static final int SKIP_INTERVAL = 8;
   //static final boolean TEST = false;
   
-  final TempPostingsWriterBase postingsWriter;
+  final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
   IndexOutput blockOut = null;
   IndexOutput indexOut = null;  // nocommit: hmm, do we really need two streams?
 
-  public TempFSTOrdTermsWriter(SegmentWriteState state, TempPostingsWriterBase postingsWriter) throws IOException {
+  public TempFSTOrdTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
     final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     final String termsBlockFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_BLOCK_EXTENSION);
 

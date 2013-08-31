@@ -58,18 +58,18 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.TempPostingsReaderBase;
+import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
 public class TempFSTOrdTermsReader extends FieldsProducer {
   static final int INTERVAL = TempFSTOrdTermsWriter.SKIP_INTERVAL;
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
-  final TempPostingsReaderBase postingsReader;
+  final PostingsReaderBase postingsReader;
   IndexInput indexIn = null;
   IndexInput blockIn = null;
   //static final boolean TEST = false;
 
-  public TempFSTOrdTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
+  public TempFSTOrdTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
     final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTOrdTermsWriter.TERMS_INDEX_EXTENSION);
     final String termsBlockFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTOrdTermsWriter.TERMS_BLOCK_EXTENSION);
 
