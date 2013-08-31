@@ -48,7 +48,6 @@ public class Facet45Codec extends Lucene45Codec {
   private final Set<String> facetFields;
   private final DocValuesFormat facetsDVFormat = DocValuesFormat.forName("Facet42");
 
-  // must have that for SPI purposes
   /** Default constructor, uses {@link FacetIndexingParams#DEFAULT}. */
   public Facet45Codec() {
     this(FacetIndexingParams.DEFAULT);
