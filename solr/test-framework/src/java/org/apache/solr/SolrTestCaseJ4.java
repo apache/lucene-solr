@@ -20,6 +20,7 @@ package org.apache.solr;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1598,21 +1599,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       throw new RuntimeException("XPath is invalid", e2);
     }
   }
-  // Creates a mininmal conf dir.
   public static void copyMinConf(File dstRoot) throws IOException {
+    copyMinConf(dstRoot, null);
+  }
+
+  // Creates a minimal conf dir. Optionally adding in a core.properties file from the string passed in
+  // the string to write to the core.properties file may be null in which case nothing is done with it.
+  // propertiesContent may be an empty string, which will actually work.
+  public static void copyMinConf(File dstRoot, String propertiesContent) throws IOException {
 
     File subHome = new File(dstRoot, "conf");
     if (! dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
-
+    if (propertiesContent != null) {
+      FileUtils.writeStringToFile(new File(dstRoot, "core.properties"), propertiesContent, Charsets.UTF_8.toString());
+    }
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  // Creates minimal full setup, including the old solr.xml file that used to be hard coded in COnfigSolrXmlOld
+  // Creates minimal full setup, including the old solr.xml file that used to be hard coded in ConfigSolrXmlOld
+  // TODO: remove for 5.0
   public static void copyMinFullSetup(File dstRoot) throws IOException {
     if (! dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());

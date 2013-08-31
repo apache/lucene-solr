@@ -17,8 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -40,9 +40,12 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -51,7 +54,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-tiny.xml");
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestLazyCores_testlazy");
+  private final File solrHomeDirectory = new File(TEMP_DIR, TestLazyCores.getSimpleClassName());
 
   private CoreContainer init() throws Exception {
 
@@ -66,7 +69,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, LOTS_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, LOTS_SOLR_XML, Charsets.UTF_8.toString());
     ConfigSolrXmlOld config = (ConfigSolrXmlOld) ConfigSolr.fromFile(loader, solrXml);
 
     CoresLocator locator = new SolrXMLCoresLocator.NonPersistingLocator(LOTS_SOLR_XML, config);
@@ -127,6 +130,40 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // This is a little weak. I'm not sure how to test that lazy core2 is loaded automagically. The getCore
   // will, of course, load it.
 
+  private void checkSearch(SolrCore core) throws IOException {
+    addLazy(core, "id", "0");
+    addLazy(core, "id", "1", "v_t", "Hello Dude");
+    addLazy(core, "id", "2", "v_t", "Hello Yonik");
+    addLazy(core, "id", "3", "v_s", "{!literal}");
+    addLazy(core, "id", "4", "v_s", "other stuff");
+    addLazy(core, "id", "5", "v_f", "3.14159");
+    addLazy(core, "id", "6", "v_f", "8983");
+
+    SolrQueryRequest req = makeReq(core);
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, false);
+    core.getUpdateHandler().commit(cmtCmd);
+
+    // Just get a couple of searches to work!
+    assertQ("test prefix query",
+        makeReq(core, "q", "{!prefix f=v_t}hel", "wt", "xml")
+        , "//result[@numFound='2']"
+    );
+
+    assertQ("test raw query",
+        makeReq(core, "q", "{!raw f=v_t}hello", "wt", "xml")
+        , "//result[@numFound='2']"
+    );
+
+    // no analysis is done, so these should match nothing
+    assertQ("test raw query",
+        makeReq(core, "q", "{!raw f=v_t}Hello", "wt", "xml")
+        , "//result[@numFound='0']"
+    );
+    assertQ("test raw query",
+        makeReq(core, "q", "{!raw f=v_f}1.5", "wt", "xml")
+        , "//result[@numFound='0']"
+    );
+  }
   @Test
   public void testLazySearch() throws Exception {
     CoreContainer cc = init();
@@ -135,31 +172,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkNotInCores(cc, "collectionLazy4");
       SolrCore core4 = cc.getCore("collectionLazy4");
 
-      addLazy(core4, "id", "0");
-      addLazy(core4, "id", "1", "v_t", "Hello Dude");
-      addLazy(core4, "id", "2", "v_t", "Hello Yonik");
-      addLazy(core4, "id", "3", "v_s", "{!literal}");
-      addLazy(core4, "id", "4", "v_s", "other stuff");
-      addLazy(core4, "id", "5", "v_f", "3.14159");
-      addLazy(core4, "id", "6", "v_f", "8983");
-
-      SolrQueryRequest req = makeReq(core4);
-      CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, false);
-      core4.getUpdateHandler().commit(cmtCmd);
-
-      RefCounted<SolrIndexSearcher> holder = core4.getSearcher();
-      SolrIndexSearcher searcher = holder.get();
-
-      // Just get a couple of searches to work!
-      assertQ("test prefix query",
-          makeReq(core4, "q", "{!prefix f=v_t}hel", "wt", "xml")
-          , "//result[@numFound='2']"
-      );
-
-      assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_t}hello", "wt", "xml")
-          , "//result[@numFound='2']"
-      );
+      checkSearch(core4);
 
       // Now just insure that the normal searching on "collection1" finds _0_ on the same query that found _2_ above.
       // Use of makeReq above and req below is tricky, very tricky.
@@ -168,19 +181,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           , "//result[@numFound='0']"
       );
 
-      // no analysis is done, so these should match nothing
-      assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_t}Hello", "wt", "xml")
-          , "//result[@numFound='0']"
-      );
-      assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_f}1.5", "wt", "xml")
-          , "//result[@numFound='0']"
-      );
-
       checkInCores(cc, "collectionLazy4");
 
-      searcher.close();
       core4.close();
     } finally {
       cc.shutdown();
@@ -397,6 +399,204 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     } finally {
       cc.shutdown();
+    }
+  }
+
+
+  // Test that transient cores
+  // 1> produce errors as appropriate when the config or schema files are foo'd
+  // 2> "self heal". That is, if the problem is corrected can the core be reloaded and used?
+  // 3> that OK cores can be searched even when some cores failed to load.
+  @Test
+  public void testBadConfigsGenerateErrors() throws Exception {
+    final CoreContainer cc = initGoodAndBad(Arrays.asList("core1", "core2"),
+        Arrays.asList("badSchema1", "badSchema2"),
+        Arrays.asList("badConfig1", "badConfig2"));
+    try {
+      // first, did the two good cores load successfully?
+      checkInCores(cc, "core1", "core2");
+
+      // Did the bad cores fail to load?
+      checkNotInCores(cc, "badSchema1", "badSchema2", "badConfig1", "badConfig2");
+
+      //  Can we still search the "good" cores even though there were core init failures?
+      SolrCore core1 = cc.getCore("core1");
+      checkSearch(core1);
+
+      // Did we get the expected message for each of the cores that failed to load? Make sure we don't run afoul of
+      // the dreaded slash/backslash difference on Windows and *nix machines.
+      testMessage(cc.getCoreInitFailures(),
+          "TestLazyCores" + File.separator + "badConfig1" + File.separator + "solrconfig.xml");
+      testMessage(cc.getCoreInitFailures(),
+          "TestLazyCores" + File.separator + "badConfig2" + File.separator + "solrconfig.xml");
+      testMessage(cc.getCoreInitFailures(),
+          "TestLazyCores" + File.separator + "badSchema1" + File.separator + "schema.xml");
+      testMessage(cc.getCoreInitFailures(),
+          "TestLazyCores" + File.separator + "badSchema2" + File.separator + "schema.xml");
+
+      // Status should report that there are failure messages for the bad cores and none for the good cores.
+      checkStatus(cc, true, "core1");
+      checkStatus(cc, true, "core2");
+      checkStatus(cc, false, "badSchema1");
+      checkStatus(cc, false, "badSchema2");
+      checkStatus(cc, false, "badConfig1");
+      checkStatus(cc, false, "badConfig2");
+
+      // Copy good config and schema files in and see if you can then load them (they are transient after all)
+      copyGoodConf("badConfig1", "solrconfig-minimal.xml", "solrconfig.xml");
+      copyGoodConf("badConfig2", "solrconfig-minimal.xml", "solrconfig.xml");
+      copyGoodConf("badSchema1", "schema-tiny.xml", "schema.xml");
+      copyGoodConf("badSchema2", "schema-tiny.xml", "schema.xml");
+
+      // This should force a reload of the cores.
+      SolrCore bc1 = cc.getCore("badConfig1");
+      SolrCore bc2 = cc.getCore("badConfig2");
+      SolrCore bs1 = cc.getCore("badSchema1");
+      SolrCore bs2 = cc.getCore("badSchema2");
+
+      // all the cores should be found in the list now.
+      checkInCores(cc, "core1", "core2", "badSchema1", "badSchema2", "badConfig1", "badConfig2");
+
+      // Did we clear out the errors by putting good files in place? And the cores that never were bad should be OK too.
+      checkStatus(cc, true, "core1");
+      checkStatus(cc, true, "core2");
+      checkStatus(cc, true, "badSchema1");
+      checkStatus(cc, true, "badSchema2");
+      checkStatus(cc, true, "badConfig1");
+      checkStatus(cc, true, "badConfig2");
+
+      // Are the formerly bad cores now searchable? Testing one of each should do.
+      checkSearch(core1);
+      checkSearch(bc1);
+      checkSearch(bs1);
+
+      core1.close();
+      bc1.close();
+      bc2.close();
+      bs1.close();
+      bs2.close();
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  // See fi the message you expect is in the list of failures
+  private void testMessage(Map<String, Exception> failures, String lookFor) {
+    for (Exception e : failures.values()) {
+      if (e.getMessage().indexOf(lookFor) != -1) return;
+    }
+    fail("Should have found message containing these tokens " + lookFor + " in the failure messages");
+  }
+
+  // Just localizes writing a configuration rather than repeating it for good and bad files.
+  private void writeCustomConfig(String coreName, String config, String schema, String rand_snip) throws IOException {
+
+    File coreRoot = new File(solrHomeDirectory, coreName);
+    File subHome = new File(coreRoot, "conf");
+    if (!coreRoot.exists()) {
+      assertTrue("Failed to make subdirectory ", coreRoot.mkdirs());
+    }
+    // Write the file for core discovery
+    FileUtils.writeStringToFile(new File(coreRoot, "core.properties"), "name=" + coreName +
+        System.getProperty("line.separator") + "transient=true" +
+        System.getProperty("line.separator") + "loadOnStartup=true", Charsets.UTF_8.toString());
+
+    FileUtils.writeStringToFile(new File(subHome, "solrconfig.snippet.randomindexconfig.xml"), rand_snip);
+
+    FileUtils.writeStringToFile(new File(subHome, "solrconfig.xml"), config, Charsets.UTF_8.toString());
+
+    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, Charsets.UTF_8.toString());
+  }
+
+  // Write out the cores' config files, both bad schema files, bad config files as well as some good cores.
+  private CoreContainer initGoodAndBad(List<String> goodCores,
+                                       List<String> badSchemaCores,
+                                       List<String> badConfigCores) throws Exception {
+
+    // Don't pollute the log with exception traces when they're expected.
+    ignoreException(Pattern.quote("SAXParseException"));
+
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+
+    // Create the cores that should be fine.
+    for (String coreName : goodCores) {
+      File coreRoot = new File(solrHomeDirectory, coreName);
+      copyMinConf(coreRoot, "name=" + coreName);
+
+    }
+
+    // Collect the files that we'll write to the config directories.
+    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String min_schema = FileUtils.readFileToString(new File(top, "schema-tiny.xml"),
+        Charsets.UTF_8.toString());
+    String min_config = FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"),
+        Charsets.UTF_8.toString());
+    String rand_snip = FileUtils.readFileToString(new File(top, "solrconfig.snippet.randomindexconfig.xml"),
+        Charsets.UTF_8.toString());
+
+    // Now purposely mess up the config files, introducing stupid syntax errors.
+    String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
+    String bad_schema = min_schema.replace("<field", "<filed");
+
+    // Create the cores with bad configs
+    for (String coreName : badConfigCores) {
+      writeCustomConfig(coreName, bad_config, min_schema, rand_snip);
+    }
+
+    // Create the cores with bad schemas.
+    for (String coreName : badSchemaCores) {
+      writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
+    }
+
+    // Write the solr.xml file. Cute how minimal it can be now....
+    File solrXml = new File(solrHomeDirectory, "solr.xml");
+    FileUtils.write(solrXml, "<solr/>", Charsets.UTF_8.toString());
+
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
+    ConfigSolrXml config = (ConfigSolrXml) ConfigSolr.fromFile(loader, solrXml);
+
+    CoresLocator locator = new CorePropertiesLocator(solrHomeDirectory.getAbsolutePath());
+
+    // OK this should succeed, but at the end we should have recorded a series of errors.
+    final CoreContainer cores = new CoreContainer(loader, config, locator);
+    cores.load();
+    return cores;
+  }
+
+  // We want to see that the core "heals itself" if an un-corrupted file is written to the directory.
+  private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
+    File coreRoot = new File(solrHomeDirectory, coreName);
+    File subHome = new File(coreRoot, "conf");
+    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
+
+  }
+
+  // If ok==true, we shouldn't be seeing any failure cases.
+  // if ok==false, the core being examined should have a failure in the list.
+  private void checkStatus(CoreContainer cc, Boolean ok, String core) throws Exception {
+    SolrQueryResponse resp = new SolrQueryResponse();
+    final CoreAdminHandler admin = new CoreAdminHandler(cc);
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.STATUS.toString(),
+            CoreAdminParams.CORE, core),
+            resp);
+
+    Map<String, Exception> failures =
+        (Map<String, Exception>) resp.getValues().get("initFailures");
+
+    if (ok) {
+      if (failures.size() != 0) {
+        fail("Should have cleared the error, but there are failues " + failures.toString());
+      }
+    } else {
+      if (failures.size() == 0) {
+        fail("Should have had errors here but the status return has no failures!");
+      }
     }
   }
 
