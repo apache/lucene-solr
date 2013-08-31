@@ -484,7 +484,9 @@ public class CoreContainer {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
       log.error("Failed to load file {}", new File(instanceDir, dcore.getConfigName()).getAbsolutePath());
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load config for " + dcore.getConfigName(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Could not load config file " + new File(instanceDir, dcore.getConfigName()).getAbsolutePath(),
+          e);
     }
 
     IndexSchema schema = null;

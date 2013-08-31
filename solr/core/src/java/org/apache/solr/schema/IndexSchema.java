@@ -51,6 +51,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -605,10 +606,13 @@ public class IndexSchema {
         aware.inform(this);
       }
     } catch (SolrException e) {
-      throw e;
+      throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
+          loader.getInstanceDir() + resourceName, e);
     } catch(Exception e) {
       // unexpected exception...
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Schema Parsing Failed: " + e.getMessage(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + loader.getInstanceDir() + resourceName,
+          e);
     }
 
     // create the field analyzers
