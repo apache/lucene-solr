@@ -333,10 +333,18 @@ public abstract class LuceneTestCase extends Assert {
   // -----------------------------------------------------------------
 
   /**
-   * @lucene.internal 
+   * @lucene.internal
    */
   public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
 
+  /**
+   * When {@code true}, Codecs for old Lucene version will support writing
+   * indexes in that format. Defaults to {@code true}, can be disabled by
+   * spdecific tests on demand.
+   * 
+   * @lucene.internal
+   */
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
 
   // -----------------------------------------------------------------
   // Class level (suite) rules.

@@ -31,10 +31,14 @@ import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
+import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
+import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
+import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -705,4 +709,30 @@ public class TestCodecs extends LuceneTestCase {
     
     dir.close();
   }
+  
+  public void testDisableImpersonation() throws Exception {
+    Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec() };
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("f", "bar", Store.YES));
+    doc.add(new NumericDocValuesField("n", 18L));
+    writer.addDocument(doc);
+    
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
+    try {
+      writer.close();
+      fail("should not have succeeded to impersonate an old format!");
+    } catch (UnsupportedOperationException e) {
+      writer.rollback();
+    } finally {
+      OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+    }
+    
+    dir.close();
+  }
+  
 }
