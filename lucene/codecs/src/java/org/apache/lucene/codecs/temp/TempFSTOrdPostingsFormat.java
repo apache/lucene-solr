@@ -32,6 +32,22 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
+/** 
+ * FST-based term dict, using ord as FST output.
+ *
+ * The FST holds the mapping between &lt;term, ord&gt;, and 
+ * term's metadata is delta encoded into a single byte block.
+ *
+ * Typically the byte block consists of four parts:
+ * 1. term statistics: docFreq, totalTermFreq;
+ * 2. monotonic long[], e.g. the pointer to the postings list for that term;
+ * 3. generic byte[], e.g. other information customized by postings base.
+ * 4. single-level skip list to speed up metadata decoding by ord.
+ *
+ * <!-- TODO: explain about the data format -->
+ * @lucene.experimental 
+ */
+
 public final class TempFSTOrdPostingsFormat extends PostingsFormat {
   public TempFSTOrdPostingsFormat() {
     super("TempFSTOrd");

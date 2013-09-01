@@ -32,6 +32,21 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
+/**
+ * FST-based term dict, using metadata as FST output.
+ *
+ * The FST directly holds the mapping between &lt;term, metadata&gt;.
+ *
+ * Term metadata consists of three parts:
+ * 1. term statistics: docFreq, totalTermFreq;
+ * 2. monotonic long[], e.g. the pointer to the postings list for that term;
+ * 3. generic byte[], e.g. other information need by postings reader.
+ *
+ *
+ * <!-- TODO: explain about the data format -->
+ * @lucene.experimental
+ */
+
 public final class TempFSTPostingsFormat extends PostingsFormat {
   public TempFSTPostingsFormat() {
     super("TempFST");

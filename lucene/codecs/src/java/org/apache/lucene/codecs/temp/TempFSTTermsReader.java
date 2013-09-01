@@ -59,6 +59,15 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
+/**
+ * FST-based terms dictionary reader.
+ *
+ * The FST directly maps each term and its metadata, 
+ * it is memeory resident.
+ *
+ * @lucene.experimental
+ */
+
 public class TempFSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
   final PostingsReaderBase postingsReader;

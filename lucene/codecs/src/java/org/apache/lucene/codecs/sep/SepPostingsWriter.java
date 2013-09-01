@@ -164,7 +164,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   }
 
   @Override
-  public SepTermState newTermState() {
+  public BlockTermState newTermState() {
     return new SepTermState();
   }
 

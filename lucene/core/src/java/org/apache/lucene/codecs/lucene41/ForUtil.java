@@ -33,7 +33,7 @@ import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZ
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
  */
-public final class ForUtil {
+final class ForUtil {
 
   /**
    * Special number of bits per value used whenever all values to encode are equal.

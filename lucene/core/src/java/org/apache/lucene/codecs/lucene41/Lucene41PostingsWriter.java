@@ -575,7 +575,8 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     }
     lastState = state;
   }
-  public void _encodeTerm(DataOutput out, FieldInfo fieldInfo, IntBlockTermState state) throws IOException {
+
+  private void _encodeTerm(DataOutput out, FieldInfo fieldInfo, IntBlockTermState state) throws IOException {
     if (state.singletonDocID == -1) {
       out.writeVLong(state.docTermStartFP - lastState.docTermStartFP);
       lastState.docTermStartFP = state.docTermStartFP;

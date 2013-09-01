@@ -44,8 +44,11 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.CodecUtil;
 
-/** FST based term dict, all the metadata held
- *  as output of FST */
+/** 
+ * FST based term dict, the FST maps each term and its metadata.
+ *
+ * @lucene.experimental
+ */
 
 public class TempFSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";

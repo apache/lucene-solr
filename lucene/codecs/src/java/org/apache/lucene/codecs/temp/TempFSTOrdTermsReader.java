@@ -61,6 +61,15 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
+/** 
+ * FST-based terms dictionary reader.
+ *
+ * The FST index maps each term and its ord, and during seek 
+ * the ord is used fetch metadata from a single block.
+ * The term dictionary is fully memeory resident.
+ *
+ * @lucene.experimental
+ */
 public class TempFSTOrdTermsReader extends FieldsProducer {
   static final int INTERVAL = TempFSTOrdTermsWriter.SKIP_INTERVAL;
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();

@@ -45,8 +45,11 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.CodecUtil;
 
-/** FST based term dict, only ords is hold in FST, 
- *  other metadata encoded into single byte block */
+/** 
+ * FST based term dict, the FST maps each term and its ord.
+ *
+ * @lucene.experimental
+ */
 
 public class TempFSTOrdTermsWriter extends FieldsConsumer {
   static final String TERMS_INDEX_EXTENSION = "tix";

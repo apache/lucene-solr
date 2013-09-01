@@ -27,14 +27,26 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.LongsRef;
 
+/**
+ * An FST {@link Outputs} implementation for 
+ * {@link TempFSTPostingsFormat}.
+ *
+ * @lucene.experimental
+ */
+
 // NOTE: outputs should be per-field, since
 // longsSize is fixed for each field
 public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   private final static TempMetaData NO_OUTPUT = new TempMetaData();
-  private static boolean DEBUG = false;
+  //private static boolean TEST = false;
   private final boolean hasPos;
   private final int longsSize;
 
+  /** 
+   * Represents the metadata for one term.
+   * On an FST, only long[] part is 'shared' and pushed towards root.
+   * byte[] and term stats will be kept on deeper arcs.
+   */
   public static class TempMetaData {
     long[] longs;
     byte[] bytes;
@@ -89,33 +101,6 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
              bytesEqual(this, other);
 
     }
-    public String toString() {
-      if (this == NO_OUTPUT) {
-        return "no_output";
-      }
-      StringBuffer sb = new StringBuffer();
-      if (longs != null) {
-        sb.append("[ ");
-        for (int i = 0; i < longs.length; i++) {
-          sb.append(longs[i]+" ");
-        }
-        sb.append("]");
-      } else {
-        sb.append("null");
-      }
-      if (bytes != null) {
-        sb.append(" [ ");
-        for (int i = 0; i < bytes.length; i++) {
-          sb.append(Integer.toHexString((int)bytes[i] & 0xff)+" ");
-        }
-        sb.append("]");
-      } else {
-        sb.append(" null");
-      }
-      sb.append(" "+docFreq);
-      sb.append(" "+totalTermFreq);
-      return sb.toString();
-    }
   }
   
   protected TempTermOutputs(FieldInfo fieldInfo, int longsSize) {
@@ -130,14 +115,10 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // 1. every value in t1 is not larger than in t2, or
   // 2. every value in t1 is not smaller than t2.
   //
-  // NOTE: 
-  // Only long[] part is 'shared' and pushed towards root.
-  // byte[] and term stats will be kept on deeper arcs.
-  //
   public TempMetaData common(TempMetaData t1, TempMetaData t2) {
-    //if (DEBUG) System.out.print("common("+t1+", "+t2+") = ");
+    //if (TEST) System.out.print("common("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT || t2 == NO_OUTPUT) {
-      //if (DEBUG) System.out.println("ret:"+NO_OUTPUT);
+      //if (TEST) System.out.println("ret:"+NO_OUTPUT);
       return NO_OUTPUT;
     }
     assert t1.longs.length == t2.longs.length;
@@ -172,15 +153,15 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
         ret = new TempMetaData(min, null, 0, -1);
       }
     }
-    //if (DEBUG) System.out.println("ret:"+ret);
+    //if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
   @Override
   public TempMetaData subtract(TempMetaData t1, TempMetaData t2) {
-    //if (DEBUG) System.out.print("subtract("+t1+", "+t2+") = ");
+    //if (TEST) System.out.print("subtract("+t1+", "+t2+") = ");
     if (t2 == NO_OUTPUT) {
-      //if (DEBUG) System.out.println("ret:"+t1);
+      //if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
     assert t1.longs.length == t2.longs.length;
@@ -201,7 +182,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     } else {
       ret = new TempMetaData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    //if (DEBUG) System.out.println("ret:"+ret);
+    //if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
@@ -210,12 +191,12 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // we seem to put much stress on FST Outputs decoding?
   @Override
   public TempMetaData add(TempMetaData t1, TempMetaData t2) {
-    //if (DEBUG) System.out.print("add("+t1+", "+t2+") = ");
+    //if (TEST) System.out.print("add("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT) {
-      //if (DEBUG) System.out.println("ret:"+t2);
+      //if (TEST) System.out.println("ret:"+t2);
       return t2;
     } else if (t2 == NO_OUTPUT) {
-      //if (DEBUG) System.out.println("ret:"+t1);
+      //if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
     assert t1.longs.length == t2.longs.length;
@@ -234,7 +215,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     } else {
       ret = new TempMetaData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    //if (DEBUG) System.out.println("ret:"+ret);
+    //if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
