@@ -55,13 +55,12 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
   public static final int TERMS_VERSION_START = 0;
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
   public static final int SKIP_INTERVAL = 8;
-  //static final boolean TEST = false;
   
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
   IndexOutput blockOut = null;
-  IndexOutput indexOut = null;  // nocommit: hmm, do we really need two streams?
+  IndexOutput indexOut = null;
 
   public TempFSTOrdTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
     final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
@@ -134,8 +133,6 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
     out.writeLong(dirStart);
   }
 
-  // nocommit: nuke this? we don't need to buffer so much data, 
-  // since close() can do this naturally
   private static class FieldMetaData {
     public FieldInfo fieldInfo;
     public long numTerms;
@@ -145,12 +142,16 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
     public int longsSize;
     public FST<Long> dict;
 
-    // nocommit: block encode each part 
-    // (so that we'll have metaLongsOut[])
-    public RAMOutputStream skipOut;       // vint encode next skip point (all values start from 0, fully decoded when reading)
-    public RAMOutputStream statsOut;      // vint encode df, (ttf-df)
-    public RAMOutputStream metaLongsOut;  // vint encode monotonic long[] and length for corresponding byte[]
-    public RAMOutputStream metaBytesOut;  // put all bytes blob here
+    // TODO: block encode each part 
+
+    // vint encode next skip point (fully decoded when reading)
+    public RAMOutputStream skipOut;
+    // vint encode df, (ttf-df)
+    public RAMOutputStream statsOut;
+    // vint encode monotonic long[] and length for corresponding byte[]
+    public RAMOutputStream metaLongsOut;
+    // generic byte[]
+    public RAMOutputStream metaBytesOut;
   }
 
   final class TermsWriter extends TermsConsumer {

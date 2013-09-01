@@ -408,7 +408,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
       }
 
-      // nocommit: this can be achieved by making use of Util.getByOutput()
+      // TODO: this can be achieved by making use of Util.getByOutput()
       //           and should have related tests
       @Override
       public void seekExact(long ord) throws IOException {
@@ -541,14 +541,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         this.fstReader = fst.getBytesReader();
         this.fstOutputs = index.outputs;
         this.fsa = compiled.runAutomaton;
-        /*
-        PrintWriter pw1 = new PrintWriter(new File("../temp/fst.txt"));
-        Util.toDot(dict,pw1, false, false);
-        pw1.close();
-        PrintWriter pw2 = new PrintWriter(new File("../temp/fsa.txt"));
-        pw2.write(compiled.toDot());
-        pw2.close();
-        */
         this.level = -1;
         this.stack = new Frame[16];
         for (int i = 0 ; i < stack.length; i++) {
@@ -679,8 +671,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         return frame;
       }
 
-      // nocommit: expected to use readFirstTargetArc here?
-
       /** Load frame for target arc(node) on fst */
       Frame loadExpandFrame(Frame top, Frame frame) throws IOException {
         if (!canGrow(top)) {
@@ -743,7 +733,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         return !frame.arc.isLast();
       }
 
-      // nocommit: need to load ord lazily?
       void pushFrame(Frame frame) {
         final FST.Arc<Long> arc = frame.arc;
         arc.output = fstOutputs.add(topFrame().arc.output, arc.output);

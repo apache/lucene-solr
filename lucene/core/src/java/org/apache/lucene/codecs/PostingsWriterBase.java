@@ -55,7 +55,7 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
   public abstract BlockTermState newTermState() throws IOException;
 
   /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(long[], DataOutput, TermStats)} is done, only if the term has at least one
+   *  #finishTerm(BlockTermState)} is done, only if the term has at least one
    *  document. */
   public abstract void startTerm() throws IOException;
 
@@ -67,12 +67,18 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
   /**
    * Encode metadata as long[] and byte[]. {@code absolute} controls 
    * whether current term is delta encoded according to latest term.
+   *
+   * NOTE: sometimes long[] might contain values that doesn't make sense,
+   * e.g. for Lucene41PostingsFormat, when singletonDocID != -1, docStartFP is not defined.
+   * Here postings side should always use the last docStartFP, to keep each element in 
+   * metadata long[] monotonic.
    */
   public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
   /** 
-   * Return the fixed length of longs,
+   * Return the fixed length of long[] metadata (which is fixed per field),
    * called when the writing switches to another field. */
+  // TODO: better name?
   public abstract int setField(FieldInfo fieldInfo);
 
   @Override

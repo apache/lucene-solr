@@ -215,8 +215,6 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     termsOut.writeVInt(BLOCK_SIZE);
   }
 
-  // nocommit better name?
-
   @Override
   public int setField(FieldInfo fieldInfo) {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -540,16 +538,12 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     docCount = 0;
   }
   
-  // nocommit explain about the "don't care" values
-
   @Override
   public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IntBlockTermState state = (IntBlockTermState)_state;
     if (absolute) {
       lastState = newTermState();
     }
-    //System.out.println("PW: state=" + state);
-    //System.out.println("     last=" + lastState);
     if (VERSION_CURRENT < VERSION_META_ARRAY) {  // impersonation
       _encodeTerm(out, fieldInfo, state);
       return;

@@ -22,8 +22,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
@@ -128,16 +126,18 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   @Override
   //
   // The return value will be the smaller one, when these two are 
-  // 'comparable', i.e. every value in long[] fits the same ordering.
+  // 'comparable', i.e. 
+  // 1. every value in t1 is not larger than in t2, or
+  // 2. every value in t1 is not smaller than t2.
   //
   // NOTE: 
   // Only long[] part is 'shared' and pushed towards root.
-  // byte[] and term stats will be on deeper arcs.
+  // byte[] and term stats will be kept on deeper arcs.
   //
   public TempMetaData common(TempMetaData t1, TempMetaData t2) {
-    if (DEBUG) System.out.print("common("+t1+", "+t2+") = ");
+    //if (DEBUG) System.out.print("common("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT || t2 == NO_OUTPUT) {
-      if (DEBUG) System.out.println("ret:"+NO_OUTPUT);
+      //if (DEBUG) System.out.println("ret:"+NO_OUTPUT);
       return NO_OUTPUT;
     }
     assert t1.longs.length == t2.longs.length;
@@ -172,15 +172,15 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
         ret = new TempMetaData(min, null, 0, -1);
       }
     }
-    if (DEBUG) System.out.println("ret:"+ret);
+    //if (DEBUG) System.out.println("ret:"+ret);
     return ret;
   }
 
   @Override
   public TempMetaData subtract(TempMetaData t1, TempMetaData t2) {
-    if (DEBUG) System.out.print("subtract("+t1+", "+t2+") = ");
+    //if (DEBUG) System.out.print("subtract("+t1+", "+t2+") = ");
     if (t2 == NO_OUTPUT) {
-      if (DEBUG) System.out.println("ret:"+t1);
+      //if (DEBUG) System.out.println("ret:"+t1);
       return t1;
     }
     assert t1.longs.length == t2.longs.length;
@@ -201,20 +201,21 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     } else {
       ret = new TempMetaData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    if (DEBUG) System.out.println("ret:"+ret);
+    //if (DEBUG) System.out.println("ret:"+ret);
     return ret;
   }
 
-  // nocommit: we might refactor out an 'addSelf' later, 
-  // which improves 5~7% for fuzzy queries
+  // TODO: if we refactor a 'addSelf(TempMetaDat other)',
+  // we can gain about 5~7% for fuzzy queries, however on the other hand
+  // we seem to put much stress on FST Outputs decoding?
   @Override
   public TempMetaData add(TempMetaData t1, TempMetaData t2) {
-    if (DEBUG) System.out.print("add("+t1+", "+t2+") = ");
+    //if (DEBUG) System.out.print("add("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT) {
-      if (DEBUG) System.out.println("ret:"+t2);
+      //if (DEBUG) System.out.println("ret:"+t2);
       return t2;
     } else if (t2 == NO_OUTPUT) {
-      if (DEBUG) System.out.println("ret:"+t1);
+      //if (DEBUG) System.out.println("ret:"+t1);
       return t1;
     }
     assert t1.longs.length == t2.longs.length;
@@ -233,7 +234,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     } else {
       ret = new TempMetaData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    if (DEBUG) System.out.println("ret:"+ret);
+    //if (DEBUG) System.out.println("ret:"+ret);
     return ret;
   }
 

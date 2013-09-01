@@ -63,7 +63,7 @@ public class TempFSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
   final PostingsReaderBase postingsReader;
   final IndexInput in;
-  //static boolean DEBUG = false;
+  //static boolean TEST = false;
 
   public TempFSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTTermsWriter.TERMS_EXTENSION);
@@ -283,12 +283,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
       }
 
-      // nocommit: do we need this? for SegmentTermsEnum, we can maintain
-      // a stack to record how current term is constructed on FST, (and ord on each alphabet)
-      // so that during seek we don't have to start from the first arc.
-      // however, we'll be implementing a new fstEnum instead of wrapping current one.
-      //
-      // nocommit: this can also be achieved by making use of Util.getByOutput()
       @Override
       public void seekExact(long ord) throws IOException {
         throw new UnsupportedOperationException();
@@ -428,19 +422,11 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       IntersectTermsEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
         super();
-        //if (DEBUG) System.out.println("Enum init, startTerm=" + startTerm);
+        //if (TEST) System.out.println("Enum init, startTerm=" + startTerm);
         this.fst = dict;
         this.fstReader = fst.getBytesReader();
         this.fstOutputs = dict.outputs;
         this.fsa = compiled.runAutomaton;
-        /*
-        PrintWriter pw1 = new PrintWriter(new File("../temp/fst.txt"));
-        Util.toDot(dict,pw1, false, false);
-        pw1.close();
-        PrintWriter pw2 = new PrintWriter(new File("../temp/fsa.txt"));
-        pw2.write(compiled.toDot());
-        pw2.close();
-        */
         this.level = -1;
         this.stack = new Frame[16];
         for (int i = 0 ; i < stack.length; i++) {
@@ -511,7 +497,7 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       @Override
       public BytesRef next() throws IOException {
-        //if (DEBUG) System.out.println("Enum next()");
+        //if (TEST) System.out.println("Enum next()");
         if (pending) {
           pending = false;
           loadMetaData();
@@ -546,7 +532,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       private BytesRef doSeekCeil(BytesRef target) throws IOException {
-        //if (DEBUG) System.out.println("Enum doSeekCeil()");
+        //if (TEST) System.out.println("Enum doSeekCeil()");
         Frame frame= null;
         int label, upto = 0, limit = target.length;
         while (upto < limit) {  // to target prefix, or ceil label (rewind prefix)
@@ -580,12 +566,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         return null;
       }
 
-      // nocommit: might be great if we can set flag BIT_LAST_ARC
-      // nocommit: actually we can use first arc as candidate...
-      // it always has NO_OUTPUT as output, and BIT_LAST_ARC set.
-      // but we'll have problem if later FST supports output sharing
-      // on first arc!
-
       /** Virtual frame, never pop */
       Frame loadVirtualFrame(Frame frame) throws IOException {
         frame.fstArc.output = fstOutputs.getNoOutput();
@@ -601,8 +581,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         return frame;
       }
 
-      // nocommit: expected to use readFirstTargetArc here?
-
       /** Load frame for target arc(node) on fst */
       Frame loadExpandFrame(Frame top, Frame frame) throws IOException {
         if (!canGrow(top)) {
@@ -610,18 +588,13 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
         frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target, frame.fstArc, fstReader);
         frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
-        //if (DEBUG) System.out.println(" loadExpand frame="+frame);
+        //if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
         return frame;
       }
 
-      // nocommit: actually, here we're looking for a valid state for fsa, 
-      //           so if numArcs is large in fst, we should try a reverse lookup?
-      //           but we don have methods like advance(label) in fst, even 
-      //           binary search hurts. 
-      
       /** Load frame for sibling arc(node) on fst */
       Frame loadNextFrame(Frame top, Frame frame) throws IOException {
         if (!canRewind(frame)) {
@@ -634,7 +607,7 @@ public class TempFSTTermsReader extends FieldsProducer {
             break;
           }
         }
-        //if (DEBUG) System.out.println(" loadNext frame="+frame);
+        //if (TEST) System.out.println(" loadNext frame="+frame);
         if (frame.fsaState == -1) {
           return null;
         }
@@ -650,7 +623,7 @@ public class TempFSTTermsReader extends FieldsProducer {
           return null;
         }
         frame.fsaState = fsa.step(top.fsaState, arc.label);
-        //if (DEBUG) System.out.println(" loadCeil frame="+frame);
+        //if (TEST) System.out.println(" loadCeil frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
@@ -673,14 +646,14 @@ public class TempFSTTermsReader extends FieldsProducer {
       void pushFrame(Frame frame) {
         term = grow(frame.fstArc.label);
         level++;
-        //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
+        //if (TEST) System.out.println("  term=" + term + " level=" + level);
       }
 
       Frame popFrame() {
         term = shrink();
         level--;
         metaUpto = metaUpto > level ? level : metaUpto;
-        //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
+        //if (TEST) System.out.println("  term=" + term + " level=" + level);
         return stack[level+1];
       }
 
