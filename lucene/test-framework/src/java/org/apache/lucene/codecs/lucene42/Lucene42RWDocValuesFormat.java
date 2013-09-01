@@ -21,15 +21,21 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Read-write version of {@link Lucene42DocValuesFormat} for testing.
  */
+@SuppressWarnings("deprecation")
 public class Lucene42RWDocValuesFormat extends Lucene42DocValuesFormat {
   
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+    if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+      return super.fieldsConsumer(state);
+    } else {
+      // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
+      return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+    }
   }
 }
