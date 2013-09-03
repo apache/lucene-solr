@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1396,13 +1397,21 @@ public abstract class LuceneTestCase extends Assert {
   
   /** Returns true if the codec "supports" docsWithField 
    * (other codecs return MatchAllBits, because you couldnt write missing values before) */
-  public static boolean defaultCodecSupportsDocsWithField() {
+  public static boolean defaultCodecSupportsDocsWithField(String... fields) {
     if (!defaultCodecSupportsDocValues()) {
       return false;
     }
     String name = Codec.getDefault().getName();
     if (name.equals("Appending") || name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
       return false;
+    }
+    
+    // check that the actual DocValuesFormat for each field supports docsWithField
+    for (String field : fields) {
+      String format = _TestUtil.getDocValuesFormat(field);
+      if (format.equals("Lucene40") || format.equals("Lucene41") || format.equals("Lucene42")) {
+        return false;
+      }
     }
     return true;
   }
