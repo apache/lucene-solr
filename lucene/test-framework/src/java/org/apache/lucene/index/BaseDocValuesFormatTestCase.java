@@ -674,7 +674,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     iwriter.close();
     
     SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
-    if (defaultCodecSupportsDocsWithField("field")) {
+    if (defaultCodecSupportsDocsWithField()) {
       assertEquals(-1, dv.getOrd(0));
       assertEquals(0, dv.getValueCount());
     } else {
@@ -734,7 +734,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     dv.lookupOrd(dv.getOrd(0), scratch);
     assertEquals(new BytesRef("hello world 2"), scratch);
-    if (defaultCodecSupportsDocsWithField("dv")) {
+    if (defaultCodecSupportsDocsWithField()) {
       assertEquals(-1, dv.getOrd(1));
     }
     dv.get(1, scratch);
@@ -1092,8 +1092,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testRandomSortedBytes() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    final boolean defaultCodecSupportsDocsWithField = defaultCodecSupportsDocsWithField("field");
-    if (!defaultCodecSupportsDocsWithField) {
+    if (!defaultCodecSupportsDocsWithField()) {
       // if the codec doesnt support missing, we expect missing to be mapped to byte[]
       // by the impersonator, but we have to give it a chance to merge them to this
       cfg.setMergePolicy(newLogMergePolicy());
@@ -1122,14 +1121,14 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       doc.add(newTextField("id", "noValue", Field.Store.YES));
       w.addDocument(doc);
     }
-    if (!defaultCodecSupportsDocsWithField) {
+    if (!defaultCodecSupportsDocsWithField()) {
       BytesRef bytesRef = new BytesRef();
       hash.add(bytesRef); // add empty value for the gaps
     }
     if (rarely()) {
       w.commit();
     }
-    if (!defaultCodecSupportsDocsWithField) {
+    if (!defaultCodecSupportsDocsWithField()) {
       // if the codec doesnt support missing, we expect missing to be mapped to byte[]
       // by the impersonator, but we have to give it a chance to merge them to this
       w.forceMerge(1);
@@ -1254,7 +1253,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("indexed", "dv"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2357,7 +2356,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testTwoNumbersOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2386,7 +2385,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testTwoNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2416,7 +2415,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testThreeNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2452,7 +2451,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testTwoBytesOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2484,7 +2483,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testTwoBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2517,7 +2516,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testThreeBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dv1"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2814,7 +2813,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   
   /** Tests dv against stored fields with threads (all types + missing) */
   public void testThreads2() throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField("dvBin", "dvSorted", "dvNum", "dvSortedSet"));
+    assumeTrue("Codec does not support getDocsWithField", defaultCodecSupportsDocsWithField());
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));

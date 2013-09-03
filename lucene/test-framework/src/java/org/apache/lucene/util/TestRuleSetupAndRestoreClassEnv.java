@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,10 +184,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       
       final DocValuesFormat dvFormat;
       if ("random".equals(TEST_DOCVALUESFORMAT)) {
-        // pick one from SPI
-        List<String> formats = new ArrayList<String>(DocValuesFormat.availableDocValuesFormats());
-        formats.remove("Facet42");
-        dvFormat = DocValuesFormat.forName(formats.get(random.nextInt(formats.size())));
+        dvFormat = DocValuesFormat.forName("Lucene45");
       } else {
         dvFormat = DocValuesFormat.forName(TEST_DOCVALUESFORMAT);
       }

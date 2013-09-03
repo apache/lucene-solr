@@ -327,7 +327,7 @@ public class TestMultiDocValues extends LuceneTestCase {
   }
   
   public void testDocsWithField() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField("numbers"));
+    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory dir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);

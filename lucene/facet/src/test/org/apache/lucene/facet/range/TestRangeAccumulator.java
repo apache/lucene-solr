@@ -635,7 +635,7 @@ public class TestRangeAccumulator extends FacetTestCase {
 
   // LUCENE-5178
   public void testMissingValues() throws Exception {
-    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField("field"));
+    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
