@@ -176,6 +176,9 @@ Bug Fixes
 * SOLR-3852: Fixed ZookeeperInfoServlet so that the SolrCloud Admin UI pages will 
   work even if ZK contains nodes with data which are not utf8 text. (hossman)
 
+* SOLR-5206: Fixed OpenExchangeRatesOrgProvider to use refreshInterval correctly
+  (Catalin, hossman)
+
 Optimizations
 ----------------------
 
