@@ -27,8 +27,12 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.IOException;
+import java.util.Random;
 
 /**
  * Base class for testing {@link Classifier}s
@@ -41,8 +45,9 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   private RandomIndexWriter indexWriter;
-  private String textFieldName;
   private Directory dir;
+
+  String textFieldName;
   String categoryFieldName;
   String booleanFieldName;
 
@@ -66,82 +71,141 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
 
-  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String classFieldName) throws Exception {
-    AtomicReader compositeReaderWrapper = null;
+  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {
+    AtomicReader atomicReader = null;
     try {
-      populateIndex(analyzer);
-      compositeReaderWrapper = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(compositeReaderWrapper, textFieldName, classFieldName, analyzer);
+      populateSampleIndex(analyzer);
+      atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      classifier.train(atomicReader, textFieldName, classFieldName, analyzer);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
       assertTrue("got a not positive score " + classificationResult.getScore(), classificationResult.getScore() > 0);
     } finally {
-      if (compositeReaderWrapper != null)
-        compositeReaderWrapper.close();
+      if (atomicReader != null)
+        atomicReader.close();
     }
   }
 
-  private void populateIndex(Analyzer analyzer) throws Exception {
+  protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {
+    AtomicReader atomicReader = null;
+    long trainStart = System.currentTimeMillis();
+    long trainEnd = 0l;
+    try {
+      populatePerformanceIndex(analyzer);
+      atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      classifier.train(atomicReader, textFieldName, classFieldName, analyzer);
+      trainEnd = System.currentTimeMillis();
+      long trainTime = trainEnd - trainStart;
+      assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
+    } finally {
+      if (atomicReader != null)
+        atomicReader.close();
+    }
+  }
+
+  private void populatePerformanceIndex(Analyzer analyzer) throws IOException {
+    indexWriter.deleteAll();
+    indexWriter.commit();
+
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    int docs = 1000;
+    Random random = random();
+    for (int i = 0; i < docs; i++) {
+      boolean b = random.nextBoolean();
+      Document doc = new Document();
+      doc.add(new Field(textFieldName, createRandomString(random), ft));
+      doc.add(new Field(categoryFieldName, b ? "technology" : "politics", ft));
+      doc.add(new Field(booleanFieldName, String.valueOf(b), ft));
+      indexWriter.addDocument(doc, analyzer);
+    }
+    indexWriter.commit();
+  }
+
+  private String createRandomString(Random random) {
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < 20; i++) {
+      builder.append(_TestUtil.randomSimpleString(random, 5));
+      builder.append(" ");
+    }
+    return builder.toString();
+  }
+
+  private void populateSampleIndex(Analyzer analyzer) throws Exception {
+
+    indexWriter.deleteAll();
+    indexWriter.commit();
 
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
 
+    String text;
+
     Document doc = new Document();
-    doc.add(new Field(textFieldName, "The traveling press secretary for Mitt Romney lost his cool and cursed at reporters " +
+    text = "The traveling press secretary for Mitt Romney lost his cool and cursed at reporters " +
         "who attempted to ask questions of the Republican presidential candidate in a public plaza near the Tomb of " +
-        "the Unknown Soldier in Warsaw Tuesday.", ft));
+        "the Unknown Soldier in Warsaw Tuesday.";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.add(new Field(booleanFieldName, "true", ft));
 
     indexWriter.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new Field(textFieldName, "Mitt Romney seeks to assure Israel and Iran, as well as Jewish voters in the United" +
-        " States, that he will be tougher against Iran's nuclear ambitions than President Barack Obama.", ft));
+    text = "Mitt Romney seeks to assure Israel and Iran, as well as Jewish voters in the United" +
+        " States, that he will be tougher against Iran's nuclear ambitions than President Barack Obama.";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.add(new Field(booleanFieldName, "true", ft));
     indexWriter.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new Field(textFieldName, "And there's a threshold question that he has to answer for the American people and " +
+    text = "And there's a threshold question that he has to answer for the American people and " +
         "that's whether he is prepared to be commander-in-chief,\" she continued. \"As we look to the past events, we " +
-        "know that this raises some questions about his preparedness and we'll see how the rest of his trip goes.\"", ft));
+        "know that this raises some questions about his preparedness and we'll see how the rest of his trip goes.\"";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.add(new Field(booleanFieldName, "true", ft));
     indexWriter.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new Field(textFieldName, "Still, when it comes to gun policy, many congressional Democrats have \"decided to " +
+    text = "Still, when it comes to gun policy, many congressional Democrats have \"decided to " +
         "keep quiet and not go there,\" said Alan Lizotte, dean and professor at the State University of New York at " +
-        "Albany's School of Criminal Justice.", ft));
+        "Albany's School of Criminal Justice.";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
+    doc.add(new Field(booleanFieldName, "true", ft));
+    indexWriter.addDocument(doc, analyzer);
+
+    doc = new Document();
+    text = "Standing amongst the thousands of people at the state Capitol, Jorstad, director of " +
+        "technology at the University of Wisconsin-La Crosse, documented the historic moment and shared it with the " +
+        "world through the Internet.";
+    doc.add(new Field(textFieldName, text, ft));
+    doc.add(new Field(categoryFieldName, "technology", ft));
     doc.add(new Field(booleanFieldName, "false", ft));
     indexWriter.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new Field(textFieldName, "Standing amongst the thousands of people at the state Capitol, Jorstad, director of " +
-        "technology at the University of Wisconsin-La Crosse, documented the historic moment and shared it with the " +
-        "world through the Internet.", ft));
+    text = "So, about all those experts and analysts who've spent the past year or so saying " +
+        "Facebook was going to make a phone. A new expert has stepped forward to say it's not going to happen.";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.add(new Field(booleanFieldName, "false", ft));
     indexWriter.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new Field(textFieldName, "So, about all those experts and analysts who've spent the past year or so saying " +
-        "Facebook was going to make a phone. A new expert has stepped forward to say it's not going to happen.", ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
-    indexWriter.addDocument(doc, analyzer);
-
-    doc = new Document();
-    doc.add(new Field(textFieldName, "More than 400 million people trust Google with their e-mail, and 50 million store files" +
+    text = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
         " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
-        "generally transfer or store huge volumes of personal data online.", ft));
+        "generally transfer or store huge volumes of personal data online.";
+    doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.add(new Field(booleanFieldName, "false", ft));
     indexWriter.addDocument(doc, analyzer);
 
     indexWriter.commit();

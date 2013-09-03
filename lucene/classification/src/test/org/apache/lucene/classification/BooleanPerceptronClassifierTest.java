@@ -17,22 +17,26 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
- * Testcase for {@link KNearestNeighborClassifier}
+ * Testcase for {@link org.apache.lucene.classification.BooleanPerceptronClassifier}
  */
-public class KNearestNeighborClassifierTest extends ClassificationTestBase<BytesRef> {
+public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Boolean> {
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new KNearestNeighborClassifier(1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
+    checkCorrectClassification(new BooleanPerceptronClassifier(), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName);
+  }
+
+  @Test
+  public void testExplicitThreshold() throws Exception {
+    checkCorrectClassification(new BooleanPerceptronClassifier(100d, 1), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName);
   }
 
   @Test
   public void testPerformance() throws Exception {
-    checkPerformance(new KNearestNeighborClassifier(100), new MockAnalyzer(random()), categoryFieldName);
+    checkPerformance(new BooleanPerceptronClassifier(), new MockAnalyzer(random()), booleanFieldName);
   }
 
 }

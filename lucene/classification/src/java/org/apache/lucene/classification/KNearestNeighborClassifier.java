@@ -59,7 +59,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
     if (mlt == null) {
-      throw new IOException("You must first call Classifier#train first");
+      throw new IOException("You must first call Classifier#train");
     }
     Query q = mlt.like(new StringReader(text), textFieldName);
     TopDocs topDocs = indexSearcher.search(q, k);
@@ -71,13 +71,11 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     Map<BytesRef, Integer> classCounts = new HashMap<BytesRef, Integer>();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
       BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
-      if (cl != null) {
-        Integer count = classCounts.get(cl);
-        if (count != null) {
-          classCounts.put(cl, count + 1);
-        } else {
-          classCounts.put(cl, 1);
-        }
+      Integer count = classCounts.get(cl);
+      if (count != null) {
+        classCounts.put(cl, count + 1);
+      } else {
+        classCounts.put(cl, 1);
       }
     }
     double max = 0;
