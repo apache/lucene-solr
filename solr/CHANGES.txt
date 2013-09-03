@@ -173,6 +173,9 @@ Bug Fixes
 * SOLR-5190: SolrEntityProcessor substitutes variables only once in child entities
   (Harsh Chawla, shalin)
 
+* SOLR-3852: Fixed ZookeeperInfoServlet so that the SolrCloud Admin UI pages will 
+  work even if ZK contains nodes with data which are not utf8 text. (hossman)
+
 Optimizations
 ----------------------
 
