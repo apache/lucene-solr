@@ -187,8 +187,8 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   }
 
   // TODO: if we refactor a 'addSelf(TempMetaDat other)',
-  // we can gain about 5~7% for fuzzy queries, however on the other hand
-  // we seem to put much stress on FST Outputs decoding?
+  // we can gain about 5~7% for fuzzy queries, however this also 
+  // means we are putting too much stress on FST Outputs decoding?
   @Override
   public TempMetaData add(TempMetaData t1, TempMetaData t2) {
     //if (TEST) System.out.print("add("+t1+", "+t2+") = ");

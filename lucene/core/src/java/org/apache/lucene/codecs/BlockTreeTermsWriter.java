@@ -209,7 +209,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   public static final int TERMS_VERSION_META_ARRAY = 2;
 
   /** Current terms format. */
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_APPEND_ONLY;
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_META_ARRAY;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -225,7 +225,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   public static final int TERMS_INDEX_VERSION_META_ARRAY = 2;
 
   /** Current index format. */
-  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_APPEND_ONLY;
+  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_META_ARRAY;
 
   private final IndexOutput out;
   private final IndexOutput indexOut;

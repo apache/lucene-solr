@@ -61,8 +61,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   public static final int VERSION_START = 0;
   public static final int VERSION_APPEND_ONLY = 1;
   public static final int VERSION_META_ARRAY = 2;
-  public static final int VERSION_CURRENT = VERSION_APPEND_ONLY;
-  //public static final int VERSION_CURRENT = VERSION_META_ARRAY;
+  public static final int VERSION_CURRENT = VERSION_META_ARRAY;
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tib";

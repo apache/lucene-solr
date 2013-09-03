@@ -63,8 +63,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
 
   final static int VERSION_META_ARRAY = 1;
 
-  //final static int VERSION_CURRENT = VERSION_META_ARRAY;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
   private SegmentWriteState segmentState;
   private IndexOutput termsOut;

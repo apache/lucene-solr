@@ -65,13 +65,17 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
   public abstract void finishTerm(BlockTermState state) throws IOException;
 
   /**
-   * Encode metadata as long[] and byte[]. {@code absolute} controls 
-   * whether current term is delta encoded according to latest term.
+   * Encode metadata as long[] and byte[]. {@code absolute} controls whether 
+   * current term is delta encoded according to latest term. 
+   * Usually elements in {@code longs} are file pointers, so each one always 
+   * increases when a new term is consumed. {@code out} is used to write generic
+   * bytes, which are not monotonical.
    *
-   * NOTE: sometimes long[] might contain values that doesn't make sense,
-   * e.g. for Lucene41PostingsFormat, when singletonDocID != -1, docStartFP is not defined.
-   * Here postings side should always use the last docStartFP, to keep each element in 
-   * metadata long[] monotonic.
+   * NOTE: sometimes long[] might contain values that doesn't make sense, e.g. 
+   * the pointer to postings list may not be defined, if it is designed to inline 
+   * some postings data in term dictionary.  For this the postings side should 
+   * always use the last file pointer, so that each element in metadata long[] is 
+   * still monotonic.
    */
   public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 

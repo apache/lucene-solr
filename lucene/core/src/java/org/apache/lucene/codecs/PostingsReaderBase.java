@@ -55,7 +55,9 @@ public abstract class PostingsReaderBase implements Closeable {
   /** Return a newly created empty TermState */
   public abstract BlockTermState newTermState() throws IOException;
 
-  /** Actually decode metadata for next term */
+  /** Actually decode metadata for next term 
+   *  @see PostingsWriterBase#encodeTerm 
+   */
   public abstract void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
   /** Must fully consume state, since after this call that

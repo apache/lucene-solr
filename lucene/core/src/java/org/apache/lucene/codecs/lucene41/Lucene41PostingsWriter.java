@@ -67,8 +67,8 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   // Increment version to change it
   final static int VERSION_START = 0;
   final static int VERSION_META_ARRAY = 1;
-  final static int VERSION_CURRENT = VERSION_START;
-  //final static int VERSION_CURRENT = VERSION_META_ARRAY;
+  //final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
   final IndexOutput docOut;
   final IndexOutput posOut;
@@ -519,7 +519,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       //   System.out.println("  no skip: docCount=" + docCount);
       // }
     }
-    if (state.totalTermFreq >= BLOCK_SIZE) {
+    if (VERSION_CURRENT >= VERSION_META_ARRAY || state.totalTermFreq >= BLOCK_SIZE) {
       state.payTermStartFP = payTermStartFP;
     } else {
       state.payTermStartFP = -1;
@@ -552,11 +552,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     if (fieldHasPositions) {
       longs[1] = state.posTermStartFP - lastState.posTermStartFP;
       if (fieldHasPayloads || fieldHasOffsets) {
-        if (state.payTermStartFP == -1) {
-          longs[2] = 0;
-        } else {
-          longs[2] = state.payTermStartFP - lastState.payTermStartFP;
-        }
+        longs[2] = state.payTermStartFP - lastState.payTermStartFP;
       }
     }
     if (state.singletonDocID != -1) {
