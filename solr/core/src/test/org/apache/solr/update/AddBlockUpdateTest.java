@@ -33,6 +33,7 @@ import javax.xml.stream.XMLStreamReader;
 
 
 
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -135,6 +136,54 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     exe = null;
     inputFactory = null;
     counter = null;
+  }
+  
+  @Test
+  public void testOverwrite() throws IOException{
+    assertU(add(
+      nest(doc("id","X", parent, "X"), 
+             doc(child,"a", "id", "66"), 
+             doc(child,"b", "id", "66"))));
+    assertU(add(
+      nest(doc("id","Y", parent, "Y"), 
+             doc(child,"a", "id", "66"), 
+             doc(child,"b", "id", "66"))));
+    String overwritten = random().nextBoolean() ? "X": "Y";
+    String dubbed = overwritten=="X" ? "Y":"X";
+    
+    assertU(add(
+        nest(doc("id",overwritten, parent, overwritten), 
+               doc(child,"c","id", "66"), 
+               doc(child,"d","id", "66")), "overwrite", "true"));
+    assertU(add(
+        nest(doc("id",dubbed, parent, dubbed), 
+               doc(child,"c","id", "66"), 
+               doc(child,"d","id", "66")), "overwrite", "false"));
+    
+    assertU(commit());
+    
+    assertQ(req(parent+":"+overwritten, "//*[@numFound='1']"));
+    assertQ(req(parent+":"+dubbed, "//*[@numFound='2']"));
+    
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, one("ab"), dubbed);
+    
+    final TopDocs docs = searcher.search(join(one("cd")), 10);
+    assertEquals(2, docs.totalHits);
+    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent)+
+                        searcher.doc(docs.scoreDocs[1].doc).get(parent);
+    assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length()==2);
+    
+    assertQ(req("id:66", "//*[@numFound='6']"));
+    assertQ(req(child+":(a b)", "//*[@numFound='2']"));
+    assertQ(req(child+":(c d)", "//*[@numFound='4']"));
+  }
+  
+  private static XmlDoc nest(XmlDoc parent, XmlDoc ... children){
+    XmlDoc xmlDoc = new XmlDoc();
+    xmlDoc.xml = parent.xml.replace("</doc>",
+        Arrays.toString(children).replaceAll("[\\[\\]]", "")+"</doc>");
+    return xmlDoc;
   }
   
   @Test
