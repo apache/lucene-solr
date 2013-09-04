@@ -44,7 +44,7 @@ final class ForUtil {
    * Upper limit of the number of bytes that might be required to stored
    * <code>BLOCK_SIZE</code> encoded values.
    */
-  public static final int MAX_ENCODED_SIZE = BLOCK_SIZE * 4;
+  static final int MAX_ENCODED_SIZE = BLOCK_SIZE * 4;
 
   /**
    * Upper limit of the number of values that might be decoded in a single call to
@@ -52,7 +52,7 @@ final class ForUtil {
    * <code>BLOCK_SIZE</code> are garbage, it is necessary to allocate value buffers
    * whose size is >= MAX_DATA_SIZE to avoid {@link ArrayIndexOutOfBoundsException}s.
    */
-  public static final int MAX_DATA_SIZE;
+  static final int MAX_DATA_SIZE;
   static {
     int maxDataSize = 0;
     for(int version=PackedInts.VERSION_START;version<=PackedInts.VERSION_CURRENT;version++) {
@@ -96,7 +96,7 @@ final class ForUtil {
   /**
    * Create a new {@link ForUtil} instance and save state into <code>out</code>.
    */
-  public ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
+  ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
     out.writeVInt(PackedInts.VERSION_CURRENT);
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
@@ -122,7 +122,7 @@ final class ForUtil {
   /**
    * Restore a {@link ForUtil} from a {@link DataInput}.
    */
-  public ForUtil(DataInput in) throws IOException {
+  ForUtil(DataInput in) throws IOException {
     int packedIntsVersion = in.readVInt();
     PackedInts.checkVersion(packedIntsVersion);
     encodedSizes = new int[33];
@@ -154,7 +154,7 @@ final class ForUtil {
    * @param out      the destination output
    * @throws IOException If there is a low-level I/O error
    */
-  public void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
+  void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
     if (isAllEqual(data)) {
       out.writeByte((byte) ALL_VALUES_EQUAL);
       out.writeVInt(data[0]);
@@ -183,7 +183,7 @@ final class ForUtil {
    * @param decoded   where to write decoded data
    * @throws IOException If there is a low-level I/O error
    */
-  public void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
+  void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
     final int numBits = in.readByte();
     assert numBits <= 32 : numBits;
 
@@ -209,7 +209,7 @@ final class ForUtil {
    * @param in      the input where to read data
    * @throws IOException If there is a low-level I/O error
    */
-  public void skipBlock(IndexInput in) throws IOException {
+  void skipBlock(IndexInput in) throws IOException {
     final int numBits = in.readByte();
     if (numBits == ALL_VALUES_EQUAL) {
       in.readVInt();

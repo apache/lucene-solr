@@ -161,7 +161,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 8 in Lucene41PostingsFormat).</li>
+ *        (i.e. 128 in Lucene41PostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>

@@ -46,7 +46,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "TempFixedIntBlock", "TempVariableIntBlock", "TempSep", "TempRandom"})
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsHighlighterRanking extends LuceneTestCase {
   /** 
    * indexes a bunch of gibberish, and then highlights top(n).
