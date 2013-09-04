@@ -104,14 +104,14 @@ import org.apache.lucene.util.packed.PackedInts;
  * and decoding the Postings Metadata and Term Metadata sections.</p>
  *
  * <ul>
- *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Header</i>, NodeBlock<sup>NumBlocks</sup>,
+ *    <li>TermsDict (.tim) --&gt; Header, <i>PostingsHeader</i>, NodeBlock<sup>NumBlocks</sup>,
  *                               FieldSummary, DirOffset</li>
  *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
- *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
- *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata ? </i>&gt;<sup>EntryCount</sup></li>
+ *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata ? </i>&gt;<sup>EntryCount</sup></li>
  *    <li>TermStats --&gt; DocFreq, TotalTermFreq </li>
  *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
- *                            SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
+ *                            SumTotalTermFreq?, SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *    <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *    <li>EntryCount,SuffixLength,StatsLength,DocFreq,MetaLength,NumFields,
@@ -133,7 +133,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SumDocFreq is the total number of postings, the number of term-document pairs across
  *        the entire field.</li>
  *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
- *    <li>PostingsMetadata and TermMetadata are plugged into by the specific postings implementation:
+ *    <li>PostingsHeader and TermMetadata are plugged into by the specific postings implementation:
  *        these contain arbitrary per-file data (such as parameters or versioning information) 
  *        and per-term data (such as pointers to inverted files).</li>
  *    <li>For inner nodes of the tree, every entry will steal one bit to mark whether it points

@@ -89,7 +89,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       readHeader(indexIn);
       readHeader(blockIn);
       this.postingsReader.init(blockIn);
-      seekDir(indexIn);
       seekDir(blockIn);
 
       final FieldInfos fieldInfos = state.fieldInfos;

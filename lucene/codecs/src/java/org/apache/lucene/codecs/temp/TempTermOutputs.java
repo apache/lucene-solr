@@ -36,8 +36,8 @@ import org.apache.lucene.util.LongsRef;
 
 // NOTE: outputs should be per-field, since
 // longsSize is fixed for each field
-public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
-  private final static TempMetaData NO_OUTPUT = new TempMetaData();
+public class TempTermOutputs extends Outputs<TempTermOutputs.TempTermData> {
+  private final static TempTermData NO_OUTPUT = new TempTermData();
   //private static boolean TEST = false;
   private final boolean hasPos;
   private final int longsSize;
@@ -47,18 +47,18 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
    * On an FST, only long[] part is 'shared' and pushed towards root.
    * byte[] and term stats will be kept on deeper arcs.
    */
-  public static class TempMetaData {
+  public static class TempTermData {
     long[] longs;
     byte[] bytes;
     int docFreq;
     long totalTermFreq;
-    TempMetaData() {
+    TempTermData() {
       this.longs = null;
       this.bytes = null;
       this.docFreq = 0;
       this.totalTermFreq = -1;
     }
-    TempMetaData(long[] longs, byte[] bytes, int docFreq, long totalTermFreq) {
+    TempTermData(long[] longs, byte[] bytes, int docFreq, long totalTermFreq) {
       this.longs = longs;
       this.bytes = bytes;
       this.docFreq = docFreq;
@@ -92,10 +92,10 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     public boolean equals(Object other_) {
       if (other_ == this) {
         return true;
-      } else if (!(other_ instanceof TempTermOutputs.TempMetaData)) {
+      } else if (!(other_ instanceof TempTermOutputs.TempTermData)) {
         return false;
       }
-      TempMetaData other = (TempMetaData) other_;
+      TempTermData other = (TempTermData) other_;
       return statsEqual(this, other) && 
              longsEqual(this, other) && 
              bytesEqual(this, other);
@@ -115,7 +115,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // 1. every value in t1 is not larger than in t2, or
   // 2. every value in t1 is not smaller than t2.
   //
-  public TempMetaData common(TempMetaData t1, TempMetaData t2) {
+  public TempTermData common(TempTermData t1, TempTermData t2) {
     //if (TEST) System.out.print("common("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT || t2 == NO_OUTPUT) {
       //if (TEST) System.out.println("ret:"+NO_OUTPUT);
@@ -125,7 +125,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
 
     long[] min = t1.longs, max = t2.longs;
     int pos = 0;
-    TempMetaData ret;
+    TempTermData ret;
 
     while (pos < longsSize && min[pos] == max[pos]) {
       pos++;
@@ -142,7 +142,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       if (pos < longsSize || allZero(min)) {  // not comparable or all-zero
         ret = NO_OUTPUT;
       } else {
-        ret = new TempMetaData(min, null, 0, -1);
+        ret = new TempTermData(min, null, 0, -1);
       }
     } else {  // equal long[]
       if (statsEqual(t1, t2) && bytesEqual(t1, t2)) {
@@ -150,7 +150,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       } else if (allZero(min)) {
         ret = NO_OUTPUT;
       } else {
-        ret = new TempMetaData(min, null, 0, -1);
+        ret = new TempTermData(min, null, 0, -1);
       }
     }
     //if (TEST) System.out.println("ret:"+ret);
@@ -158,7 +158,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   }
 
   @Override
-  public TempMetaData subtract(TempMetaData t1, TempMetaData t2) {
+  public TempTermData subtract(TempTermData t1, TempTermData t2) {
     //if (TEST) System.out.print("subtract("+t1+", "+t2+") = ");
     if (t2 == NO_OUTPUT) {
       //if (TEST) System.out.println("ret:"+t1);
@@ -176,11 +176,11 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       pos++;
     }
 
-    TempMetaData ret;
+    TempTermData ret;
     if (diff == 0 && statsEqual(t1, t2) && bytesEqual(t1, t2)) {
       ret = NO_OUTPUT;
     } else {
-      ret = new TempMetaData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
+      ret = new TempTermData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     //if (TEST) System.out.println("ret:"+ret);
     return ret;
@@ -190,7 +190,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // we can gain about 5~7% for fuzzy queries, however this also 
   // means we are putting too much stress on FST Outputs decoding?
   @Override
-  public TempMetaData add(TempMetaData t1, TempMetaData t2) {
+  public TempTermData add(TempTermData t1, TempTermData t2) {
     //if (TEST) System.out.print("add("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT) {
       //if (TEST) System.out.println("ret:"+t2);
@@ -209,18 +209,18 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       pos++;
     }
 
-    TempMetaData ret;
+    TempTermData ret;
     if (t2.bytes != null || t2.docFreq > 0) {
-      ret = new TempMetaData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
+      ret = new TempTermData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
     } else {
-      ret = new TempMetaData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
+      ret = new TempTermData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     //if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
   @Override
-  public void write(TempMetaData data, DataOutput out) throws IOException {
+  public void write(TempTermData data, DataOutput out) throws IOException {
     int bit0 = allZero(data.longs) ? 0 : 1;
     int bit1 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1) << 1;
     int bit2 = ((data.docFreq == 0)  ? 0 : 1) << 2;
@@ -259,7 +259,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   }
 
   @Override
-  public TempMetaData read(DataInput in) throws IOException {
+  public TempTermData read(DataInput in) throws IOException {
     long[] longs = new long[longsSize];
     byte[] bytes = null;
     int docFreq = 0;
@@ -292,29 +292,29 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
         docFreq = code;
       }
     }
-    return new TempMetaData(longs, bytes, docFreq, totalTermFreq);
+    return new TempTermData(longs, bytes, docFreq, totalTermFreq);
   }
 
   @Override
-  public TempMetaData getNoOutput() {
+  public TempTermData getNoOutput() {
     return NO_OUTPUT;
   }
 
   @Override
-  public String outputToString(TempMetaData data) {
+  public String outputToString(TempTermData data) {
     return data.toString();
   }
 
-  static boolean statsEqual(final TempMetaData t1, final TempMetaData t2) {
+  static boolean statsEqual(final TempTermData t1, final TempTermData t2) {
     return t1.docFreq == t2.docFreq && t1.totalTermFreq == t2.totalTermFreq;
   }
-  static boolean bytesEqual(final TempMetaData t1, final TempMetaData t2) {
+  static boolean bytesEqual(final TempTermData t1, final TempTermData t2) {
     if (t1.bytes == null && t2.bytes == null) {
       return true;
     }
     return t1.bytes != null && t2.bytes != null && Arrays.equals(t1.bytes, t2.bytes);
   }
-  static boolean longsEqual(final TempMetaData t1, final TempMetaData t2) {
+  static boolean longsEqual(final TempTermData t1, final TempTermData t2) {
     if (t1.longs == null && t2.longs == null) {
       return true;
     }

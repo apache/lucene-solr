@@ -125,9 +125,9 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public final long sumDocFreq;
     public final int docCount;
     public final int longsSize;
-    public final FST<TempTermOutputs.TempMetaData> dict;
+    public final FST<TempTermOutputs.TempTermData> dict;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<TempTermOutputs.TempMetaData> fst) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<TempTermOutputs.TempTermData> fst) {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
@@ -139,7 +139,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
   }
 
   final class TermsWriter extends TermsConsumer {
-    private final Builder<TempTermOutputs.TempMetaData> builder;
+    private final Builder<TempTermOutputs.TempTermData> builder;
     private final TempTermOutputs outputs;
     private final FieldInfo fieldInfo;
     private final int longsSize;
@@ -154,7 +154,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = new TempTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<TempTermOutputs.TempMetaData>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.builder = new Builder<TempTermOutputs.TempTermData>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
       // write term meta data into fst
       final BlockTermState state = postingsWriter.newTermState();
-      final TempTermOutputs.TempMetaData meta = new TempTermOutputs.TempMetaData();
+      final TempTermOutputs.TempTermData meta = new TempTermOutputs.TempTermData();
       meta.longs = new long[longsSize];
       meta.bytes = null;
       meta.docFreq = state.docFreq = stats.docFreq;
@@ -193,7 +193,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<TempTermOutputs.TempMetaData> fst = builder.finish();
+        final FST<TempTermOutputs.TempTermData> fst = builder.finish();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }

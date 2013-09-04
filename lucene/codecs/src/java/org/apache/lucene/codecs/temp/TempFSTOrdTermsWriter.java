@@ -120,7 +120,6 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
         field.metaBytesOut.writeTo(blockOut);
         field.dict.save(indexOut);
       }
-      writeTrailer(indexOut, indexDirStart);
       writeTrailer(blockOut, blockDirStart);
     } catch (IOException ioe2) {
       ioe = ioe2;

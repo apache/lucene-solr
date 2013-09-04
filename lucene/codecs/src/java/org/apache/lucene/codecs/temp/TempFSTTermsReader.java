@@ -167,7 +167,7 @@ public class TempFSTTermsReader extends FieldsProducer {
     final long sumDocFreq;
     final int docCount;
     final int longsSize;
-    final FST<TempTermOutputs.TempMetaData> dict;
+    final FST<TempTermOutputs.TempTermData> dict;
 
     TermsReader(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
       this.fieldInfo = fieldInfo;
@@ -176,7 +176,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       this.longsSize = longsSize;
-      this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(fieldInfo, longsSize));
+      this.dict = new FST<TempTermOutputs.TempTermData>(in, new TempTermOutputs(fieldInfo, longsSize));
     }
 
     @Override
@@ -238,7 +238,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       final BlockTermState state;
 
       /* Current term stats + undecoded metadata (long[] & byte[]) */
-      TempTermOutputs.TempMetaData meta;
+      TempTermOutputs.TempTermData meta;
       ByteArrayDataInput bytesReader;
 
       /** Decodes metadata into customized term state */
@@ -306,7 +306,7 @@ public class TempFSTTermsReader extends FieldsProducer {
 
     // Iterates through all terms in this field
     private final class SegmentTermsEnum extends BaseTermsEnum {
-      final BytesRefFSTEnum<TempTermOutputs.TempMetaData> fstEnum;
+      final BytesRefFSTEnum<TempTermOutputs.TempTermData> fstEnum;
 
       /* True when current term's metadata is decoded */
       boolean decoded;
@@ -316,7 +316,7 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       SegmentTermsEnum() throws IOException {
         super();
-        this.fstEnum = new BytesRefFSTEnum<TempTermOutputs.TempMetaData>(dict);
+        this.fstEnum = new BytesRefFSTEnum<TempTermOutputs.TempTermData>(dict);
         this.decoded = false;
         this.seekPending = false;
         this.meta = null;
@@ -335,7 +335,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       // Update current enum according to FSTEnum
-      void updateEnum(final InputOutput<TempTermOutputs.TempMetaData> pair) {
+      void updateEnum(final InputOutput<TempTermOutputs.TempTermData> pair) {
         if (pair == null) {
           term = null;
         } else {
@@ -405,22 +405,22 @@ public class TempFSTTermsReader extends FieldsProducer {
       int metaUpto;
 
       /* term dict fst */
-      final FST<TempTermOutputs.TempMetaData> fst;
+      final FST<TempTermOutputs.TempTermData> fst;
       final FST.BytesReader fstReader;
-      final Outputs<TempTermOutputs.TempMetaData> fstOutputs;
+      final Outputs<TempTermOutputs.TempTermData> fstOutputs;
 
       /* query automaton to intersect with */
       final ByteRunAutomaton fsa;
 
       private final class Frame {
         /* fst stats */
-        FST.Arc<TempTermOutputs.TempMetaData> fstArc;
+        FST.Arc<TempTermOutputs.TempTermData> fstArc;
 
         /* automaton stats */
         int fsaState;
 
         Frame() {
-          this.fstArc = new FST.Arc<TempTermOutputs.TempMetaData>();
+          this.fstArc = new FST.Arc<TempTermOutputs.TempTermData>();
           this.fsaState = -1;
         }
 
@@ -475,7 +475,7 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       /** Lazily accumulate meta data, when we got a accepted term */
       void loadMetaData() throws IOException {
-        FST.Arc<TempTermOutputs.TempMetaData> last, next;
+        FST.Arc<TempTermOutputs.TempTermData> last, next;
         last = stack[metaUpto].fstArc;
         while (metaUpto != level) {
           metaUpto++;
@@ -626,7 +626,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       /** Load frame for target arc(node) on fst, so that 
        *  arc.label >= label and !fsa.reject(arc.label) */
       Frame loadCeilFrame(int label, Frame top, Frame frame) throws IOException {
-        FST.Arc<TempTermOutputs.TempMetaData> arc = frame.fstArc;
+        FST.Arc<TempTermOutputs.TempTermData> arc = frame.fstArc;
         arc = Util.readCeilArc(label, fst, top.fstArc, arc, fstReader);
         if (arc == null) {
           return null;
