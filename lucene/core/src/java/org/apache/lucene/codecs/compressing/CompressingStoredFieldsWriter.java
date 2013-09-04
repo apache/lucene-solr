@@ -70,7 +70,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final String CODEC_SFX_IDX = "Index";
   static final String CODEC_SFX_DAT = "Data";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_BIG_CHUNKS = 1;
+  static final int VERSION_CURRENT = VERSION_BIG_CHUNKS;
 
   private final Directory directory;
   private final String segment;
@@ -119,6 +120,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
       indexStream = null;
 
+      fieldsStream.writeVInt(chunkSize);
       fieldsStream.writeVInt(PackedInts.VERSION_CURRENT);
 
       success = true;
@@ -219,7 +221,14 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     writeHeader(docBase, numBufferedDocs, numStoredFields, lengths);
 
     // compress stored fields to fieldsStream
-    compressor.compress(bufferedDocs.bytes, 0, bufferedDocs.length, fieldsStream);
+    if (bufferedDocs.length >= 2 * chunkSize) {
+      // big chunk, slice it
+      for (int compressed = 0; compressed < bufferedDocs.length; compressed += chunkSize) {
+        compressor.compress(bufferedDocs.bytes, compressed, Math.min(chunkSize, bufferedDocs.length - compressed), fieldsStream);
+      }
+    } else {
+      compressor.compress(bufferedDocs.bytes, 0, bufferedDocs.length, fieldsStream);
+    }
 
     // reset
     docBase += numBufferedDocs;
@@ -327,7 +336,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
 
-      if (matchingFieldsReader == null) {
+      if (matchingFieldsReader == null
+          || matchingFieldsReader.getVersion() != VERSION_CURRENT) { // means reader version is not the same as the writer version
         // naive merge...
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
           StoredDocument doc = reader.document(i);

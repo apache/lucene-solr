@@ -259,6 +259,10 @@ Optimizations
 * LUCENE-5182: Terminate phrase searches early if max phrase window is 
   exceeded in FastVectorHighlighter to prevent very long running phrase
   extraction if phrase terms are high frequent. (Simon Willnauer)
+
+* LUCENE-5188: CompressingStoredFieldsFormat now slices chunks containing big
+  documents into fixed-size blocks so that requesting a single field does not
+  necessarily force to decompress the whole chunk. (Adrien Grand)
   
 Documentation
 
