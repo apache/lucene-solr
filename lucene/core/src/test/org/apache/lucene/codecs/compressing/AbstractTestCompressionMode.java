@@ -24,6 +24,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -127,6 +128,12 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     for (int i = 0; i < decompressed.length; ++i) {
       decompressed[i] = (byte) i;
     }
+    test(decompressed);
+  }
+
+  public void testConstant() throws IOException {
+    final byte[] decompressed = new byte[_TestUtil.nextInt(random(), 1, 10000)];
+    Arrays.fill(decompressed, (byte) random().nextInt());
     test(decompressed);
   }
 
