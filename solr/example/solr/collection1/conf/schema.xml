@@ -107,6 +107,11 @@
    -->
         
    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
+
+   <!-- points to the root document of a block of nested documents -->
+   <field name="_root_" type="string" indexed="true" stored="false"/>
+
+
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
    <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
