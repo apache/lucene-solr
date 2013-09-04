@@ -50,10 +50,10 @@ import org.apache.lucene.codecs.sep.IntIndexOutput;
 import org.apache.lucene.codecs.sep.IntStreamFactory;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.codecs.temp.TempFSTTermsWriter;
-import org.apache.lucene.codecs.temp.TempFSTTermsReader;
-import org.apache.lucene.codecs.temp.TempFSTOrdTermsWriter;
-import org.apache.lucene.codecs.temp.TempFSTOrdTermsReader;
+import org.apache.lucene.codecs.memory.FSTTermsWriter;
+import org.apache.lucene.codecs.memory.FSTTermsReader;
+import org.apache.lucene.codecs.memory.FSTOrdTermsWriter;
+import org.apache.lucene.codecs.memory.FSTOrdTermsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -196,7 +196,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     if (t1 == 0) {
       boolean success = false;
       try {
-        fields = new TempFSTTermsWriter(state, postingsWriter);
+        fields = new FSTTermsWriter(state, postingsWriter);
         success = true;
       } finally {
         if (!success) {
@@ -206,7 +206,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     } else if (t1 == 1) {
       boolean success = false;
       try {
-        fields = new TempFSTOrdTermsWriter(state, postingsWriter);
+        fields = new FSTOrdTermsWriter(state, postingsWriter);
         success = true;
       } finally {
         if (!success) {
@@ -355,7 +355,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     if (t1 == 0) {
       boolean success = false;
       try {
-        fields = new TempFSTTermsReader(state, postingsReader);
+        fields = new FSTTermsReader(state, postingsReader);
         success = true;
       } finally {
         if (!success) {
@@ -365,7 +365,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     } else if (t1 == 1) {
       boolean success = false;
       try {
-        fields = new TempFSTOrdTermsReader(state, postingsReader);
+        fields = new FSTOrdTermsReader(state, postingsReader);
         success = true;
       } finally {
         if (!success) {

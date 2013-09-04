@@ -1,4 +1,5 @@
-package org.apache.lucene.codecs.temp;
+package org.apache.lucene.codecs.memory;
+
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,71 +22,61 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsBaseFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
-import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-/** TempFST + Pulsing41, test only, since
- *  FST does no delta encoding here!
- *  @lucene.experimental */
+/** 
+ * FSTOrd term dict + Lucene41PBF
+ */
 
-public class TempFSTPulsing41PostingsFormat extends PostingsFormat {
-  private final PostingsBaseFormat wrappedPostingsBaseFormat;
-  private final int freqCutoff;
-
-  public TempFSTPulsing41PostingsFormat() {
-    this(1);
+public final class FSTOrdPostingsFormat extends PostingsFormat {
+  public FSTOrdPostingsFormat() {
+    super("FSTOrd41");
   }
-  
-  public TempFSTPulsing41PostingsFormat(int freqCutoff) {
-    super("TempFSTPulsing41");
-    this.wrappedPostingsBaseFormat = new Lucene41PostingsBaseFormat();
-    this.freqCutoff = freqCutoff;
+
+  @Override
+  public String toString() {
+    return getName();
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docsWriter = null;
-    PostingsWriterBase pulsingWriter = null;
+    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state);
 
     boolean success = false;
     try {
-      docsWriter = wrappedPostingsBaseFormat.postingsWriterBase(state);
-      pulsingWriter = new PulsingPostingsWriter(state, freqCutoff, docsWriter);
-      FieldsConsumer ret = new TempFSTTermsWriter(state, pulsingWriter);
+      FieldsConsumer ret = new FSTOrdTermsWriter(state, postingsWriter);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(docsWriter, pulsingWriter);
+        IOUtils.closeWhileHandlingException(postingsWriter);
       }
     }
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase docsReader = null;
-    PostingsReaderBase pulsingReader = null;
+    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
+                                                                state.fieldInfos,
+                                                                state.segmentInfo,
+                                                                state.context,
+                                                                state.segmentSuffix);
     boolean success = false;
     try {
-      docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
-      pulsingReader = new PulsingPostingsReader(state, docsReader);
-      FieldsProducer ret = new TempFSTTermsReader(state, pulsingReader);
+      FieldsProducer ret = new FSTOrdTermsReader(state, postingsReader);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(docsReader, pulsingReader);
+        IOUtils.closeWhileHandlingException(postingsReader);
       }
     }
   }

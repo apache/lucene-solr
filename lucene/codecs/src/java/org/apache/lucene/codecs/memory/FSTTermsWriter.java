@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.temp;
+package org.apache.lucene.codecs.memory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -44,13 +45,83 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.CodecUtil;
 
-/** 
- * FST based term dict, the FST maps each term and its metadata.
+/**
+ * FST-based term dict, using metadata as FST output.
+ *
+ * The FST directly holds the mapping between &lt;term, metadata&gt;.
+ *
+ * Term metadata consists of three parts:
+ * 1. term statistics: docFreq, totalTermFreq;
+ * 2. monotonic long[], e.g. the pointer to the postings list for that term;
+ * 3. generic byte[], e.g. other information need by postings reader.
+ *
+ * <p>
+ * File:
+ * <ul>
+ *   <li><tt>.tst</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
+ * </ul>
+ * <p>
+ *
+ * <a name="Termdictionary" id="Termdictionary"></a>
+ * <h3>Term Dictionary</h3>
+ * <p>
+ *  The .tst contains a list of FSTs, one for each field.
+ *  The FST maps a term to its corresponding statistics (e.g. docfreq) 
+ *  and metadata (e.g. information for postings list reader like file pointer
+ *  to postings list).
+ * </p>
+ * <p>
+ *  Typically the metadata is separated into two parts:
+ *  <ul>
+ *   <li>
+ *    Monotonical long array: Some metadata will always be ascending in order
+ *    with the corresponding term. This part is used by FST to share outputs between arcs.
+ *   </li>
+ *   <li>
+ *    Generic byte array: Used to store non-monotonical metadata.
+ *   </li>
+ *  </ul>
+ * </p>
+ *
+ * File format:
+ * <ul>
+ *  <li>TermsDict(.tst) --&gt; Header, <i>PostingsHeader</i>, FieldSummary, DirOffset</li>
+ *  <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, SumTotalTermFreq?, 
+ *                                      SumDocFreq, DocCount, LongsSize, TermFST &gt;<sup>NumFields</sup></li>
+ *  <li>TermFST --&gt; {@link FST FST&lt;TermData&gt;}</li>
+ *  <li>TermData --&gt; Flag, BytesSize?, LongDelta<sup>LongsSize</sup>?, Byte<sup>BytesSize</sup>?, 
+ *                      &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) &gt; ? </li>
+ *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
+ *  <li>DocFreq, LongsSize, BytesSize, NumFields,
+ *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *  <li>TotalTermFreq, NumTerms, SumTotalTermFreq, SumDocFreq, LongDelta --&gt; 
+ *        {@link DataOutput#writeVLong VLong}</li>
+ * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *  <li>
+ *   The format of PostingsHeader and generic meta bytes are customized by the specific postings implementation:
+ *   they contain arbitrary per-file data (such as parameters or versioning information), and per-term data
+ *   (non-monotonical ones like pulsed postings data).
+ *  </li>
+ *  <li>
+ *   The format of TermData is determined by FST, typically monotonical metadata will be dense around shallow arcs,
+ *   while in deeper arcs only generic bytes and term statistics exist.
+ *  </li>
+ *  <li>
+ *   The byte Flag is used to indicate which part of metadata exists on current arc. Specially the monotonical part
+ *   is omitted when it is an array of 0s.
+ *  </li>
+ *  <li>
+ *   Since LongsSize is per-field fixed, it is only written once in field summary.
+ *  </li>
+ * </ul>
  *
  * @lucene.experimental
  */
 
-public class TempFSTTermsWriter extends FieldsConsumer {
+public class FSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
   static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
   public static final int TERMS_VERSION_START = 0;
@@ -61,7 +132,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
   final IndexOutput out;
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
 
-  public TempFSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
+  public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
 
     this.postingsWriter = postingsWriter;
@@ -125,9 +196,9 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public final long sumDocFreq;
     public final int docCount;
     public final int longsSize;
-    public final FST<TempTermOutputs.TempTermData> dict;
+    public final FST<FSTTermOutputs.TermData> dict;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<TempTermOutputs.TempTermData> fst) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<FSTTermOutputs.TermData> fst) {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
@@ -139,8 +210,8 @@ public class TempFSTTermsWriter extends FieldsConsumer {
   }
 
   final class TermsWriter extends TermsConsumer {
-    private final Builder<TempTermOutputs.TempTermData> builder;
-    private final TempTermOutputs outputs;
+    private final Builder<FSTTermOutputs.TermData> builder;
+    private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
     private final int longsSize;
     private long numTerms;
@@ -153,8 +224,8 @@ public class TempFSTTermsWriter extends FieldsConsumer {
       this.numTerms = 0;
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
-      this.outputs = new TempTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<TempTermOutputs.TempTermData>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
+      this.builder = new Builder<FSTTermOutputs.TermData>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     @Override
@@ -172,7 +243,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
       // write term meta data into fst
       final BlockTermState state = postingsWriter.newTermState();
-      final TempTermOutputs.TempTermData meta = new TempTermOutputs.TempTermData();
+      final FSTTermOutputs.TermData meta = new FSTTermOutputs.TermData();
       meta.longs = new long[longsSize];
       meta.bytes = null;
       meta.docFreq = state.docFreq = stats.docFreq;
@@ -193,7 +264,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<TempTermOutputs.TempTermData> fst = builder.finish();
+        final FST<FSTTermOutputs.TermData> fst = builder.finish();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }
