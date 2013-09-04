@@ -221,44 +221,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("mno"), "P");
     assertSingleParentOf(searcher, one("qrs"), "T");
     assertSingleParentOf(searcher, one("uvw"), "X");
+   
+    assertQ(req("q",child+":(a b c)", "sort","_docid_ asc"),
+        "//*[@numFound='3']", // assert physical order of children
+      "//doc[1]/arr[@name='child_s']/str[text()='a']",
+      "//doc[2]/arr[@name='child_s']/str[text()='b']",
+      "//doc[3]/arr[@name='child_s']/str[text()='c']");
   }
-
-  /***
-  @Test
-  public void testSmallBlockDirect() throws Exception {
-    final AddBlockUpdateCommand cmd = new AddBlockUpdateCommand(req("*:*"));
-    final List<SolrInputDocument> docs = Arrays.asList(new SolrInputDocument() {
-      {
-        addField("id", id());
-        addField(child, "a");
-      }
-    }, new SolrInputDocument() {
-      {
-        addField("id", id());
-        addField(parent, "B");
-      }
-    });
-    cmd.setDocs(docs);
-    assertEquals(2, h.getCore().getUpdateHandler().addBlock(cmd));
-    assertU(commit());
-    
-    final SolrIndexSearcher searcher = getSearcher();
-    assertQ(req("*:*"), "//*[@numFound='2']");
-    assertSingleParentOf(searcher, one("a"), "B");
-  }
-  
-  @Test
-  public void testEmptyDirect() throws Exception {
-    final AddBlockUpdateCommand cmd = new AddBlockUpdateCommand(req("*:*"));
-    // let's add empty one
-    cmd.setDocs(Collections.<SolrInputDocument> emptyList());
-    assertEquals(0,
-        ((DirectUpdateHandler2) h.getCore().getUpdateHandler()).addBlock(cmd));
-    assertU(commit());
-    
-    assertQ(req("*:*"), "//*[@numFound='0']");
-  }
-   ***/
   
   @Test
   public void testExceptionThrown() throws Exception {

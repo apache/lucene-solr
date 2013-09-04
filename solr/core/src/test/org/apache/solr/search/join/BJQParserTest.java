@@ -19,13 +19,9 @@ package org.apache.solr.search.join;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
-import org.apache.solr.search.SyntaxError;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -111,6 +107,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     // add grandchildren after children
     for (ListIterator<String[]> iter = block.listIterator(); iter.hasNext();) {
       String[] child = iter.next();
+      assert child[0]=="child_s" && child[2]=="parentchild_s": Arrays.toString(child);
       String child_s = child[1];
       String parentchild_s = child[3];
       int grandChildPos = 0;
@@ -193,7 +190,6 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore("SOLR-5168")
   public void testGrandChildren() throws IOException {
     assertQ(
         req("q", "{!parent which=$parentfilter v=$children}", "children",
