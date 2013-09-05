@@ -295,7 +295,7 @@ final class LZ4 {
     private int hashPointer(byte[] bytes, int off) {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
-      return base + hashTable[h];
+      return hashTable[h];
     }
 
     private int next(int off) {
@@ -306,6 +306,7 @@ final class LZ4 {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
       int delta = off - hashTable[h];
+      assert delta > 0 : delta;
       if (delta >= MAX_DISTANCE) {
         delta = MAX_DISTANCE - 1;
       }
