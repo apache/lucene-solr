@@ -104,4 +104,8 @@ public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompres
     test(decompressed);
   }
 
+  public void testMatchRightBeforeLastLiterals() throws IOException {
+    test(new byte[] {1,2,3,4, 1,2,3,4, 1,2,3,4,5});
+  }
+
 }

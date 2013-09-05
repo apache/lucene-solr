@@ -14,6 +14,8 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,6 +33,7 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
+@Repeat(iterations=5) // give it a chance to test various compression modes with different chunk sizes
 public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestCase {
 
   @Override

@@ -114,6 +114,10 @@ Bug Fixes
   outside BMP because it encoded UTF-16 chars instead of codepoints.
   The escaping of codepoints > 127 was removed (not needed for valid HTML)
   and missing escaping for ' and / was added.  (Uwe Schindler)
+
+* LUCENE-5201: Fixed compression bug in LZ4.compressHC when the input is highly
+  compressible and the start offset of the array to compress is > 0.
+  (Adrien Grand)
   
 API Changes
 
