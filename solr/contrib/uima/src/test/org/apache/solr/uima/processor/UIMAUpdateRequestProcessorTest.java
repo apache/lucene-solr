@@ -93,7 +93,6 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testProcessing() throws Exception {
-
     addDoc("uima", adoc(
             "id",
             "2312312321312",
@@ -182,6 +181,13 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     }
     catch(StringIndexOutOfBoundsException e){  // SOLR-2579
       fail("exception shouldn't be raised");
+    }
+  }
+
+  @Test
+  public void testMultiplierProcessing() throws Exception {
+    for (int i = 0; i < RANDOM_MULTIPLIER; i++) {
+      testProcessing();
     }
   }
 
