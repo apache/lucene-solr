@@ -223,6 +223,10 @@ Changes in Runtime Behavior
 * LUCENE-5178: DocValues codec consumer APIs (iterables) return null values 
   when the document has no value for the field. (Robert Muir)
 
+* LUCENE-5200: The HighFreqTerms command-line tool returns the true top-N
+  by totalTermFreq when using the -t option, it uses the term statistics (faster)
+  and now always shows totalTermFreq in the output.  (Robert Muir)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
