@@ -117,6 +117,11 @@ New Features
   FieldMutatingUpdateProcessorFactory and supports all of it's selector options. Use
   of the "fields" init param is now deprecated in favor of "fieldName" (hossman)
   
+* SOLR-2548: Allow multiple threads to be specified for faceting. When threading, one
+  can specify facet.threads to parallelize loading the uninverted fields. In at least
+  one extreme case this reduced warmup time from 20 seconds to 3 seconds. (Janne Majaranta,
+  Gun Akkor via Erick Erickson)
+  
 
 Bug Fixes
 ----------------------
