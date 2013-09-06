@@ -64,7 +64,8 @@ public class ToChildBlockJoinQuery extends Query {
    * 
    * @param parentQuery Query that matches parent documents
    * @param parentsFilter Filter (must produce FixedBitSet
-   * per-segment) identifying the parent documents.
+   * per-segment, like {@link FixedBitSetCachingWrapperFilter})
+   * identifying the parent documents.
    * @param doScores true if parent scores should be calculated
    */
   public ToChildBlockJoinQuery(Query parentQuery, Filter parentsFilter, boolean doScores) {

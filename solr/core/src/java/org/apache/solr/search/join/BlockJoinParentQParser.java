@@ -22,6 +22,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
@@ -86,8 +87,7 @@ class BlockJoinParentQParser extends QParser {
   }
 
   protected Filter createParentFilter(Query parentQ) {
-    return new CachingWrapperFilter(new QueryWrapperFilter(parentQ)) {
-    };
+    return new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(parentQ));
   }
 }
 

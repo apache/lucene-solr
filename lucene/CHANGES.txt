@@ -267,6 +267,11 @@ Optimizations
 * LUCENE-5188: CompressingStoredFieldsFormat now slices chunks containing big
   documents into fixed-size blocks so that requesting a single field does not
   necessarily force to decompress the whole chunk. (Adrien Grand)
+
+* LUCENE-5101: CachingWrapper makes it easier to plug-in a custom cacheable
+  DocIdSet implementation and uses WAH8DocIdSet by default, which should be
+  more memory efficient than FixedBitSet on average as well as faster on small
+  sets. (Robert Muir)
   
 Documentation
 
@@ -289,6 +294,10 @@ Changes in backwards compatibility policy
 
 * LUCENE-5187: SlowCompositeReaderWrapper constructor is now private,
   SlowCompositeReaderWrapper.wrap should be used instead. (Adrien Grand)
+
+* LUCENE-5101: CachingWrapperFilter doesn't always return FixedBitSet instances
+  anymore. Users of the join module can use
+  oal.search.join.FixedBitSetCachingWrapperFilter instead. (Adrien Grand)
   
 Build
 
