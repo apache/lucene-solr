@@ -137,7 +137,7 @@ public class HighFreqTerms {
     
     @Override
     public int compare(TermStats a, TermStats b) {
-      int res = Long.compare(a.docFreq, b.docFreq);
+      int res = Long.signum(a.docFreq - b.docFreq);
       if (res == 0) {
         res = a.field.compareTo(b.field);
         if (res == 0) {
@@ -155,12 +155,16 @@ public class HighFreqTerms {
     
     @Override
     public int compare(TermStats a, TermStats b) {
-      int res = Long.compare(a.totalTermFreq, b.totalTermFreq);
-      if (res == 0) {
+      int res;
+      if (a.totalTermFreq == b.totalTermFreq) {
         res = a.field.compareTo(b.field);
         if (res == 0) {
           res = a.termtext.compareTo(b.termtext);
         }
+      } else if (a.totalTermFreq > b.totalTermFreq) {
+        res = 1;
+      } else {
+        res = -1;
       }
       return res;
     }
