@@ -122,7 +122,14 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testWithoutSubclusters() throws Exception {
     checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs),
-            1, 1, 0);
+        1, 1, 0);
+  }
+
+  @Test
+  public void testExternalXmlAttributesFile() throws Exception {
+    checkClusters(
+        checkEngine(getClusteringEngine("mock-external-attrs"), 13),
+        1, 4, 0);
   }
 
   @Test
@@ -186,6 +193,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
     checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
+        "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
+  }
+
+  @Test
+  public void testLexicalResourcesFromSolrConfigCustomDirDeprecated() throws Exception {
+    checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir-deprecated",
         "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
   }
 

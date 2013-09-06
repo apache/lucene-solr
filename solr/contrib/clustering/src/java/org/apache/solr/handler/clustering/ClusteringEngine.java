@@ -30,7 +30,6 @@ public class ClusteringEngine {
 
   public String init(NamedList config, SolrCore core) {
     name = (String) config.get(ENGINE_NAME);
-
     return name;
   }
 

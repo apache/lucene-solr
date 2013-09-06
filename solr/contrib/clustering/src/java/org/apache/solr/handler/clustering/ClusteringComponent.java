@@ -59,11 +59,13 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   private Map<String, SearchClusteringEngine> searchClusteringEngines = new HashMap<String, SearchClusteringEngine>();
   private Map<String, DocumentClusteringEngine> documentClusteringEngines = new HashMap<String, DocumentClusteringEngine>();
+
   /**
-   * Base name for all spell checker query parameters. This name is also used to
+   * Base name for all component parameters. This name is also used to
    * register this component with SearchHandler.
    */
   public static final String COMPONENT_NAME = "clustering";
+  
   private NamedList initParams;
 
   @Override
