@@ -1382,58 +1382,56 @@
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:true}"
                    class="solr.clustering.ClusteringComponent" >
-    <!-- Declare an engine -->
+    <!-- Declare a named clustering engine. Only one engine can be named 
+         "default" (and it becomes the default one for the search component). 
+      -->
     <lst name="engine">
-      <!-- The name, only one can be named "default" -->
       <str name="name">default</str>
 
-      <!-- Class name of Carrot2 clustering algorithm.
+      <!-- Class name of a clustering algorithm compatible with the Carrot2
+           framework.
 
-           Currently available algorithms are:
-           
+           Currently available open source algorithms are:
            * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
            * org.carrot2.clustering.stc.STCClusteringAlgorithm
            * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
-           
-           See http://project.carrot2.org/algorithms.html for the
-           algorithm's characteristics.
+
+           See http://project.carrot2.org/algorithms.html for more information.
+
+           A commercial algorithm Lingo3G (needs to be installed separately) is defined as:
+           * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
         -->
       <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
 
-      <!-- Overriding values for Carrot2 default algorithm attributes.
+      <!-- Override location of the clustering algorithm's resources 
+           (attribute definitions and lexical resources).
 
-           For a description of all available attributes, see:
-           http://download.carrot2.org/stable/manual/#chapter.components.
-           Use attribute key as name attribute of str elements
-           below. These can be further overridden for individual
-           requests by specifying attribute key as request parameter
-           name and attribute value as parameter value.
-        -->
-      <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
-
-      <!-- Location of Carrot2 lexical resources.
-
-           A directory from which to load Carrot2-specific stop words
-           and stop labels. Absolute or relative to Solr config directory.
+           A directory from which to load algorithm-specific stop words,
+           stop labels and attribute definition XMLs. 
+           Absolute or relative to Solr config directory.
            If a specific resource (e.g. stopwords.en) is present in the
            specified dir, it will completely override the corresponding
-           default one that ships with Carrot2.
+           default one that typically ships with each algorithm.
 
            For an overview of Carrot2 lexical resources, see:
            http://download.carrot2.org/head/manual/#chapter.lexical-resources
-        -->
-      <str name="carrot.lexicalResourcesDir">clustering/carrot2</str>
-
-      <!-- The language to assume for the documents.
-
-           For a list of allowed values, see:
-           http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
+           
+           For an overview of Lingo3G lexical resources, see:
+           http://download.carrotsearch.com/lingo3g/manual/#chapter.lexical-resources
        -->
-      <str name="MultilingualClustering.defaultLanguage">ENGLISH</str>
+      <!-- <str name="carrot.resourcesDir">clustering/carrot2</str> -->
     </lst>
+
+    <!-- An example definition for the STC clustering algorithm. -->
     <lst name="engine">
       <str name="name">stc</str>
       <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+    </lst>
+
+    <!-- An example definition for the bisecting kmeans clustering algorithm. -->
+    <lst name="engine">
+      <str name="name">kmeans</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
     </lst>
   </searchComponent>
 
