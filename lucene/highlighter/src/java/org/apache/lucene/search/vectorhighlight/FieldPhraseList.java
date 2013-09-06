@@ -60,49 +60,49 @@ public class FieldPhraseList {
   public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
-    QueryPhraseMap qpm = fieldQuery.getRootMap(field);
-    if (qpm != null) {
-      LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
-      extractPhrases(fieldTermStack.termList, qpm, phraseCandidate, 0);
-      assert phraseCandidate.size() == 0;
-    }
-  }
+    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
+    QueryPhraseMap currMap = null;
+    QueryPhraseMap nextMap = null;
+    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) )
+    {      
+      phraseCandidate.clear();
 
-  void extractPhrases(LinkedList<TermInfo> terms, QueryPhraseMap currMap, LinkedList<TermInfo> phraseCandidate, int longest) {
-    if (phraseCandidate.size() > 1 && phraseCandidate.getLast().getPosition() - phraseCandidate.getFirst().getPosition() > currMap.getMaxPhraseWindow()) {
-      return;
-    }
-    if (terms.isEmpty()) {
-      if (longest > 0) {
-        addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate.subList(0, longest), currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
-      }
-      return;
-    }
-    ArrayList<TermInfo> samePositionTerms = new ArrayList<TermInfo>();
-    do {
-      samePositionTerms.add(terms.pop());
-    } while (!terms.isEmpty() && terms.get(0).getPosition() == samePositionTerms.get(0).getPosition());
+      TermInfo ti = fieldTermStack.pop();
+      currMap = fieldQuery.getFieldTermMap( field, ti.getText() );
 
-    // try all next terms at the same position
-    for (TermInfo nextTerm : samePositionTerms) {
-      QueryPhraseMap nextMap = currMap.getTermMap(nextTerm.getText());
-      if (nextMap != null) {
-        phraseCandidate.add(nextTerm);
-        int l = longest;
-        if(nextMap.isValidTermOrPhrase( phraseCandidate ) ){
-          l = phraseCandidate.size();
+      // if not found, discard top TermInfo from stack, then try next element
+      if( currMap == null ) continue;
+      
+      // if found, search the longest phrase
+      phraseCandidate.add( ti );
+      while( true ){
+        ti = fieldTermStack.pop();
+        nextMap = null;
+        if( ti != null )
+          nextMap = currMap.getTermMap( ti.getText() );
+        if( ti == null || nextMap == null ){
+          if( ti != null ) 
+            fieldTermStack.push( ti );
+          if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
+            addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
+          }
+          else{
+            while( phraseCandidate.size() > 1 ){
+              fieldTermStack.push( phraseCandidate.removeLast() );
+              currMap = fieldQuery.searchPhrase( field, phraseCandidate );
+              if( currMap != null ){
+                addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
+                break;
+              }
+            }
+          }
+          break;
         }
-        extractPhrases(terms, nextMap, phraseCandidate, l);
-        phraseCandidate.removeLast();
+        else{
+          phraseCandidate.add( ti );
+          currMap = nextMap;
+        }
       }
-    }
-
-    // ignore the next term
-    extractPhrases(terms, currMap, phraseCandidate, longest);
-
-    // add terms back
-    for (TermInfo nextTerm : samePositionTerms) {
-      terms.push(nextTerm);
     }
   }
 
@@ -159,11 +159,11 @@ public class FieldPhraseList {
       return termsInfos;
     }
 
-    public WeightedPhraseInfo( List<TermInfo> terms, float boost ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
     
-    public WeightedPhraseInfo( List<TermInfo> terms, float boost, int seqnum ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
       this.seqnum = seqnum;
       
