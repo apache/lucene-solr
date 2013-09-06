@@ -26,14 +26,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@SuppressCodecs("Lucene3x")
 public class TestHighFreqTerms extends LuceneTestCase {
  
   private static IndexWriter writer =null;
@@ -66,21 +66,21 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public void testFirstTermHighestDocFreqAllFields () throws Exception{
     int numTerms = 12;
     String field =null;
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.DocFreqComparator());
     assertEquals("Term with highest docfreq is first", 20,terms[0].docFreq );
   }
   
   public void testFirstTermHighestDocFreq () throws Exception{
     int numTerms = 12;
     String field="FIELD_1";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.DocFreqComparator());
     assertEquals("Term with highest docfreq is first", 10,terms[0].docFreq );
   }
 
   public void testOrderedByDocFreqDescending () throws Exception{
     int numTerms = 12;
     String field="FIELD_1";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.DocFreqComparator());
     for (int i = 0; i < terms.length; i++) {
       if (i > 0) {
         assertTrue ("out of order " + terms[i-1].docFreq + "should be >= " + terms[i].docFreq,terms[i-1].docFreq >= terms[i].docFreq);
@@ -91,14 +91,14 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public void testNumTerms () throws Exception{
     int numTerms = 12;
     String field = null;
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.DocFreqComparator());
     assertEquals("length of terms array equals numTerms :" + numTerms, numTerms, terms.length);
   }
     
   public void testGetHighFreqTerms () throws Exception{
     int numTerms=12;
     String field="FIELD_1";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.DocFreqComparator());
        
     for (int i = 0; i < terms.length; i++) {
       String termtext = terms[i].termtext.utf8ToString();
@@ -122,30 +122,27 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public void testFirstTermHighestTotalTermFreq () throws Exception{
     int numTerms = 20;
     String field = null;
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
-    TermStats[] termsWithTotalTermFreq = HighFreqTerms.sortByTotalTermFreq(reader, terms);
-    assertEquals("Term with highest totalTermFreq is first",200, termsWithTotalTermFreq[0].totalTermFreq);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.TotalTermFreqComparator());
+    assertEquals("Term with highest totalTermFreq is first",200, terms[0].totalTermFreq);
   }
 
   public void testFirstTermHighestTotalTermFreqDifferentField () throws Exception{
     int numTerms = 20;
     String field = "different_field";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
-    TermStats[] termsWithTotalTermFreq = HighFreqTerms.sortByTotalTermFreq(reader, terms);
-    assertEquals("Term with highest totalTermFreq is first"+ termsWithTotalTermFreq[0].getTermText(),150, termsWithTotalTermFreq[0].totalTermFreq);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.TotalTermFreqComparator());
+    assertEquals("Term with highest totalTermFreq is first"+ terms[0].getTermText(),150, terms[0].totalTermFreq);
   }
   
   public void testOrderedByTermFreqDescending () throws Exception{
     int numTerms = 12;
     String field = "FIELD_1";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
-    TermStats[] termsWithTF = HighFreqTerms.sortByTotalTermFreq(reader, terms);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.TotalTermFreqComparator());
  
-    for (int i = 0; i < termsWithTF.length; i++) {
+    for (int i = 0; i < terms.length; i++) {
       // check that they are sorted by descending termfreq
       // order
       if (i > 0) {
-        assertTrue ("out of order" +termsWithTF[i-1]+ " > " +termsWithTF[i],termsWithTF[i-1].totalTermFreq >= termsWithTF[i].totalTermFreq);
+        assertTrue ("out of order" +terms[i-1]+ " > " +terms[i],terms[i-1].totalTermFreq >= terms[i].totalTermFreq);
       }
     } 
   }
@@ -153,49 +150,29 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public void testGetTermFreqOrdered () throws Exception{
     int numTerms = 12;
     String field = "FIELD_1";
-    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
-    TermStats[] termsWithTF = HighFreqTerms.sortByTotalTermFreq(reader, terms);
+    TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field, new HighFreqTerms.TotalTermFreqComparator());
    
-    for (int i = 0; i < termsWithTF.length; i++) {
-      String text = termsWithTF[i].termtext.utf8ToString();
+    for (int i = 0; i < terms.length; i++) {
+      String text = terms[i].termtext.utf8ToString();
       if (text.contains("highTF")) {
         if (text.contains("medDF")) {
           assertEquals("total term freq is expected", 125,
-                       termsWithTF[i].totalTermFreq);
+                       terms[i].totalTermFreq);
         } else {
           assertEquals("total term freq is expected", 200,
-                       termsWithTF[i].totalTermFreq);
+                       terms[i].totalTermFreq);
         }
         
       } else {
         int n = Integer.parseInt(text);
         assertEquals("doc freq is expected", getExpecteddocFreq(n),
-                     termsWithTF[i].docFreq);
+                     terms[i].docFreq);
         assertEquals("total term freq is expected", getExpectedtotalTermFreq(n),
-                     termsWithTF[i].totalTermFreq);
+                     terms[i].totalTermFreq);
       }
     }
   }
-    
-  /********************Tests for getTotalTermFreq**********************************/
-    
-  public void testGetTotalTermFreq() throws Exception{
-    String term ="highTF";
-    BytesRef termtext = new BytesRef (term);
-    String field = "FIELD_1";
-    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, new Term(field, termtext));
-    assertEquals("highTf tf should be 200",200,totalTermFreq);
-    
-  }
-    
-  public void testGetTotalTermFreqBadTerm() throws Exception{
-    String term ="foobar";
-    BytesRef termtext = new BytesRef (term);
-    String field = "FIELD_1";
-    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, new Term(field, termtext));
-    assertEquals("totalTermFreq should be 0 for term not in index",0,totalTermFreq);
-    
-  }
+
   /********************Testing Utils**********************************/
     
   private static void indexDocs(IndexWriter writer) throws Exception {

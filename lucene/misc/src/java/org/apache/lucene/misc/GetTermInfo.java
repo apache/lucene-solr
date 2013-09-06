@@ -20,7 +20,6 @@ package org.apache.lucene.misc;
 import java.io.File;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -50,9 +49,8 @@ public class GetTermInfo {
   
   public static void getTermInfo(Directory dir, Term term) throws Exception {
     IndexReader reader = DirectoryReader.open(dir);
-    long totalTF = HighFreqTerms.getTotalTermFreq(reader, term);
     System.out.printf("%s:%s \t totalTF = %,d \t doc freq = %,d \n",
-         term.field(), term.text(), totalTF, reader.docFreq(term)); 
+         term.field(), term.text(), reader.totalTermFreq(term), reader.docFreq(term)); 
   }
    
   private static void usage() {
