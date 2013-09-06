@@ -33,6 +33,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -83,9 +84,9 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   private boolean fieldHasPayloads;
 
   // Holds starting file pointers for current term:
-  private long docTermStartFP;
-  private long posTermStartFP;
-  private long payTermStartFP;
+  private long docStartFP;
+  private long posStartFP;
+  private long payStartFP;
 
   final int[] docDeltaBuffer;
   final int[] freqBuffer;
@@ -191,16 +192,39 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     this(state, PackedInts.COMPACT);
   }
 
-  private final static class IntBlockTermState extends BlockTermState {
-    long docTermStartFP = 0;
-    long posTermStartFP = 0;
-    long payTermStartFP = 0;
+  final static class IntBlockTermState extends BlockTermState {
+    long docStartFP = 0;
+    long posStartFP = 0;
+    long payStartFP = 0;
     long skipOffset = -1;
     long lastPosBlockOffset = -1;
+    // docid when there is a single pulsed posting, otherwise -1
+    // freq is always implicitly totalTermFreq in this case.
     int singletonDocID = -1;
+
+    @Override
+    public IntBlockTermState clone() {
+      IntBlockTermState other = new IntBlockTermState();
+      other.copyFrom(this);
+      return other;
+    }
+
+    @Override
+    public void copyFrom(TermState _other) {
+      super.copyFrom(_other);
+      IntBlockTermState other = (IntBlockTermState) _other;
+      docStartFP = other.docStartFP;
+      posStartFP = other.posStartFP;
+      payStartFP = other.payStartFP;
+      lastPosBlockOffset = other.lastPosBlockOffset;
+      skipOffset = other.skipOffset;
+      singletonDocID = other.singletonDocID;
+    }
+
+
     @Override
     public String toString() {
-      return super.toString() + " docStartFP=" + docTermStartFP + " posStartFP=" + posTermStartFP + " payStartFP=" + payTermStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
+      return super.toString() + " docStartFP=" + docStartFP + " posStartFP=" + posStartFP + " payStartFP=" + payStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
     }
   }
 
@@ -237,17 +261,17 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   @Override
   public void startTerm() {
-    docTermStartFP = docOut.getFilePointer();
+    docStartFP = docOut.getFilePointer();
     if (fieldHasPositions) {
-      posTermStartFP = posOut.getFilePointer();
+      posStartFP = posOut.getFilePointer();
       if (fieldHasPayloads || fieldHasOffsets) {
-        payTermStartFP = payOut.getFilePointer();
+        payStartFP = payOut.getFilePointer();
       }
     }
     lastDocID = 0;
     lastBlockDocID = -1;
     // if (DEBUG) {
-    //   System.out.println("FPW.startTerm startFP=" + docTermStartFP);
+    //   System.out.println("FPW.startTerm startFP=" + docStartFP);
     // }
     skipWriter.resetSkip();
   }
@@ -394,7 +418,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
     // if (DEBUG) {
     //   if (docBufferUpto > 0) {
-    //     System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docTermStartFP=" + docTermStartFP);
+    //     System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docStartFP=" + docStartFP);
     //   }
     // }
     
@@ -425,7 +449,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     if (fieldHasPositions) {
       // if (DEBUG) {
       //   if (posBufferUpto > 0) {
-      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posTermStartFP=" + posTermStartFP + " hasPayloads=" + fieldHasPayloads + " hasOffsets=" + fieldHasOffsets);
+      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posStartFP=" + posStartFP + " hasPayloads=" + fieldHasPayloads + " hasOffsets=" + fieldHasOffsets);
       //   }
       // }
 
@@ -434,7 +458,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       assert state.totalTermFreq != -1;
       if (state.totalTermFreq > BLOCK_SIZE) {
         // record file offset for last pos in last block
-        lastPosBlockOffset = posOut.getFilePointer() - posTermStartFP;
+        lastPosBlockOffset = posOut.getFilePointer() - posStartFP;
       } else {
         lastPosBlockOffset = -1;
       }
@@ -505,10 +529,10 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
     long skipOffset;
     if (docCount > BLOCK_SIZE) {
-      skipOffset = skipWriter.writeSkip(docOut) - docTermStartFP;
+      skipOffset = skipWriter.writeSkip(docOut) - docStartFP;
       
       // if (DEBUG) {
-      //   System.out.println("skip packet " + (docOut.getFilePointer() - (docTermStartFP + skipOffset)) + " bytes");
+      //   System.out.println("skip packet " + (docOut.getFilePointer() - (docStartFP + skipOffset)) + " bytes");
       // }
     } else {
       skipOffset = -1;
@@ -519,9 +543,9 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
-    state.docTermStartFP = docTermStartFP;
-    state.posTermStartFP = posTermStartFP;
-    state.payTermStartFP = payTermStartFP;
+    state.docStartFP = docStartFP;
+    state.posStartFP = posStartFP;
+    state.payStartFP = payStartFP;
     state.singletonDocID = singletonDocID;
     state.skipOffset = skipOffset;
     state.lastPosBlockOffset = lastPosBlockOffset;
@@ -537,11 +561,11 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     if (absolute) {
       lastState = emptyState;
     }
-    longs[0] = state.docTermStartFP - lastState.docTermStartFP;
+    longs[0] = state.docStartFP - lastState.docStartFP;
     if (fieldHasPositions) {
-      longs[1] = state.posTermStartFP - lastState.posTermStartFP;
+      longs[1] = state.posStartFP - lastState.posStartFP;
       if (fieldHasPayloads || fieldHasOffsets) {
-        longs[2] = state.payTermStartFP - lastState.payTermStartFP;
+        longs[2] = state.payStartFP - lastState.payStartFP;
       }
     }
     if (state.singletonDocID != -1) {
