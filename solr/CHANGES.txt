@@ -87,6 +87,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-5202: Support easier overrides of Carrot2 clustering attributes via 
+  XML data sets exported from the Workbench. (Dawid Weiss)
+
 * SOLR-5126: Update Carrot2 clustering to version 3.8.0, update Morfologik 
   to version 1.7.1 (Dawid Weiss)
 
