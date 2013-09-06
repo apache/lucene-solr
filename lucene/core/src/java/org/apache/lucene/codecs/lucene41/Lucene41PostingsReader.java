@@ -195,7 +195,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       termState.posStartFP = 0;
       termState.payStartFP = 0;
     }
-    if (version < Lucene41PostingsWriter.VERSION_META_ARRAY) {  // impersonation
+    if (version < Lucene41PostingsWriter.VERSION_META_ARRAY) {  // backward compatibility
       _decodeTerm(in, fieldInfo, termState);
       return;
     }

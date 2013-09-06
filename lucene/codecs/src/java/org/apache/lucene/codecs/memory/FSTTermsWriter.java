@@ -78,7 +78,7 @@ import org.apache.lucene.codecs.CodecUtil;
  *    with the corresponding term. This part is used by FST to share outputs between arcs.
  *   </li>
  *   <li>
- *    Generic byte array: Used to store non-monotonical metadata.
+ *    Generic byte array: Used to store non-monotonic metadata.
  *   </li>
  *  </ul>
  * </p>
@@ -103,14 +103,14 @@ import org.apache.lucene.codecs.CodecUtil;
  *  <li>
  *   The format of PostingsHeader and generic meta bytes are customized by the specific postings implementation:
  *   they contain arbitrary per-file data (such as parameters or versioning information), and per-term data
- *   (non-monotonical ones like pulsed postings data).
+ *   (non-monotonic ones like pulsed postings data).
  *  </li>
  *  <li>
- *   The format of TermData is determined by FST, typically monotonical metadata will be dense around shallow arcs,
+ *   The format of TermData is determined by FST, typically monotonic metadata will be dense around shallow arcs,
  *   while in deeper arcs only generic bytes and term statistics exist.
  *  </li>
  *  <li>
- *   The byte Flag is used to indicate which part of metadata exists on current arc. Specially the monotonical part
+ *   The byte Flag is used to indicate which part of metadata exists on current arc. Specially the monotonic part
  *   is omitted when it is an array of 0s.
  *  </li>
  *  <li>

@@ -94,7 +94,7 @@ import org.apache.lucene.codecs.CodecUtil;
  *  per-field data like number of documents in current field). For each field, there are four blocks:
  *  <ul>
  *   <li>statistics bytes block: contains term statistics; </li>
- *   <li>metadata longs block: delta-encodes monotonical part of metadata; </li>
+ *   <li>metadata longs block: delta-encodes monotonic part of metadata; </li>
  *   <li>metadata bytes block: encodes other parts of metadata; </li>
  *   <li>skip block: contains skip data, to speed up metadata seeking and decoding</li>
  *  </ul>
@@ -126,7 +126,7 @@ import org.apache.lucene.codecs.CodecUtil;
  *  <li>
  *   The format of PostingsHeader and MetaBytes are customized by the specific postings implementation:
  *   they contain arbitrary per-file data (such as parameters or versioning information), and per-term data 
- *   (non-monotonical ones like pulsed postings data).
+ *   (non-monotonic ones like pulsed postings data).
  *  </li>
  *  <li>
  *   During initialization the reader will load all the blocks into memory. SkipBlock will be decoded, so that during seek

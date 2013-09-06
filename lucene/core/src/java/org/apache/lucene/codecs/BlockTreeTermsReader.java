@@ -616,7 +616,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         final BlockTermState termState;
   
-        // metadata buffer, holding monotonical values
+        // metadata buffer, holding monotonic values
         public long[] longs;
         // metadata buffer, holding general values
         public byte[] bytes;
@@ -2314,7 +2314,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         final BlockTermState state;
 
-        // metadata buffer, holding monotonical values
+        // metadata buffer, holding monotonic values
         public long[] longs;
         // metadata buffer, holding general values
         public byte[] bytes;
