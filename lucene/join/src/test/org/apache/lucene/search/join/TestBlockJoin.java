@@ -93,7 +93,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     assertTrue(r.leaves().size() > 1);
     IndexSearcher s = new IndexSearcher(r);
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
@@ -145,7 +145,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
@@ -249,7 +249,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
@@ -269,7 +269,7 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals("dummy filter passes everyone ", 2, s.search(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))), 10).totalHits);
       
     // not found test
-    assertEquals("noone live there", 0, s.search(childJoinQuery, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), 1).totalHits);
+    assertEquals("noone live there", 0, s.search(childJoinQuery, new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), 1).totalHits);
     assertEquals("noone live there", 0, s.search(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("country", "Oz"))), 1).totalHits);
       
     // apply the UK filter by the searcher
@@ -362,7 +362,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(
         NumericRangeQuery.newIntRange("year", 1990, 2010, true, true),
-        new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))),
+        new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))),
         ScoreMode.Total
     );
 
@@ -563,7 +563,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     final IndexSearcher joinS = new IndexSearcher(joinR);
 
-    final Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "x"))));
+    final Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "x"))));
 
     final int iters = 200*RANDOM_MULTIPLIER;
 
@@ -829,7 +829,7 @@ public class TestBlockJoin extends LuceneTestCase {
           childJoinQuery2 = parentJoinQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
           childJoinFilter2 = random().nextBoolean()
-                  ? new CachingWrapperFilter(f): f;
+                  ? new FixedBitSetCachingWrapperFilter(f): f;
         } else {
           childJoinFilter2 = null;
           // AND child field w/ parent query:
@@ -850,7 +850,7 @@ public class TestBlockJoin extends LuceneTestCase {
           childQuery2 = parentQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
           childFilter2 = random().nextBoolean()
-                  ? new CachingWrapperFilter(f): f;
+                  ? new FixedBitSetCachingWrapperFilter(f): f;
         } else {
           childFilter2 = null;
           final BooleanQuery bq2 = new BooleanQuery();
@@ -989,7 +989,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childJobQuery = new BooleanQuery();
@@ -1070,7 +1070,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
     Query tq = new TermQuery(new Term("child", "1"));
-    Filter parentFilter = new CachingWrapperFilter(
+    Filter parentFilter = new FixedBitSetCachingWrapperFilter(
                             new QueryWrapperFilter(
                               new TermQuery(new Term("parent", "1"))));
 
@@ -1104,7 +1104,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
     Query tq = new TermQuery(new Term("child", "2"));
-    Filter parentFilter = new CachingWrapperFilter(
+    Filter parentFilter = new FixedBitSetCachingWrapperFilter(
                             new QueryWrapperFilter(
                               new TermQuery(new Term("isparent", "yes"))));
 
@@ -1138,7 +1138,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = new IndexSearcher(r);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
@@ -1242,7 +1242,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
 
     Query childQuery = new TermQuery(new Term("childText", "text"));
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
     BooleanQuery parentQuery = new BooleanQuery();
     parentQuery.add(childJoinQuery, Occur.SHOULD);
@@ -1308,7 +1308,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // never matches:
     Query childQuery = new TermQuery(new Term("childText", "bogus"));
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
     BooleanQuery parentQuery = new BooleanQuery();
     parentQuery.add(childJoinQuery, Occur.SHOULD);
@@ -1374,7 +1374,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // illegally matches parent:
     Query childQuery = new TermQuery(new Term("parentText", "text"));
-    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
     BooleanQuery parentQuery = new BooleanQuery();
     parentQuery.add(childJoinQuery, Occur.SHOULD);
