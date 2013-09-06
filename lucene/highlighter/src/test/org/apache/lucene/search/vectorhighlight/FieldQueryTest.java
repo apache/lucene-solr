@@ -863,8 +863,8 @@ public class FieldQueryTest extends AbstractTestCase {
     phraseCandidate.add( new TermInfo( "c", 4, 5, 4, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
 
-    // "a b c"~2
-    query = pqF( 1F, 2, "a", "b", "c" );
+    // "a b c"~1
+    query = pqF( 1F, 1, "a", "b", "c" );
 
     // phraseHighlight = true, fieldMatch = true
     fq = new FieldQuery( query, true, true );
