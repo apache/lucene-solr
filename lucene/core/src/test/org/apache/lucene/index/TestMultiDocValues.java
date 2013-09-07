@@ -121,7 +121,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
       ref.copyChars(_TestUtil.randomUnicodeString(random()));
-      if (random().nextInt(7) == 0) {
+      if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
         iw.addDocument(new Document());
       }
       iw.addDocument(doc);
