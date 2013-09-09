@@ -101,13 +101,21 @@ New Features
   the "ie" (input encoding) parameter, e.g. "select?q=m%FCller&ie=ISO-8859-1".
   The default is UTF-8. To change the encoding of POSTed content, use the
   "Content-Type" HTTP header.  (Uwe Schindler, David Smiley)
+  
 * SOLR-4221: Custom sharding (Noble Paul)
-* SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
+
+* SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection 
+  and Shard level (Noble Paul, Shalin Mangar)
+
 * SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
+
 * SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
+
 * SOLR-4222: create custom sharded collection via collections API (Noble Paul)
-* SOLR-4718: Allow solr.xml to be stored in ZooKeeper
-* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
+
+* SOLR-4718: Allow solr.xml to be stored in ZooKeeper. (Mark Miller, Erick Erickson)
+
+* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK. (Erick Erickson)
 
 * SOLR-5165: Single-valued docValues fields no longer require a default value.
   Additionally they work with sortMissingFirst, sortMissingLast, facet.missing, 
@@ -186,6 +194,9 @@ Bug Fixes
 
 * SOLR-5206: Fixed OpenExchangeRatesOrgProvider to use refreshInterval correctly
   (Catalin, hossman)
+
+* SOLR-5215: Fix possibility of deadlock in ZooKeeper ConnectionManager.
+  (Mark Miller, Ricardo Merizalde)
 
 Optimizations
 ----------------------
