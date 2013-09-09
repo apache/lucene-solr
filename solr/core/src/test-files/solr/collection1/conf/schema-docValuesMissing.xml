@@ -54,6 +54,33 @@
     <field name="stringdv"              type="string" indexed="false" stored="false" docValues="true"/>
     <field name="stringdv_missingfirst" type="string" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
     <field name="stringdv_missinglast"  type="string" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+
+
+    <dynamicField name="*_floatdv"               type="float" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_floatdv_missingfirst"  type="float" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_floatdv_missinglast"   type="float" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+    
+    <dynamicField name="*_intdv"                 type="int" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_intdv_missingfirst"    type="int" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_intdv_missinglast"     type="int" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_doubledv"              type="double" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_doubledv_missingfirst" type="double" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_doubledv_missinglast"  type="double" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_longdv"                type="long" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_longdv_missingfirst"   type="long" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_longdv_missinglast"    type="long" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+ 
+    <dynamicField name="*_datedv"                type="date" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_datedv_missingfirst"   type="date" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_datedv_missinglast"    type="date" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_stringdv"              type="string" indexed="false" stored="false" docValues="true"/>
+    <dynamicField name="*_stringdv_missingfirst" type="string" indexed="false" stored="false" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_stringdv_missinglast"  type="string" indexed="false" stored="false" docValues="true" sortMissingLast="true"/>
+
+
   </fields>
 
   <uniqueKey>id</uniqueKey>
