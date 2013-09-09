@@ -37,16 +37,14 @@ class ConnectionManager implements Watcher {
   private boolean connected;
 
   private final ZkClientConnectionStrategy connectionStrategy;
-  
-  private Object connectionUpdateLock = new Object();
 
-  private String zkServerAddress;
+  private final String zkServerAddress;
 
-  private int zkClientTimeout;
+  private final int zkClientTimeout;
 
-  private SolrZkClient client;
+  private final SolrZkClient client;
 
-  private OnReconnect onReconnect;
+  private final OnReconnect onReconnect;
 
   private volatile boolean isClosed = false;
 
@@ -92,37 +90,35 @@ class ConnectionManager implements Watcher {
             new ZkClientConnectionStrategy.ZkUpdate() {
               @Override
               public void update(SolrZooKeeper keeper) {
-                // if keeper does not replace oldKeeper we must be sure to close it
-                synchronized (connectionUpdateLock) {
-                  try {
-                    waitForConnected(Long.MAX_VALUE);
-                  } catch (Exception e1) {
-                    closeKeeper(keeper);
-                    throw new RuntimeException(e1);
-                  }
-                  log.info("Connection with ZooKeeper reestablished.");
-                  try {
-                    client.updateKeeper(keeper);
-                  } catch (InterruptedException e) {
-                    closeKeeper(keeper);
-                    Thread.currentThread().interrupt();
-                    // we must have been asked to stop
-                    throw new RuntimeException(e);
-                  } catch(Throwable t) {
-                    closeKeeper(keeper);
-                    throw new RuntimeException(t);
-                  }
-      
-                  if (onReconnect != null) {
-                    onReconnect.command();
-                  }
-                  synchronized (ConnectionManager.this) {
-                    ConnectionManager.this.connected = true;
-                  }
+                try {
+                  waitForConnected(Long.MAX_VALUE);
+                } catch (Exception e1) {
+                  closeKeeper(keeper);
+                  throw new RuntimeException(e1);
+                }
+                
+                log.info("Connection with ZooKeeper reestablished.");
+                try {
+                  client.updateKeeper(keeper);
+                } catch (InterruptedException e) {
+                  closeKeeper(keeper);
+                  Thread.currentThread().interrupt();
+                  // we must have been asked to stop
+                  throw new RuntimeException(e);
+                } catch (Throwable t) {
+                  closeKeeper(keeper);
+                  throw new RuntimeException(t);
+                }
+                
+                if (onReconnect != null) {
+                  onReconnect.command();
+                }
+                
+                synchronized (ConnectionManager.this) {
+                  ConnectionManager.this.connected = true;
                 }
                 
               }
-
             });
       } catch (Exception e) {
         SolrException.log(log, "", e);
