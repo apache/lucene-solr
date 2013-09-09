@@ -35,6 +35,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Enables per field postings support.
@@ -224,6 +225,16 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(Map.Entry<String,FieldsProducer> entry: formats.entrySet()) {
+        sizeInBytes += entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR;
+        sizeInBytes += entry.getValue().ramBytesUsed();
+      }
+      return sizeInBytes;
     }
   }
 

@@ -40,4 +40,7 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable {
 
   @Override
   public abstract StoredFieldsReader clone();
+  
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
 }

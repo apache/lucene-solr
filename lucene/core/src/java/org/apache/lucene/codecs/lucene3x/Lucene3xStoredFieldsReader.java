@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Closeable;
 
@@ -296,5 +297,10 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
       final int length = fieldsStream.readVInt();
       fieldsStream.seek(fieldsStream.getFilePointer() + length);
     }
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
 }

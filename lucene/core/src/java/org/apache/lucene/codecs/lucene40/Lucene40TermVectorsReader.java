@@ -763,5 +763,10 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     
     return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs);
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }
 

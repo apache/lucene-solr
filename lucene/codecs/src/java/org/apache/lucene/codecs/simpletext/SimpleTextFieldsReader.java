@@ -574,6 +574,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       */
       //System.out.println("FST " + fst.sizeInBytes());
     }
+    
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return (fst!=null) ? fst.sizeInBytes() : 0;
+    }
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
@@ -630,7 +635,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
-  private final Map<String,Terms> termsCache = new HashMap<String,Terms>();
+  private final Map<String,SimpleTextTerms> termsCache = new HashMap<String,SimpleTextTerms>();
 
   @Override
   synchronized public Terms terms(String field) throws IOException {
@@ -641,7 +646,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         return null;
       } else {
         terms = new SimpleTextTerms(field, fp);
-        termsCache.put(field, terms);
+        termsCache.put(field, (SimpleTextTerms) terms);
       }
     }
     return terms;
@@ -655,5 +660,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     in.close();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    for(SimpleTextTerms simpleTextTerms : termsCache.values()) {
+      sizeInBytes += (simpleTextTerms!=null) ? simpleTextTerms.ramBytesUsed() : 0;
+    }
+    return sizeInBytes;
   }
 }

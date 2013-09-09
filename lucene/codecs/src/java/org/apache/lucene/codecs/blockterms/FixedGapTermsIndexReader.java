@@ -394,6 +394,12 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           }
         }
       }
+      
+      /** Returns approximate RAM bytes Used */
+      public long ramBytesUsed() {
+        return ((termOffsets!=null)? termOffsets.ramBytesUsed() : 0) +
+            ((termsDictOffsets!=null)? termsDictOffsets.ramBytesUsed() : 0);
+      }
     }
   }
 
@@ -420,5 +426,15 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       dirOffset = input.readLong();
     }
     input.seek(dirOffset);
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = ((termBytes!=null) ? termBytes.ramBytesUsed() : 0) +
+        ((termBytesReader!=null)? termBytesReader.ramBytesUsed() : 0);
+    for(FieldIndexData entry : fields.values()) {
+      sizeInBytes += entry.coreIndex.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
 }

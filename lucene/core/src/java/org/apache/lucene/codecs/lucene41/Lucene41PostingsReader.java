@@ -1604,4 +1604,10 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       return docFreq;
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
+
 }

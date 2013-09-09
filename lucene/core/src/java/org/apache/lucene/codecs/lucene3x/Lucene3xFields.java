@@ -42,6 +42,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
@@ -1067,5 +1068,10 @@ class Lucene3xFields extends FieldsProducer {
     public long cost() {
       return pos.df;
     }
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
 }

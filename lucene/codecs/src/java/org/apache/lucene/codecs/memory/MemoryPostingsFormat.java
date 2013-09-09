@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -49,6 +50,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -843,6 +845,10 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public boolean hasPayloads() {
       return field.hasPayloads();
     }
+
+    public long ramBytesUsed() {
+      return ((fst!=null) ? fst.sizeInBytes() : 0);
+    }
   }
 
   @Override
@@ -888,6 +894,16 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         for(TermsReader termsReader : fields.values()) {
           termsReader.fst = null;
         }
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        long sizeInBytes = 0;
+        for(Map.Entry<String,TermsReader> entry: fields.entrySet()) {
+          sizeInBytes += (entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR);
+          sizeInBytes += entry.getValue().ramBytesUsed();
+        }
+        return sizeInBytes;
       }
     };
   }

@@ -538,4 +538,9 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return 1;
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }

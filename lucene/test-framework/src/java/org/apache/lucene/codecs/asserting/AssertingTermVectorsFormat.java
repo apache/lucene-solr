@@ -71,6 +71,11 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     public TermVectorsReader clone() {
       return new AssertingTermVectorsReader(in.clone());
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
 
   enum Status {

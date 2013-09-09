@@ -62,6 +62,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     boolean fixedLength;
     long minValue;
     long numValues;
+    
   };
 
   final int maxDoc;
@@ -463,5 +464,10 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   /** Used only in ctor: */
   private String stripPrefix(BytesRef prefix) throws IOException {
     return new String(scratch.bytes, scratch.offset + prefix.length, scratch.length - prefix.length, "UTF-8");
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
   }
 }

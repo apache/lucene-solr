@@ -72,4 +72,7 @@ public abstract class TermsIndexReaderBase implements Closeable {
     /** Only implemented if {@link TermsIndexReaderBase#supportsOrd()} returns true. */
     public abstract long ord();
   }
+
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
 }

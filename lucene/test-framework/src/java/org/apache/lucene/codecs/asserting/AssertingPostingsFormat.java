@@ -91,6 +91,11 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     public long getUniqueTermCount() throws IOException {
       return in.getUniqueTermCount();
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
   
   static class AssertingFieldsConsumer extends FieldsConsumer {

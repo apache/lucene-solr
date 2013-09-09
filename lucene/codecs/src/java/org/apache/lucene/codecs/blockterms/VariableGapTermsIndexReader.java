@@ -215,6 +215,11 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         }
       }
     }
+    
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return fst == null ? 0 : fst.sizeInBytes();
+    }
   }
 
   @Override
@@ -240,5 +245,14 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       dirOffset = input.readLong();
     }
     input.seek(dirOffset);
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    for(FieldIndexData entry : fields.values()) {
+      sizeInBytes += entry.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
 }

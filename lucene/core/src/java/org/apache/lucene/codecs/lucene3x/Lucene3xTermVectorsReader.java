@@ -45,6 +45,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** @deprecated Only for reading existing 3.x indexes */
 @Deprecated
@@ -730,6 +731,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
   // index, using the test-only PreFlexRW.
   protected boolean sortTermsByUnicode() {
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
 }
 

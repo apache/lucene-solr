@@ -192,4 +192,9 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     return a.length == b.length - bOffset && 
         ArrayUtil.equals(a.bytes, a.offset, b.bytes, b.offset + bOffset, b.length - bOffset);
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }

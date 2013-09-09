@@ -497,4 +497,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return indexReader.ramBytesUsed();
+  }
+
 }

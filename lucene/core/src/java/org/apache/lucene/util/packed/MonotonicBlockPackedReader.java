@@ -26,6 +26,7 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Provides random access to a stream written with
@@ -82,6 +83,17 @@ public final class MonotonicBlockPackedReader {
   /** Returns the number of values */
   public long size() {
     return valueCount;
+  }
+  
+  /** Returns the approximate RAM bytes used */
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    sizeInBytes += RamUsageEstimator.sizeOf(minValues);
+    sizeInBytes += RamUsageEstimator.sizeOf(averages);
+    for(PackedInts.Reader reader: subReaders) {
+      sizeInBytes += reader.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
 
 }

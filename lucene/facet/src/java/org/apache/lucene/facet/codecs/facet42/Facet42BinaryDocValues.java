@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
 class Facet42BinaryDocValues extends BinaryDocValues {
@@ -42,6 +43,11 @@ class Facet42BinaryDocValues extends BinaryDocValues {
     ret.bytes = bytes;
     ret.offset = start;
     ret.length = (int) (addresses.get(docID+1)-start);
+  }
+  
+  /** Returns approximate RAM bytes used */
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(bytes) + addresses.ramBytesUsed();
   }
   
 }

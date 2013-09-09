@@ -126,6 +126,11 @@ public final class PagedBytes {
         assert b.length > 0;
       }
     }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return ((blocks!=null) ? (blockSize * blocks.length) : 0);
+    }
   }
 
   /** 1&lt;&lt;blockBits must be bigger than biggest single

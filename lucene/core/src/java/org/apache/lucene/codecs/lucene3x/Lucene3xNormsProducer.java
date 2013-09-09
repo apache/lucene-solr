@@ -38,6 +38,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -217,5 +218,10 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
     throw new AssertionError();
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
 }

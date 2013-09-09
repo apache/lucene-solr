@@ -630,4 +630,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       // we don't want to copy any stuff over to another docsenum ever!
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return ((wrappedPostingsReader!=null) ? wrappedPostingsReader.ramBytesUsed(): 0);
+  }
 }
