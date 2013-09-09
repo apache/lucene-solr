@@ -91,7 +91,7 @@ final class IndexFileDeleter implements Closeable {
 
   /* Holds files we had incref'd from the previous
    * non-commit checkpoint: */
-  private List<Collection<String>> lastFiles = new ArrayList<Collection<String>>();
+  private final List<String> lastFiles = new ArrayList<String>();
 
   /* Commits that the IndexDeletionPolicy have decided to delete: */
   private List<CommitPoint> commitsToDelete = new ArrayList<CommitPoint>();
@@ -360,14 +360,13 @@ final class IndexFileDeleter implements Closeable {
     refresh(null);
   }
 
+  @Override
   public void close() throws IOException {
     // DecRef old files from the last checkpoint, if any:
     assert locked();
-    int size = lastFiles.size();
-    if (size > 0) {
-      for(int i=0;i<size;i++) {
-        decRef(lastFiles.get(i));
-      }
+
+    if (!lastFiles.isEmpty()) {
+      decRef(lastFiles);
       lastFiles.clear();
     }
 
@@ -458,13 +457,11 @@ final class IndexFileDeleter implements Closeable {
       deleteCommits();
     } else {
       // DecRef old files from the last checkpoint, if any:
-      for (Collection<String> lastFile : lastFiles) {
-        decRef(lastFile);
-      }
+      decRef(lastFiles);
       lastFiles.clear();
 
       // Save files so we can decr on next checkpoint/commit:
-      lastFiles.add(segmentInfos.files(directory, false));
+      lastFiles.addAll(segmentInfos.files(directory, false));
     }
     if (infoStream.isEnabled("IFD")) {
       long t1 = System.nanoTime();
