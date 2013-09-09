@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Random;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
 
   public void testRandomStrings() throws Exception {
@@ -64,5 +62,36 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
       }
       };
     checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
+  }
+
+  public void testMissedFirstToken() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName,
+                                                       Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TrivialLookaheadFilter filter = new TrivialLookaheadFilter(source);
+        return new TokenStreamComponents(source, filter);
+     }
+    };
+
+    assertAnalyzesTo(analyzer,
+        "Only he who is running knows .",
+        new String[]{
+            "Only",
+            "Only-huh?",
+            "he",
+            "he-huh?",
+            "who",
+            "who-huh?",
+            "is",
+            "is-huh?",
+            "running",
+            "running-huh?",
+            "knows",
+            "knows-huh?",
+            ".",
+            ".-huh?"
+        });
   }
 }
