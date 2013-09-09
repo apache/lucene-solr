@@ -804,10 +804,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     if (includeSegmentsFile) {
       final String segmentFileName = getSegmentsFileName();
       if (segmentFileName != null) {
-        /*
-         * TODO: if lastGen == -1 we get might get null here it seems wrong to
-         * add null to the files set
-         */
         files.add(segmentFileName);
       }
     }
