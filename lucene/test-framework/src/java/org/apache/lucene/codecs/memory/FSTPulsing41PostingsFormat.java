@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.pulsing;
+package org.apache.lucene.codecs.memory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,68 +19,50 @@ package org.apache.lucene.codecs.pulsing;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsBaseFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
+import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-/** This postings format "inlines" the postings for terms that have
- *  low docFreq.  It wraps another postings format, which is used for
- *  writing the non-inlined terms.
- *
+/** FST + Pulsing41, test only, since
+ *  FST does no delta encoding here!
  *  @lucene.experimental */
 
-public abstract class PulsingPostingsFormat extends PostingsFormat {
-
-  private final int freqCutoff;
-  private final int minBlockSize;
-  private final int maxBlockSize;
+public class FSTPulsing41PostingsFormat extends PostingsFormat {
   private final PostingsBaseFormat wrappedPostingsBaseFormat;
+  private final int freqCutoff;
+
+  public FSTPulsing41PostingsFormat() {
+    this(1);
+  }
   
-  public PulsingPostingsFormat(String name, PostingsBaseFormat wrappedPostingsBaseFormat, int freqCutoff) {
-    this(name, wrappedPostingsBaseFormat, freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
-  }
-
-  /** Terms with freq <= freqCutoff are inlined into terms
-   *  dict. */
-  public PulsingPostingsFormat(String name, PostingsBaseFormat wrappedPostingsBaseFormat, int freqCutoff, int minBlockSize, int maxBlockSize) {
-    super(name);
+  public FSTPulsing41PostingsFormat(int freqCutoff) {
+    super("FSTPulsing41");
+    this.wrappedPostingsBaseFormat = new Lucene41PostingsBaseFormat();
     this.freqCutoff = freqCutoff;
-    this.minBlockSize = minBlockSize;
-    assert minBlockSize > 1;
-    this.maxBlockSize = maxBlockSize;
-    this.wrappedPostingsBaseFormat = wrappedPostingsBaseFormat;
-  }
-
-  @Override
-  public String toString() {
-    return getName() + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase docsWriter = null;
-
-    // Terms that have <= freqCutoff number of docs are
-    // "pulsed" (inlined):
     PostingsWriterBase pulsingWriter = null;
 
-    // Terms dict
     boolean success = false;
     try {
       docsWriter = wrappedPostingsBaseFormat.postingsWriterBase(state);
-
-      // Terms that have <= freqCutoff number of docs are
-      // "pulsed" (inlined):
       pulsingWriter = new PulsingPostingsWriter(state, freqCutoff, docsWriter);
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
+      FieldsConsumer ret = new FSTTermsWriter(state, pulsingWriter);
       success = true;
       return ret;
     } finally {
@@ -94,16 +76,11 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase docsReader = null;
     PostingsReaderBase pulsingReader = null;
-
     boolean success = false;
     try {
       docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
       pulsingReader = new PulsingPostingsReader(state, docsReader);
-      FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.directory, state.fieldInfos, state.segmentInfo,
-                                                    pulsingReader,
-                                                    state.context,
-                                                    state.segmentSuffix);
+      FieldsProducer ret = new FSTTermsReader(state, pulsingReader);
       success = true;
       return ret;
     } finally {
@@ -111,9 +88,5 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
         IOUtils.closeWhileHandlingException(docsReader, pulsingReader);
       }
     }
-  }
-
-  public int getFreqCutoff() {
-    return freqCutoff;
   }
 }

@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -115,15 +116,6 @@ public class SepPostingsReader extends PostingsReaderBase {
     long payloadFP;
     long skipFP;
 
-    // Only used for "primary" term state; these are never
-    // copied on clone:
-    
-    // TODO: these should somehow be stored per-TermsEnum
-    // not per TermState; maybe somehow the terms dict
-    // should load/manage the byte[]/DataReader for us?
-    byte[] bytes;
-    ByteArrayDataInput bytesReader;
-
     @Override
     public SepTermState clone() {
       SepTermState other = new SepTermState();
@@ -182,40 +174,21 @@ public class SepPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+  public void decodeTerm(long[] empty, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute) 
+    throws IOException {
     final SepTermState termState = (SepTermState) _termState;
-    //System.out.println("SEPR: readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
-    final int len = termsIn.readVInt();
-    //System.out.println("  numBytes=" + len);
-    if (termState.bytes == null) {
-      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-      termState.bytesReader = new ByteArrayDataInput(termState.bytes);
-    } else if (termState.bytes.length < len) {
-      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-    }
-    termState.bytesReader.reset(termState.bytes, 0, len);
-    termsIn.readBytes(termState.bytes, 0, len);
-  }
-
-  @Override
-  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    final SepTermState termState = (SepTermState) _termState;
-    final boolean isFirstTerm = termState.termBlockOrd == 0;
-    //System.out.println("SEPR.nextTerm termCount=" + termState.termBlockOrd + " isFirstTerm=" + isFirstTerm + " bytesReader.pos=" + termState.bytesReader.getPosition());
-    //System.out.println("  docFreq=" + termState.docFreq);
-    termState.docIndex.read(termState.bytesReader, isFirstTerm);
-    //System.out.println("  docIndex=" + termState.docIndex);
+    termState.docIndex.read(in, absolute);
     if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-      termState.freqIndex.read(termState.bytesReader, isFirstTerm);
+      termState.freqIndex.read(in, absolute);
       if (fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         //System.out.println("  freqIndex=" + termState.freqIndex);
-        termState.posIndex.read(termState.bytesReader, isFirstTerm);
+        termState.posIndex.read(in, absolute);
         //System.out.println("  posIndex=" + termState.posIndex);
         if (fieldInfo.hasPayloads()) {
-          if (isFirstTerm) {
-            termState.payloadFP = termState.bytesReader.readVLong();
+          if (absolute) {
+            termState.payloadFP = in.readVLong();
           } else {
-            termState.payloadFP += termState.bytesReader.readVLong();
+            termState.payloadFP += in.readVLong();
           }
           //System.out.println("  payloadFP=" + termState.payloadFP);
         }
@@ -223,14 +196,14 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
 
     if (termState.docFreq >= skipMinimum) {
-      //System.out.println("   readSkip @ " + termState.bytesReader.getPosition());
-      if (isFirstTerm) {
-        termState.skipFP = termState.bytesReader.readVLong();
+      //System.out.println("   readSkip @ " + in.getPosition());
+      if (absolute) {
+        termState.skipFP = in.readVLong();
       } else {
-        termState.skipFP += termState.bytesReader.readVLong();
+        termState.skipFP += in.readVLong();
       }
       //System.out.println("  skipFP=" + termState.skipFP);
-    } else if (isFirstTerm) {
+    } else if (absolute) {
       termState.skipFP = 0;
     }
   }

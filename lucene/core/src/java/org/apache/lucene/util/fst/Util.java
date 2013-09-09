@@ -762,10 +762,11 @@ public final class Util {
    */
   private static String printableLabel(int label) {
     if (label >= 0x20 && label <= 0x7d) {
-      return Character.toString((char) label);
-    } else {
-      return "0x" + Integer.toHexString(label);
+      if (label != 0x22 && label != 0x5c) {  // " OR \
+        return Character.toString((char) label);
+      }
     }
+    return "0x" + Integer.toHexString(label);
   }
 
   /** Just maps each UTF16 unit (char) to the ints in an

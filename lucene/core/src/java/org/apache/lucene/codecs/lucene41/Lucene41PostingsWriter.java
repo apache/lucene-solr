@@ -25,14 +25,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -65,13 +67,15 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   // Increment version to change it
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_META_ARRAY = 1;
+  final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
   final IndexOutput docOut;
   final IndexOutput posOut;
   final IndexOutput payOut;
 
-  private IndexOutput termsOut;
+  final static IntBlockTermState emptyState = new IntBlockTermState();
+  IntBlockTermState lastState;
 
   // How current field indexes postings:
   private boolean fieldHasFreqs;
@@ -79,10 +83,10 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  // Holds starting file pointers for each term:
-  private long docTermStartFP;
-  private long posTermStartFP;
-  private long payTermStartFP;
+  // Holds starting file pointers for current term:
+  private long docStartFP;
+  private long posStartFP;
+  private long payStartFP;
 
   final int[] docDeltaBuffer;
   final int[] freqBuffer;
@@ -188,36 +192,86 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     this(state, PackedInts.COMPACT);
   }
 
+  final static class IntBlockTermState extends BlockTermState {
+    long docStartFP = 0;
+    long posStartFP = 0;
+    long payStartFP = 0;
+    long skipOffset = -1;
+    long lastPosBlockOffset = -1;
+    // docid when there is a single pulsed posting, otherwise -1
+    // freq is always implicitly totalTermFreq in this case.
+    int singletonDocID = -1;
+
+    @Override
+    public IntBlockTermState clone() {
+      IntBlockTermState other = new IntBlockTermState();
+      other.copyFrom(this);
+      return other;
+    }
+
+    @Override
+    public void copyFrom(TermState _other) {
+      super.copyFrom(_other);
+      IntBlockTermState other = (IntBlockTermState) _other;
+      docStartFP = other.docStartFP;
+      posStartFP = other.posStartFP;
+      payStartFP = other.payStartFP;
+      lastPosBlockOffset = other.lastPosBlockOffset;
+      skipOffset = other.skipOffset;
+      singletonDocID = other.singletonDocID;
+    }
+
+
+    @Override
+    public String toString() {
+      return super.toString() + " docStartFP=" + docStartFP + " posStartFP=" + posStartFP + " payStartFP=" + payStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
+    }
+  }
+
   @Override
-  public void start(IndexOutput termsOut) throws IOException {
-    this.termsOut = termsOut;
+  public IntBlockTermState newTermState() {
+    return new IntBlockTermState();
+  }
+
+  @Override
+  public void init(IndexOutput termsOut) throws IOException {
     CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
     termsOut.writeVInt(BLOCK_SIZE);
   }
 
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     fieldHasFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     fieldHasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     fieldHasPayloads = fieldInfo.hasPayloads();
     skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
+    lastState = emptyState;
+    if (fieldHasPositions) {
+      if (fieldHasPayloads || fieldHasOffsets) {
+        return 3;  // doc + pos + pay FP
+      } else {
+        return 2;  // doc + pos FP
+      }
+    } else {
+      return 1;    // doc FP
+    }
   }
 
   @Override
   public void startTerm() {
-    docTermStartFP = docOut.getFilePointer();
+    docStartFP = docOut.getFilePointer();
     if (fieldHasPositions) {
-      posTermStartFP = posOut.getFilePointer();
+      posStartFP = posOut.getFilePointer();
       if (fieldHasPayloads || fieldHasOffsets) {
-        payTermStartFP = payOut.getFilePointer();
+        payStartFP = payOut.getFilePointer();
       }
     }
     lastDocID = 0;
     lastBlockDocID = -1;
     // if (DEBUG) {
-    //   System.out.println("FPW.startTerm startFP=" + docTermStartFP);
+    //   System.out.println("FPW.startTerm startFP=" + docStartFP);
     // }
     skipWriter.resetSkip();
   }
@@ -348,48 +402,29 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     }
   }
 
-  private static class PendingTerm {
-    public final long docStartFP;
-    public final long posStartFP;
-    public final long payStartFP;
-    public final long skipOffset;
-    public final long lastPosBlockOffset;
-    public final int singletonDocID;
-
-    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, long skipOffset, long lastPosBlockOffset, int singletonDocID) {
-      this.docStartFP = docStartFP;
-      this.posStartFP = posStartFP;
-      this.payStartFP = payStartFP;
-      this.skipOffset = skipOffset;
-      this.lastPosBlockOffset = lastPosBlockOffset;
-      this.singletonDocID = singletonDocID;
-    }
-  }
-
-  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
-
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats) throws IOException {
-    assert stats.docFreq > 0;
+  public void finishTerm(BlockTermState _state) throws IOException {
+    IntBlockTermState state = (IntBlockTermState) _state;
+    assert state.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
-    assert stats.docFreq == docCount: stats.docFreq + " vs " + docCount;
+    assert state.docFreq == docCount: state.docFreq + " vs " + docCount;
 
     // if (DEBUG) {
-    //   System.out.println("FPW.finishTerm docFreq=" + stats.docFreq);
+    //   System.out.println("FPW.finishTerm docFreq=" + state.docFreq);
     // }
 
     // if (DEBUG) {
     //   if (docBufferUpto > 0) {
-    //     System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docTermStartFP=" + docTermStartFP);
+    //     System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docStartFP=" + docStartFP);
     //   }
     // }
     
     // docFreq == 1, don't write the single docid/freq to a separate file along with a pointer to it.
     final int singletonDocID;
-    if (stats.docFreq == 1) {
+    if (state.docFreq == 1) {
       // pulse the singleton docid into the term dictionary, freq is implicitly totalTermFreq
       singletonDocID = docDeltaBuffer[0];
     } else {
@@ -414,16 +449,16 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     if (fieldHasPositions) {
       // if (DEBUG) {
       //   if (posBufferUpto > 0) {
-      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posTermStartFP=" + posTermStartFP + " hasPayloads=" + fieldHasPayloads + " hasOffsets=" + fieldHasOffsets);
+      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posStartFP=" + posStartFP + " hasPayloads=" + fieldHasPayloads + " hasOffsets=" + fieldHasOffsets);
       //   }
       // }
 
       // totalTermFreq is just total number of positions(or payloads, or offsets)
       // associated with current term.
-      assert stats.totalTermFreq != -1;
-      if (stats.totalTermFreq > BLOCK_SIZE) {
+      assert state.totalTermFreq != -1;
+      if (state.totalTermFreq > BLOCK_SIZE) {
         // record file offset for last pos in last block
-        lastPosBlockOffset = posOut.getFilePointer() - posTermStartFP;
+        lastPosBlockOffset = posOut.getFilePointer() - posStartFP;
       } else {
         lastPosBlockOffset = -1;
       }
@@ -486,7 +521,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
         }
       }
       // if (DEBUG) {
-      //   System.out.println("  totalTermFreq=" + stats.totalTermFreq + " lastPosBlockOffset=" + lastPosBlockOffset);
+      //   System.out.println("  totalTermFreq=" + state.totalTermFreq + " lastPosBlockOffset=" + lastPosBlockOffset);
       // }
     } else {
       lastPosBlockOffset = -1;
@@ -494,10 +529,10 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
     long skipOffset;
     if (docCount > BLOCK_SIZE) {
-      skipOffset = skipWriter.writeSkip(docOut) - docTermStartFP;
+      skipOffset = skipWriter.writeSkip(docOut) - docStartFP;
       
       // if (DEBUG) {
-      //   System.out.println("skip packet " + (docOut.getFilePointer() - (docTermStartFP + skipOffset)) + " bytes");
+      //   System.out.println("skip packet " + (docOut.getFilePointer() - (docStartFP + skipOffset)) + " bytes");
       // }
     } else {
       skipOffset = -1;
@@ -505,76 +540,46 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       //   System.out.println("  no skip: docCount=" + docCount);
       // }
     }
-
-    long payStartFP;
-    if (stats.totalTermFreq >= BLOCK_SIZE) {
-      payStartFP = payTermStartFP;
-    } else {
-      payStartFP = -1;
-    }
-
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
-
-    pendingTerms.add(new PendingTerm(docTermStartFP, posTermStartFP, payStartFP, skipOffset, lastPosBlockOffset, singletonDocID));
+    state.docStartFP = docStartFP;
+    state.posStartFP = posStartFP;
+    state.payStartFP = payStartFP;
+    state.singletonDocID = singletonDocID;
+    state.skipOffset = skipOffset;
+    state.lastPosBlockOffset = lastPosBlockOffset;
     docBufferUpto = 0;
     posBufferUpto = 0;
     lastDocID = 0;
     docCount = 0;
   }
-
-  private final RAMOutputStream bytesWriter = new RAMOutputStream();
-
+  
   @Override
-  public void flushTermsBlock(int start, int count) throws IOException {
-
-    if (count == 0) {
-      termsOut.writeByte((byte) 0);
-      return;
+  public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+    IntBlockTermState state = (IntBlockTermState)_state;
+    if (absolute) {
+      lastState = emptyState;
     }
-
-    assert start <= pendingTerms.size();
-    assert count <= start;
-
-    final int limit = pendingTerms.size() - start + count;
-
-    long lastDocStartFP = 0;
-    long lastPosStartFP = 0;
-    long lastPayStartFP = 0;
-    for(int idx=limit-count; idx<limit; idx++) {
-      PendingTerm term = pendingTerms.get(idx);
-
-      if (term.singletonDocID == -1) {
-        bytesWriter.writeVLong(term.docStartFP - lastDocStartFP);
-        lastDocStartFP = term.docStartFP;
-      } else {
-        bytesWriter.writeVInt(term.singletonDocID);
-      }
-
-      if (fieldHasPositions) {
-        bytesWriter.writeVLong(term.posStartFP - lastPosStartFP);
-        lastPosStartFP = term.posStartFP;
-        if (term.lastPosBlockOffset != -1) {
-          bytesWriter.writeVLong(term.lastPosBlockOffset);
-        }
-        if ((fieldHasPayloads || fieldHasOffsets) && term.payStartFP != -1) {
-          bytesWriter.writeVLong(term.payStartFP - lastPayStartFP);
-          lastPayStartFP = term.payStartFP;
-        }
-      }
-
-      if (term.skipOffset != -1) {
-        bytesWriter.writeVLong(term.skipOffset);
+    longs[0] = state.docStartFP - lastState.docStartFP;
+    if (fieldHasPositions) {
+      longs[1] = state.posStartFP - lastState.posStartFP;
+      if (fieldHasPayloads || fieldHasOffsets) {
+        longs[2] = state.payStartFP - lastState.payStartFP;
       }
     }
-
-    termsOut.writeVInt((int) bytesWriter.getFilePointer());
-    bytesWriter.writeTo(termsOut);
-    bytesWriter.reset();
-
-    // Remove the terms we just wrote:
-    pendingTerms.subList(limit-count, limit).clear();
+    if (state.singletonDocID != -1) {
+      out.writeVInt(state.singletonDocID);
+    }
+    if (fieldHasPositions) {
+      if (state.lastPosBlockOffset != -1) {
+        out.writeVLong(state.lastPosBlockOffset);
+      }
+    }
+    if (state.skipOffset != -1) {
+      out.writeVLong(state.skipOffset);
+    }
+    lastState = state;
   }
 
   @Override

@@ -233,15 +233,18 @@ public final class FST<T> {
       StringBuilder b = new StringBuilder();
       b.append("node=" + node);
       b.append(" target=" + target);
-      b.append(" label=" + label);
-      if (flag(BIT_LAST_ARC)) {
-        b.append(" last");
-      }
+      b.append(" label=0x" + Integer.toHexString(label));
       if (flag(BIT_FINAL_ARC)) {
         b.append(" final");
       }
+      if (flag(BIT_LAST_ARC)) {
+        b.append(" last");
+      }
       if (flag(BIT_TARGET_NEXT)) {
         b.append(" targetNext");
+      }
+      if (flag(BIT_STOP_NODE)) {
+        b.append(" stop");
       }
       if (flag(BIT_ARC_HAS_OUTPUT)) {
         b.append(" output=" + output);
@@ -834,6 +837,9 @@ public final class FST<T> {
     if (emptyOutput != null) {
       arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
       arc.nextFinalOutput = emptyOutput;
+      if (emptyOutput != NO_OUTPUT) {
+        arc.flags |= BIT_ARC_HAS_FINAL_OUTPUT;
+      }
     } else {
       arc.flags = BIT_LAST_ARC;
       arc.nextFinalOutput = NO_OUTPUT;
