@@ -43,6 +43,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
@@ -186,6 +187,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       numericInstances.put(field.number, instance);
     }
     return instance;
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
   
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {

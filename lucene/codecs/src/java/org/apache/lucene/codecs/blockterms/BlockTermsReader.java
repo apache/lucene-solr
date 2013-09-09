@@ -862,4 +862,11 @@ public class BlockTermsReader extends FieldsProducer {
       }
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = (postingsReader!=null) ? postingsReader.ramBytesUsed() : 0;
+    sizeInBytes += (indexReader!=null) ? indexReader.ramBytesUsed() : 0;
+    return sizeInBytes;
+  }
 }

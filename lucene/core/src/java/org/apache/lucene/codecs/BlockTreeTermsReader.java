@@ -550,6 +550,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
       return new IntersectEnum(compiled, startTerm);
     }
     
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return ((index!=null)? index.sizeInBytes() : 0);
+    }
+    
     // NOTE: cannot seek!
     private final class IntersectEnum extends TermsEnum {
       private final IndexInput in;
@@ -2973,5 +2978,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
       }
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInByes = ((postingsReader!=null) ? postingsReader.ramBytesUsed() : 0);
+    for(FieldReader reader : fields.values()) {
+      sizeInByes += reader.ramBytesUsed();
+    }
+    return sizeInByes;
   }
 }

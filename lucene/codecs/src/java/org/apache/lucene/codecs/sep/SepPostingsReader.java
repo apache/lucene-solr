@@ -701,4 +701,9 @@ public class SepPostingsReader extends PostingsReaderBase {
       return docFreq;
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }

@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene45;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.DELTA_COMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.GCD_COMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.TABLE_COMPRESSED;
-
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_PREFIX_COMPRESSED;
@@ -242,6 +241,18 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     return getNumeric(entry);
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;    
+    for(MonotonicBlockPackedReader monotonicBlockPackedReader: addressInstances.values()) {
+      sizeInBytes += Integer.SIZE + monotonicBlockPackedReader.ramBytesUsed();
+    }
+    for(MonotonicBlockPackedReader monotonicBlockPackedReader: ordIndexInstances.values()) {
+      sizeInBytes += Integer.SIZE + monotonicBlockPackedReader.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
   
   LongNumericDocValues getNumeric(NumericEntry entry) throws IOException {

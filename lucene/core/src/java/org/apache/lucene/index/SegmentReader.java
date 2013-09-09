@@ -283,4 +283,10 @@ public final class SegmentReader extends AtomicReader {
     ensureOpen();
     core.removeCoreClosedListener(listener);
   }
+  
+  /** Returns approximate RAM Bytes used */
+  public long ramBytesUsed() {
+    ensureOpen();
+    return (core!=null) ? core.ramBytesUsed() : 0;
+  }
 }

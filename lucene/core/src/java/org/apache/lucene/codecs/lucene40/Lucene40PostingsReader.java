@@ -1162,4 +1162,10 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       return limit;
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
+
 }

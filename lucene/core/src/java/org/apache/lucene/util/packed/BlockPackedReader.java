@@ -85,4 +85,12 @@ public final class BlockPackedReader {
     return (minValues == null ? 0 : minValues[block]) + subReaders[block].get(idx);
   }
 
+  /** Returns approximate RAM bytes used */
+  public long ramBytesUsed() {
+    long size = 0;
+    for (PackedInts.Reader reader : subReaders) {
+      size += reader.ramBytesUsed();
+    }
+    return size;
+  }
 }

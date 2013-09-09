@@ -50,6 +50,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -120,6 +121,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public void close() {
     }
+
+    @Override
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMField field : fieldToTerms.values()) {
+        sizeInBytes += field.ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   } 
 
   static class RAMField extends Terms {
@@ -133,6 +143,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     RAMField(String field, FieldInfo info) {
       this.field = field;
       this.info = info;
+    }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMTerm term : termToDocs.values()) {
+        sizeInBytes += term.ramBytesUsed();
+      }
+      return sizeInBytes;
     }
 
     @Override
@@ -188,6 +207,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public RAMTerm(String term) {
       this.term = term;
     }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMDoc rDoc : docs) {
+        sizeInBytes += rDoc.ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   }
 
   static class RAMDoc {
@@ -198,6 +226,19 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public RAMDoc(int docID, int freq) {
       this.docID = docID;
       positions = new int[freq];
+    }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      sizeInBytes +=  (positions!=null) ? RamUsageEstimator.sizeOf(positions) : 0;
+      
+      if (payloads != null) {
+        for(byte[] payload: payloads) {
+          sizeInBytes += (payload!=null) ? RamUsageEstimator.sizeOf(payload) : 0;
+        }
+      }
+      return sizeInBytes;
     }
   }
 

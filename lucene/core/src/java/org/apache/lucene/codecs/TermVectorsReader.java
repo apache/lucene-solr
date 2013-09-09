@@ -42,6 +42,9 @@ public abstract class TermVectorsReader implements Cloneable, Closeable {
    *  available from the {@link DocsAndPositionsEnum}. */
   public abstract Fields get(int doc) throws IOException;
 
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
+  
   /** Create a clone that one caller at a time may use to
    *  read term vectors. */
   @Override

@@ -64,6 +64,9 @@ public abstract class DocValuesProducer implements Closeable {
    *  used by a single thread. */
   public abstract Bits getDocsWithField(FieldInfo field) throws IOException;
   
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
+  
   /** 
    * A simple implementation of {@link DocValuesProducer#getDocsWithField} that 
    * returns {@code true} if a document has an ordinal &gt;= 0

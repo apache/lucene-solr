@@ -107,6 +107,9 @@ New features
 * LUCENE-5186: Added CachingWrapperFilter.getFilter in order to be able to get
   the wrapped filter. (Trejkaz via Adrien Grand)
 
+* LUCENE-5197: Added SegmentReader.ramBytesUsed to return approximate heap RAM
+  used by index datastructures. (Areek Zillur via Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all

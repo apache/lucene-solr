@@ -91,4 +91,13 @@ class Facet42DocValuesProducer extends DocValuesProducer {
   @Override
   public void close() throws IOException {
   }
+
+  @Override
+  public long ramBytesUsed() {
+    long size = 0;
+    for (Facet42BinaryDocValues entry: fields.values()) {
+      size += entry.ramBytesUsed() + Integer.SIZE;
+    } 
+    return size;
+  }
 }

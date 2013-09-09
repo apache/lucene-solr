@@ -86,6 +86,11 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     public int size() {
       return in.size();
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
   
   static class AssertingFieldsConsumer extends FieldsConsumer {

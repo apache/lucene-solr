@@ -37,6 +37,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Just like {@link Lucene45DocValuesFormat} but with additional asserts.
@@ -300,6 +301,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       in.close();
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
     }
   }
 }

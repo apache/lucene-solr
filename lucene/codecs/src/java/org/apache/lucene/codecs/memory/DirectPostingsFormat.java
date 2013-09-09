@@ -44,6 +44,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -147,12 +148,25 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public void close() {
     }
+
+    @Override
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(Map.Entry<String,DirectField> entry: fields.entrySet()) {
+        sizeInBytes += entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR;
+        sizeInBytes += entry.getValue().ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   }
 
   private final static class DirectField extends Terms {
 
     private static abstract class TermAndSkip {
       public int[] skips;
+
+      /** Returns the approximate number of RAM bytes used */
+      public abstract long ramBytesUsed();
     }
 
     private static final class LowFreqTerm extends TermAndSkip {
@@ -166,6 +180,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
         this.payloads = payloads;
         this.docFreq = docFreq;
         this.totalTermFreq = totalTermFreq;
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) + 
+            ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
       }
     }
 
@@ -183,6 +203,31 @@ public final class DirectPostingsFormat extends PostingsFormat {
         this.positions = positions;
         this.payloads = payloads;
         this.totalTermFreq = totalTermFreq;
+      }
+
+      @Override
+      public long ramBytesUsed() {
+         long sizeInBytes = 0;
+         sizeInBytes += (docIDs!=null)? RamUsageEstimator.sizeOf(docIDs) : 0;
+         sizeInBytes += (freqs!=null)? RamUsageEstimator.sizeOf(freqs) : 0;
+         
+         if(positions != null) {
+           for(int[] position : positions) {
+             sizeInBytes += (position!=null) ? RamUsageEstimator.sizeOf(position) : 0;
+           }
+         }
+         
+         if (payloads != null) {
+           for(byte[][] payload : payloads) {
+             if(payload != null) {
+               for(byte[] pload : payload) {
+                 sizeInBytes += (pload!=null) ? RamUsageEstimator.sizeOf(pload) : 0; 
+               }
+             }
+           }
+         }
+         
+         return sizeInBytes;
       }
     }
 
@@ -442,6 +487,24 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       this.skipOffsets[numTerms] = skipOffset;
       assert skipOffset == skipCount;
+    }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      sizeInBytes += ((termBytes!=null) ? RamUsageEstimator.sizeOf(termBytes) : 0);
+      sizeInBytes += ((termOffsets!=null) ? RamUsageEstimator.sizeOf(termOffsets) : 0);
+      sizeInBytes += ((skips!=null) ? RamUsageEstimator.sizeOf(skips) : 0);
+      sizeInBytes += ((skipOffsets!=null) ? RamUsageEstimator.sizeOf(skipOffsets) : 0);
+      sizeInBytes += ((sameCounts!=null) ? RamUsageEstimator.sizeOf(sameCounts) : 0);
+      
+      if(terms!=null) {
+        for(TermAndSkip termAndSkip : terms) {
+          sizeInBytes += (termAndSkip!=null) ? termAndSkip.ramBytesUsed() : 0;
+        }
+      }
+      
+      return sizeInBytes;
     }
 
     // Compares in unicode (UTF8) order:

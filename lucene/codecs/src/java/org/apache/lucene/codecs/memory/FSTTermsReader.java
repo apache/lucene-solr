@@ -729,4 +729,13 @@ public class FSTTermsReader extends FieldsProducer {
       }
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    long ramBytesUsed = 0;
+    for (TermsReader r : fields.values()) {
+      ramBytesUsed += r.dict == null ? 0 : r.dict.sizeInBytes();
+    }
+    return ramBytesUsed;
+  }
 }

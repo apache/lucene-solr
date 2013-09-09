@@ -60,6 +60,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.memory.FSTTermsReader.TermsReader;
 
 /** 
  * FST-based terms dictionary reader.
@@ -816,5 +817,20 @@ public class FSTOrdTermsReader extends FieldsProducer {
         }
       }
     }
+  }
+  
+  @Override
+  public long ramBytesUsed() {
+    long ramBytesUsed = 0;
+    for (TermsReader r : fields.values()) {
+      if (r.index != null) {
+        ramBytesUsed += r.index.sizeInBytes();
+        ramBytesUsed += RamUsageEstimator.sizeOf(r.metaBytesBlock);
+        ramBytesUsed += RamUsageEstimator.sizeOf(r.metaLongsBlock);
+        ramBytesUsed += RamUsageEstimator.sizeOf(r.skipInfo);
+        ramBytesUsed += RamUsageEstimator.sizeOf(r.statsBlock);
+      }
+    }
+    return ramBytesUsed;
   }
 }

@@ -354,6 +354,14 @@ final class SegmentCoreReaders {
     coreClosedListeners.remove(listener);
   }
 
+  /** Returns approximate RAM bytes used */
+  public long ramBytesUsed() {
+    return ((dvProducer!=null) ? dvProducer.ramBytesUsed() : 0) + 
+        ((normsProducer!=null) ? normsProducer.ramBytesUsed() : 0) +
+        ((fields!=null) ? fields.ramBytesUsed() : 0) + 
+        ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
+        ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);
+  }
   @Override
   public String toString() {
     return "SegmentCoreReader(owner=" + owner + ")";
