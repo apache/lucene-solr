@@ -35,7 +35,7 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
   <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
 
   <mergeScheduler class="${solr.tests.mergeScheduler}" />
-  <reopenReaders>${solr.tests.reopenReaders:true}</reopenReaders>
+  <nrtMode>${solr.tests.nrtMode:true}</nrtMode>
 
   <writeLockTimeout>1000</writeLockTimeout>
   <commitLockTimeout>10000</commitLockTimeout>

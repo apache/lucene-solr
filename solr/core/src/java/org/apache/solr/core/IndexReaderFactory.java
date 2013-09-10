@@ -60,7 +60,7 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
   /**
    * Creates a new IndexReader instance using the given IndexWriter.
    * <p>
-   * This is used for opening the initial reader in NRT mode ({@code reopenReaders=true}
+   * This is used for opening the initial reader in NRT mode ({@code nrtMode=true}
    * in solrconfig.xml)
    * 
    * @param writer IndexWriter

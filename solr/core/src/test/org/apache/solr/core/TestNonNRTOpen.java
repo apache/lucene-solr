@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
@@ -31,7 +30,7 @@ import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class TestNRTOpen extends SolrTestCaseJ4 {
+public class TestNonNRTOpen extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -39,6 +38,8 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // and dont delete it initially
     System.setProperty("solr.test.leavedatadir", "true");
+    // turn off nrt
+    System.setProperty("solr.tests.nrtMode", "false");
     // set these so that merges won't break the test
     System.setProperty("solr.tests.maxBufferedDocs", "100000");
     System.setProperty("solr.tests.mergePolicy", "org.apache.lucene.index.LogDocMergePolicy");
@@ -52,16 +53,7 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     dataDir = myDir;
     initCore("solrconfig-basic.xml", "schema-minimal.xml");
     // startup
-    assertNRT(1);
-  }
-  
-  @AfterClass
-  public static void afterClass() throws Exception {
-    // ensure we clean up after ourselves, this will fire before superclass...
-    System.clearProperty("solr.test.leavedatadir");
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.mergePolicy");
+    assertNotNRT(1);
   }
   
   public void setUp() throws Exception {
@@ -72,28 +64,36 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     assertU(commit());
   }
   
-  public void testReaderIsNRT() {
+  @AfterClass
+  public static void afterClass() throws Exception {
+    // ensure we clean up after ourselves, this will fire before superclass...
+    System.clearProperty("solr.test.leavedatadir");
+    System.clearProperty("solr.directoryFactory");
+    System.clearProperty("solr.tests.maxBufferedDocs");
+    System.clearProperty("solr.tests.mergePolicy");
+    System.clearProperty("solr.tests.nrtMode");
+  }
+
+  public void testReaderIsNotNRT() {
+    // startup
+    assertNotNRT(1);
+    
     // core reload
     String core = h.getCore().getName();
     h.getCoreContainer().reload(core);
-    assertNRT(1);
+    assertNotNRT(1);
     
-    // add a doc and soft commit
+    // add a doc and commit
     assertU(adoc("baz", "doc"));
-    assertU(commit("softCommit", "true"));
-    assertNRT(2);
-    
-    // add a doc and hard commit
-    assertU(adoc("bazz", "doc"));
     assertU(commit());
-    assertNRT(3);
+    assertNotNRT(2);
     
     // add a doc and core reload
-    assertU(adoc("bazzz", "doc2"));
+    assertU(adoc("bazz", "doc2"));
     h.getCoreContainer().reload(core);
-    assertNRT(4);
+    assertNotNRT(3);
   }
-  
+
   public void testSharedCores() {
     // clear out any junk
     assertU(optimize());
@@ -103,7 +103,7 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     
     // add a doc, will go in a new segment
     assertU(adoc("baz", "doc"));
-    assertU(commit("softCommit", "true"));
+    assertU(commit());
     
     Set<Object> s2 = getCoreCacheKeys();
     assertEquals(2, s2.size());
@@ -126,17 +126,17 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     assertEquals(s3, getCoreCacheKeys());
   }
   
-  static void assertNRT(int maxDoc) {
+  static void assertNotNRT(int maxDoc) {
     RefCounted<SolrIndexSearcher> searcher = h.getCore().getSearcher();
     try {
       DirectoryReader ir = searcher.get().getIndexReader();
       assertEquals(maxDoc, ir.maxDoc());
-      assertTrue("expected NRT reader, got: " + ir, ir.toString().contains(":nrt"));
+      assertFalse("expected non-NRT reader, got: " + ir, ir.toString().contains(":nrt"));
     } finally {
       searcher.decref();
     }
   }
-  
+
   private Set<Object> getCoreCacheKeys() {
     RefCounted<SolrIndexSearcher> searcher = h.getCore().getSearcher();
     Set<Object> set = Collections.newSetFromMap(new IdentityHashMap<Object,Boolean>());
@@ -151,3 +151,4 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     return set;
   }
 }
+

@@ -348,7 +348,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     useFactory(null);    // force a persistent directory
 
     // read-only setting (no opening from indexwriter)
-    System.setProperty("solr.tests.reopenReaders", "false");
+    System.setProperty("solr.tests.nrtMode", "false");
     try {
     // stop and start so they see the new directory setting
     slaveJetty.stop();
@@ -361,7 +361,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     slaveJetty.start(true);
     } finally {
-      System.clearProperty("solr.tests.reopenReaders"); // dont mess with other tests
+      System.clearProperty("solr.tests.nrtMode"); // dont mess with other tests
     }
 
     // Currently we open a writer on-demand.  This is to test that we are correctly testing

@@ -198,6 +198,9 @@ Bug Fixes
 * SOLR-5215: Fix possibility of deadlock in ZooKeeper ConnectionManager.
   (Mark Miller, Ricardo Merizalde)
 
+* SOLR-4909: Use DirectoryReader.openIfChanged in non-NRT mode.
+  (Michael Garski via Robert Muir)
+
 Optimizations
 ----------------------
 

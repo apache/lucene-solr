@@ -17,7 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.util.InfoStream;
@@ -34,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.List;
@@ -166,8 +164,8 @@ public class SolrIndexConfig {
       }
     }
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
-    if (mergedSegmentWarmerInfo != null && solrConfig.reopenReaders == false) {
-      throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since reopenReaders is false");
+    if (mergedSegmentWarmerInfo != null && solrConfig.nrtMode == false) {
+      throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since nrtMode is false");
     }
   }
 

@@ -257,11 +257,13 @@
     <unlockOnStartup>false</unlockOnStartup>
       -->
 
-    <!-- If true, IndexReaders will be reopened (often more efficient)
-         instead of closed and then opened. Default: true
+    <!-- If true, IndexReaders will be opened/reopened from the IndexWriter
+         instead of from the Directory. Hosts in a master/slave setup
+         should have this set to false while those in a SolrCloud
+         cluster need to be set to true. Default: true
       -->
     <!-- 
-    <reopenReaders>true</reopenReaders>
+    <nrtMode>true</nrtMode>
       -->
 
     <!-- Commit Deletion Policy
