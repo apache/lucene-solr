@@ -76,6 +76,14 @@ Upgrading from Solr 4.4.0
   XXXXX and delete the ones that you do not wish to use.  See SOLR-4953 & 
   SOLR-5108 for more details.
 
+* In the past, schema.xml parsing would silently ignore "default" or "required" 
+  options specified on <dynamicField/> declarations.  Begining with 4.5, attempting
+  to do configured these on a dynamic field will cause an init error.  If you 
+  encounter one of these errors when upgrading an existing schema.xml, you can 
+  safely remove these attributes, regardless of their value, from your config and 
+  Solr will continue to bahave exactly as it did in previous versions.  See 
+  SOLR-5227 for more details.
+
 * The UniqFieldsUpdateProcessorFactory has been improved to support all of the
   FieldMutatingUpdateProcessorFactory selector options.  The <lst named="fields"> 
   init param option is now deprecated and should be replaced with the more standard
@@ -200,6 +208,9 @@ Bug Fixes
 
 * SOLR-4909: Use DirectoryReader.openIfChanged in non-NRT mode.
   (Michael Garski via Robert Muir)
+
+* SOLR-5227: Correctly fail schema initalization if a dynamicField is configured to
+  be required, or have a default value.  (hossman)
 
 Optimizations
 ----------------------

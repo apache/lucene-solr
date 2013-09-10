@@ -674,6 +674,14 @@ public class IndexSchema {
           requiredFields.add(f);
         }
       } else if (node.getNodeName().equals(DYNAMIC_FIELD)) {
+        if( f.getDefaultValue() != null ) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+                                  DYNAMIC_FIELD + " can not have a default value: " + name);
+        }
+        if ( f.isRequired() ) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+                                  DYNAMIC_FIELD + " can not be required: " + name);
+        }
         if (isValidFieldGlob(name)) {
           // make sure nothing else has the same path
           addDynamicField(dFields, f);

@@ -40,6 +40,10 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testSevereErrorsForDuplicateDynamicField() throws Exception {
     doTest("bad-schema-dup-dynamicField.xml", "_twice");
   }
+  public void testSevereErrorsForUnsupportedAttributesOnDynamicField() throws Exception {
+    doTest("bad-schema-dynamicfield-default-val.xml", "default");
+    doTest("bad-schema-dynamicfield-required.xml", "required");
+  }
 
   public void testSevereErrorsForDuplicateFieldType() throws Exception {
     doTest("bad-schema-dup-fieldType.xml", "ftAgain");
