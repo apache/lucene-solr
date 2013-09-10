@@ -521,7 +521,8 @@
       class="solr.search.LRUCache"
       size="10"
       initialSize="0"
-      autowarmCount="10" />
+      autowarmCount="10"
+      regenerator="solr.NoOpRegenerator" />
 
     <!-- Field Value Cache
          
