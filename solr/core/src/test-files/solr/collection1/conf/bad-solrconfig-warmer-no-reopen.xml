@@ -22,6 +22,6 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <indexConfig>
     <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
-    <reopenReaders>false</reopenReaders>    <!-- BAD -->
+    <nrtMode>false</nrtMode>    <!-- BAD -->
   </indexConfig>
 </config>

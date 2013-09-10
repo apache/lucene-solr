@@ -152,7 +152,7 @@ public class SolrConfig extends Config {
       defaultIndexConfig = mainIndexConfig = null;
       indexConfigPrefix = "indexConfig";
     }
-    reopenReaders = getBool(indexConfigPrefix+"/reopenReaders", true);
+    nrtMode = getBool(indexConfigPrefix+"/nrtMode", true);
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
    
@@ -316,7 +316,7 @@ public class SolrConfig extends Config {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
-  public final boolean reopenReaders;
+  public final boolean nrtMode;
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;
