@@ -1381,6 +1381,7 @@
   <!-- Clustering Component
 
        http://wiki.apache.org/solr/ClusteringComponent
+       http://carrot2.github.io/solr-integration-strategies/
     -->
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:true}"
@@ -1391,8 +1392,7 @@
     <lst name="engine">
       <str name="name">default</str>
 
-      <!-- Class name of a clustering algorithm compatible with the Carrot2
-           framework.
+      <!-- Class name of a clustering algorithm compatible with the Carrot2 framework.
 
            Currently available open source algorithms are:
            * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
@@ -1411,18 +1411,14 @@
 
            A directory from which to load algorithm-specific stop words,
            stop labels and attribute definition XMLs. 
-           Absolute or relative to Solr config directory.
-           If a specific resource (e.g. stopwords.en) is present in the
-           specified dir, it will completely override the corresponding
-           default one that typically ships with each algorithm.
 
            For an overview of Carrot2 lexical resources, see:
            http://download.carrot2.org/head/manual/#chapter.lexical-resources
-           
+
            For an overview of Lingo3G lexical resources, see:
            http://download.carrotsearch.com/lingo3g/manual/#chapter.lexical-resources
        -->
-      <!-- <str name="carrot.resourcesDir">clustering/carrot2</str> -->
+      <str name="carrot.resourcesDir">clustering/carrot2</str>
     </lst>
 
     <!-- An example definition for the STC clustering algorithm. -->
@@ -1453,26 +1449,28 @@
       <bool name="clustering">true</bool>
       <str name="clustering.engine">default</str>
       <bool name="clustering.results">true</bool>
-      <!-- The title field -->
+      <!-- Field name with the logical "title" of a each document (optional) -->
       <str name="carrot.title">name</str>
+      <!-- Field name with the logical "URL" of a each document (optional) -->
       <str name="carrot.url">id</str>
-      <!-- The field to cluster on -->
-       <str name="carrot.snippet">features</str>
-       <!-- produce summaries -->
-       <bool name="carrot.produceSummary">true</bool>
-       <!-- the maximum number of labels per cluster -->
-       <!--<int name="carrot.numDescriptions">5</int>-->
-       <!-- produce sub clusters -->
-       <bool name="carrot.outputSubClusters">false</bool>
-       
-       <str name="defType">edismax</str>
-       <str name="qf">
-         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-       </str>
-       <str name="q.alt">*:*</str>
-       <str name="rows">10</str>
-       <str name="fl">*,score</str>
-    </lst>     
+      <!-- Field name with the logical "content" of a each document (optional) -->
+      <str name="carrot.snippet">features</str>
+      <!-- Apply highlighter to the title/ content and use this for clustering. -->
+      <bool name="carrot.produceSummary">true</bool>
+      <!-- the maximum number of labels per cluster -->
+      <!--<int name="carrot.numDescriptions">5</int>-->
+      <!-- produce sub clusters -->
+      <bool name="carrot.outputSubClusters">false</bool>
+
+      <!-- Configure the remaining request handler parameters. -->
+      <str name="defType">edismax</str>
+      <str name="qf">
+        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+      </str>
+      <str name="q.alt">*:*</str>
+      <str name="rows">10</str>
+      <str name="fl">*,score</str>
+    </lst>
     <arr name="last-components">
       <str>clustering</str>
     </arr>
