@@ -1390,7 +1390,7 @@
          "default" (and it becomes the default one for the search component). 
       -->
     <lst name="engine">
-      <str name="name">default</str>
+      <str name="name">lingo</str>
 
       <!-- Class name of a clustering algorithm compatible with the Carrot2 framework.
 
@@ -1447,7 +1447,6 @@
                   class="solr.SearchHandler">
     <lst name="defaults">
       <bool name="clustering">true</bool>
-      <str name="clustering.engine">default</str>
       <bool name="clustering.results">true</bool>
       <!-- Field name with the logical "title" of a each document (optional) -->
       <str name="carrot.title">name</str>
