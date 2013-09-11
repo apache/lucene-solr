@@ -1104,6 +1104,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       synchronized(this) {
         try {
           commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
+          commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.getLbServer().setConnectionTimeout(15000);
           commondCloudSolrServer.getLbServer().setSoTimeout(30000);

@@ -98,14 +98,14 @@ public class HttpSolrServer extends SolrServer {
    * 
    * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
    */
-  protected ResponseParser parser;
+  protected volatile ResponseParser parser;
   
   /**
    * The RequestWriter used to write all requests to Solr
    * 
    * @see org.apache.solr.client.solrj.request.RequestWriter
    */
-  protected RequestWriter requestWriter = new RequestWriter();
+  protected volatile RequestWriter requestWriter = new RequestWriter();
   
   private final HttpClient httpClient;
   

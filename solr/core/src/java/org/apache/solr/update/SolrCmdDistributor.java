@@ -34,7 +34,7 @@ import java.util.concurrent.RejectedExecutionException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.UpdateRequestExt;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -152,8 +152,9 @@ public class SolrCmdDistributor {
     // finish with the pending requests
     checkResponses(false);
 
-    UpdateRequestExt ureq = new UpdateRequestExt();
+    UpdateRequest ureq = new UpdateRequest();
     ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
+
     ureq.setParams(params);
     syncRequest(node, ureq);
   }
@@ -173,7 +174,7 @@ public class SolrCmdDistributor {
     deleteRequest.cmd = clonedCmd;
     deleteRequest.params = params;
 
-    UpdateRequestExt ureq = new UpdateRequestExt();
+    UpdateRequest ureq = new UpdateRequest();
     if (cmd.isDeleteById()) {
       ureq.deleteById(cmd.getId(), cmd.getVersion());
     } else {
@@ -185,7 +186,7 @@ public class SolrCmdDistributor {
     }
   }
 
-  private void syncRequest(Node node, UpdateRequestExt ureq) {
+  private void syncRequest(Node node, UpdateRequest ureq) {
     Request sreq = new Request();
     sreq.node = node;
     sreq.ureq = ureq;
@@ -224,7 +225,7 @@ public class SolrCmdDistributor {
     
     // currently, we dont try to piggy back on outstanding adds or deletes
     
-    UpdateRequestExt ureq = new UpdateRequestExt();
+    UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(params);
     
     addCommit(ureq, cmd);
@@ -265,7 +266,7 @@ public class SolrCmdDistributor {
     flushDeletes(maxBufferedDeletesPerServer);
   }
   
-  void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
+  void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
     if (cmd == null) return;
     ureq.setAction(cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes);
@@ -281,14 +282,13 @@ public class SolrCmdDistributor {
       List<AddRequest> alist = adds.get(node);
       if (alist == null || alist.size() < limit) continue;
   
-      UpdateRequestExt ureq = new UpdateRequestExt();
+      UpdateRequest ureq = new UpdateRequest();
       
       ModifiableSolrParams combinedParams = new ModifiableSolrParams();
-      
+
       for (AddRequest aReq : alist) {
         AddUpdateCommand cmd = aReq.cmd;
         combinedParams.add(aReq.params);
-       
         ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
       }
       
@@ -315,7 +315,7 @@ public class SolrCmdDistributor {
     for (Node node : nodes) {
       List<DeleteRequest> dlist = deletes.get(node);
       if (dlist == null || dlist.size() < limit) continue;
-      UpdateRequestExt ureq = new UpdateRequestExt();
+      UpdateRequest ureq = new UpdateRequest();
       
       ModifiableSolrParams combinedParams = new ModifiableSolrParams();
       
@@ -354,14 +354,14 @@ public class SolrCmdDistributor {
   
   public static class Request {
     public Node node;
-    UpdateRequestExt ureq;
+    UpdateRequest ureq;
     NamedList<Object> ursp;
     int rspCode;
     public Exception exception;
     int retries;
   }
   
-  void submit(UpdateRequestExt ureq, Node node) {
+  void submit(UpdateRequest ureq, Node node) {
     Request sreq = new Request();
     sreq.node = node;
     sreq.ureq = ureq;

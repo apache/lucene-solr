@@ -153,6 +153,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     
     // search with new cloud client
     CloudSolrServer cloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
+    cloudSolrServer.setParallelUpdates(random().nextBoolean());
     query = new SolrQuery("*:*");
     query.set("collection", "testalias");
     res = cloudSolrServer.query(query);

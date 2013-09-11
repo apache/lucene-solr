@@ -26,6 +26,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.nio.charset.Charset;
 
 /**
@@ -52,7 +53,7 @@ public class RequestWriter {
 
   private boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments()) &&
-            isNull(updateRequest.getDeleteById()) &&
+            isNull(updateRequest.getDeleteByIdMap()) &&
             isNull(updateRequest.getDeleteQuery()) &&
             updateRequest.getDocIterator() == null;
   }
@@ -135,6 +136,10 @@ public class RequestWriter {
   }
 
   protected boolean isNull(List l) {
+    return l == null || l.isEmpty();
+  }
+  
+  protected boolean isNull(Map l) {
     return l == null || l.isEmpty();
   }
 }
