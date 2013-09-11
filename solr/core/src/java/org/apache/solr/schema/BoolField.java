@@ -172,7 +172,8 @@ class BoolFieldSource extends ValueSource {
     // figure out what ord maps to true
     int nord = sindex.getValueCount();
     BytesRef br = new BytesRef();
-    int tord = -1;
+    // if no values in the segment, default trueOrd to something other then -1 (missing)
+    int tord = -2;
     for (int i=0; i<nord; i++) {
       sindex.lookupOrd(i, br);
       if (br.length==1 && br.bytes[br.offset]=='T') {

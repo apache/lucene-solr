@@ -725,4 +725,32 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
   }
 
+  public void testMissingFieldFunctionBehavior() throws Exception {
+    clearIndex();
+    // add a doc that has no values in any interesting fields
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // it's important that these functions not only use fields that
+    // out doc have no values for, but also that that no other doc ever added
+    // to the index might have ever had a value for, so that the segment
+    // term metadata doesn't exist
+    
+    for (String suffix : new String[] {"s", "b", "dt", "tdt",
+                                       "i", "l", "f", "d", 
+                                       "pi", "pl", "pf", "pd",
+                                       "ti", "tl", "tf", "td"    }) {
+      final String field = "no__vals____" + suffix;
+      assertQ(req("q","id:1",
+                  "fl","noval_if:if("+field+",42,-99)",
+                  "fl","noval_def:def("+field+",-99)",
+                  "fl","noval_not:not("+field+")",
+                  "fl","noval_exists:exists("+field+")"),
+              "//long[@name='noval_if']='-99'",
+              "//long[@name='noval_def']='-99'",
+              "//bool[@name='noval_not']='true'",
+              "//bool[@name='noval_exists']='false'");
+    }
+  }
+
 }
