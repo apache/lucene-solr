@@ -34,7 +34,7 @@ public abstract class DocumentClusteringEngine extends ClusteringEngine {
    * @param solrParams The params controlling clustering
    * @return The clustering results
    */
-  public abstract NamedList cluster(SolrParams solrParams);
+  public abstract NamedList<?> cluster(SolrParams solrParams);
 
   /**
    * Experimental.  Subject to change before the next release
@@ -44,7 +44,7 @@ public abstract class DocumentClusteringEngine extends ClusteringEngine {
    * @param solrParams The params controlling the clustering
    * @return The results.
    */
-  public abstract NamedList cluster(DocSet docs, SolrParams solrParams);
+  public abstract NamedList<?> cluster(DocSet docs, SolrParams solrParams);
 
 
 }

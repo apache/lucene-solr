@@ -276,7 +276,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   }
 
   @Override
-  @SuppressWarnings({ "unchecked", "rawtypes" })
+  @SuppressWarnings("rawtypes")
   public String init(NamedList config, final SolrCore core) {
     this.core = core;
 
@@ -566,6 +566,13 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
 
     return result;
+  }
+
+  /**
+   * Expose clustering algorithm class for tests.
+   */
+  Class<? extends IClusteringAlgorithm> getClusteringAlgorithmClass() {
+    return clusteringAlgorithmClass;
   }
 
   /**

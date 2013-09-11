@@ -28,7 +28,7 @@ public class ClusteringEngine {
   public static final String ENGINE_NAME = "name";
   public static final String DEFAULT_ENGINE_NAME = "default";
 
-  public String init(NamedList config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
     name = (String) config.get(ENGINE_NAME);
     return name;
   }

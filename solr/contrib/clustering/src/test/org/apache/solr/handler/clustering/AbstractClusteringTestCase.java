@@ -16,6 +16,8 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -82,8 +84,14 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     docWithCustomFields.addField("heading", "first");
     docWithCustomFields.addField("heading", "second");
     assertNull(h.validateUpdate(adoc(docWithCustomFields)));
-    
     assertNull(h.validateUpdate(commit()));
+  }
+
+  /**
+   * Expose package-scope methods from {@link ClusteringComponent} to tests.
+   */
+  protected final Map<String,SearchClusteringEngine> getSearchClusteringEngines(ClusteringComponent comp) {
+    return comp.getSearchClusteringEngines();
   }
 
   final static String[][] DOCUMENTS = new String[][]{
