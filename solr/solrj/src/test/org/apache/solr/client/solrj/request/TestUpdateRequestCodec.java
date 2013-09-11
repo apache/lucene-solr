@@ -16,23 +16,22 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.util.FastInputStream;
 import org.junit.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Test for UpdateRequestCodec
@@ -93,7 +92,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     };
 
     UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()) ,handler);
-    Assert.assertNull(updateUnmarshalled.getDocuments());
+
     for (SolrInputDocument document : docs) {
       updateUnmarshalled.add(document);
     }
@@ -144,7 +143,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     };
 
     UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()) ,handler);
-    Assert.assertNull(updateUnmarshalled.getDocuments());
+ 
     for (SolrInputDocument document : docs) {
       updateUnmarshalled.add(document);
     }

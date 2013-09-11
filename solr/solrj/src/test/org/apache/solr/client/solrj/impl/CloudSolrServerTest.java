@@ -19,13 +19,22 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -100,6 +109,92 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
 
     del("*:*");
 
+    commit();
+    
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField(id, "0");
+    doc1.addField("a_t", "hello1");
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.addField(id, "2");
+    doc2.addField("a_t", "hello2");
+    
+    UpdateRequest request = new UpdateRequest();
+    request.add(doc1);
+    request.add(doc2);
+    request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+    
+    // Test single threaded routed updates for UpdateRequest
+    NamedList response = cloudClient.request(request);
+    CloudSolrServer.RouteResponse rr = (CloudSolrServer.RouteResponse) response;
+    Map<String,LBHttpSolrServer.Req> routes = rr.getRoutes();
+    Iterator<Map.Entry<String,LBHttpSolrServer.Req>> it = routes.entrySet()
+        .iterator();
+    while (it.hasNext()) {
+      Map.Entry<String,LBHttpSolrServer.Req> entry = it.next();
+      String url = entry.getKey();
+      UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
+          .getRequest();
+      SolrInputDocument doc = updateRequest.getDocuments().get(0);
+      String id = doc.getField("id").getValue().toString();
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("q", "id:" + id);
+      params.add("distrib", "false");
+      QueryRequest queryRequest = new QueryRequest(params);
+      HttpSolrServer solrServer = new HttpSolrServer(url);
+      QueryResponse queryResponse = queryRequest.process(solrServer);
+      SolrDocumentList docList = queryResponse.getResults();
+      assertTrue(docList.getNumFound() == 1);
+    }
+    
+    // Test the deleteById routing for UpdateRequest
+    
+    UpdateRequest delRequest = new UpdateRequest();
+    delRequest.deleteById("0");
+    delRequest.deleteById("2");
+    delRequest.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+    cloudClient.request(delRequest);
+    ModifiableSolrParams qParams = new ModifiableSolrParams();
+    qParams.add("q", "*:*");
+    QueryRequest qRequest = new QueryRequest(qParams);
+    QueryResponse qResponse = qRequest.process(cloudClient);
+    SolrDocumentList docs = qResponse.getResults();
+    assertTrue(docs.getNumFound() == 0);
+    
+    // Test Multi-Threaded routed updates for UpdateRequest
+    
+    CloudSolrServer threadedClient = null;
+    try {
+      threadedClient = new CloudSolrServer(zkServer.getZkAddress());
+      threadedClient.setParallelUpdates(true);
+      threadedClient.setDefaultCollection("collection1");
+      response = threadedClient.request(request);
+      rr = (CloudSolrServer.RouteResponse) response;
+      routes = rr.getRoutes();
+      it = routes.entrySet()
+          .iterator();
+      while (it.hasNext()) {
+        Map.Entry<String,LBHttpSolrServer.Req> entry = it.next();
+        String url = entry.getKey();
+        UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
+            .getRequest();
+        SolrInputDocument doc = updateRequest.getDocuments().get(0);
+        String id = doc.getField("id").getValue().toString();
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.add("q", "id:" + id);
+        params.add("distrib", "false");
+        QueryRequest queryRequest = new QueryRequest(params);
+        HttpSolrServer solrServer = new HttpSolrServer(url);
+        QueryResponse queryResponse = queryRequest.process(solrServer);
+        SolrDocumentList docList = queryResponse.getResults();
+        assertTrue(docList.getNumFound() == 1);
+      }
+    } finally {
+      threadedClient.shutdown();
+    }
+    
+    del("*:*");
+    commit();
+    
     indexr(id, 0, "a_t", "to come to the aid of their country.");
     
     CloudJettyRunner shard1Leader = shardToLeaderJetty.get("shard1");

@@ -89,6 +89,15 @@ Upgrading from Solr 4.4.0
   init param option is now deprecated and should be replaced with the more standard
   <arr name="fieldName">.  See SOLR-4249 for more details.
 
+* UpdateRequestExt has been removed as part of SOLR-4816. You should use UpdateRequest 
+  instead.
+  
+* CloudSolrServer can now use multiple threads to add documents by default. This is a
+  small change in runtime semantics when using the bulk add method - you will still
+  end up with the same exception on a failure, but some documents beyond the one that
+  failed may have made it in. To get the old, single threaded behavior, set parallel updates
+  to false on the CloudSolrServer instance.  
+
 Detailed Change List
 ----------------------
 
@@ -140,7 +149,11 @@ New Features
   can specify facet.threads to parallelize loading the uninverted fields. In at least
   one extreme case this reduced warmup time from 20 seconds to 3 seconds. (Janne Majaranta,
   Gun Akkor via Erick Erickson)
+
+* SOLR-4816: CloudSolrServer can now route updates locally and no longer relies on inter-node
+  update forwarding.  (Joel Bernstein, Mark Miller)
   
+* SOLR-3249: Allow CloudSolrServer and SolrCmdDistributor to use JavaBin. (Mark Miller)  
 
 Bug Fixes
 ----------------------
@@ -222,6 +235,9 @@ Optimizations
   (Mark Miller, Uwe Schindler)
 
  * SOLR-5057: QueryResultCache should not related with the order of fq's list (Feihong Huang via Erick Erickson)
+
+* SOLR-4816: CloudSolrServer now uses multiple threads to send updates by default.  
+  (Joel Bernstein via Mark Miller)
 
 Other Changes
 ----------------------

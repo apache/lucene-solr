@@ -37,6 +37,9 @@ import org.slf4j.LoggerFactory;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Update handler which uses the JavaBin format
@@ -97,7 +100,7 @@ public class JavabinLoader extends ContentStreamLoader {
       } catch (EOFException e) {
         break; // this is expected
       }
-      if (update.getDeleteById() != null || update.getDeleteQuery() != null) {
+      if (update.getDeleteByIdMap() != null || update.getDeleteQuery() != null) {
         delete(req, update, processor);
       }
     }
@@ -118,9 +121,17 @@ public class JavabinLoader extends ContentStreamLoader {
       delcmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     }
     
-    if(update.getDeleteById() != null) {
-      for (String s : update.getDeleteById()) {
-        delcmd.id = s;
+    if(update.getDeleteByIdMap() != null) {
+      Set<Entry<String,Map<String,Object>>> entries = update.getDeleteByIdMap().entrySet();
+      for (Entry<String,Map<String,Object>> e : entries) {
+        delcmd.id = e.getKey();
+        Map<String,Object> map = e.getValue();
+        if (map != null) {
+          Long version = (Long) map.get("ver");
+          if (version != null) {
+            delcmd.setVersion(version);
+          }
+        }
         processor.processDelete(delcmd);
         delcmd.clear();
       }

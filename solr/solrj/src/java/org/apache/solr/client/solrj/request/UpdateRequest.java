@@ -22,203 +22,411 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.LinkedHashMap;
 
+import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
 /**
  * 
- *
+ * 
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {
   
-  private List<SolrInputDocument> documents = null;
+  public static final String OVERWRITE = "ow";
+  public static final String COMMIT_WITHIN = "cw";
+  private Map<SolrInputDocument,Map<String,Object>> documents = null;
   private Iterator<SolrInputDocument> docIterator = null;
-  private List<String> deleteById = null;
+  private Map<String,Map<String,Object>> deleteById = null;
   private List<String> deleteQuery = null;
-
-  public UpdateRequest()
-  {
-    super( METHOD.POST, "/update" );
+  
+  public UpdateRequest() {
+    super(METHOD.POST, "/update");
   }
-
+  
   public UpdateRequest(String url) {
     super(METHOD.POST, url);
   }
-
-  //---------------------------------------------------------------------------
-  //---------------------------------------------------------------------------
+  
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   
   /**
    * clear the pending documents and delete commands
    */
-  public void clear()
-  {
-    if( documents != null ) {
+  public void clear() {
+    if (documents != null) {
       documents.clear();
     }
-    if( deleteById != null ) {
+    if (deleteById != null) {
       deleteById.clear();
     }
-    if( deleteQuery != null ) {
+    if (deleteQuery != null) {
       deleteQuery.clear();
     }
   }
   
-  //---------------------------------------------------------------------------
-  //---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   
-  public UpdateRequest add( final SolrInputDocument doc )
-  {
-    if( documents == null ) {
-      documents = new ArrayList<SolrInputDocument>( 2 );
+  public UpdateRequest add(final SolrInputDocument doc) {
+    if (documents == null) {
+      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
     }
-    documents.add( doc );
+    documents.put(doc, null);
     return this;
   }
   
-  public UpdateRequest add( final Collection<SolrInputDocument> docs )
-  {
-    if( documents == null ) {
-      documents = new ArrayList<SolrInputDocument>( docs.size()+1 );
+  public UpdateRequest add(final SolrInputDocument doc, Boolean overwrite) {
+    return add(doc, null, overwrite);
+  }
+  
+  public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin) {
+    return add(doc, commitWithin, null);
+  }
+  
+  public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin,
+      Boolean overwrite) {
+    if (documents == null) {
+      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
     }
-    documents.addAll( docs );
+    Map<String,Object> params = new HashMap<String,Object>(2);
+    if (commitWithin != null) params.put(COMMIT_WITHIN, commitWithin);
+    if (overwrite != null) params.put(OVERWRITE, overwrite);
+    
+    documents.put(doc, params);
+    
     return this;
   }
   
-  public UpdateRequest deleteById( String id )
-  {
-    if( deleteById == null ) {
-      deleteById = new ArrayList<String>();
+  public UpdateRequest add(final Collection<SolrInputDocument> docs) {
+    if (documents == null) {
+      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
     }
-    deleteById.add( id );
-    return this;
-  }
-  public UpdateRequest deleteById( List<String> ids )
-  {
-    if( deleteById == null ) {
-      deleteById = new ArrayList<String>(ids);
-    } else {
-      deleteById.addAll(ids);
+    for (SolrInputDocument doc : docs) {
+      documents.put(doc, null);
     }
     return this;
   }
   
-  public UpdateRequest deleteByQuery( String q )
-  {
-    if( deleteQuery == null ) {
+  public UpdateRequest deleteById(String id) {
+    if (deleteById == null) {
+      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+    }
+    deleteById.put(id, null);
+    return this;
+  }
+  
+  public UpdateRequest deleteById(List<String> ids) {
+    if (deleteById == null) {
+      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+    }
+    
+    for (String id : ids) {
+      deleteById.put(id, null);
+    }
+    
+    return this;
+  }
+  
+  public UpdateRequest deleteById(String id, Long version) {
+    if (deleteById == null) {
+      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+    }
+    Map<String,Object> params = new HashMap<String,Object>(1);
+    params.put("ver", version);
+    deleteById.put(id, params);
+    return this;
+  }
+  
+  public UpdateRequest deleteByQuery(String q) {
+    if (deleteQuery == null) {
       deleteQuery = new ArrayList<String>();
     }
-    deleteQuery.add( q );
+    deleteQuery.add(q);
     return this;
   }
+  
+  /**
+   * @param router to route updates with
+   * @param col DocCollection for the updates
+   * @param urlMap of the cluster
+   * @param params params to use
+   * @param idField the id field
+   * @return a Map of urls to requests
+   */
+  public Map<String,LBHttpSolrServer.Req> getRoutes(DocRouter router,
+      DocCollection col, Map<String,List<String>> urlMap,
+      ModifiableSolrParams params, String idField) {
+    
+    if ((documents == null || documents.size() == 0)
+        && (deleteById == null || deleteById.size() == 0)) {
+      return null;
+    }
+    
+    Map<String,LBHttpSolrServer.Req> routes = new HashMap<String,LBHttpSolrServer.Req>();
+    if (documents != null) {
+      Set<Entry<SolrInputDocument,Map<String,Object>>> entries = documents.entrySet();
+      for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
+        SolrInputDocument doc = entry.getKey();
+        Object id = doc.getFieldValue(idField);
+        if (id == null) {
+          return null;
+        }
+        Slice slice = router.getTargetSlice(id
+            .toString(), doc, null, col);
+        if (slice == null) {
+          return null;
+        }
+        List<String> urls = urlMap.get(slice.getName());
+        String leaderUrl = urls.get(0);
+        LBHttpSolrServer.Req request = (LBHttpSolrServer.Req) routes
+            .get(leaderUrl);
+        if (request == null) {
+          UpdateRequest updateRequest = new UpdateRequest();
+          updateRequest.setMethod(getMethod());
+          updateRequest.setCommitWithin(getCommitWithin());
+          updateRequest.setParams(params);
+          updateRequest.setPath(getPath());
+          request = new LBHttpSolrServer.Req(updateRequest, urls);
+          routes.put(leaderUrl, request);
+        }
+        UpdateRequest urequest = (UpdateRequest) request.getRequest();
+        urequest.add(doc);
+      }
+    }
+    
+    // Route the deleteById's
+    
+    if (deleteById != null) {
+      
+      Iterator<Map.Entry<String,Map<String,Object>>> entries = deleteById.entrySet()
+          .iterator();
+      while (entries.hasNext()) {
+        
+        Map.Entry<String,Map<String,Object>> entry = entries.next();
+        
+        String deleteId = entry.getKey();
+        Map<String,Object> map = entry.getValue();
+        Long version = null;
+        if (map != null) {
+          version = (Long) map.get("ver");
+        }
+        Slice slice = router.getTargetSlice(deleteId, null, null, col);
+        if (slice == null) {
+          return null;
+        }
+        List<String> urls = urlMap.get(slice.getName());
+        String leaderUrl = urls.get(0);
+        LBHttpSolrServer.Req request = routes.get(leaderUrl);
+        if (request != null) {
+          UpdateRequest urequest = (UpdateRequest) request.getRequest();
+          urequest.deleteById(deleteId, version);
+        } else {
+          UpdateRequest urequest = new UpdateRequest();
+          urequest.deleteById(deleteId, version);
+          request = new LBHttpSolrServer.Req(urequest, urls);
+          routes.put(leaderUrl, request);
+        }
+      }
+    }
 
+    return routes;
+  }
+  
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
     this.docIterator = docIterator;
   }
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
+  
+  public void setDeleteQuery(List<String> deleteQuery) {
+    this.deleteQuery = deleteQuery;
+  }
+  
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
-    return ClientUtils.toContentStreams( getXML(), ClientUtils.TEXT_XML );
+    return ClientUtils.toContentStreams(getXML(), ClientUtils.TEXT_XML);
   }
-
+  
   public String getXML() throws IOException {
     StringWriter writer = new StringWriter();
-    writeXML( writer );
+    writeXML(writer);
     writer.flush();
-
+    
     // If action is COMMIT or OPTIMIZE, it is sent with params
     String xml = writer.toString();
-    //System.out.println( "SEND:"+xml );
+    // System.out.println( "SEND:"+xml );
     return (xml.length() > 0) ? xml : null;
+  }
+  
+  private List<Map<SolrInputDocument,Map<String,Object>>> getDocLists(Map<SolrInputDocument,Map<String,Object>> documents) {
+    List<Map<SolrInputDocument,Map<String,Object>>> docLists = new ArrayList<Map<SolrInputDocument,Map<String,Object>>>();
+    Map<SolrInputDocument,Map<String,Object>> docList = null;
+    if (this.documents != null) {
+      
+      Boolean lastOverwrite = true;
+      Integer lastCommitWithin = -1;
+      
+      Set<Entry<SolrInputDocument,Map<String,Object>>> entries = this.documents
+          .entrySet();
+      for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
+        Map<String,Object> map = entry.getValue();
+        Boolean overwrite = null;
+        Integer commitWithin = null;
+        if (map != null) {
+          overwrite = (Boolean) entry.getValue().get(OVERWRITE);
+          commitWithin = (Integer) entry.getValue().get(COMMIT_WITHIN);
+        }
+        if (overwrite != lastOverwrite || commitWithin != lastCommitWithin
+            || docLists.size() == 0) {
+          docList = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+          docLists.add(docList);
+        }
+        docList.put(entry.getKey(), entry.getValue());
+        lastCommitWithin = commitWithin;
+        lastOverwrite = overwrite;
+      }
+    }
+    
+    if (docIterator != null) {
+      docList = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+      docLists.add(docList);
+      while (docIterator.hasNext()) {
+        SolrInputDocument doc = docIterator.next();
+        if (doc != null) {
+          docList.put(doc, null);
+        }
+      }
+      
+    }
+
+    return docLists;
   }
   
   /**
    * @since solr 1.4
    */
-  public void writeXML( Writer writer ) throws IOException {
-    if( (documents != null && documents.size() > 0) || docIterator != null) {
-      if( commitWithin > 0 ) {
-        writer.write("<add commitWithin=\""+commitWithin+"\">");
-      }
-      else {
-        writer.write("<add>");
-      }
-      if(documents != null) {
-        for (SolrInputDocument doc : documents) {
-          if (doc != null) {
-            ClientUtils.writeXML(doc, writer);
-          }
+  public void writeXML(Writer writer) throws IOException {
+    List<Map<SolrInputDocument,Map<String,Object>>> getDocLists = getDocLists(documents);
+    
+    for (Map<SolrInputDocument,Map<String,Object>> docs : getDocLists) {
+      
+      if ((docs != null && docs.size() > 0)) {
+        Entry<SolrInputDocument,Map<String,Object>> firstDoc = docs.entrySet()
+            .iterator().next();
+        Map<String,Object> map = firstDoc.getValue();
+        Integer cw = null;
+        Boolean ow = null;
+        if (map != null) {
+          cw = (Integer) firstDoc.getValue().get(COMMIT_WITHIN);
+          ow = (Boolean) firstDoc.getValue().get(OVERWRITE);
         }
-      }
-      if (docIterator != null) {
-        while (docIterator.hasNext()) {
-          SolrInputDocument doc = docIterator.next();
-          if (doc != null) {
-            ClientUtils.writeXML(doc, writer);
-          }
+        if (ow == null) ow = true;
+        int commitWithin = (cw != null && cw != -1) ? cw : this.commitWithin;
+        boolean overwrite = ow;
+        if (commitWithin > -1 || overwrite != true) {
+          writer.write("<add commitWithin=\"" + commitWithin + "\" "
+              + "overwrite=\"" + overwrite + "\">");
+        } else {
+          writer.write("<add>");
         }
+        
+        Set<Entry<SolrInputDocument,Map<String,Object>>> entries = docs
+            .entrySet();
+        for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
+          ClientUtils.writeXML(entry.getKey(), writer);
+        }
+        
+        writer.write("</add>");
       }
-      writer.write("</add>");
     }
     
     // Add the delete commands
     boolean deleteI = deleteById != null && deleteById.size() > 0;
     boolean deleteQ = deleteQuery != null && deleteQuery.size() > 0;
-    if( deleteI || deleteQ ) {
-      if(commitWithin>0) {
-        writer.append( "<delete commitWithin=\"" + commitWithin + "\">" );
+    if (deleteI || deleteQ) {
+      if (commitWithin > 0) {
+        writer.append("<delete commitWithin=\"" + commitWithin + "\">");
       } else {
-        writer.append( "<delete>" );
+        writer.append("<delete>");
       }
-      if( deleteI ) {
-        for( String id : deleteById ) {
-          writer.append( "<id>" );
-          XML.escapeCharData( id, writer );
-          writer.append( "</id>" );
+      if (deleteI) {
+        for (Map.Entry<String,Map<String,Object>> entry : deleteById.entrySet()) {
+          writer.append("<id");
+          Map<String,Object> map = entry.getValue();
+          if (map != null) {
+            Long version = (Long) map.get("ver");
+            if (version != null) {
+              writer.append(" version=\"" + version + "\"");
+            }
+          }
+          writer.append(">");
+          
+          XML.escapeCharData(entry.getKey(), writer);
+          writer.append("</id>");
         }
       }
-      if( deleteQ ) {
-        for( String q : deleteQuery ) {
-          writer.append( "<query>" );
-          XML.escapeCharData( q, writer );
-          writer.append( "</query>" );
+      if (deleteQ) {
+        for (String q : deleteQuery) {
+          writer.append("<query>");
+          XML.escapeCharData(q, writer);
+          writer.append("</query>");
         }
       }
-      writer.append( "</delete>" );
+      writer.append("</delete>");
     }
   }
-
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  //--------------------------------------------------------------------------
-  // 
-  //--------------------------------------------------------------------------
-
+  
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  
+  // --------------------------------------------------------------------------
+  //
+  // --------------------------------------------------------------------------
+  
   public List<SolrInputDocument> getDocuments() {
+    if (documents == null) return null;
+    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(documents.size());
+    docs.addAll(documents.keySet());
+    return docs;
+  }
+  
+  public Map<SolrInputDocument,Map<String,Object>> getDocumentsMap() {
     return documents;
   }
-
+  
   public Iterator<SolrInputDocument> getDocIterator() {
     return docIterator;
   }
-
+  
   public List<String> getDeleteById() {
+    if (deleteById == null) return null;
+    List<String> deletes = new ArrayList<String>(deleteById.keySet());
+    return deletes;
+  }
+  
+  public Map<String,Map<String,Object>> getDeleteByIdMap() {
     return deleteById;
   }
-
+  
   public List<String> getDeleteQuery() {
     return deleteQuery;
   }
-
+  
 }
