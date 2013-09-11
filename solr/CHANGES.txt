@@ -225,6 +225,11 @@ Bug Fixes
 * SOLR-5227: Correctly fail schema initalization if a dynamicField is configured to
   be required, or have a default value.  (hossman)
 
+* SOLR-5231: Fixed a bug with the behavior of BoolField that caused documents w/o
+  a value for the field to act as if the value were true in functions if no other
+  documents in the same index segment had a value of true.
+  (Robert Muir, hossman, yonik)
+
 Optimizations
 ----------------------
 
