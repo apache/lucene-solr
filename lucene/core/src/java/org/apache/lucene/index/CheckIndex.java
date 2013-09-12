@@ -410,7 +410,7 @@ public class CheckIndex {
     // note: we only read the format byte (required preamble) here!
     IndexInput input = null;
     try {
-      input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
+      input = dir.openInput(segmentsFileName, IOContext.READONCE);
     } catch (Throwable t) {
       msg(infoStream, "ERROR: could not open segments file in directory");
       if (infoStream != null)

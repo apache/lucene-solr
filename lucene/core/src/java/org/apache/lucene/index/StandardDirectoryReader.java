@@ -173,7 +173,7 @@ final class StandardDirectoryReader extends DirectoryReader {
             // Steal the ref returned by SegmentReader ctor:
             assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
             assert infos.info(i).hasDeletions();
-            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core, IOContext.READ);
+            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core);
           }
         }
         success = true;

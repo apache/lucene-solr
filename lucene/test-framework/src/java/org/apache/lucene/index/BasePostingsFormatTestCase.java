@@ -572,7 +572,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
