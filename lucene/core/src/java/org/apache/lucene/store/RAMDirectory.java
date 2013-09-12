@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * implementation working directly on the file system cache of the
  * operating system, so copying data to Java heap space is not useful.
  */
-public class RAMDirectory extends Directory {
+public class RAMDirectory extends BaseDirectory {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   

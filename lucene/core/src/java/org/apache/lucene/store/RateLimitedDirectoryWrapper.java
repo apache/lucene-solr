@@ -16,7 +16,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.store.IOContext.Context;
 
@@ -28,123 +27,40 @@ import org.apache.lucene.store.IOContext.Context;
  *  @see #setRateLimiter(RateLimiter, IOContext.Context)
  * @lucene.experimental
  */
-public final class RateLimitedDirectoryWrapper extends Directory {
-  
-  private final Directory delegate;
+public final class RateLimitedDirectoryWrapper extends FilterDirectory {
+
   // we need to be volatile here to make sure we see all the values that are set
   // / modified concurrently
   private volatile RateLimiter[] contextRateLimiters = new RateLimiter[IOContext.Context
       .values().length];
   
   public RateLimitedDirectoryWrapper(Directory wrapped) {
-    this.delegate = wrapped;
-  }
-  
-  public Directory getDelegate() {
-    return delegate;
-  }
-  
-  @Override
-  public String[] listAll() throws IOException {
-    ensureOpen();
-    return delegate.listAll();
-  }
-  
-  @Override
-  public boolean fileExists(String name) throws IOException {
-    ensureOpen();
-    return delegate.fileExists(name);
-  }
-  
-  @Override
-  public void deleteFile(String name) throws IOException {
-    ensureOpen();
-    delegate.deleteFile(name);
-  }
-  
-  @Override
-  public long fileLength(String name) throws IOException {
-    ensureOpen();
-    return delegate.fileLength(name);
+    super(wrapped);
   }
   
   @Override
   public IndexOutput createOutput(String name, IOContext context)
       throws IOException {
     ensureOpen();
-    final IndexOutput output = delegate.createOutput(name, context);
+    final IndexOutput output = super.createOutput(name, context);
     final RateLimiter limiter = getRateLimiter(context.context);
     if (limiter != null) {
       return new RateLimitedIndexOutput(limiter, output);
     }
     return output;
   }
-  
-  @Override
-  public void sync(Collection<String> names) throws IOException {
-    ensureOpen();
-    delegate.sync(names);
-  }
-  
-  @Override
-  public IndexInput openInput(String name, IOContext context)
-      throws IOException {
-    ensureOpen();
-    return delegate.openInput(name, context);
-  }
-  
-  @Override
-  public void close() throws IOException {
-    isOpen = false;
-    delegate.close();
-  }
-  
+
   @Override
   public IndexInputSlicer createSlicer(String name, IOContext context)
       throws IOException {
     ensureOpen();
-    return delegate.createSlicer(name, context);
-  }
-  
-  @Override
-  public Lock makeLock(String name) {
-    ensureOpen();
-    return delegate.makeLock(name);
-  }
-
-  @Override
-  public void clearLock(String name) throws IOException {
-    ensureOpen();
-    delegate.clearLock(name);
-  }
-
-  @Override
-  public void setLockFactory(LockFactory lockFactory) throws IOException {
-    ensureOpen();
-    delegate.setLockFactory(lockFactory);
-  }
-
-  @Override
-  public LockFactory getLockFactory() {
-    ensureOpen();
-    return delegate.getLockFactory();
-  }
-
-  @Override
-  public String getLockID() {
-    ensureOpen();
-    return delegate.getLockID();
-  }
-
-  @Override
-  public String toString() {
-    return "RateLimitedDirectoryWrapper(" + delegate.toString() + ")";
+    return in.createSlicer(name, context);
   }
 
   @Override
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     ensureOpen();
-    delegate.copy(to, src, dest, context);
+    in.copy(to, src, dest, context);
   }
   
   private RateLimiter getRateLimiter(IOContext.Context context) {
