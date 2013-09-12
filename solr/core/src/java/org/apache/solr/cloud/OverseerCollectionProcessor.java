@@ -820,7 +820,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       } while (srsp != null);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          Overseer.REMOVESHARD, ZkStateReader.COLLECTION_PROP, collection);
+          Overseer.REMOVESHARD, ZkStateReader.COLLECTION_PROP, collection,
+          ZkStateReader.SHARD_ID_PROP, sliceId);
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
 
       // wait for a while until we don't see the shard
@@ -829,7 +830,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       boolean removed = false;
       while (System.currentTimeMillis() < timeout) {
         Thread.sleep(100);
-        removed = zkStateReader.getClusterState().getSlice(collection, message.getStr("name")) == null;
+        removed = zkStateReader.getClusterState().getSlice(collection, sliceId) == null;
         if (removed) {
           Thread.sleep(100); // just a bit of time so it's more likely other readers see on return
           break;
@@ -837,15 +838,15 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
       if (!removed) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + collection + " shard: " + message.getStr("name"));
+            "Could not fully remove collection: " + collection + " shard: " + sliceId);
       }
 
-      log.info("Successfully deleted collection " + collection + ", shard: " + message.getStr("name"));
+      log.info("Successfully deleted collection: " + collection + ", shard: " + sliceId);
 
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error executing delete operation for collection: " + collection + " shard: " + message.getStr("name"), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error executing delete operation for collection: " + collection + " shard: " + sliceId, e);
     }
   }
 

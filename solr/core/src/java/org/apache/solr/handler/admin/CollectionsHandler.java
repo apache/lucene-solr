@@ -329,11 +329,11 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleDeleteShardAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Deleting Shard : " + req.getParamString());
-    String name = req.getParams().required().get("collection");
-    String shard = req.getParams().required().get("shard");
+    String name = req.getParams().required().get(ZkStateReader.COLLECTION_PROP);
+    String shard = req.getParams().required().get(ZkStateReader.SHARD_ID_PROP);
     
     Map<String,Object> props = new HashMap<String,Object>();
-    props.put("collection", name);
+    props.put(ZkStateReader.COLLECTION_PROP, name);
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.DELETESHARD);
     props.put(ZkStateReader.SHARD_ID_PROP, shard);
 

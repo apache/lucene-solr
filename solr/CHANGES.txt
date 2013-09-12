@@ -233,6 +233,10 @@ Bug Fixes
   documents in the same index segment had a value of true.
   (Robert Muir, hossman, yonik)
 
+* SOLR-5233: The "deleteshard" collections API doesn't wait for cluster state to update,
+  can fail if some nodes of the deleted shard were down and had incorrect logging.
+  (Christine Poerschke, shalin)
+
 Optimizations
 ----------------------
 
