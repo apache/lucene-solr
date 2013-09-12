@@ -45,6 +45,9 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+======================= Lucene 4.6.0 =======================
+
+
 ======================= Lucene 4.5.0 =======================
 
 New features
