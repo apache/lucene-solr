@@ -47,6 +47,11 @@ Optimizations
 
 ======================= Lucene 4.6.0 =======================
 
+New Features
+
+* LUCENE-4906: PostingsHighlighter can now render to custom Object,
+  for advanced use cases where String is too restrictive (Luca
+  Cavanna, Robert Muir, Mike McCandless)
 
 ======================= Lucene 4.5.0 =======================
 
