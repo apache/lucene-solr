@@ -20,6 +20,16 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  4.6.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
