@@ -24,7 +24,7 @@
     that you fully re-index after changing this setting as it can affect both how text is indexed
     and queried.
   -->
-  <luceneMatchVersion>4.5</luceneMatchVersion>
+  <luceneMatchVersion>4.6</luceneMatchVersion>
 
   <jmx />
 
