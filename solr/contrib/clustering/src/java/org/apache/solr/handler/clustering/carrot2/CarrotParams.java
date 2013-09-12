@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 
 /**
  * Carrot2 parameter mapping (recognized and mapped if passed via Solr configuration).
+ * @lucene.experimental
  */
 public final class CarrotParams {
 

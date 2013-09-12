@@ -50,10 +50,11 @@ import com.google.common.collect.Multimap;
  * stop words removal. In other words, if something is a stop word during
  * indexing, then it should also be a stop word during clustering, but not the
  * other way round.
+ * 
+ * @lucene.experimental
  */
 @Bindable
-public class SolrStopwordsCarrot2LexicalDataFactory implements
-    ILexicalDataFactory {
+public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFactory {
   final static Logger logger = org.slf4j.LoggerFactory
       .getLogger(SolrStopwordsCarrot2LexicalDataFactory.class);
 
