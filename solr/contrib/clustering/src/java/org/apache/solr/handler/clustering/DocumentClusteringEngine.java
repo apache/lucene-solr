@@ -20,11 +20,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.DocSet;
 
-
 /**
- * Experimental.  Subject to change before the next release.
- *
- **/
+ * @lucene.experimental
+ */
 public abstract class DocumentClusteringEngine extends ClusteringEngine {
 
   /**

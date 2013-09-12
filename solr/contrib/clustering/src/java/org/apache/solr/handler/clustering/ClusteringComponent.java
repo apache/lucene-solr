@@ -1,4 +1,5 @@
 package org.apache.solr.handler.clustering;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +19,6 @@ package org.apache.solr.handler.clustering;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,6 +38,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +47,13 @@ import com.google.common.collect.Maps;
 
 
 /**
- * Provide a plugin for performing cluster analysis. This can either be applied to 
+ * Provides a plugin for performing cluster analysis. This can either be applied to 
  * search results (e.g., via <a href="http://project.carrot2.org">Carrot<sup>2</sup></a>) or for
  * clustering documents (e.g., via <a href="http://mahout.apache.org/">Mahout</a>).
  * <p>
- * This engine is experimental. Output from this engine is subject to change in future releases.</p>
- * <p>
- * See Solr example for configuration examples.</p>  
+ * See Solr example for configuration examples.</p>
+ * 
+ * @lucene.experimental
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
   private transient static Logger log = LoggerFactory.getLogger(ClusteringComponent.class);
@@ -78,6 +79,13 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    */
   private final Map<String, SearchClusteringEngine> searchClusteringEnginesView = Collections.unmodifiableMap(searchClusteringEngines);
 
+  /**
+   * Initialization parameters temporarily saved here, the component
+   * is initialized in {@link #inform(SolrCore)} because we need to know
+   * the core's {@link SolrResourceLoader}.
+   * 
+   * @see #init(NamedList)
+   */
   private NamedList<Object> initParams;
 
   @Override
@@ -150,8 +158,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       SearchClusteringEngine engine = getSearchClusteringEngine(rb);
       if (engine != null) {
         DocListAndSet results = rb.getResults();
-        Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(results.docList.size());
-        SolrDocumentList solrDocList = engine.getSolrDocumentList(results.docList, rb.req, docIds);
+        Map<SolrDocument,Integer> docIds = Maps.newHashMapWithExpectedSize(results.docList.size());
+        SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList(
+            results.docList, rb.req.getSearcher(), engine.getFieldsToLoad(rb.req), docIds);
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
       } else {
@@ -177,7 +186,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       }
     }
   }
-  
+
   private SearchClusteringEngine getSearchClusteringEngine(ResponseBuilder rb){
     return searchClusteringEngines.get(getClusteringEngineName(rb));
   }

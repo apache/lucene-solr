@@ -17,10 +17,7 @@ package org.apache.solr.handler.clustering.carrot2;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
@@ -45,7 +41,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.clustering.ClusteringEngine;
 import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -56,7 +51,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.SolrPluginUtils;
 import org.carrot2.core.Cluster;
 import org.carrot2.core.Controller;
 import org.carrot2.core.ControllerFactory;
@@ -71,7 +65,6 @@ import org.carrot2.util.attribute.AttributeValueSet;
 import org.carrot2.util.attribute.AttributeValueSets;
 import org.carrot2.util.resource.ClassLoaderLocator;
 import org.carrot2.util.resource.IResource;
-import org.carrot2.util.resource.IResourceLocator;
 import org.carrot2.util.resource.ResourceLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,19 +77,17 @@ import com.google.common.collect.Sets;
 
 /**
  * Search results clustering engine based on Carrot2 clustering algorithms.
- * <p/>
- * Output from this class is subject to change.
  *
  * @see "http://project.carrot2.org"
+ * @lucene.experimental
  */
 public class CarrotClusteringEngine extends SearchClusteringEngine {
-  private transient static Logger log = LoggerFactory
-          .getLogger(CarrotClusteringEngine.class);
+  transient static Logger log = LoggerFactory.getLogger(CarrotClusteringEngine.class);
 
   /**
    * The subdirectory in Solr config dir to read customized Carrot2 resources from.
    */
-  private static final String CARROT_RESOURCES_PREFIX = "clustering/carrot2";
+  static final String CARROT_RESOURCES_PREFIX = "clustering/carrot2";
 
   /**
    * Name of Carrot2 document's field containing Solr document's identifier.
@@ -114,166 +105,14 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    * Carrot2 controller that manages instances of clustering algorithms
    */
   private Controller controller = ControllerFactory.createPooling();
+  
+  /**
+   * {@link IClusteringAlgorithm} class used for actual clustering.
+   */
   private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
 
   /** Solr core we're bound to. */
   private SolrCore core;
-
-  private static class SolrResourceLocator implements IResourceLocator {
-    private final SolrResourceLoader resourceLoader;
-    private final String carrot2ResourcesDir;
-
-    public SolrResourceLocator(SolrCore core, SolrParams initParams) {
-      resourceLoader = core.getResourceLoader();
-      
-      @SuppressWarnings("deprecation")
-      String lexicalResourcesDir = initParams.get(CarrotParams.LEXICAL_RESOURCES_DIR);
-      String resourcesDir = initParams.get(CarrotParams.RESOURCES_DIR);
-      carrot2ResourcesDir = firstNonNull(resourcesDir, lexicalResourcesDir, CARROT_RESOURCES_PREFIX);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> T firstNonNull(T... args) {
-      for (T t : args) {
-        if (t != null) return t;
-      }
-      throw new NullPointerException("At least one element has to be non-null.");
-    }
-
-    @Override
-    public IResource[] getAll(final String resource) {
-      final String resourceName = carrot2ResourcesDir + "/" + resource;
-      log.debug("Looking for Solr resource: " + resourceName);
-
-      InputStream resourceStream = null;
-      final byte [] asBytes;
-      try {
-        resourceStream = resourceLoader.openResource(resourceName);
-        asBytes = IOUtils.toByteArray(resourceStream);
-      } catch (IOException e) {
-        log.debug("Resource not found in Solr's config: " + resourceName
-            + ". Using the default " + resource + " from Carrot JAR.");          
-        return new IResource[] {};
-      } finally {
-        if (resourceStream != null) {
-          try {
-            resourceStream.close();
-          } catch (IOException e) {
-            // ignore.
-          }
-        }
-      }
-
-      log.info("Loaded Solr resource: " + resourceName);
-
-      final IResource foundResource = new IResource() {
-        @Override
-        public InputStream open() {
-          return new ByteArrayInputStream(asBytes);
-        }
-
-        @Override
-        public int hashCode() {
-          // In case multiple resources are found they will be deduped, but we don't use it in Solr,
-          // so simply rely on instance equivalence.
-          return super.hashCode();
-        }
-        
-        @Override
-        public boolean equals(Object obj) {
-          // In case multiple resources are found they will be deduped, but we don't use it in Solr,
-          // so simply rely on instance equivalence.
-          return super.equals(obj);
-        }
-
-        @Override
-        public String toString() {
-          return "Solr config resource: " + resourceName;
-        }
-      };
-
-      return new IResource[] { foundResource };
-    }
-
-    @Override
-    public int hashCode() {
-      // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
-      // so simply rely on instance equivalence.
-      return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
-      // so simply rely on instance equivalence.
-      return super.equals(obj);
-    }
-
-    @Override
-    public String toString() {
-      String configDir = "";
-      try {
-        configDir = "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath() + ", ";
-      } catch (Exception ignored) {
-        // If we get the exception, the resource loader implementation
-        // probably does not support getConfigDir(). Not a big problem.
-      }
-      
-      return "SolrResourceLocator, " + configDir
-          + "Carrot2 relative lexicalResourcesDir=" + carrot2ResourcesDir;
-    }
-  }
-
-  @Override
-  @Deprecated
-  public Object cluster(Query query, DocList docList, SolrQueryRequest sreq) {
-    SolrIndexSearcher searcher = sreq.getSearcher();
-    SolrDocumentList solrDocList;
-    try {
-      Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(docList.size());
-      solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, getFieldsToLoad(sreq), docIds );
-      return cluster(query, solrDocList, docIds, sreq);
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  @Override
-  public Object cluster(Query query, SolrDocumentList solrDocList,
-      Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
-    try {
-      // Prepare attributes for Carrot2 clustering call
-      Map<String, Object> attributes = new HashMap<String, Object>();
-      List<Document> documents = getDocuments(solrDocList, docIds, query, sreq);
-      attributes.put(AttributeNames.DOCUMENTS, documents);
-      attributes.put(AttributeNames.QUERY, query.toString());
-
-      // Pass the fields on which clustering runs to the
-      // SolrStopwordsCarrot2LexicalDataFactory
-      attributes.put("solrFieldNames", getFieldsForClustering(sreq));
-
-      // Pass extra overriding attributes from the request, if any
-      extractCarrotAttributes(sreq.getParams(), attributes);
-
-      // Perform clustering and convert to named list
-      // Carrot2 uses current thread's context class loader to get
-      // certain classes (e.g. custom tokenizer/stemmer) at runtime.
-      // To make sure classes from contrib JARs are available,
-      // we swap the context class loader for the time of clustering.
-      Thread ct = Thread.currentThread();
-      ClassLoader prev = ct.getContextClassLoader();
-      try {
-        ct.setContextClassLoader(core.getResourceLoader().getClassLoader());
-        return clustersToNamedList(controller.process(attributes,
-                clusteringAlgorithmClass).getClusters(), sreq.getParams());
-      } finally {
-        ct.setContextClassLoader(prev);
-      }
-    } catch (Exception e) {
-      log.error("Carrot2 clustering failed", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
-    }
-  }
 
   @Override
   @SuppressWarnings("rawtypes")
@@ -378,6 +217,43 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   }
 
   @Override
+  public Object cluster(Query query, SolrDocumentList solrDocList,
+      Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
+    try {
+      // Prepare attributes for Carrot2 clustering call
+      Map<String, Object> attributes = new HashMap<String, Object>();
+      List<Document> documents = getDocuments(solrDocList, docIds, query, sreq);
+      attributes.put(AttributeNames.DOCUMENTS, documents);
+      attributes.put(AttributeNames.QUERY, query.toString());
+  
+      // Pass the fields on which clustering runs.
+      attributes.put("solrFieldNames", getFieldsForClustering(sreq));
+  
+      // Pass extra overriding attributes from the request, if any
+      extractCarrotAttributes(sreq.getParams(), attributes);
+  
+      // Perform clustering and convert to an output structure of clusters.
+      //
+      // Carrot2 uses current thread's context class loader to get
+      // certain classes (e.g. custom tokenizer/stemmer) at runtime.
+      // To make sure classes from contrib JARs are available,
+      // we swap the context class loader for the time of clustering.
+      Thread ct = Thread.currentThread();
+      ClassLoader prev = ct.getContextClassLoader();
+      try {
+        ct.setContextClassLoader(core.getResourceLoader().getClassLoader());
+        return clustersToNamedList(controller.process(attributes,
+                clusteringAlgorithmClass).getClusters(), sreq.getParams());
+      } finally {
+        ct.setContextClassLoader(prev);
+      }
+    } catch (Exception e) {
+      log.error("Carrot2 clustering failed", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
+    }
+  }
+
+  @Override
   protected Set<String> getFieldsToLoad(SolrQueryRequest sreq){
     SolrParams solrParams = sreq.getParams();
 
@@ -434,8 +310,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Parse language code map string into a map
     Map<String, String> languageCodeMap = Maps.newHashMap();
     if (StringUtils.isNotBlank(languageField)) {
-      for (String pair : solrParams.get(CarrotParams.LANGUAGE_CODE_MAP, "")
-          .split("[, ]")) {
+      for (String pair : solrParams.get(CarrotParams.LANGUAGE_CODE_MAP, "").split("[, ]")) {
         final String[] split = pair.split(":");
         if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
           languageCodeMap.put(split[0], split[1]);
