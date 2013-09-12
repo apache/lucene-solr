@@ -424,7 +424,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertEquals("v2", result.getFieldValue("parent_f2"));
     
     List<SolrInputDocument> resultChilds = result.getChildDocuments();
-    assertEquals(childsNum, resultChilds.size());
+    int resultChildsSize = resultChilds == null ? 0 : resultChilds.size();
+    assertEquals(childsNum, resultChildsSize);
     
     for (int childIndex = 0; childIndex < childsNum; ++childIndex) {
       SolrInputDocument child = resultChilds.get(childIndex);
@@ -433,7 +434,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       }
       
       List<SolrInputDocument> grandChilds = child.getChildDocuments();
-      assertEquals(childIndex * 2, grandChilds.size());
+      int grandChildsSize = grandChilds == null ? 0 : grandChilds.size();
+
+      assertEquals(childIndex * 2, grandChildsSize);
       for (int grandIndex = 0; grandIndex < childIndex * 2; ++grandIndex) {
         SolrInputDocument grandChild = grandChilds.get(grandIndex);
         assertFalse(grandChild.hasChildDocuments());
