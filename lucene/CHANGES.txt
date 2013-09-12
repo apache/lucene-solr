@@ -240,6 +240,9 @@ Documentation
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
   package's documentation and classes javadocs. (Shai Erera)
 
+* LUCENE-5206: Clarify FuzzyQuery's unexpected behavior on short
+  terms. (Tim Allison via Mike McCandless)
+
 Changes in backwards compatibility policy
 
 * LUCENE-5141: CheckIndex.fixIndex(Status,Codec) is now
