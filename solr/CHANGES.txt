@@ -163,7 +163,7 @@ New Features
   Gun Akkor via Erick Erickson)
 
 * SOLR-4816: CloudSolrServer can now route updates locally and no longer relies on inter-node
-  update forwarding.  (Joel Bernstein, Mark Miller)
+  update forwarding.  (Joel Bernstein, Shikhar Bhushan, Mark Miller)
   
 * SOLR-3249: Allow CloudSolrServer and SolrCmdDistributor to use JavaBin. (Mark Miller)  
 
