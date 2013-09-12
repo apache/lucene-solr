@@ -16,6 +16,11 @@ New Features
   String is too restrictive (Robert Muir, Shai Erera, Mike
   McCandless)
 
+Bug Fixes
+
+* LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
+  of IOContext.READ (Shikhar Bhushan via Mike McCandless)
+
 Changes in backwards compatibility policy
 
 * LUCENE-5204: Directory doesn't have default implementations for
