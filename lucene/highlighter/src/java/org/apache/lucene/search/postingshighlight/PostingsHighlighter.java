@@ -267,7 +267,7 @@ public class PostingsHighlighter {
 
     return highlightFields(fields, query, searcher, docids, maxPassages);
   }
-    
+
   /**
    * Highlights the top-N passages from multiple fields,
    * for the provided int[] docids.
@@ -280,7 +280,7 @@ public class PostingsHighlighter {
    * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to 
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
-   *         corresponding to the documents in <code>topDocs</code>. 
+   *         corresponding to the documents in <code>docidsIn</code>. 
    *         If no highlights were found for a document, the
    *         first {@code maxPassages} from the field will
    *         be returned.
@@ -289,6 +289,45 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public Map<String,String[]> highlightFields(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
+    Map<String,String[]> snippets = new HashMap<String,String[]>();
+    for(Map.Entry<String,Object[]> ent : highlightFieldsAsObjects(fieldsIn, query, searcher, docidsIn, maxPassagesIn).entrySet()) {
+      Object[] snippetObjects = ent.getValue();
+      String[] snippetStrings = new String[snippetObjects.length];
+      snippets.put(ent.getKey(), snippetStrings);
+      for(int i=0;i<snippetObjects.length;i++) {
+        Object snippet = snippetObjects[i];
+        if (snippet != null) {
+          snippetStrings[i] = snippet.toString();
+        }
+      }
+    }
+
+    return snippets;
+  }
+
+  /**
+   * Expert: highlights the top-N passages from multiple fields,
+   * for the provided int[] docids, to custom Object as
+   * returned by the {@link PassageFormatter}.  Use
+   * this API to render to something other than String.
+   * 
+   * @param fieldsIn field names to highlight. 
+   *        Must have a stored string value and also be indexed with offsets.
+   * @param query query to highlight.
+   * @param searcher searcher that was previously used to execute the query.
+   * @param docidsIn containing the document IDs to highlight.
+   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to 
+   *        form the highlighted snippets.
+   * @return Map keyed on field name, containing the array of formatted snippets 
+   *         corresponding to the documents in <code>docidsIn</code>. 
+   *         If no highlights were found for a document, the
+   *         first {@code maxPassages} from the field will
+   *         be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without 
+   *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   */
+  public Map<String,Object[]> highlightFieldsAsObjects(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
     if (fieldsIn.length < 1) {
       throw new IllegalArgumentException("fieldsIn must not be empty");
     }
@@ -335,7 +374,7 @@ public class PostingsHighlighter {
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
     
-    Map<String,String[]> highlights = new HashMap<String,String[]>();
+    Map<String,Object[]> highlights = new HashMap<String,Object[]>();
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
       int numPassages = maxPassages[i];
@@ -350,9 +389,9 @@ public class PostingsHighlighter {
       for(Term term : fieldTerms) {
         terms[termUpto++] = term.bytes();
       }
-      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages);
+      Map<Integer,Object> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages);
         
-      String[] result = new String[docids.length];
+      Object[] result = new Object[docids.length];
       for (int j = 0; j < docidsIn.length; j++) {
         result[j] = fieldHighlights.get(docidsIn[j]);
       }
@@ -394,8 +433,8 @@ public class PostingsHighlighter {
     return ' ';
   }
     
-  private Map<Integer,String> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
-    Map<Integer,String> highlights = new HashMap<Integer,String>();
+  private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
+    Map<Integer,Object> highlights = new HashMap<Integer,Object>();
     
     // reuse in the real sense... for docs in same segment we just advance our old enum
     DocsAndPositionsEnum postings[] = null;
