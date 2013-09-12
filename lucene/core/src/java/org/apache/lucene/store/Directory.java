@@ -43,12 +43,6 @@ import org.apache.lucene.util.IOUtils;
  */
 public abstract class Directory implements Closeable {
 
-  volatile protected boolean isOpen = true;
-
-  /** Holds the LockFactory instance (implements locking for
-   * this Directory instance). */
-  protected LockFactory lockFactory;
-
   /**
    * Returns an array of strings, one for each file in the directory.
    * 
@@ -114,20 +108,15 @@ public abstract class Directory implements Closeable {
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */
-  public Lock makeLock(String name) {
-      return lockFactory.makeLock(name);
-  }
+  public abstract Lock makeLock(String name);
+
   /**
    * Attempt to clear (forcefully unlock and remove) the
    * specified lock.  Only call this at a time when you are
    * certain this lock is no longer in use.
    * @param name name of the lock to be cleared.
    */
-  public void clearLock(String name) throws IOException {
-    if (lockFactory != null) {
-      lockFactory.clearLock(name);
-    }
-  }
+  public abstract void clearLock(String name) throws IOException;
 
   /** Closes the store. */
   @Override
@@ -143,11 +132,7 @@ public abstract class Directory implements Closeable {
    *
    * @param lockFactory instance of {@link LockFactory}.
    */
-  public void setLockFactory(LockFactory lockFactory) throws IOException {
-    assert lockFactory != null;
-    this.lockFactory = lockFactory;
-    lockFactory.setLockPrefix(this.getLockID());
-  }
+  public abstract void setLockFactory(LockFactory lockFactory) throws IOException;
 
   /**
    * Get the LockFactory that this Directory instance is
@@ -155,9 +140,7 @@ public abstract class Directory implements Closeable {
    * may be null for Directory implementations that provide
    * their own locking implementation.
    */
-  public LockFactory getLockFactory() {
-    return this.lockFactory;
-  }
+  public abstract LockFactory getLockFactory();
 
   /**
    * Return a string identifier that uniquely differentiates
@@ -255,10 +238,7 @@ public abstract class Directory implements Closeable {
   /**
    * @throws AlreadyClosedException if this Directory is closed
    */
-  protected final void ensureOpen() throws AlreadyClosedException {
-    if (!isOpen)
-      throw new AlreadyClosedException("this Directory is closed");
-  }
+  protected void ensureOpen() throws AlreadyClosedException {}
   
   /**
    * Allows to create one or more sliced {@link IndexInput} instances from a single 

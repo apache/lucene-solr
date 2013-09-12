@@ -110,7 +110,7 @@ import org.apache.lucene.util.IOUtils;
  *
  * @see Directory
  */
-public abstract class FSDirectory extends Directory {
+public abstract class FSDirectory extends BaseDirectory {
 
   /**
    * Default read chunk size: 8192 bytes (this is the size up to which the JDK

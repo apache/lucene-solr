@@ -36,6 +36,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -112,7 +113,7 @@ public class TestFieldsReader extends LuceneTestCase {
   }
 
 
-  public static class FaultyFSDirectory extends Directory {
+  public static class FaultyFSDirectory extends BaseDirectory {
 
     Directory fsDir;
     

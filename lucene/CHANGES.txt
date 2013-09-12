@@ -11,6 +11,13 @@ New Features
   for advanced use cases where String is too restrictive (Luca
   Cavanna, Robert Muir, Mike McCandless)
 
+Changes in backwards compatibility policy
+
+* LUCENE-5204: Directory doesn't have default implementations for
+  LockFactory-related methods, which have been moved to BaseDirectory. If you
+  had a custom Directory implementation that extended Directory, you need to
+  extend BaseDirectory instead. (Adrien Grand)
+
 ======================= Lucene 4.5.0 =======================
 
 New features
@@ -268,7 +275,7 @@ Changes in backwards compatibility policy
 * LUCENE-5101: CachingWrapperFilter doesn't always return FixedBitSet instances
   anymore. Users of the join module can use
   oal.search.join.FixedBitSetCachingWrapperFilter instead. (Adrien Grand)
-  
+
 Build
 
 * SOLR-5159: Manifest includes non-parsed maven variables. 

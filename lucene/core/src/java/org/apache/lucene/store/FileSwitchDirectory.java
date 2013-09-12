@@ -39,7 +39,7 @@ import java.util.HashSet;
  * @lucene.experimental
  */
 
-public class FileSwitchDirectory extends Directory {
+public class FileSwitchDirectory extends BaseDirectory {
   private final Directory secondaryDir;
   private final Directory primaryDir;
   private final Set<String> primaryExtensions;

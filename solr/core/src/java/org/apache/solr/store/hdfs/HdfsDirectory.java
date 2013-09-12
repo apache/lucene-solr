@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -39,7 +40,7 @@ import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsDirectory extends Directory {
+public class HdfsDirectory extends BaseDirectory {
   public static Logger LOG = LoggerFactory.getLogger(HdfsDirectory.class);
   
   public static final int BUFFER_SIZE = 8192;
