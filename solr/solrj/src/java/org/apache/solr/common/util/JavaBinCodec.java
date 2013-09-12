@@ -387,7 +387,8 @@ public class JavaBinCodec {
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
     writeTag(SOLRINPUTDOC, sdoc.size());
-    writeTag(SOLRINPUTDOC_CHILDS, sdoc.getChildDocuments().size());    
+    List<SolrInputDocument> children = sdoc.getChildDocuments();
+    writeTag(SOLRINPUTDOC_CHILDS, children==null ? 0 : children.size());
     writeFloat(sdoc.getDocumentBoost());
     for (SolrInputField inputField : sdoc.values()) {
       if (inputField.getBoost() != 1.0f) {
@@ -396,8 +397,10 @@ public class JavaBinCodec {
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
     }
-    for (SolrInputDocument child : sdoc.getChildDocuments()) {
-      writeSolrInputDocument(child);
+    if (children != null) {
+      for (SolrInputDocument child : sdoc.getChildDocuments()) {
+        writeSolrInputDocument(child);
+      }
     }
   }
 

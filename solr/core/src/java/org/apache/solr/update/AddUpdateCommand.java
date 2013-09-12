@@ -197,8 +197,11 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<IndexDoc
   }
 
   private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
-    for (SolrInputDocument child : currentDoc.getChildDocuments()) {
-      recUnwrapp(unwrappedDocs, child);
+    List<SolrInputDocument> children = currentDoc.getChildDocuments();
+    if (children != null) {
+      for (SolrInputDocument child : children) {
+        recUnwrapp(unwrappedDocs, child);
+      }
     }
     unwrappedDocs.add(currentDoc);
   }
