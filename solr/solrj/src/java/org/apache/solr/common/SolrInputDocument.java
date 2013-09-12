@@ -43,12 +43,10 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   
   public SolrInputDocument() {
     _fields = new LinkedHashMap<String,SolrInputField>();
-    _childDocuments = new ArrayList<SolrInputDocument>();
   }
   
   public SolrInputDocument(Map<String,SolrInputField> fields) {
     _fields = fields;
-    _childDocuments = new ArrayList<SolrInputDocument>();
   }
   
   /**
@@ -60,9 +58,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     if( _fields != null ) {
       _fields.clear();      
     }
-    if (_childDocuments != null) {
-      _childDocuments.clear();
-    }
+    _childDocuments = null;
   }
 
   ///////////////////////////////////////////////////////////////////
@@ -198,7 +194,9 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   @Override
   public String toString()
   {
-    return "SolrInputDocument(fields: " + _fields.values() + ", childs: " + _childDocuments + ")";
+    return "SolrInputDocument(fields: " + _fields.values()
+        + ( _childDocuments == null ? "" : (", children: " + _childDocuments) )
+        + ")";
   }
   
   public SolrInputDocument deepCopy() {
@@ -208,11 +206,13 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
       clone._fields.put(fieldEntry.getKey(), fieldEntry.getValue().deepCopy());
     }
     clone._documentBoost = _documentBoost;
-    
-    clone._childDocuments = new ArrayList<SolrInputDocument>(_childDocuments.size());
-    for (SolrInputDocument child : _childDocuments) {
-      clone._childDocuments.add(child.deepCopy());  
-    }    
+
+    if (_childDocuments != null) {
+      clone._childDocuments = new ArrayList<SolrInputDocument>(_childDocuments.size());
+      for (SolrInputDocument child : _childDocuments) {
+        clone._childDocuments.add(child.deepCopy());
+      }
+    }
     
     return clone;
   }
@@ -277,6 +277,9 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   }
   
   public void addChildDocument(SolrInputDocument child) {
+   if (_childDocuments == null) {
+     _childDocuments = new ArrayList<SolrInputDocument>();
+   }
     _childDocuments.add(child);
   }
   
@@ -285,7 +288,8 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
       addChildDocument(child);
     }
   }
-  
+
+  /** Returns the list of child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
   }
