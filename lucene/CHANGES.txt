@@ -63,11 +63,6 @@ Bug Fixes
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
   of IOContext.READ (Shikhar Bhushan via Mike McCandless)
 
-Documentation
-
-* LUCENE-5206: Clarify FuzzyQuery's unexpected behavior on short
-  terms. (Tim Allison via Mike McCandless)
-
 Changes in backwards compatibility policy
 
 * LUCENE-5204: Directory doesn't have default implementations for
@@ -311,6 +306,9 @@ Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
   package's documentation and classes javadocs. (Shai Erera)
+
+* LUCENE-5206: Clarify FuzzyQuery's unexpected behavior on short
+  terms. (Tim Allison via Mike McCandless)
 
 Changes in backwards compatibility policy
 
