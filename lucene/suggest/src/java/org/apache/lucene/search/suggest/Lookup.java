@@ -41,6 +41,10 @@ public abstract class Lookup {
     /** the key's text */
     public final CharSequence key;
 
+    /** Expert: custom Object to hold the result of a
+     *  highlighted suggestion. */
+    public final Object highlightKey;
+
     /** the key's weight */
     public final long value;
 
@@ -59,6 +63,17 @@ public abstract class Lookup {
      */
     public LookupResult(CharSequence key, long value, BytesRef payload) {
       this.key = key;
+      this.highlightKey = null;
+      this.value = value;
+      this.payload = payload;
+    }
+
+    /**
+     * Create a new result from a key+highlightKey+weight+payload triple.
+     */
+    public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload) {
+      this.key = key;
+      this.highlightKey = highlightKey;
       this.value = value;
       this.payload = payload;
     }

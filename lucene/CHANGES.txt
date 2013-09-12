@@ -53,6 +53,11 @@ New Features
   for advanced use cases where String is too restrictive (Luca
   Cavanna, Robert Muir, Mike McCandless)
 
+* LUCENE-5133: Changed AnalyzingInfixSuggester.highlight to return
+  Object instead of String, to allow for advanced use cases where
+  String is too restrictive (Robert Muir, Shai Erera, Mike
+  McCandless)
+
 Changes in backwards compatibility policy
 
 * LUCENE-5204: Directory doesn't have default implementations for

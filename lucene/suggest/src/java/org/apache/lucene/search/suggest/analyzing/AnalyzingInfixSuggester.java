@@ -67,6 +67,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -98,8 +99,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Field name used for the indexed text. */
   protected final static String TEXT_FIELD_NAME = "text";
 
-  private final Analyzer queryAnalyzer;
-  final Analyzer indexAnalyzer;
+  /** Analyzer used at search time */
+  protected final Analyzer queryAnalyzer;
+  /** Analyzer used at index time */
+  protected final Analyzer indexAnalyzer;
   final Version matchVersion;
   private final File indexPath;
   final int minPrefixChars;
@@ -422,9 +425,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         ScoreDoc sd = hits.scoreDocs[i];
         textDV.get(sd.doc, scratch);
         String text = scratch.utf8ToString();
-        if (doHighlight) {
-          text = highlight(text, matchedTokens, prefixToken);
-        }
         long score = weightsDV.get(sd.doc);
 
         BytesRef payload;
@@ -435,7 +435,15 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           payload = null;
         }
 
-        results.add(new LookupResult(text, score, payload));
+        LookupResult result;
+
+        if (doHighlight) {
+          Object highlightKey = highlight(text, matchedTokens, prefixToken);
+          result = new LookupResult(highlightKey.toString(), highlightKey, score, payload);
+        } else {
+          result = new LookupResult(text, score, payload);
+        }
+        results.add(result);
       }
       //System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
       //System.out.println(results);
@@ -451,7 +459,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return in;
   }
 
-  private String highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
+  /** Override this method to customize the Object
+   *  representing a single highlighted suggestions; the
+   *  result is set on each {@link
+   *  LookupResult#highlightKey} member. */
+  protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
     TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -463,7 +475,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       int startOffset = offsetAtt.startOffset();
       int endOffset = offsetAtt.endOffset();
       if (upto < startOffset) {
-        sb.append(text.substring(upto, startOffset));
+        addNonMatch(sb, text.substring(upto, startOffset));
         upto = startOffset;
       } else if (upto > startOffset) {
         continue;
@@ -481,24 +493,38 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     ts.end();
     int endOffset = offsetAtt.endOffset();
     if (upto < endOffset) {
-      sb.append(text.substring(upto));
+      addNonMatch(sb, text.substring(upto));
     }
     ts.close();
 
     return sb.toString();
   }
 
-  /** Appends the whole matched token to the provided {@code
-   *  StringBuilder}. */
+  /** Called while highlighting a single result, to append a
+   *  non-matching chunk of text from the suggestion to the
+   *  provided fragments list.
+   *  @param sb The {@code StringBuilder} to append to
+   *  @param text The text chunk to add
+   */
+  protected void addNonMatch(StringBuilder sb, String text) {
+    sb.append(text);
+  }
+
+  /** Called while highlighting a single result, to append
+   *  the whole matched token to the provided fragments list.
+   *  @param sb The {@code StringBuilder} to append to
+   *  @param surface The surface form (original) text
+   *  @param analyzed The analyzed token corresponding to the surface form text
+   */
   protected void addWholeMatch(StringBuilder sb, String surface, String analyzed) {
     sb.append("<b>");
     sb.append(surface);
     sb.append("</b>");
   }
 
-  /** Append a matched prefix token, to the provided
-   *  {@code StringBuilder}. 
-   *  @param sb {@code StringBuilder} to append to
+  /** Called while highlighting a single result, to append a
+   *  matched prefix token, to the provided fragments list.
+   *  @param sb The {@code StringBuilder} to append to
    *  @param surface The fragment of the surface form
    *        (indexed during {@link #build}, corresponding to
    *        this match
@@ -509,13 +535,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // TODO: apps can try to invert their analysis logic
     // here, e.g. downcase the two before checking prefix:
     sb.append("<b>");
-    if (surface.startsWith(prefixToken)) {
-      sb.append(surface.substring(0, prefixToken.length()));
-      sb.append("</b>");
+    sb.append(surface.substring(0, prefixToken.length()));
+    sb.append("</b>");
+    if (prefixToken.length() < surface.length()) {
       sb.append(surface.substring(prefixToken.length()));
-    } else {
-      sb.append(surface);
-      sb.append("</b>");
     }
   }
 
