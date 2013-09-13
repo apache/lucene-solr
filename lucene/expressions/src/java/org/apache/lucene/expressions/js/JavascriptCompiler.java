@@ -196,6 +196,9 @@ public class JavascriptCompiler {
         wasIdentifierPart = false;
       }
     }
+    // limit maximum length, theoretically 65536 is allowed in constant pool (in UTF-8 format).
+    if (sb.length() > 1204) sb.setLength(1024);
+    // remove trailing underscores
     for (int i = sb.length() - 1; i >= 0; i--) {
       if (sb.charAt(i) == '_') {
         sb.setLength(i);
