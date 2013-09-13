@@ -116,6 +116,8 @@ public class JavascriptCompiler {
     }
   }
   
+  private static final int CLASSFILE_VERSION = V1_7;
+  
   // We use the same class name for all generated classes as they all have their own class loader.
   // The source code is displayed as "source file name" in stack trace.
   private static final String COMPILED_EXPRESSION_CLASS = JavascriptCompiler.class.getName() + "$CompiledExpression";
@@ -150,6 +152,17 @@ public class JavascriptCompiler {
    */
   public static Expression compile(String sourceText) throws ParseException {
     return new JavascriptCompiler().compileExpression(sourceText);
+  }
+  
+  /**
+   * This method is unused, it is just here to make sure that the funcion signatures don't change.
+   * If this method fails to compile, you also have to change the byte code generator to correctly
+   * use the FunctionValues class.
+   */
+  @SuppressWarnings("unused")
+  private static void unusedTestCompile() {
+    FunctionValues f = null;
+    double ret = f.doubleVal(2);
   }
   
   /**
@@ -189,7 +202,7 @@ public class JavascriptCompiler {
   
   private void beginCompile(String sourceText) {
     classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-    classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, COMPILED_EXPRESSION_INTERNAL,
+    classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_INTERNAL, null);
     String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
