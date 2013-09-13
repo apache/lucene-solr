@@ -18,6 +18,7 @@ package org.apache.lucene.expressions.js;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.reflect.Method;
 
 import org.apache.lucene.util.MathUtil;
 import org.objectweb.asm.Type;
@@ -26,63 +27,41 @@ import org.objectweb.asm.Type;
  * A wrapper to delegate function calls from a javascript expression.
  */
 class JavascriptFunction {
-  private static Map<String, JavascriptFunction> methods = null;
-  
+
+  private static final Map<String, JavascriptFunction> methods = new HashMap<String, JavascriptFunction>();
   static {
-    String mathClass  = Type.getInternalName(Math.class);
-    String mathUtilClass = Type.getInternalName(MathUtil.class);
-    
-    JavascriptFunction abs    = new JavascriptFunction("abs",    1, mathClass,  "abs",      "(D)D" );
-    JavascriptFunction acos   = new JavascriptFunction("acos",   1, mathClass,  "acos",     "(D)D" );
-    JavascriptFunction acosh  = new JavascriptFunction("acosh",  1, mathUtilClass, "acosh",    "(D)D" );
-    JavascriptFunction asin   = new JavascriptFunction("asin",   1, mathClass,  "asin",     "(D)D" );
-    JavascriptFunction asinh  = new JavascriptFunction("asinh",  1, mathUtilClass, "asinh",    "(D)D" );
-    JavascriptFunction atan   = new JavascriptFunction("atan",   1, mathClass,  "atan",     "(D)D" );
-    JavascriptFunction atan2  = new JavascriptFunction("atan2",  1, mathClass,  "atan2",    "(DD)D");
-    JavascriptFunction atanh  = new JavascriptFunction("atanh",  1, mathUtilClass, "atanh",    "(D)D" );
-    JavascriptFunction ceil   = new JavascriptFunction("ceil",   1, mathClass,  "ceil",     "(D)D" );
-    JavascriptFunction cos    = new JavascriptFunction("cos",    1, mathClass,  "cos",      "(D)D" );
-    JavascriptFunction cosh   = new JavascriptFunction("cosh",   1, mathClass,  "cosh",     "(D)D" );
-    JavascriptFunction exp    = new JavascriptFunction("exp",    1, mathClass,  "exp",      "(D)D" );
-    JavascriptFunction floor  = new JavascriptFunction("floor",  1, mathClass,  "floor",    "(D)D" );
-    JavascriptFunction ln     = new JavascriptFunction("ln",     1, mathClass,  "log",      "(D)D" );
-    JavascriptFunction log10  = new JavascriptFunction("log10",  1, mathClass,  "log10",    "(D)D" );
-    JavascriptFunction logn   = new JavascriptFunction("logn",   2, mathUtilClass, "log",      "(DD)D");
-    JavascriptFunction pow    = new JavascriptFunction("pow",    2, mathClass,  "pow",      "(DD)D");
-    JavascriptFunction sin    = new JavascriptFunction("sin",    1, mathClass,  "sin",      "(D)D" );
-    JavascriptFunction sinh   = new JavascriptFunction("sinh",   1, mathClass,  "sinh",     "(D)D" );
-    JavascriptFunction sqrt   = new JavascriptFunction("sqrt",   1, mathClass,  "sqrt",     "(D)D" );
-    JavascriptFunction tan    = new JavascriptFunction("tan",    1, mathClass,  "tan",      "(D)D" );
-    JavascriptFunction tanh   = new JavascriptFunction("tanh",   1, mathClass,  "tanh",     "(D)D" );
-    
-    JavascriptFunction min    = new JavascriptFunction("min",    2, mathClass,  "min",      "(DD)D");
-    JavascriptFunction max    = new JavascriptFunction("max",    2, mathClass,  "max",      "(DD)D");
-    
-    methods  = new HashMap<String, JavascriptFunction>();
-    methods.put( "abs",    abs   );
-    methods.put( "acos",   acos  );
-    methods.put( "acosh",  acosh );
-    methods.put( "asin",   asin  );
-    methods.put( "asinh",  asinh );
-    methods.put( "atan",   atan  );
-    methods.put( "atan2",  atan2 );
-    methods.put( "atanh",  atanh );
-    methods.put( "ceil",   ceil  );
-    methods.put( "cos",    cos   );
-    methods.put( "cosh",   cosh  );
-    methods.put( "exp",    exp   );
-    methods.put( "floor",  floor );
-    methods.put( "ln",     ln    );
-    methods.put( "log10",  log10 );
-    methods.put( "logn",   logn  );
-    methods.put( "max",    max   );
-    methods.put( "min",    min   );
-    methods.put( "pow",    pow   );
-    methods.put( "sin",    sin   );
-    methods.put( "sinh",   sinh  );
-    methods.put( "sqrt",   sqrt  );
-    methods.put( "tan",    tan   );
-    methods.put( "tanh",   tanh  );
+    try {
+      addFunction("abs",    Math.class.getMethod("abs", double.class));
+      addFunction("acos",   Math.class.getMethod("acos", double.class));
+      addFunction("acosh",  MathUtil.class.getMethod("acosh", double.class));
+      addFunction("asin",   Math.class.getMethod("asin", double.class));
+      addFunction("asinh",  MathUtil.class.getMethod("asinh", double.class));
+      addFunction("atan",   Math.class.getMethod("atan", double.class));
+      addFunction("atan2",  Math.class.getMethod("atan2", double.class, double.class));
+      addFunction("atanh",  MathUtil.class.getMethod("atanh", double.class));
+      addFunction("ceil",   Math.class.getMethod("ceil", double.class));
+      addFunction("cos",    Math.class.getMethod("cos", double.class));
+      addFunction("cosh",   Math.class.getMethod("cosh", double.class));
+      addFunction("exp",    Math.class.getMethod("exp", double.class));
+      addFunction("floor",  Math.class.getMethod("floor", double.class));
+      addFunction("ln",     Math.class.getMethod("log", double.class));
+      addFunction("log10",  Math.class.getMethod("log10", double.class));
+      addFunction("logn",   MathUtil.class.getMethod("log", double.class, double.class));
+      addFunction("max",    Math.class.getMethod("max", double.class, double.class));
+      addFunction("min",    Math.class.getMethod("min", double.class, double.class));
+      addFunction("pow",    Math.class.getMethod("pow", double.class, double.class));
+      addFunction("sin",    Math.class.getMethod("sin", double.class));
+      addFunction("sinh",   Math.class.getMethod("sinh", double.class));
+      addFunction("sqrt",   Math.class.getMethod("sqrt", double.class));
+      addFunction("tan",    Math.class.getMethod("tan", double.class));
+      addFunction("tanh",   Math.class.getMethod("tanh", double.class));
+    } catch (NoSuchMethodException e) {
+      throw new Error("Cannot resolve function", e);
+    }
+  }
+  
+  private static void addFunction(String call, Method method) {
+    methods.put(call, new JavascriptFunction(call, method));
   }
 
   public static JavascriptFunction getMethod(String call, int arguments) {
@@ -106,11 +85,11 @@ class JavascriptFunction {
   public final String method;
   public final String signature;
   
-  private JavascriptFunction(String call, int arguments, String klass, String method, String signature) {
+  private JavascriptFunction(String call, Method method) {
     this.call = call;
-    this.arguments = arguments;
-    this.klass = klass;
-    this.method = method;
-    this.signature = signature;
+    this.arguments = method.getParameterTypes().length;
+    this.klass = Type.getInternalName(method.getDeclaringClass());
+    this.method = method.getName();
+    this.signature = Type.getMethodDescriptor(method);
   }
 }
