@@ -100,6 +100,10 @@
       <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
         <!-- this is a hack because antlr generates code comments in nondeterministic order (using hashmap somewhere it should use linkedhashmap) -->
         <sysproperty key="jdk.map.althashing.threshold" value="-1"/>
+        <sysproperty key="file.encoding" value="UTF-8"/>
+        <sysproperty key="user.language" value="en"/>
+        <sysproperty key="user.country" value="US"/>
+        <sysproperty key="user.variant" value=""/>
         <arg value="-verbose"/>
         <arg value="-make"/>
         <arg value="-o"/>
