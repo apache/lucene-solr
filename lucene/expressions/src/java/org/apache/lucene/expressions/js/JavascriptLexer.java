@@ -96,7 +96,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_ADD"
@@ -117,7 +117,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_AND"
@@ -138,7 +138,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_NOT"
@@ -159,7 +159,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_OR"
@@ -182,7 +182,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_SHL"
@@ -205,7 +205,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_SHR"
@@ -228,7 +228,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_SHU"
@@ -249,7 +249,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BIT_XOR"
@@ -272,7 +272,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BOOL_AND"
@@ -293,7 +293,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BOOL_NOT"
@@ -316,7 +316,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_BOOL_OR"
@@ -337,7 +337,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COLON"
@@ -358,7 +358,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMMA"
@@ -381,7 +381,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_EQ"
@@ -402,7 +402,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_GT"
@@ -425,7 +425,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_GTE"
@@ -446,7 +446,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_LT"
@@ -469,7 +469,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_LTE"
@@ -492,7 +492,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COMP_NEQ"
@@ -513,7 +513,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_COND_QUE"
@@ -534,7 +534,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_DIVIDE"
@@ -555,7 +555,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_DOT"
@@ -576,7 +576,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_LPAREN"
@@ -597,7 +597,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_MODULO"
@@ -618,7 +618,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_MULTIPLY"
@@ -639,7 +639,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_RPAREN"
@@ -660,7 +660,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "AT_SUBTRACT"
@@ -695,24 +695,24 @@ class JavascriptLexer extends Lexer {
 
 
                 switch (alt1) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-            	    {
-            	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
-            	        input.consume();
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        recover(mse);
-            	        throw mse;
-            	    }
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                    {
+                    if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'Z')||input.LA(1)=='_'||(input.LA(1) >= 'a' && input.LA(1) <= 'z') ) {
+                        input.consume();
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        recover(mse);
+                        throw mse;
+                    }
 
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop1;
+                default :
+                    break loop1;
                 }
             } while (true);
 
@@ -723,7 +723,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "ID"
@@ -749,24 +749,24 @@ class JavascriptLexer extends Lexer {
 
 
                 switch (alt2) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-            	    {
-            	    if ( (input.LA(1) >= '\t' && input.LA(1) <= '\n')||input.LA(1)=='\r'||input.LA(1)==' ' ) {
-            	        input.consume();
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        recover(mse);
-            	        throw mse;
-            	    }
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                    {
+                    if ( (input.LA(1) >= '\t' && input.LA(1) <= '\n')||input.LA(1)=='\r'||input.LA(1)==' ' ) {
+                        input.consume();
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        recover(mse);
+                        throw mse;
+                    }
 
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    if ( cnt2 >= 1 ) break loop2;
+                default :
+                    if ( cnt2 >= 1 ) break loop2;
                         EarlyExitException eee =
                             new EarlyExitException(2, input);
                         throw eee;
@@ -783,7 +783,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "WS"
@@ -818,24 +818,24 @@ class JavascriptLexer extends Lexer {
 
 
                         switch (alt3) {
-                    	case 1 :
-                    	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-                    	    {
-                    	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
-                    	        input.consume();
-                    	    }
-                    	    else {
-                    	        MismatchedSetException mse = new MismatchedSetException(null,input);
-                    	        recover(mse);
-                    	        throw mse;
-                    	    }
+                        case 1 :
+                            // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                            {
+                            if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
+                                input.consume();
+                            }
+                            else {
+                                MismatchedSetException mse = new MismatchedSetException(null,input);
+                                recover(mse);
+                                throw mse;
+                            }
 
 
-                    	    }
-                    	    break;
+                            }
+                            break;
 
-                    	default :
-                    	    break loop3;
+                        default :
+                            break loop3;
                         }
                     } while (true);
 
@@ -881,24 +881,24 @@ class JavascriptLexer extends Lexer {
 
 
                         switch (alt5) {
-                    	case 1 :
-                    	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-                    	    {
-                    	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
-                    	        input.consume();
-                    	    }
-                    	    else {
-                    	        MismatchedSetException mse = new MismatchedSetException(null,input);
-                    	        recover(mse);
-                    	        throw mse;
-                    	    }
+                        case 1 :
+                            // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                            {
+                            if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
+                                input.consume();
+                            }
+                            else {
+                                MismatchedSetException mse = new MismatchedSetException(null,input);
+                                recover(mse);
+                                throw mse;
+                            }
 
 
-                    	    }
-                    	    break;
+                            }
+                            break;
 
-                    	default :
-                    	    if ( cnt5 >= 1 ) break loop5;
+                        default :
+                            if ( cnt5 >= 1 ) break loop5;
                                 EarlyExitException eee =
                                     new EarlyExitException(5, input);
                                 throw eee;
@@ -963,7 +963,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "DECIMAL"
@@ -991,24 +991,24 @@ class JavascriptLexer extends Lexer {
 
 
                 switch (alt9) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-            	    {
-            	    if ( (input.LA(1) >= '0' && input.LA(1) <= '7') ) {
-            	        input.consume();
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        recover(mse);
-            	        throw mse;
-            	    }
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                    {
+                    if ( (input.LA(1) >= '0' && input.LA(1) <= '7') ) {
+                        input.consume();
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        recover(mse);
+                        throw mse;
+                    }
 
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    if ( cnt9 >= 1 ) break loop9;
+                default :
+                    if ( cnt9 >= 1 ) break loop9;
                         EarlyExitException eee =
                             new EarlyExitException(9, input);
                         throw eee;
@@ -1023,7 +1023,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "OCTAL"
@@ -1100,24 +1100,24 @@ class JavascriptLexer extends Lexer {
 
 
                 switch (alt11) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-            	    {
-            	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'F')||(input.LA(1) >= 'a' && input.LA(1) <= 'f') ) {
-            	        input.consume();
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        recover(mse);
-            	        throw mse;
-            	    }
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                    {
+                    if ( (input.LA(1) >= '0' && input.LA(1) <= '9')||(input.LA(1) >= 'A' && input.LA(1) <= 'F')||(input.LA(1) >= 'a' && input.LA(1) <= 'f') ) {
+                        input.consume();
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        recover(mse);
+                        throw mse;
+                    }
 
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    if ( cnt11 >= 1 ) break loop11;
+                default :
+                    if ( cnt11 >= 1 ) break loop11;
                         EarlyExitException eee =
                             new EarlyExitException(11, input);
                         throw eee;
@@ -1132,7 +1132,7 @@ class JavascriptLexer extends Lexer {
             state.channel = _channel;
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "HEX"
@@ -1182,24 +1182,24 @@ class JavascriptLexer extends Lexer {
 
 
                         switch (alt12) {
-                    	case 1 :
-                    	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-                    	    {
-                    	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
-                    	        input.consume();
-                    	    }
-                    	    else {
-                    	        MismatchedSetException mse = new MismatchedSetException(null,input);
-                    	        recover(mse);
-                    	        throw mse;
-                    	    }
+                        case 1 :
+                            // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                            {
+                            if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
+                                input.consume();
+                            }
+                            else {
+                                MismatchedSetException mse = new MismatchedSetException(null,input);
+                                recover(mse);
+                                throw mse;
+                            }
 
 
-                    	    }
-                    	    break;
+                            }
+                            break;
 
-                    	default :
-                    	    break loop12;
+                        default :
+                            break loop12;
                         }
                     } while (true);
 
@@ -1211,7 +1211,7 @@ class JavascriptLexer extends Lexer {
 
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "DECIMALINTEGER"
@@ -1272,24 +1272,24 @@ class JavascriptLexer extends Lexer {
 
 
                 switch (alt15) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:
-            	    {
-            	    if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
-            	        input.consume();
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        recover(mse);
-            	        throw mse;
-            	    }
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:
+                    {
+                    if ( (input.LA(1) >= '0' && input.LA(1) <= '9') ) {
+                        input.consume();
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        recover(mse);
+                        throw mse;
+                    }
 
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    if ( cnt15 >= 1 ) break loop15;
+                default :
+                    if ( cnt15 >= 1 ) break loop15;
                         EarlyExitException eee =
                             new EarlyExitException(15, input);
                         throw eee;
@@ -1303,7 +1303,7 @@ class JavascriptLexer extends Lexer {
 
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "EXPONENT"
@@ -1329,7 +1329,7 @@ class JavascriptLexer extends Lexer {
 
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "DECIMALDIGIT"
@@ -1355,7 +1355,7 @@ class JavascriptLexer extends Lexer {
 
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "HEXDIGIT"
@@ -1381,7 +1381,7 @@ class JavascriptLexer extends Lexer {
 
         }
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
     }
     // $ANTLR end "OCTALDIGIT"

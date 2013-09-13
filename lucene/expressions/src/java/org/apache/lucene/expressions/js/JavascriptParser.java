@@ -243,12 +243,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -348,12 +348,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -409,28 +409,28 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt2) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:259:20: AT_BOOL_OR ^ logical_and
-            	    {
-            	    AT_BOOL_OR9=(Token)match(input,AT_BOOL_OR,FOLLOW_AT_BOOL_OR_in_logical_or790); 
-            	    AT_BOOL_OR9_tree = 
-            	    (CommonTree)adaptor.create(AT_BOOL_OR9)
-            	    ;
-            	    root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_OR9_tree, root_0);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:259:20: AT_BOOL_OR ^ logical_and
+                    {
+                    AT_BOOL_OR9=(Token)match(input,AT_BOOL_OR,FOLLOW_AT_BOOL_OR_in_logical_or790); 
+                    AT_BOOL_OR9_tree = 
+                    (CommonTree)adaptor.create(AT_BOOL_OR9)
+                    ;
+                    root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_OR9_tree, root_0);
 
 
-            	    pushFollow(FOLLOW_logical_and_in_logical_or793);
-            	    logical_and10=logical_and();
+                    pushFollow(FOLLOW_logical_and_in_logical_or793);
+                    logical_and10=logical_and();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, logical_and10.getTree());
+                    adaptor.addChild(root_0, logical_and10.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop2;
+                default :
+                    break loop2;
                 }
             } while (true);
 
@@ -447,12 +447,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -508,28 +508,28 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt3) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:263:19: AT_BOOL_AND ^ bitwise_or
-            	    {
-            	    AT_BOOL_AND12=(Token)match(input,AT_BOOL_AND,FOLLOW_AT_BOOL_AND_in_logical_and815); 
-            	    AT_BOOL_AND12_tree = 
-            	    (CommonTree)adaptor.create(AT_BOOL_AND12)
-            	    ;
-            	    root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_AND12_tree, root_0);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:263:19: AT_BOOL_AND ^ bitwise_or
+                    {
+                    AT_BOOL_AND12=(Token)match(input,AT_BOOL_AND,FOLLOW_AT_BOOL_AND_in_logical_and815); 
+                    AT_BOOL_AND12_tree = 
+                    (CommonTree)adaptor.create(AT_BOOL_AND12)
+                    ;
+                    root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_AND12_tree, root_0);
 
 
-            	    pushFollow(FOLLOW_bitwise_or_in_logical_and818);
-            	    bitwise_or13=bitwise_or();
+                    pushFollow(FOLLOW_bitwise_or_in_logical_and818);
+                    bitwise_or13=bitwise_or();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, bitwise_or13.getTree());
+                    adaptor.addChild(root_0, bitwise_or13.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop3;
+                default :
+                    break loop3;
                 }
             } while (true);
 
@@ -546,12 +546,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -607,28 +607,28 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt4) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:267:20: AT_BIT_OR ^ bitwise_xor
-            	    {
-            	    AT_BIT_OR15=(Token)match(input,AT_BIT_OR,FOLLOW_AT_BIT_OR_in_bitwise_or840); 
-            	    AT_BIT_OR15_tree = 
-            	    (CommonTree)adaptor.create(AT_BIT_OR15)
-            	    ;
-            	    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_OR15_tree, root_0);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:267:20: AT_BIT_OR ^ bitwise_xor
+                    {
+                    AT_BIT_OR15=(Token)match(input,AT_BIT_OR,FOLLOW_AT_BIT_OR_in_bitwise_or840); 
+                    AT_BIT_OR15_tree = 
+                    (CommonTree)adaptor.create(AT_BIT_OR15)
+                    ;
+                    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_OR15_tree, root_0);
 
 
-            	    pushFollow(FOLLOW_bitwise_xor_in_bitwise_or843);
-            	    bitwise_xor16=bitwise_xor();
+                    pushFollow(FOLLOW_bitwise_xor_in_bitwise_or843);
+                    bitwise_xor16=bitwise_xor();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, bitwise_xor16.getTree());
+                    adaptor.addChild(root_0, bitwise_xor16.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop4;
+                default :
+                    break loop4;
                 }
             } while (true);
 
@@ -645,12 +645,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -706,28 +706,28 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt5) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:271:20: AT_BIT_XOR ^ bitwise_and
-            	    {
-            	    AT_BIT_XOR18=(Token)match(input,AT_BIT_XOR,FOLLOW_AT_BIT_XOR_in_bitwise_xor865); 
-            	    AT_BIT_XOR18_tree = 
-            	    (CommonTree)adaptor.create(AT_BIT_XOR18)
-            	    ;
-            	    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_XOR18_tree, root_0);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:271:20: AT_BIT_XOR ^ bitwise_and
+                    {
+                    AT_BIT_XOR18=(Token)match(input,AT_BIT_XOR,FOLLOW_AT_BIT_XOR_in_bitwise_xor865); 
+                    AT_BIT_XOR18_tree = 
+                    (CommonTree)adaptor.create(AT_BIT_XOR18)
+                    ;
+                    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_XOR18_tree, root_0);
 
 
-            	    pushFollow(FOLLOW_bitwise_and_in_bitwise_xor868);
-            	    bitwise_and19=bitwise_and();
+                    pushFollow(FOLLOW_bitwise_and_in_bitwise_xor868);
+                    bitwise_and19=bitwise_and();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, bitwise_and19.getTree());
+                    adaptor.addChild(root_0, bitwise_and19.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop5;
+                default :
+                    break loop5;
                 }
             } while (true);
 
@@ -744,12 +744,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -805,28 +805,28 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt6) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:275:18: AT_BIT_AND ^ equality
-            	    {
-            	    AT_BIT_AND21=(Token)match(input,AT_BIT_AND,FOLLOW_AT_BIT_AND_in_bitwise_and891); 
-            	    AT_BIT_AND21_tree = 
-            	    (CommonTree)adaptor.create(AT_BIT_AND21)
-            	    ;
-            	    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_AND21_tree, root_0);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:275:18: AT_BIT_AND ^ equality
+                    {
+                    AT_BIT_AND21=(Token)match(input,AT_BIT_AND,FOLLOW_AT_BIT_AND_in_bitwise_and891); 
+                    AT_BIT_AND21_tree = 
+                    (CommonTree)adaptor.create(AT_BIT_AND21)
+                    ;
+                    root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_AND21_tree, root_0);
 
 
-            	    pushFollow(FOLLOW_equality_in_bitwise_and894);
-            	    equality22=equality();
+                    pushFollow(FOLLOW_equality_in_bitwise_and894);
+                    equality22=equality();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, equality22.getTree());
+                    adaptor.addChild(root_0, equality22.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop6;
+                default :
+                    break loop6;
                 }
             } while (true);
 
@@ -843,12 +843,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -904,38 +904,38 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt7) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:279:19: ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational
-            	    {
-            	    set24=(Token)input.LT(1);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:279:19: ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational
+                    {
+                    set24=(Token)input.LT(1);
 
-            	    set24=(Token)input.LT(1);
+                    set24=(Token)input.LT(1);
 
-            	    if ( input.LA(1)==AT_COMP_EQ||input.LA(1)==AT_COMP_NEQ ) {
-            	        input.consume();
-            	        root_0 = (CommonTree)adaptor.becomeRoot(
-            	        (CommonTree)adaptor.create(set24)
-            	        , root_0);
-            	        state.errorRecovery=false;
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        throw mse;
-            	    }
+                    if ( input.LA(1)==AT_COMP_EQ||input.LA(1)==AT_COMP_NEQ ) {
+                        input.consume();
+                        root_0 = (CommonTree)adaptor.becomeRoot(
+                        (CommonTree)adaptor.create(set24)
+                        , root_0);
+                        state.errorRecovery=false;
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        throw mse;
+                    }
 
 
-            	    pushFollow(FOLLOW_relational_in_equality925);
-            	    relational25=relational();
+                    pushFollow(FOLLOW_relational_in_equality925);
+                    relational25=relational();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, relational25.getTree());
+                    adaptor.addChild(root_0, relational25.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop7;
+                default :
+                    break loop7;
                 }
             } while (true);
 
@@ -952,12 +952,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1013,38 +1013,38 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt8) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:283:14: ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift
-            	    {
-            	    set27=(Token)input.LT(1);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:283:14: ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift
+                    {
+                    set27=(Token)input.LT(1);
 
-            	    set27=(Token)input.LT(1);
+                    set27=(Token)input.LT(1);
 
-            	    if ( (input.LA(1) >= AT_COMP_GT && input.LA(1) <= AT_COMP_LTE) ) {
-            	        input.consume();
-            	        root_0 = (CommonTree)adaptor.becomeRoot(
-            	        (CommonTree)adaptor.create(set27)
-            	        , root_0);
-            	        state.errorRecovery=false;
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        throw mse;
-            	    }
+                    if ( (input.LA(1) >= AT_COMP_GT && input.LA(1) <= AT_COMP_LTE) ) {
+                        input.consume();
+                        root_0 = (CommonTree)adaptor.becomeRoot(
+                        (CommonTree)adaptor.create(set27)
+                        , root_0);
+                        state.errorRecovery=false;
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        throw mse;
+                    }
 
 
-            	    pushFollow(FOLLOW_shift_in_relational964);
-            	    shift28=shift();
+                    pushFollow(FOLLOW_shift_in_relational964);
+                    shift28=shift();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, shift28.getTree());
+                    adaptor.addChild(root_0, shift28.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop8;
+                default :
+                    break loop8;
                 }
             } while (true);
 
@@ -1061,12 +1061,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1122,38 +1122,38 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt9) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:287:17: ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive
-            	    {
-            	    set30=(Token)input.LT(1);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:287:17: ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive
+                    {
+                    set30=(Token)input.LT(1);
 
-            	    set30=(Token)input.LT(1);
+                    set30=(Token)input.LT(1);
 
-            	    if ( (input.LA(1) >= AT_BIT_SHL && input.LA(1) <= AT_BIT_SHU) ) {
-            	        input.consume();
-            	        root_0 = (CommonTree)adaptor.becomeRoot(
-            	        (CommonTree)adaptor.create(set30)
-            	        , root_0);
-            	        state.errorRecovery=false;
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        throw mse;
-            	    }
+                    if ( (input.LA(1) >= AT_BIT_SHL && input.LA(1) <= AT_BIT_SHU) ) {
+                        input.consume();
+                        root_0 = (CommonTree)adaptor.becomeRoot(
+                        (CommonTree)adaptor.create(set30)
+                        , root_0);
+                        state.errorRecovery=false;
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        throw mse;
+                    }
 
 
-            	    pushFollow(FOLLOW_additive_in_shift999);
-            	    additive31=additive();
+                    pushFollow(FOLLOW_additive_in_shift999);
+                    additive31=additive();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, additive31.getTree());
+                    adaptor.addChild(root_0, additive31.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop9;
+                default :
+                    break loop9;
                 }
             } while (true);
 
@@ -1170,12 +1170,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1231,38 +1231,38 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt10) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:291:23: ( AT_ADD | AT_SUBTRACT ) ^ multiplicative
-            	    {
-            	    set33=(Token)input.LT(1);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:291:23: ( AT_ADD | AT_SUBTRACT ) ^ multiplicative
+                    {
+                    set33=(Token)input.LT(1);
 
-            	    set33=(Token)input.LT(1);
+                    set33=(Token)input.LT(1);
 
-            	    if ( input.LA(1)==AT_ADD||input.LA(1)==AT_SUBTRACT ) {
-            	        input.consume();
-            	        root_0 = (CommonTree)adaptor.becomeRoot(
-            	        (CommonTree)adaptor.create(set33)
-            	        , root_0);
-            	        state.errorRecovery=false;
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        throw mse;
-            	    }
+                    if ( input.LA(1)==AT_ADD||input.LA(1)==AT_SUBTRACT ) {
+                        input.consume();
+                        root_0 = (CommonTree)adaptor.becomeRoot(
+                        (CommonTree)adaptor.create(set33)
+                        , root_0);
+                        state.errorRecovery=false;
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        throw mse;
+                    }
 
 
-            	    pushFollow(FOLLOW_multiplicative_in_additive1030);
-            	    multiplicative34=multiplicative();
+                    pushFollow(FOLLOW_multiplicative_in_additive1030);
+                    multiplicative34=multiplicative();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, multiplicative34.getTree());
+                    adaptor.addChild(root_0, multiplicative34.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop10;
+                default :
+                    break loop10;
                 }
             } while (true);
 
@@ -1279,12 +1279,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1340,38 +1340,38 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                 switch (alt11) {
-            	case 1 :
-            	    // src/java/org/apache/lucene/expressions/js/Javascript.g:295:14: ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary
-            	    {
-            	    set36=(Token)input.LT(1);
+                case 1 :
+                    // src/java/org/apache/lucene/expressions/js/Javascript.g:295:14: ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary
+                    {
+                    set36=(Token)input.LT(1);
 
-            	    set36=(Token)input.LT(1);
+                    set36=(Token)input.LT(1);
 
-            	    if ( input.LA(1)==AT_DIVIDE||(input.LA(1) >= AT_MODULO && input.LA(1) <= AT_MULTIPLY) ) {
-            	        input.consume();
-            	        root_0 = (CommonTree)adaptor.becomeRoot(
-            	        (CommonTree)adaptor.create(set36)
-            	        , root_0);
-            	        state.errorRecovery=false;
-            	    }
-            	    else {
-            	        MismatchedSetException mse = new MismatchedSetException(null,input);
-            	        throw mse;
-            	    }
+                    if ( input.LA(1)==AT_DIVIDE||(input.LA(1) >= AT_MODULO && input.LA(1) <= AT_MULTIPLY) ) {
+                        input.consume();
+                        root_0 = (CommonTree)adaptor.becomeRoot(
+                        (CommonTree)adaptor.create(set36)
+                        , root_0);
+                        state.errorRecovery=false;
+                    }
+                    else {
+                        MismatchedSetException mse = new MismatchedSetException(null,input);
+                        throw mse;
+                    }
 
 
-            	    pushFollow(FOLLOW_unary_in_multiplicative1065);
-            	    unary37=unary();
+                    pushFollow(FOLLOW_unary_in_multiplicative1065);
+                    unary37=unary();
 
-            	    state._fsp--;
+                    state._fsp--;
 
-            	    adaptor.addChild(root_0, unary37.getTree());
+                    adaptor.addChild(root_0, unary37.getTree());
 
-            	    }
-            	    break;
+                    }
+                    break;
 
-            	default :
-            	    break loop11;
+                default :
+                    break loop11;
                 }
             } while (true);
 
@@ -1388,12 +1388,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1527,12 +1527,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1664,12 +1664,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1815,12 +1815,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -1945,12 +1945,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -2023,23 +2023,23 @@ public TreeAdaptor getTreeAdaptor() {
 
 
                         switch (alt16) {
-                    	case 1 :
-                    	    // src/java/org/apache/lucene/expressions/js/Javascript.g:322:32: AT_COMMA ! conditional
-                    	    {
-                    	    AT_COMMA56=(Token)match(input,AT_COMMA,FOLLOW_AT_COMMA_in_arguments1244); 
+                        case 1 :
+                            // src/java/org/apache/lucene/expressions/js/Javascript.g:322:32: AT_COMMA ! conditional
+                            {
+                            AT_COMMA56=(Token)match(input,AT_COMMA,FOLLOW_AT_COMMA_in_arguments1244); 
 
-                    	    pushFollow(FOLLOW_conditional_in_arguments1247);
-                    	    conditional57=conditional();
+                            pushFollow(FOLLOW_conditional_in_arguments1247);
+                            conditional57=conditional();
 
-                    	    state._fsp--;
+                            state._fsp--;
 
-                    	    adaptor.addChild(root_0, conditional57.getTree());
+                            adaptor.addChild(root_0, conditional57.getTree());
 
-                    	    }
-                    	    break;
+                            }
+                            break;
 
-                    	default :
-                    	    break loop16;
+                        default :
+                            break loop16;
                         }
                     } while (true);
 
@@ -2064,12 +2064,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
@@ -2129,12 +2129,12 @@ public TreeAdaptor getTreeAdaptor() {
         catch (RecognitionException re) {
             reportError(re);
             recover(input,re);
-    	retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+        retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
 
         }
 
         finally {
-        	// do for sure before leaving
+            // do for sure before leaving
         }
         return retval;
     }
