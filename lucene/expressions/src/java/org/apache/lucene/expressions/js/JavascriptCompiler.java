@@ -116,10 +116,12 @@ public class JavascriptCompiler {
     }
   }
   
-  private static final int MAX_CLASS_NAME_LENGTH = 1024;
+  // We use the same class name for all generated classes as they all have their own class loader.
+  // The source code is displayed as "source file name" in stack trace.
+  private static final String COMPILED_EXPRESSION_CLASS = JavascriptCompiler.class.getName() + "$CompiledExpression";
+  private static final String COMPILED_EXPRESSION_INTERNAL = COMPILED_EXPRESSION_CLASS.replace('.', '/');
   
-  private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Expr_";
-  private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
+  private static final String EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
   
   private static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
   private static final Type FUNCTION_VALUES_ARRAY_TYPE = Type.getType(FunctionValues[].class);
@@ -129,6 +131,8 @@ public class JavascriptCompiler {
   private static final String CONSTRUCTOR_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, STRING_TYPE, STRING_ARRAY_TYPE);
   private static final String EVALUATE_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE, FUNCTION_VALUES_ARRAY_TYPE);
   private static final String DOUBLE_VAL_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE);
+  
+  private static final int MAX_SOURCE_LENGTH = 16384;
   
   private final Loader loader = new Loader(getClass().getClassLoader());
   
@@ -165,60 +169,37 @@ public class JavascriptCompiler {
     if (sourceText == null) {
       throw new NullPointerException();
     }
-    final String className = EXPRESSION_CLASS_PREFIX + createClassName(sourceText);
-    // System.out.println(sourceText + "|" + className);
     try {
       externalsMap = new HashMap<String, Integer>();
       externalsList = new ArrayList<String>();
       
       Tree antlrTree = getAntlrComputedExpressionTree(sourceText);
       
-      beginCompile(className);
+      beginCompile(sourceText);
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
       endCompile();
       
-      Class<? extends Expression> evaluatorClass = loader.define(className, classWriter.toByteArray());
+      Class<? extends Expression> evaluatorClass = loader.define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
       return constructor.newInstance(sourceText, externalsList.toArray(new String[externalsList.size()]));
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
+      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }
   
-  private String createClassName(String sourceText) {
-    final StringBuilder sb = new StringBuilder(Math.min(sourceText.length() / 2, MAX_CLASS_NAME_LENGTH));
-    boolean wasIdentifierPart = true;
-    for (int i = 0, c = sourceText.length(); i < c && sb.length() < MAX_CLASS_NAME_LENGTH; i++) {
-      final char ch = sourceText.charAt(i);
-      if (Character.isJavaIdentifierPart(ch)) {
-        sb.append(ch);
-        wasIdentifierPart = true;
-      } else if (wasIdentifierPart) {
-        sb.append('_');
-        wasIdentifierPart = false;
-      }
-    }
-    // remove trailing underscores
-    for (int i = sb.length() - 1; i >= 0; i--) {
-      if (sb.charAt(i) == '_') {
-        sb.setLength(i);
-      } else {
-        break;
-      }
-    }
-    return sb.toString();
-  }
-
-  private void beginCompile(String className) {
+  private void beginCompile(String sourceText) {
     classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-    classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, className.replace('.', '/'),
-        null, COMPILED_EXPRESSION_INTERNAL, null);
+    classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, COMPILED_EXPRESSION_INTERNAL,
+        null, EXPRESSION_INTERNAL, null);
+    String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
+    classWriter.visitSource(clippedSourceText, null);
+    
     MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC, "<init>", CONSTRUCTOR_DESC, null, null);
     constructor.visitCode();
     constructor.visitVarInsn(ALOAD, 0);
     constructor.visitVarInsn(ALOAD, 1);
     constructor.visitVarInsn(ALOAD, 2);
-    constructor.visitMethodInsn(INVOKESPECIAL, COMPILED_EXPRESSION_INTERNAL, "<init>", CONSTRUCTOR_DESC);
+    constructor.visitMethodInsn(INVOKESPECIAL, EXPRESSION_INTERNAL, "<init>", CONSTRUCTOR_DESC);
     constructor.visitInsn(RETURN);
     constructor.visitMaxs(0, 0);
     constructor.visitEnd();
