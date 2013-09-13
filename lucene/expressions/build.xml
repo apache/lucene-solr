@@ -113,9 +113,9 @@
       <!-- nuke timestamps in generated files -->
       <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
       <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
-      <!-- remove tabs in antlr generated files (it does this for comments in finally blocks) -->
-      <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match="\t" flags="g" replace="    " encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match="\t" flags="g" replace="    " encoding="UTF-8"/>
+      <!-- remove tabs in antlr generated files -->
+      <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
+      <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
       <!-- fix line endings -->
       <fixcrlf file="${grammar.path}/@{grammar}Parser.java"/>
       <fixcrlf file="${grammar.path}/@{grammar}Lexer.java"/>
