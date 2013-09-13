@@ -136,8 +136,6 @@ public class JavascriptCompiler {
   
   private static final int MAX_SOURCE_LENGTH = 16384;
   
-  private final Loader loader = new Loader(getClass().getClassLoader());
-  
   private ClassWriter classWriter;
   private MethodVisitor methodVisitor;
   private Map<String, Integer> externalsMap;
@@ -192,7 +190,8 @@ public class JavascriptCompiler {
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
       endCompile();
       
-      Class<? extends Expression> evaluatorClass = loader.define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
+      Class<? extends Expression> evaluatorClass = new Loader(getClass().getClassLoader())
+        .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
       return constructor.newInstance(sourceText, externalsList.toArray(new String[externalsList.size()]));
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
