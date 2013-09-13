@@ -41,6 +41,7 @@ import static org.objectweb.asm.Opcodes.AALOAD;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.D2I;
@@ -134,11 +135,13 @@ public class JavascriptCompiler {
   private static final String EVALUATE_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE, FUNCTION_VALUES_ARRAY_TYPE);
   private static final String DOUBLE_VAL_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE);
   
+  // This maximum length is theoretically 65535 bytes, but as its CESU-8 encoded we dont know how large it is in bytes, so be safe
+  // rcmuir: "If your ranking function is that large you need to check yourself into a mental institution!"
   private static final int MAX_SOURCE_LENGTH = 16384;
   
   private final String sourceText;
   private final Map<String, Integer> externalsMap = new LinkedHashMap<String, Integer>();
-  private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+  private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
   private MethodVisitor methodVisitor;
   
   /**
@@ -165,6 +168,7 @@ public class JavascriptCompiler {
   
   /**
    * Constructs a compiler for expressions.
+   * @param sourceText The expression to compile
    */
   private JavascriptCompiler(String sourceText) {
     if (sourceText == null) {
@@ -176,7 +180,6 @@ public class JavascriptCompiler {
   /**
    * Compiles the given expression.
    *
-   * @param sourceText The expression to compile
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
@@ -198,12 +201,12 @@ public class JavascriptCompiler {
   }
   
   private void beginCompile() {
-    classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, COMPILED_EXPRESSION_INTERNAL,
+    classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC | ACC_SUPER | ACC_FINAL | ACC_SYNTHETIC, COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_INTERNAL, null);
     String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
     
-    MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC, "<init>", CONSTRUCTOR_DESC, null, null);
+    MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC | ACC_SYNTHETIC, "<init>", CONSTRUCTOR_DESC, null, null);
     constructor.visitCode();
     constructor.visitVarInsn(ALOAD, 0);
     constructor.visitVarInsn(ALOAD, 1);
@@ -213,7 +216,7 @@ public class JavascriptCompiler {
     constructor.visitMaxs(0, 0);
     constructor.visitEnd();
     
-    methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "evaluate", EVALUATE_METHOD_DESC, null, null);
+    methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_SYNTHETIC, "evaluate", EVALUATE_METHOD_DESC, null, null);
     methodVisitor.visitCode();
   }
   
@@ -296,7 +299,6 @@ public class JavascriptCompiler {
         } else {
           methodVisitor.visitLdcInsn((double)hex);
         }
-        
         break;
       case JavascriptParser.OCTAL:
         long octal = Long.parseLong(text.substring(1), 8);
@@ -308,7 +310,6 @@ public class JavascriptCompiler {
         } else {
           methodVisitor.visitLdcInsn((double)octal);
         }
-        
         break;
       case JavascriptParser.DECIMAL:
         double decimal = Double.parseDouble(text);
@@ -420,7 +421,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelEqTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelEqReturn);
-        
         break;
       case JavascriptParser.AT_COMP_NEQ:
         Label labelNeqTrue = new Label();
@@ -436,7 +436,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelNeqTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelNeqReturn);
-        
         break;
       case JavascriptParser.AT_COMP_LT:
         Label labelLtTrue = new Label();
@@ -452,7 +451,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelLtTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelLtReturn);
-        
         break;
       case JavascriptParser.AT_COMP_GT:
         Label labelGtTrue = new Label();
@@ -468,7 +466,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelGtTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelGtReturn);
-        
         break;
       case JavascriptParser.AT_COMP_LTE:
         Label labelLteTrue = new Label();
@@ -484,7 +481,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelLteTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelLteReturn);
-        
         break;
       case JavascriptParser.AT_COMP_GTE:
         Label labelGteTrue = new Label();
@@ -500,7 +496,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelGteTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelGteReturn);
-        
         break;
       case JavascriptParser.AT_BOOL_NOT:
         Label labelNotTrue = new Label();
@@ -513,7 +508,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(labelNotTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(labelNotReturn);
-        
         break;
       case JavascriptParser.AT_BOOL_AND:
         Label andFalse = new Label();
@@ -528,7 +522,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(andFalse);
         truthCompile(expected, false);
         methodVisitor.visitLabel(andEnd);
-        
         break;
       case JavascriptParser.AT_BOOL_OR:
         Label orTrue = new Label();
@@ -543,7 +536,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(orTrue);
         truthCompile(expected, true);
         methodVisitor.visitLabel(orEnd);
-        
         break;
       case JavascriptParser.AT_COND_QUE:
         Label condFalse = new Label();
@@ -556,7 +548,6 @@ public class JavascriptCompiler {
         methodVisitor.visitLabel(condFalse);
         recursiveCompile(current.getChild(2), expected);
         methodVisitor.visitLabel(condEnd);
-        
         break;
       default:
         throw new IllegalStateException("Unknown operation specified: (" + current.getText() + ").");
@@ -575,7 +566,6 @@ public class JavascriptCompiler {
         } else {
           methodVisitor.visitInsn(D2I);
         }
-        
         break;
       case LONG:
         if (actual == ComputedType.INT) {
@@ -583,7 +573,6 @@ public class JavascriptCompiler {
         } else {
           methodVisitor.visitInsn(D2L);
         }
-        
         break;
       default:
         if (actual == ComputedType.INT) {
@@ -591,7 +580,6 @@ public class JavascriptCompiler {
         } else {
           methodVisitor.visitInsn(L2D);
         }
-        
         break;
     }
   }
@@ -600,15 +588,12 @@ public class JavascriptCompiler {
     switch (expected) {
       case INT:
         methodVisitor.visitInsn(truth ? ICONST_1 : ICONST_0);
-        
         break;
       case LONG:
         methodVisitor.visitInsn(truth ? LCONST_1 : LCONST_0);
-        
         break;
       default:
         methodVisitor.visitInsn(truth ? DCONST_1 : DCONST_0);
-        
         break;
     }
   }
