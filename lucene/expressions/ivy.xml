@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="expressions"/>
     <dependencies>
-      <dependency org="org.antlr" name="antlr-runtime" rev="3.4" transitive="false"/>
+      <dependency org="org.antlr" name="antlr-runtime" rev="3.5" transitive="false"/>
       <dependency org="org.ow2.asm" name="asm" rev="4.1" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
     </dependencies>

@@ -51,13 +51,31 @@
   <target name="regenerate" depends="run-antlr"/>
 
   <target name="resolve-antlr" xmlns:ivy="antlib:org.apache.ivy.ant">
-    <ivy:cachepath organisation="org.antlr" module="antlr" revision="3.4"
+    <ivy:cachepath organisation="org.antlr" module="antlr" revision="3.5"
                   inline="true" conf="default" type="jar" pathid="antlr.classpath"/>
   </target>
 
   <target name="run-antlr" depends="resolve-antlr">
     <regen-grammar package="js" grammar="Javascript"/>
   </target>
+  
+  <macrodef name="replace-value">
+    <attribute name="value" />
+    <attribute name="property" />
+    <attribute name="from" />
+    <attribute name="to" />
+    <sequential>
+      <loadresource property="@{property}">
+        <string value="@{value}"/>
+        <filterchain>
+          <tokenfilter>
+            <filetokenizer/>
+            <replacestring from="@{from}" to="@{to}"/>
+          </tokenfilter>
+        </filterchain>
+      </loadresource>
+    </sequential>
+  </macrodef>
 
   <macrodef name="regen-grammar">
     <attribute name="package" />
@@ -71,27 +89,24 @@
         </fileset>
       </delete>
       <local name="grammar.path"/>
+      <local name="grammar.matchpath"/>
+      <local name="-grammar.relative.path"/>
       <local name="grammar.relative.path"/>
       <property name="grammar.path" location="src/java/org/apache/lucene/expressions/@{package}"/>
-      <property name="grammar.relative.path" location="${grammar.path}" relative="true"/>
-      <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath">
+      <!-- this is a hack for windows, because antlr writes absolute paths with double backslashes (no idea why...): -->
+      <replace-value property="grammar.matchpath" value="${grammar.path}${file.separator}" from="\" to="\\"/>
+      <property name="-grammar.relative.path" location="${grammar.path}" relative="true"/>
+      <replace-value property="grammar.relative.path" value="${-grammar.relative.path}${file.separator}" from="${file.separator}" to="/"/>
+      <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
         <arg value="-verbose"/>
         <arg value="-make"/>
         <arg value="-o"/>
         <arg path="${grammar.path}"/>
         <arg path="${grammar.path}/@{grammar}.g"/>
       </java>
-      <!-- prevent warnings from generated code -->
-      <replaceregexp file="${grammar.path}/@{grammar}Parser.java"
-                     encoding="UTF-8"
-                     byline="true">
-
-        <regexp pattern="@SuppressWarnings(.*)" />
-        <substitution expression="@SuppressWarnings({&quot;all&quot;, &quot;warnings&quot;, &quot;unchecked&quot;, &quot;cast&quot;})" />
-      </replaceregexp>
       <!-- replace absolute paths by relative ones -->
-      <replace file="${grammar.path}/@{grammar}Parser.java" token="${grammar.path}" value="${grammar.relative.path}" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}Lexer.java" token="${grammar.path}" value="${grammar.relative.path}" encoding="UTF-8"/>
+      <replace file="${grammar.path}/@{grammar}Parser.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
+      <replace file="${grammar.path}/@{grammar}Lexer.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
       <!-- make the generated classes package private (it's an antlr option with 4.0) -->
       <replace file="${grammar.path}/@{grammar}Parser.java" token="public class @{grammar}Parser" value="class @{grammar}Parser" encoding="UTF-8"/>
       <replace file="${grammar.path}/@{grammar}Lexer.java" token="public class @{grammar}Lexer" value="class @{grammar}Lexer" encoding="UTF-8"/>
@@ -101,6 +116,9 @@
       <!-- remove tabs in antlr generated files (it does this for comments in finally blocks) -->
       <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match="\t" flags="g" replace="    " encoding="UTF-8"/>
       <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match="\t" flags="g" replace="    " encoding="UTF-8"/>
+      <!-- fix line endings -->
+      <fixcrlf file="${grammar.path}/@{grammar}Parser.java"/>
+      <fixcrlf file="${grammar.path}/@{grammar}Lexer.java"/>
     </sequential>
   </macrodef>
 </project>
