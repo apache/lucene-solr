@@ -116,6 +116,8 @@ public class JavascriptCompiler {
     }
   }
   
+  private static final int MAX_CLASS_NAME_LENGTH = 1024;
+  
   private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Expr_";
   private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
   
@@ -184,9 +186,9 @@ public class JavascriptCompiler {
   }
   
   private String createClassName(String sourceText) {
-    final StringBuilder sb = new StringBuilder(sourceText.length() / 2);
+    final StringBuilder sb = new StringBuilder(Math.min(sourceText.length() / 2, MAX_CLASS_NAME_LENGTH));
     boolean wasIdentifierPart = true;
-    for (int i = 0, c = sourceText.length(); i < c; i++) {
+    for (int i = 0, c = sourceText.length(); i < c && sb.length() < MAX_CLASS_NAME_LENGTH; i++) {
       final char ch = sourceText.charAt(i);
       if (Character.isJavaIdentifierPart(ch)) {
         sb.append(ch);
@@ -196,8 +198,6 @@ public class JavascriptCompiler {
         wasIdentifierPart = false;
       }
     }
-    // limit maximum length, theoretically 65536 is allowed in constant pool (in UTF-8 format).
-    if (sb.length() > 1204) sb.setLength(1024);
     // remove trailing underscores
     for (int i = sb.length() - 1; i >= 0; i--) {
       if (sb.charAt(i) == '_') {
