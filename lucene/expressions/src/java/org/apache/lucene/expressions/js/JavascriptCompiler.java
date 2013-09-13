@@ -236,7 +236,7 @@ public class JavascriptCompiler {
           recursiveCompile(current.getChild(argument), ComputedType.DOUBLE);
         }
         
-        methodVisitor.visitMethodInsn(INVOKESTATIC, method.klass, method.method, method.signature);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, method.klass, method.method, method.descriptor);
         
         typeCompile(expected, ComputedType.DOUBLE);
         break;

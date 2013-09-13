@@ -16,11 +16,16 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.objectweb.asm.Type;
 
@@ -32,59 +37,48 @@ class JavascriptFunction {
   private static final Map<String, JavascriptFunction> methods = new HashMap<String, JavascriptFunction>();
   static {
     try {
-      addFunction("abs",    Math.class.getMethod("abs", double.class));
-      addFunction("acos",   Math.class.getMethod("acos", double.class));
-      addFunction("acosh",  MathUtil.class.getMethod("acosh", double.class));
-      addFunction("asin",   Math.class.getMethod("asin", double.class));
-      addFunction("asinh",  MathUtil.class.getMethod("asinh", double.class));
-      addFunction("atan",   Math.class.getMethod("atan", double.class));
-      addFunction("atan2",  Math.class.getMethod("atan2", double.class, double.class));
-      addFunction("atanh",  MathUtil.class.getMethod("atanh", double.class));
-      addFunction("ceil",   Math.class.getMethod("ceil", double.class));
-      addFunction("cos",    Math.class.getMethod("cos", double.class));
-      addFunction("cosh",   Math.class.getMethod("cosh", double.class));
-      addFunction("exp",    Math.class.getMethod("exp", double.class));
-      addFunction("floor",  Math.class.getMethod("floor", double.class));
-      addFunction("ln",     Math.class.getMethod("log", double.class));
-      addFunction("log10",  Math.class.getMethod("log10", double.class));
-      addFunction("logn",   MathUtil.class.getMethod("log", double.class, double.class));
-      addFunction("max",    Math.class.getMethod("max", double.class, double.class));
-      addFunction("min",    Math.class.getMethod("min", double.class, double.class));
-      addFunction("pow",    Math.class.getMethod("pow", double.class, double.class));
-      addFunction("sin",    Math.class.getMethod("sin", double.class));
-      addFunction("sinh",   Math.class.getMethod("sinh", double.class));
-      addFunction("sqrt",   Math.class.getMethod("sqrt", double.class));
-      addFunction("tan",    Math.class.getMethod("tan", double.class));
-      addFunction("tanh",   Math.class.getMethod("tanh", double.class));
-    } catch (NoSuchMethodException e) {
+      final Properties props = new Properties();
+      try (Reader in = IOUtils.getDecodingReader(JavascriptFunction.class,
+        JavascriptFunction.class.getSimpleName() + ".properties", IOUtils.CHARSET_UTF_8)) {
+        props.load(in);
+      }
+      for (final String call : props.stringPropertyNames()) {
+        final String[] vals = props.getProperty(call).split(",");
+        if (vals.length != 3) {
+          throw new Error("Syntax error while reading Javascript functions from resource");
+        }
+        final Class<?> clazz = Class.forName(vals[0].trim());
+        final String methodName = vals[1].trim();
+        final int arity = Integer.parseInt(vals[2].trim());
+        @SuppressWarnings({"rawtypes", "unchecked"}) Class[] args = new Class[arity];
+        Arrays.fill(args, double.class);
+        methods.put(call, new JavascriptFunction(call, clazz.getMethod(methodName, args)));
+      }
+    } catch (NoSuchMethodException | ClassNotFoundException | IOException e) {
       throw new Error("Cannot resolve function", e);
     }
   }
   
-  private static void addFunction(String call, Method method) {
-    methods.put(call, new JavascriptFunction(call, method));
-  }
-
-  public static JavascriptFunction getMethod(String call, int arguments) {
+  public static JavascriptFunction getMethod(String call, int arity) {
     JavascriptFunction method = methods.get(call);
 
     if (method == null) {
       throw new IllegalArgumentException("Unrecognized method call (" + call + ").");
     }
 
-    if (arguments != method.arguments && method.arguments != -1) {
-      throw new IllegalArgumentException("Expected (" + method.arguments + ") arguments for method call (" +
-          call + "), but found (" + arguments + ").");
+    if (arity != method.arity && method.arity != -1) {
+      throw new IllegalArgumentException("Expected (" + method.arity + ") arguments for method call (" +
+          call + "), but found (" + arity + ").");
     }
 
     return method;
   }
   
   public final String call;
-  public final int arguments;
+  public final int arity;
   public final String klass;
   public final String method;
-  public final String signature;
+  public final String descriptor;
   
   private JavascriptFunction(String call, Method method) {
     // do some checks if the signature is "compatible":
@@ -95,17 +89,10 @@ class JavascriptFunction {
       throw new Error(method + " does not return a double.");
     }
     
-    final Class<?>[] paramTypes = method.getParameterTypes();
-    for (final Class<?> paramType : paramTypes) {
-      if (paramType != double.class) {
-        throw new Error(method + " may only take parameters of type 'double'.");
-      }
-    }
-    
     this.call = call;
-    this.arguments = paramTypes.length;
+    this.arity = method.getParameterTypes().length;
     this.klass = Type.getInternalName(method.getDeclaringClass());
     this.method = method.getName();
-    this.signature = Type.getMethodDescriptor(method);
+    this.descriptor = Type.getMethodDescriptor(method);
   }
 }
