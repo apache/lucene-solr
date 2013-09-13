@@ -98,6 +98,8 @@
       <property name="-grammar.relative.path" location="${grammar.path}" relative="true"/>
       <replace-value property="grammar.relative.path" value="${-grammar.relative.path}${file.separator}" from="${file.separator}" to="/"/>
       <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
+        <!-- this is a hack because antlr generates code comments in nondeterministic order (using hashmap somewhere it should use linkedhashmap) -->
+        <sysproperty key="jdk.map.althashing.threshold" value="-1"/>
         <arg value="-verbose"/>
         <arg value="-make"/>
         <arg value="-o"/>
