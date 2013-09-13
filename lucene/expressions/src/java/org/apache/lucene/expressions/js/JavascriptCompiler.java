@@ -120,7 +120,15 @@ public class JavascriptCompiler {
   private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Computed_";
   private static final String EXPRESSION_INTERNAL_PREFIX = EXPRESSION_CLASS_PREFIX.replace('.', '/');
   private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
-  private static final String FUNCTION_VALUES_INTERNAL = Type.getInternalName(FunctionValues.class);
+  
+  private static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
+  private static final Type FUNCTION_VALUES_ARRAY_TYPE = Type.getType(FunctionValues[].class);
+  private static final Type STRING_TYPE = Type.getType(String.class);
+  private static final Type STRING_ARRAY_TYPE = Type.getType(String[].class);
+  
+  private static final String CONSTRUCTOR_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, STRING_TYPE, STRING_ARRAY_TYPE);
+  private static final String EVALUATE_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE, FUNCTION_VALUES_ARRAY_TYPE);
+  private static final String DOUBLE_VAL_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE);
   
   private final Loader loader;
   
@@ -205,17 +213,17 @@ public class JavascriptCompiler {
     classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
     classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, EXPRESSION_INTERNAL_PREFIX + className,
         null, COMPILED_EXPRESSION_INTERNAL, null);
-    MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC, "<init>", "(Ljava/lang/String;[Ljava/lang/String;)V", null, null);
+    MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC, "<init>", CONSTRUCTOR_DESC, null, null);
     constructor.visitCode();
     constructor.visitVarInsn(ALOAD, 0);
     constructor.visitVarInsn(ALOAD, 1);
     constructor.visitVarInsn(ALOAD, 2);
-    constructor.visitMethodInsn(INVOKESPECIAL, COMPILED_EXPRESSION_INTERNAL, "<init>", "(Ljava/lang/String;[Ljava/lang/String;)V");
+    constructor.visitMethodInsn(INVOKESPECIAL, COMPILED_EXPRESSION_INTERNAL, "<init>", CONSTRUCTOR_DESC);
     constructor.visitInsn(RETURN);
     constructor.visitMaxs(0, 0);
     constructor.visitEnd();
     
-    methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "evaluate", "(I[L" + FUNCTION_VALUES_INTERNAL + ";)D", null, null);
+    methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "evaluate", EVALUATE_METHOD_DESC, null, null);
     methodVisitor.visitCode();
   }
   
@@ -285,7 +293,7 @@ public class JavascriptCompiler {
         
         methodVisitor.visitInsn(AALOAD);
         methodVisitor.visitVarInsn(ILOAD, 1);
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, FUNCTION_VALUES_INTERNAL, "doubleVal", "(I)D");
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, FUNCTION_VALUES_TYPE.getInternalName(), "doubleVal", DOUBLE_VAL_METHOD_DESC);
         
         typeCompile(expected, ComputedType.DOUBLE);
         break;
