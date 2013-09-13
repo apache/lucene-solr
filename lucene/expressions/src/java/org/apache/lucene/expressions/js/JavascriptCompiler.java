@@ -116,8 +116,7 @@ public class JavascriptCompiler {
     }
   }
   
-  private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Computed_";
-  private static final String EXPRESSION_INTERNAL_PREFIX = EXPRESSION_CLASS_PREFIX.replace('.', '/');
+  private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Expr_";
   private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
   
   private static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
@@ -131,7 +130,6 @@ public class JavascriptCompiler {
   
   private final Loader loader = new Loader(getClass().getClassLoader());
   
-  private String className;
   private ClassWriter classWriter;
   private MethodVisitor methodVisitor;
   private Map<String, Integer> externalsMap;
@@ -165,28 +163,52 @@ public class JavascriptCompiler {
     if (sourceText == null) {
       throw new NullPointerException();
     }
+    final String className = EXPRESSION_CLASS_PREFIX + createClassName(sourceText);
+    // System.out.println(sourceText + "|" + className);
     try {
-      this.className = "CompiledExpression";
       externalsMap = new HashMap<String, Integer>();
       externalsList = new ArrayList<String>();
       
       Tree antlrTree = getAntlrComputedExpressionTree(sourceText);
       
-      beginCompile();
+      beginCompile(className);
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
       endCompile();
       
-      Class<? extends Expression> evaluatorClass = loader.define(EXPRESSION_CLASS_PREFIX + className, classWriter.toByteArray());
+      Class<? extends Expression> evaluatorClass = loader.define(className, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
       return constructor.newInstance(sourceText, externalsList.toArray(new String[externalsList.size()]));
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
     }
   }
+  
+  private String createClassName(String sourceText) {
+    final StringBuilder sb = new StringBuilder(sourceText.length() / 2);
+    boolean wasIdentifierPart = true;
+    for (int i = 0, c = sourceText.length(); i < c; i++) {
+      final char ch = sourceText.charAt(i);
+      if (Character.isJavaIdentifierPart(ch)) {
+        sb.append(ch);
+        wasIdentifierPart = true;
+      } else if (wasIdentifierPart) {
+        sb.append('_');
+        wasIdentifierPart = false;
+      }
+    }
+    for (int i = sb.length() - 1; i >= 0; i--) {
+      if (sb.charAt(i) == '_') {
+        sb.setLength(i);
+      } else {
+        break;
+      }
+    }
+    return sb.toString();
+  }
 
-  private void beginCompile() {
+  private void beginCompile(String className) {
     classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-    classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, EXPRESSION_INTERNAL_PREFIX + className,
+    classWriter.visit(V1_7, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, className.replace('.', '/'),
         null, COMPILED_EXPRESSION_INTERNAL, null);
     MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC, "<init>", CONSTRUCTOR_DESC, null, null);
     constructor.visitCode();
