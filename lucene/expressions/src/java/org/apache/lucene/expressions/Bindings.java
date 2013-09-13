@@ -70,7 +70,7 @@ public abstract class Bindings implements Iterable<String> {
     
     if (vs instanceof ExpressionValueSource) {
       Expression expr = ((ExpressionValueSource)vs).expression;
-      for (String external : expr.externals) {
+      for (String external : expr.variables) {
         if (chain.contains(external)) {
           throw new IllegalArgumentException("Recursion Error: Cycle detected originating in (" + external + ")");
         }

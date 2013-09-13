@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CharStream;
@@ -91,7 +90,15 @@ import static org.objectweb.asm.Opcodes.V1_7;
 
 /**
  * An expression compiler for javascript expressions.
- *
+ * <p>
+ * Example:
+ * <pre class="prettyprint">
+ *   Expression foo = JavascriptCompiler.compile("((0.3*popularity)/10.0)+(0.7*score)");
+ * </pre>
+ * <p>
+ * See the {@link org.apache.lucene.expressions.js package documentation} for 
+ * the supported syntax and functions.
+ * 
  * @lucene.experimental
  */
 public class JavascriptCompiler {
@@ -115,8 +122,7 @@ public class JavascriptCompiler {
   private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
   private static final String FUNCTION_VALUES_INTERNAL = Type.getInternalName(FunctionValues.class);
   
-  private Loader loader;
-  private AtomicLong counter = new AtomicLong();
+  private final Loader loader;
   
   private String className;
   private ClassWriter classWriter;
@@ -127,17 +133,17 @@ public class JavascriptCompiler {
   /**
    * Constructs a compiler for expressions.
    */
-  public JavascriptCompiler() {
-    this(null);
+  private JavascriptCompiler() {
+    loader = new Loader(getClass().getClassLoader());
   }
 
   /**
    * Constructs a compiler for expressions that will be loaded using the given class loader as the parent.
    * @param parent Class loader to load the dynamically compiled expression
    */
-  public JavascriptCompiler(ClassLoader parent) {
+  private JavascriptCompiler(ClassLoader parent) {
     if (parent == null) {
-      parent = getClass().getClassLoader();
+      throw new NullPointerException();
     }
     loader = new Loader(parent);
   }
@@ -145,28 +151,43 @@ public class JavascriptCompiler {
   /**
    * Compiles the given expression.
    *
-   * @param expression The expression to compile
+   * @param sourceText The expression to compile
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
-  public static Expression compile(String expression) throws ParseException {
-    return new JavascriptCompiler().compileExpression(expression);
+  public static Expression compile(String sourceText) throws ParseException {
+    return new JavascriptCompiler().compileExpression(sourceText);
+  }
+  
+  /**
+   * Compiles the given expression, specifying the parent classloader.
+   *
+   * @param sourceText The expression to compile
+   * @param parent Parent classloader
+   * @return A new compiled expression
+   * @throws ParseException on failure to compile
+   */
+  public static Expression compile(String sourceText, ClassLoader parent) throws ParseException {
+    return new JavascriptCompiler(parent).compileExpression(sourceText);
   }
 
   /**
    * Compiles the given expression.
    *
-   * @param expression The expression to compile
+   * @param sourceText The expression to compile
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
-  public Expression compileExpression(String expression) throws ParseException {
+  private Expression compileExpression(String sourceText) throws ParseException {
+    if (sourceText == null) {
+      throw new NullPointerException();
+    }
     try {
-      this.className = "Expr" + Long.toString(counter.incrementAndGet());
+      this.className = "CompiledExpression";
       externalsMap = new HashMap<String, Integer>();
       externalsList = new ArrayList<String>();
       
-      Tree antlrTree = getAntlrComputedExpressionTree(expression);
+      Tree antlrTree = getAntlrComputedExpressionTree(sourceText);
       
       beginCompile();
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
@@ -174,14 +195,8 @@ public class JavascriptCompiler {
       
       Class<? extends Expression> evaluatorClass = loader.define(EXPRESSION_CLASS_PREFIX + className, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
-      return constructor.newInstance(expression, externalsList.toArray(new String[externalsList.size()]));
-    } catch (InstantiationException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
-    } catch (IllegalAccessException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
-    } catch (NoSuchMethodException exception) {
-      throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
-    } catch (InvocationTargetException exception) {
+      return constructor.newInstance(sourceText, externalsList.toArray(new String[externalsList.size()]));
+    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + className + ").", exception);
     }
   }

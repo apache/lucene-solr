@@ -22,13 +22,13 @@
 <h1>expressions</h1>
 <p>
 {@link org.apache.lucene.expressions.Expression} - result of compiling an expression, which can
-evaluate it for a given document.  Each expression can have external variables which evaluate
-will retrieve from passed FunctionValues.
+evaluate it for a given document.  Each expression can have external variables are resolved by
+{@code Bindings}.
 </p>
 
 <p>
 {@link org.apache.lucene.expressions.Bindings} - abstraction for binding external variables
-to a way to get a value for those variables for a particular document (ValueSource)
+to a way to get a value for those variables for a particular document (ValueSource).
 </p>
 
 <p>

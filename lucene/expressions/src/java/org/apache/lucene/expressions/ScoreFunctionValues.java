@@ -43,6 +43,6 @@ class ScoreFunctionValues extends FunctionValues {
   
   @Override
   public String toString(int document) {
-    return "ComputedScorerValues(" + document + ": " + doubleVal(document) + ")";
+    return "ScoreFunctionValues(" + document + ": " + doubleVal(document) + ")";
   }
 }

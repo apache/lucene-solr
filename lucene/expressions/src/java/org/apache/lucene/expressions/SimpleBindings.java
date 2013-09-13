@@ -33,7 +33,8 @@ import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.search.SortField;
 
 /**
- * Simple class that binds expression variable names to {@link SortField}s.
+ * Simple class that binds expression variable names to {@link SortField}s
+ * or other {@link Expression}s.
  *
  * @lucene.experimental
  */

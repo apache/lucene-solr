@@ -47,10 +47,10 @@ final class ExpressionValueSource extends ValueSource {
     if (valuesCache == null) {
       throw new NullPointerException();
     }
-    FunctionValues[] externalValues = new FunctionValues[expression.externals.length];
+    FunctionValues[] externalValues = new FunctionValues[expression.variables.length];
 
-    for (int i = 0; i < expression.externals.length; ++i) {
-      String externalName = expression.externals[i];
+    for (int i = 0; i < expression.variables.length; ++i) {
+      String externalName = expression.variables[i];
       FunctionValues values = valuesCache.get(externalName);
       if (values == null) {
         source = bindings.getValueSource(externalName);
@@ -68,12 +68,12 @@ final class ExpressionValueSource extends ValueSource {
 
   @Override
   public SortField getSortField(boolean reverse) {
-    return new ExpressionSortField(expression.expression, this, reverse);
+    return new ExpressionSortField(expression.sourceText, this, reverse);
   }
 
   @Override
   public String description() {
-    return "ExpressionValueSource(" + expression.expression + ")";
+    return "ExpressionValueSource(" + expression.sourceText + ")";
   }
 
   @Override

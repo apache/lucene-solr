@@ -16,6 +16,7 @@ package org.apache.lucene.expressions;
  * limitations under the License.
  */
 
+import org.apache.lucene.expressions.js.JavascriptCompiler; // javadocs
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
@@ -38,32 +39,33 @@ import org.apache.lucene.search.SortField;
  *   Query query = new TermQuery(new Term("body", "contents"));
  *   searcher.search(query, null, 10, sort);
  * </pre>
+ * @see JavascriptCompiler#compile
  * @lucene.experimental
  */
 public abstract class Expression {
 
-  /** The original {@link String} expression, before it was compiled */
-  public final String expression;
+  /** The original source text */
+  public final String sourceText;
 
-  /** The names of external references found in the expression */
-  public final String[] externals;
+  /** Named variables referred to by this expression */
+  public final String[] variables;
 
   /**
-   * Creates a new {@code CompiledExpression}.
+   * Creates a new {@code Expression}.
    *
-   * @param expression The expression that was compiled
-   * @param externals Names of external references found in the expression
+   * @param sourceText Source text for the expression: e.g. {@code ln(popularity)}
+   * @param variables Names of external variables referred to by the expression
    */
-  public Expression(String expression, String[] externals) {
-    this.expression = expression;
-    this.externals = externals;
+  protected Expression(String sourceText, String[] variables) {
+    this.sourceText = sourceText;
+    this.variables = variables;
   }
 
   /**
    * Evaluates the expression for the given document.
    *
    * @param document <code>docId</code> of the document to compute a value for
-   * @param functionValues {@link FunctionValues} for each element of {@link #externals}.
+   * @param functionValues {@link FunctionValues} for each element of {@link #variables}.
    * @return The computed value of the expression for the given document.
    */
   public abstract double evaluate(int document, FunctionValues[] functionValues);
