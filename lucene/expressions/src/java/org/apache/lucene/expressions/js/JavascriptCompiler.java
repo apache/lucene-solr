@@ -107,7 +107,6 @@ public class JavascriptCompiler {
   }
 
   static class Loader extends ClassLoader {
-
     Loader(ClassLoader parent) {
       super(parent);
     }
@@ -130,31 +129,13 @@ public class JavascriptCompiler {
   private static final String EVALUATE_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE, FUNCTION_VALUES_ARRAY_TYPE);
   private static final String DOUBLE_VAL_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE);
   
-  private final Loader loader;
+  private final Loader loader = new Loader(getClass().getClassLoader());
   
   private String className;
   private ClassWriter classWriter;
   private MethodVisitor methodVisitor;
   private Map<String, Integer> externalsMap;
   private List<String> externalsList;
-  
-  /**
-   * Constructs a compiler for expressions.
-   */
-  private JavascriptCompiler() {
-    loader = new Loader(getClass().getClassLoader());
-  }
-
-  /**
-   * Constructs a compiler for expressions that will be loaded using the given class loader as the parent.
-   * @param parent Class loader to load the dynamically compiled expression
-   */
-  private JavascriptCompiler(ClassLoader parent) {
-    if (parent == null) {
-      throw new NullPointerException();
-    }
-    loader = new Loader(parent);
-  }
   
   /**
    * Compiles the given expression.
@@ -168,17 +149,11 @@ public class JavascriptCompiler {
   }
   
   /**
-   * Compiles the given expression, specifying the parent classloader.
-   *
-   * @param sourceText The expression to compile
-   * @param parent Parent classloader
-   * @return A new compiled expression
-   * @throws ParseException on failure to compile
+   * Constructs a compiler for expressions.
    */
-  public static Expression compile(String sourceText, ClassLoader parent) throws ParseException {
-    return new JavascriptCompiler(parent).compileExpression(sourceText);
+  private JavascriptCompiler() {
   }
-
+  
   /**
    * Compiles the given expression.
    *
