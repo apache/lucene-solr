@@ -86,6 +86,17 @@ public class TestJavascriptFunction extends LuceneTestCase {
     assertEvaluatesTo("atan(1.732050808)", Math.PI/3);
   }
   
+  public void testAtan2Method() throws Exception {
+    assertEvaluatesTo("atan2(+0,+0)", +0.0);
+    assertEvaluatesTo("atan2(+0,-0)", +Math.PI);
+    assertEvaluatesTo("atan2(-0,+0)", -0.0);
+    assertEvaluatesTo("atan2(-0,-0)", -Math.PI);
+    assertEvaluatesTo("atan2(2,2)", Math.PI/4);
+    assertEvaluatesTo("atan2(-2,2)", -Math.PI/4);
+    assertEvaluatesTo("atan2(2,-2)", Math.PI*3/4);
+    assertEvaluatesTo("atan2(-2,-2)", -Math.PI*3/4);
+  }
+  
   public void testAtanhMethod() throws Exception {
     assertEvaluatesTo("atanh(-1)", Double.NEGATIVE_INFINITY);
     assertEvaluatesTo("atanh(-0.5)", -0.5493061443340549);
