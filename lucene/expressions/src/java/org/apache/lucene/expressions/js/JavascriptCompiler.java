@@ -20,7 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -136,10 +136,10 @@ public class JavascriptCompiler {
   
   private static final int MAX_SOURCE_LENGTH = 16384;
   
-  private ClassWriter classWriter;
+  private final String sourceText;
+  private final Map<String, Integer> externalsMap = new LinkedHashMap<String, Integer>();
+  private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
   private MethodVisitor methodVisitor;
-  private Map<String, Integer> externalsMap;
-  private List<String> externalsList;
   
   /**
    * Compiles the given expression.
@@ -149,7 +149,7 @@ public class JavascriptCompiler {
    * @throws ParseException on failure to compile
    */
   public static Expression compile(String sourceText) throws ParseException {
-    return new JavascriptCompiler().compileExpression(sourceText);
+    return new JavascriptCompiler(sourceText).compileExpression();
   }
   
   /**
@@ -166,7 +166,11 @@ public class JavascriptCompiler {
   /**
    * Constructs a compiler for expressions.
    */
-  private JavascriptCompiler() {
+  private JavascriptCompiler(String sourceText) {
+    if (sourceText == null) {
+      throw new NullPointerException();
+    }
+    this.sourceText = sourceText;
   }
   
   /**
@@ -176,31 +180,24 @@ public class JavascriptCompiler {
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
-  private Expression compileExpression(String sourceText) throws ParseException {
-    if (sourceText == null) {
-      throw new NullPointerException();
-    }
+  private Expression compileExpression() throws ParseException {
     try {
-      externalsMap = new HashMap<String, Integer>();
-      externalsList = new ArrayList<String>();
+      Tree antlrTree = getAntlrComputedExpressionTree();
       
-      Tree antlrTree = getAntlrComputedExpressionTree(sourceText);
-      
-      beginCompile(sourceText);
+      beginCompile();
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
       endCompile();
       
       Class<? extends Expression> evaluatorClass = new Loader(getClass().getClassLoader())
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
-      return constructor.newInstance(sourceText, externalsList.toArray(new String[externalsList.size()]));
+      return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }
   
-  private void beginCompile(String sourceText) {
-    classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+  private void beginCompile() {
     classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC + ACC_SUPER + ACC_FINAL, COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_INTERNAL, null);
     String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
@@ -246,8 +243,7 @@ public class JavascriptCompiler {
         if (externalsMap.containsKey(text)) {
           index = externalsMap.get(text);
         } else {
-          index = externalsList.size();
-          externalsList.add(text);
+          index = externalsMap.size();
           externalsMap.put(text, index);
         }
         
@@ -625,8 +621,8 @@ public class JavascriptCompiler {
     classWriter.visitEnd();
   }
 
-  private static Tree getAntlrComputedExpressionTree(String expression) throws ParseException {
-    CharStream input = new ANTLRStringStream(expression);
+  private Tree getAntlrComputedExpressionTree() throws ParseException {
+    CharStream input = new ANTLRStringStream(sourceText);
     JavascriptLexer lexer = new JavascriptLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     JavascriptParser parser = new JavascriptParser(tokens);
