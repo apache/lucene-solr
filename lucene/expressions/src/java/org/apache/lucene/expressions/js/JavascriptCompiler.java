@@ -106,7 +106,7 @@ public class JavascriptCompiler {
     INT, LONG, DOUBLE
   }
 
-  class Loader extends ClassLoader {
+  static class Loader extends ClassLoader {
 
     Loader(ClassLoader parent) {
       super(parent);
@@ -118,7 +118,7 @@ public class JavascriptCompiler {
   }
   
   private static final String EXPRESSION_CLASS_PREFIX = JavascriptCompiler.class.getPackage().getName() + ".Computed_";
-  private static final String EXPRESSION_INTERNAL_PREFIX = JavascriptCompiler.class.getPackage().getName().replace(".", "/") + "/Computed_";
+  private static final String EXPRESSION_INTERNAL_PREFIX = EXPRESSION_CLASS_PREFIX.replace('.', '/');
   private static final String COMPILED_EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
   private static final String FUNCTION_VALUES_INTERNAL = Type.getInternalName(FunctionValues.class);
   
