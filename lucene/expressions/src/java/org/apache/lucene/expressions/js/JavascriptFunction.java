@@ -19,6 +19,7 @@ package org.apache.lucene.expressions.js;
 import java.util.HashMap;
 import java.util.Map;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import org.apache.lucene.util.MathUtil;
 import org.objectweb.asm.Type;
@@ -86,8 +87,23 @@ class JavascriptFunction {
   public final String signature;
   
   private JavascriptFunction(String call, Method method) {
+    // do some checks if the signature is "compatible":
+    if (!Modifier.isStatic(method.getModifiers())) {
+      throw new Error(method + " is not static.");
+    }
+    if (method.getReturnType() != double.class) {
+      throw new Error(method + " does not return a double.");
+    }
+    
+    final Class<?>[] paramTypes = method.getParameterTypes();
+    for (final Class<?> paramType : paramTypes) {
+      if (paramType != double.class) {
+        throw new Error(method + " may only take parameters of type 'double'.");
+      }
+    }
+    
     this.call = call;
-    this.arguments = method.getParameterTypes().length;
+    this.arguments = paramTypes.length;
     this.klass = Type.getInternalName(method.getDeclaringClass());
     this.method = method.getName();
     this.signature = Type.getMethodDescriptor(method);
