@@ -83,10 +83,10 @@ class JavascriptFunction {
   private JavascriptFunction(String call, Method method) {
     // do some checks if the signature is "compatible":
     if (!Modifier.isStatic(method.getModifiers())) {
-      throw new Error(method + " is not static.");
+      throw new IllegalArgumentException(method + " is not static.");
     }
     if (method.getReturnType() != double.class) {
-      throw new Error(method + " does not return a double.");
+      throw new IllegalArgumentException(method + " does not return a double.");
     }
     
     this.call = call;
