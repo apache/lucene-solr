@@ -34,7 +34,6 @@ import static org.objectweb.asm.Opcodes.IFGT;
 import static org.objectweb.asm.Opcodes.IFLE;
 import static org.objectweb.asm.Opcodes.IFLT;
 import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.LAND;
 import static org.objectweb.asm.Opcodes.LOR;
 import static org.objectweb.asm.Opcodes.LSHL;
@@ -273,7 +272,7 @@ public class JavascriptCompiler {
         methodVisitor.loadArg(1);
         methodVisitor.push(index);
         methodVisitor.arrayLoad(FUNCTION_VALUES_TYPE);
-        methodVisitor.visitVarInsn(ILOAD, 1);
+        methodVisitor.loadArg(0);
         methodVisitor.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
         
         methodVisitor.cast(Type.DOUBLE_TYPE, expected);
