@@ -531,7 +531,7 @@ public class JavascriptCompiler {
     if (expected == Type.INT_TYPE) {
         methodVisitor.push(truth);
     } else if (expected == Type.LONG_TYPE) {
-        methodVisitor.push((long) (truth ? 1 : 0));
+        methodVisitor.push(truth ? 1L : 0L);
     } else if (expected == Type.DOUBLE_TYPE) {
         methodVisitor.push(truth ? 1. : 0.);
     } else {
