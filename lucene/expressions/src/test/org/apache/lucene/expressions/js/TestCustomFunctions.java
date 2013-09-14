@@ -85,4 +85,60 @@ public class TestCustomFunctions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions, getClass().getClassLoader());
     assertEquals(11, expr.evaluate(0, null), DELTA);
   }
+  
+  public static String bogusReturnType() { return "bogus!"; }
+  
+  /** wrong return type: must be double */
+  public void testWrongReturnType() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("bogusReturnType"));
+    try {
+      JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("does not return a double"));
+    }
+  }
+  
+  public static double bogusParameterType(String s) { return 0; }
+  
+  /** wrong param type: must be doubles */
+  public void testWrongParameterType() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("bogusParameterType", String.class));
+    try {
+      JavascriptCompiler.compile("foo(2)", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("must take only double parameters"));
+    }
+  }
+  
+  public double nonStaticMethod() { return 0; }
+  
+  /** wrong modifiers: must be static */
+  public void testWrongNotStatic() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("nonStaticMethod"));
+    try {
+      JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("is not static"));
+    }
+  }
+  
+  static double nonPublicMethod() { return 0; }
+  
+  /** wrong modifiers: must be public */
+  public void testWrongNotPublic() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getDeclaredMethod("nonPublicMethod"));
+    try {
+      JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("is not public"));
+    }
+  }
 }

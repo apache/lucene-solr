@@ -712,6 +712,14 @@ public class JavascriptCompiler {
     if (!Modifier.isStatic(method.getModifiers())) {
       throw new IllegalArgumentException(method + " is not static.");
     }
+    if (!Modifier.isPublic(method.getModifiers())) {
+      throw new IllegalArgumentException(method + " is not public.");
+    }
+    for (Class<?> clazz : method.getParameterTypes()) {
+      if (!clazz.equals(double.class)) {
+        throw new IllegalArgumentException(method + " must take only double parameters");
+      }
+    }
     if (method.getReturnType() != double.class) {
       throw new IllegalArgumentException(method + " does not return a double.");
     }
