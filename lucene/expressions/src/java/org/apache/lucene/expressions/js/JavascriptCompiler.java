@@ -43,6 +43,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 import static org.objectweb.asm.Opcodes.AALOAD;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -131,16 +132,18 @@ public class JavascriptCompiler {
   private static final String COMPILED_EXPRESSION_CLASS = JavascriptCompiler.class.getName() + "$CompiledExpression";
   private static final String COMPILED_EXPRESSION_INTERNAL = COMPILED_EXPRESSION_CLASS.replace('.', '/');
   
-  private static final String EXPRESSION_INTERNAL = Type.getInternalName(Expression.class);
-  
+  private static final Type EXPRESSION_TYPE = Type.getType(Expression.class);
   private static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
-  private static final Type FUNCTION_VALUES_ARRAY_TYPE = Type.getType(FunctionValues[].class);
-  private static final Type STRING_TYPE = Type.getType(String.class);
-  private static final Type STRING_ARRAY_TYPE = Type.getType(String[].class);
+
+  private static final org.objectweb.asm.commons.Method
+    EXPRESSION_CTOR = getMethod("void <init>(String, String[])"),
+    EVALUATE_METHOD = getMethod("double evaluate(int, " + FunctionValues.class.getName() + "[])"),
+    DOUBLE_VAL_METHOD = getMethod("double doubleVal(int)");
   
-  private static final String CONSTRUCTOR_DESC = Type.getMethodDescriptor(Type.VOID_TYPE, STRING_TYPE, STRING_ARRAY_TYPE);
-  private static final String EVALUATE_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE, FUNCTION_VALUES_ARRAY_TYPE);
-  private static final String DOUBLE_VAL_METHOD_DESC = Type.getMethodDescriptor(Type.DOUBLE_TYPE, Type.INT_TYPE);
+  // to work around import clash:
+  private static org.objectweb.asm.commons.Method getMethod(String method) {
+    return org.objectweb.asm.commons.Method.getMethod(method);
+  }
   
   // This maximum length is theoretically 65535 bytes, but as its CESU-8 encoded we dont know how large it is in bytes, so be safe
   // rcmuir: "If your ranking function is that large you need to check yourself into a mental institution!"
@@ -149,7 +152,7 @@ public class JavascriptCompiler {
   private final String sourceText;
   private final Map<String, Integer> externalsMap = new LinkedHashMap<String, Integer>();
   private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-  private MethodVisitor methodVisitor;
+  private GeneratorAdapter methodVisitor;
   
   private final Map<String,Method> functions;
   
@@ -242,22 +245,19 @@ public class JavascriptCompiler {
   
   private void beginCompile() {
     classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC | ACC_SUPER | ACC_FINAL | ACC_SYNTHETIC, COMPILED_EXPRESSION_INTERNAL,
-        null, EXPRESSION_INTERNAL, null);
+        null, EXPRESSION_TYPE.getInternalName(), null);
     String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
     
-    MethodVisitor constructor = classWriter.visitMethod(ACC_PUBLIC | ACC_SYNTHETIC, "<init>", CONSTRUCTOR_DESC, null, null);
-    constructor.visitCode();
-    constructor.visitVarInsn(ALOAD, 0);
-    constructor.visitVarInsn(ALOAD, 1);
-    constructor.visitVarInsn(ALOAD, 2);
-    constructor.visitMethodInsn(INVOKESPECIAL, EXPRESSION_INTERNAL, "<init>", CONSTRUCTOR_DESC);
-    constructor.visitInsn(RETURN);
-    constructor.visitMaxs(0, 0);
-    constructor.visitEnd();
+    GeneratorAdapter constructor = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EXPRESSION_CTOR, null, null, classWriter);
+    constructor.loadThis();
+    constructor.loadArg(0);
+    constructor.loadArg(1);
+    constructor.invokeConstructor(EXPRESSION_TYPE, EXPRESSION_CTOR);
+    constructor.returnValue();
+    constructor.endMethod();
     
-    methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_SYNTHETIC, "evaluate", EVALUATE_METHOD_DESC, null, null);
-    methodVisitor.visitCode();
+    methodVisitor = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EVALUATE_METHOD, null, null, classWriter);
   }
   
   private void recursiveCompile(Tree current, ComputedType expected) {
@@ -285,10 +285,8 @@ public class JavascriptCompiler {
           recursiveCompile(current.getChild(argument), ComputedType.DOUBLE);
         }
         
-        String klass = Type.getInternalName(method.getDeclaringClass());
-        String name = method.getName();
-        String descriptor = Type.getMethodDescriptor(method);
-        methodVisitor.visitMethodInsn(INVOKESTATIC, klass, name, descriptor);
+        methodVisitor.invokeStatic(Type.getType(method.getDeclaringClass()),
+          org.objectweb.asm.commons.Method.getMethod(method));
         
         typeCompile(expected, ComputedType.DOUBLE);
         break;
@@ -303,40 +301,10 @@ public class JavascriptCompiler {
         }
         
         methodVisitor.visitVarInsn(ALOAD, 2);
-        
-        switch (index) {
-          case 0:
-            methodVisitor.visitInsn(ICONST_0);
-            break;
-          case 1:
-            methodVisitor.visitInsn(ICONST_1);
-            break;
-          case 2:
-            methodVisitor.visitInsn(ICONST_2);
-            break;
-          case 3:
-            methodVisitor.visitInsn(ICONST_3);
-            break;
-          case 4:
-            methodVisitor.visitInsn(ICONST_4);
-            break;
-          case 5:
-            methodVisitor.visitInsn(ICONST_5);
-            break;
-          default:
-            if (index < 128) {
-              methodVisitor.visitIntInsn(BIPUSH, index);
-            } else if (index < 16384) {
-              methodVisitor.visitIntInsn(SIPUSH, index);
-            } else {
-              methodVisitor.visitLdcInsn(index);
-            }
-            break;
-        }
-        
+        methodVisitor.push(index);
         methodVisitor.visitInsn(AALOAD);
         methodVisitor.visitVarInsn(ILOAD, 1);
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, FUNCTION_VALUES_TYPE.getInternalName(), "doubleVal", DOUBLE_VAL_METHOD_DESC);
+        methodVisitor.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
         
         typeCompile(expected, ComputedType.DOUBLE);
         break;
@@ -650,9 +618,8 @@ public class JavascriptCompiler {
   }
   
   private void endCompile() {
-    methodVisitor.visitInsn(DRETURN);
-    methodVisitor.visitMaxs(0, 0);
-    methodVisitor.visitEnd();
+    methodVisitor.returnValue();
+    methodVisitor.endMethod();
     
     classWriter.visitEnd();
   }
