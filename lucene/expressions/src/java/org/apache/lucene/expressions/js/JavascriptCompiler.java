@@ -171,12 +171,17 @@ public class JavascriptCompiler {
    *
    * @param sourceText The expression to compile
    * @param functions map of String names to functions
+   * @param parent a {@code ClassLoader} that should be used as the parent of the loaded class.
+   *   It must contain all classes referred to by the given {@code functions}.
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
   public static Expression compile(String sourceText, Map<String,Method> functions, ClassLoader parent) throws ParseException {
+    if (parent == null) {
+      throw new NullPointerException("A parent ClassLoader must be given.");
+    }
     for (Method m : functions.values()) {
-      checkFunction(m);
+      checkFunction(m, parent);
     }
     return new JavascriptCompiler(sourceText, functions).compileExpression(parent);
   }
@@ -698,7 +703,7 @@ public class JavascriptCompiler {
         @SuppressWarnings({"rawtypes", "unchecked"}) Class[] args = new Class[arity];
         Arrays.fill(args, double.class);
         Method method = clazz.getMethod(methodName, args);
-        checkFunction(method);
+        checkFunction(method, JavascriptCompiler.class.getClassLoader());
         map.put(call, method);
       }
     } catch (NoSuchMethodException | ClassNotFoundException | IOException e) {
@@ -707,8 +712,23 @@ public class JavascriptCompiler {
     DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);
   }
   
-  /* do some checks if the signature is "compatible" */
-  private static void checkFunction(Method method) {
+  private static void checkFunction(Method method, ClassLoader parent) {
+    // We can only call the function if the given parent class loader of our compiled class has access to the method:
+    final ClassLoader functionClassloader = method.getDeclaringClass().getClassLoader();
+    if (functionClassloader != null) { // it is a system class iff null!
+      boolean found = false;
+      while (parent != null) {
+        if (parent == functionClassloader) {
+          found = true;
+          break;
+        }
+        parent = parent.getParent();
+      }
+      if (!found) {
+        throw new IllegalArgumentException(method + " is not declared by a class which is accessible by the given parent ClassLoader.");
+      }
+    }
+    // do some checks if the signature is "compatible":
     if (!Modifier.isStatic(method.getModifiers())) {
       throw new IllegalArgumentException(method + " is not static.");
     }
