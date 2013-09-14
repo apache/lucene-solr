@@ -161,24 +161,24 @@ public class JavascriptCompiler {
    * @throws ParseException on failure to compile
    */
   public static Expression compile(String sourceText) throws ParseException {
-    return new JavascriptCompiler(sourceText).compileExpression();
+    return new JavascriptCompiler(sourceText).compileExpression(JavascriptCompiler.class.getClassLoader());
   }
   
   /**
    * Compiles the given expression with the supplied custom functions.
    * <p>
-   * Functions must return a double.
+   * Functions must return {@code double} and can take from zero to 256 {@code double} parameters.
    *
    * @param sourceText The expression to compile
    * @param functions map of String names to functions
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
-  public static Expression compile(String sourceText, Map<String,Method> functions) throws ParseException {
+  public static Expression compile(String sourceText, Map<String,Method> functions, ClassLoader parent) throws ParseException {
     for (Method m : functions.values()) {
       checkFunction(m);
     }
-    return new JavascriptCompiler(sourceText, functions).compileExpression();
+    return new JavascriptCompiler(sourceText, functions).compileExpression(parent);
   }
   
   /**
@@ -213,12 +213,12 @@ public class JavascriptCompiler {
   }
   
   /**
-   * Compiles the given expression.
+   * Compiles the given expression with the specified parent classloader
    *
    * @return A new compiled expression
    * @throws ParseException on failure to compile
    */
-  private Expression compileExpression() throws ParseException {
+  private Expression compileExpression(ClassLoader parent) throws ParseException {
     try {
       Tree antlrTree = getAntlrComputedExpressionTree();
       
@@ -226,7 +226,7 @@ public class JavascriptCompiler {
       recursiveCompile(antlrTree, ComputedType.DOUBLE);
       endCompile();
       
-      Class<? extends Expression> evaluatorClass = new Loader(getClass().getClassLoader())
+      Class<? extends Expression> evaluatorClass = new Loader(parent)
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));

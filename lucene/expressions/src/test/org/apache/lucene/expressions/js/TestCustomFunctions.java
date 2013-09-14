@@ -33,7 +33,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testEmpty() throws Exception {
     Map<String,Method> functions = Collections.emptyMap();
     try {
-      JavascriptCompiler.compile("sqrt(20)", functions);
+      JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("Unrecognized method"));
@@ -43,7 +43,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   /** using the default map explicitly */
   public void testDefaultList() throws Exception {
     Map<String,Method> functions = JavascriptCompiler.DEFAULT_FUNCTIONS;
-    Expression expr = JavascriptCompiler.compile("sqrt(20)", functions);
+    Expression expr = JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
     assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
   }
   
@@ -53,7 +53,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testNoArgMethod() throws Exception {
     Map<String,Method> functions = new HashMap<String,Method>();
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
-    Expression expr = JavascriptCompiler.compile("foo()", functions);
+    Expression expr = JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
     assertEquals(5, expr.evaluate(0, null), DELTA);
   }
   
@@ -63,7 +63,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testOneArgMethod() throws Exception {
     Map<String,Method> functions = new HashMap<String,Method>();
     functions.put("foo", getClass().getMethod("oneArgMethod", double.class));
-    Expression expr = JavascriptCompiler.compile("foo(3)", functions);
+    Expression expr = JavascriptCompiler.compile("foo(3)", functions, getClass().getClassLoader());
     assertEquals(6, expr.evaluate(0, null), DELTA);
   }
   
@@ -73,7 +73,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testThreeArgMethod() throws Exception {
     Map<String,Method> functions = new HashMap<String,Method>();
     functions.put("foo", getClass().getMethod("threeArgMethod", double.class, double.class, double.class));
-    Expression expr = JavascriptCompiler.compile("foo(3, 4, 5)", functions);
+    Expression expr = JavascriptCompiler.compile("foo(3, 4, 5)", functions, getClass().getClassLoader());
     assertEquals(12, expr.evaluate(0, null), DELTA);
   }
   
@@ -82,7 +82,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     Map<String,Method> functions = new HashMap<String,Method>();
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
     functions.put("bar", getClass().getMethod("oneArgMethod", double.class));
-    Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions);
+    Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions, getClass().getClassLoader());
     assertEquals(11, expr.evaluate(0, null), DELTA);
   }
 }
