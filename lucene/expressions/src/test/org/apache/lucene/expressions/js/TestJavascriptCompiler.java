@@ -25,6 +25,7 @@ public class TestJavascriptCompiler extends LuceneTestCase {
   public void testValidCompiles() throws Exception {
     assertNotNull(JavascriptCompiler.compile("100"));
     assertNotNull(JavascriptCompiler.compile("valid0+100"));
+    assertNotNull(JavascriptCompiler.compile("valid0+\n100"));
     assertNotNull(JavascriptCompiler.compile("logn(2, 20+10-5.0)"));
   }
   
@@ -40,6 +41,59 @@ public class TestJavascriptCompiler extends LuceneTestCase {
       JavascriptCompiler.compile("7*/-8");
       fail();
     } catch (ParseException expected) {
+      // expected exception
+    }
+    
+    try {
+      JavascriptCompiler.compile("0y1234");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+    
+    try {
+      JavascriptCompiler.compile("500EE");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+    
+    try {
+      JavascriptCompiler.compile("500.5EE");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+  }
+  
+  public void testEmpty() {
+    try {
+      JavascriptCompiler.compile("");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+    
+    try {
+      JavascriptCompiler.compile("()");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+    
+    try {
+      JavascriptCompiler.compile("   \r\n   \n \t");
+      fail();
+    } catch (ParseException expected) {
+      // expected exception
+    }
+  }
+  
+  public void testNull() throws Exception {
+    try {
+      JavascriptCompiler.compile(null);
+      fail();
+    } catch (NullPointerException expected) {
       // expected exception
     }
   }

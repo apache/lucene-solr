@@ -295,6 +295,8 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("1", 1);
     assertEvaluatesTo("123456789", 123456789);
     assertEvaluatesTo("5.6E2", 560);
+    assertEvaluatesTo("5.6E+2", 560);
+    assertEvaluatesTo("500E-2", 5);
   }
   
   public void testHexConst() throws Exception {
@@ -302,6 +304,13 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0x1", 1);
     assertEvaluatesTo("0xF", 15);
     assertEvaluatesTo("0x1234ABCDEF", 78193085935L);
+  }
+  
+  public void testHexConst2() throws Exception {
+    assertEvaluatesTo("0X0", 0);
+    assertEvaluatesTo("0X1", 1);
+    assertEvaluatesTo("0XF", 15);
+    assertEvaluatesTo("0X1234ABCDEF", 78193085935L);
   }
   
   public void testOctalConst() throws Exception {
