@@ -16,13 +16,19 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.text.ParseException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CharStream;
@@ -31,6 +37,7 @@ import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.Tree;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.util.IOUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -144,6 +151,8 @@ public class JavascriptCompiler {
   private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
   private MethodVisitor methodVisitor;
   
+  private final Map<String,Method> functions;
+  
   /**
    * Compiles the given expression.
    *
@@ -156,7 +165,24 @@ public class JavascriptCompiler {
   }
   
   /**
-   * This method is unused, it is just here to make sure that the funcion signatures don't change.
+   * Compiles the given expression with the supplied custom functions.
+   * <p>
+   * Functions must return a double.
+   *
+   * @param sourceText The expression to compile
+   * @param functions map of String names to functions
+   * @return A new compiled expression
+   * @throws ParseException on failure to compile
+   */
+  public static Expression compile(String sourceText, Map<String,Method> functions) throws ParseException {
+    for (Method m : functions.values()) {
+      checkFunction(m);
+    }
+    return new JavascriptCompiler(sourceText, functions).compileExpression();
+  }
+  
+  /**
+   * This method is unused, it is just here to make sure that the function signatures don't change.
    * If this method fails to compile, you also have to change the byte code generator to correctly
    * use the FunctionValues class.
    */
@@ -171,10 +197,19 @@ public class JavascriptCompiler {
    * @param sourceText The expression to compile
    */
   private JavascriptCompiler(String sourceText) {
+    this(sourceText, DEFAULT_FUNCTIONS);
+  }
+  
+  /**
+   * Constructs a compiler for expressions with specific set of functions
+   * @param sourceText The expression to compile
+   */
+  private JavascriptCompiler(String sourceText, Map<String,Method> functions) {
     if (sourceText == null) {
       throw new NullPointerException();
     }
     this.sourceText = sourceText;
+    this.functions = functions;
   }
   
   /**
@@ -230,13 +265,25 @@ public class JavascriptCompiler {
         String call = identifier.getText();
         int arguments = current.getChildCount() - 1;
         
-        JavascriptFunction method = JavascriptFunction.getMethod(call, arguments);
+        Method method = functions.get(call);
+        if (method == null) {
+          throw new IllegalArgumentException("Unrecognized method call (" + call + ").");
+        }
+        
+        int arity = method.getParameterTypes().length;
+        if (arguments != arity && arity != -1) {
+          throw new IllegalArgumentException("Expected (" + arity + ") arguments for method call (" +
+              call + "), but found (" + arguments + ").");
+        }
         
         for (int argument = 1; argument <= arguments; ++argument) {
           recursiveCompile(current.getChild(argument), ComputedType.DOUBLE);
         }
         
-        methodVisitor.visitMethodInsn(INVOKESTATIC, method.klass, method.method, method.descriptor);
+        String klass = Type.getInternalName(method.getDeclaringClass());
+        String name = method.getName();
+        String descriptor = Type.getMethodDescriptor(method);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, klass, name, descriptor);
         
         typeCompile(expected, ComputedType.DOUBLE);
         break;
@@ -622,6 +669,51 @@ public class JavascriptCompiler {
         throw (ParseException)exception.getCause();
       }
       throw exception;
+    }
+  }
+  
+  /** 
+   * The default set of functions available to expressions.
+   * <p>
+   * See the {@link org.apache.lucene.expressions.js package documentation}
+   * for a list.
+   */
+  public static final Map<String,Method> DEFAULT_FUNCTIONS;
+  static {
+    Map<String,Method> map = new HashMap<String,Method>();
+    try {
+      final Properties props = new Properties();
+      try (Reader in = IOUtils.getDecodingReader(JavascriptCompiler.class,
+        JavascriptCompiler.class.getSimpleName() + ".properties", IOUtils.CHARSET_UTF_8)) {
+        props.load(in);
+      }
+      for (final String call : props.stringPropertyNames()) {
+        final String[] vals = props.getProperty(call).split(",");
+        if (vals.length != 3) {
+          throw new Error("Syntax error while reading Javascript functions from resource");
+        }
+        final Class<?> clazz = Class.forName(vals[0].trim());
+        final String methodName = vals[1].trim();
+        final int arity = Integer.parseInt(vals[2].trim());
+        @SuppressWarnings({"rawtypes", "unchecked"}) Class[] args = new Class[arity];
+        Arrays.fill(args, double.class);
+        Method method = clazz.getMethod(methodName, args);
+        checkFunction(method);
+        map.put(call, method);
+      }
+    } catch (NoSuchMethodException | ClassNotFoundException | IOException e) {
+      throw new Error("Cannot resolve function", e);
+    }
+    DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);
+  }
+  
+  /* do some checks if the signature is "compatible" */
+  private static void checkFunction(Method method) {
+    if (!Modifier.isStatic(method.getModifiers())) {
+      throw new IllegalArgumentException(method + " is not static.");
+    }
+    if (method.getReturnType() != double.class) {
+      throw new IllegalArgumentException(method + " does not return a double.");
     }
   }
 }
