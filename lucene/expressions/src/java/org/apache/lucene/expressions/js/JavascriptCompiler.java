@@ -276,7 +276,7 @@ public class JavascriptCompiler {
         }
         
         int arity = method.getParameterTypes().length;
-        if (arguments != arity && arity != -1) {
+        if (arguments != arity) {
           throw new IllegalArgumentException("Expected (" + arity + ") arguments for method call (" +
               call + "), but found (" + arguments + ").");
         }
@@ -331,7 +331,6 @@ public class JavascriptCompiler {
             } else {
               methodVisitor.visitLdcInsn(index);
             }
-            
             break;
         }
         
