@@ -304,6 +304,10 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0x1", 1);
     assertEvaluatesTo("0xF", 15);
     assertEvaluatesTo("0x1234ABCDEF", 78193085935L);
+    assertEvaluatesTo("1 << 0x1", 1 << 0x1);
+    assertEvaluatesTo("1 << 0xA", 1 << 0xA);
+    assertEvaluatesTo("0x1 << 2", 0x1 << 2);
+    assertEvaluatesTo("0xA << 2", 0xA << 2);
   }
   
   public void testHexConst2() throws Exception {
@@ -318,5 +322,10 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("01", 1);
     assertEvaluatesTo("010", 8);
     assertEvaluatesTo("0123456777", 21913087);
+    assertEvaluatesTo("1 << 01", 1 << 01);
+    assertEvaluatesTo("1 << 010", 1 << 010);
+    assertEvaluatesTo("01 << 2", 01 << 2);
+    assertEvaluatesTo("010 << 2", 010 << 2);
+
   }
 }

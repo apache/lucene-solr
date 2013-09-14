@@ -111,6 +111,44 @@ public class  TestDemoExpressions extends LuceneTestCase {
     }
   }
   
+  /** tests same binding used more than once in an expression */
+  public void testTwoOfSameBinding() throws Exception {
+    Expression expr = JavascriptCompiler.compile("_score + _score");
+    
+    SimpleBindings bindings = new SimpleBindings();    
+    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    
+    Sort sort = new Sort(expr.getSortField(bindings, true));
+    Query query = new TermQuery(new Term("body", "contents"));
+    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    for (int i = 0; i < 3; i++) {
+      FieldDoc d = (FieldDoc) td.scoreDocs[i];
+      float expected = 2*d.score;
+      float actual = ((Double)d.fields[0]).floatValue();
+      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+    }
+  }
+  
+  /** tests expression referring to another expression */
+  public void testExpressionRefersToExpression() throws Exception {
+    Expression expr1 = JavascriptCompiler.compile("_score");
+    Expression expr2 = JavascriptCompiler.compile("2*expr1");
+    
+    SimpleBindings bindings = new SimpleBindings();    
+    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    bindings.add("expr1", expr1);
+    
+    Sort sort = new Sort(expr2.getSortField(bindings, true));
+    Query query = new TermQuery(new Term("body", "contents"));
+    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    for (int i = 0; i < 3; i++) {
+      FieldDoc d = (FieldDoc) td.scoreDocs[i];
+      float expected = 2*d.score;
+      float actual = ((Double)d.fields[0]).floatValue();
+      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+    }
+  }
+  
   /** tests huge amounts of variables in the expression */
   public void testLotsOfBindings() throws Exception {
     doTestLotsOfBindings(Byte.MAX_VALUE-1);
