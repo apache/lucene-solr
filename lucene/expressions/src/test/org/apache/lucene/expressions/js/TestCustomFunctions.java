@@ -152,6 +152,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     functions.put("foo", NestedNotPublic.class.getMethod("method"));
     try {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
+      fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("is not public"));
     }
