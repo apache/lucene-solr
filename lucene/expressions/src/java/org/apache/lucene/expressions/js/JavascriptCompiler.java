@@ -16,6 +16,33 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.DADD;
+import static org.objectweb.asm.Opcodes.DCMPG;
+import static org.objectweb.asm.Opcodes.DCMPL;
+import static org.objectweb.asm.Opcodes.DDIV;
+import static org.objectweb.asm.Opcodes.DNEG;
+import static org.objectweb.asm.Opcodes.DREM;
+import static org.objectweb.asm.Opcodes.DSUB;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.IFGE;
+import static org.objectweb.asm.Opcodes.IFGT;
+import static org.objectweb.asm.Opcodes.IFLE;
+import static org.objectweb.asm.Opcodes.IFLT;
+import static org.objectweb.asm.Opcodes.IFNE;
+import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.LAND;
+import static org.objectweb.asm.Opcodes.LOR;
+import static org.objectweb.asm.Opcodes.LSHL;
+import static org.objectweb.asm.Opcodes.LSHR;
+import static org.objectweb.asm.Opcodes.LUSHR;
+import static org.objectweb.asm.Opcodes.LXOR;
+import static org.objectweb.asm.Opcodes.V1_7;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
@@ -40,62 +67,9 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.IOUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
-
-import static org.objectweb.asm.Opcodes.AALOAD;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_SUPER;
-import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.BIPUSH;
-import static org.objectweb.asm.Opcodes.D2I;
-import static org.objectweb.asm.Opcodes.D2L;
-import static org.objectweb.asm.Opcodes.DADD;
-import static org.objectweb.asm.Opcodes.DCMPG;
-import static org.objectweb.asm.Opcodes.DCMPL;
-import static org.objectweb.asm.Opcodes.DCONST_0;
-import static org.objectweb.asm.Opcodes.DCONST_1;
-import static org.objectweb.asm.Opcodes.DDIV;
-import static org.objectweb.asm.Opcodes.DNEG;
-import static org.objectweb.asm.Opcodes.DREM;
-import static org.objectweb.asm.Opcodes.DRETURN;
-import static org.objectweb.asm.Opcodes.DSUB;
-import static org.objectweb.asm.Opcodes.GOTO;
-import static org.objectweb.asm.Opcodes.I2D;
-import static org.objectweb.asm.Opcodes.I2L;
-import static org.objectweb.asm.Opcodes.ICONST_0;
-import static org.objectweb.asm.Opcodes.ICONST_1;
-import static org.objectweb.asm.Opcodes.ICONST_2;
-import static org.objectweb.asm.Opcodes.ICONST_3;
-import static org.objectweb.asm.Opcodes.ICONST_4;
-import static org.objectweb.asm.Opcodes.ICONST_5;
-import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.IFGE;
-import static org.objectweb.asm.Opcodes.IFGT;
-import static org.objectweb.asm.Opcodes.IFLE;
-import static org.objectweb.asm.Opcodes.IFLT;
-import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.ILOAD;
-import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.L2D;
-import static org.objectweb.asm.Opcodes.L2I;
-import static org.objectweb.asm.Opcodes.LAND;
-import static org.objectweb.asm.Opcodes.LCONST_0;
-import static org.objectweb.asm.Opcodes.LCONST_1;
-import static org.objectweb.asm.Opcodes.LOR;
-import static org.objectweb.asm.Opcodes.LSHL;
-import static org.objectweb.asm.Opcodes.LSHR;
-import static org.objectweb.asm.Opcodes.LUSHR;
-import static org.objectweb.asm.Opcodes.LXOR;
-import static org.objectweb.asm.Opcodes.RETURN;
-import static org.objectweb.asm.Opcodes.SIPUSH;
-import static org.objectweb.asm.Opcodes.V1_7;
 
 /**
  * An expression compiler for javascript expressions.
@@ -111,9 +85,6 @@ import static org.objectweb.asm.Opcodes.V1_7;
  * @lucene.experimental
  */
 public class JavascriptCompiler {
-  private static enum ComputedType {
-    INT, LONG, DOUBLE
-  }
 
   static class Loader extends ClassLoader {
     Loader(ClassLoader parent) {
@@ -194,7 +165,7 @@ public class JavascriptCompiler {
    * If this method fails to compile, you also have to change the byte code generator to correctly
    * use the FunctionValues class.
    */
-  @SuppressWarnings("unused")
+  @SuppressWarnings({"unused", "null"})
   private static void unusedTestCompile() {
     FunctionValues f = null;
     double ret = f.doubleVal(2);
@@ -231,7 +202,7 @@ public class JavascriptCompiler {
       Tree antlrTree = getAntlrComputedExpressionTree();
       
       beginCompile();
-      recursiveCompile(antlrTree, ComputedType.DOUBLE);
+      recursiveCompile(antlrTree, Type.DOUBLE_TYPE);
       endCompile();
       
       Class<? extends Expression> evaluatorClass = new Loader(parent)
@@ -251,8 +222,7 @@ public class JavascriptCompiler {
     
     GeneratorAdapter constructor = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EXPRESSION_CTOR, null, null, classWriter);
     constructor.loadThis();
-    constructor.loadArg(0);
-    constructor.loadArg(1);
+    constructor.loadArgs();
     constructor.invokeConstructor(EXPRESSION_TYPE, EXPRESSION_CTOR);
     constructor.returnValue();
     constructor.endMethod();
@@ -260,7 +230,7 @@ public class JavascriptCompiler {
     methodVisitor = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EVALUATE_METHOD, null, null, classWriter);
   }
   
-  private void recursiveCompile(Tree current, ComputedType expected) {
+  private void recursiveCompile(Tree current, Type expected) {
     int type = current.getType();
     String text = current.getText();
     
@@ -282,13 +252,13 @@ public class JavascriptCompiler {
         }
         
         for (int argument = 1; argument <= arguments; ++argument) {
-          recursiveCompile(current.getChild(argument), ComputedType.DOUBLE);
+          recursiveCompile(current.getChild(argument), Type.DOUBLE_TYPE);
         }
         
         methodVisitor.invokeStatic(Type.getType(method.getDeclaringClass()),
           org.objectweb.asm.commons.Method.getMethod(method));
         
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.ID:
         int index;
@@ -300,138 +270,123 @@ public class JavascriptCompiler {
           externalsMap.put(text, index);
         }
         
-        methodVisitor.visitVarInsn(ALOAD, 2);
+        methodVisitor.loadArg(1);
         methodVisitor.push(index);
-        methodVisitor.visitInsn(AALOAD);
+        methodVisitor.arrayLoad(FUNCTION_VALUES_TYPE);
         methodVisitor.visitVarInsn(ILOAD, 1);
         methodVisitor.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
         
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.HEX:
         long hex = Long.parseLong(text.substring(2), 16);
         
-        if (expected == ComputedType.INT) {
-          methodVisitor.visitLdcInsn((int)hex);
-        } else if (expected == ComputedType.LONG) {
-          methodVisitor.visitLdcInsn(hex);
+        if (expected == Type.INT_TYPE) {
+          methodVisitor.push((int)hex);
+        } else if (expected == Type.LONG_TYPE) {
+          methodVisitor.push(hex);
         } else {
-          methodVisitor.visitLdcInsn((double)hex);
+          methodVisitor.push((double)hex);
         }
         break;
       case JavascriptParser.OCTAL:
         long octal = Long.parseLong(text.substring(1), 8);
         
-        if (expected == ComputedType.INT) {
-          methodVisitor.visitLdcInsn((int)octal);
-        } else if (expected == ComputedType.LONG) {
-          methodVisitor.visitLdcInsn(octal);
+        if (expected == Type.INT_TYPE) {
+          methodVisitor.push((int)octal);
+        } else if (expected == Type.LONG_TYPE) {
+          methodVisitor.push(octal);
         } else {
-          methodVisitor.visitLdcInsn((double)octal);
+          methodVisitor.push((double)octal);
         }
         break;
       case JavascriptParser.DECIMAL:
         double decimal = Double.parseDouble(text);
-        methodVisitor.visitLdcInsn(decimal);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.push(decimal);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_NEGATE:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DNEG);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_ADD:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DADD);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_SUBTRACT:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DSUB);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_MULTIPLY:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(Opcodes.DMUL);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_DIVIDE:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DDIV);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_MODULO:
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DREM);
-        
-        typeCompile(expected, ComputedType.DOUBLE);
+        methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_BIT_SHL:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitInsn(LSHL);
-        
-        typeCompile(expected, ComputedType.LONG);
+        methodVisitor.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_BIT_SHR:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitInsn(LSHR);
-        
-        typeCompile(expected, ComputedType.LONG);
+        methodVisitor.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_BIT_SHU:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitInsn(LUSHR);
-        
-        typeCompile(expected, ComputedType.LONG);
+        methodVisitor.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_BIT_AND:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.LONG);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
         methodVisitor.visitInsn(LAND);
-        
-        typeCompile(expected, ComputedType.LONG);
+        methodVisitor.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_BIT_OR:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.LONG);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
         methodVisitor.visitInsn(LOR);
-        
-        typeCompile(expected, ComputedType.LONG);            
+        methodVisitor.cast(Type.LONG_TYPE, expected);            
         break;
       case JavascriptParser.AT_BIT_XOR:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
-        recursiveCompile(current.getChild(1), ComputedType.LONG);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
+        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
         methodVisitor.visitInsn(LXOR);
-        
-        typeCompile(expected, ComputedType.LONG);            
+        methodVisitor.cast(Type.LONG_TYPE, expected);            
         break;
       case JavascriptParser.AT_BIT_NOT:
-        recursiveCompile(current.getChild(0), ComputedType.LONG);
+        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
         methodVisitor.visitLdcInsn(new Long(-1));
         methodVisitor.visitInsn(LXOR);
-        
-        typeCompile(expected, ComputedType.LONG);
+        methodVisitor.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_COMP_EQ:
         Label labelEqTrue = new Label();
         Label labelEqReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFEQ, labelEqTrue);
@@ -445,8 +400,8 @@ public class JavascriptCompiler {
         Label labelNeqTrue = new Label();
         Label labelNeqReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFNE, labelNeqTrue);
@@ -460,8 +415,8 @@ public class JavascriptCompiler {
         Label labelLtTrue = new Label();
         Label labelLtReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPG);
         
         methodVisitor.visitJumpInsn(IFLT, labelLtTrue);
@@ -475,8 +430,8 @@ public class JavascriptCompiler {
         Label labelGtTrue = new Label();
         Label labelGtReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFGT, labelGtTrue);
@@ -490,8 +445,8 @@ public class JavascriptCompiler {
         Label labelLteTrue = new Label();
         Label labelLteReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPG);
         
         methodVisitor.visitJumpInsn(IFLE, labelLteTrue);
@@ -505,8 +460,8 @@ public class JavascriptCompiler {
         Label labelGteTrue = new Label();
         Label labelGteReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.DOUBLE);
-        recursiveCompile(current.getChild(1), ComputedType.DOUBLE);
+        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFGE, labelGteTrue);
@@ -520,7 +475,7 @@ public class JavascriptCompiler {
         Label labelNotTrue = new Label();
         Label labelNotReturn = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, labelNotTrue);
         truthCompile(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelNotReturn);
@@ -532,9 +487,9 @@ public class JavascriptCompiler {
         Label andFalse = new Label();
         Label andEnd = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, andFalse);
-        recursiveCompile(current.getChild(1), ComputedType.INT);
+        recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, andFalse);
         truthCompile(expected, true);
         methodVisitor.visitJumpInsn(GOTO, andEnd);
@@ -546,9 +501,9 @@ public class JavascriptCompiler {
         Label orTrue = new Label();
         Label orEnd = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFNE, orTrue);
-        recursiveCompile(current.getChild(1), ComputedType.INT);
+        recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFNE, orTrue);
         truthCompile(expected, false);
         methodVisitor.visitJumpInsn(GOTO, orEnd);
@@ -560,7 +515,7 @@ public class JavascriptCompiler {
         Label condFalse = new Label();
         Label condEnd = new Label();
         
-        recursiveCompile(current.getChild(0), ComputedType.INT);
+        recursiveCompile(current.getChild(0), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, condFalse);
         recursiveCompile(current.getChild(1), expected);
         methodVisitor.visitJumpInsn(GOTO, condEnd);
@@ -573,47 +528,15 @@ public class JavascriptCompiler {
     }
   }
   
-  private void typeCompile(ComputedType expected, ComputedType actual) {
-    if (expected == actual) {
-      return;
-    }
-    
-    switch (expected) {
-      case INT:
-        if (actual == ComputedType.LONG) {
-          methodVisitor.visitInsn(L2I);
-        } else {
-          methodVisitor.visitInsn(D2I);
-        }
-        break;
-      case LONG:
-        if (actual == ComputedType.INT) {
-          methodVisitor.visitInsn(I2L);
-        } else {
-          methodVisitor.visitInsn(D2L);
-        }
-        break;
-      default:
-        if (actual == ComputedType.INT) {
-          methodVisitor.visitInsn(I2D);
-        } else {
-          methodVisitor.visitInsn(L2D);
-        }
-        break;
-    }
-  }
-  
-  private void truthCompile(ComputedType expected, boolean truth) {
-    switch (expected) {
-      case INT:
-        methodVisitor.visitInsn(truth ? ICONST_1 : ICONST_0);
-        break;
-      case LONG:
-        methodVisitor.visitInsn(truth ? LCONST_1 : LCONST_0);
-        break;
-      default:
-        methodVisitor.visitInsn(truth ? DCONST_1 : DCONST_0);
-        break;
+  private void truthCompile(Type expected, boolean truth) {
+    if (expected == Type.INT_TYPE) {
+        methodVisitor.push(truth);
+    } else if (expected == Type.LONG_TYPE) {
+        methodVisitor.push((long) (truth ? 1 : 0));
+    } else if (expected == Type.DOUBLE_TYPE) {
+        methodVisitor.push(truth ? 1. : 0.);
+    } else {
+      throw new IllegalStateException("Invalid expected type");
     }
   }
   
