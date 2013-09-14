@@ -715,6 +715,9 @@ public class JavascriptCompiler {
     if (!Modifier.isPublic(method.getModifiers())) {
       throw new IllegalArgumentException(method + " is not public.");
     }
+    if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+      throw new IllegalArgumentException(method.getDeclaringClass().getName() + " is not public.");
+    }
     for (Class<?> clazz : method.getParameterTypes()) {
       if (!clazz.equals(double.class)) {
         throw new IllegalArgumentException(method + " must take only double parameters");

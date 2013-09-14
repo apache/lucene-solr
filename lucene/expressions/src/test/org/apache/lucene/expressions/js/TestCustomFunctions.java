@@ -141,4 +141,19 @@ public class TestCustomFunctions extends LuceneTestCase {
       assertTrue(e.getMessage().contains("is not public"));
     }
   }
+  
+  static class NestedNotPublic {
+    public static double method() { return 0; }
+  }
+  
+  /** wrong class modifiers: class containing method is not public */
+  public void testWrongNestedNotPublic() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", NestedNotPublic.class.getMethod("method"));
+    try {
+      JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("is not public"));
+    }
+  }
 }
