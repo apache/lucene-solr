@@ -1,0 +1,88 @@
+package org.apache.lucene.expressions.js;
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.util.LuceneTestCase;
+
+/** Tests customing the function map */
+public class TestCustomFunctions extends LuceneTestCase {
+  private static double DELTA = 0.0000001;
+  
+  /** empty list of methods */
+  public void testEmpty() throws Exception {
+    Map<String,Method> functions = Collections.emptyMap();
+    try {
+      JavascriptCompiler.compile("sqrt(20)", functions);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("Unrecognized method"));
+    }
+  }
+  
+  /** using the default map explicitly */
+  public void testDefaultList() throws Exception {
+    Map<String,Method> functions = JavascriptCompiler.DEFAULT_FUNCTIONS;
+    Expression expr = JavascriptCompiler.compile("sqrt(20)", functions);
+    assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
+  }
+  
+  public static double zeroArgMethod() { return 5; }
+  
+  /** tests a method with no arguments */
+  public void testNoArgMethod() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("zeroArgMethod"));
+    Expression expr = JavascriptCompiler.compile("foo()", functions);
+    assertEquals(5, expr.evaluate(0, null), DELTA);
+  }
+  
+  public static double oneArgMethod(double arg1) { return 3 + arg1; }
+  
+  /** tests a method with one arguments */
+  public void testOneArgMethod() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("oneArgMethod", double.class));
+    Expression expr = JavascriptCompiler.compile("foo(3)", functions);
+    assertEquals(6, expr.evaluate(0, null), DELTA);
+  }
+  
+  public static double threeArgMethod(double arg1, double arg2, double arg3) { return arg1 + arg2 + arg3; }
+  
+  /** tests a method with three arguments */
+  public void testThreeArgMethod() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("threeArgMethod", double.class, double.class, double.class));
+    Expression expr = JavascriptCompiler.compile("foo(3, 4, 5)", functions);
+    assertEquals(12, expr.evaluate(0, null), DELTA);
+  }
+  
+  /** tests a map with 2 functions */
+  public void testTwoMethods() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", getClass().getMethod("zeroArgMethod"));
+    functions.put("bar", getClass().getMethod("oneArgMethod", double.class));
+    Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions);
+    assertEquals(11, expr.evaluate(0, null), DELTA);
+  }
+}
