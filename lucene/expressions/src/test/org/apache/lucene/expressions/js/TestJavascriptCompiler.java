@@ -43,4 +43,20 @@ public class TestJavascriptCompiler extends LuceneTestCase {
       // expected exception
     }
   }
+  
+  public void testWrongArity() throws Exception {
+    try {
+      JavascriptCompiler.compile("tan()");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("arguments for method call"));
+    }
+    
+    try {
+      JavascriptCompiler.compile("tan(1, 1)");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("arguments for method call"));
+    }
+  }
 }
