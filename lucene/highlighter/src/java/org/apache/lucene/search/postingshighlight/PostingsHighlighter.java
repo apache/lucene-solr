@@ -327,7 +327,7 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,Object[]> highlightFieldsAsObjects(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
+  protected Map<String,Object[]> highlightFieldsAsObjects(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
     if (fieldsIn.length < 1) {
       throw new IllegalArgumentException("fieldsIn must not be empty");
     }
