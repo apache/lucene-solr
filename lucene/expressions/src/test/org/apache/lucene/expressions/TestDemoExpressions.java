@@ -110,4 +110,36 @@ public class  TestDemoExpressions extends LuceneTestCase {
       assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
     }
   }
+  
+  /** tests huge amounts of variables in the expression */
+  public void testLotsOfBindings() throws Exception {
+    doTestLotsOfBindings(Byte.MAX_VALUE-1);
+    doTestLotsOfBindings(Byte.MAX_VALUE);
+    doTestLotsOfBindings(Byte.MAX_VALUE+1);
+    // TODO: ideally we'd test > Short.MAX_VALUE too, but compilation is currently recursive.
+    // so if we want to test such huge expressions, we need to instead change parser to use an explicit Stack
+  }
+  
+  private void doTestLotsOfBindings(int n) throws Exception {
+    SimpleBindings bindings = new SimpleBindings();    
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < n; i++) {
+      if (i > 0) {
+        sb.append("+");
+      }
+      sb.append("x" + i);
+      bindings.add(new SortField("x" + i, SortField.Type.SCORE));
+    }
+    
+    Expression expr = JavascriptCompiler.compile(sb.toString());
+    Sort sort = new Sort(expr.getSortField(bindings, true));
+    Query query = new TermQuery(new Term("body", "contents"));
+    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    for (int i = 0; i < 3; i++) {
+      FieldDoc d = (FieldDoc) td.scoreDocs[i];
+      float expected = n*d.score;
+      float actual = ((Double)d.fields[0]).floatValue();
+      assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
+    }
+  }
 }
