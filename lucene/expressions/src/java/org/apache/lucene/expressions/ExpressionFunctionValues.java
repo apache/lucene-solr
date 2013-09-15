@@ -53,12 +53,7 @@ class ExpressionFunctionValues extends FunctionValues {
   }
   
   @Override
-  public String toString(int document) {
-    if (currentDocument != document) {
-      currentDocument = document;
-      currentValue = expression.evaluate(document, functionValues);
-    }
-    
-    return "ExpressionFunctionValues(" + document + ": " + currentValue + ")";
+  public String toString(int document) {    
+    return "ExpressionFunctionValues(" + document + ": " + objectVal(document) + ")";
   }
 }

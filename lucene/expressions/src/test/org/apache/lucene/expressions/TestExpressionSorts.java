@@ -104,7 +104,7 @@ public class TestExpressionSorts extends LuceneTestCase {
       bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
       bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
       assertQuery(bq, null);
-      // force out of order
+      // force in order
       bq.add(new TermQuery(new Term("english", "two")), BooleanClause.Occur.SHOULD);
       bq.setMinimumNumberShouldMatch(2);
       assertQuery(bq, null);

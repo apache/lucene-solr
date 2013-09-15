@@ -126,19 +126,19 @@ public class TestSearchAfter extends LuceneTestCase {
   }
 
   void assertQuery(Query query, Filter filter, Sort sort) throws Exception {
-    int maxDoc = searcher.getIndexReader().maxDoc();
+    int size = _TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc());
     TopDocs all;
-    int pageSize = _TestUtil.nextInt(random(), 1, maxDoc*2);
+    int pageSize = _TestUtil.nextInt(random(), 1, size*2);
     if (VERBOSE) {
       System.out.println("\nassertQuery: query=" + query + " filter=" + filter + " sort=" + sort + " pageSize=" + pageSize);
     }
     final boolean doMaxScore = random().nextBoolean();
     if (sort == null) {
-      all = searcher.search(query, filter, maxDoc);
+      all = searcher.search(query, filter, size);
     } else if (sort == Sort.RELEVANCE) {
-      all = searcher.search(query, filter, maxDoc, sort, true, doMaxScore);
+      all = searcher.search(query, filter, size, sort, true, doMaxScore);
     } else {
-      all = searcher.search(query, filter, maxDoc, sort);
+      all = searcher.search(query, filter, size, sort);
     }
     if (VERBOSE) {
       System.out.println("  all.totalHits=" + all.totalHits);
