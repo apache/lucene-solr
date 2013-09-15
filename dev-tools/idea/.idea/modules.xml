@@ -23,6 +23,7 @@
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/test/codecs-tests.iml" />
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/resources/codecs-resources.iml" />
       <module filepath="$PROJECT_DIR$/lucene/demo/demo.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/expressions/expressions.iml" />
       <module filepath="$PROJECT_DIR$/lucene/facet/facet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
