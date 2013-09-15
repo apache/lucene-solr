@@ -17,6 +17,8 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -155,6 +157,58 @@ public class TestCustomFunctions extends LuceneTestCase {
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("is not public"));
+    }
+  }
+  
+  /** hack to load this test a second time in a different classLoader */
+  static class Loader extends ClassLoader {
+    Loader(ClassLoader parent) {
+      super(parent);
+    }
+
+    public Class<?> loadFromParentResource(String className) throws Exception {
+      final ByteArrayOutputStream byteCode = new ByteArrayOutputStream();
+      try (InputStream in = getParent().getResourceAsStream(className.replace('.', '/') + ".class")) {
+        final byte[] buf = new byte[1024];
+        int read;
+        do {
+          read = in.read(buf);
+          if (read > 0) byteCode.write(buf, 0, read);
+        } while (read > 0);
+      }
+      final byte[] bc = byteCode.toByteArray();
+      return defineClass(className, bc, 0, bc.length);
+    }
+  }
+  
+  /** uses this test with a different classloader and tries to
+   * register it using the default classloader, which should fail */
+  public void testClassLoader() throws Exception {
+    Loader child = new Loader(this.getClass().getClassLoader());
+    Class<?> thisInDifferentLoader = child.loadFromParentResource(getClass().getName());
+    Map<String,Method> functions = Collections.singletonMap("zeroArgMethod", thisInDifferentLoader.getMethod("zeroArgMethod"));
+    
+    // use our classloader, not the foreign one, which should fail!
+    try {
+      JavascriptCompiler.compile("zeroArgMethod()", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
+    }
+    
+    // this should pass:
+    JavascriptCompiler.compile("zeroArgMethod()", functions, child);
+    
+    // mix foreign and default functions
+    Map<String,Method> mixedFunctions = new HashMap<>(JavascriptCompiler.DEFAULT_FUNCTIONS);
+    mixedFunctions.putAll(functions);
+    JavascriptCompiler.compile("zeroArgMethod()", mixedFunctions, child);
+    JavascriptCompiler.compile("sqrt(20)", mixedFunctions, child);
+    try {
+      JavascriptCompiler.compile("zeroArgMethod()", functions, getClass().getClassLoader());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
     }
   }
 }

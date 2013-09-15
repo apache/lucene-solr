@@ -87,7 +87,7 @@ public class JavascriptCompiler {
     }
 
     public Class<? extends Expression> define(String className, byte[] bytecode) {
-      return super.defineClass(className, bytecode, 0, bytecode.length).asSubclass(Expression.class);
+      return defineClass(className, bytecode, 0, bytecode.length).asSubclass(Expression.class);
     }
   }
   
