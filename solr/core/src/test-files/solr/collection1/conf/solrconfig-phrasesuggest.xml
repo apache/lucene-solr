@@ -65,6 +65,24 @@
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
+  <!-- AnalyzingInfixLookup suggest component (default)-->
+  <searchComponent class="solr.SpellCheckComponent" name="infix_suggest_analyzing">
+    <lst name="spellchecker">
+      <str name="name">infix_suggest_analyzing</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <str name="suggestAnalyzerFieldType">text</str>
+      
+      <str name="sourceLocation">analyzingInfixSuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+
   <!-- FuzzyLookup suggest component (default)-->
   <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing">
     <lst name="spellchecker">
@@ -183,7 +201,20 @@
     </arr>
   </requestHandler>
   
-  <!--  Fuzzy analyzing handler with 1 max edit -->
+  <!--  Infix analyzing handler (default) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/infix_suggest_analyzing">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">infix_suggest_analyzing</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>infix_suggest_analyzing</str>
+    </arr>
+  </requestHandler>
+
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing">
     <lst name="defaults">
       <str name="spellcheck">true</str>
