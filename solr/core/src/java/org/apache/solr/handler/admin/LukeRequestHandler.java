@@ -555,6 +555,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
+    indexInfo.add("indexHeapUsageBytes", getIndexHeapUsed(reader));
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
@@ -567,6 +568,21 @@ public class LukeRequestHandler extends RequestHandlerBase
       indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }
     return indexInfo;
+  }
+
+  /** Returns the sum of RAM bytes used by each segment */
+  private static long getIndexHeapUsed(DirectoryReader reader) {
+    long indexHeapRamBytesUsed = 0;
+    for(AtomicReaderContext atomicReaderContext : reader.leaves()) {
+      AtomicReader atomicReader = atomicReaderContext.reader();
+      if (atomicReader instanceof SegmentReader) {
+        indexHeapRamBytesUsed += ((SegmentReader) atomicReader).ramBytesUsed();
+      } else {
+        // Not supported for any reader that is not a SegmentReader
+        return -1;
+      }
+    }
+    return indexHeapRamBytesUsed;
   }
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
