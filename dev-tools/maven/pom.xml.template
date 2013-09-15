@@ -266,6 +266,32 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr-runtime</artifactId>
+        <version>3.5</version>
+        <!-- these are dependencies to compile antlr-runtime itself -->
+        <exclusions>
+          <exclusion>
+            <groupId>antlr</groupId>
+            <artifactId>antlr</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.antlr</groupId>
+            <artifactId>stringtemplate</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>4.1</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.ant</groupId>
         <artifactId>ant</artifactId>
         <version>1.8.2</version>
