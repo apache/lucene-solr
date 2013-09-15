@@ -17,8 +17,6 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +24,10 @@ import java.util.Map;
 
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.util.LuceneTestCase;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 /** Tests customing the function map */
 public class TestCustomFunctions extends LuceneTestCase {
@@ -160,23 +162,33 @@ public class TestCustomFunctions extends LuceneTestCase {
     }
   }
   
-  /** hack to load this test a second time in a different classLoader */
-  static class Loader extends ClassLoader {
+  /** Classloader that can be used to create a fake static class that has one method returning a static var */
+  static class Loader extends ClassLoader implements Opcodes {
     Loader(ClassLoader parent) {
       super(parent);
     }
 
-    public Class<?> loadFromParentResource(String className) throws Exception {
-      final ByteArrayOutputStream byteCode = new ByteArrayOutputStream();
-      try (InputStream in = getParent().getResourceAsStream(className.replace('.', '/') + ".class")) {
-        final byte[] buf = new byte[1024];
-        int read;
-        do {
-          read = in.read(buf);
-          if (read > 0) byteCode.write(buf, 0, read);
-        } while (read > 0);
-      }
-      final byte[] bc = byteCode.toByteArray();
+    public Class<?> createFakeClass() {
+      String className = TestCustomFunctions.class.getName() + "$Foo";
+      ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+      classWriter.visit(Opcodes.V1_5, ACC_PUBLIC | ACC_SUPER | ACC_FINAL | ACC_SYNTHETIC,
+          className.replace('.', '/'), null, Type.getInternalName(Object.class), null);
+      
+      org.objectweb.asm.commons.Method m = org.objectweb.asm.commons.Method.getMethod("void <init>()");
+      GeneratorAdapter constructor = new GeneratorAdapter(ACC_PRIVATE | ACC_SYNTHETIC, m, null, null, classWriter);
+      constructor.loadThis();
+      constructor.loadArgs();
+      constructor.invokeConstructor(Type.getType(Object.class), m);
+      constructor.returnValue();
+      constructor.endMethod();
+      
+      GeneratorAdapter gen = new GeneratorAdapter(ACC_STATIC | ACC_PUBLIC | ACC_SYNTHETIC,
+          org.objectweb.asm.commons.Method.getMethod("double bar()"), null, null, classWriter);
+      gen.push(2.0);
+      gen.returnValue();
+      gen.endMethod();      
+      
+      byte[] bc = classWriter.toByteArray();
       return defineClass(className, bc, 0, bc.length);
     }
   }
@@ -184,31 +196,38 @@ public class TestCustomFunctions extends LuceneTestCase {
   /** uses this test with a different classloader and tries to
    * register it using the default classloader, which should fail */
   public void testClassLoader() throws Exception {
-    Loader child = new Loader(this.getClass().getClassLoader());
-    Class<?> thisInDifferentLoader = child.loadFromParentResource(getClass().getName());
-    Map<String,Method> functions = Collections.singletonMap("zeroArgMethod", thisInDifferentLoader.getMethod("zeroArgMethod"));
+    ClassLoader thisLoader = getClass().getClassLoader();
+    Loader childLoader = new Loader(thisLoader);
+    Class<?> fooClass = childLoader.createFakeClass();
+    
+    Method barMethod = fooClass.getMethod("bar");
+    Map<String,Method> functions = Collections.singletonMap("bar", barMethod);
+    assertNotSame(thisLoader, fooClass.getClassLoader());
+    assertNotSame(thisLoader, barMethod.getDeclaringClass().getClassLoader());
+    
+    // this should pass:
+    Expression expr = JavascriptCompiler.compile("bar()", functions, childLoader);
+    assertEquals(2.0, expr.evaluate(0, null), DELTA);
     
     // use our classloader, not the foreign one, which should fail!
     try {
-      JavascriptCompiler.compile("zeroArgMethod()", functions, getClass().getClassLoader());
+      JavascriptCompiler.compile("bar()", functions, thisLoader);
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
     }
     
-    // this should pass:
-    Expression expr = JavascriptCompiler.compile("zeroArgMethod()", functions, child);
-    assertEquals(5, expr.evaluate(0, null), DELTA);
-    
     // mix foreign and default functions
     Map<String,Method> mixedFunctions = new HashMap<>(JavascriptCompiler.DEFAULT_FUNCTIONS);
     mixedFunctions.putAll(functions);
-    expr = JavascriptCompiler.compile("zeroArgMethod()", mixedFunctions, child);
-    assertEquals(5, expr.evaluate(0, null), DELTA);
-    expr = JavascriptCompiler.compile("sqrt(20)", mixedFunctions, child);
+    expr = JavascriptCompiler.compile("bar()", mixedFunctions, childLoader);
+    assertEquals(2.0, expr.evaluate(0, null), DELTA);
+    expr = JavascriptCompiler.compile("sqrt(20)", mixedFunctions, childLoader);
     assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
+    
+    // use our classloader, not the foreign one, which should fail!
     try {
-      JavascriptCompiler.compile("zeroArgMethod()", functions, getClass().getClassLoader());
+      JavascriptCompiler.compile("bar()", functions, thisLoader);
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));

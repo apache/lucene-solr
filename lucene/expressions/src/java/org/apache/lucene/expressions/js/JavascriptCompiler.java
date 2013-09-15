@@ -16,14 +16,6 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_SUPER;
-import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.V1_7;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
@@ -91,7 +83,7 @@ public class JavascriptCompiler {
     }
   }
   
-  private static final int CLASSFILE_VERSION = V1_7;
+  private static final int CLASSFILE_VERSION = Opcodes.V1_7;
   
   // We use the same class name for all generated classes as they all have their own class loader.
   // The source code is displayed as "source file name" in stack trace.
@@ -211,19 +203,24 @@ public class JavascriptCompiler {
   }
   
   private void beginCompile() {
-    classWriter.visit(CLASSFILE_VERSION, ACC_PUBLIC | ACC_SUPER | ACC_FINAL | ACC_SYNTHETIC, COMPILED_EXPRESSION_INTERNAL,
+    classWriter.visit(CLASSFILE_VERSION,
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+        COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_TYPE.getInternalName(), null);
-    String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ? sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
+    String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ?
+        sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
     
-    GeneratorAdapter constructor = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EXPRESSION_CTOR, null, null, classWriter);
+    GeneratorAdapter constructor = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+        EXPRESSION_CTOR, null, null, classWriter);
     constructor.loadThis();
     constructor.loadArgs();
     constructor.invokeConstructor(EXPRESSION_TYPE, EXPRESSION_CTOR);
     constructor.returnValue();
     constructor.endMethod();
     
-    gen = new GeneratorAdapter(ACC_PUBLIC | ACC_SYNTHETIC, EVALUATE_METHOD, null, null, classWriter);
+    gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+        EVALUATE_METHOD, null, null, classWriter);
   }
   
   private void recursiveCompile(Tree current, Type expected) {
@@ -350,7 +347,7 @@ public class JavascriptCompiler {
         Label labelNotReturn = new Label();
         
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
-        gen.visitJumpInsn(IFEQ, labelNotTrue);
+        gen.visitJumpInsn(Opcodes.IFEQ, labelNotTrue);
         pushBoolean(expected, false);
         gen.goTo(labelNotReturn);
         gen.visitLabel(labelNotTrue);
@@ -362,9 +359,9 @@ public class JavascriptCompiler {
         Label andEnd = new Label();
         
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
-        gen.visitJumpInsn(IFEQ, andFalse);
+        gen.visitJumpInsn(Opcodes.IFEQ, andFalse);
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
-        gen.visitJumpInsn(IFEQ, andFalse);
+        gen.visitJumpInsn(Opcodes.IFEQ, andFalse);
         pushBoolean(expected, true);
         gen.goTo(andEnd);
         gen.visitLabel(andFalse);
@@ -376,9 +373,9 @@ public class JavascriptCompiler {
         Label orEnd = new Label();
         
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
-        gen.visitJumpInsn(IFNE, orTrue);
+        gen.visitJumpInsn(Opcodes.IFNE, orTrue);
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
-        gen.visitJumpInsn(IFNE, orTrue);
+        gen.visitJumpInsn(Opcodes.IFNE, orTrue);
         pushBoolean(expected, false);
         gen.goTo(orEnd);
         gen.visitLabel(orTrue);
@@ -390,7 +387,7 @@ public class JavascriptCompiler {
         Label condEnd = new Label();
         
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
-        gen.visitJumpInsn(IFEQ, condFalse);
+        gen.visitJumpInsn(Opcodes.IFEQ, condFalse);
         recursiveCompile(current.getChild(1), expected);
         gen.goTo(condEnd);
         gen.visitLabel(condFalse);
