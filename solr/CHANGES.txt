@@ -62,6 +62,16 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
+Detailed Change List
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-5237: Add indexHeapUsageBytes to LukeRequestHandler, indicating how much
+  heap memory is being used by the underlying Lucene index structures.
+  (Areek Zillur via Robert Muir)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
