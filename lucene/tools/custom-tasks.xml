@@ -39,11 +39,13 @@
     
     <!-- Some typical snapshot/minimalized JAR suffixes. -->
     <replaceregex pattern="-min$" replace="" flags="gi" />
-    <replaceregex pattern="SNAPSHOT$" replace="" flags="gi" />
+    <replaceregex pattern="SNAPSHOT" replace="" flags="gi" />
 
     <!-- Typical version patterns. -->
     <replaceregex pattern="\.rc[0-9]+" replace="" flags="gi" />
-    <replaceregex pattern="\-(r)?([0-9\-\_\.])+((b(eta)?)|((a(lpha)?))([0-9\-\.])*)?(\-tests)?$" replace="" flags="gi" />
+    <replaceregex pattern="\-(r)?([0-9\-\_\.])+(([a-zA-Z]+)([0-9\-\.])*)?" replace="" flags="gi" />
+    
+    <replaceregex pattern="tests$" replace="-tests" flags="gi" />
 
     <!-- git hashcode pattern: its always 40 chars right? -->
     <replaceregex pattern="\-[a-z0-9]{40,40}$" replace="" flags="gi" />
