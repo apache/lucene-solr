@@ -290,6 +290,12 @@
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
         <version>4.1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
