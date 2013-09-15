@@ -65,6 +65,12 @@ Apache ZooKeeper 3.4.5
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-5167: Add support for AnalyzingInfixSuggester (AnalyzingInfixLookupFactory).
+  (Areek Zillur, Varun Thacker via Robert Muir)
+
 Other Changes
 ----------------------
 
