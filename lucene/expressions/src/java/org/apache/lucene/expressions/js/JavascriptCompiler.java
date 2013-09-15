@@ -20,19 +20,8 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.DADD;
-import static org.objectweb.asm.Opcodes.DDIV;
-import static org.objectweb.asm.Opcodes.DNEG;
-import static org.objectweb.asm.Opcodes.DREM;
-import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.LAND;
-import static org.objectweb.asm.Opcodes.LOR;
-import static org.objectweb.asm.Opcodes.LSHL;
-import static org.objectweb.asm.Opcodes.LSHR;
-import static org.objectweb.asm.Opcodes.LUSHR;
-import static org.objectweb.asm.Opcodes.LXOR;
 import static org.objectweb.asm.Opcodes.V1_7;
 
 import java.io.IOException;
@@ -281,98 +270,65 @@ public class JavascriptCompiler {
         break;
       case JavascriptParser.AT_NEGATE:
         recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        gen.visitInsn(DNEG);
+        gen.visitInsn(Opcodes.DNEG);
         gen.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_ADD:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DADD);
-        gen.cast(Type.DOUBLE_TYPE, expected);
+        pushArith(Opcodes.DADD, current, expected);
         break;
       case JavascriptParser.AT_SUBTRACT:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DSUB);
-        gen.cast(Type.DOUBLE_TYPE, expected);
+        pushArith(Opcodes.DSUB, current, expected);
         break;
       case JavascriptParser.AT_MULTIPLY:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(Opcodes.DMUL);
-        gen.cast(Type.DOUBLE_TYPE, expected);
+        pushArith(Opcodes.DMUL, current, expected);
         break;
       case JavascriptParser.AT_DIVIDE:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DDIV);
-        gen.cast(Type.DOUBLE_TYPE, expected);
+        pushArith(Opcodes.DDIV, current, expected);
         break;
       case JavascriptParser.AT_MODULO:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DREM);
-        gen.cast(Type.DOUBLE_TYPE, expected);
+        pushArith(Opcodes.DREM, current, expected);
         break;
       case JavascriptParser.AT_BIT_SHL:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.INT_TYPE);
-        gen.visitInsn(LSHL);
-        gen.cast(Type.LONG_TYPE, expected);
+        pushShift(Opcodes.LSHL, current, expected);
         break;
       case JavascriptParser.AT_BIT_SHR:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.INT_TYPE);
-        gen.visitInsn(LSHR);
-        gen.cast(Type.LONG_TYPE, expected);
+        pushShift(Opcodes.LSHR, current, expected);
         break;
       case JavascriptParser.AT_BIT_SHU:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.INT_TYPE);
-        gen.visitInsn(LUSHR);
-        gen.cast(Type.LONG_TYPE, expected);
+        pushShift(Opcodes.LUSHR, current, expected);
         break;
       case JavascriptParser.AT_BIT_AND:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
-        gen.visitInsn(LAND);
-        gen.cast(Type.LONG_TYPE, expected);
+        pushBitwise(Opcodes.LAND, current, expected);
         break;
       case JavascriptParser.AT_BIT_OR:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
-        gen.visitInsn(LOR);
-        gen.cast(Type.LONG_TYPE, expected);            
+        pushBitwise(Opcodes.LOR, current, expected);           
         break;
       case JavascriptParser.AT_BIT_XOR:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        recursiveCompile(current.getChild(1), Type.LONG_TYPE);
-        gen.visitInsn(LXOR);
-        gen.cast(Type.LONG_TYPE, expected);            
+        pushBitwise(Opcodes.LXOR, current, expected);           
         break;
       case JavascriptParser.AT_BIT_NOT:
         recursiveCompile(current.getChild(0), Type.LONG_TYPE);
         gen.push(-1L);
-        gen.visitInsn(LXOR);
+        gen.visitInsn(Opcodes.LXOR);
         gen.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_COMP_EQ:
-        compileCompare(GeneratorAdapter.EQ, current, expected);
+        pushCond(GeneratorAdapter.EQ, current, expected);
         break;
       case JavascriptParser.AT_COMP_NEQ:
-        compileCompare(GeneratorAdapter.NE, current, expected);
+        pushCond(GeneratorAdapter.NE, current, expected);
         break;
       case JavascriptParser.AT_COMP_LT:
-        compileCompare(GeneratorAdapter.LT, current, expected);
+        pushCond(GeneratorAdapter.LT, current, expected);
         break;
       case JavascriptParser.AT_COMP_GT:
-        compileCompare(GeneratorAdapter.GT, current, expected);
+        pushCond(GeneratorAdapter.GT, current, expected);
         break;
       case JavascriptParser.AT_COMP_LTE:
-        compileCompare(GeneratorAdapter.LE, current, expected);
+        pushCond(GeneratorAdapter.LE, current, expected);
         break;
       case JavascriptParser.AT_COMP_GTE:
-        compileCompare(GeneratorAdapter.GE, current, expected);
+        pushCond(GeneratorAdapter.GE, current, expected);
         break;
       case JavascriptParser.AT_BOOL_NOT:
         Label labelNotTrue = new Label();
@@ -430,8 +386,27 @@ public class JavascriptCompiler {
         throw new IllegalStateException("Unknown operation specified: (" + current.getText() + ").");
     }
   }
+
+  private void pushArith(int operator, Tree current, Type expected) {
+    pushBinaryOp(operator, current, expected, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE);
+  }
   
-  private void compileCompare(int operator, Tree current, Type expected) {
+  private void pushShift(int operator, Tree current, Type expected) {
+    pushBinaryOp(operator, current, expected, Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE);
+  }
+  
+  private void pushBitwise(int operator, Tree current, Type expected) {
+    pushBinaryOp(operator, current, expected, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+  }
+  
+  private void pushBinaryOp(int operator, Tree current, Type expected, Type arg1, Type arg2, Type returnType) {
+    recursiveCompile(current.getChild(0), arg1);
+    recursiveCompile(current.getChild(1), arg2);
+    gen.visitInsn(operator);
+    gen.cast(returnType, expected);
+  }
+  
+  private void pushCond(int operator, Tree current, Type expected) {
     Label labelTrue = new Label();
     Label labelReturn = new Label();
     
