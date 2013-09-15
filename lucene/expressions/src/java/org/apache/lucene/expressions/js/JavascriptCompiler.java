@@ -73,7 +73,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  */
 public class JavascriptCompiler {
 
-  static class Loader extends ClassLoader {
+  static final class Loader extends ClassLoader {
     Loader(ClassLoader parent) {
       super(parent);
     }
