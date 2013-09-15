@@ -18,10 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,12 +36,12 @@ import org.apache.lucene.util.InfoStream;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
- * deletes are appended to this stream.  We later
- * apply these deletes (resolve them to the actual
+ * deletes and updates are appended to this stream.  We later
+ * apply them (resolve them to the actual
  * docIDs, per segment) when a merge is started
  * (only to the to-be-merged segments).  We
  * also apply to all segments when NRT reader is pulled,
- * commit/close is called, or when too many deletes are
+ * commit/close is called, or when too many deletes or  updates are
  * buffered and must be flushed (by RAM usage or by count).
  *
  * Each packet is assigned a generation, and each flushed or
@@ -48,7 +49,7 @@ import org.apache.lucene.util.InfoStream;
  * track which BufferedDeletes packets to apply to any given
  * segment. */
 
-class BufferedDeletesStream {
+class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
 
   // TODO: maybe linked list?
   private final List<FrozenBufferedDeletes> deletes = new ArrayList<FrozenBufferedDeletes>();
@@ -114,6 +115,7 @@ class BufferedDeletesStream {
   }
 
   public static class ApplyDeletesResult {
+    
     // True if any actual deletes took place:
     public final boolean anyDeletes;
 
@@ -123,10 +125,14 @@ class BufferedDeletesStream {
     // If non-null, contains segments that are 100% deleted
     public final List<SegmentInfoPerCommit> allDeleted;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted) {
+    // True if any actual numeric docvalues updates took place
+    public final boolean anyNumericDVUpdates;
+    
+    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted, boolean anyNumericDVUpdates) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
       this.allDeleted = allDeleted;
+      this.anyNumericDVUpdates = anyNumericDVUpdates;
     }
   }
 
@@ -145,7 +151,7 @@ class BufferedDeletesStream {
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
-      return new ApplyDeletesResult(false, nextGen++, null);
+      return new ApplyDeletesResult(false, nextGen++, null, false);
     }
 
     assert checkDeleteStats();
@@ -154,7 +160,7 @@ class BufferedDeletesStream {
       if (infoStream.isEnabled("BD")) {
         infoStream.message("BD", "applyDeletes: no deletes; skipping");
       }
-      return new ApplyDeletesResult(false, nextGen++, null);
+      return new ApplyDeletesResult(false, nextGen++, null, false);
     }
 
     if (infoStream.isEnabled("BD")) {
@@ -169,6 +175,7 @@ class BufferedDeletesStream {
 
     CoalescedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
+    boolean anyNewUpdates = false;
 
     int infosIDX = infos2.size()-1;
     int delIDX = deletes.size()-1;
@@ -183,7 +190,7 @@ class BufferedDeletesStream {
       final long segGen = info.getBufferedDeletesGen();
 
       if (packet != null && segGen < packet.delGen()) {
-        //System.out.println("  coalesce");
+//        System.out.println("  coalesce");
         if (coalescedDeletes == null) {
           coalescedDeletes = new CoalescedDeletes();
         }
@@ -206,7 +213,7 @@ class BufferedDeletesStream {
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        final SegmentReader reader = rld.getReader(IOContext.READ);
+        final SegmentReader reader = rld.getReader(false, IOContext.READ); // don't apply deletes, as we're about to add more!
         int delCount = 0;
         final boolean segAllDeletes;
         try {
@@ -214,11 +221,13 @@ class BufferedDeletesStream {
             //System.out.println("    del coalesced");
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
+            anyNewUpdates |= applyNumericDocValueUpdates(coalescedDeletes.numericDVUpdates, rld, reader);
           }
           //System.out.println("    del exact");
           // Don't delete by Term here; DocumentsWriterPerThread
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), rld, reader);
+          anyNewUpdates |= applyNumericDocValueUpdates(Arrays.asList(packet.updates), rld, reader); 
           final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
           assert fullDelCount <= rld.info.info.getDocCount();
           segAllDeletes = fullDelCount == rld.info.info.getDocCount();
@@ -259,12 +268,13 @@ class BufferedDeletesStream {
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
           final ReadersAndLiveDocs rld = readerPool.get(info, true);
-          final SegmentReader reader = rld.getReader(IOContext.READ);
+          final SegmentReader reader = rld.getReader(false, IOContext.READ); // don't apply deletes, as we're about to add more!
           int delCount = 0;
           final boolean segAllDeletes;
           try {
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
+            anyNewUpdates |= applyNumericDocValueUpdates(coalescedDeletes.numericDVUpdates, rld, reader);
             final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
             assert fullDelCount <= rld.info.info.getDocCount();
             segAllDeletes = fullDelCount == rld.info.info.getDocCount();
@@ -297,7 +307,7 @@ class BufferedDeletesStream {
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
 
-    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
+    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted, anyNewUpdates);
   }
 
   synchronized long getNextGen() {
@@ -402,15 +412,15 @@ class BufferedDeletesStream {
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }   
+            if (!any) {
+              rld.initWritableLiveDocs();
+              any = true;
+            }
             // NOTE: there is no limit check on the docID
             // when deleting by Term (unlike by Query)
             // because on flush we apply all Term deletes to
             // each segment.  So all Term deleting here is
             // against prior segments:
-            if (!any) {
-              rld.initWritableLiveDocs();
-              any = true;
-            }
             if (rld.delete(docID)) {
               delCount++;
             }
@@ -420,6 +430,65 @@ class BufferedDeletesStream {
     }
 
     return delCount;
+  }
+
+  // NumericDocValue Updates
+  private synchronized boolean applyNumericDocValueUpdates(Iterable<NumericUpdate> updates, ReadersAndLiveDocs rld, SegmentReader reader) throws IOException {
+    Fields fields = reader.fields();
+    if (fields == null) {
+      // This reader has no postings
+      return false;
+    }
+
+    TermsEnum termsEnum = null;
+    DocsEnum docs = null;
+    boolean any = false;
+    //System.out.println(Thread.currentThread().getName() + " numericDVUpdate reader=" + reader);
+    for (NumericUpdate update : updates) {
+      Term term = update.term;
+      int limit = update.docIDUpto;
+      
+      // TODO: we rely on the map being ordered by updates order, not by terms order.
+      // we need that so that if two terms update the same document, the one that came
+      // last wins.
+      // alternatively, we could keep a map from doc->lastUpto and apply the update
+      // in terms order, where an update is applied only if its docIDUpto is greater
+      // than lastUpto.
+      // but, since app can send two updates, in order, which will have same upto, we
+      // cannot rely solely on docIDUpto, and need to have our own gen, which is
+      // incremented with every update.
+      
+      // Unlike applyTermDeletes, we visit terms in update order, not term order.
+      // Therefore we cannot assume we can only seek forwards and must ask for a
+      // new TermsEnum
+      Terms terms = fields.terms(term.field);
+      if (terms == null) { // no terms in that field
+        termsEnum = null;
+        continue;
+      }
+      
+      termsEnum = terms.iterator(termsEnum);
+
+      // System.out.println("  term=" + term);
+
+      if (termsEnum.seekExact(term.bytes())) {
+        // we don't need term frequencies for this
+        DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, DocsEnum.FLAG_NONE);
+      
+        //System.out.println("BDS: got docsEnum=" + docsEnum);
+
+        int doc;
+        while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          //System.out.println(Thread.currentThread().getName() + " numericDVUpdate term=" + term + " doc=" + docID);
+          if (doc >= limit) {
+            break; // no more docs that can be updated for this term
+          }
+          rld.updateNumericDocValue(update.field, doc, update.value);
+          any = true;
+        }
+      }
+    }
+    return any;
   }
 
   public static class QueryAndLimit {

@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -35,14 +36,13 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexOutput;
-import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * A collection of segmentInfo objects with methods for operating on
@@ -111,10 +111,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCommit> {
 
-  /**
-   * The file format version for the segments_N codec header
-   */
+  /** The file format version for the segments_N codec header, up to 4.4. */
   public static final int VERSION_40 = 0;
+
+  /** The file format version for the segments_N codec header, since 4.5+. */
+  public static final int VERSION_45 = 1;
 
   /** Used for the segments.gen file only!
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
@@ -319,14 +320,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_45);
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
       if (numSegments < 0) {
         throw new CorruptIndexException("invalid segment count: " + numSegments + " (resource: " + input + ")");
       }
-      for(int seg=0;seg<numSegments;seg++) {
+      for (int seg = 0; seg < numSegments; seg++) {
         String segName = input.readString();
         Codec codec = Codec.forName(input.readString());
         //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
@@ -337,7 +338,19 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         if (delCount < 0 || delCount > info.getDocCount()) {
           throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
         }
-        add(new SegmentInfoPerCommit(info, delCount, delGen));
+        long docValuesGen = -1;
+        if (format >= VERSION_45) {
+          docValuesGen = input.readLong();
+        }
+        SegmentInfoPerCommit siPerCommit = new SegmentInfoPerCommit(info, delCount, delGen, docValuesGen);
+        if (format >= VERSION_45) {
+          int numUpdates = input.readInt();
+          for (int i = 0; i < numUpdates; i++) {
+            siPerCommit.setDocValuesGen(input.readInt(), input.readLong());
+          }
+          siPerCommit.addUpdatesFiles(input.readStringSet());
+        }
+        add(siPerCommit);
       }
       userData = input.readStringStringMap();
 
@@ -395,7 +408,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
     try {
       segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, IOContext.DEFAULT));
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_45);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
@@ -405,6 +418,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
         segnOutput.writeInt(siPerCommit.getDelCount());
+        segnOutput.writeLong(siPerCommit.getDocValuesGen());
+        Map<Integer,Long> docValuesUpdatesGen = siPerCommit.getFieldDocValuesGens();
+        segnOutput.writeInt(docValuesUpdatesGen.size());
+        for (Entry<Integer,Long> e : docValuesUpdatesGen.entrySet()) {
+          segnOutput.writeInt(e.getKey());
+          segnOutput.writeLong(e.getValue());
+        }
+        segnOutput.writeStringSet(siPerCommit.getUpdatesFiles());
         assert si.dir == directory;
 
         assert siPerCommit.getDelCount() <= si.getDocCount();
@@ -815,6 +836,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         files.addAll(info.files());
       }
     }
+    
     return files;
   }
 

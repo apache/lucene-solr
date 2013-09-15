@@ -19,25 +19,26 @@ package org.apache.lucene.index;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/* Holds buffered deletes, by docID, term or query for a
+/* Holds buffered deletes and updates, by docID, term or query for a
  * single segment. This is used to hold buffered pending
- * deletes against the to-be-flushed segment.  Once the
- * deletes are pushed (on flush in DocumentsWriter), these
- * deletes are converted to a FrozenDeletes instance. */
+ * deletes and updates against the to-be-flushed segment.  Once the
+ * deletes and updates are pushed (on flush in DocumentsWriter), they
+ * are converted to a FrozenDeletes instance. */
 
 // NOTE: instances of this class are accessed either via a private
 // instance on DocumentWriterPerThread, or via sync'd code by
 // DocumentsWriterDeleteQueue
 
-class BufferedDeletes {
+class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
      load factor (say 2 * POINTER).  Entry is object w/ Term
@@ -63,10 +64,44 @@ class BufferedDeletes {
      undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
   final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
 
+  /* Rough logic: NumericUpdate calculates its actual size,
+   * including the update Term and DV field (String). The 
+   * per-term map holds a reference to the update Term, and
+   * therefore we only account for the object reference and 
+   * map space itself. This is incremented when we first see
+   * an update Term.
+   * LinkedHashMap has an array[Entry] w/ varying load factor 
+   * (say 2*POINTER). Entry is an object w/ Term key, Map val, 
+   * int hash, Entry next, Entry before, Entry after (OBJ_HEADER + 5*POINTER + INT).
+   * Term (key) is counted only as POINTER.
+   * Map (val) is counted as OBJ_HEADER, array[Entry] ref + header, 4*INT, 1*FLOAT,
+   * Set (entrySet) (2*OBJ_HEADER + ARRAY_HEADER + 2*POINTER + 4*INT + FLOAT)
+   */
+  final static int BYTES_PER_NUMERIC_UPDATE_TERM_ENTRY = 
+      9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
+      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
+  
+  /* Rough logic: Incremented when we see another field for an already updated
+   * Term.
+   * HashMap has an array[Entry] w/ varying load
+   * factor (say 2*POINTER). Entry is an object w/ String key, 
+   * NumericUpdate val, int hash, Entry next (OBJ_HEADER + 3*POINTER + INT).
+   * NumericUpdate returns its own size, and therefore isn't accounted for here.
+   */
+  final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  
   final AtomicInteger numTermDeletes = new AtomicInteger();
+  final AtomicInteger numNumericUpdates = new AtomicInteger();
   final Map<Term,Integer> terms = new HashMap<Term,Integer>();
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Integer> docIDs = new ArrayList<Integer>();
+
+  // Map<updateTerm,Map<dvField,NumericUpdate>>
+  // LinkedHashMap because we need to preserve the order of the updates. That
+  // is, if two terms update the same document and same DV field, whoever came
+  // in last should win. LHM guarantees we iterate on the map in insertion
+  // order.
+  final Map<Term,Map<String,NumericUpdate>> numericUpdates = new LinkedHashMap<Term,Map<String,NumericUpdate>>();
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -75,21 +110,17 @@ class BufferedDeletes {
   private final static boolean VERBOSE_DELETES = false;
 
   long gen;
+  
   public BufferedDeletes() {
-    this(new AtomicLong());
-  }
-
-  BufferedDeletes(AtomicLong bytesUsed) {
-    assert bytesUsed != null;
-    this.bytesUsed = bytesUsed;
+    this.bytesUsed = new AtomicLong();
   }
 
   @Override
   public String toString() {
     if (VERBOSE_DELETES) {
       return "gen=" + gen + " numTerms=" + numTermDeletes + ", terms=" + terms
-        + ", queries=" + queries + ", docIDs=" + docIDs + ", bytesUsed="
-        + bytesUsed;
+        + ", queries=" + queries + ", docIDs=" + docIDs + ", numericUpdates=" + numericUpdates
+        + ", bytesUsed=" + bytesUsed;
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
@@ -100,6 +131,9 @@ class BufferedDeletes {
       }
       if (docIDs.size() != 0) {
         s += " " + docIDs.size() + " deleted docIDs";
+      }
+      if (numNumericUpdates.get() != 0) {
+        s += " " + numNumericUpdates.get() + " numeric updates (unique count=" + numericUpdates.size() + ")";
       }
       if (bytesUsed.get() != 0) {
         s += " bytesUsed=" + bytesUsed.get();
@@ -145,20 +179,41 @@ class BufferedDeletes {
     }
   }
  
+  public void addNumericUpdate(NumericUpdate update, int docIDUpto) {
+    Map<String,NumericUpdate> termUpdates = numericUpdates.get(update.term);
+    if (termUpdates == null) {
+      termUpdates = new HashMap<String,NumericUpdate>();
+      numericUpdates.put(update.term, termUpdates);
+      bytesUsed.addAndGet(BYTES_PER_NUMERIC_UPDATE_TERM_ENTRY);
+    }
+    final NumericUpdate current = termUpdates.get(update.field);
+    if (current != null && docIDUpto < current.docIDUpto) {
+      // Only record the new number if it's greater than or equal to the current
+      // one. This is important because if multiple threads are replacing the
+      // same doc at nearly the same time, it's possible that one thread that
+      // got a higher docID is scheduled before the other threads.
+      return;
+    }
+
+    update.docIDUpto = docIDUpto;
+    termUpdates.put(update.field, update);
+    numNumericUpdates.incrementAndGet();
+    if (current == null) {
+      bytesUsed.addAndGet(BYTES_PER_NUMERIC_UPDATE_ENTRY + update.sizeInBytes());
+    }
+  }
+  
   void clear() {
     terms.clear();
     queries.clear();
     docIDs.clear();
+    numericUpdates.clear();
     numTermDeletes.set(0);
+    numNumericUpdates.set(0);
     bytesUsed.set(0);
   }
   
-  void clearDocIDs() {
-    bytesUsed.addAndGet(-docIDs.size()*BYTES_PER_DEL_DOCID);
-    docIDs.clear();
-  }
-  
   boolean any() {
-    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0;
+    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0 || numericUpdates.size() > 0;
   }
 }

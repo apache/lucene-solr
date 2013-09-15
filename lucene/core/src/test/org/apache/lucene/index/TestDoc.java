@@ -239,7 +239,7 @@ public class TestDoc extends LuceneTestCase {
         }
       }
 
-      return new SegmentInfoPerCommit(info, 0, -1L);
+      return new SegmentInfoPerCommit(info, 0, -1L, -1L);
    }
 
 

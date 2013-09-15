@@ -17,9 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.io.IOException;
 import java.text.NumberFormat;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -40,9 +42,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 class DocumentsWriterPerThread {
 
@@ -174,8 +173,9 @@ class DocumentsWriterPerThread {
   final DocConsumer consumer;
   final Counter bytesUsed;
   
-  //Deletes for our still-in-RAM (to be flushed next) segment
-  final BufferedDeletes pendingDeletes;  
+  SegmentWriteState flushState;
+  // Deletes for our still-in-RAM (to be flushed next) segment
+  final BufferedDeletes pendingDeletes;
   private final SegmentInfo segmentInfo;     // Current segment we are working on
   boolean aborting = false;   // True if an abort is pending
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
@@ -467,7 +467,7 @@ class DocumentsWriterPerThread {
       pendingDeletes.terms.clear();
       segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
-      final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L);
+      final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.segmentInfo.getDocCount() - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
@@ -481,7 +481,8 @@ class DocumentsWriterPerThread {
       }
 
       final BufferedDeletes segmentDeletes;
-      if (pendingDeletes.queries.isEmpty()) {
+      if (pendingDeletes.queries.isEmpty() && pendingDeletes.numericUpdates.isEmpty()) {
+        pendingDeletes.clear();
         segmentDeletes = null;
       } else {
         segmentDeletes = pendingDeletes;

@@ -105,11 +105,11 @@ public class MergeState {
 
   }
 
-  private static class NoDelDocMap extends DocMap {
+  private static final class NoDelDocMap extends DocMap {
 
     private final int maxDoc;
 
-    private NoDelDocMap(int maxDoc) {
+    NoDelDocMap(int maxDoc) {
       this.maxDoc = maxDoc;
     }
 

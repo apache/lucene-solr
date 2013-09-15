@@ -158,6 +158,15 @@ final class DocumentsWriter {
     return applyAllDeletes( deleteQueue);
   }
 
+  synchronized void updateNumericDocValue(Term term, String field, Long value) throws IOException {
+    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
+    deleteQueue.addNumericUpdate(new NumericUpdate(term, field, value));
+    flushControl.doOnDelete();
+    if (flushControl.doApplyAllDeletes()) {
+      applyAllDeletes(deleteQueue);
+    }
+  }
+
   DocumentsWriterDeleteQueue currentDeleteSession() {
     return deleteQueue;
   }

@@ -162,18 +162,26 @@ final class StandardDirectoryReader extends DirectoryReader {
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
-          if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()) {
+          if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()
+              && newReaders[i].getSegmentInfo().getDocValuesGen() == infos.info(i).getDocValuesGen()) {
             // No change; this reader will be shared between
             // the old and the new one, so we must incRef
             // it:
             readerShared[i] = true;
             newReaders[i].incRef();
           } else {
+            // there are changes to the reader, either liveDocs or DV updates
             readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
             assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
-            assert infos.info(i).hasDeletions();
-            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core);
+            assert infos.info(i).hasDeletions() || infos.info(i).hasFieldUpdates();
+            if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()) {
+              // only DV updates
+              newReaders[i] = new SegmentReader(infos.info(i), newReaders[i], newReaders[i].getLiveDocs(), newReaders[i].numDocs());
+            } else {
+              // both DV and liveDocs have changed
+              newReaders[i] = new SegmentReader(infos.info(i), newReaders[i]);
+            }
           }
         }
         success = true;

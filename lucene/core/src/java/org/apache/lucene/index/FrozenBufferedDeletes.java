@@ -17,32 +17,38 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
-/** Holds buffered deletes by term or query, once pushed.
- *  Pushed deletes are write-once, so we shift to more
- *  memory efficient data structure to hold them.  We don't
- *  hold docIDs because these are applied on flush. */
-
-class FrozenBufferedDeletes {
+/**
+ * Holds buffered deletes and updates by term or query, once pushed. Pushed
+ * deletes/updates are write-once, so we shift to more memory efficient data
+ * structure to hold them. We don't hold docIDs because these are applied on
+ * flush.
+ */
+class FrozenBufferedDeletes { // TODO (DVU_RENAME) FrozenBufferedUpdates?
 
   /* Query we often undercount (say 24 bytes), plus int. */
   final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + 24;
-
+  
   // Terms, in sorted order:
   final PrefixCodedTerms terms;
   int termCount; // just for debugging
 
-  // Parallel array of deleted query, and the docIDUpto for
-  // each
+  // Parallel array of deleted query, and the docIDUpto for each
   final Query[] queries;
   final int[] queryLimits;
+  
+  // numeric DV update term and their updates
+  final NumericUpdate[] updates;
+  
   final int bytesUsed;
   final int numTermDeletes;
   private long gen = -1; // assigned by BufferedDeletesStream once pushed
@@ -72,7 +78,17 @@ class FrozenBufferedDeletes {
       upto++;
     }
 
-    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY;
+    List<NumericUpdate> allUpdates = new ArrayList<NumericUpdate>();
+    int numericUpdatesSize = 0;
+    for (Map<String,NumericUpdate> fieldUpdates : deletes.numericUpdates.values()) {
+      for (NumericUpdate update : fieldUpdates.values()) {
+        allUpdates.add(update);
+        numericUpdatesSize += update.sizeInBytes();
+      }
+    }
+    updates = allUpdates.toArray(new NumericUpdate[allUpdates.size()]);
+    
+    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY + numericUpdatesSize + updates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     numTermDeletes = deletes.numTermDeletes.get();
   }
   
@@ -140,6 +156,6 @@ class FrozenBufferedDeletes {
   }
   
   boolean any() {
-    return termCount > 0 || queries.length > 0;
+    return termCount > 0 || queries.length > 0 || updates.length > 0;
   }
 }

@@ -223,6 +223,20 @@ public class FieldInfos implements Iterable<FieldInfo> {
         (dvType == null || docValuesType.get(name) == null || dvType == docValuesType.get(name));
     }
 
+    /**
+     * Returns true if the {@code fieldName} exists in the map and is of the
+     * same {@code dvType}.
+     */
+    synchronized boolean contains(String fieldName, DocValuesType dvType) {
+      // used by IndexWriter.updateNumericDocValue
+      if (!nameToNumber.containsKey(fieldName)) {
+        return false;
+      } else {
+        // only return true if the field has the same dvType as the requested one
+        return dvType == docValuesType.get(fieldName);
+      }
+    }
+    
     synchronized void clear() {
       numberToName.clear();
       nameToNumber.clear();

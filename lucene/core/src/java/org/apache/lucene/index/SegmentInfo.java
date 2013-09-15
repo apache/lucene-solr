@@ -119,7 +119,7 @@ public final class SegmentInfo {
   public void setCodec(Codec codec) {
     assert this.codec == null;
     if (codec == null) {
-      throw new IllegalArgumentException("segmentCodecs must be non-null");
+      throw new IllegalArgumentException("codec must be non-null");
     }
     this.codec = codec;
   }
@@ -170,7 +170,6 @@ public final class SegmentInfo {
    *  left off when there are no deletions).</p>
    */
   public String toString(Directory dir, int delCount) {
-
     StringBuilder s = new StringBuilder();
     s.append(name).append('(').append(version == null ? "?" : version).append(')').append(':');
     char cfs = getUseCompoundFile() ? 'c' : 'C';

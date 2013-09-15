@@ -29,19 +29,26 @@ import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 class CoalescedDeletes {
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Iterable<Term>> iterables = new ArrayList<Iterable<Term>>();
-
+  final List<NumericUpdate> numericDVUpdates = new ArrayList<NumericUpdate>();
+  
   @Override
   public String toString() {
     // note: we could add/collect more debugging information
-    return "CoalescedDeletes(termSets=" + iterables.size() + ",queries=" + queries.size() + ")";
+    return "CoalescedDeletes(termSets=" + iterables.size() + ",queries=" + queries.size() + ",numericUpdates=" + numericDVUpdates.size() + ")";
   }
 
   void update(FrozenBufferedDeletes in) {
     iterables.add(in.termsIterable());
 
-    for(int queryIdx=0;queryIdx<in.queries.length;queryIdx++) {
+    for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {
       final Query query = in.queries[queryIdx];
       queries.put(query, BufferedDeletes.MAX_INT);
+    }
+    
+    for (NumericUpdate nu : in.updates) {
+      NumericUpdate clone = new NumericUpdate(nu.term, nu.field, nu.value);
+      clone.docIDUpto = Integer.MAX_VALUE;
+      numericDVUpdates.add(clone);
     }
   }
 

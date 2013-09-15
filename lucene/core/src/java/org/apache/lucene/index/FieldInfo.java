@@ -79,7 +79,7 @@ public final class FieldInfo {
      * Character offsets are encoded alongside the positions. 
      */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-  };
+  }
   
   /**
    * DocValues types.
@@ -110,7 +110,7 @@ public final class FieldInfo {
      * ordinal and by-value.  Values must be <= 32766 bytes.
      */
     SORTED_SET
-  };
+  }
 
   /**
    * Sole Constructor.

@@ -37,7 +37,6 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -121,9 +120,23 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     iw1.commit();
     iw2.commit();
     final Document doc = randomDocument();
-    iw1.addDocument(doc);
-    iw2.addDocument(doc);
+    // NOTE: don't use RIW.addDocument directly, since it sometimes commits
+    // which may trigger a merge, at which case forceMerge may not do anything.
+    // With field updates this is a problem, since the updates can go into the
+    // single segment in the index, and threefore the index won't be sorted.
+    // This hurts the assumption of the test later on, that the index is sorted
+    // by SortingMP.
+    iw1.w.addDocument(doc);
+    iw2.w.addDocument(doc);
 
+    if (defaultCodecSupportsFieldUpdates()) {
+      // update NDV of docs belonging to one term (covers many documents)
+      final long value = random().nextLong();
+      final String term = RandomPicks.randomFrom(random(), terms);
+      iw1.w.updateNumericDocValue(new Term("s", term), "ndv", value);
+      iw2.w.updateNumericDocValue(new Term("s", term), "ndv", value);
+    }
+    
     iw1.forceMerge(1);
     iw2.forceMerge(1);
     iw1.close();
@@ -144,7 +157,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   private static void assertSorted(AtomicReader reader) throws IOException {
     final NumericDocValues ndv = reader.getNumericDocValues("ndv");
     for (int i = 1; i < reader.maxDoc(); ++i) {
-      assertTrue(ndv.get(i-1) <= ndv.get(i));
+      assertTrue("ndv(" + (i-1) + ")=" + ndv.get(i-1) + ",ndv(" + i + ")=" + ndv.get(i), ndv.get(i-1) <= ndv.get(i));
     }
   }
 
@@ -154,6 +167,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
 
     assertSorted(sortedReader1);
     assertSorted(sortedReader2);
+    
     assertReaderEquals("", sortedReader1, sortedReader2);
   }
 
