@@ -21,18 +21,11 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.DADD;
-import static org.objectweb.asm.Opcodes.DCMPG;
-import static org.objectweb.asm.Opcodes.DCMPL;
 import static org.objectweb.asm.Opcodes.DDIV;
 import static org.objectweb.asm.Opcodes.DNEG;
 import static org.objectweb.asm.Opcodes.DREM;
 import static org.objectweb.asm.Opcodes.DSUB;
-import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.IFGE;
-import static org.objectweb.asm.Opcodes.IFGT;
-import static org.objectweb.asm.Opcodes.IFLE;
-import static org.objectweb.asm.Opcodes.IFLT;
 import static org.objectweb.asm.Opcodes.IFNE;
 import static org.objectweb.asm.Opcodes.LAND;
 import static org.objectweb.asm.Opcodes.LOR;
@@ -274,7 +267,6 @@ public class JavascriptCompiler {
         gen.arrayLoad(FUNCTION_VALUES_TYPE);
         gen.loadArg(0);
         gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
-        
         gen.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.HEX:
@@ -360,98 +352,27 @@ public class JavascriptCompiler {
         break;
       case JavascriptParser.AT_BIT_NOT:
         recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        gen.visitLdcInsn(new Long(-1));
+        gen.push(-1L);
         gen.visitInsn(LXOR);
         gen.cast(Type.LONG_TYPE, expected);
         break;
       case JavascriptParser.AT_COMP_EQ:
-        Label labelEqTrue = new Label();
-        Label labelEqReturn = new Label();
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPL);
-        
-        gen.visitJumpInsn(IFEQ, labelEqTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelEqReturn);
-        gen.visitLabel(labelEqTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelEqReturn);
+        compileCompare(GeneratorAdapter.EQ, current, expected);
         break;
       case JavascriptParser.AT_COMP_NEQ:
-        Label labelNeqTrue = new Label();
-        Label labelNeqReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPL);
-        
-        gen.visitJumpInsn(IFNE, labelNeqTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelNeqReturn);
-        gen.visitLabel(labelNeqTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelNeqReturn);
+        compileCompare(GeneratorAdapter.NE, current, expected);
         break;
       case JavascriptParser.AT_COMP_LT:
-        Label labelLtTrue = new Label();
-        Label labelLtReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPG);
-        
-        gen.visitJumpInsn(IFLT, labelLtTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelLtReturn);
-        gen.visitLabel(labelLtTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelLtReturn);
+        compileCompare(GeneratorAdapter.LT, current, expected);
         break;
       case JavascriptParser.AT_COMP_GT:
-        Label labelGtTrue = new Label();
-        Label labelGtReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPL);
-        
-        gen.visitJumpInsn(IFGT, labelGtTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelGtReturn);
-        gen.visitLabel(labelGtTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelGtReturn);
+        compileCompare(GeneratorAdapter.GT, current, expected);
         break;
       case JavascriptParser.AT_COMP_LTE:
-        Label labelLteTrue = new Label();
-        Label labelLteReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPG);
-        
-        gen.visitJumpInsn(IFLE, labelLteTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelLteReturn);
-        gen.visitLabel(labelLteTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelLteReturn);
+        compileCompare(GeneratorAdapter.LE, current, expected);
         break;
       case JavascriptParser.AT_COMP_GTE:
-        Label labelGteTrue = new Label();
-        Label labelGteReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-        gen.visitInsn(DCMPL);
-        
-        gen.visitJumpInsn(IFGE, labelGteTrue);
-        pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelGteReturn);
-        gen.visitLabel(labelGteTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelGteReturn);
+        compileCompare(GeneratorAdapter.GE, current, expected);
         break;
       case JavascriptParser.AT_BOOL_NOT:
         Label labelNotTrue = new Label();
@@ -460,7 +381,7 @@ public class JavascriptCompiler {
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
         gen.visitJumpInsn(IFEQ, labelNotTrue);
         pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, labelNotReturn);
+        gen.goTo(labelNotReturn);
         gen.visitLabel(labelNotTrue);
         pushBoolean(expected, true);
         gen.visitLabel(labelNotReturn);
@@ -474,7 +395,7 @@ public class JavascriptCompiler {
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
         gen.visitJumpInsn(IFEQ, andFalse);
         pushBoolean(expected, true);
-        gen.visitJumpInsn(GOTO, andEnd);
+        gen.goTo(andEnd);
         gen.visitLabel(andFalse);
         pushBoolean(expected, false);
         gen.visitLabel(andEnd);
@@ -488,7 +409,7 @@ public class JavascriptCompiler {
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
         gen.visitJumpInsn(IFNE, orTrue);
         pushBoolean(expected, false);
-        gen.visitJumpInsn(GOTO, orEnd);
+        gen.goTo(orEnd);
         gen.visitLabel(orTrue);
         pushBoolean(expected, true);
         gen.visitLabel(orEnd);
@@ -500,7 +421,7 @@ public class JavascriptCompiler {
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
         gen.visitJumpInsn(IFEQ, condFalse);
         recursiveCompile(current.getChild(1), expected);
-        gen.visitJumpInsn(GOTO, condEnd);
+        gen.goTo(condEnd);
         gen.visitLabel(condFalse);
         recursiveCompile(current.getChild(2), expected);
         gen.visitLabel(condEnd);
@@ -508,6 +429,21 @@ public class JavascriptCompiler {
       default:
         throw new IllegalStateException("Unknown operation specified: (" + current.getText() + ").");
     }
+  }
+  
+  private void compileCompare(int operator, Tree current, Type expected) {
+    Label labelTrue = new Label();
+    Label labelReturn = new Label();
+    
+    recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
+    recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
+    
+    gen.ifCmp(Type.DOUBLE_TYPE, operator, labelTrue);
+    pushBoolean(expected, false);
+    gen.goTo(labelReturn);
+    gen.visitLabel(labelTrue);
+    pushBoolean(expected, true);
+    gen.visitLabel(labelReturn);    
   }
   
   private void pushBoolean(Type expected, boolean truth) {
