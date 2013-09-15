@@ -278,30 +278,13 @@ public class JavascriptCompiler {
         methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.HEX:
-        long hex = Long.parseLong(text.substring(2), 16);
-        
-        if (expected == Type.INT_TYPE) {
-          methodVisitor.push((int)hex);
-        } else if (expected == Type.LONG_TYPE) {
-          methodVisitor.push(hex);
-        } else {
-          methodVisitor.push((double)hex);
-        }
+        pushLong(expected, Long.parseLong(text.substring(2), 16));
         break;
       case JavascriptParser.OCTAL:
-        long octal = Long.parseLong(text.substring(1), 8);
-        
-        if (expected == Type.INT_TYPE) {
-          methodVisitor.push((int)octal);
-        } else if (expected == Type.LONG_TYPE) {
-          methodVisitor.push(octal);
-        } else {
-          methodVisitor.push((double)octal);
-        }
+        pushLong(expected, Long.parseLong(text.substring(1), 8));
         break;
       case JavascriptParser.DECIMAL:
-        double decimal = Double.parseDouble(text);
-        methodVisitor.push(decimal);
+        methodVisitor.push(Double.parseDouble(text));
         methodVisitor.cast(Type.DOUBLE_TYPE, expected);
         break;
       case JavascriptParser.AT_NEGATE:
@@ -389,10 +372,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFEQ, labelEqTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelEqReturn);
         methodVisitor.visitLabel(labelEqTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelEqReturn);
         break;
       case JavascriptParser.AT_COMP_NEQ:
@@ -404,10 +387,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFNE, labelNeqTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelNeqReturn);
         methodVisitor.visitLabel(labelNeqTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelNeqReturn);
         break;
       case JavascriptParser.AT_COMP_LT:
@@ -419,10 +402,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPG);
         
         methodVisitor.visitJumpInsn(IFLT, labelLtTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelLtReturn);
         methodVisitor.visitLabel(labelLtTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelLtReturn);
         break;
       case JavascriptParser.AT_COMP_GT:
@@ -434,10 +417,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFGT, labelGtTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelGtReturn);
         methodVisitor.visitLabel(labelGtTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelGtReturn);
         break;
       case JavascriptParser.AT_COMP_LTE:
@@ -449,10 +432,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPG);
         
         methodVisitor.visitJumpInsn(IFLE, labelLteTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelLteReturn);
         methodVisitor.visitLabel(labelLteTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelLteReturn);
         break;
       case JavascriptParser.AT_COMP_GTE:
@@ -464,10 +447,10 @@ public class JavascriptCompiler {
         methodVisitor.visitInsn(DCMPL);
         
         methodVisitor.visitJumpInsn(IFGE, labelGteTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelGteReturn);
         methodVisitor.visitLabel(labelGteTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelGteReturn);
         break;
       case JavascriptParser.AT_BOOL_NOT:
@@ -476,10 +459,10 @@ public class JavascriptCompiler {
         
         recursiveCompile(current.getChild(0), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, labelNotTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, labelNotReturn);
         methodVisitor.visitLabel(labelNotTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(labelNotReturn);
         break;
       case JavascriptParser.AT_BOOL_AND:
@@ -490,10 +473,10 @@ public class JavascriptCompiler {
         methodVisitor.visitJumpInsn(IFEQ, andFalse);
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFEQ, andFalse);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitJumpInsn(GOTO, andEnd);
         methodVisitor.visitLabel(andFalse);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitLabel(andEnd);
         break;
       case JavascriptParser.AT_BOOL_OR:
@@ -504,10 +487,10 @@ public class JavascriptCompiler {
         methodVisitor.visitJumpInsn(IFNE, orTrue);
         recursiveCompile(current.getChild(1), Type.INT_TYPE);
         methodVisitor.visitJumpInsn(IFNE, orTrue);
-        truthCompile(expected, false);
+        pushBoolean(expected, false);
         methodVisitor.visitJumpInsn(GOTO, orEnd);
         methodVisitor.visitLabel(orTrue);
-        truthCompile(expected, true);
+        pushBoolean(expected, true);
         methodVisitor.visitLabel(orEnd);
         break;
       case JavascriptParser.AT_COND_QUE:
@@ -527,15 +510,35 @@ public class JavascriptCompiler {
     }
   }
   
-  private void truthCompile(Type expected, boolean truth) {
-    if (expected == Type.INT_TYPE) {
+  private void pushBoolean(Type expected, boolean truth) {
+    switch (expected.getSort()) {
+      case Type.INT:
         methodVisitor.push(truth);
-    } else if (expected == Type.LONG_TYPE) {
+        break;
+      case Type.LONG:
         methodVisitor.push(truth ? 1L : 0L);
-    } else if (expected == Type.DOUBLE_TYPE) {
+        break;
+      case Type.DOUBLE:
         methodVisitor.push(truth ? 1. : 0.);
-    } else {
-      throw new IllegalStateException("Invalid expected type");
+        break;
+      default:
+        throw new IllegalStateException("Invalid expected type: " + expected);
+    }
+  }
+  
+  private void pushLong(Type expected, long i) {
+    switch (expected.getSort()) {
+      case Type.INT:
+        methodVisitor.push((int) i);
+        break;
+      case Type.LONG:
+        methodVisitor.push(i);
+        break;
+      case Type.DOUBLE:
+        methodVisitor.push((double) i);
+        break;
+      default:
+        throw new IllegalStateException("Invalid expected type: " + expected);
     }
   }
   
