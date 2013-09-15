@@ -61,7 +61,21 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * </pre>
  * <p>
  * See the {@link org.apache.lucene.expressions.js package documentation} for 
- * the supported syntax and functions.
+ * the supported syntax and default functions.
+ * <p>
+ * You can compile with an alternate set of functions via {@link #compile(String, Map, ClassLoader)}.
+ * For example:
+ * <pre class="prettyprint">
+ *   Map&lt;String,Method&gt; functions = new HashMap&lt;&gt;();
+ *   // add all the default functions
+ *   functions.putAll(JavascriptCompiler.DEFAULT_FUNCTIONS);
+ *   // add cbrt()
+ *   functions.put("cbrt", Math.class.getMethod("cbrt", double.class));
+ *   // call compile with customized function map
+ *   Expression foo = JavascriptCompiler.compile("cbrt(score)+ln(popularity)", 
+ *                                               functions, 
+ *                                               getClass().getClassLoader());
+ * </pre>
  * 
  * @lucene.experimental
  */
@@ -122,7 +136,8 @@ public class JavascriptCompiler {
   /**
    * Compiles the given expression with the supplied custom functions.
    * <p>
-   * Functions must return {@code double} and can take from zero to 256 {@code double} parameters.
+   * Functions must be {@code public static}, return {@code double} and 
+   * can take from zero to 256 {@code double} parameters.
    *
    * @param sourceText The expression to compile
    * @param functions map of String names to functions

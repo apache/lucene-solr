@@ -35,7 +35,21 @@ import org.apache.lucene.search.SortField;
 /**
  * Simple class that binds expression variable names to {@link SortField}s
  * or other {@link Expression}s.
- *
+ * <p>
+ * Example usage:
+ * <pre class="prettyprint">
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   // document's text relevance score
+ *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   // integer NumericDocValues field (or from FieldCache) 
+ *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *   // another expression
+ *   bindings.add("recency", myRecencyExpression);
+ *   
+ *   // create a sort field in reverse order
+ *   Sort sort = new Sort(expr.getSortField(bindings, true));
+ * </pre>
+ * 
  * @lucene.experimental
  */
 public final class SimpleBindings extends Bindings {
