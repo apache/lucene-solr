@@ -197,13 +197,16 @@ public class TestCustomFunctions extends LuceneTestCase {
     }
     
     // this should pass:
-    JavascriptCompiler.compile("zeroArgMethod()", functions, child);
+    Expression expr = JavascriptCompiler.compile("zeroArgMethod()", functions, child);
+    assertEquals(5, expr.evaluate(0, null), DELTA);
     
     // mix foreign and default functions
     Map<String,Method> mixedFunctions = new HashMap<>(JavascriptCompiler.DEFAULT_FUNCTIONS);
     mixedFunctions.putAll(functions);
-    JavascriptCompiler.compile("zeroArgMethod()", mixedFunctions, child);
-    JavascriptCompiler.compile("sqrt(20)", mixedFunctions, child);
+    expr = JavascriptCompiler.compile("zeroArgMethod()", mixedFunctions, child);
+    assertEquals(5, expr.evaluate(0, null), DELTA);
+    expr = JavascriptCompiler.compile("sqrt(20)", mixedFunctions, child);
+    assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
     try {
       JavascriptCompiler.compile("zeroArgMethod()", functions, getClass().getClassLoader());
       fail();
