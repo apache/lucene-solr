@@ -176,7 +176,7 @@ New Features
 * SOLR-2548: Allow multiple threads to be specified for faceting. When threading, one
   can specify facet.threads to parallelize loading the uninverted fields. In at least
   one extreme case this reduced warmup time from 20 seconds to 3 seconds. (Janne Majaranta,
-  Gun Akkor via Erick Erickson)
+  Gun Akkor via Erick Erickson, David Smiley)
 
 * SOLR-4816: CloudSolrServer can now route updates locally and no longer relies on inter-node
   update forwarding.  (Joel Bernstein, Shikhar Bhushan, Mark Miller)
