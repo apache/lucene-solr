@@ -78,6 +78,9 @@ Other Changes
   heap memory is being used by the underlying Lucene index structures.
   (Areek Zillur via Robert Muir)
 
+* SOLR-5241: Fix SimplePostToolTest performance problem - implicit DNS lookups
+  (hossman)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components

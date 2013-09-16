@@ -34,14 +34,19 @@ import org.apache.solr.util.SimplePostTool.PageFetcherResult;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * NOTE: do *not* use real hostnames, not even "example.com", in this test.
+ *
+ * Even though a MockPageFetcher is used to prevent real HTTP requests from being 
+ * executed, the use of the URL class in SimplePostTool causes attempted resolution of 
+ * the hostnames.
+ */ 
 public class SimplePostToolTest extends SolrTestCaseJ4 {
   SimplePostTool t_file, t_file_auto, t_file_rec, t_web, t_test;
   PageFetcher pf;
   
-  @Override
   @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void initVariousPostTools() throws Exception {
     String[] args = {"-"};
     System.setProperty("data", "files");
     t_file = SimplePostTool.parseArgsAndInit(args);
@@ -82,21 +87,21 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   
   @Test
   public void testNormalizeUrlEnding() {
-    assertEquals("http://example.com", SimplePostTool.normalizeUrlEnding("http://example.com/"));
-    assertEquals("http://example.com", SimplePostTool.normalizeUrlEnding("http://example.com/#foo?bar=baz"));
-    assertEquals("http://example.com/index.html", SimplePostTool.normalizeUrlEnding("http://example.com/index.html#hello"));
+    assertEquals("http://[ff01::114]", SimplePostTool.normalizeUrlEnding("http://[ff01::114]/"));
+    assertEquals("http://[ff01::114]", SimplePostTool.normalizeUrlEnding("http://[ff01::114]/#foo?bar=baz"));
+    assertEquals("http://[ff01::114]/index.html", SimplePostTool.normalizeUrlEnding("http://[ff01::114]/index.html#hello"));
   }
   
   @Test
   public void testComputeFullUrl() throws MalformedURLException {
-    assertEquals("http://example.com/index.html", t_web.computeFullUrl(new URL("http://example.com/"), "/index.html"));
-    assertEquals("http://example.com/index.html", t_web.computeFullUrl(new URL("http://example.com/foo/bar/"), "/index.html"));
-    assertEquals("http://example.com/fil.html", t_web.computeFullUrl(new URL("http://example.com/foo.htm?baz#hello"), "fil.html"));
+    assertEquals("http://[ff01::114]/index.html", t_web.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
+    assertEquals("http://[ff01::114]/index.html", t_web.computeFullUrl(new URL("http://[ff01::114]/foo/bar/"), "/index.html"));
+    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new URL("http://[ff01::114]/foo.htm?baz#hello"), "fil.html"));
 //    TODO: How to know what is the base if URL path ends with "foo"?? 
-//    assertEquals("http://example.com/fil.html", t_web.computeFullUrl(new URL("http://example.com/foo?baz#hello"), "fil.html"));
-    assertEquals(null, t_web.computeFullUrl(new URL("http://example.com/"), "fil.jpg"));
-    assertEquals(null, t_web.computeFullUrl(new URL("http://example.com/"), "mailto:hello@foo.bar"));
-    assertEquals(null, t_web.computeFullUrl(new URL("http://example.com/"), "ftp://server/file"));
+//    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
+    assertEquals(null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
+    assertEquals(null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
+    assertEquals(null, t_web.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
   }
   
   @Test
@@ -120,13 +125,13 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   
   @Test
   public void testAppendParam() {
-    assertEquals("http://example.com?foo=bar", SimplePostTool.appendParam("http://example.com", "foo=bar"));
-    assertEquals("http://example.com/?a=b&foo=bar", SimplePostTool.appendParam("http://example.com/?a=b", "foo=bar"));
+    assertEquals("http://[ff01::114]?foo=bar", SimplePostTool.appendParam("http://[ff01::114]", "foo=bar"));
+    assertEquals("http://[ff01::114]/?a=b&foo=bar", SimplePostTool.appendParam("http://[ff01::114]/?a=b", "foo=bar"));
   }
   
   @Test
   public void testAppendUrlPath() throws MalformedURLException {
-    assertEquals(new URL("http://example.com/a?foo=bar"), SimplePostTool.appendUrlPath(new URL("http://example.com?foo=bar"), "/a"));
+    assertEquals(new URL("http://[ff01::114]/a?foo=bar"), SimplePostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
   }
   
   @Test
@@ -150,55 +155,55 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     // Uses mock pageFetcher
     t_web.delay = 0;
     t_web.recursive = 5;
-    int num = t_web.postWebPages(new String[] {"http://example.com/#removeme"}, 0, null);
+    int num = t_web.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(5, num);
     
     t_web.recursive = 1;
-    num = t_web.postWebPages(new String[] {"http://example.com/"}, 0, null);
+    num = t_web.postWebPages(new String[] {"http://[ff01::114]/"}, 0, null);
     assertEquals(3, num);
     
     // Without respecting robots.txt
     SimplePostTool.pageFetcher.robotsCache.clear();
     t_web.recursive = 5;
-    num = t_web.postWebPages(new String[] {"http://example.com/#removeme"}, 0, null);
+    num = t_web.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(6, num);
 }
   
   @Test
   public void testRobotsExclusion() throws MalformedURLException {
-    assertFalse(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://example.com/")));
-    assertTrue(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://example.com/disallowed")));
-    assertTrue("There should be two entries parsed from robots.txt", SimplePostTool.pageFetcher.robotsCache.get("example.com").size() == 2);
+    assertFalse(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
+    assertTrue(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertTrue("There should be two entries parsed from robots.txt", SimplePostTool.pageFetcher.robotsCache.get("[ff01::114]").size() == 2);
   }
 
-  class MockPageFetcher extends PageFetcher {
+  static class MockPageFetcher extends PageFetcher {
     HashMap<String,String> htmlMap = new HashMap<String,String>();
     HashMap<String,Set<URL>> linkMap = new HashMap<String,Set<URL>>();
     
     public MockPageFetcher() throws IOException {
       (new SimplePostTool()).super();
-      htmlMap.put("http://example.com", "<html><body><a href=\"http://example.com/page1\">page1</a><a href=\"http://example.com/page2\">page2</a></body></html>");
-      htmlMap.put("http://example.com/index.html", "<html><body><a href=\"http://example.com/page1\">page1</a><a href=\"http://example.com/page2\">page2</a></body></html>");
-      htmlMap.put("http://example.com/page1", "<html><body><a href=\"http://example.com/page1/foo\"></body></html>");
-      htmlMap.put("http://example.com/page1/foo", "<html><body><a href=\"http://example.com/page1/foo/bar\"></body></html>");
-      htmlMap.put("http://example.com/page1/foo/bar", "<html><body><a href=\"http://example.com/page1\"></body></html>");
-      htmlMap.put("http://example.com/page2", "<html><body><a href=\"http://example.com/\"><a href=\"http://example.com/disallowed\"/></body></html>");
-      htmlMap.put("http://example.com/disallowed", "<html><body><a href=\"http://example.com/\"></body></html>");
+      htmlMap.put("http://[ff01::114]", "<html><body><a href=\"http://[ff01::114]/page1\">page1</a><a href=\"http://[ff01::114]/page2\">page2</a></body></html>");
+      htmlMap.put("http://[ff01::114]/index.html", "<html><body><a href=\"http://[ff01::114]/page1\">page1</a><a href=\"http://[ff01::114]/page2\">page2</a></body></html>");
+      htmlMap.put("http://[ff01::114]/page1", "<html><body><a href=\"http://[ff01::114]/page1/foo\"></body></html>");
+      htmlMap.put("http://[ff01::114]/page1/foo", "<html><body><a href=\"http://[ff01::114]/page1/foo/bar\"></body></html>");
+      htmlMap.put("http://[ff01::114]/page1/foo/bar", "<html><body><a href=\"http://[ff01::114]/page1\"></body></html>");
+      htmlMap.put("http://[ff01::114]/page2", "<html><body><a href=\"http://[ff01::114]/\"><a href=\"http://[ff01::114]/disallowed\"/></body></html>");
+      htmlMap.put("http://[ff01::114]/disallowed", "<html><body><a href=\"http://[ff01::114]/\"></body></html>");
 
       Set<URL> s = new HashSet<URL>();
-      s.add(new URL("http://example.com/page1"));
-      s.add(new URL("http://example.com/page2"));
-      linkMap.put("http://example.com", s);
-      linkMap.put("http://example.com/index.html", s);
+      s.add(new URL("http://[ff01::114]/page1"));
+      s.add(new URL("http://[ff01::114]/page2"));
+      linkMap.put("http://[ff01::114]", s);
+      linkMap.put("http://[ff01::114]/index.html", s);
       s = new HashSet<URL>();
-      s.add(new URL("http://example.com/page1/foo"));
-      linkMap.put("http://example.com/page1", s);
+      s.add(new URL("http://[ff01::114]/page1/foo"));
+      linkMap.put("http://[ff01::114]/page1", s);
       s = new HashSet<URL>();
-      s.add(new URL("http://example.com/page1/foo/bar"));
-      linkMap.put("http://example.com/page1/foo", s);
+      s.add(new URL("http://[ff01::114]/page1/foo/bar"));
+      linkMap.put("http://[ff01::114]/page1/foo", s);
       s = new HashSet<URL>();
-      s.add(new URL("http://example.com/disallowed"));
-      linkMap.put("http://example.com/page2", s);
+      s.add(new URL("http://[ff01::114]/disallowed"));
+      linkMap.put("http://[ff01::114]/page2", s);
       
       // Simulate a robots.txt file with comments and a few disallows
       StringBuilder sb = new StringBuilder();
@@ -207,7 +212,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       sb.append("Disallow:  # This is void\n");
       sb.append("Disallow: /disallow # Disallow this path\n");
       sb.append("Disallow: /nonexistingpath # Disallow this path\n");
-      this.robotsCache.put("example.com", SimplePostTool.pageFetcher.
+      this.robotsCache.put("[ff01::114]", SimplePostTool.pageFetcher.
           parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes("UTF-8"))));
     }
     
