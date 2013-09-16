@@ -262,6 +262,8 @@ Bug Fixes
   can fail if some nodes of the deleted shard were down and had incorrect logging.
   (Christine Poerschke, shalin)
 
+* SOLR-5150: HdfsIndexInput may not fully read requested bytes. (Mark Miller, Patrick Hunt)
+
 Optimizations
 ----------------------
 
