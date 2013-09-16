@@ -447,6 +447,39 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     dir.close();
   }
   
+  public void testUnsetAllValues() throws Exception {
+    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    for (int i = 0; i < 2; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "doc", Store.NO));
+      doc.add(new NumericDocValuesField("ndv", 5));
+      writer.addDocument(doc);
+    }
+    writer.commit();
+    
+    // unset the value of 'doc'
+    writer.updateNumericDocValue(new Term("id", "doc"), "ndv", null);
+    writer.close();
+    
+    final DirectoryReader reader = DirectoryReader.open(dir);
+    AtomicReader r = reader.leaves().get(0).reader();
+    NumericDocValues ndv = r.getNumericDocValues("ndv");
+    for (int i = 0; i < r.maxDoc(); i++) {
+      assertEquals(0, ndv.get(i));
+    }
+    
+    Bits docsWithField = r.getDocsWithField("ndv");
+    assertFalse(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    
+    reader.close();
+    dir.close();
+  }
+  
   @Test
   public void testUpdateNonDocValueField() throws Exception {
     // we don't support adding new fields or updating existing non-numeric-dv
