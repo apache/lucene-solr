@@ -109,7 +109,7 @@ public class HdfsDirectory extends Directory {
   }
   
   private IndexInput openInput(String name, int bufferSize) throws IOException {
-    return new HdfsNormalIndexInput(name, getFileSystem(), new Path(
+    return new HdfsIndexInput(name, getFileSystem(), new Path(
         hdfsDirPath, name), BUFFER_SIZE);
   }
   
@@ -164,16 +164,16 @@ public class HdfsDirectory extends Directory {
     return configuration;
   }
   
-  static class HdfsNormalIndexInput extends CustomBufferedIndexInput {
+  static class HdfsIndexInput extends CustomBufferedIndexInput {
     public static Logger LOG = LoggerFactory
-        .getLogger(HdfsNormalIndexInput.class);
+        .getLogger(HdfsIndexInput.class);
     
     private final Path path;
     private final FSDataInputStream inputStream;
     private final long length;
     private boolean clone = false;
     
-    public HdfsNormalIndexInput(String name, FileSystem fileSystem, Path path,
+    public HdfsIndexInput(String name, FileSystem fileSystem, Path path,
         int bufferSize) throws IOException {
       super(name);
       this.path = path;
@@ -186,12 +186,12 @@ public class HdfsDirectory extends Directory {
     @Override
     protected void readInternal(byte[] b, int offset, int length)
         throws IOException {
-      inputStream.read(getFilePointer(), b, offset, length);
+      inputStream.readFully(getFilePointer(), b, offset, length);
     }
     
     @Override
     protected void seekInternal(long pos) throws IOException {
-      inputStream.seek(pos);
+
     }
     
     @Override
@@ -209,7 +209,7 @@ public class HdfsDirectory extends Directory {
     
     @Override
     public IndexInput clone() {
-      HdfsNormalIndexInput clone = (HdfsNormalIndexInput) super.clone();
+      HdfsIndexInput clone = (HdfsIndexInput) super.clone();
       clone.clone = true;
       return clone;
     }
