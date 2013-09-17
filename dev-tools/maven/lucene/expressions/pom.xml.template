@@ -72,5 +72,10 @@
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
     <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>${module-path}/src/resources</directory>
+      </resource>
+    </resources>
   </build>
 </project>
