@@ -182,7 +182,7 @@ New Features
   Gun Akkor via Erick Erickson, David Smiley)
 
 * SOLR-4816: CloudSolrServer can now route updates locally and no longer relies on inter-node
-  update forwarding.  (Joel Bernstein, Shikhar Bhushan, Mark Miller)
+  update forwarding.  (Joel Bernstein, Shikhar Bhushan, Stephen Riesenberg, Mark Miller)
   
 * SOLR-3249: Allow CloudSolrServer and SolrCmdDistributor to use JavaBin. (Mark Miller)  
 
@@ -270,7 +270,6 @@ Bug Fixes
 * SOLR-5240: All solr cores will now be loaded in parallel (as opposed to a fixed number)
   in zookeeper mode to avoid deadlocks due to replicas waiting for other replicas
   to come up. (yonik)
-
 
 Optimizations
 ----------------------
