@@ -57,6 +57,9 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -209,8 +212,10 @@ public class CoreContainer {
     containerProperties = cfg.getSolrProperties("solr");
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor = Executors.newFixedThreadPool(cfg.getCoreLoadThreadCount(),
-        new DefaultSolrThreadFactory("coreLoadExecutor"));
+    // do not limit the size of the executor in zk mode since cores may try and wait for each other.
+    ExecutorService coreLoadExecutor = Executors.newFixedThreadPool(
+        ( zkSys.getZkController() == null ? cfg.getCoreLoadThreadCount() : Integer.MAX_VALUE ),
+        new DefaultSolrThreadFactory("coreLoadExecutor") );
 
     try {
       CompletionService<SolrCore> completionService = new ExecutorCompletionService<SolrCore>(
