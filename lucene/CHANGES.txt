@@ -20,6 +20,10 @@ New Features
   with script-like syntax. 
   (Jack Conradson, Ryan Ernst, Uwe Schindler via Robert Muir)
 
+* LUCENE-5180: ShingleFilter now creates shingles with trailing holes,
+  for example if a StopFilter had removed the last token.  (Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
