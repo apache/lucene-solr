@@ -38,6 +38,10 @@ New Features
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
 
+* LUCENE-5180: ShingleFilter now creates shingles with trailing holes,
+  for example if a StopFilter had removed the last token.  (Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile

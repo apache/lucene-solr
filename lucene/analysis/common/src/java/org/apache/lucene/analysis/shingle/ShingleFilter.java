@@ -147,6 +147,12 @@ public final class ShingleFilter extends TokenFilter {
    * true if no shingles have been output yet (for outputUnigramsIfNoShingles).
    */
   boolean noShingleOutput = true;
+
+  /**
+   * Holds the State after input.end() was called, so we can
+   * restore it in our end() impl.
+   */
+  private State endState;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -279,7 +285,7 @@ public final class ShingleFilter extends TokenFilter {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public boolean incrementToken() throws IOException {
     boolean tokenAvailable = false;
     int builtGramSize = 0;
     if (gramSize.atMinValue() || inputWindow.size() < gramSize.getValue()) {
@@ -364,37 +370,61 @@ public final class ShingleFilter extends TokenFilter {
       }
       isNextInputStreamToken = false;
       newTarget.isFiller = false;
-    } else if (!exhausted && input.incrementToken()) {
-      if (null == target) {
-        newTarget = new InputWindowToken(cloneAttributes());
-      } else {
-        this.copyTo(target.attSource);
-      }
-      if (posIncrAtt.getPositionIncrement() > 1) {
-        // Each output shingle must contain at least one input token, 
-        // so no more than (maxShingleSize - 1) filler tokens will be inserted.
-        numFillerTokensToInsert 
-          = Math.min(posIncrAtt.getPositionIncrement() - 1, maxShingleSize - 1);
-        // Save the current token as the next input stream token
-        if (null == nextInputStreamToken) {
-          nextInputStreamToken = cloneAttributes();
+    } else if (!exhausted) {
+      if (input.incrementToken()) {
+        if (null == target) {
+          newTarget = new InputWindowToken(cloneAttributes());
         } else {
-          this.copyTo(nextInputStreamToken);
+          this.copyTo(target.attSource);
         }
-        isNextInputStreamToken = true;
-        // A filler token occupies no space
-        newTarget.offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
-        newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
-        newTarget.isFiller = true;
-        --numFillerTokensToInsert;
+        if (posIncrAtt.getPositionIncrement() > 1) {
+          // Each output shingle must contain at least one input token, 
+          // so no more than (maxShingleSize - 1) filler tokens will be inserted.
+          numFillerTokensToInsert = Math.min(posIncrAtt.getPositionIncrement() - 1, maxShingleSize - 1);
+          // Save the current token as the next input stream token
+          if (null == nextInputStreamToken) {
+            nextInputStreamToken = cloneAttributes();
+          } else {
+            this.copyTo(nextInputStreamToken);
+          }
+          isNextInputStreamToken = true;
+          // A filler token occupies no space
+          newTarget.offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
+          newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+          newTarget.isFiller = true;
+          --numFillerTokensToInsert;
+        } else {
+          newTarget.isFiller = false;
+        }
       } else {
-        newTarget.isFiller = false;
+        exhausted = true;
+        input.end();
+        endState = captureState();
+        numFillerTokensToInsert = Math.min(posIncrAtt.getPositionIncrement(), maxShingleSize - 1);
+        if (numFillerTokensToInsert > 0) {
+          nextInputStreamToken = new AttributeSource(getAttributeFactory());
+          nextInputStreamToken.addAttribute(CharTermAttribute.class);
+          OffsetAttribute newOffsetAtt = nextInputStreamToken.addAttribute(OffsetAttribute.class);
+          newOffsetAtt.setOffset(offsetAtt.endOffset(), offsetAtt.endOffset());
+          // Recurse/loop just once:
+          return getNextToken(target);
+        } else {
+          newTarget = null;
+        }
       }
     } else {
       newTarget = null;
-      exhausted = true;
     }
     return newTarget;
+  }
+
+  @Override
+  public void end() throws IOException {
+    if (!exhausted) {
+      super.end();
+    } else {
+      restoreState(endState);
+    }
   }
 
   /**
@@ -445,6 +475,7 @@ public final class ShingleFilter extends TokenFilter {
     isOutputHere = false;
     noShingleOutput = true;
     exhausted = false;
+    endState = null;
     if (outputUnigramsIfNoShingles && ! outputUnigrams) {
       // Fix up gramSize if minValue was reset for outputUnigramsIfNoShingles
       gramSize.minValue = minShingleSize;
