@@ -267,6 +267,11 @@ Bug Fixes
 
 * SOLR-5150: HdfsIndexInput may not fully read requested bytes. (Mark Miller, Patrick Hunt)
 
+* SOLR-5240: All solr cores will now be loaded in parallel (as opposed to a fixed number)
+  in zookeeper mode to avoid deadlocks due to replicas waiting for other replicas
+  to come up. (yonik)
+
+
 Optimizations
 ----------------------
 
