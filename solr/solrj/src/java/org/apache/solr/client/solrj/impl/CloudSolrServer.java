@@ -302,6 +302,10 @@ public class CloudSolrServer extends SolrServer {
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
     Map<String,List<String>> urlMap = buildUrlMap(col);
+    if (urlMap == null) {
+      // we could not find a leader yet - use unoptimized general path
+      return null;
+    }
 
     NamedList exceptions = new NamedList();
     NamedList shardResponses = new NamedList();
@@ -314,7 +318,7 @@ public class CloudSolrServer extends SolrServer {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<String, Future<NamedList<?>>>();
+      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<String, Future<NamedList<?>>>(routes.size());
       for (final Map.Entry<String, LBHttpSolrServer.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBHttpSolrServer.Req lbRequest = entry.getValue();
@@ -402,6 +406,10 @@ public class CloudSolrServer extends SolrServer {
       String name = slice.getName();
       List<String> urls = new ArrayList<String>();
       Replica leader = slice.getLeader();
+      if (leader == null) {
+        // take unoptimized general path - we cannot find a leader yet
+        return null;
+      }
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
       String url = zkProps.getBaseUrl() + "/" + col.getName();
       urls.add(url);
