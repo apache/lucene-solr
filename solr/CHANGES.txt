@@ -148,7 +148,7 @@ New Features
 * SOLR-5082: The encoding of URL-encoded query parameters can be changed with
   the "ie" (input encoding) parameter, e.g. "select?q=m%FCller&ie=ISO-8859-1".
   The default is UTF-8. To change the encoding of POSTed content, use the
-  "Content-Type" HTTP header.  (Uwe Schindler)
+  "Content-Type" HTTP header.  (Uwe Schindler, Shawn Heisey)
   
 * SOLR-4221: Custom sharding (Noble Paul)
 
