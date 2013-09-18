@@ -201,7 +201,7 @@ public class LiveIndexWriterConfig {
    * <pre class="prettyprint">
    * //customize Lucene41PostingsFormat, passing minBlockSize=50, maxBlockSize=100
    * final PostingsFormat tweakedPostings = new Lucene41PostingsFormat(50, 100);
-   * iwc.setCodec(new Lucene42Codec() {
+   * iwc.setCodec(new Lucene45Codec() {
    *   &#64;Override
    *   public PostingsFormat getPostingsFormatForField(String field) {
    *     if (field.equals("fieldWithTonsOfTerms"))
