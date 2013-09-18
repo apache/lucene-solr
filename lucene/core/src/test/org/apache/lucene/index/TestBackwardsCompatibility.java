@@ -970,7 +970,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       try {
         upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
       } catch (Exception e) {
-        throw new AssertionError("unable to parse args: " + args, e);
+        throw new RuntimeException("unable to parse args: " + args, e);
       }
       upgrader.upgrade();
       
