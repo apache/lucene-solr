@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -575,5 +576,21 @@ public class TestSimilarityBase extends LuceneTestCase {
     reader.close();
     dir.close();
     super.tearDown();
+  }
+  
+  // LUCENE-5221
+  public void testDiscountOverlapsBoost() throws IOException {
+    DefaultSimilarity expected = new DefaultSimilarity();
+    SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
+    expected.setDiscountOverlaps(false);
+    actual.setDiscountOverlaps(false);
+    FieldInvertState state = new FieldInvertState("foo");
+    state.setLength(5);
+    state.setNumOverlap(2);
+    state.setBoost(3);
+    assertEquals(expected.computeNorm(state), actual.computeNorm(state));
+    expected.setDiscountOverlaps(true);
+    actual.setDiscountOverlaps(true);
+    assertEquals(expected.computeNorm(state), actual.computeNorm(state));
   }
 }

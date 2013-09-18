@@ -151,6 +151,10 @@ Bug Fixes
 * LUCENE-5201: Fixed compression bug in LZ4.compressHC when the input is highly
   compressible and the start offset of the array to compress is > 0.
   (Adrien Grand)
+
+* LUCENE-5221: SimilarityBase did not write norms the same way as DefaultSimilarity
+  if discountOverlaps == false and index-time boosts are present for the field.
+  (Yubin Kim via Robert Muir)
   
 API Changes
 
