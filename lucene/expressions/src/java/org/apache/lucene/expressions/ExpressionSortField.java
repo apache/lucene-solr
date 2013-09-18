@@ -35,4 +35,9 @@ class ExpressionSortField extends SortField {
   public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
     return new ExpressionComparator(source, numHits);
   }
+
+  @Override
+  public boolean needsScores() {
+    return true; // TODO: maybe we can optimize by "figuring this out" somehow...
+  }
 }
