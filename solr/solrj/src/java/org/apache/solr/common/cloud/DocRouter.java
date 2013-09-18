@@ -28,8 +28,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 /**
  * Class to partition int range into n ranges.
@@ -38,12 +41,32 @@ import java.util.Map;
 public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
   public static final DocRouter DEFAULT = new CompositeIdRouter();
-  public static final String ROUTE_FIELD = "routeField";
 
-  public static DocRouter getDocRouter(Object routerSpec) {
-    DocRouter router = routerMap.get(routerSpec);
+
+  public static DocRouter getDocRouter(Object routerName) {
+    DocRouter router = routerMap.get(routerName);
     if (router != null) return router;
-    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerSpec + "'");
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
+  }
+
+  protected String getRouteField(DocCollection coll){
+    if(coll == null) return null;
+    Map m = (Map) coll.get(DOC_ROUTER);
+    if(m == null) return null;
+    return (String) m.get("field");
+
+  }
+
+  public static Map<String,Object> getRouterSpec(ZkNodeProps props){
+    Map<String,Object> map =  new LinkedHashMap<String, Object>();
+    for (String s : props.keySet()) {
+      if(s.startsWith("router.")){
+        map.put(s.substring(7), props.get(s));
+      }
+    }
+    if(map.get("name") == null) map.put("name", DEFAULT_NAME);
+    return  map;
+
   }
 
   // currently just an implementation detail...

@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /** This document router is for custom sharding
@@ -42,7 +41,7 @@ public class ImplicitDocRouter extends DocRouter {
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     String shard = null;
     if (sdoc != null) {
-      String f = collection.getStr(ROUTE_FIELD);
+      String f = getRouteField(collection);
       if(f !=null) {
         Object o = sdoc.getFieldValue(f);
         if (o != null) shard = o.toString();

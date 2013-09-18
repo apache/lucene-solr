@@ -1584,7 +1584,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
 
     createCollection(collectionInfos, collectionName,
-        OverseerCollectionProcessor.asMap(
+        ZkNodeProps.makeMap(
         NUM_SLICES, numShards,
         REPLICATION_FACTOR, numReplicas,
         CREATE_NODE_SET, createNodeSetStr,

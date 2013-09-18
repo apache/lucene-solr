@@ -64,7 +64,6 @@ import java.util.Set;
 
 import static org.apache.solr.cloud.Assign.Node;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
-import static org.apache.solr.common.cloud.DocRouter.ROUTE_FIELD;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
@@ -102,11 +101,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final String COLL_CONF = "collection.configName";
 
 
-  public static final Map<String,Object> COLL_PROPS = asMap(
-      ROUTER,DocRouter.DEFAULT_NAME,
+  public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
+      ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
-      MAX_SHARDS_PER_NODE,"1",
-      ROUTE_FIELD,null);
+      MAX_SHARDS_PER_NODE, "1");
 
 
   // TODO: use from Overseer?
@@ -875,7 +873,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       
       int repFactor = message.getInt( REPLICATION_FACTOR, 1);
       Integer numSlices = message.getInt(NUM_SLICES, null);
-      String router = message.getStr(ROUTER, DocRouter.DEFAULT_NAME);
+      String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
       List<String> shardNames = new ArrayList<>();
       if(ImplicitDocRouter.NAME.equals(router)){
         Overseer.getShardNames(shardNames, message.getStr("shards",null));
@@ -943,8 +941,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + " shards to be created (higher than the allowed number)");
       }
 
-//      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-//          Overseer.CREATECOLLECTION, "name", message.getStr("name"));
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
       // wait for a while until we don't see the collection
@@ -1102,11 +1098,4 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return isClosed;
   }
 
-  public static Map<String, Object> asMap(Object... vals) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
-    for(int i=0; i<vals.length; i+=2) {
-      m.put(String.valueOf(vals[i]), vals[i+1]);
-    }
-    return m;
-  }
 }

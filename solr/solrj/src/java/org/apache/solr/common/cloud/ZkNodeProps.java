@@ -58,7 +58,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    Map<String,Object> propMap = new HashMap<String,Object>(keyVals.length>>1);
+    Map<String,Object> propMap = new LinkedHashMap<String,Object>(keyVals.length>>1);
     for (int i = 0; i < keyVals.length; i+=2) {
       propMap.put(keyVals[i].toString(), keyVals[i+1]);
     }
@@ -125,7 +125,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public Object get(String key) {
     return propMap.get(key);
   }
-  
+
   @Override
   public String toString() {
     return JSONUtil.toJSON(this);
