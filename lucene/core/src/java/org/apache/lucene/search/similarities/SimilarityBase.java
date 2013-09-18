@@ -233,7 +233,7 @@ public abstract class SimilarityBase extends Similarity {
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
-      numTerms = state.getLength() / state.getBoost();
+      numTerms = state.getLength();
     return encodeNormValue(state.getBoost(), numTerms);
   }
   
