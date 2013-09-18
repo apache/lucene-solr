@@ -61,7 +61,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
   @Override
   public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
-    String shardFieldName = collection ==null? null: collection.getStr(DocRouter.ROUTE_FIELD);
+    String shardFieldName = getRouteField(collection);
     String part1 = null;
     int idx = 0;
     int commaIdx = 0;

@@ -47,7 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
@@ -59,7 +61,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.DocRouter.ROUTE_FIELD;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
@@ -294,9 +296,8 @@ public class CollectionsHandler extends RequestHandlerBase {
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
         CREATE_NODE_SET ,
-        ROUTER,
         SHARDS_PROP,
-        ROUTE_FIELD);
+        "router.");
 
 
     ZkNodeProps m = new ZkNodeProps(props);
@@ -307,20 +308,37 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Create shard: " + req.getParamString());
     req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP);
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if(!ImplicitDocRouter.NAME.equals( clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).getStr(ROUTER)))
+    if(!ImplicitDocRouter.NAME.equals( ((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(ROUTER)).get("name") )  )
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
-    Map<String, Object> map = OverseerCollectionProcessor.asMap(QUEUE_OPERATION, CREATESHARD);
+    Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
     copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);
   }
 
   private static void copyIfNotNull(SolrParams params, Map<String, Object> props, String... keys) {
+    ArrayList<String> prefixes = new ArrayList<String>(1);
     if(keys !=null){
       for (String key : keys) {
+        if(key.endsWith(".")) {
+          prefixes.add(key);
+          continue;
+        }
         String v = params.get(key);
         if(v != null) props.put(key,v);
+      }
+    }
+    if(prefixes.isEmpty()) return;
+    Iterator<String> it = params.getParameterNamesIterator();
+    String prefix = null;
+    for(;it.hasNext();){
+      String name = it.next();
+      for (int i = 0; i < prefixes.size(); i++) {
+        if(name.startsWith(prefixes.get(i))){
+          String val = params.get(name);
+          if(val !=null) props.put(name,val);
+        }
       }
     }
 

@@ -1166,9 +1166,9 @@ public final class ZkController {
               numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
             }
             if (numShards == null) {
-              collectionProps.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+              collectionProps.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
             } else {
-              collectionProps.put(DocCollection.DOC_ROUTER, DocRouter.DEFAULT_NAME);
+              collectionProps.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", DocRouter.DEFAULT_NAME));
             }
           }
 

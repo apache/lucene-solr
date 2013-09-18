@@ -221,7 +221,7 @@ public class Overseer {
 
       ArrayList<String> shardNames = new ArrayList<String>();
 
-      if(ImplicitDocRouter.NAME.equals( message.getStr("router",DocRouter.DEFAULT_NAME))){
+      if(ImplicitDocRouter.NAME.equals( message.getStr("router.name",DocRouter.DEFAULT_NAME))){
         getShardNames(shardNames,message.getStr("shards",DocRouter.DEFAULT_NAME));
       } else {
         int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
@@ -415,8 +415,8 @@ public class Overseer {
       private ClusterState createCollection(ClusterState state, String collectionName, List<String> shards , ZkNodeProps message) {
         log.info("Create collection {} with shards {}", collectionName, shards);;
 
-        String routerName = message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME);
-        DocRouter router = DocRouter.getDocRouter(routerName);
+//        String routerName = message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME);
+        DocRouter router = DocRouter.getDocRouter(message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME));
 
         List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
 
@@ -447,7 +447,7 @@ public class Overseer {
           }
           if(val != null) collectionProps.put(e.getKey(),val);
         }
-        collectionProps.put(DocCollection.DOC_ROUTER, routerName);
+        collectionProps.put(DocCollection.DOC_ROUTER, DocRouter.getRouterSpec(message));
 
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 
@@ -506,7 +506,7 @@ public class Overseer {
           // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
           slices = new HashMap<String, Slice>(1);
           props = new HashMap<String,Object>(1);
-          props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+          props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
           router = new ImplicitDocRouter();
         } else {
           props = coll.getProperties();

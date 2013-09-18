@@ -151,7 +151,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     prop.put("state", "inactive");
     Slice newSlice = new Slice(slice.getName(), slice.getReplicasMap(), prop);
     slicesMap.put(newSlice.getName(), newSlice);
-    props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+    props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", ImplicitDocRouter.NAME));
 
     DocCollection coll = new DocCollection("collection1", slicesMap, props, DocRouter.DEFAULT);
     collectionStates.put("collection1", coll);

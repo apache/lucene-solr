@@ -183,8 +183,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
           client = createCloudClient(COLL_PREFIX + i);
         }
 
-        Map<String, Object> props = OverseerCollectionProcessor.asMap(
-            ROUTER, ImplicitDocRouter.NAME,
+        Map<String, Object> props = ZkNodeProps.makeMap(
+            "router.name", ImplicitDocRouter.NAME,
             REPLICATION_FACTOR, replicationFactor,
             MAX_SHARDS_PER_NODE, maxShardsPerNode,
             SHARDS_PROP,"a,b,c");
@@ -216,7 +216,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     ClusterState clusterState = zkStateReader.getClusterState();
 
     DocCollection coll = clusterState.getCollection(COLL_PREFIX + 0);
-    assertEquals("implicit", coll.getStr(ROUTER));
+    assertEquals("implicit", ((Map)coll.get(ROUTER)).get("name") );
     assertNotNull(coll.getStr(REPLICATION_FACTOR));
     assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
 
@@ -308,12 +308,12 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     String shard_fld = "shard_s";
     try {
       client = createCloudClient(null);
-      Map<String, Object> props = OverseerCollectionProcessor.asMap(
-          ROUTER, ImplicitDocRouter.NAME,
+      Map<String, Object> props = ZkNodeProps.makeMap(
+          "router.name", ImplicitDocRouter.NAME,
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           SHARDS_PROP,"a,b,c,d",
-          DocRouter.ROUTE_FIELD, shard_fld);
+          "router.field", shard_fld);
 
       collectionName = COLL_PREFIX + "withShardField";
       createCollection(collectionInfos, collectionName,props,client);
@@ -371,11 +371,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     String shard_fld = "shard_s";
     try {
       client = createCloudClient(null);
-      Map<String, Object> props = OverseerCollectionProcessor.asMap(
+      Map<String, Object> props = ZkNodeProps.makeMap(
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           NUM_SLICES,numShards,
-          DocRouter.ROUTE_FIELD, shard_fld);
+          "router.field", shard_fld);
 
       createCollection(collectionInfos, collectionName,props,client);
     } finally {
