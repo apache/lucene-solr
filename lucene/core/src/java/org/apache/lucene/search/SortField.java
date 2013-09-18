@@ -428,4 +428,9 @@ public class SortField {
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
+  
+  /** Whether the relevance score is needed to sort documents. */
+  public boolean needsScores() {
+    return type == Type.SCORE;
+  }
 }
