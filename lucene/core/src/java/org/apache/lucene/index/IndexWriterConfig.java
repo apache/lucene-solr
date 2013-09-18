@@ -497,9 +497,11 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return super.getRAMBufferSizeMB();
   }
   
-  /** If non-null, information about merges, deletes and a
+  /** 
+   * Information about merges, deletes and a
    * message when maxFieldLength is reached will be printed
-   * to this.
+   * to this. Must not be null, but {@link InfoStream#NO_OUTPUT} 
+   * may be used to supress output.
    */
   public IndexWriterConfig setInfoStream(InfoStream infoStream) {
     if (infoStream == null) {
@@ -510,7 +512,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return this;
   }
   
-  /** Convenience method that uses {@link PrintStreamInfoStream} */
+  /** 
+   * Convenience method that uses {@link PrintStreamInfoStream}.  Must not be null.
+   */
   public IndexWriterConfig setInfoStream(PrintStream printStream) {
     if (printStream == null) {
       throw new IllegalArgumentException("printStream must not be null");
