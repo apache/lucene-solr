@@ -271,6 +271,9 @@ Bug Fixes
   in zookeeper mode to avoid deadlocks due to replicas waiting for other replicas
   to come up. (yonik)
 
+* SOLR-5243: Killing a shard in one collection can result in leader election in a different 
+  collection if they share the same coreNodeName. (yonik, Mark Miller)
+
 Optimizations
 ----------------------
 
