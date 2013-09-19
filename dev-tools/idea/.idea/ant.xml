@@ -19,6 +19,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/classification/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/codecs/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/demo/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/expressions/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/facet/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/grouping/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/highlighter/build.xml" />
