@@ -109,7 +109,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     
     final int size = col.terms.size();
     if (size > 0) {
-      final int sort[] = col.terms.sort(col.termsEnum.getComparator());
+      final int sort[] = col.terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
       final float[] boost = col.array.boost;
       final TermContext[] termStates = col.array.termState;
       for (int i = 0; i < size; i++) {

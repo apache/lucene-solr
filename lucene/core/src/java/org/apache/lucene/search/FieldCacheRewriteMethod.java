@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -26,7 +25,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
@@ -89,11 +87,6 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       // Cannot use FixedBitSet because we require long index (ord):
       final OpenBitSet termSet = new OpenBitSet(fcsi.getValueCount());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
-        
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
-        }
         
         @Override
         public TermsEnum iterator(TermsEnum reuse) {

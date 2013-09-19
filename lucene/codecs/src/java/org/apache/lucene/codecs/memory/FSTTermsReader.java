@@ -18,12 +18,9 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -40,7 +37,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -180,11 +176,6 @@ public class FSTTermsReader extends FieldsProducer {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public boolean hasOffsets() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
@@ -249,11 +240,6 @@ public class FSTTermsReader extends FieldsProducer {
         this.bytesReader = new ByteArrayDataInput();
         this.term = null;
         // NOTE: metadata will only be initialized in child class
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override

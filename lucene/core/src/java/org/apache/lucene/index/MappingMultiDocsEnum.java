@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MultiDocsAndPositionsEnum;
-import org.apache.lucene.index.MultiDocsAndPositionsEnum.EnumWithSlice;
+import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
 
 import java.io.IOException;
 
@@ -32,34 +28,31 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
-  private MultiDocsAndPositionsEnum.EnumWithSlice[] subs;
+final class MappingMultiDocsEnum extends DocsEnum {
+  private MultiDocsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
   MergeState.DocMap currentMap;
-  DocsAndPositionsEnum current;
+  DocsEnum current;
   int currentBase;
   int doc = -1;
-  private MergeState mergeState;
+  private final MergeState mergeState;
+  MultiDocsEnum multiDocsEnum;
 
   /** Sole constructor. */
-  public MappingMultiDocsAndPositionsEnum() {
+  public MappingMultiDocsEnum(MergeState mergeState) {
+    this.mergeState = mergeState;
   }
 
-  MappingMultiDocsAndPositionsEnum reset(MultiDocsAndPositionsEnum postingsEnum) {
-    this.numSubs = postingsEnum.getNumSubs();
-    this.subs = postingsEnum.getSubs();
+  MappingMultiDocsEnum reset(MultiDocsEnum docsEnum) {
+    this.numSubs = docsEnum.getNumSubs();
+    this.subs = docsEnum.getSubs();
+    this.multiDocsEnum = docsEnum;
     upto = -1;
     current = null;
     return this;
   }
 
-  /** Sets the {@link MergeState}, which is used to re-map
-   *  document IDs. */
-  public void setMergeState(MergeState mergeState) {
-    this.mergeState = mergeState;
-  }
-  
   /** How many sub-readers we are merging.
    *  @see #getSubs */
   public int getNumSubs() {
@@ -95,14 +88,22 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
         } else {
           upto++;
           final int reader = subs[upto].slice.readerIndex;
-          current = subs[upto].docsAndPositionsEnum;
+          current = subs[upto].docsEnum;
           currentBase = mergeState.docBase[reader];
           currentMap = mergeState.docMaps[reader];
+          assert currentMap.maxDoc() == subs[upto].slice.length: "readerIndex=" + reader + " subs.len=" + subs.length + " len1=" + currentMap.maxDoc() + " vs " + subs[upto].slice.length;
         }
       }
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
+
+        mergeState.checkAbortCount++;
+        if (mergeState.checkAbortCount > 60000) {
+          mergeState.checkAbort.work(mergeState.checkAbortCount/5.0);
+          mergeState.checkAbortCount = 0;
+        }
+
         // compact deletions
         doc = currentMap.get(doc);
         if (doc == -1) {
@@ -114,32 +115,12 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
       }
     }
   }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return current.nextPosition();
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return current.startOffset();
-  }
   
-  @Override
-  public int endOffset() throws IOException {
-    return current.endOffset();
-  }
-  
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return current.getPayload();
-  }
-
   @Override
   public long cost() {
     long cost = 0;
     for (EnumWithSlice enumWithSlice : subs) {
-      cost += enumWithSlice.docsAndPositionsEnum.cost();
+      cost += enumWithSlice.docsEnum.cost();
     }
     return cost;
   }

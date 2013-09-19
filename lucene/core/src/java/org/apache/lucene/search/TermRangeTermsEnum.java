@@ -17,18 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Comparator;
-
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the
- * specified range parameters.
- * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * specified range parameters.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
 public class TermRangeTermsEnum extends FilteredTermsEnum {
@@ -37,7 +32,6 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
   final private boolean includeUpper;
   final private BytesRef lowerBytesRef;
   final private BytesRef upperBytesRef;
-  private final Comparator<BytesRef> termComp;
 
   /**
    * Enumerates all terms greater/equal than <code>lowerTerm</code>
@@ -82,7 +76,6 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
     }
 
     setInitialSeekTerm(lowerBytesRef);
-    termComp = getComparator();
   }
 
   @Override
@@ -92,7 +85,7 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
     
     // Use this field's default sort ordering
     if (upperBytesRef != null) {
-      final int cmp = termComp.compare(upperBytesRef, term);
+      final int cmp = upperBytesRef.compareTo(term);
       /*
        * if beyond the upper term, or is exclusive and this is equal to
        * the upper term, break out

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -187,11 +186,6 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
     } finally {
       out = null;
     }
-  }
-  
-  @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
   
   private void write(String s) throws IOException {

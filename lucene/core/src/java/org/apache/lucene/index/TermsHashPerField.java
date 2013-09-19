@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.ByteBlockPool;
@@ -77,13 +76,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       nextPerField = null;
   }
 
-  void shrinkHash(int targetSize) {
-    // Fully free the bytesHash on each flush but keep the pool untouched
-    // bytesHash.clear will clear the ByteStartArray and in turn the ParallelPostingsArray too
-    bytesHash.clear(false);
-  }
-
-  public void reset() {
+  void reset() {
     bytesHash.clear(false);
     if (nextPerField != null)
       nextPerField.reset();
@@ -107,8 +100,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   /** Collapse the hash table & sort in-place. */
-  public int[] sortPostings(Comparator<BytesRef> termComp) {
-   return bytesHash.sort(termComp);
+  public int[] sortPostings() {
+    return bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
   private boolean doCall;
@@ -136,7 +129,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   // Secondary entry point (for 2nd & subsequent TermsHash),
   // because token text has already been "interned" into
-  // textStart, so we hash by textStart
+  // textStart, so we hash by textStart.  term vectors use
+  // this API.
   public void add(int textStart) throws IOException {
     int termID = bytesHash.addByPoolOffset(textStart);
     if (termID >= 0) {      // New posting
@@ -173,7 +167,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     }
   }
 
-  // Primary entry point (for first TermsHash)
+  // Primary entry point (for first TermsHash); postings use
+  // this API.
   @Override
   void add() throws IOException {
 

@@ -1486,7 +1486,6 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }

@@ -17,7 +17,9 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Shape;
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
@@ -26,9 +28,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.Iterator;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Traverses a {@link SpatialPrefixTree} indexed field, using the template &
@@ -176,7 +176,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         //Seek to curVNode's cell (or skip if termsEnum has moved beyond)
         curVNodeTerm.bytes = curVNode.cell.getTokenBytes();
         curVNodeTerm.length = curVNodeTerm.bytes.length;
-        int compare = termsEnum.getComparator().compare(thisTerm, curVNodeTerm);
+        int compare = thisTerm.compareTo(curVNodeTerm);
         if (compare > 0) {
           // leap frog (termsEnum is beyond where we would otherwise seek)
           assert ! context.reader().terms(fieldName).iterator(null).seekExact(curVNodeTerm) : "should be absent";

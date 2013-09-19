@@ -761,8 +761,6 @@ public class CheckIndex {
       
       BytesRef lastTerm = null;
       
-      Comparator<BytesRef> termComp = terms.getComparator();
-      
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
       FixedBitSet visitedDocs = new FixedBitSet(maxDoc);
@@ -780,7 +778,7 @@ public class CheckIndex {
         if (lastTerm == null) {
           lastTerm = BytesRef.deepCopyOf(term);
         } else {
-          if (termComp.compare(lastTerm, term) >= 0) {
+          if (lastTerm.compareTo(term) >= 0) {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);

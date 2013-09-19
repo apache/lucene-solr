@@ -804,11 +804,6 @@ public class MemoryIndex {
             }
 
             @Override
-            public Comparator<BytesRef> getComparator() {
-              return BytesRef.getUTF8SortedAsUnicodeComparator();
-            }
-
-            @Override
             public long size() {
               return info.terms.size();
             }
@@ -963,11 +958,6 @@ public class MemoryIndex {
         }
         final int ord = info.sortedTerms[termUpto];
         return ((MemoryDocsAndPositionsEnum) reuse).reset(liveDocs, info.sliceArray.start[ord], info.sliceArray.end[ord], info.sliceArray.freq[ord]);
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override

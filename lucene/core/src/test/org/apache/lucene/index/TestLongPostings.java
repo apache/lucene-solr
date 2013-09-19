@@ -199,6 +199,9 @@ public class TestLongPostings extends LuceneTestCase {
           }
 
           if (random().nextInt(6) == 3) {
+            if (VERBOSE) {
+              System.out.println("    check positions");
+            }
             final int freq = postings.freq();
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {

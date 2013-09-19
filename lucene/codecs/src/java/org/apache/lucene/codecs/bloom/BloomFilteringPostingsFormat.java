@@ -19,18 +19,18 @@ package org.apache.lucene.codecs.bloom;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.PushFieldsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
@@ -111,14 +111,16 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     this.delegatePostingsFormat = delegatePostingsFormat;
     this.bloomFilterFactory = bloomFilterFactory;
   }
-  
+
   /**
    * Creates Bloom filters for a selection of fields created in the index. This
    * is recorded as a set of Bitsets held as a segment summary in an additional
    * "blm" file. This PostingsFormat delegates to a choice of delegate
    * PostingsFormat for encoding all other postings data. This choice of
    * constructor defaults to the {@link DefaultBloomFilterFactory} for
-   * configuring per-field BloomFilters.
+   * configuring per-field BloomFilters.  Note that the
+   * wrapped PostingsFormat must use a {@link PushFieldsConsumer}
+   * for writing.
    * 
    * @param delegatePostingsFormat
    *          The PostingsFormat that records all the non-bloom filter data i.e.
@@ -141,9 +143,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       throw new UnsupportedOperationException("Error - " + getClass().getName()
           + " has been constructed without a choice of PostingsFormat");
     }
+    FieldsConsumer fieldsConsumer = delegatePostingsFormat.fieldsConsumer(state);
+    if (!(fieldsConsumer instanceof PushFieldsConsumer)) {
+      throw new UnsupportedOperationException("Wrapped PostingsFormat must return a PushFieldsConsumer");
+    }
     return new BloomFilteredFieldsConsumer(
-        delegatePostingsFormat.fieldsConsumer(state), state,
-        delegatePostingsFormat);
+              (PushFieldsConsumer) fieldsConsumer, state);
   }
   
   @Override
@@ -252,11 +257,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public Comparator<BytesRef> getComparator() {
-        return delegateTerms.getComparator();
-      }
-      
-      @Override
       public long size() throws IOException {
         return delegateTerms.size();
       }
@@ -327,11 +327,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public final Comparator<BytesRef> getComparator() {
-        return delegateTerms.getComparator();
-      }
-      
-      @Override
       public final boolean seekExact(BytesRef text)
           throws IOException {
         // The magical fail-fast speed up that is the entire point of all of
@@ -388,8 +383,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           throws IOException {
         return delegate().docs(liveDocs, reuse, flags);
       }
-      
-      
     }
 
     @Override
@@ -401,17 +394,16 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
-    
   }
   
-  class BloomFilteredFieldsConsumer extends FieldsConsumer {
-    private FieldsConsumer delegateFieldsConsumer;
+  class BloomFilteredFieldsConsumer extends PushFieldsConsumer {
+    private PushFieldsConsumer delegateFieldsConsumer;
     private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<FieldInfo,FuzzySet>();
     private SegmentWriteState state;
     
-    
-    public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer,
-        SegmentWriteState state, PostingsFormat delegatePostingsFormat) {
+    public BloomFilteredFieldsConsumer(PushFieldsConsumer fieldsConsumer,
+        SegmentWriteState state) {
+      super(state);
       this.delegateFieldsConsumer = fieldsConsumer;
       this.state = state;
     }
@@ -422,7 +414,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       if (bloomFilter != null) {
         assert bloomFilters.containsKey(field) == false;
         bloomFilters.put(field, bloomFilter);
-        return new WrappedTermsConsumer(delegateFieldsConsumer.addField(field),bloomFilter);
+        return new WrappedTermsConsumer(delegateFieldsConsumer.addField(field), bloomFilter);
       } else {
         // No, use the unfiltered fieldsConsumer - we are not interested in
         // recording any term Bitsets.
@@ -510,12 +502,5 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         throws IOException {
       delegateTermsConsumer.finish(sumTotalTermFreq, sumDocFreq, docCount);
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
-      return delegateTermsConsumer.getComparator();
-    }
-    
   }
-  
 }

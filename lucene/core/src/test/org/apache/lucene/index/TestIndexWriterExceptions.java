@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -537,21 +538,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
-        boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if (sawAppend && sawFlush) {
-            break;
-          }
-          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName())) {
-            sawAppend = true;
-          }
           if ("flush".equals(trace[i].getMethodName())) {
             sawFlush = true;
+            break;
           }
         }
 
-        if (sawAppend && sawFlush && count++ >= 30) {
+        if (sawFlush && count++ >= 30) {
           doFail = false;
           throw new IOException("now failing during flush");
         }

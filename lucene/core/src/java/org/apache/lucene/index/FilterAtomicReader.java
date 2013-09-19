@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -97,11 +96,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return in.iterator(reuse);
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
     }
 
     @Override
@@ -199,11 +193,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       return in.docsAndPositions(liveDocs, reuse, flags);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
     }
   }
 

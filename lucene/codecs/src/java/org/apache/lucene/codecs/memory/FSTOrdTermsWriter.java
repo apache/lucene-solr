@@ -18,10 +18,16 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.List;
 
+import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.PostingsConsumer;
+import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushFieldsConsumer;
+import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -30,7 +36,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
@@ -38,13 +43,6 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
-import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.CodecUtil;
 
 /** 
  * FST-based term dict, using ord as FST output.
@@ -144,7 +142,7 @@ import org.apache.lucene.codecs.CodecUtil;
  * @lucene.experimental 
  */
 
-public class FSTOrdTermsWriter extends FieldsConsumer {
+public class FSTOrdTermsWriter extends PushFieldsConsumer {
   static final String TERMS_INDEX_EXTENSION = "tix";
   static final String TERMS_BLOCK_EXTENSION = "tbk";
   static final String TERMS_CODEC_NAME = "FST_ORD_TERMS_DICT";
@@ -159,6 +157,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   IndexOutput indexOut = null;
 
   public FSTOrdTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
+    super(state);
     final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     final String termsBlockFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_BLOCK_EXTENSION);
 
@@ -189,7 +188,6 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   public void close() throws IOException {
     IOException ioe = null;
     try {
-      final long indexDirStart = indexOut.getFilePointer();
       final long blockDirStart = blockOut.getFilePointer();
 
       // write field summary
@@ -284,11 +282,6 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
 
       this.lastLongs = new long[longsSize];
       this.lastMetaBytesFP = 0;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

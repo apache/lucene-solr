@@ -18,10 +18,16 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.List;
 
+import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.PostingsConsumer;
+import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushFieldsConsumer;
+import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -30,20 +36,12 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
-import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.CodecUtil;
 
 /**
  * FST-based term dict, using metadata as FST output.
@@ -121,7 +119,7 @@ import org.apache.lucene.codecs.CodecUtil;
  * @lucene.experimental
  */
 
-public class FSTTermsWriter extends FieldsConsumer {
+public class FSTTermsWriter extends PushFieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
   static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
   public static final int TERMS_VERSION_START = 0;
@@ -133,6 +131,7 @@ public class FSTTermsWriter extends FieldsConsumer {
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
 
   public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
+    super(state);
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
 
     this.postingsWriter = postingsWriter;
@@ -217,7 +216,6 @@ public class FSTTermsWriter extends FieldsConsumer {
     private long numTerms;
 
     private final IntsRef scratchTerm = new IntsRef();
-    private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
 
     TermsWriter(FieldInfo fieldInfo) {
@@ -226,11 +224,6 @@ public class FSTTermsWriter extends FieldsConsumer {
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
       this.builder = new Builder<FSTTermOutputs.TermData>(FST.INPUT_TYPE.BYTE1, outputs);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

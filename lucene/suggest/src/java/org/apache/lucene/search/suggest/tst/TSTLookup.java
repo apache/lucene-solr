@@ -56,11 +56,9 @@ public class TSTLookup extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     root = new TernaryTreeNode();
-    // buffer first
-    if (tfit.getComparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {
-      // make sure it's sorted and the comparator uses UTF16 sort order
-      tfit = new SortedTermFreqIteratorWrapper(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
-    }
+
+    // make sure it's sorted and the comparator uses UTF16 sort order
+    tfit = new SortedTermFreqIteratorWrapper(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
 
     ArrayList<String> tokens = new ArrayList<String>();
     ArrayList<Number> vals = new ArrayList<Number>();

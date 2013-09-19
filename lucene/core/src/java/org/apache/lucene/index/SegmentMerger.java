@@ -22,9 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -375,19 +374,10 @@ final class SegmentMerger {
       docBase += maxDoc;
     }
 
-    final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
-    boolean success = false;
-    try {
-      consumer.merge(mergeState,
-                     new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                     slices.toArray(ReaderSlice.EMPTY_ARRAY)));
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(consumer);
-      } else {
-        IOUtils.closeWhileHandlingException(consumer);
-      }
-    }
+    Fields mergedFields = new MappedMultiFields(mergeState, 
+                                                new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+                                                                slices.toArray(ReaderSlice.EMPTY_ARRAY)));
+
+    codec.postingsFormat().fieldsConsumer(segmentWriteState).write(mergedFields);
   }
 }

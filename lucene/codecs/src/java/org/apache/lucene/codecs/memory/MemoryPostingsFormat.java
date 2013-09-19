@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -29,6 +28,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.PushFieldsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -278,11 +278,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         //System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
       }
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
   }
 
   private static String EXTENSION = "ram";
@@ -293,7 +288,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
-    return new FieldsConsumer() {
+    return new PushFieldsConsumer(state) {
       @Override
       public TermsConsumer addField(FieldInfo field) {
         //System.out.println("\naddField field=" + field.name);
@@ -759,11 +754,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public void seekExact(long ord) {
       // NOTE: we could add this...
       throw new UnsupportedOperationException();
@@ -824,11 +814,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public TermsEnum iterator(TermsEnum reuse) {
       return new FSTTermsEnum(field, fst);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

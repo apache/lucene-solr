@@ -18,13 +18,10 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.File;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -41,7 +38,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -210,11 +206,6 @@ public class FSTOrdTermsReader extends FieldsProducer {
       blockIn.readBytes(metaBytesBlock, 0, metaBytesBlock.length);
     }
 
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
     public boolean hasFreqs() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     }
@@ -374,11 +365,6 @@ public class FSTOrdTermsReader extends FieldsProducer {
           bytesStart[i] = bytesStart[i-1] + bytesLength[i-1];
           bytesLength[i] = (int)metaLongsReader.readVLong();
         }
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override

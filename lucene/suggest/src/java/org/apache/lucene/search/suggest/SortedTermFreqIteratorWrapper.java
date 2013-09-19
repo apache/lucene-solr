@@ -65,11 +65,6 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   }
   
   @Override
-  public Comparator<BytesRef> getComparator() {
-    return comparator;
-  }
-  
-  @Override
   public BytesRef next() throws IOException {
     boolean success = false;
     if (done) {

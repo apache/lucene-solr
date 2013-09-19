@@ -19,13 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Abstract API that consumes postings for an individual term.
@@ -70,79 +64,4 @@ public abstract class PostingsConsumer {
   /** Called when we are done adding positions & payloads
    *  for each doc. */
   public abstract void finishDoc() throws IOException;
-
-  /** Default merge impl: append documents, mapping around
-   *  deletes */
-  public TermStats merge(final MergeState mergeState, IndexOptions indexOptions, final DocsEnum postings, final FixedBitSet visitedDocs) throws IOException {
-
-    int df = 0;
-    long totTF = 0;
-
-    if (indexOptions == IndexOptions.DOCS_ONLY) {
-      while(true) {
-        final int doc = postings.nextDoc();
-        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        visitedDocs.set(doc);
-        this.startDoc(doc, -1);
-        this.finishDoc();
-        df++;
-      }
-      totTF = -1;
-    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
-      while(true) {
-        final int doc = postings.nextDoc();
-        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        visitedDocs.set(doc);
-        final int freq = postings.freq();
-        this.startDoc(doc, freq);
-        this.finishDoc();
-        df++;
-        totTF += freq;
-      }
-    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
-      while(true) {
-        final int doc = postingsEnum.nextDoc();
-        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        visitedDocs.set(doc);
-        final int freq = postingsEnum.freq();
-        this.startDoc(doc, freq);
-        totTF += freq;
-        for(int i=0;i<freq;i++) {
-          final int position = postingsEnum.nextPosition();
-          final BytesRef payload = postingsEnum.getPayload();
-          this.addPosition(position, payload, -1, -1);
-        }
-        this.finishDoc();
-        df++;
-      }
-    } else {
-      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-      final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
-      while(true) {
-        final int doc = postingsEnum.nextDoc();
-        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        visitedDocs.set(doc);
-        final int freq = postingsEnum.freq();
-        this.startDoc(doc, freq);
-        totTF += freq;
-        for(int i=0;i<freq;i++) {
-          final int position = postingsEnum.nextPosition();
-          final BytesRef payload = postingsEnum.getPayload();
-          this.addPosition(position, payload, postingsEnum.startOffset(), postingsEnum.endOffset());
-        }
-        this.finishDoc();
-        df++;
-      }
-    }
-    return new TermStats(df, indexOptions == IndexOptions.DOCS_ONLY ? -1 : totTF);
-  }
 }

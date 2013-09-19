@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.TreeMap;
@@ -495,11 +494,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     // TODO: maybe push this into Terms?
     public Stats computeStats() throws IOException {
       return new SegmentTermsEnum().computeBlockStats();
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -1239,11 +1233,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
-      }
-
-      @Override
       public boolean seekExact(BytesRef text) {
         throw new UnsupportedOperationException();
       }
@@ -1452,11 +1441,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           arcs = next;
         }
         return arcs[ord];
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       // Pushes a frame we seek'd to

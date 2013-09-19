@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -56,11 +55,6 @@ public final class TermFreqArrayIterator implements TermFreqIterator {
       spare.copyBytes(current.term);
       return spare;
     }
-    return null;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
     return null;
   }
 }

@@ -26,7 +26,7 @@ import org.apache.lucene.util.StringHelper;
  * Subclass of FilteredTermEnum for enumerating all terms that match the
  * specified prefix filter term.
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
 public class PrefixTermsEnum extends FilteredTermsEnum {

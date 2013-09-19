@@ -156,7 +156,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    final int[] termIDs = termsHashPerField.sortPostings(tv.getComparator());
+    final int[] termIDs = termsHashPerField.sortPostings();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
     
@@ -189,11 +189,6 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     termsHashPerField.reset();
 
     fieldInfo.setStoreTermVectors();
-  }
-
-  void shrinkHash() {
-    termsHashPerField.shrinkHash(maxNumPostings);
-    maxNumPostings = 0;
   }
 
   @Override

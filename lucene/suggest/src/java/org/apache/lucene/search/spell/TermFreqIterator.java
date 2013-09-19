@@ -18,7 +18,6 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
@@ -54,11 +53,6 @@ public interface TermFreqIterator extends BytesRefIterator {
     @Override
     public BytesRef next() throws IOException {
       return wrapped.next();
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return wrapped.getComparator();
     }
   }
 }

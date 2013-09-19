@@ -406,7 +406,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       uniqueTerms.add(new BytesRef(term));
     }
     final BytesRef[] sortedTerms = uniqueTerms.toArray(new BytesRef[0]);
-    Arrays.sort(sortedTerms, terms.getComparator());
+    Arrays.sort(sortedTerms);
     final TermsEnum termsEnum = terms.iterator(random().nextBoolean() ? null : this.termsEnum.get());
     this.termsEnum.set(termsEnum);
     for (int i = 0; i < sortedTerms.length; ++i) {

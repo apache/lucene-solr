@@ -70,20 +70,18 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       private final Map<BytesRef,ScoreTerm> visitedTerms = new HashMap<BytesRef,ScoreTerm>();
       
       private TermsEnum termsEnum;
-      private Comparator<BytesRef> termComp;
       private BoostAttribute boostAtt;        
       private ScoreTerm st;
       
       @Override
       public void setNextEnum(TermsEnum termsEnum) {
         this.termsEnum = termsEnum;
-        this.termComp = termsEnum.getComparator();
         
         assert compareToLastTerm(null);
 
         // lazy init the initial ScoreTerm because comparator is not known on ctor:
         if (st == null)
-          st = new ScoreTerm(this.termComp, new TermContext(topReaderContext));
+          st = new ScoreTerm(new TermContext(topReaderContext));
         boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
       }
     
@@ -95,7 +93,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         } else if (t == null) {
           lastTerm = null;
         } else {
-          assert termsEnum.getComparator().compare(lastTerm, t) < 0: "lastTerm=" + lastTerm + " t=" + t;
+          assert lastTerm.compareTo(t) < 0: "lastTerm=" + lastTerm + " t=" + t;
           lastTerm.copyBytes(t);
         }
         return true;
@@ -115,7 +113,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
           final ScoreTerm t = stQueue.peek();
           if (boost < t.boost)
             return true;
-          if (boost == t.boost && termComp.compare(bytes, t.bytes) > 0)
+          if (boost == t.boost && bytes.compareTo(t.bytes) > 0)
             return true;
         }
         ScoreTerm t = visitedTerms.get(bytes);
@@ -139,7 +137,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
             visitedTerms.remove(st.bytes);
             st.termState.clear(); // reset the termstate! 
           } else {
-            st = new ScoreTerm(termComp, new TermContext(topReaderContext));
+            st = new ScoreTerm(new TermContext(topReaderContext));
           }
           assert stQueue.size() <= maxSize : "the PQ size must be limited to maxSize";
           // set maxBoostAtt with values to help FuzzyTermsEnum to optimize
@@ -185,26 +183,22 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     new Comparator<ScoreTerm>() {
       @Override
       public int compare(ScoreTerm st1, ScoreTerm st2) {
-        assert st1.termComp == st2.termComp :
-          "term comparator should not change between segments";
-        return st1.termComp.compare(st1.bytes, st2.bytes);
+        return st1.bytes.compareTo(st2.bytes);
       }
     };
 
   static final class ScoreTerm implements Comparable<ScoreTerm> {
-    public final Comparator<BytesRef> termComp;
     public final BytesRef bytes = new BytesRef();
     public float boost;
     public final TermContext termState;
-    public ScoreTerm(Comparator<BytesRef> termComp, TermContext termState) {
-      this.termComp = termComp;
+    public ScoreTerm(TermContext termState) {
       this.termState = termState;
     }
     
     @Override
     public int compareTo(ScoreTerm other) {
       if (this.boost == other.boost)
-        return termComp.compare(other.bytes, this.bytes);
+        return other.bytes.compareTo(this.bytes);
       else
         return Float.compare(this.boost, other.boost);
     }

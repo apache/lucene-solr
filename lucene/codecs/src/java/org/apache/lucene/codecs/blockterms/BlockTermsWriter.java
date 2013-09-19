@@ -19,18 +19,17 @@ package org.apache.lucene.codecs.blockterms;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushFieldsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -53,7 +52,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental
  */
 
-public class BlockTermsWriter extends FieldsConsumer {
+public class BlockTermsWriter extends PushFieldsConsumer {
 
   final static String CODEC_NAME = "BLOCK_TERMS_DICT";
 
@@ -100,6 +99,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   public BlockTermsWriter(TermsIndexWriterBase termsIndexWriter,
       SegmentWriteState state, PostingsWriterBase postingsWriter)
       throws IOException {
+    super(state);
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
     out = state.directory.createOutput(termsFileName, state.context);
@@ -200,11 +200,6 @@ public class BlockTermsWriter extends FieldsConsumer {
       this.longsSize = postingsWriter.setField(fieldInfo);
     }
     
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
       //System.out.println("BTW: startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);

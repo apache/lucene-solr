@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -63,10 +62,5 @@ public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterat
   @Override
   public BytesRef payload() {
     return current.payload;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return null;
   }
 }

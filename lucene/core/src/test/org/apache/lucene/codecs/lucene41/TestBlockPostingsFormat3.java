@@ -261,7 +261,6 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }

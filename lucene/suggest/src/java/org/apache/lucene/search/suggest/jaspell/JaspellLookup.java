@@ -28,7 +28,6 @@ import java.util.List;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.UnsortedTermFreqIteratorWrapper;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -56,11 +55,6 @@ public class JaspellLookup extends Lookup {
   public void build(TermFreqIterator tfit) throws IOException {
     if (tfit instanceof TermFreqPayloadIterator) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
-    }
-    if (tfit.getComparator() != null) {
-      // make sure it's unsorted
-      // WTF - this could result in yet another sorted iteration....
-      tfit = new UnsortedTermFreqIteratorWrapper(tfit);
     }
     trie = new JaspellTernarySearchTrie();
     trie.setMatchAlmostDiff(editDistance);

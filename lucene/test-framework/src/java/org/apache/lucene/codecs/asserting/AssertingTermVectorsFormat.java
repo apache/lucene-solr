@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -178,11 +177,6 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
       assert fieldStatus != Status.STARTED;
       assert termStatus != Status.STARTED;
       in.finish(fis, numDocs);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
-      return in.getComparator();
     }
 
     @Override

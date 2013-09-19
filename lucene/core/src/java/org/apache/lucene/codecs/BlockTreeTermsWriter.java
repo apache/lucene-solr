@@ -19,7 +19,6 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -175,7 +174,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public class BlockTreeTermsWriter extends FieldsConsumer {
+public class BlockTreeTermsWriter extends PushFieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
@@ -274,6 +273,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                               int maxItemsInBlock)
     throws IOException
   {
+    super(state);
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
@@ -1017,11 +1017,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       this.longsSize = postingsWriter.setField(fieldInfo);
     }
     
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
       //if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment);

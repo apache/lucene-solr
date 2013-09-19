@@ -215,6 +215,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(
         directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+            // Force excessive merging:
             setMaxBufferedDocs(2).
             setMergePolicy(newLogMergePolicy(100))
     );
@@ -249,7 +250,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setOpenMode(OpenMode.APPEND).
-              setMergePolicy(newLogMergePolicy(100))
+              setMergePolicy(newLogMergePolicy(100)).
+              // Force excessive merging:
+              setMaxBufferedDocs(2)
       );
     }
     writer.close();

@@ -25,15 +25,20 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.PushFieldsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -49,7 +54,12 @@ public final class AssertingPostingsFormat extends PostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new AssertingFieldsConsumer(in.fieldsConsumer(state));
+    FieldsConsumer fieldsConsumer = in.fieldsConsumer(state);
+    if (fieldsConsumer instanceof PushFieldsConsumer) {
+      return new AssertingPushFieldsConsumer(state, (PushFieldsConsumer) fieldsConsumer);
+    } else {
+      return new AssertingFieldsConsumer(state, fieldsConsumer);
+    }
   }
 
   @Override
@@ -92,11 +102,12 @@ public final class AssertingPostingsFormat extends PostingsFormat {
       return in.ramBytesUsed();
     }
   }
-  
-  static class AssertingFieldsConsumer extends FieldsConsumer {
-    private final FieldsConsumer in;
+
+  static class AssertingPushFieldsConsumer extends PushFieldsConsumer {
+    private final PushFieldsConsumer in;
     
-    AssertingFieldsConsumer(FieldsConsumer in) {
+    AssertingPushFieldsConsumer(SegmentWriteState writeState, PushFieldsConsumer in) {
+      super(writeState);
       this.in = in;
     }
     
@@ -112,6 +123,113 @@ public final class AssertingPostingsFormat extends PostingsFormat {
       in.close();
     }
   }
+
+  static class AssertingFieldsConsumer extends FieldsConsumer {
+    private final FieldsConsumer in;
+    private final SegmentWriteState writeState;
+
+    AssertingFieldsConsumer(SegmentWriteState writeState, FieldsConsumer in) {
+      this.writeState = writeState;
+      this.in = in;
+    }
+    
+    @Override
+    public void write(Fields fields) throws IOException {
+      in.write(fields);
+
+      // TODO: more asserts?  can we somehow run a
+      // "limited" CheckIndex here???  Or ... can we improve
+      // AssertingFieldsProducer and us it also to wrap the
+      // incoming Fields here?
+ 
+      String lastField = null;
+      TermsEnum termsEnum = null;
+
+      for(String field : fields) {
+
+        FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
+        assert fieldInfo != null;
+        assert lastField == null || lastField.compareTo(field) < 0;
+        lastField = field;
+
+        Terms terms = fields.terms(field);
+        assert terms != null;
+
+        termsEnum = terms.iterator(termsEnum);
+        BytesRef lastTerm = null;
+        DocsEnum docsEnum = null;
+        DocsAndPositionsEnum posEnum = null;
+
+        boolean hasFreqs = fieldInfo.getIndexOptions().compareTo(FieldInfo.IndexOptions.DOCS_AND_FREQS) >= 0;
+        boolean hasPositions = fieldInfo.getIndexOptions().compareTo(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+        boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+
+        assert hasPositions == terms.hasPositions();
+        assert hasOffsets == terms.hasOffsets();
+
+        while(true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          assert lastTerm == null || lastTerm.compareTo(term) < 0;
+          if (lastTerm == null) {
+            lastTerm = BytesRef.deepCopyOf(term);
+          } else {
+            lastTerm.copyBytes(term);
+          }
+
+          if (hasPositions == false) {
+            int flags = 0;
+            if (hasFreqs) {
+              flags = flags | DocsEnum.FLAG_FREQS;
+            }
+            docsEnum = termsEnum.docs(null, docsEnum, flags);
+          } else {
+            int flags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+            if (hasOffsets) {
+              flags = flags | DocsAndPositionsEnum.FLAG_OFFSETS;
+            }
+            posEnum = termsEnum.docsAndPositions(null, posEnum, flags);
+            docsEnum = posEnum;
+          }
+
+          int lastDocID = -1;
+
+          while(true) {
+            int docID = docsEnum.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            assert docID > lastDocID;
+            lastDocID = docID;
+            if (hasFreqs) {
+              int freq = docsEnum.freq();
+              assert freq > 0;
+
+              if (hasPositions) {
+                int lastPos = -1;
+                int lastStartOffset = -1;
+                for(int i=0;i<freq;i++) {
+                  int pos = posEnum.nextPosition();
+                  assert pos > lastPos;
+                  lastPos = pos;
+
+                  if (hasOffsets) {
+                    int startOffset = posEnum.startOffset();
+                    int endOffset = posEnum.endOffset();
+                    assert endOffset > startOffset;
+                    assert startOffset >= lastStartOffset;
+                    lastStartOffset = startOffset;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   
   static enum TermsConsumerState { INITIAL, START, FINISHED };
   static class AssertingTermsConsumer extends TermsConsumer {
@@ -123,6 +241,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     private long sumTotalTermFreq = 0;
     private long sumDocFreq = 0;
     private OpenBitSet visitedDocs = new OpenBitSet();
+    private static final Comparator<BytesRef> termComp = BytesRef.getUTF8SortedAsUnicodeComparator();
     
     AssertingTermsConsumer(TermsConsumer in, FieldInfo fieldInfo) {
       this.in = in;
@@ -133,7 +252,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
       assert state == TermsConsumerState.INITIAL || state == TermsConsumerState.START && lastPostingsConsumer.docFreq == 0;
       state = TermsConsumerState.START;
-      assert lastTerm == null || in.getComparator().compare(text, lastTerm) > 0;
+      assert lastTerm == null || termComp.compare(text, lastTerm) > 0;
       lastTerm = BytesRef.deepCopyOf(text);
       return lastPostingsConsumer = new AssertingPostingsConsumer(in.startTerm(text), fieldInfo, visitedDocs);
     }
@@ -170,11 +289,6 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         assert sumTotalTermFreq == this.sumTotalTermFreq;
       }
       in.finish(sumTotalTermFreq, sumDocFreq, docCount);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
-      return in.getComparator();
     }
   }
   

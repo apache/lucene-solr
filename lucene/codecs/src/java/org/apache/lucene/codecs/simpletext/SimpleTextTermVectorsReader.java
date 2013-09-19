@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -272,11 +271,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public long size() throws IOException {
       return terms.size();
     }
@@ -393,11 +387,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum();
       e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
       return e;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
   

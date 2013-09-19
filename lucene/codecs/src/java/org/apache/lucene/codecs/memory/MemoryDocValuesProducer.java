@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -563,11 +562,6 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       } else {
         return io.input;
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest;
 
 
 import java.io.*;
-import java.util.Comparator;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -99,11 +98,5 @@ public class FileDictionary implements Dictionary {
         return null;
       }
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
   }
-
 }

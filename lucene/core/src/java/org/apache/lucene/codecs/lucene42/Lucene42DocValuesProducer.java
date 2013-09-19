@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -508,11 +507,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       } else {
         return io.input;
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override

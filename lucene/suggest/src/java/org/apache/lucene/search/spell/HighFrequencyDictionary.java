@@ -18,7 +18,6 @@
 package org.apache.lucene.search.spell;
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
@@ -98,15 +97,6 @@ public class HighFrequencyDictionary implements Dictionary {
         }
       }
       return  null;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      if (termsEnum == null) {
-        return null;
-      } else {
-        return termsEnum.getComparator();
-      }
     }
   }
 }

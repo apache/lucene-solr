@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blockterms;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -245,11 +244,6 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
@@ -347,11 +341,6 @@ public class BlockTermsReader extends FieldsProducer {
         docFreqBytes = new byte[64];
         //System.out.println("BTR.enum init this=" + this + " postingsReader=" + postingsReader);
         longs = new long[longsSize];
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       // TODO: we may want an alternate mode here which is

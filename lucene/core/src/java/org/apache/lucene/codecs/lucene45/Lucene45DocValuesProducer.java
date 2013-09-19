@@ -26,7 +26,6 @@ import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -810,11 +809,6 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         @Override
         public long ord() throws IOException {
           return currentOrd;
-        }
-        
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
         }
 
         @Override

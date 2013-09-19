@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
@@ -609,11 +608,6 @@ public class DocTermOrds {
     public OrdWrappedTermsEnum(AtomicReader reader) throws IOException {
       assert indexedTermsArray != null;
       termsEnum = reader.fields().terms(field).iterator(null);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return termsEnum.getComparator();
     }
 
     @Override    

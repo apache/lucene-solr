@@ -101,7 +101,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
     } else {
       final BooleanQuery bq = getTopLevelQuery();
       final BytesRefHash pendingTerms = col.pendingTerms;
-      final int sort[] = pendingTerms.sort(col.termsEnum.getComparator());
+      final int sort[] = pendingTerms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
       for(int i = 0; i < size; i++) {
         final int pos = sort[i];
         // docFreq is not used for constant score here, we pass 1

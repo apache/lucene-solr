@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -661,11 +660,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public boolean hasOffsets() {
       return hasOffsets;
     }
@@ -698,11 +692,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       public void reset() {
         termOrd = -1;
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override
@@ -1094,11 +1083,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
           //   System.out.println("  loop end; return termOrd=" + termOrd + " stateUpto=" + stateUpto);
           // }
         }
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       private void grow() {

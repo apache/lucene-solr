@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -442,10 +441,5 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     // the first exception encountered in this process
     IOUtils.close(tvx, tvd, tvf);
     tvx = tvd = tvf = null;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }
