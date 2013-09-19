@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.synonym;
  */
 
 import java.io.IOException;
+import java.io.Reader;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -107,39 +109,7 @@ public class SynonymMap {
       return reuse;
     }
     
-    /** Sugar: analyzes the text with the analyzer and
-     *  separates by {@link SynonymMap#WORD_SEPARATOR}.
-     *  reuse and its chars must not be null. */
-    public static CharsRef analyze(Analyzer analyzer, String text, CharsRef reuse) throws IOException {
-      TokenStream ts = analyzer.tokenStream("", text);
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-      ts.reset();
-      reuse.length = 0;
-      while (ts.incrementToken()) {
-        int length = termAtt.length();
-        if (length == 0) {
-          throw new IllegalArgumentException("term: " + text + " analyzed to a zero-length token");
-        }
-        if (posIncAtt.getPositionIncrement() != 1) {
-          throw new IllegalArgumentException("term: " + text + " analyzed to a token with posinc != 1");
-        }
-        reuse.grow(reuse.length + length + 1); /* current + word + separator */
-        int end = reuse.offset + reuse.length;
-        if (reuse.length > 0) {
-          reuse.chars[end++] = SynonymMap.WORD_SEPARATOR;
-          reuse.length++;
-        }
-        System.arraycopy(termAtt.buffer(), 0, reuse.chars, end, length);
-        reuse.length += length;
-      }
-      ts.end();
-      ts.close();
-      if (reuse.length == 0) {
-        throw new IllegalArgumentException("term: " + text + " was completely eliminated by analyzer");
-      }
-      return reuse;
-    }
+
 
     /** only used for asserting! */
     private boolean hasHoles(CharsRef chars) {
@@ -312,4 +282,60 @@ public class SynonymMap {
       return new SynonymMap(fst, words, maxHorizontalContext);
     }
   }
+
+  /**
+   * Abstraction for parsing synonym files.
+   *
+   * @lucene.experimental
+   */
+  public static abstract class Parser extends Builder {
+
+    private final Analyzer analyzer;
+
+    public Parser(boolean dedup, Analyzer analyzer) {
+      super(dedup);
+      this.analyzer = analyzer;
+    }
+
+    /**
+     * Parse the given input, adding synonyms to the inherited {@link Builder}.
+     * @param in The input to parse
+     */
+    public abstract void parse(Reader in) throws IOException, ParseException;
+
+    /** Sugar: analyzes the text with the analyzer and
+     *  separates by {@link SynonymMap#WORD_SEPARATOR}.
+     *  reuse and its chars must not be null. */
+    public CharsRef analyze(String text, CharsRef reuse) throws IOException {
+      TokenStream ts = analyzer.tokenStream("", text);
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      ts.reset();
+      reuse.length = 0;
+      while (ts.incrementToken()) {
+        int length = termAtt.length();
+        if (length == 0) {
+          throw new IllegalArgumentException("term: " + text + " analyzed to a zero-length token");
+        }
+        if (posIncAtt.getPositionIncrement() != 1) {
+          throw new IllegalArgumentException("term: " + text + " analyzed to a token with posinc != 1");
+        }
+        reuse.grow(reuse.length + length + 1); /* current + word + separator */
+        int end = reuse.offset + reuse.length;
+        if (reuse.length > 0) {
+          reuse.chars[end++] = SynonymMap.WORD_SEPARATOR;
+          reuse.length++;
+        }
+        System.arraycopy(termAtt.buffer(), 0, reuse.chars, end, length);
+        reuse.length += length;
+      }
+      ts.end();
+      ts.close();
+      if (reuse.length == 0) {
+        throw new IllegalArgumentException("term: " + text + " was completely eliminated by analyzer");
+      }
+      return reuse;
+    }
+  }
+
 }
