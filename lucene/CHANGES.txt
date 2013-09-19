@@ -78,6 +78,12 @@ API Changes:
   with IndexSearcher when an ExecutorService is specified.
   (Ryan Ernst, Mike McCandless, Robert Muir)
 
+Documentation
+
+* LUCENE-5211: Better javadocs and error checking of 'format' option in 
+  StopFilterFactory, as well as comments in all snowball formated files
+  about specifying format option.  (hossman)
+
 Changes in backwards compatibility policy
 
 * LUCENE-5204: Directory doesn't have default implementations for

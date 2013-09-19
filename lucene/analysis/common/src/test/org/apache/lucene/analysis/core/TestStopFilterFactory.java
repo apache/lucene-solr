@@ -57,6 +57,11 @@ public class TestStopFilterFactory extends BaseTokenStreamFactoryTestCase {
     assertTrue(words.contains("her"));
     assertTrue(words.contains("hers"));
     assertTrue(words.contains("herself"));
+
+    // defaults
+    factory = (StopFilterFactory) tokenFilterFactory("Stop");
+    assertEquals(StopAnalyzer.ENGLISH_STOP_WORDS_SET, factory.getStopWords());
+    assertEquals(false, factory.isIgnoreCase());
   }
   
   /** Test that bogus arguments result in exception */
@@ -66,6 +71,32 @@ public class TestStopFilterFactory extends BaseTokenStreamFactoryTestCase {
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+
+  /** Test that bogus arguments result in exception */
+  public void testBogusFormats() throws Exception {
+    try {
+      tokenFilterFactory("Stop", 
+                         "words", "stop-snowball.txt",
+                         "format", "bogus");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      String msg = expected.getMessage();
+      assertTrue(msg, msg.contains("Unknown"));
+      assertTrue(msg, msg.contains("format"));
+      assertTrue(msg, msg.contains("bogus"));
+    }
+    try {
+      tokenFilterFactory("Stop", 
+                         // implicit default words file
+                         "format", "bogus");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      String msg = expected.getMessage();
+      assertTrue(msg, msg.contains("can not be specified"));
+      assertTrue(msg, msg.contains("format"));
+      assertTrue(msg, msg.contains("bogus"));
     }
   }
 }
