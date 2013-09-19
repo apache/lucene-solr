@@ -122,6 +122,9 @@ Bug Fixes
 * LUCENE-5221: SimilarityBase did not write norms the same way as DefaultSimilarity
   if discountOverlaps == false and index-time boosts are present for the field.
   (Yubin Kim via Robert Muir)
+
+* LUCENE-5223: Fixed IndexUpgrader command line parsing: -verbose is not required
+  and -dir-impl option now works correctly.  (hossman)
   
 API Changes
 
