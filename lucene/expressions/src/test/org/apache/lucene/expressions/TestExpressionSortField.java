@@ -66,4 +66,51 @@ public class TestExpressionSortField extends LuceneTestCase {
     // same instance:
     assertEquals(sf1, sf1);
   }
+  
+  public void testNeedsScores() throws Exception {
+    SimpleBindings bindings = new SimpleBindings();
+    // refers to score directly
+    Expression exprA = JavascriptCompiler.compile("_score");
+    // constant
+    Expression exprB = JavascriptCompiler.compile("0");
+    // field
+    Expression exprC = JavascriptCompiler.compile("intfield");
+    
+    // score + constant
+    Expression exprD = JavascriptCompiler.compile("_score + 0");
+    // field + constant
+    Expression exprE = JavascriptCompiler.compile("intfield + 0");
+    
+    // expression + constant (score ref'd)
+    Expression exprF = JavascriptCompiler.compile("a + 0");
+    // expression + constant
+    Expression exprG = JavascriptCompiler.compile("e + 0");
+    
+    // several variables (score ref'd)
+    Expression exprH = JavascriptCompiler.compile("b / c + e * g - sqrt(f)");
+    // several variables
+    Expression exprI = JavascriptCompiler.compile("b / c + e * g");
+    
+    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    bindings.add(new SortField("intfield", SortField.Type.INT));
+    bindings.add("a", exprA);
+    bindings.add("b", exprB);
+    bindings.add("c", exprC);
+    bindings.add("d", exprD);
+    bindings.add("e", exprE);
+    bindings.add("f", exprF);
+    bindings.add("g", exprG);
+    bindings.add("h", exprH);
+    bindings.add("i", exprI);
+    
+    assertTrue(exprA.getSortField(bindings, true).needsScores());
+    assertFalse(exprB.getSortField(bindings, true).needsScores());
+    assertFalse(exprC.getSortField(bindings, true).needsScores());
+    assertTrue(exprD.getSortField(bindings, true).needsScores());
+    assertFalse(exprE.getSortField(bindings, true).needsScores());
+    assertTrue(exprF.getSortField(bindings, true).needsScores());
+    assertFalse(exprG.getSortField(bindings, true).needsScores());
+    assertTrue(exprH.getSortField(bindings, true).needsScores());
+    assertFalse(exprI.getSortField(bindings, false).needsScores());
+  }
 }

@@ -18,15 +18,14 @@ package org.apache.lucene.expressions;
 
 import java.io.IOException;
 
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 
 /** A {@link SortField} which sorts documents by the evaluated value of an expression for each document */
 class ExpressionSortField extends SortField {
-  private final ValueSource source;
+  private final ExpressionValueSource source;
 
-  ExpressionSortField(String name, ValueSource source, boolean reverse) {
+  ExpressionSortField(String name, ExpressionValueSource source, boolean reverse) {
     super(name, Type.CUSTOM, reverse);
     this.source = source;
   }
@@ -73,6 +72,6 @@ class ExpressionSortField extends SortField {
 
   @Override
   public boolean needsScores() {
-    return true; // TODO: maybe we can optimize by "figuring this out" somehow...
+    return source.needsScores();
   }
 }
