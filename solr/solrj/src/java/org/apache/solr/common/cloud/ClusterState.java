@@ -260,7 +260,8 @@ public class ClusterState implements JSONWriter.Writable {
       objs.remove(DocCollection.SHARDS);
     }
 
-    DocRouter router = DocRouter.getDocRouter(props.get(DocCollection.DOC_ROUTER));
+    Map map = (Map) props.get(DocCollection.DOC_ROUTER);
+    DocRouter router = map == null ? DocRouter.DEFAULT : DocRouter.getDocRouter(map.get("name"));
     return new DocCollection(name, slices, props, router);
   }
 
