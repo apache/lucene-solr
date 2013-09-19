@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.util.Version;
@@ -47,6 +48,18 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * TokenizerFactory.  If the TokenizerFactory expects an init parameters with 
  * the same name as an init param used by the SynonymFilterFactory, the prefix 
  * is mandatory.
+ * </p>
+ * <p>
+ * The optional {@code format} parameter controls how the synonyms will be parsed:
+ * It supports the short names of {@code solr} for {@link SolrSynonymParser} 
+ * and {@code wordnet} for and {@link WordnetSynonymParser}, or your own 
+ * {@code SynonymMap.Parser} class name. The default is {@code solr}.
+ * A custom {@link SynonymMap.Parser} is expected to have a constructor taking:
+ * <ul>
+ *   <li><code>boolean dedup</code> - true if duplicates should be ignored, false otherwise</li>
+ *   <li><code>boolean expand</code> - true if conflation groups should be expanded, false if they are one-directional</li>
+ *   <li><code>{@link Analyzer} analyzer</code> - an analyzer used for each raw synonym</li>
+ * </ul>
  * </p>
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {

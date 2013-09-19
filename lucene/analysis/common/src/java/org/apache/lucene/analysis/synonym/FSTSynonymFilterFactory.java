@@ -102,61 +102,44 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
     };
 
     try {
+      String formatClass = format;
       if (format == null || format.equals("solr")) {
-        // TODO: expose dedup as a parameter?
-        map = loadSolrSynonyms(loader, true, analyzer);
+        formatClass = SolrSynonymParser.class.getName();
       } else if (format.equals("wordnet")) {
-        map = loadWordnetSynonyms(loader, true, analyzer);
-      } else {
-        // TODO: somehow make this more pluggable
-        throw new IllegalArgumentException("Unrecognized synonyms format: " + format);
+        formatClass = WordnetSynonymParser.class.getName();
       }
+      // TODO: expose dedup as a parameter?
+      map = loadSynonyms(loader, formatClass, true, analyzer);
     } catch (ParseException e) {
       throw new IOException("Error parsing synonyms file:", e);
     }
   }
-  
+
   /**
-   * Load synonyms from the solr format, "format=solr".
+   * Load synonyms with the given {@link SynonymMap.Parser} class.
    */
-  private SynonymMap loadSolrSynonyms(ResourceLoader loader, boolean dedup, Analyzer analyzer) throws IOException, ParseException {    
+  private SynonymMap loadSynonyms(ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
-      .onMalformedInput(CodingErrorAction.REPORT)
-      .onUnmappableCharacter(CodingErrorAction.REPORT);
-    
-    SolrSynonymParser parser = new SolrSynonymParser(dedup, expand, analyzer);
-    File synonymFile = new File(synonyms);
-    if (synonymFile.exists()) {
-      decoder.reset();
-      parser.add(new InputStreamReader(loader.openResource(synonyms), decoder));
-    } else {
-      List<String> files = splitFileNames(synonyms);
-      for (String file : files) {
-        decoder.reset();
-        parser.add(new InputStreamReader(loader.openResource(file), decoder));
-      }
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT);
+
+    SynonymMap.Parser parser;
+    Class<? extends SynonymMap.Parser> clazz = loader.findClass(cname, SynonymMap.Parser.class);
+    try {
+      parser = clazz.getConstructor(boolean.class, boolean.class, Analyzer.class).newInstance(dedup, expand, analyzer);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    return parser.build();
-  }
-  
-  /**
-   * Load synonyms from the wordnet format, "format=wordnet".
-   */
-  private SynonymMap loadWordnetSynonyms(ResourceLoader loader, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
-    CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
-      .onMalformedInput(CodingErrorAction.REPORT)
-      .onUnmappableCharacter(CodingErrorAction.REPORT);
-    
-    WordnetSynonymParser parser = new WordnetSynonymParser(dedup, expand, analyzer);
+
     File synonymFile = new File(synonyms);
     if (synonymFile.exists()) {
       decoder.reset();
-      parser.add(new InputStreamReader(loader.openResource(synonyms), decoder));
+      parser.parse(new InputStreamReader(loader.openResource(synonyms), decoder));
     } else {
       List<String> files = splitFileNames(synonyms);
       for (String file : files) {
         decoder.reset();
-        parser.add(new InputStreamReader(loader.openResource(file), decoder));
+        parser.parse(new InputStreamReader(loader.openResource(file), decoder));
       }
     }
     return parser.build();
