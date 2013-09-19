@@ -85,4 +85,19 @@ final class ExpressionValueSource extends ValueSource {
   public boolean equals(Object obj) {
     return obj == this;
   }
+  
+  boolean needsScores() {
+    for (int i = 0; i < expression.variables.length; i++) {
+      String externalName = expression.variables[i];
+      ValueSource source = bindings.getValueSource(externalName);
+      if (source instanceof ScoreValueSource) {
+        return true;
+      } else if (source instanceof ExpressionValueSource) {
+        if (((ExpressionValueSource)source).needsScores()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }
