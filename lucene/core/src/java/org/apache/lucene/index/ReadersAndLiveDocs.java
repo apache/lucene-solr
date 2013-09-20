@@ -504,7 +504,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     if (hasFieldUpdates) {
       info.advanceDocValuesGen();
       // copy all the updates to mergingUpdates, so they can later be applied to the merged segment
-      if (isMerging || true) {
+      if (isMerging) {
         copyUpdatesToMerging();
       }
       numericUpdates.clear();
