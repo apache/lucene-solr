@@ -247,7 +247,7 @@
     <property name="idea.jdk" value=""/>
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
-      <filterset begintoken="@" endtoken="@">
+      <filterset begintoken="subst.=&quot;" endtoken="&quot;">
         <filter token="idea.jdk" value="${idea.jdk}"/>
       </filterset>
     </copy>
