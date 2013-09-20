@@ -237,13 +237,13 @@
 
   <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
     <!-- Look for property definition for ${idea.jdk} in various *build.properties files -->
+    <property file="lucene/build.properties"/>    <!-- Look in the current project first -->
     <property file="${user.home}/lucene.build.properties"/>
     <property file="${user.home}/build.properties"/>
-    <property file="lucene/build.properties"/>
     <condition property="idea.jdk.is.set">
       <isset property="idea.jdk"/>
     </condition>
-    <!-- Define ${idea.jdk} if it's not in any *build.properties file -->
+    <!-- Define ${idea.jdk} if it's not yet defined - otherwise literal "${idea.jdk}" is substituted -->
     <property name="idea.jdk" value=""/>
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
