@@ -707,8 +707,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     int numRounds = atLeast(15);
     int docID = 0;
     for (int i = 0; i < numRounds; i++) {
-      int numDocs = atLeast(2);
-      //      System.out.println("round=" + i + ", numDocs=" + numDocs);
+      int numDocs = atLeast(5);
+//      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
         Document doc = new Document();
         doc.add(new StringField("id", "doc-" + docID, Store.NO));
@@ -724,12 +724,12 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int fieldIdx = random.nextInt(fieldValues.length);
       String updateField = "f" + fieldIdx;
       writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
-      //      System.out.println("+++ updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
+//      System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
       
       if (random.nextDouble() < 0.2) {
         int deleteDoc = random.nextInt(docID); // might also delete an already deleted document, ok!
         writer.deleteDocuments(new Term("id", "doc-" + deleteDoc));
-        //        System.out.println("--- deleted document: doc-" + deleteDoc);
+//        System.out.println("[" + Thread.currentThread().getName() + "]: deleted document: doc-" + deleteDoc);
       }
       
       // verify reader
@@ -737,14 +737,16 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         writer.commit();
       }
       
+//      System.out.println("[" + Thread.currentThread().getName() + "]: reopen reader: " + reader);
       DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
       assertNotNull(newReader);
       reader.close();
       reader = newReader;
+//      System.out.println("[" + Thread.currentThread().getName() + "]: reopened reader: " + reader);
       assertTrue(reader.numDocs() > 0); // we delete at most one document per round
       for (AtomicReaderContext context : reader.leaves()) {
         AtomicReader r = context.reader();
-        //        System.out.println(((SegmentReader) r).getSegmentName());
+//        System.out.println(((SegmentReader) r).getSegmentName());
         Bits liveDocs = r.getLiveDocs();
         for (int field = 0; field < fieldValues.length; field++) {
           String f = "f" + field;
@@ -754,12 +756,12 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
           for (int doc = 0; doc < maxDoc; doc++) {
             if (liveDocs == null || liveDocs.get(doc)) {
               //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + ndv.get(doc));
-              assertEquals("invalid value for doc=" + (doc + context.docBase) + ", field=" + f, fieldValues[field], ndv.get(doc));
+              assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
             }
           }
         }
       }
-      //      System.out.println();
+//      System.out.println();
     }
     
     IOUtils.close(writer, reader, dir);

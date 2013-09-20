@@ -433,6 +433,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       final ReadersAndLiveDocs rld = readerMap.get(info);
       if (rld != null) {
         assert info == rld.info;
+//        System.out.println("[" + Thread.currentThread().getName() + "] ReaderPool.drop: " + info);
         readerMap.remove(info);
         rld.dropReaders();
       }
@@ -459,6 +460,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       if (!poolReaders && rld.refCount() == 1) {
         // This is the last ref to this RLD, and we're not
         // pooling, so remove it:
+//        System.out.println("[" + Thread.currentThread().getName() + "] ReaderPool.release: " + rld.info);
         if (rld.writeLiveDocs(directory)) {
           // Make sure we only write del docs and field updates for a live segment:
           assert infoIsLive(rld.info);
@@ -467,6 +469,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           deleter.checkpoint(segmentInfos, false);
         }
 
+//        System.out.println("[" + Thread.currentThread().getName() + "] ReaderPool.release: drop readers " + rld.info);
         rld.dropReaders();
         readerMap.remove(rld.info);
       }
@@ -3157,7 +3160,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       assert rld != null: "seg=" + info.info.name;
       final Bits currentLiveDocs = rld.getLiveDocs();
       final Map<Integer,Map<String,Long>> mergingUpdates = rld.getMergingUpdates();
-      
+
+//      System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMergedDeletes: info=" + info + ", mergingUpdates=" + mergingUpdates);
+
       if (prevLiveDocs != null) {
 
         // If we had deletions on starting the merge we must
@@ -3284,6 +3289,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     // set any updates that came while the segment was merging
     if (!mergedUpdates.isEmpty()) {
+//      System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMergedDeletes: mergedDeletes.info=" + mergedDeletes.info + ", mergedUpdates=" + mergedUpdates);
       assert mergedDeletes != null;
       mergedDeletes.setMergingUpdates(mergedUpdates);
     }
@@ -3331,6 +3337,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
 
     final ReadersAndLiveDocs mergedDeletes =  merge.info.info.getDocCount() == 0 ? null : commitMergedDeletes(merge, mergeState);
+//    System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMerge: mergedDeletes=" + mergedDeletes);
 
     assert mergedDeletes == null || mergedDeletes.getPendingDeleteCount() != 0 || mergedDeletes.hasFieldUpdates();
 
@@ -3364,6 +3371,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     if (mergedDeletes != null) {
       if (dropSegment) {
+//        System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMerge: dropChanges " + merge.info);
         mergedDeletes.dropChanges();
       }
       readerPool.release(mergedDeletes);
@@ -3677,7 +3685,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     setDiagnostics(si, SOURCE_MERGE, details);
     merge.setInfo(new SegmentInfoPerCommit(si, 0, -1L, -1L));
 
-//    System.out.println("[" + Thread.currentThread().getName() + "] _mergeInit: " + segString(merge.segments) + " into " + si);
+//    System.out.println("[" + Thread.currentThread().getName() + "] IW._mergeInit: " + segString(merge.segments) + " into " + si);
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
@@ -3743,8 +3751,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           assert rld != null;
           if (drop) {
             rld.dropChanges();
+          } else {
+            rld.dropMergingUpdates();
           }
-          rld.setMerging(false);
           rld.release(sr);
           readerPool.release(rld);
           if (drop) {
@@ -3802,13 +3811,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        SegmentReader reader = rld.getReader(true, context);
+        SegmentReader reader = rld.getReaderForMerge(context);
         assert reader != null;
 
-        // Notify that we are merging, so that we can later copy the updates
-        // that were received while merging to the merged segment.
-        rld.setMerging(true);
-        
         // Carefully pull the most recent live docs:
         final Bits liveDocs;
         final int delCount;
@@ -3860,6 +3865,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         segUpto++;
       }
 
+//      System.out.println("[" + Thread.currentThread().getName() + "] IW.mergeMiddle: merging " + merge.getMergeReaders());
+      
       // we pass merge.getMergeReaders() instead of merge.readers to allow the
       // OneMerge to return a view over the actual segments to merge
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),

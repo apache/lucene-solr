@@ -82,7 +82,7 @@ public final class SegmentReader extends AtomicReader {
   public SegmentReader(SegmentInfoPerCommit si, IOContext context) throws IOException {
     this.si = si;
     core = new SegmentCoreReaders(this, si.info.dir, si, context);
-    
+
     boolean success = false;
     final Codec codec = si.info.getCodec();
     try {
@@ -101,6 +101,8 @@ public final class SegmentReader extends AtomicReader {
         // initialize the per generation numericDVProducers and put the correct
         // DVProducer for each field
         final Map<Long,List<FieldInfo>> genInfos = getGenInfos(si);
+        
+//        System.out.println("[" + Thread.currentThread().getName() + "] SR.init: new reader: " + si + "; gens=" + genInfos.keySet());
 
         for (Entry<Long,List<FieldInfo>> e : genInfos.entrySet()) {
           Long gen = e.getKey();
@@ -150,6 +152,8 @@ public final class SegmentReader extends AtomicReader {
     this.core = sr.core;
     core.incRef();
     
+//    System.out.println("[" + Thread.currentThread().getName() + "] SR.init: sharing reader: " + sr + " for gens=" + sr.genDVProducers.keySet());
+    
     // increment refCount of DocValuesProducers that are used by this reader
     boolean success = false;
     try {
@@ -170,9 +174,11 @@ public final class SegmentReader extends AtomicReader {
             if (dvp != null) {
               // gen used by given reader, incRef its DVP
               dvp.incRef();
+//              System.out.println("[" + Thread.currentThread().getName() + "] SR.init: sharing DVP for gen=" + gen + " refCount=" + dvp.getRefCount());
             } else {
               // this gen is not used by given reader, initialize a new one
               dvp = newDocValuesProducer(si, IOContext.READ, dir, dvFormat, gen, infos);
+//              System.out.println("[" + Thread.currentThread().getName() + "] SR.init: new DVP for gen=" + gen + " refCount=" + dvp.getRefCount());
             }
             assert dvp != null;
             genDVProducers.put(gen, dvp);

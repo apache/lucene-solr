@@ -170,29 +170,27 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     return reader;
   }
   
-  private SegmentReader doGetReaderWithUpdates(IOContext context) throws IOException {
+  private synchronized SegmentReader doGetReaderWithUpdates(IOContext context) throws IOException {
+    assert Thread.holdsLock(writer); // when we get here, we should already have the writer lock
     boolean checkpoint = false;
     try {
-      // don't synchronize the entire method because we cannot call
-      // writer.checkpoint() while holding the RLD lock, otherwise we might hit
-      // a deadlock w/ e.g. a concurrent merging thread.
-      synchronized (this) {
-        checkpoint = writeLiveDocs(info.info.dir);
-        if (reader == null) {
-          // We steal returned ref:
-          reader = new SegmentReader(info, context);
-          if (liveDocs == null) {
-            liveDocs = reader.getLiveDocs();
-          }
-        } else if (checkpoint) {
-          // enroll a new reader with the applied updates
-          reopenReader(context);
+      checkpoint = writeLiveDocs(info.info.dir);
+      if (reader == null) {
+        // We steal returned ref:
+//        System.out.println("[" + Thread.currentThread().getName() + "] RLD.doGetReaderWithUpdates: newSR " + info);
+        reader = new SegmentReader(info, context);
+        if (liveDocs == null) {
+          liveDocs = reader.getLiveDocs();
         }
-        
-        // Ref for caller
-        reader.incRef();
-        return reader;
+      } else if (checkpoint) {
+        // enroll a new reader with the applied updates
+//        System.out.println("[" + Thread.currentThread().getName() + "] RLD.doGetReaderWithUpdates: reopenReader " + info);
+        reopenReader(context);
       }
+      
+      // Ref for caller
+      reader.incRef();
+      return reader;
     } finally {
       if (checkpoint) {
         writer.checkpoint();
@@ -208,9 +206,11 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     // cost of obtaining it.
     if (applyFieldUpdates && hasFieldUpdates()) {
       synchronized (writer) {
+//        System.out.println("[" + Thread.currentThread().getName() + "] RLD.getReader: getReaderWithUpdates " + info);
         return doGetReaderWithUpdates(context);
       }
     } else {
+//      System.out.println("[" + Thread.currentThread().getName() + "] RLD.getReader: getReader no updates " + info);
       return doGetReader(context);
     }
   }
@@ -367,6 +367,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
       if (hasFieldUpdates) {
         // reader could be null e.g. for a just merged segment (from
         // IndexWriter.commitMergedDeletes).
+//        if (this.reader == null) System.out.println("[" + Thread.currentThread().getName() + "] RLD.writeLiveDocs: newSR " + info);
         final SegmentReader reader = this.reader == null ? new SegmentReader(info, IOContext.READONCE) : this.reader;
         try {
           // clone FieldInfos so that we can update their numericUpdatesGen
@@ -396,6 +397,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
           final DocValuesConsumer fieldsConsumer = docValuesFormat.fieldsConsumer(state);
           boolean fieldsConsumerSuccess = false;
           try {
+//            System.out.println("[" + Thread.currentThread().getName() + "] RLD.writeLiveDocs: applying updates; seg=" + info + " updates=" + numericUpdates);
             for (Entry<String,Map<Integer,Long>> e : numericUpdates.entrySet()) {
               final String field = e.getKey();
               final Map<Integer,Long> updates = e.getValue();
@@ -459,6 +461,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
           }
         } finally {
           if (reader != this.reader) {
+//            System.out.println("[" + Thread.currentThread().getName() + "] RLD.writeLiveDocs: closeReader " + reader);
             reader.close();
           }
         }
@@ -501,7 +504,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     if (hasFieldUpdates) {
       info.advanceDocValuesGen();
       // copy all the updates to mergingUpdates, so they can later be applied to the merged segment
-      if (isMerging) {
+      if (isMerging || true) {
         copyUpdatesToMerging();
       }
       numericUpdates.clear();
@@ -513,6 +516,9 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
   }
 
   private void copyUpdatesToMerging() {
+//    System.out.println("[" + Thread.currentThread().getName() + "] RLD.copyUpdatesToMerging: " + numericUpdates);
+    // cannot do a simple putAll, even if mergingUpdates is empty, because we
+    // need a shallow copy of the values (maps)
     for (Entry<String,Map<Integer,Long>> e : numericUpdates.entrySet()) {
       String field = e.getKey();
       Map<Integer,Long> merging = mergingUpdates.get(field);
@@ -525,16 +531,31 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
   }
   
   /**
-   * Indicates whether this segment is currently being merged. Call this just
-   * before the segment is being merged with {@code true} and when the merge has
-   * finished and all updates have been applied to the merged segment, call this
-   * with {@code false}.
+   * Returns a reader for merge. This method applies field updates if there are
+   * any and marks that this segment is currently merging.
    */
-  public synchronized void setMerging(boolean isMerging) {
-    this.isMerging = isMerging;
-    if (!isMerging) {
-      mergingUpdates.clear();
+  SegmentReader getReaderForMerge(IOContext context) throws IOException {
+    // lock ordering must be IW -> RLD, otherwise could cause deadlocks
+    synchronized (writer) {
+      synchronized (this) {
+        // must execute these two statements as atomic operation, otherwise we
+        // could lose updates if e.g. another thread calls writeLiveDocs in
+        // between, or the updates are applied to the obtained reader, but then
+        // re-applied in IW.commitMergedDeletes (unnecessary work and potential
+        // bugs.
+        isMerging = true;
+        return getReader(true, context);
+      }
     }
+  }
+  
+  /**
+   * Drops all merging updates. Called from IndexWriter after this segment
+   * finished merging (whether successfully or not).
+   */
+  public synchronized void dropMergingUpdates() {
+    mergingUpdates.clear();
+    isMerging = false;
   }
   
   /**
