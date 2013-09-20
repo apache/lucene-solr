@@ -236,8 +236,16 @@
   </target>
 
   <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
+    <!-- Look for property definition for ${idea.jdk} in various *build.properties files -->
+    <property file="${user.home}/lucene.build.properties"/>
+    <property file="${user.home}/build.properties"/>
+    <property file="lucene/build.properties"/>
+    <property name="idea.jdk" value=""/>  <!-- Define ${idea.jdk} if it's not in any *build.properties file -->
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="idea.jdk" value="${idea.jdk}"/>
+      </filterset>
     </copy>
     <echo>
       To complete IntelliJ IDEA setup, you must manually configure
