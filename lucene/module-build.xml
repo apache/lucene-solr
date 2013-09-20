@@ -31,7 +31,6 @@
   <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
   <path id="base.classpath">
    <pathelement location="${common.dir}/build/core/classes/java"/>
-   <pathelement path="${project.classpath}"/>
   </path>
   
   <!-- default classpath refid, can be overridden by contrib's build.xml (use the above base.classpath as basis): -->
