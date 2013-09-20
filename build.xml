@@ -240,16 +240,33 @@
     <property file="${user.home}/lucene.build.properties"/>
     <property file="${user.home}/build.properties"/>
     <property file="lucene/build.properties"/>
-    <property name="idea.jdk" value=""/>  <!-- Define ${idea.jdk} if it's not in any *build.properties file -->
+    <condition property="idea.jdk.is.set">
+      <isset property="idea.jdk"/>
+    </condition>
+    <!-- Define ${idea.jdk} if it's not in any *build.properties file -->
+    <property name="idea.jdk" value=""/>
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="idea.jdk" value="${idea.jdk}"/>
       </filterset>
     </copy>
+    <antcall target="-post-idea-instructions"/>
+  </target>
+  
+  <target name="-post-idea-instructions" unless="idea.jdk.is.set">
     <echo>
-      To complete IntelliJ IDEA setup, you must manually configure
-      File | Project Structure | Project | Project SDK.
+To complete IntelliJ IDEA setup, you must manually configure
+File | Project Structure | Project | Project SDK.
+      
+You won't have to do this in the future if you define property
+$${idea.jdk}, e.g. in ~/lucene.build.properties, ~/build.properties
+or lucene/build.properties, with a value consisting of the
+following two XML attributes/values (adjust values according to
+JDKs you have defined locally - see 
+File | Project Structure | Platform Settings | SDKs):
+
+    idea.jdk = project-jdk-name="1.7" project-jdk-type="JavaSDK"
     </echo>
   </target>
 
