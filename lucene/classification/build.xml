@@ -28,7 +28,6 @@
     <path refid="base.classpath"/>
     <pathelement path="${lucene-core.jar}"/>
     <pathelement path="${queries.jar}"/>
-    <pathelement path="${project.classpath}"/>
     <pathelement location="${build.dir}/classes/java" />
   </path>
 
