@@ -514,12 +514,6 @@ public class IndexSearcher {
    * Just like {@link #search(Weight, int, Sort, boolean, boolean)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.
-   *
-   * <p>NOTE: this does not compute scores by default.  If you
-   * need scores, create a {@link TopFieldCollector}
-   * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(List, Weight,
-   * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, FieldDoc after, int nDocs,
                                 Sort sort, boolean fillFields,
