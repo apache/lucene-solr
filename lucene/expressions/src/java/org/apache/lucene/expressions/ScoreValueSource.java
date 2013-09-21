@@ -38,7 +38,7 @@ class ScoreValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     FunctionValues v = (FunctionValues) context.get("scorer");
     if (v == null) {
-      throw new NullPointerException();
+      throw new IllegalStateException("Expressions referencing the score can only be used for sorting");
     }
     return v;
   }

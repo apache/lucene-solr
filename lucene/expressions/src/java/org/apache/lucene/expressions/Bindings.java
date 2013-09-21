@@ -16,10 +16,6 @@ package org.apache.lucene.expressions;
  * limitations under the License.
  */
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
@@ -30,7 +26,7 @@ import org.apache.lucene.queries.function.ValueSource;
  * 
  * @lucene.experimental
  */
-public abstract class Bindings implements Iterable<String> {
+public abstract class Bindings {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -41,47 +37,8 @@ public abstract class Bindings implements Iterable<String> {
    */
   public abstract ValueSource getValueSource(String name);
   
-  /** Returns an <code>Iterator</code> over the variable names in this binding */
-  @Override
-  public abstract Iterator<String> iterator();
-
-  /** 
-   * Traverses the graph of bindings, checking there are no cycles or missing references 
-   * @throws IllegalArgumentException if the bindings is inconsistent 
-   */
-  public final void validate() {
-    Set<String> marked = new HashSet<String>();
-    Set<String> chain = new HashSet<String>();
-    
-    for (String name : this) {
-      if (!marked.contains(name)) {
-        chain.add(name);
-        validate(name, marked, chain);
-        chain.remove(name);
-      }
-    }
-  }
-
-  private void validate(String name, Set<String> marked, Set<String> chain) {        
-    ValueSource vs = getValueSource(name);
-    if (vs == null) {
-      throw new IllegalArgumentException("Invalid reference '" + name + "'");
-    }
-    
-    if (vs instanceof ExpressionValueSource) {
-      Expression expr = ((ExpressionValueSource)vs).expression;
-      for (String external : expr.variables) {
-        if (chain.contains(external)) {
-          throw new IllegalArgumentException("Recursion Error: Cycle detected originating in (" + external + ")");
-        }
-        if (!marked.contains(external)) {
-          chain.add(external);
-          validate(external, marked, chain);
-          chain.remove(external);
-        }
-      }
-    }
-    
-    marked.add(name);
+  /** Returns a {@code ValueSource} over relevance scores */
+  protected final ValueSource getScoreValueSource() {
+    return new ScoreValueSource();
   }
 }

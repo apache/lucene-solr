@@ -42,8 +42,8 @@ public class TestExpressionSortField extends LuceneTestCase {
     bindings.add(new SortField("popularity", SortField.Type.INT));
     
     SimpleBindings otherBindings = new SimpleBindings();
-    bindings.add(new SortField("_score", SortField.Type.LONG));
-    bindings.add(new SortField("popularity", SortField.Type.INT));
+    otherBindings.add(new SortField("_score", SortField.Type.LONG));
+    otherBindings.add(new SortField("popularity", SortField.Type.INT));
     
     SortField sf1 = expr.getSortField(bindings, true);
     
