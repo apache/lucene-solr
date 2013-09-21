@@ -43,9 +43,16 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<String,String>();
     config = new SolrConfig(new SolrResourceLoader("solr/collection1"), testConfHome + "solrconfig.xml", null);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    System.clearProperty("solr.allow.unsafe.resourceloading");
+    super.tearDown();
   }
 
   @SuppressWarnings("deprecation")
