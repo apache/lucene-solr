@@ -19,10 +19,10 @@ package org.apache.solr.core;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.util._TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
@@ -33,6 +33,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
@@ -41,23 +42,46 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-public class ResourceLoaderTest extends LuceneTestCase 
+public class ResourceLoaderTest extends SolrTestCaseJ4 
 {
   public void testInstanceDir() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(null);
     String instDir = loader.getInstanceDir();
     assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr/") == true);
+    loader.close();
 
     loader = new SolrResourceLoader("solr");
     instDir = loader.getInstanceDir();
     assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr" + File.separator) == true);
+    loader.close();
   }
 
-  public void testAwareCompatibility() 
+  public void testEscapeInstanceDir() throws Exception {
+    File temp = _TestUtil.getTempDir("testEscapeInstanceDir");
+    try {
+      temp.mkdirs();
+      new File(temp, "dummy.txt").createNewFile();
+      File instanceDir = new File(temp, "instance");
+      instanceDir.mkdir();
+      new File(instanceDir, "conf").mkdir();
+      SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
+      try {
+        loader.openResource("../../dummy.txt").close();
+        fail();
+      } catch (IOException ioe) {
+        assertTrue(ioe.getMessage().startsWith("For security reasons, SolrResourceLoader"));
+      }
+      loader.close();
+    } finally {
+      _TestUtil.rmDir(temp);
+    }
+  }
+
+  public void testAwareCompatibility() throws Exception
   {
     SolrResourceLoader loader = new SolrResourceLoader( "." );
     
-    Class clazz = ResourceLoaderAware.class;
+    Class<?> clazz = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
     loader.assertAwareCompatibility( clazz, new NGramFilterFactory(new HashMap<String,String>()) );
     loader.assertAwareCompatibility( clazz, new KeywordTokenizerFactory(new HashMap<String,String>()) );
@@ -97,6 +121,8 @@ public class ResourceLoaderTest extends LuceneTestCase
       }
       catch( SolrException ex ) { } // OK
     }
+    
+    loader.close();
   }
   
   public void testBOMMarkers() throws Exception {
@@ -123,6 +149,8 @@ public class ResourceLoaderTest extends LuceneTestCase
     List<String> lines = loader.getLines(fileWithBom);
     assertEquals(1, lines.size());
     assertEquals("BOMsAreEvil", lines.get(0));
+    
+    loader.close();
   }
   
   public void testWrongEncoding() throws Exception {
@@ -130,11 +158,12 @@ public class ResourceLoaderTest extends LuceneTestCase
     SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
     // ensure we get our exception
     try {
-      List<String> lines = loader.getLines(wrongEncoding);
+      loader.getLines(wrongEncoding);
       fail();
     } catch (SolrException expected) {
       assertTrue(expected.getCause() instanceof CharacterCodingException);
     }
+    loader.close();
   }
 
   public void testClassLoaderLibs() throws Exception {

@@ -71,6 +71,17 @@ New Features
 * SOLR-5167: Add support for AnalyzingInfixSuggester (AnalyzingInfixLookupFactory).
   (Areek Zillur, Varun Thacker via Robert Muir)
 
+Security
+----------------------
+
+* SOLR-4882: SolrResourceLoader was restricted to only allow access to resource
+  files below the instance dir. The reason for this is security related: Some
+  Solr components allow to pass in resource paths via REST parameters
+  (e.g. XSL stylesheets, velocity templates,...) and load them via resource
+  loader. For backwards compatibility, this security feature can be disabled
+  by a new system property: solr.allow.unsafe.resourceloading=true
+  (Uwe Schindler)
+
 Other Changes
 ----------------------
 
