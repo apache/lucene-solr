@@ -900,7 +900,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   public void testStressMultiThreading() throws Exception {
     final Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(2);
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
@@ -930,12 +929,13 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     for (int i = 0; i < threads.length; i++) {
       final String f = "f" + i;
       final String cf = "cf" + i;
+      final int numThreadUpdates = atLeast(40);
       threads[i] = new Thread("UpdateThread-" + i) {
         @Override
         public void run() {
           try {
-            int numUpdates = atLeast(40);
             Random random = random();
+            int numUpdates = numThreadUpdates;
             while (numUpdates-- > 0) {
               double group = random.nextDouble();
               Term t;
@@ -943,6 +943,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
               else if (group < 0.5) t = new Term("updKey", "g1");
               else if (group < 0.8) t = new Term("updKey", "g2");
               else t = new Term("updKey", "g3");
+//              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
               long updValue = random.nextInt();
               writer.updateNumericDocValue(t, f, updValue);
               writer.updateNumericDocValue(t, cf, updValue * 2);
