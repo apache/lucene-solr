@@ -18,7 +18,6 @@ package org.apache.lucene.expressions;
  */
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.queries.function.ValueSource;
@@ -96,14 +95,26 @@ public final class SimpleBindings extends Bindings {
       case DOUBLE:
         return new DoubleFieldSource(field.getField(), (DoubleParser) field.getParser());
       case SCORE:
-        return new ScoreValueSource();
+        return getScoreValueSource();
       default:
         throw new UnsupportedOperationException(); 
     }
   }
-
-  @Override
-  public Iterator<String> iterator() {
-    return map.keySet().iterator();
+  
+  /** 
+   * Traverses the graph of bindings, checking there are no cycles or missing references 
+   * @throws IllegalArgumentException if the bindings is inconsistent 
+   */
+  public void validate() {
+    for (Object o : map.values()) {
+      if (o instanceof Expression) {
+        Expression expr = (Expression) o;
+        try {
+          expr.getValueSource(this);
+        } catch (StackOverflowError e) {
+          throw new IllegalArgumentException("Recursion Error: Cycle detected originating in (" + expr.sourceText + ")");
+        }
+      }
+    }
   }
 }

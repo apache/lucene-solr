@@ -17,6 +17,7 @@ package org.apache.lucene.expressions;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
@@ -29,32 +30,47 @@ import org.apache.lucene.search.SortField;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 final class ExpressionValueSource extends ValueSource {
-  private final Bindings bindings;
+  final ValueSource variables[];
   final Expression expression;
+  final boolean needsScores;
 
-  public ExpressionValueSource(Bindings bindings, Expression expression) {
+  ExpressionValueSource(Bindings bindings, Expression expression) {
     if (bindings == null) throw new NullPointerException();
     if (expression == null) throw new NullPointerException();
-    this.bindings = bindings;
     this.expression = expression;
+    variables = new ValueSource[expression.variables.length];
+    boolean needsScores = false;
+    for (int i = 0; i < variables.length; i++) {
+      ValueSource source = bindings.getValueSource(expression.variables[i]);
+      if (source instanceof ScoreValueSource) {
+        needsScores = true;
+      } else if (source instanceof ExpressionValueSource) {
+        if (((ExpressionValueSource)source).needsScores()) {
+          needsScores = true;
+        }
+      } else if (source == null) {
+        throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
+      }
+      variables[i] = source;
+    }
+    this.needsScores = needsScores;
   }
 
-  /** <code>context</code> must contain a key <code>"valuesCache"</code> which is a <code>Map&lt;String,FunctionValues&gt;</code>. */
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    ValueSource source;
     Map<String, FunctionValues> valuesCache = (Map<String, FunctionValues>)context.get("valuesCache");
     if (valuesCache == null) {
-      throw new NullPointerException();
+      valuesCache = new HashMap<String, FunctionValues>();
+      context = new HashMap(context);
+      context.put("valuesCache", valuesCache);
     }
     FunctionValues[] externalValues = new FunctionValues[expression.variables.length];
 
-    for (int i = 0; i < expression.variables.length; ++i) {
+    for (int i = 0; i < variables.length; ++i) {
       String externalName = expression.variables[i];
       FunctionValues values = valuesCache.get(externalName);
       if (values == null) {
-        source = bindings.getValueSource(externalName);
-        values = source.getValues(context, readerContext);
+        values = variables[i].getValues(context, readerContext);
         if (values == null) {
           throw new RuntimeException("Internal error. External (" + externalName + ") does not exist.");
         }
@@ -87,17 +103,6 @@ final class ExpressionValueSource extends ValueSource {
   }
   
   boolean needsScores() {
-    for (int i = 0; i < expression.variables.length; i++) {
-      String externalName = expression.variables[i];
-      ValueSource source = bindings.getValueSource(externalName);
-      if (source instanceof ScoreValueSource) {
-        return true;
-      } else if (source instanceof ExpressionValueSource) {
-        if (((ExpressionValueSource)source).needsScores()) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return needsScores;
   }
 }
