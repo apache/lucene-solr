@@ -17,6 +17,8 @@ package org.apache.lucene.expressions.js;
  * limitations under the License.
  */
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -231,6 +233,31 @@ public class TestCustomFunctions extends LuceneTestCase {
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
+    }
+  }
+  
+  static String MESSAGE = "This should not happen but it happens";
+  
+  public static class StaticThrowingException {
+    public static double method() { throw new ArithmeticException(MESSAGE); }
+  }
+  
+  /** the method throws an exception. We should check the stack trace that it contains the source code of the expression as file name. */
+  public void testThrowingException() throws Exception {
+    Map<String,Method> functions = new HashMap<String,Method>();
+    functions.put("foo", StaticThrowingException.class.getMethod("method"));
+    String source = "3 * foo() / 5";
+    Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
+    try {
+      expr.evaluate(0, null);
+      fail();
+    } catch (ArithmeticException e) {
+      assertEquals(MESSAGE, e.getMessage());
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      e.printStackTrace(pw);
+      pw.flush();
+      assertTrue(sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
     }
   }
 }
