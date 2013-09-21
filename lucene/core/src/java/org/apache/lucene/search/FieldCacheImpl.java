@@ -360,7 +360,7 @@ class FieldCacheImpl implements FieldCache {
     return getBytes(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -546,7 +546,7 @@ class FieldCacheImpl implements FieldCache {
     return getInts(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -759,13 +759,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getFloats(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -871,12 +871,12 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getLongs(reader, field, null, setDocsWithField);
   }
   
-  // inherit javadocs
+  @Override
   public Longs getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -996,13 +996,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getDoubles(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Doubles getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);

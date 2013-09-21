@@ -31,12 +31,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains int field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getInts()</code>
- * and makes those values available as other numeric types, casting as needed. *
- *
+ * Obtains int field values from {@link FieldCache#getInts} and makes those
+ * values available as other numeric types, casting as needed.
  */
-
 public class IntFieldSource extends FieldCacheSource {
   final FieldCache.IntParser parser;
 

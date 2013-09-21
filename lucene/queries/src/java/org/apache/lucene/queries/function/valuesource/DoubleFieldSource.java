@@ -31,13 +31,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains double field values from {@link FieldCache#getDoubles} and makes
+ * those values available as other numeric types, casting as needed.
  */
-
 public class DoubleFieldSource extends FieldCacheSource {
 
   protected final FieldCache.DoubleParser parser;
