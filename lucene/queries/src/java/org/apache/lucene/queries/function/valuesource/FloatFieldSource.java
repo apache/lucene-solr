@@ -29,13 +29,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains float field values from {@link FieldCache#getFloats} and makes those
+ * values available as other numeric types, casting as needed.
  */
-
 public class FloatFieldSource extends FieldCacheSource {
 
   protected final FieldCache.FloatParser parser;

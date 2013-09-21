@@ -31,13 +31,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains long field values from {@link FieldCache#getLongs} and makes those
+ * values available as other numeric types, casting as needed.
  */
-
 public class LongFieldSource extends FieldCacheSource {
 
   protected final FieldCache.LongParser parser;
