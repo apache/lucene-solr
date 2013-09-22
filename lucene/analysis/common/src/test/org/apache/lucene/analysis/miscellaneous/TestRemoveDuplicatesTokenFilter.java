@@ -175,7 +175,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

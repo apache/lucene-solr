@@ -243,7 +243,7 @@ public final class JapaneseTokenizer extends Tokenizer {
         outputCompounds = false;
         break;
     }
-    buffer.reset(null); // best effort NPE consumers that don't call reset()
+    buffer.reset(this.input);
 
     resetState();
 
@@ -261,7 +261,14 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    buffer.reset(input);
+  }
+
+  @Override
   public void reset() throws IOException {
+    super.reset();
     buffer.reset(input);
     resetState();
   }

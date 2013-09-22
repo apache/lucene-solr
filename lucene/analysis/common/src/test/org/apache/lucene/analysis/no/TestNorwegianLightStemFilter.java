@@ -93,6 +93,6 @@ public class TestNorwegianLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new NorwegianLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

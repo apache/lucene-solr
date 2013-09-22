@@ -34,8 +34,8 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new ArmenianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "արծիվ", "արծ");
-    checkOneTermReuse(a, "արծիվներ", "արծ");
+    checkOneTerm(a, "արծիվ", "արծ");
+    checkOneTerm(a, "արծիվներ", "արծ");
     // stopword
     assertAnalyzesTo(a, "է", new String[] { });
   }
@@ -45,8 +45,8 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("արծիվներ"), false);
     Analyzer a = new ArmenianAnalyzer(TEST_VERSION_CURRENT, 
         ArmenianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "արծիվներ", "արծիվներ");
-    checkOneTermReuse(a, "արծիվ", "արծ");
+    checkOneTerm(a, "արծիվներ", "արծիվներ");
+    checkOneTerm(a, "արծիվ", "արծ");
   }
   
   /** blast some random strings through the analyzer */

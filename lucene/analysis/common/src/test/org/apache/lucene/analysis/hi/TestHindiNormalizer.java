@@ -75,6 +75,6 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HindiNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

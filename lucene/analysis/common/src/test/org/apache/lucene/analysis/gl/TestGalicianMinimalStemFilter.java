@@ -79,6 +79,6 @@ public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

@@ -138,6 +138,7 @@ public final class PatternTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     fillBuffer(str, input);
     matcher.reset(str);
     index = 0;

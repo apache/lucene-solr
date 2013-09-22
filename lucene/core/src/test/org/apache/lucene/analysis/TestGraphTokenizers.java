@@ -68,7 +68,8 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public void reset() {
+    public void reset() throws IOException {
+      super.reset();
       tokens = null;
       upto = 0;
     }

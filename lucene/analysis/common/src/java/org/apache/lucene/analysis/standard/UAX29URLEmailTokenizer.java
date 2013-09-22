@@ -111,8 +111,8 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     this.scanner = getScannerFor(matchVersion);
   }
 
-  private static StandardTokenizerInterface getScannerFor(Version matchVersion) {
-    return new UAX29URLEmailTokenizerImpl(null); // best effort NPE if you dont call reset
+  private StandardTokenizerInterface getScannerFor(Version matchVersion) {
+    return new UAX29URLEmailTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -157,9 +157,16 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     // adjust any skipped tokens
     posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
   }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     skippedPositions = 0;
   }

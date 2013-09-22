@@ -41,7 +41,7 @@ public class VocabularyAssert {
     while ((inputWord = vocReader.readLine()) != null) {
       String expectedWord = outputReader.readLine();
       Assert.assertNotNull(expectedWord);
-      BaseTokenStreamTestCase.checkOneTermReuse(a, inputWord, expectedWord);
+      BaseTokenStreamTestCase.checkOneTerm(a, inputWord, expectedWord);
     }
   }
   
@@ -55,7 +55,7 @@ public class VocabularyAssert {
       if (inputLine.startsWith("#") || inputLine.trim().length() == 0)
         continue; /* comment */
       String words[] = inputLine.split("\t");
-      BaseTokenStreamTestCase.checkOneTermReuse(a, words[0], words[1]);
+      BaseTokenStreamTestCase.checkOneTerm(a, words[0], words[1]);
     }
   }
   

@@ -115,6 +115,6 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

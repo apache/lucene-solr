@@ -62,7 +62,7 @@ public class TestKStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new KStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
   /****** requires original java kstem source code to create map

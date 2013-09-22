@@ -128,7 +128,7 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   private final void init(Version matchVersion) {
-    this.scanner = new StandardTokenizerImpl(null); // best effort NPE if you dont call reset
+    this.scanner = new StandardTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -180,7 +180,14 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
+
+  @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     skippedPositions = 0;
   }

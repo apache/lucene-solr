@@ -44,16 +44,16 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   /** Test stemming of single tokens with Morfologik library. */
   public final void testSingleTokens() throws IOException {
     Analyzer a = getTestAnalyzer();
-    assertAnalyzesToReuse(a, "a", new String[] { "a" });
-    assertAnalyzesToReuse(a, "liście", new String[] { "liście", "liść", "list", "lista" });
-    assertAnalyzesToReuse(a, "danych", new String[] { "dany", "dana", "dane", "dać" });
-    assertAnalyzesToReuse(a, "ęóąśłżźćń", new String[] { "ęóąśłżźćń" });
+    assertAnalyzesTo(a, "a", new String[] { "a" });
+    assertAnalyzesTo(a, "liście", new String[] { "liście", "liść", "list", "lista" });
+    assertAnalyzesTo(a, "danych", new String[] { "dany", "dana", "dane", "dać" });
+    assertAnalyzesTo(a, "ęóąśłżźćń", new String[] { "ęóąśłżźćń" });
   }
 
   /** Test stemming of multiple tokens and proper term metrics. */
   public final void testMultipleTokens() throws IOException {
     Analyzer a = getTestAnalyzer();
-    assertAnalyzesToReuse(
+    assertAnalyzesTo(
       a,
       "liście danych",
       new String[] { "liście", "liść", "list", "lista", "dany", "dana", "dane", "dać" },
@@ -61,7 +61,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       new int[] { 6, 6, 6, 6, 13, 13, 13, 13 },
       new int[] { 1, 0, 0, 0, 1, 0, 0, 0 });
 
-    assertAnalyzesToReuse(
+    assertAnalyzesTo(
         a,
         "T. Gl\u00FCcksberg",
         new String[] { "tom", "tona", "Gl\u00FCcksberg" },
@@ -106,16 +106,16 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   public final void testCase() throws IOException {
     Analyzer a = getTestAnalyzer();
 
-    assertAnalyzesToReuse(a, "AGD",      new String[] { "AGD", "artykuły gospodarstwa domowego" });
-    assertAnalyzesToReuse(a, "agd",      new String[] { "artykuły gospodarstwa domowego" });
+    assertAnalyzesTo(a, "AGD",      new String[] { "AGD", "artykuły gospodarstwa domowego" });
+    assertAnalyzesTo(a, "agd",      new String[] { "artykuły gospodarstwa domowego" });
 
-    assertAnalyzesToReuse(a, "Poznania", new String[] { "Poznań" });
-    assertAnalyzesToReuse(a, "poznania", new String[] { "poznanie", "poznać" });
+    assertAnalyzesTo(a, "Poznania", new String[] { "Poznań" });
+    assertAnalyzesTo(a, "poznania", new String[] { "poznanie", "poznać" });
 
-    assertAnalyzesToReuse(a, "Aarona",   new String[] { "Aaron" });
-    assertAnalyzesToReuse(a, "aarona",   new String[] { "aarona" });
+    assertAnalyzesTo(a, "Aarona",   new String[] { "Aaron" });
+    assertAnalyzesTo(a, "aarona",   new String[] { "aarona" });
 
-    assertAnalyzesToReuse(a, "Liście",   new String[] { "liście", "liść", "list", "lista" });
+    assertAnalyzesTo(a, "Liście",   new String[] { "liście", "liść", "list", "lista" });
   }
 
   private void assertPOSToken(TokenStream ts, String term, String... tags) throws IOException {
@@ -183,7 +183,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       }
     };
 
-    assertAnalyzesToReuse(
+    assertAnalyzesTo(
       a,
       "liście danych",
       new String[] { "liście", "dany", "dana", "dane", "dać" },

@@ -83,6 +83,6 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new TurkishLowerCaseFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

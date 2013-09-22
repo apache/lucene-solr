@@ -92,14 +92,14 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
-    assertAnalyzesToReuse(analyzer, "", new String[] {});
+    assertAnalyzesTo(analyzer, "", new String[] {});
 
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           analyzer,
           "การที่ได้ต้องแสดงว่างานดี",
           new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
 
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           analyzer,
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
           new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
@@ -136,6 +136,6 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ThaiWordFilter(TEST_VERSION_CURRENT, tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

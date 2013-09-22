@@ -39,8 +39,8 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     Analyzer analyzer = new CzechAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
-    assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česk", "republik" });
+    assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
+    assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česk", "republik" });
   }
 
   public void testWithStemExclusionSet() throws IOException{

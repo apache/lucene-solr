@@ -294,7 +294,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new CzechStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
   
 }

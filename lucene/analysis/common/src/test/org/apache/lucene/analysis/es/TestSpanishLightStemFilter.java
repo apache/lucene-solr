@@ -59,6 +59,6 @@ public class TestSpanishLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new SpanishLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

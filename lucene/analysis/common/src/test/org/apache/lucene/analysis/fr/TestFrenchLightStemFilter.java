@@ -205,6 +205,6 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new FrenchLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

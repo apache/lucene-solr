@@ -74,6 +74,6 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new PorterStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

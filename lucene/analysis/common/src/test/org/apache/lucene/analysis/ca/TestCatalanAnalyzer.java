@@ -34,8 +34,8 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "llengües", "llengu");
-    checkOneTermReuse(a, "llengua", "llengu");
+    checkOneTerm(a, "llengües", "llengu");
+    checkOneTerm(a, "llengua", "llengu");
     // stopword
     assertAnalyzesTo(a, "un", new String[] { });
   }
@@ -52,8 +52,8 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("llengües"), false);
     Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT, 
         CatalanAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "llengües", "llengües");
-    checkOneTermReuse(a, "llengua", "llengu");
+    checkOneTerm(a, "llengües", "llengües");
+    checkOneTerm(a, "llengua", "llengu");
   }
   
   /** blast some random strings through the analyzer */

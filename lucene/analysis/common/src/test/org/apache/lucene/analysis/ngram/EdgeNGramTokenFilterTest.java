@@ -197,7 +197,6 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     TokenStream tk = new LetterTokenizer(TEST_VERSION_CURRENT, new StringReader("abc d efgh ij klmno p q"));
     tk = new ShingleFilter(tk);
     tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, 7, 10);
-    tk.reset();
     assertTokenStreamContents(tk,
         new String[] { "efgh ij", "ij klmn", "ij klmno", "klmno p" },
         new int[]    { 6,11,11,14 },

@@ -34,8 +34,8 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "babakocsi", "babakocs");
-    checkOneTermReuse(a, "babakocsijáért", "babakocs");
+    checkOneTerm(a, "babakocsi", "babakocs");
+    checkOneTerm(a, "babakocsijáért", "babakocs");
     // stopword
     assertAnalyzesTo(a, "által", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("babakocsi"), false);
     Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT, 
         HungarianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "babakocsi", "babakocsi");
-    checkOneTermReuse(a, "babakocsijáért", "babakocs");
+    checkOneTerm(a, "babakocsi", "babakocsi");
+    checkOneTerm(a, "babakocsijáért", "babakocs");
   }
   
   /** blast some random strings through the analyzer */

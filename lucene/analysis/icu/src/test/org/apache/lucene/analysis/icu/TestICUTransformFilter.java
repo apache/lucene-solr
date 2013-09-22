@@ -109,6 +109,6 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, Transliterator.getInstance("Any-Latin")));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

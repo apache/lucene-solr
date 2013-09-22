@@ -36,9 +36,9 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new MockAnalyzer(random());
     assertAnalyzesTo(a, "A bc defg hiJklmn opqrstuv wxy z ",
         new String[] { "a", "bc", "defg", "hijklmn", "opqrstuv", "wxy", "z" });
-    assertAnalyzesToReuse(a, "aba cadaba shazam",
+    assertAnalyzesTo(a, "aba cadaba shazam",
         new String[] { "aba", "cadaba", "shazam" });
-    assertAnalyzesToReuse(a, "break on whitespace",
+    assertAnalyzesTo(a, "break on whitespace",
         new String[] { "break", "on", "whitespace" });
   }
   
@@ -47,9 +47,9 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a", "bc", "defg", "hijklmn", "opqrstuv", "wxy", "z" });
-    assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
+    assertAnalyzesTo(a, "aba4cadaba-Shazam",
         new String[] { "aba", "cadaba", "shazam" });
-    assertAnalyzesToReuse(a, "break+on/Letters",
+    assertAnalyzesTo(a, "break+on/Letters",
         new String[] { "break", "on", "letters" });
   }
   
@@ -58,9 +58,9 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a-bc123 defg+hijklmn567opqrstuv78wxy_z " });
-    assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
+    assertAnalyzesTo(a, "aba4cadaba-Shazam",
         new String[] { "aba4cadaba-Shazam" });
-    assertAnalyzesToReuse(a, "break+on/Nothing",
+    assertAnalyzesTo(a, "break+on/Nothing",
         new String[] { "break+on/Nothing" });
   }
   
@@ -106,7 +106,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     stream.end();
     stream.close();
     
-    assertAnalyzesToReuse(analyzer, testString, new String[] { "t" });
+    assertAnalyzesTo(analyzer, testString, new String[] { "t" });
   }
 
   /** blast some random strings through the analyzer */
