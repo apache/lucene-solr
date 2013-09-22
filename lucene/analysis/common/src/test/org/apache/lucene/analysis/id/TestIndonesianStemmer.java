@@ -41,73 +41,73 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   /** Some examples from the paper */
   public void testExamples() throws IOException {
     checkOneTerm(a, "bukukah", "buku");
-    checkOneTermReuse(a, "adalah", "ada");
-    checkOneTermReuse(a, "bukupun", "buku");
-    checkOneTermReuse(a, "bukuku", "buku");
-    checkOneTermReuse(a, "bukumu", "buku");
-    checkOneTermReuse(a, "bukunya", "buku");
-    checkOneTermReuse(a, "mengukur", "ukur");
-    checkOneTermReuse(a, "menyapu", "sapu");
-    checkOneTermReuse(a, "menduga", "duga");
-    checkOneTermReuse(a, "menuduh", "uduh");
-    checkOneTermReuse(a, "membaca", "baca");
-    checkOneTermReuse(a, "merusak", "rusak");
-    checkOneTermReuse(a, "pengukur", "ukur");
-    checkOneTermReuse(a, "penyapu", "sapu");
-    checkOneTermReuse(a, "penduga", "duga");
-    checkOneTermReuse(a, "pembaca", "baca");
-    checkOneTermReuse(a, "diukur", "ukur");
-    checkOneTermReuse(a, "tersapu", "sapu");
-    checkOneTermReuse(a, "kekasih", "kasih");
-    checkOneTermReuse(a, "berlari", "lari");
-    checkOneTermReuse(a, "belajar", "ajar");
-    checkOneTermReuse(a, "bekerja", "kerja");
-    checkOneTermReuse(a, "perjelas", "jelas");
-    checkOneTermReuse(a, "pelajar", "ajar");
-    checkOneTermReuse(a, "pekerja", "kerja");
-    checkOneTermReuse(a, "tarikkan", "tarik");
-    checkOneTermReuse(a, "ambilkan", "ambil");
-    checkOneTermReuse(a, "mengambilkan", "ambil");
-    checkOneTermReuse(a, "makanan", "makan");
-    checkOneTermReuse(a, "janjian", "janji");
-    checkOneTermReuse(a, "perjanjian", "janji");
-    checkOneTermReuse(a, "tandai", "tanda");
-    checkOneTermReuse(a, "dapati", "dapat");
-    checkOneTermReuse(a, "mendapati", "dapat");
-    checkOneTermReuse(a, "pantai", "panta");
+    checkOneTerm(a, "adalah", "ada");
+    checkOneTerm(a, "bukupun", "buku");
+    checkOneTerm(a, "bukuku", "buku");
+    checkOneTerm(a, "bukumu", "buku");
+    checkOneTerm(a, "bukunya", "buku");
+    checkOneTerm(a, "mengukur", "ukur");
+    checkOneTerm(a, "menyapu", "sapu");
+    checkOneTerm(a, "menduga", "duga");
+    checkOneTerm(a, "menuduh", "uduh");
+    checkOneTerm(a, "membaca", "baca");
+    checkOneTerm(a, "merusak", "rusak");
+    checkOneTerm(a, "pengukur", "ukur");
+    checkOneTerm(a, "penyapu", "sapu");
+    checkOneTerm(a, "penduga", "duga");
+    checkOneTerm(a, "pembaca", "baca");
+    checkOneTerm(a, "diukur", "ukur");
+    checkOneTerm(a, "tersapu", "sapu");
+    checkOneTerm(a, "kekasih", "kasih");
+    checkOneTerm(a, "berlari", "lari");
+    checkOneTerm(a, "belajar", "ajar");
+    checkOneTerm(a, "bekerja", "kerja");
+    checkOneTerm(a, "perjelas", "jelas");
+    checkOneTerm(a, "pelajar", "ajar");
+    checkOneTerm(a, "pekerja", "kerja");
+    checkOneTerm(a, "tarikkan", "tarik");
+    checkOneTerm(a, "ambilkan", "ambil");
+    checkOneTerm(a, "mengambilkan", "ambil");
+    checkOneTerm(a, "makanan", "makan");
+    checkOneTerm(a, "janjian", "janji");
+    checkOneTerm(a, "perjanjian", "janji");
+    checkOneTerm(a, "tandai", "tanda");
+    checkOneTerm(a, "dapati", "dapat");
+    checkOneTerm(a, "mendapati", "dapat");
+    checkOneTerm(a, "pantai", "panta");
   }
   
   /** Some detailed analysis examples (that might not be the best) */
   public void testIRExamples() throws IOException {
     checkOneTerm(a, "penyalahgunaan", "salahguna");
-    checkOneTermReuse(a, "menyalahgunakan", "salahguna");
-    checkOneTermReuse(a, "disalahgunakan", "salahguna");
+    checkOneTerm(a, "menyalahgunakan", "salahguna");
+    checkOneTerm(a, "disalahgunakan", "salahguna");
        
-    checkOneTermReuse(a, "pertanggungjawaban", "tanggungjawab");
-    checkOneTermReuse(a, "mempertanggungjawabkan", "tanggungjawab");
-    checkOneTermReuse(a, "dipertanggungjawabkan", "tanggungjawab");
+    checkOneTerm(a, "pertanggungjawaban", "tanggungjawab");
+    checkOneTerm(a, "mempertanggungjawabkan", "tanggungjawab");
+    checkOneTerm(a, "dipertanggungjawabkan", "tanggungjawab");
     
-    checkOneTermReuse(a, "pelaksanaan", "laksana");
-    checkOneTermReuse(a, "pelaksana", "laksana");
-    checkOneTermReuse(a, "melaksanakan", "laksana");
-    checkOneTermReuse(a, "dilaksanakan", "laksana");
+    checkOneTerm(a, "pelaksanaan", "laksana");
+    checkOneTerm(a, "pelaksana", "laksana");
+    checkOneTerm(a, "melaksanakan", "laksana");
+    checkOneTerm(a, "dilaksanakan", "laksana");
     
-    checkOneTermReuse(a, "melibatkan", "libat");
-    checkOneTermReuse(a, "terlibat", "libat");
+    checkOneTerm(a, "melibatkan", "libat");
+    checkOneTerm(a, "terlibat", "libat");
     
-    checkOneTermReuse(a, "penculikan", "culik");
-    checkOneTermReuse(a, "menculik", "culik");
-    checkOneTermReuse(a, "diculik", "culik");
-    checkOneTermReuse(a, "penculik", "culik");
+    checkOneTerm(a, "penculikan", "culik");
+    checkOneTerm(a, "menculik", "culik");
+    checkOneTerm(a, "diculik", "culik");
+    checkOneTerm(a, "penculik", "culik");
     
-    checkOneTermReuse(a, "perubahan", "ubah");
-    checkOneTermReuse(a, "peledakan", "ledak");
-    checkOneTermReuse(a, "penanganan", "tangan");
-    checkOneTermReuse(a, "kepolisian", "polisi");
-    checkOneTermReuse(a, "kenaikan", "naik");
-    checkOneTermReuse(a, "bersenjata", "senjata");
-    checkOneTermReuse(a, "penyelewengan", "seleweng");
-    checkOneTermReuse(a, "kecelakaan", "celaka");
+    checkOneTerm(a, "perubahan", "ubah");
+    checkOneTerm(a, "peledakan", "ledak");
+    checkOneTerm(a, "penanganan", "tangan");
+    checkOneTerm(a, "kepolisian", "polisi");
+    checkOneTerm(a, "kenaikan", "naik");
+    checkOneTerm(a, "bersenjata", "senjata");
+    checkOneTerm(a, "penyelewengan", "seleweng");
+    checkOneTerm(a, "kecelakaan", "celaka");
   }
   
   /* inflectional-only stemming */
@@ -122,15 +122,15 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   /** Test stemming only inflectional suffixes */
   public void testInflectionalOnly() throws IOException {
     checkOneTerm(b, "bukunya", "buku");
-    checkOneTermReuse(b, "bukukah", "buku");
-    checkOneTermReuse(b, "bukunyakah", "buku");
-    checkOneTermReuse(b, "dibukukannya", "dibukukan");
+    checkOneTerm(b, "bukukah", "buku");
+    checkOneTerm(b, "bukunyakah", "buku");
+    checkOneTerm(b, "dibukukannya", "dibukukan");
   }
   
   public void testShouldntStem() throws IOException {
     checkOneTerm(a, "bersenjata", "senjata");
-    checkOneTermReuse(a, "bukukah", "buku");
-    checkOneTermReuse(a, "gigi", "gigi");
+    checkOneTerm(a, "bukukah", "buku");
+    checkOneTerm(a, "gigi", "gigi");
   }
   
   public void testEmptyTerm() throws IOException {
@@ -141,6 +141,6 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

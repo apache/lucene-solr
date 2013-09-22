@@ -27,6 +27,12 @@ New Features
 * LUCENE-5219: Add support to SynonymFilterFactory for custom
   parsers.  (Ryan Ernst via Robert Muir)
 
+* LUCENE-5235: Tokenizers now throw an IllegalStateException if the
+  consumer does not call reset() before consuming the stream. Previous
+  versions throwed NullPointerException or ArrayIndexOutOfBoundsException
+  on best effort which was not user-friendly.
+  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
@@ -46,6 +52,11 @@ Documentation
   about specifying format option.  (hossman)
 
 Changes in backwards compatibility policy
+
+* LUCENE-5235: Sub classes of Tokenizer have to call super.reset()
+  when implementing reset(). Otherwise the consumer will get an
+  IllegalStateException because the Reader is not correctly assigned.
+  (Uwe Schindler, Robert Muir)
 
 * LUCENE-5204: Directory doesn't have default implementations for
   LockFactory-related methods, which have been moved to BaseDirectory. If you

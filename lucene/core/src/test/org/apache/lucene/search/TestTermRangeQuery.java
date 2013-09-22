@@ -227,7 +227,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
 
       @Override
-      public void reset() throws IOException {;
+      public void reset() throws IOException {
+        super.reset();
         done = false;
       }
     }

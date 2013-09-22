@@ -123,6 +123,6 @@ public class TestPortugueseLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new PortugueseLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

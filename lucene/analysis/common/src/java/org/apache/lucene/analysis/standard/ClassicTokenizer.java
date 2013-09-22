@@ -113,7 +113,7 @@ public final class ClassicTokenizer extends Tokenizer {
   }
 
   private void init(Version matchVersion) {
-    this.scanner = new ClassicTokenizerImpl(null); // best effort NPE if you dont call reset
+    this.scanner = new ClassicTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -169,9 +169,16 @@ public final class ClassicTokenizer extends Tokenizer {
     // adjust any skipped tokens
     posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
   }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     skippedPositions = 0;
   }

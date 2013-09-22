@@ -1934,6 +1934,6 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

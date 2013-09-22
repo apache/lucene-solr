@@ -1134,7 +1134,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
   public void testTrailingHole1() throws IOException {

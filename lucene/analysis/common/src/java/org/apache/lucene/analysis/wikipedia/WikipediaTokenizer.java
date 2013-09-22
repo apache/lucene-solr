@@ -143,7 +143,7 @@ public final class WikipediaTokenizer extends Tokenizer {
    */
   public WikipediaTokenizer(Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(input);
-    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
+    this.scanner = new WikipediaTokenizerImpl(this.input);
     init(tokenOutput, untokenizedTypes);
   }
 
@@ -156,7 +156,7 @@ public final class WikipediaTokenizer extends Tokenizer {
    */
   public WikipediaTokenizer(AttributeFactory factory, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(factory, input);
-    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
+    this.scanner = new WikipediaTokenizerImpl(this.input);
     init(tokenOutput, untokenizedTypes);
   }
 
@@ -295,6 +295,12 @@ public final class WikipediaTokenizer extends Tokenizer {
     offsetAtt.setOffset(correctOffset(start), correctOffset(start + termAtt.length()));
   }
 
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
+
   /*
   * (non-Javadoc)
   *
@@ -302,6 +308,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   */
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     tokens = null;
     scanner.reset();

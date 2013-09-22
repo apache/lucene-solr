@@ -377,7 +377,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, tokenizer, dict));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
     
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     final HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
@@ -390,6 +390,6 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, filter);
       }
     };
-    checkOneTermReuse(b, "", "");
+    checkOneTerm(b, "", "");
   }
 }

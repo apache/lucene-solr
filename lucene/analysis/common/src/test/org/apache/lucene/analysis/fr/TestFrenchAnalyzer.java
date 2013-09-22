@@ -206,13 +206,13 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
     FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
     // stopwords
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           fa,
           "le la chien les aux chat du des à cheval",
           new String[] { "chien", "chat", "cheval" });
 
       // some nouns and adjectives
-      assertAnalyzesToReuse(
+      assertAnalyzesTo(
           fa,
           "lances chismes habitable chiste éléments captifs",
           new String[] {
@@ -229,7 +229,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
     set.add("habitable");
     FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT,
         CharArraySet.EMPTY_SET, set);
-    assertAnalyzesToReuse(fa, "habitable chiste", new String[] { "habitable",
+    assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
 
     fa = new FrenchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
@@ -269,7 +269,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   /** test accent-insensitive */
   public void testAccentInsensitive() throws Exception {
     Analyzer a = new FrenchAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "sécuritaires", "securitair");
-    checkOneTermReuse(a, "securitaires", "securitair");
+    checkOneTerm(a, "sécuritaires", "securitair");
+    checkOneTerm(a, "securitaires", "securitair");
   }
 }

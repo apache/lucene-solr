@@ -70,7 +70,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
       endOffsets[i] = out_tokens[i].end;
       types[i] = out_tokens[i].type;
     }
-    assertAnalyzesToReuse(analyzer, str, terms, startOffsets, endOffsets, types, null);
+    assertAnalyzesTo(analyzer, str, terms, startOffsets, endOffsets, types, null);
   }
   
   public void testJa1() throws IOException {

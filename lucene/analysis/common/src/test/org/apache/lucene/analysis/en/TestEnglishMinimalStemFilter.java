@@ -65,6 +65,6 @@ public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new EnglishMinimalStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

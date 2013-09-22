@@ -254,11 +254,17 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
         .addAttribute(CharTermAttribute.class);
     CharTermAttribute term2 = stream2
         .addAttribute(CharTermAttribute.class);
+    stream1.reset();
+    stream2.reset();
     assertTrue(stream1.incrementToken());
     assertTrue(stream2.incrementToken());
     assertEquals(Integer.signum(comparison), Integer.signum(term1.toString().compareTo(term2.toString())));
     assertFalse(stream1.incrementToken());
     assertFalse(stream2.incrementToken());
+    stream1.end();
+    stream2.end();
+    stream1.close();
+    stream2.close();
   }
   
   private class StringMockResourceLoader implements ResourceLoader {

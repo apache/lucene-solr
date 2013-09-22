@@ -87,6 +87,6 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

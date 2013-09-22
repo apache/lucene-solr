@@ -691,6 +691,11 @@ final class TokenOrderingFilter extends TokenFilter {
       return true;
     }
   }
+
+  @Override
+  public void reset() throws IOException {
+    // this looks wrong: but its correct.
+  }
 }
 
 // for TokenOrderingFilter, so it can easily sort by startOffset

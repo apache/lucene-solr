@@ -107,6 +107,7 @@ public final class SentenceTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     tokenStart = tokenEnd = 0;
   }
 

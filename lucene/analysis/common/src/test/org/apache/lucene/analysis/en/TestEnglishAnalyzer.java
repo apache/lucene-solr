@@ -34,14 +34,14 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "books", "book");
-    checkOneTermReuse(a, "book", "book");
+    checkOneTerm(a, "books", "book");
+    checkOneTerm(a, "book", "book");
     // stopword
     assertAnalyzesTo(a, "the", new String[] {});
     // possessive removal
-    checkOneTermReuse(a, "steven's", "steven");
-    checkOneTermReuse(a, "steven\u2019s", "steven");
-    checkOneTermReuse(a, "steven\uFF07s", "steven");
+    checkOneTerm(a, "steven's", "steven");
+    checkOneTerm(a, "steven\u2019s", "steven");
+    checkOneTerm(a, "steven\uFF07s", "steven");
   }
   
   /** test use of exclusion set */
@@ -49,8 +49,8 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("books"), false);
     Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT, 
         EnglishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "books", "books");
-    checkOneTermReuse(a, "book", "book");
+    checkOneTerm(a, "books", "books");
+    checkOneTerm(a, "book", "book");
   }
   
   /** blast some random strings through the analyzer */

@@ -39,22 +39,25 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
         int correctStartOffset = 0;
         int correctEndOffset = 1;
         OffsetAttribute offsetAtt = tokenizer.getAttribute(OffsetAttribute.class);
+        tokenizer.reset();
         while (tokenizer.incrementToken()) {
           assertEquals(correctStartOffset, offsetAtt.startOffset());
           assertEquals(correctEndOffset, offsetAtt.endOffset());
           correctStartOffset++;
           correctEndOffset++;
         }
+        tokenizer.end();
+        tokenizer.close();
     }
     
     public void testReusableTokenStream() throws Exception
     {
       Analyzer a = new ChineseAnalyzer();
-      assertAnalyzesToReuse(a, "中华人民共和国", 
+      assertAnalyzesTo(a, "中华人民共和国", 
         new String[] { "中", "华", "人", "民", "共", "和", "国" },
         new int[] { 0, 1, 2, 3, 4, 5, 6 },
         new int[] { 1, 2, 3, 4, 5, 6, 7 });
-      assertAnalyzesToReuse(a, "北京市", 
+      assertAnalyzesTo(a, "北京市", 
         new String[] { "北", "京", "市" },
         new int[] { 0, 1, 2 },
         new int[] { 1, 2, 3 });

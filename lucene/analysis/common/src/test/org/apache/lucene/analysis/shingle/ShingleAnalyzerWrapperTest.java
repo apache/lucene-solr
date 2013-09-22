@@ -140,12 +140,12 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 2);
-    assertAnalyzesToReuse(a, "please divide into shingles",
+    assertAnalyzesTo(a, "please divide into shingles",
         new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
         new int[] { 0, 0, 7, 7, 14, 14, 19 },
         new int[] { 6, 13, 13, 18, 18, 27, 27 },
         new int[] { 1, 0, 1, 0, 1, 0, 1 });
-    assertAnalyzesToReuse(a, "divide me up again",
+    assertAnalyzesTo(a, "divide me up again",
         new String[] { "divide", "divide me", "me", "me up", "up", "up again", "again" },
         new int[] { 0, 0, 7, 7, 10, 10, 13 },
         new int[] { 6, 9, 9, 12, 12, 18, 18 },
@@ -155,7 +155,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testNonDefaultMinShingleSize() throws Exception {
     ShingleAnalyzerWrapper analyzer 
       = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 4);
-    assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
+    assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please",   "please divide this",   "please divide this sentence", 
                                          "divide",   "divide this sentence", "divide this sentence into", 
                                          "this",     "this sentence into",   "this sentence into shingles",
@@ -168,7 +168,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 4, ShingleFilter.TOKEN_SEPARATOR, false, false);
-    assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
+    assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please divide this",   "please divide this sentence", 
                                          "divide this sentence", "divide this sentence into", 
                                          "this sentence into",   "this sentence into shingles",
@@ -181,7 +181,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testNonDefaultMinAndSameMaxShingleSize() throws Exception {
     ShingleAnalyzerWrapper analyzer
       = new ShingleAnalyzerWrapper(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 3);
-    assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
+    assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please",   "please divide this", 
                                          "divide",   "divide this sentence", 
                                          "this",     "this sentence into",
@@ -194,7 +194,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 3, ShingleFilter.TOKEN_SEPARATOR, false, false);
-    assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
+    assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please divide this", 
                                          "divide this sentence", 
                                          "this sentence into",
@@ -210,7 +210,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "", true, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
                                          "divide", "divideinto", 
                                          "into", "intoshingles", 
@@ -224,7 +224,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "", false, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "pleasedivide", 
                                          "divideinto", 
                                          "intoshingles" },
@@ -239,7 +239,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         null, true, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
                                          "divide", "divideinto", 
                                          "into", "intoshingles", 
@@ -253,7 +253,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "", false, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "pleasedivide", 
                                          "divideinto", 
                                          "intoshingles" },
@@ -267,7 +267,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "<SEP>", true, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "please<SEP>divide", 
                                          "divide", "divide<SEP>into", 
                                          "into", "into<SEP>shingles", 
@@ -281,7 +281,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "<SEP>", false, false);
-    assertAnalyzesToReuse(analyzer, "please divide into shingles",
+    assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please<SEP>divide", 
                                          "divide<SEP>into", 
                                          "into<SEP>shingles" },
@@ -296,7 +296,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
         "", false, true);
-    assertAnalyzesToReuse(analyzer, "please",
+    assertAnalyzesTo(analyzer, "please",
                           new String[] { "please" },
                           new int[] { 0 },
                           new int[] { 6 },

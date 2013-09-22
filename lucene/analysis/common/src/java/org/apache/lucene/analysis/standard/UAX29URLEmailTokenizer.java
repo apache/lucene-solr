@@ -118,16 +118,16 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     this.scanner = getScannerFor(matchVersion);
   }
 
-  private static StandardTokenizerInterface getScannerFor(Version matchVersion) {
+  private StandardTokenizerInterface getScannerFor(Version matchVersion) {
     // best effort NPE if you dont call reset
     if (matchVersion.onOrAfter(Version.LUCENE_40)) {
-      return new UAX29URLEmailTokenizerImpl(null);
+      return new UAX29URLEmailTokenizerImpl(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      return new UAX29URLEmailTokenizerImpl36(null);
+      return new UAX29URLEmailTokenizerImpl36(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
-      return new UAX29URLEmailTokenizerImpl34(null);
+      return new UAX29URLEmailTokenizerImpl34(input);
     } else {
-      return new UAX29URLEmailTokenizerImpl31(null);
+      return new UAX29URLEmailTokenizerImpl31(input);
     }
   }
 
@@ -173,9 +173,16 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     // adjust any skipped tokens
     posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
   }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     skippedPositions = 0;
   }

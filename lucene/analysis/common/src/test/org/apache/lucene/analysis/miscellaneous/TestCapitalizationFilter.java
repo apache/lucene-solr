@@ -143,6 +143,6 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new CapitalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

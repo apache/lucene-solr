@@ -93,9 +93,9 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "English");
-    assertAnalyzesToReuse(a, "he abhorred accents",
+    assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
-    assertAnalyzesToReuse(a, "she abhorred him",
+    assertAnalyzesTo(a, "she abhorred him",
         new String[]{"she", "abhor", "him"});
   }
   
@@ -161,7 +161,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, lang));
         }
       };
-      checkOneTermReuse(a, "", "");
+      checkOneTerm(a, "", "");
     }
   }
   

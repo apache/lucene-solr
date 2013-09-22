@@ -97,6 +97,6 @@ public class TestHindiStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HindiStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

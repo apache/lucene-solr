@@ -55,7 +55,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new LengthFilter(TEST_VERSION_CURRENT, tokenizer, 0, 5));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

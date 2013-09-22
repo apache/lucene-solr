@@ -52,6 +52,6 @@ public class TestIrishLowerCaseFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new IrishLowerCaseFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

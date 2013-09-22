@@ -75,6 +75,6 @@ public class TestSwedishLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new SwedishLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

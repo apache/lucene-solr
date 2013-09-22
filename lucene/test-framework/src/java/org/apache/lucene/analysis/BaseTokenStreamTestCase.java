@@ -341,14 +341,17 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    checkResetException(a, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[]) throws IOException {
+    checkResetException(a, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean offsetsAreCorrect) throws IOException {
+    checkResetException(a, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), offsetsAreCorrect);
   }
   
@@ -375,40 +378,34 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
     assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, posIncrements, null);
   }
-  
 
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, null, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, String[] types) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, types, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int[] posIncrements) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, null, posIncrements);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
-    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
-    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, posIncrements);
+  static void checkResetException(Analyzer a, String input) throws IOException {
+    TokenStream ts = a.tokenStream("bogus", input);
+    try {
+      if (ts.incrementToken()) {
+        //System.out.println(ts.reflectAsString(false));
+        fail("didn't get expected exception when reset() not called");
+      }
+    } catch (IllegalStateException expected) {
+      // ok
+    } catch (AssertionError expected) {
+      // ok: MockTokenizer
+      assertTrue(expected.getMessage(), expected.getMessage() != null && expected.getMessage().contains("wrong state"));
+    } catch (Exception unexpected) {
+      fail("got wrong exception when reset() not called: " + unexpected);
+    } finally {
+      // consume correctly
+      ts.reset();
+      while (ts.incrementToken()) {}
+      ts.end();
+      ts.close();
+    }
   }
 
   // simple utility method for testing stemmers
   
   public static void checkOneTerm(Analyzer a, final String input, final String expected) throws IOException {
     assertAnalyzesTo(a, input, new String[]{expected});
-  }
-  
-  public static void checkOneTermReuse(Analyzer a, final String input, final String expected) throws IOException {
-    assertAnalyzesToReuse(a, input, new String[]{expected});
   }
   
   /** utility method for blasting tokenstreams with data to make sure they don't do anything crazy */
@@ -476,6 +473,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) throws IOException {
+    checkResetException(a, "best effort");
     long seed = random.nextLong();
     boolean useCharFilter = random.nextBoolean();
     Directory dir = null;

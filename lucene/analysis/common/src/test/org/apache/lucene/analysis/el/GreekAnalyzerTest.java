@@ -75,16 +75,16 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
     // Verify the correct analysis of capitals and small accented letters, and
     // stemming
-    assertAnalyzesToReuse(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+    assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
         new String[] { "μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ",
         "ελληνικ", "γλωσσ" });
     // Verify the correct analysis of small letters with diaeresis and the elimination
     // of punctuation marks
-    assertAnalyzesToReuse(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+    assertAnalyzesTo(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
         new String[] { "προιοντ", "πολλαπλ", "αναγκ" });
     // Verify the correct analysis of capital accented letters and capital letters with diaeresis,
     // as well as the elimination of stop words
-    assertAnalyzesToReuse(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+    assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
   }
   

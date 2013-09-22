@@ -73,6 +73,7 @@ public class BoolField extends PrimitiveFieldType {
 
         @Override
         public void reset() throws IOException {
+          super.reset();
           done = false;
         }
 

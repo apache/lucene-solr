@@ -89,6 +89,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     iterator = null;
   }
 }

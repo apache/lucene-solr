@@ -101,7 +101,7 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ArabicNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

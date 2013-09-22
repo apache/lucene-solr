@@ -92,6 +92,6 @@ public class TestNorwegianMinimalStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new NorwegianMinimalStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

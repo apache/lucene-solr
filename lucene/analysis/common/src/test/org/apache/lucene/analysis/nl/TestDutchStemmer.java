@@ -119,31 +119,31 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   @Deprecated
   public void testOldBuggyStemmer() throws Exception {
     Analyzer a = new DutchAnalyzer(Version.LUCENE_30);
-    checkOneTermReuse(a, "opheffen", "ophef"); // versus snowball 'opheff'
-    checkOneTermReuse(a, "opheffende", "ophef"); // versus snowball 'opheff'
-    checkOneTermReuse(a, "opheffing", "ophef"); // versus snowball 'opheff'
+    checkOneTerm(a, "opheffen", "ophef"); // versus snowball 'opheff'
+    checkOneTerm(a, "opheffende", "ophef"); // versus snowball 'opheff'
+    checkOneTerm(a, "opheffing", "ophef"); // versus snowball 'opheff'
   }
   
   public void testSnowballCorrectness() throws Exception {
     Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "opheffen", "opheff");
-    checkOneTermReuse(a, "opheffende", "opheff");
-    checkOneTermReuse(a, "opheffing", "opheff");
+    checkOneTerm(a, "opheffen", "opheff");
+    checkOneTerm(a, "opheffende", "opheff");
+    checkOneTerm(a, "opheffing", "opheff");
   }
   
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT); 
-    checkOneTermReuse(a, "lichaamsziek", "lichaamsziek");
-    checkOneTermReuse(a, "lichamelijk", "licham");
-    checkOneTermReuse(a, "lichamelijke", "licham");
-    checkOneTermReuse(a, "lichamelijkheden", "licham");
+    checkOneTerm(a, "lichaamsziek", "lichaamsziek");
+    checkOneTerm(a, "lichamelijk", "licham");
+    checkOneTerm(a, "lichamelijke", "licham");
+    checkOneTerm(a, "lichamelijkheden", "licham");
   }
   
   public void testExclusionTableViaCtor() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_30, 1, true);
     set.add("lichamelijk");
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
-    assertAnalyzesToReuse(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
+    assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
     
     a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });

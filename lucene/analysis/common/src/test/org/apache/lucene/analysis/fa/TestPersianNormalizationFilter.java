@@ -73,7 +73,7 @@ public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new PersianNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

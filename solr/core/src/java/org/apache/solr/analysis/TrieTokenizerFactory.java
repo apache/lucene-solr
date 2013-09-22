@@ -96,8 +96,9 @@ final class TrieTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset() {
-   try {
+  public void reset() throws IOException {
+    super.reset();
+    try {
       int upto = 0;
       char[] buf = termAtt.buffer();
       while (true) {
@@ -167,6 +168,7 @@ final class TrieTokenizer extends Tokenizer {
 
   @Override
   public void end() throws IOException {
+    super.end();
     if (hasValue) {
       ts.end();
     }

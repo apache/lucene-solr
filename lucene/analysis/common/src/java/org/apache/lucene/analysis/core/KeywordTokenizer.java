@@ -87,6 +87,7 @@ public final class KeywordTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     this.done = false;
   }
 }

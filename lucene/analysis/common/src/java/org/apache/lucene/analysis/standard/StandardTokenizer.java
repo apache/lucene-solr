@@ -142,13 +142,13 @@ public final class StandardTokenizer extends Tokenizer {
   private final void init(Version matchVersion) {
     // best effort NPE if you dont call reset
     if (matchVersion.onOrAfter(Version.LUCENE_40)) {
-      this.scanner = new StandardTokenizerImpl(null);
+      this.scanner = new StandardTokenizerImpl(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
-      this.scanner = new StandardTokenizerImpl34(null);
+      this.scanner = new StandardTokenizerImpl34(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      this.scanner = new StandardTokenizerImpl31(null);
+      this.scanner = new StandardTokenizerImpl31(input);
     } else {
-      this.scanner = new ClassicTokenizerImpl(null);
+      this.scanner = new ClassicTokenizerImpl(input);
     }
   }
 
@@ -209,7 +209,14 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
+  }
+
+  @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
     skippedPositions = 0;
   }
