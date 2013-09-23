@@ -58,7 +58,11 @@
     <lst name="defaults">
       <str name="echoParams">all</str>
       <str name="df">text</str>
-      <str name="dummyParam">${solr.core.name}</str>
+      <str name="dummy1">${solr.core.name}</str>
+      <str name="dummy2">${solr.core.dataDir}</str>
+      <str name="dummy3">${solr.core.config}</str>
+      <str name="dummy4">${solr.core.schema}</str>
+      <str name="dummy5">${solr.core.transient}</str>
     </lst>
 
   </requestHandler>
