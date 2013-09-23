@@ -19,6 +19,8 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -30,36 +32,54 @@ import org.apache.lucene.util.RamUsageEstimator;
 import java.io.IOException;
 
 /**
- * Splits words into subwords and performs optional transformations on subword groups.
- * Words are split into subwords with the following rules:
- *  - split on intra-word delimiters (by default, all non alpha-numeric characters).
- *     - "Wi-Fi" -> "Wi", "Fi"
- *  - split on case transitions
- *     - "PowerShot" -> "Power", "Shot"
- *  - split on letter-number transitions
- *     - "SD500" -> "SD", "500"
- *  - leading and trailing intra-word delimiters on each subword are ignored
- *     - "//hello---there, 'dude'" -> "hello", "there", "dude"
- *  - trailing "'s" are removed for each subword
- *     - "O'Neil's" -> "O", "Neil"
- *     - Note: this step isn't performed in a separate filter because of possible subword combinations.
- *
+ * Splits words into subwords and performs optional transformations on subword
+ * groups. Words are split into subwords with the following rules:
+ * <ul>
+ * <li>split on intra-word delimiters (by default, all non alpha-numeric
+ * characters): <code>"Wi-Fi"</code> &#8594; <code>"Wi", "Fi"</code></li>
+ * <li>split on case transitions: <code>"PowerShot"</code> &#8594;
+ * <code>"Power", "Shot"</code></li>
+ * <li>split on letter-number transitions: <code>"SD500"</code> &#8594;
+ * <code>"SD", "500"</code></li>
+ * <li>leading and trailing intra-word delimiters on each subword are ignored:
+ * <code>"//hello---there, 'dude'"</code> &#8594;
+ * <code>"hello", "there", "dude"</code></li>
+ * <li>trailing "'s" are removed for each subword: <code>"O'Neil's"</code>
+ * &#8594; <code>"O", "Neil"</code>
+ * <ul>
+ * <li>Note: this step isn't performed in a separate filter because of possible
+ * subword combinations.</li>
+ * </ul>
+ * </li>
+ * </ul>
+ * 
  * The <b>combinations</b> parameter affects how subwords are combined:
- *  - combinations="0" causes no subword combinations.
- *     - "PowerShot" -> 0:"Power", 1:"Shot"  (0 and 1 are the token positions)
- *  - combinations="1" means that in addition to the subwords, maximum runs of non-numeric subwords are catenated and produced at the same position of the last subword in the run.
- *     - "PowerShot" -> 0:"Power", 1:"Shot" 1:"PowerShot"
- *     - "A's+B's&C's" -> 0:"A", 1:"B", 2:"C", 2:"ABC"
- *     - "Super-Duper-XL500-42-AutoCoder!" -> 0:"Super", 1:"Duper", 2:"XL", 2:"SuperDuperXL", 3:"500" 4:"42", 5:"Auto", 6:"Coder", 6:"AutoCoder"
- *
- *  One use for WordDelimiterFilter is to help match words with different subword delimiters.
- *  For example, if the source text contained "wi-fi" one may want "wifi" "WiFi" "wi-fi" "wi+fi" queries to all match.
- *  One way of doing so is to specify combinations="1" in the analyzer used for indexing, and combinations="0" (the default)
- *  in the analyzer used for querying.  Given that the current StandardTokenizer immediately removes many intra-word
- *  delimiters, it is recommended that this filter be used after a tokenizer that does not do this (such as WhitespaceTokenizer).
- *
+ * <ul>
+ * <li>combinations="0" causes no subword combinations: <code>"PowerShot"</code>
+ * &#8594; <code>0:"Power", 1:"Shot"</code> (0 and 1 are the token positions)</li>
+ * <li>combinations="1" means that in addition to the subwords, maximum runs of
+ * non-numeric subwords are catenated and produced at the same position of the
+ * last subword in the run:
+ * <ul>
+ * <li><code>"PowerShot"</code> &#8594;
+ * <code>0:"Power", 1:"Shot" 1:"PowerShot"</code></li>
+ * <li><code>"A's+B's&C's"</code> -gt; <code>0:"A", 1:"B", 2:"C", 2:"ABC"</code>
+ * </li>
+ * <li><code>"Super-Duper-XL500-42-AutoCoder!"</code> &#8594;
+ * <code>0:"Super", 1:"Duper", 2:"XL", 2:"SuperDuperXL", 3:"500" 4:"42", 5:"Auto", 6:"Coder", 6:"AutoCoder"</code>
+ * </li>
+ * </ul>
+ * </li>
+ * </ul>
+ * One use for {@link WordDelimiterFilter} is to help match words with different
+ * subword delimiters. For example, if the source text contained "wi-fi" one may
+ * want "wifi" "WiFi" "wi-fi" "wi+fi" queries to all match. One way of doing so
+ * is to specify combinations="1" in the analyzer used for indexing, and
+ * combinations="0" (the default) in the analyzer used for querying. Given that
+ * the current {@link StandardTokenizer} immediately removes many intra-word
+ * delimiters, it is recommended that this filter be used after a tokenizer that
+ * does not do this (such as {@link WhitespaceTokenizer}).
  */
-
 public final class WordDelimiterFilter extends TokenFilter {
   
   public static final int LOWER = 0x01;
