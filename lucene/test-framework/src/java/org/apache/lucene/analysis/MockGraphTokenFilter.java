@@ -105,9 +105,18 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    this.random = null;
+  }
+
+  @Override
   public boolean incrementToken() throws IOException {
     if (DEBUG) {
       System.out.println("MockGraphTF.incr inputPos=" + inputPos + " outputPos=" + outputPos);
+    }
+    if (random == null) {
+      throw new IllegalStateException("incrementToken called in wrong state!");
     }
     return nextToken();
   }
