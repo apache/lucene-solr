@@ -392,6 +392,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       // ok: MockTokenizer
       assertTrue(expected.getMessage(), expected.getMessage() != null && expected.getMessage().contains("wrong state"));
     } catch (Exception unexpected) {
+      unexpected.printStackTrace(System.err);
       fail("got wrong exception when reset() not called: " + unexpected);
     } finally {
       // consume correctly
