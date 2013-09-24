@@ -105,6 +105,10 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       @Override
       public void run() {
         try {
+          if (VERBOSE) {
+            System.out.println("[" + Thread.currentThread().getName() + "]: launch reopen thread");
+          }
+
           while(System.currentTimeMillis() < stopTime) {
             Thread.sleep(_TestUtil.nextInt(random(), 1, 100));
             writer.commit();
