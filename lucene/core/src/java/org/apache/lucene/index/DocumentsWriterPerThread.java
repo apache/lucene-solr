@@ -234,7 +234,7 @@ class DocumentsWriterPerThread {
   
   final boolean testPoint(String message) {
     if (infoStream.isEnabled("TP")) {
-        infoStream.message("TP", message);
+      infoStream.message("TP", message);
     }
     return true;
   }
