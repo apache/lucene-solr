@@ -2281,4 +2281,27 @@ public class TestIndexWriter extends LuceneTestCase {
     evilWriter.close();
     dir.close();
   }
+
+  // LUCENE-5239
+  public void testDeleteSameTermAcrossFields() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new TextField("a", "foo", Field.Store.NO));
+    w.addDocument(doc);
+
+    // Should not delete the document; with LUCENE-5239 the
+    // "foo" from the 2nd delete term would incorrectly
+    // match field a's "foo":
+    w.deleteDocuments(new Term("a", "xxx"));
+    w.deleteDocuments(new Term("b", "foo"));
+    IndexReader r = w.getReader();
+    w.close();
+
+    // Make sure document was not (incorrectly) deleted:
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
 }

@@ -47,6 +47,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
           Terms terms = fields.terms(lastField);
           if (terms != null) {
             termsEnum = terms.iterator(termsEnum);
+          } else {
+            termsEnum = null;
           }
         }
 
