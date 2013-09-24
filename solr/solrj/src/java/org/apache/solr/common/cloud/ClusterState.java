@@ -260,8 +260,18 @@ public class ClusterState implements JSONWriter.Writable {
       objs.remove(DocCollection.SHARDS);
     }
 
-    Map map = (Map) props.get(DocCollection.DOC_ROUTER);
-    DocRouter router = map == null ? DocRouter.DEFAULT : DocRouter.getDocRouter(map.get("name"));
+    Object routerObj = props.get(DocCollection.DOC_ROUTER);
+    DocRouter router;
+    if (routerObj == null) {
+      router = DocRouter.DEFAULT;
+    } else if (routerObj instanceof String) {
+      // back compat with Solr4.4
+      router = DocRouter.getDocRouter((String)routerObj);
+    } else {
+      Map routerProps = (Map)routerObj;
+      router = DocRouter.getDocRouter(routerProps.get("name"));
+    }
+
     return new DocCollection(name, slices, props, router);
   }
 
