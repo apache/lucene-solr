@@ -85,6 +85,10 @@ Bug Fixes
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
   of IOContext.READ (Shikhar Bhushan via Mike McCandless)
 
+* LUCENE-5242: DirectoryTaxonomyWriter.replaceTaxonomy did not fully reset
+  its state, which could result in exceptions being thrown, as well as
+  incorrect ordinals returned from getParent. (Shai Erera)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible

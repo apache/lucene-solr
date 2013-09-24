@@ -981,12 +981,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     initReaderManager(); // ensure that it's initialized
     refreshReaderManager();
     nextID = indexWriter.maxDoc();
+    taxoArrays = null; // must nullify so that it's re-computed next time it's needed
     
     // need to clear the cache, so that addCategory won't accidentally return
     // old categories that are in the cache.
     cache.clear();
     cacheIsComplete = false;
     shouldFillCache = true;
+    cacheMisses.set(0);
     
     // update indexEpoch as a taxonomy replace is just like it has be recreated
     ++indexEpoch;
