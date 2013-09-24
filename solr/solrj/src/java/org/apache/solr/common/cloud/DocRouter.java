@@ -64,9 +64,13 @@ public abstract class DocRouter {
         map.put(s.substring(7), props.get(s));
       }
     }
-    if(map.get("name") == null) map.put("name", DEFAULT_NAME);
+    Object o = props.get("router");
+    if (o instanceof String) {
+      map.put("name", o);
+    } else if (map.get("name") == null) {
+      map.put("name", DEFAULT_NAME);
+    }
     return  map;
-
   }
 
   // currently just an implementation detail...
