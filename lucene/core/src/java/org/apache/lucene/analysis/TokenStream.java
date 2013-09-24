@@ -164,6 +164,8 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * Additionally any skipped positions (such as those removed by a stopfilter)
    * can be applied to the position increment, or any adjustment of other
    * attributes where the end-of-stream value may be important.
+   * <p>
+   * If you override this method, always call {@code super.end()}.
    * 
    * @throws IOException If an I/O error occurs
    */
@@ -177,13 +179,22 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
   /**
    * This method is called by a consumer before it begins consumption using
    * {@link #incrementToken()}.
-   * <p/>
+   * <p>
    * Resets this stream to a clean state. Stateful implementations must implement
    * this method so that they can be reused, just as if they had been created fresh.
+   * <p>
+   * If you override this method, always call {@code super.reset()}, otherwise
+   * some internal state will not be correctly reset (e.g., {@link Tokenizer} will
+   * throw {@link IllegalStateException} on further usage).
    */
   public void reset() throws IOException {}
   
-  /** Releases resources associated with this stream. */
+  /** Releases resources associated with this stream.
+   * <p>
+   * If you override this method, always call {@code super.close()}, otherwise
+   * some internal state will not be correctly reset (e.g., {@link Tokenizer} will
+   * throw {@link IllegalStateException} on reuse).
+   */
   @Override
   public void close() throws IOException {}
   
