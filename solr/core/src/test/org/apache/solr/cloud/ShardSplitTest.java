@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -33,6 +34,7 @@ import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -50,6 +52,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import static org.apache.lucene.util.LuceneTestCase.Slow;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+
+@Slow
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static final String SHARD1_0 = SHARD1 + "_0";
@@ -100,6 +108,17 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
 
+    splitByUniqueKeyTest();
+    splitByRouteFieldTest();
+
+    // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
+    // and the new sub-shards don't have any.
+    waitForRecoveriesToFinish(true);
+    //waitForThingsToLevelOut(15);
+
+  }
+
+  private void splitByUniqueKeyTest() throws Exception {
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
@@ -148,7 +167,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       for (int i = 0; i < 3; i++) {
         try {
-          splitShard(SHARD1);
+          splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
           log.info("Layout after split: \n");
           printLayout();
           break;
@@ -171,11 +190,83 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     checkDocCountsAndShardStates(docCounts, numReplicas);
+  }
 
-    // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
-    // and the new sub-shards don't have any.
-    waitForRecoveriesToFinish(true);
-    //waitForThingsToLevelOut(15);
+
+  public void splitByRouteFieldTest() throws Exception  {
+    log.info("Starting testSplitWithRouteField");
+    String collectionName = "routeFieldColl";
+    int numShards = 4;
+    int replicationFactor = 2;
+    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
+        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    CloudSolrServer client = null;
+    String shard_fld = "shard_s";
+    try {
+      client = createCloudClient(null);
+      Map<String, Object> props = ZkNodeProps.makeMap(
+          REPLICATION_FACTOR, replicationFactor,
+          MAX_SHARDS_PER_NODE, maxShardsPerNode,
+          NUM_SLICES, numShards,
+          "router.field", shard_fld);
+
+      createCollection(collectionInfos, collectionName,props,client);
+    } finally {
+      if (client != null) client.shutdown();
+    }
+
+    List<Integer> list = collectionInfos.get(collectionName);
+    checkForCollection(collectionName, list, null);
+
+    waitForRecoveriesToFinish(false);
+
+    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
+
+    HttpSolrServer collectionClient = new HttpSolrServer(url);
+
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    final DocRouter router = clusterState.getCollection(collectionName).getRouter();
+    Slice shard1 = clusterState.getSlice(collectionName, SHARD1);
+    DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
+    final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
+    final int[] docCounts = new int[ranges.size()];
+
+    for (int i = 100; i <= 200; i++) {
+      String shardKey = "" + (char)('a' + (i % 26)); // See comment in ShardRoutingTest for hash distribution
+
+      collectionClient.add(getDoc(id, i, "n_ti", i, shard_fld, shardKey));
+      int idx = getHashRangeIdx(router, ranges, shardKey);
+      if (idx != -1)  {
+        docCounts[idx]++;
+      }
+    }
+
+    for (int i = 0; i < docCounts.length; i++) {
+      int docCount = docCounts[i];
+      log.info("Shard {} docCount = {}", "shard1_" + i, docCount);
+    }
+
+    collectionClient.commit();
+
+    for (int i = 0; i < 3; i++) {
+      try {
+        splitShard(collectionName, SHARD1);
+        break;
+      } catch (HttpSolrServer.RemoteSolrException e) {
+        if (e.code() != 500) {
+          throw e;
+        }
+        log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
+        if (i == 2) {
+          fail("SPLITSHARD was not successful even after three tries");
+        }
+      }
+    }
+
+    assertEquals(docCounts[0], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_0")).getResults().getNumFound());
+    assertEquals(docCounts[1], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_1")).getResults().getNumFound());
   }
 
   protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws Exception {
@@ -248,10 +339,10 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  protected void splitShard(String shardId) throws SolrServerException, IOException {
+  protected void splitShard(String collection, String shardId) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.SPLITSHARD.toString());
-    params.set("collection", "collection1");
+    params.set("collection", collection);
     params.set("shard", shardId);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -269,7 +360,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n) throws Exception {
     index("id", id, "n_ti", n);
 
-    int idx = getHashRangeIdx(router, ranges, docCounts, id);
+    int idx = getHashRangeIdx(router, ranges, id);
     if (idx != -1)  {
       docCounts[idx]++;
     }
@@ -279,13 +370,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     controlClient.deleteById(id);
     cloudClient.deleteById(id);
 
-    int idx = getHashRangeIdx(router, ranges, docCounts, id);
+    int idx = getHashRangeIdx(router, ranges, id);
     if (idx != -1)  {
       docCounts[idx]--;
     }
   }
 
-  private int getHashRangeIdx(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id) {
+  public static int getHashRangeIdx(DocRouter router, List<DocRouter.Range> ranges, String id) {
     int hash = 0;
     if (router instanceof HashBasedRouter) {
       HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
