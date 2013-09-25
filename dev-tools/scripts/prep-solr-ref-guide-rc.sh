@@ -57,7 +57,7 @@ fi
 
 PREFIX="apache-solr-ref-guide"
 DIR="$PREFIX-$VER_RC"
-PDF="$DIR/$PREFIX-$VER.pdf"
+PDF="$PREFIX-$VER.pdf"
 SHA="$PDF.sha1"
 GPG="$PDF.asc"
 
@@ -77,7 +77,8 @@ fi
 set -x
 
 mkdir $DIR || exit 1
-mv $SRC_FILE $PDF || exit 1
+mv $SRC_FILE $DIR/$PDF || exit 1
+cd $DIR || exit 1
 sha1sum $PDF > $SHA || exit 1
 gpg $GPG_ID_ARG --armor --output $GPG --detach-sig $PDF|| exit 1
 
