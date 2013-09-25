@@ -71,6 +71,9 @@ New Features
 * SOLR-5167: Add support for AnalyzingInfixSuggester (AnalyzingInfixLookupFactory).
   (Areek Zillur, Varun Thacker via Robert Muir)
 
+* SOLR-5246: Shard splitting now supports collections configured with router.field.
+  (shalin)
+
 Security
 ----------------------
 

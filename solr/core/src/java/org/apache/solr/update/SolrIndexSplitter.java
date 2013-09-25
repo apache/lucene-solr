@@ -33,10 +33,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -59,10 +57,10 @@ public class SolrIndexSplitter {
   HashBasedRouter hashRouter;
   int numPieces;
   int currPartition = 0;
+  String routeFieldName;
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
     searcher = cmd.getReq().getSearcher();
-    field = searcher.getSchema().getUniqueKeyField();
     ranges = cmd.ranges;
     paths = cmd.paths;
     cores = cmd.cores;
@@ -74,6 +72,12 @@ public class SolrIndexSplitter {
     } else  {
       numPieces = ranges.size();
       rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
+    }
+    routeFieldName = cmd.routeFieldName;
+    if (routeFieldName == null) {
+      field = searcher.getSchema().getUniqueKeyField();
+    } else  {
+      field = searcher.getSchema().getField(routeFieldName);
     }
   }
 

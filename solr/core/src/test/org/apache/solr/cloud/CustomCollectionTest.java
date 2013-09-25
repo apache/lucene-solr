@@ -201,7 +201,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
       List<Integer> list = entry.getValue();
       checkForCollection(collection, list, null);
 
-      String url = getUrlFromZk(collection);
+      String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collection);
 
       HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -226,7 +226,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
 
-    String url = getUrlFromZk(collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -325,7 +325,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    url = getUrlFromZk(collectionName);
+    url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     collectionClient = new HttpSolrServer(url);
 
@@ -386,7 +386,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    String url = getUrlFromZk(collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -420,8 +420,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
 
-  private String getUrlFromZk(String collection) {
-    ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
+  public static String getUrlFromZk(ClusterState clusterState, String collection) {
     Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
 
     if (slices == null) {

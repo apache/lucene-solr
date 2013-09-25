@@ -77,6 +77,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+
 /**
  *
  * @since solr 1.3
@@ -248,6 +250,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
 
       DocRouter router = null;
+      String routeFieldName = null;
       if (coreContainer.isZooKeeperAware()) {
         ClusterState clusterState = coreContainer.getZkController().getClusterState();
         String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
@@ -257,6 +260,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         DocRouter.Range currentRange = slice.getRange();
         router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
         ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
+        Map m = (Map) collection.get(DOC_ROUTER);
+        if (m != null)  {
+          routeFieldName = (String) m.get("field");
+        }
       }
 
       if (pathsArr == null) {
@@ -274,7 +281,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName);
       core.getUpdateHandler().split(cmd);
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
