@@ -51,7 +51,12 @@ public abstract class DocRouter {
 
   protected String getRouteField(DocCollection coll){
     if(coll == null) return null;
-    Map m = (Map) coll.get(DOC_ROUTER);
+    Object o = coll.get(DOC_ROUTER);
+    if (o instanceof String) {
+      return null;
+      //old format. cannot have a routefield. Ignore it
+    }
+    Map m = (Map) o;
     if(m == null) return null;
     return (String) m.get("field");
 
