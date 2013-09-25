@@ -2,6 +2,33 @@
   DOCUMENTATION ABOUT ATLASSIAN CLOVER LICENSE
 ################################################
 
+From: sales@atlassian.com [mailto:sales@atlassian.com] 
+Sent: Wednesday, September 25, 2013 5:09 PM
+To: uschindler@apache.org
+Cc: npellow@atlassian.com
+Subject: RE: Fwd: New Clover License for Apache - {844535}
+
+Hey Uwe,
+
+Thanks for getting back.
+I found the license using the key you provided - thanks for that! I've renewed the license for another year and added you as a technical contact. 
+
+Cheers,
+Amber
+
+Clover 100+ Machines: Open Source License	Apache	 27 Jun 2014
+
+SEN:	 SEN-2304226 
+Technical Contact:	Mike Mccandless (mikemccand@apache.org), Uwe Schindler (uschindler@apache.org)
+Billing Contact:	Mike Mccandless (mikemccand@apache.org) 
+Licensed To:	 Apache
+
+History:	
+27 Jun 2012	 Purchase of Clover 100+ Machines: Open Source License	
+27 Jun 2013	 Maintenance Renewal	
+ 
+---------------------------------------------------------------------------------
+
 From: Nicholas Muldoon <nmuldoon@atlassian.com>
 To: Ted Yu <yuzhihong@gmail.com>
 Cc: Enis Soztutar <enis@hortonworks.com>, Todd Lipcon <todd@cloudera.com>
