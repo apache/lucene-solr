@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -36,10 +36,28 @@ if [ $# -lt 2 ] || [ 3 -lt $# ] ; then
     exit 1;
 fi
 
-PREFIX="apache-solr-ref-guide"
 SRC_FILE=$1
-DIR="$PREFIX-$2"
-PDF="$DIR/$PREFIX-$2.pdf"
+VER_RC=$2
+GPG_ID_ARG=""
+if [ ! -z "$3" ] ; then
+  GPG_ID_ARG="-u $3"
+fi
+
+VER_RC_PARTS=( ${VER_RC//-/ } )
+if [ 2 -ne ${#VER_RC_PARTS[@]} ] ; then
+   echo "! ! ! Can't proceed, Version+RC suffix must have one '-' (ie: X.Y-RCZ) : $VER_RC"
+   exit 1;
+fi
+VER=${VER_RC_PARTS[0]}
+VER_PARTS=( ${VER//./ } )
+if [ 2 -ne ${#VER_PARTS[@]} ] ; then
+   echo "! ! ! Can't proceed, Version must have one '.' (ie: X.Y) : $VER"
+   exit 1;
+fi
+
+PREFIX="apache-solr-ref-guide"
+DIR="$PREFIX-$VER_RC"
+PDF="$DIR/$PREFIX-$VER.pdf"
 SHA="$PDF.sha1"
 GPG="$PDF.asc"
 
@@ -51,11 +69,6 @@ fi
 if [ -d $DIR ] ; then
    echo "! ! ! Can't proceed, directory already exists: $DIR"
    exit 1;
-fi
-
-GPG_ID_ARG=""
-if [ ! -z "$3" ] ; then
-  GPG_ID_ARG="-u $3"
 fi
 
 # from here on, use set -x to echo progress and rely on decent error messages
