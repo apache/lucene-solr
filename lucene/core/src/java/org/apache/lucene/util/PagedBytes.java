@@ -86,9 +86,12 @@ public final class PagedBytes {
     public void fillSlice(BytesRef b, long start, int length) {
       assert length >= 0: "length=" + length;
       assert length <= blockSize+1: "length=" + length;
+      b.length = length;
+      if (length == 0) {
+        return;
+      }
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
-      b.length = length;
       if (blockSize - offset >= length) {
         // Within block
         b.bytes = blocks[index];

@@ -1432,7 +1432,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testBinaryFixedLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = _TestUtil.nextInt(random(), 0, 10);
       doTestBinaryVsStoredFields(fixedLength, fixedLength);
     }
   }
@@ -1440,7 +1440,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testBinaryVariableLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestBinaryVsStoredFields(1, 10);
+      doTestBinaryVsStoredFields(0, 10);
     }
   }
   
@@ -2956,6 +2956,43 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     }
     ir.close();
     dir.close();
+  }
+
+  // LUCENE-5218
+  public void testEmptyBinaryValueOnPageSizes() throws Exception {
+    // Test larger and larger power-of-two sized values,
+    // followed by empty string value:
+    for(int i=0;i<20;i++) {
+      if (i > 14 && codecAcceptsHugeBinaryValues("field") == false) {
+        break;
+      }
+      Directory dir = newDirectory();
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+      BytesRef bytes = new BytesRef();
+      bytes.bytes = new byte[1<<i];
+      bytes.length = 1<<i;
+      for(int j=0;j<4;j++) {
+        Document doc = new Document();
+        doc.add(new BinaryDocValuesField("field", bytes));
+        w.addDocument(doc);
+      }
+      Document doc = new Document();
+      doc.add(new StoredField("id", "5"));
+      doc.add(new BinaryDocValuesField("field", new BytesRef()));
+      w.addDocument(doc);
+      IndexReader r = w.getReader();
+      w.close();
+
+      AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+      BinaryDocValues values = ar.getBinaryDocValues("field");
+      BytesRef result = new BytesRef();
+      for(int j=0;j<5;j++) {
+        values.get(0, result);
+        assertTrue(result.length == 0 || result.length == 1<<i);
+      }
+      ar.close();
+      dir.close();
+    }
   }
 
   protected boolean codecAcceptsHugeBinaryValues(String field) {
