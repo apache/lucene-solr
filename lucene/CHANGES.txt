@@ -244,6 +244,10 @@ Bug Fixes
   return a ConstantScoreQuery to make scoring consistent. Previously it
   returned an empty unwrapped BooleanQuery, if no terms were available,
   which has a different query norm.  (Nik Everett, Uwe Schindler)
+
+* LUCENE-5218: In some cases, trying to retrieve or merge a 0-length
+  binary doc value would hit an ArrayIndexOutOfBoundsException.
+  (Littlestar via Mike McCandless)
   
 API Changes
 
