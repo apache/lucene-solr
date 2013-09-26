@@ -160,6 +160,58 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
           result[i].score, SCORE_COMP_THRESH);
     }
 
+    result = search.search(csrq("data", "1", "6", T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, 1000).scoreDocs;
+    numHits = result.length;
+    assertEquals("wrong number of results", 6, numHits);
+    for (int i = 0; i < numHits; i++) {
+      assertEquals("score for " + i + " was not the same", score,
+          result[i].score, SCORE_COMP_THRESH);
+    }
+  }
+
+  @Test // Test for LUCENE-5245: Empty MTQ rewrites should have a consistent norm, so always need to return a CSQ!
+  public void testEqualScoresWhenNoHits() throws IOException {
+    // NOTE: uses index build in *this* setUp
+
+    IndexSearcher search = newSearcher(reader);
+
+    ScoreDoc[] result;
+
+    TermQuery dummyTerm = new TermQuery(new Term("data", "1"));
+
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(dummyTerm, BooleanClause.Occur.SHOULD); // hits one doc
+    bq.add(csrq("data", "#", "#", T, T), BooleanClause.Occur.SHOULD); // hits no docs
+    result = search.search(bq, null, 1000).scoreDocs;
+    int numHits = result.length;
+    assertEquals("wrong number of results", 1, numHits);
+    float score = result[0].score;
+    for (int i = 1; i < numHits; i++) {
+      assertEquals("score for " + i + " was not the same", score,
+          result[i].score, SCORE_COMP_THRESH);
+    }
+
+    bq = new BooleanQuery();
+    bq.add(dummyTerm, BooleanClause.Occur.SHOULD); // hits one doc
+    bq.add(csrq("data", "#", "#", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE), BooleanClause.Occur.SHOULD); // hits no docs
+    result = search.search(bq, null, 1000).scoreDocs;
+    numHits = result.length;
+    assertEquals("wrong number of results", 1, numHits);
+    for (int i = 0; i < numHits; i++) {
+      assertEquals("score for " + i + " was not the same", score,
+          result[i].score, SCORE_COMP_THRESH);
+    }
+
+    bq = new BooleanQuery();
+    bq.add(dummyTerm, BooleanClause.Occur.SHOULD); // hits one doc
+    bq.add(csrq("data", "#", "#", T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), BooleanClause.Occur.SHOULD); // hits no docs
+    result = search.search(bq, null, 1000).scoreDocs;
+    numHits = result.length;
+    assertEquals("wrong number of results", 1, numHits);
+    for (int i = 0; i < numHits; i++) {
+      assertEquals("score for " + i + " was not the same", score,
+          result[i].score, SCORE_COMP_THRESH);
+    }
   }
 
   @Test
