@@ -89,11 +89,6 @@ Bug Fixes
   its state, which could result in exceptions being thrown, as well as
   incorrect ordinals returned from getParent. (Shai Erera)
 
-* LUCENE-5245: Fix MultiTermQuery's constant score rewrites to always
-  return a ConstantScoreQuery to make scoring consistent. Previously it
-  returned an empty unwrapped BooleanQuery, if no terms were available,
-  which has a different query norm.  (Nik Everett, Uwe Schindler)
-
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
@@ -244,6 +239,11 @@ Bug Fixes
 
 * LUCENE-5223: Fixed IndexUpgrader command line parsing: -verbose is not required
   and -dir-impl option now works correctly.  (hossman)
+
+* LUCENE-5245: Fix MultiTermQuery's constant score rewrites to always
+  return a ConstantScoreQuery to make scoring consistent. Previously it
+  returned an empty unwrapped BooleanQuery, if no terms were available,
+  which has a different query norm.  (Nik Everett, Uwe Schindler)
   
 API Changes
 
