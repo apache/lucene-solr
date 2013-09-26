@@ -103,6 +103,8 @@ Other Changes
 * SOLR-5241: Fix SimplePostToolTest performance problem - implicit DNS lookups
   (hossman)
 
+* SOLR-5273: Update HttpComponents to 4.2.5 and 4.2.6. (Mark Miller)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components

@@ -21,14 +21,14 @@
 
     <dependencies>
       <dependency org="org.apache.zookeeper" name="zookeeper" rev="3.4.5" transitive="false"/>
-      <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.2.3" transitive="false"/>
+      <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.2.6" transitive="false"/>
       <!--
         The httpmime rev should be kept in sync with the httpclient rev, since both the
         httpclient and the httpmime modules are sub-modules of the httpcomponents-client
         module, and both sub-modules draw their version from the httpcomponents-client
         parent POM.
        -->
-      <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.2.3" transitive="false"/>
+      <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.2.6" transitive="false"/>
       <!--
         The httpcore rev should be drawn from the httpcomponents-client POM (the parent POM
         of the httpclient POM - see the comment above) - the httpclient version and the httpcore
@@ -38,7 +38,7 @@
         - look for <httpcore.version> under <properties>:
         https://svn.apache.org/repos/asf/httpcomponents/httpclient/tags/4.2.3/pom.xml
        -->
-      <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.2.2" transitive="false"/>
+      <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.2.5" transitive="false"/>
       <dependency org="commons-io" name="commons-io" rev="${commons-io.version}" transitive="false"/>
       <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="3.2.7" transitive="false"/>
       <dependency org="org.noggit" name="noggit" rev="0.5" transitive="false"/>
