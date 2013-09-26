@@ -73,6 +73,9 @@ New Features
 
 * SOLR-5246: Shard splitting now supports collections configured with router.field.
   (shalin)
+ 
+* SOLR-5274: Allow JettySolrRunner SSL config to be specified via a constructor.
+  (Mark Miller) 
 
 Security
 ----------------------
