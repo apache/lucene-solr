@@ -42,24 +42,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.ssl.SslConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Run solr using jetty
@@ -96,6 +93,8 @@ public class JettySolrRunner {
 
   /** Maps servlet holders (i.e. factories: class + init params) to path specs */
   private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
+
+  private SSLConfig sslConfig;
 
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
@@ -173,6 +172,25 @@ public class JettySolrRunner {
     this.solrConfigFilename = solrConfigFilename;
     this.schemaFilename = schemaFileName;
   }
+  
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets, SSLConfig sslConfig) {
+    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
+    this.init(solrHome, context, port, stopAtShutdown);
+    this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
+    this.sslConfig = sslConfig;
+  }
+  
+  public static class SSLConfig {
+    public boolean useSsl;
+    public boolean clientAuth;
+    public String keyStore;
+    public String keyStorePassword;
+    public String trustStore;
+    public String trustStorePassword;
+  }
 
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
@@ -190,34 +208,16 @@ public class JettySolrRunner {
 
       // if this property is true, then jetty will be configured to use SSL
       // leveraging the same system properties as java to specify
-      // the keystore/truststore if they are set
+      // the keystore/truststore if they are set unless specific config
+      // is passed via the constructor.
       //
       // This means we will use the same truststore, keystore (and keys) for
       // the server as well as any client actions taken by this JVM in
       // talking to that server, but for the purposes of testing that should 
       // be good enough
-      final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
+      final boolean useSsl = sslConfig == null ? false : sslConfig.useSsl;
       final SslContextFactory sslcontext = new SslContextFactory(false);
-
-      if (useSsl) {
-        if (null != System.getProperty("javax.net.ssl.keyStore")) {
-          sslcontext.setKeyStorePath
-            (System.getProperty("javax.net.ssl.keyStore"));
-        }
-        if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
-          sslcontext.setKeyStorePassword
-            (System.getProperty("javax.net.ssl.keyStorePassword"));
-        }
-        if (null != System.getProperty("javax.net.ssl.trustStore")) {
-          sslcontext.setTrustStore
-            (System.getProperty("javax.net.ssl.trustStore"));
-        }
-        if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
-          sslcontext.setTrustStorePassword
-            (System.getProperty("javax.net.ssl.trustStorePassword"));
-        }
-        sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
-      }
+      sslInit(useSsl, sslcontext);
 
       final Connector connector;
       final QueuedThreadPool threadPool;
@@ -326,6 +326,48 @@ public class JettySolrRunner {
     // for some reason, there must be a servlet for this to get applied
     root.addServlet(Servlet404.class, "/*");
 
+  }
+
+  private void sslInit(final boolean useSsl, final SslContextFactory sslcontext) {
+    if (useSsl && sslConfig != null) {
+      if (null != sslConfig.keyStore) {
+        sslcontext.setKeyStorePath(sslConfig.keyStore);
+      }
+      if (null != sslConfig.keyStorePassword) {
+        sslcontext.setKeyStorePassword(System
+            .getProperty("solr.javax.net.ssl.keyStorePassword"));
+      }
+      if (null != sslConfig.trustStore) {
+        sslcontext.setTrustStore(System
+            .getProperty("solr.javax.net.ssl.trustStore"));
+      }
+      if (null != sslConfig.trustStorePassword) {
+        sslcontext.setTrustStorePassword(sslConfig.trustStorePassword);
+      }
+      sslcontext.setNeedClientAuth(sslConfig.clientAuth);
+    } else {
+      boolean jettySsl = Boolean.getBoolean("tests.jettySsl");
+
+      if (jettySsl) {
+        if (null != System.getProperty("javax.net.ssl.keyStore")) {
+          sslcontext.setKeyStorePath
+            (System.getProperty("javax.net.ssl.keyStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+          sslcontext.setKeyStorePassword
+            (System.getProperty("javax.net.ssl.keyStorePassword"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStore")) {
+          sslcontext.setTrustStore
+            (System.getProperty("javax.net.ssl.trustStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+          sslcontext.setTrustStorePassword
+            (System.getProperty("javax.net.ssl.trustStorePassword"));
+        }
+        sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
+      }
+    }
   }
 
   public FilterHolder getDispatchFilter() {
