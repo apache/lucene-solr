@@ -77,6 +77,11 @@ New Features
 * SOLR-5274: Allow JettySolrRunner SSL config to be specified via a constructor.
   (Mark Miller) 
 
+Bug Fixes
+----------------------
+* SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.
+  (Anshum Gupta, Mark Miller)
+
 Security
 ----------------------
 
