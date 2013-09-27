@@ -107,6 +107,7 @@ public class IndexSchema {
   private static final String AT = "@";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
   private static final String MAX_CHARS = "maxChars";
+  private static final String SOLR_CORE_NAME = "solr.core.name";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
   private static final String TEXT_FUNCTION = "text()";
@@ -436,7 +437,7 @@ public class IndexSchema {
       // Another case where the initialization from the test harness is different than the "real world"
       sb.append("[");
       if (loader.getCoreProperties() != null) {
-        sb.append(loader.getCoreProperties().getProperty(NAME));
+        sb.append(loader.getCoreProperties().getProperty(SOLR_CORE_NAME));
       } else {
         sb.append("null");
       }
