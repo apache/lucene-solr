@@ -31,6 +31,8 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
     try {
       cc.load();
       assertQ(req("q", "*:*"), "//str[@name='dummyParam'][.='collection1']");
+      // Test for SOLR-5279 - make sure properties are there on core reload
+      cc.reload("collection1");
     }
     finally {
       cc.shutdown();
