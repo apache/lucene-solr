@@ -82,9 +82,6 @@ Bug Fixes
 * SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.
   (Anshum Gupta, Mark Miller)
   
-* SOLR-5281: IndexSchema log message was printing '[null]' instead of
-  '[<core name>]' (Jun Ohtani via Steve Rowe)
-  
 * SOLR-5279: Implicit properties don't seem to exist on core RELOAD
   (elyograg, hossman, Steve Rowe) 
 
@@ -303,6 +300,9 @@ Bug Fixes
 
 * SOLR-5243: Killing a shard in one collection can result in leader election in a different 
   collection if they share the same coreNodeName. (yonik, Mark Miller)
+
+* SOLR-5281: IndexSchema log message was printing '[null]' instead of
+  '[<core name>]' (Jun Ohtani via Steve Rowe)
 
 Optimizations
 ----------------------
