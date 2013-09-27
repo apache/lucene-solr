@@ -56,6 +56,7 @@ public class CoreDescriptor {
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
+  public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
 
@@ -214,7 +215,7 @@ public class CoreDescriptor {
     for (String propName : coreProperties.stringPropertyNames()) {
       String propValue = coreProperties.getProperty(propName);
       if (!isUserDefinedProperty(propName))
-        propName = "solr.core." + propName;
+        propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
   }
@@ -261,12 +262,14 @@ public class CoreDescriptor {
    */
   public CoreDescriptor(String coreName, CoreDescriptor other) {
     this.coreContainer = other.coreContainer;
+    this.cloudDesc = other.cloudDesc;
     this.originalExtraProperties.putAll(other.originalExtraProperties);
     this.originalCoreProperties.putAll(other.originalCoreProperties);
     this.coreProperties.putAll(other.coreProperties);
+    this.substitutableProperties.putAll(other.substitutableProperties);
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
-    this.cloudDesc = other.cloudDesc;
+    this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
   }
 
   public String getPropertiesName() {

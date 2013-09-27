@@ -38,6 +38,8 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
               , "//str[@name='dummy4'][.='schema.xml']"
               , "//str[@name='dummy5'][.='false']"
               );
+      // Test for SOLR-5279 - make sure properties are there on core reload
+      cc.reload("collection1");
     }
     finally {
       cc.shutdown();
