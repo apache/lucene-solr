@@ -84,6 +84,9 @@ Bug Fixes
   
 * SOLR-5281: IndexSchema log message was printing '[null]' instead of
   '[<core name>]' (Jun Ohtani via Steve Rowe)
+  
+* SOLR-5279: Implicit properties don't seem to exist on core RELOAD
+  (elyograg, hossman, Steve Rowe) 
 
 Security
 ----------------------
