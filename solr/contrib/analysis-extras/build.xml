@@ -27,9 +27,6 @@
   
   <path id="analysis.extras.lucene.libs">
     <pathelement location="${analyzers-icu.jar}"/>
-    <pathelement location="${analyzers-smartcn.jar}"/>
-    <pathelement location="${analyzers-stempel.jar}"/>
-    <pathelement location="${analyzers-morfologik.jar}"/>
   </path>
 
   <path id="classpath">
@@ -38,14 +35,13 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="module-jars-to-solr"
-          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik">
+  <target name="module-jars-to-solr" depends="jar-analyzers-icu">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <path refid="analysis.extras.lucene.libs" />
     </copy>
   </target>
 
-  <target name="compile-core" depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="jar-analyzers-icu, solr-contrib-build.compile-core"/>
   <target name="dist" depends="module-jars-to-solr, common-solr.dist"/>
 </project>

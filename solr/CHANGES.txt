@@ -342,6 +342,9 @@ Other Changes
 * SOLR-5173: Solr-core's Maven configuration includes test-only Hadoop
   dependencies as indirect compile-time dependencies.
   (Chris Collins, Steve Rowe)
+  
+* SOLR-5286: Remove vestigial Chinese and Polish analysis jars from the
+  analysis-extras contrib configuration. (Steve Rowe)
 
 ==================  4.4.0 ==================
 
