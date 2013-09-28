@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,18 +20,19 @@ package org.apache.lucene.codecs.lucene42;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.FieldInfo.DocValuesType; // javadoc
-import org.apache.lucene.store.DataOutput; // javadoc
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.store.DataOutput;
 
 /**
- * Lucene 4.2 Field Infos format.
+ * Lucene 4.6 Field Infos format.
  * <p>
  * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.</p>
  * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
- * FieldBits,DocValuesBits,Attributes&gt; <sup>FieldsCount</sup></p>
+ * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup></p>
  * <p>Data types:
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#checkHeader CodecHeader}</li>
@@ -40,6 +41,7 @@ import org.apache.lucene.store.DataOutput; // javadoc
  *   <li>FieldBits, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
  *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
  *   <li>Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>DocValuesGen --&gt; {@link DataOutput#writeLong(long) Int64}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -79,18 +81,20 @@ import org.apache.lucene.store.DataOutput; // javadoc
  *          <li>3: SortedDocValues. ({@code DocValuesType#SORTED})</li>
  *        </ul>
  *    </li>
+ *    <li>DocValuesGen is the generation count of the field's DocValues. If this is -1,
+ *        there are no DocValues updates to that field. Anything above zero means there 
+ *        are updates stored by {@link DocValuesFormat}.</li>
  *    <li>Attributes: a key-value map of codec-private attributes.</li>
  * </ul>
  *
  * @lucene.experimental
- * @deprecated Only for reading old 4.2-4.5 segments
  */
-@Deprecated
-public class Lucene42FieldInfosFormat extends FieldInfosFormat {
-  private final FieldInfosReader reader = new Lucene42FieldInfosReader();
+public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
+  private final FieldInfosReader reader = new Lucene46FieldInfosReader();
+  private final FieldInfosWriter writer = new Lucene46FieldInfosWriter();
   
   /** Sole constructor. */
-  public Lucene42FieldInfosFormat() {
+  public Lucene46FieldInfosFormat() {
   }
 
   @Override
@@ -100,14 +104,14 @@ public class Lucene42FieldInfosFormat extends FieldInfosFormat {
 
   @Override
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    throw new UnsupportedOperationException("this codec can only be used for reading");
+    return writer;
   }
   
   /** Extension of field infos */
   static final String EXTENSION = "fnm";
   
   // Codec header
-  static final String CODEC_NAME = "Lucene42FieldInfos";
+  static final String CODEC_NAME = "Lucene46FieldInfos";
   static final int FORMAT_START = 0;
   static final int FORMAT_CURRENT = FORMAT_START;
   

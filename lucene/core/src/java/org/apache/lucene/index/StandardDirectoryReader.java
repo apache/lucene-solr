@@ -163,7 +163,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           newReaders[i] = newReader;
         } else {
           if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()
-              && newReaders[i].getSegmentInfo().getDocValuesGen() == infos.info(i).getDocValuesGen()) {
+              && newReaders[i].getSegmentInfo().getFieldInfosGen() == infos.info(i).getFieldInfosGen()) {
             // No change; this reader will be shared between
             // the old and the new one, so we must incRef
             // it:

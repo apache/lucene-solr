@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.lucene45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,29 +19,17 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene42Codec} for testing.
+ * Read-write version of {@link Lucene45Codec} for testing.
  */
 @SuppressWarnings("deprecation")
-public class Lucene42RWCodec extends Lucene42Codec {
-  private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
-  private static final NormsFormat norms = new Lucene42NormsFormat();
-
-  @Override
-  public DocValuesFormat getDocValuesFormatForField(String field) {
-    return dv;
-  }
-
-  @Override
-  public NormsFormat normsFormat() {
-    return norms;
-  }
+public class Lucene45RWCodec extends Lucene45Codec {
   
   @Override
   public FieldInfosFormat fieldInfosFormat() {

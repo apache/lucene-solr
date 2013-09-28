@@ -122,12 +122,15 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
 
     private DocValuesConsumer getInstance(FieldInfo field) throws IOException {
-      final DocValuesFormat format;
-      if (segmentWriteState.isFieldUpdate) {
+      DocValuesFormat format = null;
+      if (field.getDocValuesGen() != -1) {
         final String formatName = field.getAttribute(PER_FIELD_FORMAT_KEY);
-        assert formatName != null : "invalid null FORMAT_KEY for field=\"" + field.name + "\" (field updates)";
-        format = DocValuesFormat.forName(formatName);
-      } else {
+        // this means the field never existed in that segment, yet is applied updates
+        if (formatName != null) {
+          format = DocValuesFormat.forName(formatName);
+        }
+      }
+      if (format == null) {
         format = getDocValuesFormatForField(field.name);
       }
       if (format == null) {
@@ -136,19 +139,25 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       final String formatName = format.getName();
       
       String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-      assert segmentWriteState.isFieldUpdate || previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
+      assert field.getDocValuesGen() != -1 || previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
       
-      Integer suffix;
+      Integer suffix = null;
       
       ConsumerAndSuffix consumer = formats.get(format);
       if (consumer == null) {
         // First time we are seeing this format; create a new instance
 
-        if (segmentWriteState.isFieldUpdate) {
+        if (field.getDocValuesGen() != -1) {
           final String suffixAtt = field.getAttribute(PER_FIELD_SUFFIX_KEY);
-          assert suffixAtt != null : "invalid numm SUFFIX_KEY for field=\"" + field.name + "\" (field updates)";
-          suffix = Integer.valueOf(suffixAtt);
-        } else {
+          // even when dvGen is != -1, it can still be a new field, that never
+          // existed in the segment, and therefore doesn't have the recorded
+          // attributes yet.
+          if (suffixAtt != null) {
+            suffix = Integer.valueOf(suffixAtt);
+          }
+        }
+        
+        if (suffix == null) {
           // bump the suffix
           suffix = suffixes.get(formatName);
           if (suffix == null) {
@@ -172,7 +181,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
       
       previousValue = field.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(suffix));
-      assert segmentWriteState.isFieldUpdate || previousValue == null : "suffix=" + Integer.toString(suffix) + " prevValue=" + previousValue;
+      assert field.getDocValuesGen() != -1 || previousValue == null : "suffix=" + Integer.toString(suffix) + " prevValue=" + previousValue;
 
       // TODO: we should only provide the "slice" of FIS
       // that this DVF actually sees ...

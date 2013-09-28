@@ -47,8 +47,8 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextFieldInfosWriter.*;
 public class SimpleTextFieldInfosReader extends FieldInfosReader {
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
@@ -105,6 +105,10 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         final DocValuesType docValuesType = docValuesType(dvType);
         
         SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, DOCVALUES_GEN);
+        final long dvGen = Long.parseLong(readString(DOCVALUES_GEN.length, scratch));
+        
+        SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
         int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));
         Map<String,String> atts = new HashMap<String,String>();
@@ -122,6 +126,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
 
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(atts));
+        infos[i].setDocValuesGen(dvGen);
       }
 
       if (input.getFilePointer() != input.length()) {

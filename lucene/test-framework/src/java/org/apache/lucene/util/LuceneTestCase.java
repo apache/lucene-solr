@@ -1386,7 +1386,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns true if the codec "supports" field updates. */
   public static boolean defaultCodecSupportsFieldUpdates() {
     String name = Codec.getDefault().getName();
-    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
       return false;
     }
     return true;

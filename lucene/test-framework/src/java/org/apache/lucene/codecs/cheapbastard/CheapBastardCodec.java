@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.diskdv.DiskNormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
 // TODO: better name :) 
@@ -45,9 +45,10 @@ public class CheapBastardCodec extends FilterCodec {
   private final NormsFormat norms = new DiskNormsFormat();
 
   public CheapBastardCodec() {
-    super("CheapBastard", new Lucene45Codec());
+    super("CheapBastard", new Lucene46Codec());
   }
   
+  @Override
   public PostingsFormat postingsFormat() {
     return postings;
   }

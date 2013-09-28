@@ -1,7 +1,9 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -11,8 +13,9 @@ import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
+import org.apache.lucene.codecs.lucene45.Lucene45RWCodec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -25,8 +28,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -45,7 +51,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-@SuppressCodecs({"Lucene40","Lucene41","Lucene42"})
+@SuppressCodecs({"Lucene40","Lucene41","Lucene42","Lucene45"})
 public class TestNumericDocValuesUpdates extends LuceneTestCase {
   
   private Document doc(int id) {
@@ -154,7 +160,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.commit();
       reader1 = DirectoryReader.open(dir);
     }
-    
+
     // update doc
     writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 10L); // update doc-0's value to 10
     if (!isNRT) {
@@ -165,7 +171,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final DirectoryReader reader2 = DirectoryReader.openIfChanged(reader1);
     assertNotNull(reader2);
     assertTrue(reader1 != reader2);
-    
+
     assertEquals(1, reader1.leaves().get(0).reader().getNumericDocValues("val").get(0));
     assertEquals(10, reader2.leaves().get(0).reader().getNumericDocValues("val").get(0));
     
@@ -517,7 +523,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   public void testDifferentDVFormatPerField() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setCodec(new Lucene45Codec() {
+    conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new Lucene45DocValuesFormat();
@@ -792,14 +798,18 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     // update document in the second segment
     writer.updateNumericDocValue(new Term("id", "doc1"), "ndv", 5L);
-    try {
-      writer.close();
-      fail("should not have succeeded updating a segment with no numeric DocValues field");
-    } catch (UnsupportedOperationException e) {
-      // expected
-      writer.rollback();
+    writer.close();
+
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : reader.leaves()) {
+      AtomicReader r = context.reader();
+      NumericDocValues ndv = r.getNumericDocValues("ndv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        assertEquals(5L, ndv.get(i));
+      }
     }
-    
+    reader.close();
+
     dir.close();
   }
   
@@ -828,15 +838,19 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     
-    // update documentin the second segment
+    // update document in the second segment
     writer.updateNumericDocValue(new Term("id", "doc1"), "ndv", 5L);
-    try {
-      writer.close();
-      fail("should not have succeeded updating a segment with no numeric DocValues field");
-    } catch (UnsupportedOperationException e) {
-      // expected
-      writer.rollback();
+    writer.close();
+
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : reader.leaves()) {
+      AtomicReader r = context.reader();
+      NumericDocValues ndv = r.getNumericDocValues("ndv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        assertEquals(5L, ndv.get(i));
+      }
     }
+    reader.close();
     
     dir.close();
   }
@@ -867,7 +881,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   
   @Test
   public void testUpdateOldSegments() throws Exception {
-    Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec() };
+    Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec(), new Lucene45RWCodec() };
     Directory dir = newDirectory();
     
     // create a segment with an old Codec
@@ -1038,7 +1052,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // disable merges to simplify test assertions.
-    conf.setCodec(new Lucene45Codec() {
+    conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new Lucene45DocValuesFormat();
@@ -1053,7 +1067,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     // change format
-    conf.setCodec(new Lucene45Codec() {
+    conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return new AssertingDocValuesFormat();
@@ -1080,4 +1094,63 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     dir.close();
   }
 
+  @Test
+  public void testAddIndexes() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir1, conf);
+    
+    final int numDocs = atLeast(50);
+    final int numTerms = _TestUtil.nextInt(random(), 1, numDocs / 5);
+    Set<String> randomTerms = new HashSet<String>();
+    while (randomTerms.size() < numTerms) {
+      randomTerms.add(_TestUtil.randomSimpleString(random()));
+    }
+
+    // create first index
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", RandomPicks.randomFrom(random(), randomTerms), Store.NO));
+      doc.add(new NumericDocValuesField("ndv", 4L));
+      doc.add(new NumericDocValuesField("control", 8L));
+      writer.addDocument(doc);
+    }
+    
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    
+    // update some docs to a random value
+    long value = random().nextInt();
+    Term term = new Term("id", RandomPicks.randomFrom(random(), randomTerms));
+    writer.updateNumericDocValue(term, "ndv", value);
+    writer.updateNumericDocValue(term, "control", value * 2);
+    writer.close();
+    
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    writer = new IndexWriter(dir2, conf);
+    if (random().nextBoolean()) {
+      writer.addIndexes(dir1);
+    } else {
+      DirectoryReader reader = DirectoryReader.open(dir1);
+      writer.addIndexes(reader);
+      reader.close();
+    }
+    writer.close();
+    
+    DirectoryReader reader = DirectoryReader.open(dir2);
+    for (AtomicReaderContext context : reader.leaves()) {
+      AtomicReader r = context.reader();
+      NumericDocValues ndv = r.getNumericDocValues("ndv");
+      NumericDocValues control = r.getNumericDocValues("control");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        assertEquals(ndv.get(i)*2, control.get(i));
+      }
+    }
+    reader.close();
+    
+    IOUtils.close(dir1, dir2);
+  }
+  
 }

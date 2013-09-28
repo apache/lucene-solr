@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -73,6 +74,8 @@ public final class SegmentReader extends AtomicReader {
   final Map<String,DocValuesProducer> dvProducers = new HashMap<String,DocValuesProducer>();
   final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<Long,RefCount<DocValuesProducer>>();
 
+  final FieldInfos fieldInfos;
+  
   /**
    * Constructs a new SegmentReader with a new core.
    * @throws CorruptIndexException if the index is corrupt
@@ -81,6 +84,13 @@ public final class SegmentReader extends AtomicReader {
   // TODO: why is this public?
   public SegmentReader(SegmentInfoPerCommit si, IOContext context) throws IOException {
     this.si = si;
+    // TODO if the segment uses CFS, we may open the CFS file twice: once for
+    // reading the FieldInfos (if they are not gen'd) and second time by
+    // SegmentCoreReaders. We can open the CFS here and pass to SCR, but then it
+    // results in less readable code (resource not closed where it was opened).
+    // Best if we could somehow read FieldInfos in SCR but not keep it there, but
+    // constructors don't allow returning two things...
+    fieldInfos = readFieldInfos(si);
     core = new SegmentCoreReaders(this, si.info.dir, si, context);
 
     boolean success = false;
@@ -95,7 +105,7 @@ public final class SegmentReader extends AtomicReader {
       }
       numDocs = si.info.getDocCount() - si.getDelCount();
       
-      if (core.fieldInfos.hasDocValues()) {
+      if (fieldInfos.hasDocValues()) {
         final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
         final DocValuesFormat dvFormat = codec.docValuesFormat();
         // initialize the per generation numericDVProducers and put the correct
@@ -157,8 +167,14 @@ public final class SegmentReader extends AtomicReader {
     // increment refCount of DocValuesProducers that are used by this reader
     boolean success = false;
     try {
-      if (core.fieldInfos.hasDocValues()) {
-        final Codec codec = si.info.getCodec();
+      final Codec codec = si.info.getCodec();
+      if (si.getFieldInfosGen() == -1) {
+        fieldInfos = sr.fieldInfos;
+      } else {
+        fieldInfos = readFieldInfos(si);
+      }
+      
+      if (fieldInfos.hasDocValues()) {
         final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
         
         final DocValuesFormat dvFormat = codec.docValuesFormat();
@@ -196,14 +212,45 @@ public final class SegmentReader extends AtomicReader {
     }
   }
 
+  /**
+   * Reads the most recent {@link FieldInfos} of the given segment info.
+   * 
+   * @lucene.internal
+   */
+  static FieldInfos readFieldInfos(SegmentInfoPerCommit info) throws IOException {
+    final Directory dir;
+    final boolean closeDir;
+    if (info.getFieldInfosGen() == -1 && info.info.getUseCompoundFile()) {
+      // no fieldInfos gen and segment uses a compound file
+      dir = new CompoundFileDirectory(info.info.dir,
+          IndexFileNames.segmentFileName(info.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
+          IOContext.READONCE,
+          false);
+      closeDir = true;
+    } else {
+      // gen'd FIS are read outside CFS, or the segment doesn't use a compound file
+      dir = info.info.dir;
+      closeDir = false;
+    }
+    
+    try {
+      final String segmentSuffix = info.getFieldInfosGen() == -1 ? "" : Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
+      return info.info.getCodec().fieldInfosFormat().getFieldInfosReader().read(dir, info.info.name, segmentSuffix, IOContext.READONCE);
+    } finally {
+      if (closeDir) {
+        dir.close();
+      }
+    }
+  }
+  
   // returns a gen->List<FieldInfo> mapping. Fields without DV updates have gen=-1
   private Map<Long,List<FieldInfo>> getGenInfos(SegmentInfoPerCommit si) {
     final Map<Long,List<FieldInfo>> genInfos = new HashMap<Long,List<FieldInfo>>();
-    for (FieldInfo fi : core.fieldInfos) {
+    for (FieldInfo fi : fieldInfos) {
       if (fi.getDocValuesType() == null) {
         continue;
       }
-      long gen = si.getDocValuesGen(fi.number);
+      long gen = fi.getDocValuesGen();
       List<FieldInfo> infos = genInfos.get(gen);
       if (infos == null) {
         infos = new ArrayList<FieldInfo>();
@@ -267,7 +314,7 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public FieldInfos getFieldInfos() {
     ensureOpen();
-    return core.fieldInfos;
+    return fieldInfos;
   }
 
   /** Expert: retrieve thread-private {@link
@@ -372,7 +419,7 @@ public final class SegmentReader extends AtomicReader {
   // null if the field does not exist, or not indexed as the requested
   // DovDocValuesType.
   private FieldInfo getDVField(String field, DocValuesType type) {
-    FieldInfo fi = core.fieldInfos.fieldInfo(field);
+    FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
       return null;
@@ -414,7 +461,7 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public Bits getDocsWithField(String field) throws IOException {
     ensureOpen();
-    FieldInfo fi = core.fieldInfos.fieldInfo(field);
+    FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
       return null;
@@ -507,7 +554,12 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    return core.getNormValues(field);
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null || !fi.hasNorms()) {
+      // Field does not exist or does not index norms
+      return null;
+    }
+    return core.getNormValues(fi);
   }
 
   /**

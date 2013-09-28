@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,11 +16,11 @@ package org.apache.lucene.codecs.lucene40;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosReader.LegacyDocValuesType;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
@@ -32,41 +32,40 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.0 FieldInfos writer.
+ * Lucene 4.6 FieldInfos writer.
  * 
- * @see Lucene40FieldInfosFormat
+ * @see Lucene46FieldInfosFormat
  * @lucene.experimental
  */
-@Deprecated
-public class Lucene40FieldInfosWriter extends FieldInfosWriter {
-
+final class Lucene46FieldInfosWriter extends FieldInfosWriter {
+  
   /** Sole constructor. */
-  public Lucene40FieldInfosWriter() {
+  public Lucene46FieldInfosWriter() {
   }
   
   @Override
   public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosFormat.FIELD_INFOS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene46FieldInfosFormat.EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;
     try {
-      CodecUtil.writeHeader(output, Lucene40FieldInfosFormat.CODEC_NAME, Lucene40FieldInfosFormat.FORMAT_CURRENT);
+      CodecUtil.writeHeader(output, Lucene46FieldInfosFormat.CODEC_NAME, Lucene46FieldInfosFormat.FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         IndexOptions indexOptions = fi.getIndexOptions();
         byte bits = 0x0;
-        if (fi.hasVectors()) bits |= Lucene40FieldInfosFormat.STORE_TERMVECTOR;
-        if (fi.omitsNorms()) bits |= Lucene40FieldInfosFormat.OMIT_NORMS;
-        if (fi.hasPayloads()) bits |= Lucene40FieldInfosFormat.STORE_PAYLOADS;
+        if (fi.hasVectors()) bits |= Lucene46FieldInfosFormat.STORE_TERMVECTOR;
+        if (fi.omitsNorms()) bits |= Lucene46FieldInfosFormat.OMIT_NORMS;
+        if (fi.hasPayloads()) bits |= Lucene46FieldInfosFormat.STORE_PAYLOADS;
         if (fi.isIndexed()) {
-          bits |= Lucene40FieldInfosFormat.IS_INDEXED;
+          bits |= Lucene46FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
           if (indexOptions == IndexOptions.DOCS_ONLY) {
-            bits |= Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
+            bits |= Lucene46FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
-            bits |= Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
+            bits |= Lucene46FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
-            bits |= Lucene40FieldInfosFormat.OMIT_POSITIONS;
+            bits |= Lucene46FieldInfosFormat.OMIT_POSITIONS;
           }
         }
         output.writeString(fi.name);
@@ -74,11 +73,12 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         output.writeByte(bits);
 
         // pack the DV types in one byte
-        final byte dv = docValuesByte(fi.getDocValuesType(), fi.getAttribute(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY));
-        final byte nrm = docValuesByte(fi.getNormType(), fi.getAttribute(Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY));
+        final byte dv = docValuesByte(fi.getDocValuesType());
+        final byte nrm = docValuesByte(fi.getNormType());
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
+        output.writeLong(fi.getDocValuesGen());
         output.writeStringStringMap(fi.attributes());
       }
       success = true;
@@ -91,14 +91,19 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
     }
   }
   
-  /** 4.0-style docvalues byte */
-  public byte docValuesByte(DocValuesType type, String legacyTypeAtt) {
+  private static byte docValuesByte(DocValuesType type) {
     if (type == null) {
-      assert legacyTypeAtt == null;
       return 0;
+    } else if (type == DocValuesType.NUMERIC) {
+      return 1;
+    } else if (type == DocValuesType.BINARY) {
+      return 2;
+    } else if (type == DocValuesType.SORTED) {
+      return 3;
+    } else if (type == DocValuesType.SORTED_SET) {
+      return 4;
     } else {
-      assert legacyTypeAtt != null;
-      return (byte) LegacyDocValuesType.valueOf(legacyTypeAtt).ordinal();
+      throw new AssertionError();
     }
   }  
 }

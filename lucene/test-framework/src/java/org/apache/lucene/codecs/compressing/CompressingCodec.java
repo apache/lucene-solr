@@ -23,13 +23,13 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 /**
  * A codec that uses {@link CompressingStoredFieldsFormat} for its stored
- * fields and delegates to {@link Lucene45Codec} for everything else.
+ * fields and delegates to {@link Lucene46Codec} for everything else.
  */
 public abstract class CompressingCodec extends FilterCodec {
 
@@ -73,7 +73,7 @@ public abstract class CompressingCodec extends FilterCodec {
    * Creates a compressing codec with a given segment suffix
    */
   public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize) {
-    super(name, new Lucene45Codec());
+    super(name, new Lucene46Codec());
     this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize);
     this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize);
   }

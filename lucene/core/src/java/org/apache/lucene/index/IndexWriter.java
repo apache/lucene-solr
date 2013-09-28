@@ -532,6 +532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         final ReadersAndLiveDocs rld = readerMap.get(info);
         if (rld != null) {
           assert rld.info == info;
+          boolean hasFieldUpdates = rld.hasFieldUpdates(); // only reopen reader if there were field udpates
           if (rld.writeLiveDocs(directory)) {
             // Make sure we only write del docs and updates for a live segment:
             assert infoIsLive(info);
@@ -540,8 +541,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             // created new _X_N.del and field updates files.
             deleter.checkpoint(segmentInfos, false);
             
-            // we wrote liveDocs and field updates, reopen the reader
-            rld.reopenReader(IOContext.READ);
+            // we wrote field updates, reopen the reader
+            if (hasFieldUpdates) {
+              rld.reopenReader(IOContext.READ);
+            }
           }
         }
       }
@@ -783,27 +786,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
 
-  private FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
-    Directory cfsDir = null;
-    try {
-      if (info.getUseCompoundFile()) {
-        cfsDir = new CompoundFileDirectory(info.dir,
-                                           IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
-                                           IOContext.READONCE,
-                                           false);
-      } else {
-        cfsDir = info.dir;
-      }
-      return info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
-                                                                                info.name,
-                                                                                IOContext.READONCE);
-    } finally {
-      if (info.getUseCompoundFile() && cfsDir != null) {
-        cfsDir.close();
-      }
-    }
-  }
-
   /**
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
@@ -812,7 +794,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     final FieldNumbers map = new FieldNumbers();
 
     for(SegmentInfoPerCommit info : segmentInfos) {
-      for(FieldInfo fi : getFieldInfos(info.info)) {
+      for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
         map.addOrGet(fi.name, fi.number, fi.getDocValuesType());
       }
     }
@@ -1547,13 +1529,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * that already exist in the index, not add new fields through this method.
    * 
    * <p>
-   * <b>NOTE:</b> it is currently not allowed to update the value of documents
-   * in a segment where the field does not exist (even though it may exist in
-   * other segments). If you try that, you will hit an
-   * {@link UnsupportedOperationException} when the segment is later flushed
-   * (following an NRT reader reopen, commit, forceMerge etc.).
-   * 
-   * <p>
    * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
    * close the writer. See <a href="#OOME">above</a> for details.
    * </p>
@@ -1569,7 +1544,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * @throws IOException
    *           if there is a low-level IO error
    */
-  // TODO (DVU_FIELDINFOS_GEN) remove the paragraph on updating segments without the field not allowed
   public void updateNumericDocValue(Term term, String field, Long value) throws IOException {
     ensureOpen();
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
@@ -2431,7 +2405,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
             IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.sizeInBytes(), true, -1));
 
-            for(FieldInfo fi : getFieldInfos(info.info)) {
+            for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
@@ -2632,7 +2606,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     
     // note: we don't really need this fis (its copied), but we load it up
     // so we don't pass a null value to the si writer
-    FieldInfos fis = getFieldInfos(info.info);
+    FieldInfos fis = SegmentReader.readFieldInfos(info);
     
     final Map<String,String> attributes;
     // copy the attributes map, we might modify it below.
@@ -2648,7 +2622,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), attributes);
-    SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen(), info.getDocValuesGen());
+    SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen(), info.getFieldInfosGen());
 
     Set<String> segFiles = new HashSet<String>();
 

@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -144,9 +144,6 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
       try {
         reader.decRef();
         reader = newReader;
-        if (liveDocs == null) {
-          liveDocs = reader.getLiveDocs();
-        }
         reopened = true;
       } finally {
         if (!reopened) {
@@ -328,7 +325,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     // discard them on the sub-readers:
     pendingDeleteCount = 0;
     numericUpdates.clear();
-    mergingUpdates.clear();
+    dropMergingUpdates();
   }
 
   // Commit live docs (writes new _X_N.del files) and field updates (writes new
@@ -344,9 +341,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     }
     
     // We have new deletes or updates
-    if (pendingDeleteCount > 0) {
-      assert liveDocs.length() == info.info.getDocCount();
-    }
+    assert pendingDeleteCount == 0 || liveDocs.length() == info.info.getDocCount();
     
     // Do this so we can delete any created files on
     // exception; this saves all codecs from having to do
@@ -370,11 +365,11 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
 //        if (this.reader == null) System.out.println("[" + Thread.currentThread().getName() + "] RLD.writeLiveDocs: newSR " + info);
         final SegmentReader reader = this.reader == null ? new SegmentReader(info, IOContext.READONCE) : this.reader;
         try {
-          // clone FieldInfos so that we can update their numericUpdatesGen
-          // separately from the reader's infos and write them to a new
-          // fieldInfos_gen file
+          // clone FieldInfos so that we can update their dvGen separately from
+          // the reader's infos and write them to a new fieldInfos_gen file
           FieldInfos.Builder builder = new FieldInfos.Builder(writer.globalFieldNumberMap);
-          // cannot use builder.add(reader.getFieldInfos()) because it does not clone FI.attributes
+          // cannot use builder.add(reader.getFieldInfos()) because it does not
+          // clone FI.attributes as well FI.dvGen
           for (FieldInfo fi : reader.getFieldInfos()) {
             FieldInfo clone = builder.add(fi);
             // copy the stuff FieldInfos.Builder doesn't copy
@@ -383,16 +378,17 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
                 clone.putAttribute(e.getKey(), e.getValue());
               }
             }
+            clone.setDocValuesGen(fi.getDocValuesGen());
           }
           // create new fields or update existing ones to have NumericDV type
-//          for (String f : numericUpdates.keySet()) {
-//            builder.addOrUpdate(f, NumericDocValuesField.TYPE);
-//          }
+          for (String f : numericUpdates.keySet()) {
+            builder.addOrUpdate(f, NumericDocValuesField.TYPE);
+          }
           
           final FieldInfos fieldInfos = builder.finish();
-          final long nextDocValuesGen = info.getNextDocValuesGen();
-          final String segmentSuffix = Long.toString(nextDocValuesGen, Character.MAX_RADIX);
-          final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, IOContext.DEFAULT, segmentSuffix, true);
+          final long nextFieldInfosGen = info.getNextFieldInfosGen();
+          final String segmentSuffix = Long.toString(nextFieldInfosGen, Character.MAX_RADIX);
+          final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, IOContext.DEFAULT, segmentSuffix);
           final DocValuesFormat docValuesFormat = codec.docValuesFormat();
           final DocValuesConsumer fieldsConsumer = docValuesFormat.fieldsConsumer(state);
           boolean fieldsConsumerSuccess = false;
@@ -403,13 +399,9 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
               final Map<Integer,Long> updates = e.getValue();
               final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
 
-              if (fieldInfo == null || fieldInfo.getDocValuesType() != DocValuesType.NUMERIC) {
-                throw new UnsupportedOperationException(
-                    "cannot update docvalues in a segment with no docvalues field: segment=" + info + ", field=" + field);
-              }
-//              assert fieldInfo != null;
+              assert fieldInfo != null;
 
-              info.setDocValuesGen(fieldInfo.number, nextDocValuesGen);
+              fieldInfo.setDocValuesGen(nextFieldInfosGen);
               
               // write the numeric updates to a new gen'd docvalues file
               fieldsConsumer.addNumericField(fieldInfo, new Iterable<Number>() {
@@ -451,6 +443,8 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
                 }
               });
             }
+            
+            codec.fieldInfosFormat().getFieldInfosWriter().write(trackingDir, info.info.name, segmentSuffix, fieldInfos, IOContext.DEFAULT);
             fieldsConsumerSuccess = true;
           } finally {
             if (fieldsConsumerSuccess) {
@@ -478,7 +472,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
         // Advance only the nextWriteDocValuesGen so that a 2nd
         // attempt to write will write to a new file
         if (hasFieldUpdates) {
-          info.advanceNextWriteDocValuesGen();
+          info.advanceNextWriteFieldInfosGen();
         }
         
         // Delete any partially created file(s):
@@ -502,7 +496,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     }
     
     if (hasFieldUpdates) {
-      info.advanceDocValuesGen();
+      info.advanceFieldInfosGen();
       // copy all the updates to mergingUpdates, so they can later be applied to the merged segment
       if (isMerging) {
         copyUpdatesToMerging();

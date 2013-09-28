@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.codecs.facet45;
+package org.apache.lucene.facet.codecs.facet46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,13 +21,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.facet.codecs.facet42.Facet42DocValuesFormat;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 
 /**
- * Same as {@link Lucene45Codec} except it uses {@link Facet42DocValuesFormat}
+ * Same as {@link Lucene46Codec} except it uses {@link Facet42DocValuesFormat}
  * for facet fields (faster-but-more-RAM-consuming doc values).
  * 
  * <p>
@@ -43,13 +43,13 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
  * 
  * @lucene.experimental
  */
-public class Facet45Codec extends Lucene45Codec {
+public class Facet46Codec extends Lucene46Codec {
 
   private final Set<String> facetFields;
   private final DocValuesFormat facetsDVFormat = DocValuesFormat.forName("Facet42");
 
   /** Default constructor, uses {@link FacetIndexingParams#DEFAULT}. */
-  public Facet45Codec() {
+  public Facet46Codec() {
     this(FacetIndexingParams.DEFAULT);
   }
 
@@ -58,7 +58,7 @@ public class Facet45Codec extends Lucene45Codec {
    * {@link DocValuesFormat} for the fields that are returned by
    * {@link FacetIndexingParams#getAllCategoryListParams()}.
    */
-  public Facet45Codec(FacetIndexingParams fip) {
+  public Facet46Codec(FacetIndexingParams fip) {
     if (fip.getPartitionSize() != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("this Codec does not support partitions");
     }

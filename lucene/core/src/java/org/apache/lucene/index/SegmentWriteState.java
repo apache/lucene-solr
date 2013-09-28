@@ -71,24 +71,20 @@ public class SegmentWriteState {
    *  to {@link Directory#createOutput(String,IOContext)}. */
   public final IOContext context;
 
-  /** True is this instance represents a field update. */
-  public final boolean isFieldUpdate; // TODO (DVU_FIELDINFOS_GEN) once we gen FieldInfos, get rid of this
-  
   /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
       BufferedDeletes segDeletes, IOContext context) {
-    this(infoStream, directory, segmentInfo, fieldInfos, segDeletes, context, "", false);
+    this(infoStream, directory, segmentInfo, fieldInfos, segDeletes, context, "");
   }
 
   /**
-   * Constructor which takes segment suffix and isFieldUpdate in addition to the
-   * other parameters.
+   * Constructor which takes segment suffix.
    * 
    * @see #SegmentWriteState(InfoStream, Directory, SegmentInfo, FieldInfos,
    *      BufferedDeletes, IOContext)
    */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      BufferedDeletes segDeletes, IOContext context, String segmentSuffix, boolean isFieldUpdate) {
+      BufferedDeletes segDeletes, IOContext context, String segmentSuffix) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -96,7 +92,6 @@ public class SegmentWriteState {
     this.fieldInfos = fieldInfos;
     this.segmentSuffix = segmentSuffix;
     this.context = context;
-    this.isFieldUpdate = isFieldUpdate;
   }
   
   /** Create a shallow copy of {@link SegmentWriteState} with a new segment suffix. */
@@ -109,6 +104,5 @@ public class SegmentWriteState {
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
     delCountOnFlush = state.delCountOnFlush;
-    isFieldUpdate = state.isFieldUpdate;
   }
 }

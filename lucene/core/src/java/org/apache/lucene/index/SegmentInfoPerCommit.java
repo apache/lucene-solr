@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.store.Directory;
@@ -46,16 +44,12 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
   // attempt to write:
   private long nextWriteDelGen;
 
-  // holds field.number to docValuesGen mapping
-  // TODO (DVU_FIELDINFOS_GEN) once we gen FieldInfos, get rid of this; every FieldInfo will record its dvGen
-  private final Map<Integer,Long> fieldDocValuesGens = new HashMap<Integer,Long>();
+  // Generation number of the FieldInfos (-1 if there are no updates)
+  private long fieldInfosGen;
   
-  // Generation number of the docValues (-1 if there are no field updates)
-  private long docValuesGen;
-  
-  // Normally 1 + docValuesGen, unless an exception was hit on last attempt to
+  // Normally 1 + fieldInfosGen, unless an exception was hit on last attempt to
   // write
-  private long nextWriteDocValuesGen;
+  private long nextWriteFieldInfosGen;
 
   // Tracks the files with field updates
   private Set<String> updatesFiles = new HashSet<String>();
@@ -71,10 +65,10 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
    *          number of deleted documents in this segment
    * @param delGen
    *          deletion generation number (used to name deletion files)
-   * @param docValuesGen
-   *          doc-values generation number (used to name docvalues files)
+   * @param fieldInfosGen
+   *          FieldInfos generation number (used to name field-infos files)
    **/
-  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long docValuesGen) {
+  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long fieldInfosGen) {
     this.info = info;
     this.delCount = delCount;
     this.delGen = delGen;
@@ -84,11 +78,11 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
       nextWriteDelGen = delGen+1;
     }
     
-    this.docValuesGen = docValuesGen;
-    if (docValuesGen == -1) {
-      nextWriteDocValuesGen = 1;
+    this.fieldInfosGen = fieldInfosGen;
+    if (fieldInfosGen == -1) {
+      nextWriteFieldInfosGen = 1;
     } else {
-      nextWriteDocValuesGen = docValuesGen + 1;
+      nextWriteFieldInfosGen = fieldInfosGen + 1;
     }
   }
 
@@ -116,19 +110,19 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
     nextWriteDelGen++;
   }
   
-  /** Called when we succeed in writing docvalues updates */
-  void advanceDocValuesGen() {
-    docValuesGen = nextWriteDocValuesGen;
-    nextWriteDocValuesGen = docValuesGen + 1;
+  /** Called when we succeed in writing a new FieldInfos generation. */
+  void advanceFieldInfosGen() {
+    fieldInfosGen = nextWriteFieldInfosGen;
+    nextWriteFieldInfosGen = fieldInfosGen + 1;
     sizeInBytes = -1;
   }
   
   /**
-   * Called if there was an exception while writing docvalues updates, so that
-   * we don't try to write to the same file more than once.
+   * Called if there was an exception while writing a new generation of
+   * FieldInfos, so that we don't try to write to the same file more than once.
    */
-  void advanceNextWriteDocValuesGen() {
-    nextWriteDocValuesGen++;
+  void advanceNextWriteFieldInfosGen() {
+    nextWriteFieldInfosGen++;
   }
 
   /** Returns total size in bytes of all files for this
@@ -183,43 +177,20 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
 
   /** Returns true if there are any field updates for the segment in this commit. */
   public boolean hasFieldUpdates() {
-    return docValuesGen != -1;
+    return fieldInfosGen != -1;
   }
   
-  /** Returns the next available generation number of the docvalues files. */
-  public long getNextDocValuesGen() {
-    return nextWriteDocValuesGen;
-  }
-  
-  /**
-   * Returns the docvalues generation of this field, or -1 if there are
-   * no updates to it.
-   */
-  public long getDocValuesGen(int fieldNumber) {
-    Long gen = fieldDocValuesGens.get(fieldNumber);
-    return gen == null ? -1 : gen.longValue();
-  }
-  
-  /** Sets the docvalues generation for this field. */
-  public void setDocValuesGen(int fieldNumber, long gen) {
-    fieldDocValuesGens.put(fieldNumber, gen);
-  }
-  
-  /**
-   * Returns a mapping from a field number to its DV generation.
-   * 
-   * @see #getDocValuesGen(int)
-   */
-  public Map<Integer,Long> getFieldDocValuesGens() {
-    return fieldDocValuesGens;
+  /** Returns the next available generation number of the FieldInfos files. */
+  public long getNextFieldInfosGen() {
+    return nextWriteFieldInfosGen;
   }
   
   /**
    * Returns the generation number of the field infos file or -1 if there are no
    * field updates yet.
    */
-  public long getDocValuesGen() {
-    return docValuesGen;
+  public long getFieldInfosGen() {
+    return fieldInfosGen;
   }
   
   /**
@@ -261,25 +232,24 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
     if (delGen != -1) {
       s += ":delGen=" + delGen;
     }
-    if (docValuesGen != -1) {
-      s += ":docValuesGen=" + docValuesGen;
+    if (fieldInfosGen != -1) {
+      s += ":fieldInfosGen=" + fieldInfosGen;
     }
     return s;
   }
 
   @Override
   public SegmentInfoPerCommit clone() {
-    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen, docValuesGen);
+    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen, fieldInfosGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to
     // be safe:
     other.nextWriteDelGen = nextWriteDelGen;
-    other.nextWriteDocValuesGen = nextWriteDocValuesGen;
+    other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
     
     other.updatesFiles.addAll(updatesFiles);
     
-    other.fieldDocValuesGens.putAll(fieldDocValuesGens);
     return other;
   }
 }

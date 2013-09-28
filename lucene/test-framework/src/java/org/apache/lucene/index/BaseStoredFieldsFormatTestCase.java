@@ -31,21 +31,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -59,7 +58,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -78,6 +76,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
    */
   protected abstract Codec getCodec();
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // set the default codec, so adding test cases to this isn't fragile
@@ -85,6 +84,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     Codec.setDefault(getCodec());
   }
 
+  @Override
   public void tearDown() throws Exception {
     Codec.setDefault(savedCodec); // restore
     super.tearDown();
@@ -502,7 +502,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     // get another codec, other than the default: so we are merging segments across different codecs
     final Codec otherCodec;
     if ("SimpleText".equals(Codec.getDefault().getName())) {
-      otherCodec = new Lucene45Codec();
+      otherCodec = new Lucene46Codec();
     } else {
       otherCodec = new SimpleTextCodec();
     }

@@ -3,7 +3,7 @@ package org.apache.lucene.facet;
 import java.util.Random;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.facet.codecs.facet45.Facet45Codec;
+import org.apache.lucene.facet.codecs.facet46.Facet46Codec;
 import org.apache.lucene.facet.encoding.DGapIntEncoder;
 import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.facet.encoding.EightFlagsIntEncoder;
@@ -53,7 +53,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
   public static void beforeClassFacetTestCase() throws Exception {
     if (random().nextDouble() < 0.3) {
       savedDefault = Codec.getDefault(); // save to restore later
-      Codec.setDefault(new Facet45Codec());
+      Codec.setDefault(new Facet46Codec());
     }
   }
   

@@ -141,7 +141,7 @@ public class IndexSplitter {
       SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), 
                                             info.getUseCompoundFile(),
                                             info.getCodec(), info.getDiagnostics(), info.attributes());
-      destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen(), infoPerCommit.getDocValuesGen()));
+      destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen()));
       // now copy files over
       Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,29 +35,27 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.2 FieldInfos reader.
+ * Lucene 4.6 FieldInfos reader.
  * 
  * @lucene.experimental
- * @deprecated Only for reading old 4.2-4.5 segments
- * @see Lucene42FieldInfosFormat
+ * @see Lucene46FieldInfosFormat
  */
-@Deprecated
-final class Lucene42FieldInfosReader extends FieldInfosReader {
+final class Lucene46FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
-  public Lucene42FieldInfosReader() {
+  public Lucene46FieldInfosReader() {
   }
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
-    IndexInput input = directory.openInput(fileName, iocontext);
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene46FieldInfosFormat.EXTENSION);
+    IndexInput input = directory.openInput(fileName, context);
     
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene42FieldInfosFormat.CODEC_NAME, 
-                                   Lucene42FieldInfosFormat.FORMAT_START, 
-                                   Lucene42FieldInfosFormat.FORMAT_CURRENT);
+      CodecUtil.checkHeader(input, Lucene46FieldInfosFormat.CODEC_NAME, 
+                                   Lucene46FieldInfosFormat.FORMAT_START, 
+                                   Lucene46FieldInfosFormat.FORMAT_CURRENT);
 
       final int size = input.readVInt(); //read in the size
       FieldInfo infos[] = new FieldInfo[size];
@@ -66,18 +64,18 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
         String name = input.readString();
         final int fieldNumber = input.readVInt();
         byte bits = input.readByte();
-        boolean isIndexed = (bits & Lucene42FieldInfosFormat.IS_INDEXED) != 0;
-        boolean storeTermVector = (bits & Lucene42FieldInfosFormat.STORE_TERMVECTOR) != 0;
-        boolean omitNorms = (bits & Lucene42FieldInfosFormat.OMIT_NORMS) != 0;
-        boolean storePayloads = (bits & Lucene42FieldInfosFormat.STORE_PAYLOADS) != 0;
+        boolean isIndexed = (bits & Lucene46FieldInfosFormat.IS_INDEXED) != 0;
+        boolean storeTermVector = (bits & Lucene46FieldInfosFormat.STORE_TERMVECTOR) != 0;
+        boolean omitNorms = (bits & Lucene46FieldInfosFormat.OMIT_NORMS) != 0;
+        boolean storePayloads = (bits & Lucene46FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
           indexOptions = null;
-        } else if ((bits & Lucene42FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        } else if ((bits & Lucene46FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
-        } else if ((bits & Lucene42FieldInfosFormat.OMIT_POSITIONS) != 0) {
+        } else if ((bits & Lucene46FieldInfosFormat.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
-        } else if ((bits & Lucene42FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
+        } else if ((bits & Lucene46FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
         } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -87,9 +85,11 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
         byte val = input.readByte();
         final DocValuesType docValuesType = getDocValuesType(input, (byte) (val & 0x0F));
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
+        final long dvGen = input.readLong();
         final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
+        infos[i].setDocValuesGen(dvGen);
       }
 
       if (input.getFilePointer() != input.length()) {

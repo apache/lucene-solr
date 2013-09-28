@@ -50,7 +50,6 @@ final class SegmentCoreReaders {
   // SegmentReaders:
   private final AtomicInteger ref = new AtomicInteger(1);
   
-  final FieldInfos fieldInfos;
   final FieldsProducer fields;
   final DocValuesProducer normsProducer;
 
@@ -103,10 +102,10 @@ final class SegmentCoreReaders {
         cfsDir = dir;
       }
 
-      fieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, si.info.name, IOContext.READONCE);
+      final FieldInfos fieldInfos = owner.fieldInfos;
       
-      final PostingsFormat format = codec.postingsFormat();
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context);
+      final PostingsFormat format = codec.postingsFormat();
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
@@ -151,24 +150,15 @@ final class SegmentCoreReaders {
     ref.incrementAndGet();
   }
 
-  NumericDocValues getNormValues(String field) throws IOException {
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null) {
-      // Field does not exist
-      return null;
-    }
-    if (!fi.hasNorms()) {
-      return null;
-    }
-   
+  NumericDocValues getNormValues(FieldInfo fi) throws IOException {
     assert normsProducer != null;
 
     Map<String,Object> normFields = normsLocal.get();
 
-    NumericDocValues norms = (NumericDocValues) normFields.get(field);
+    NumericDocValues norms = (NumericDocValues) normFields.get(fi.name);
     if (norms == null) {
       norms = normsProducer.getNumeric(fi);
-      normFields.put(field, norms);
+      normFields.put(fi.name, norms);
     }
 
     return norms;

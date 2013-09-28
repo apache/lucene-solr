@@ -37,14 +37,15 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene42FieldInfosFormat
  * @lucene.experimental
  */
-final class Lucene42FieldInfosWriter extends FieldInfosWriter {
+@Deprecated
+public final class Lucene42FieldInfosWriter extends FieldInfosWriter {
   
   /** Sole constructor. */
   public Lucene42FieldInfosWriter() {
   }
   
   @Override
-  public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
+  public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;
