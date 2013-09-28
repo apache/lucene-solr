@@ -27,6 +27,14 @@
   
   <path id="analysis.extras.lucene.libs">
     <pathelement location="${analyzers-icu.jar}"/>
+    <!-- 
+      Although the smartcn, stempel, and morfologik jars are not dependencies of
+      code in the analysis-extras contrib, they must remain here in order to
+      populate the Solr distribution
+     -->
+    <pathelement location="${analyzers-smartcn.jar}"/>
+    <pathelement location="${analyzers-stempel.jar}"/>
+    <pathelement location="${analyzers-morfologik.jar}"/>
   </path>
 
   <path id="classpath">
@@ -35,7 +43,14 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="module-jars-to-solr" depends="jar-analyzers-icu">
+
+  <!-- 
+    Although the smartcn, stempel, and morfologik jars are not dependencies of
+    code in the analysis-extras contrib, they must remain here in order to
+    populate the Solr distribution
+   -->
+  <target name="module-jars-to-solr"
+          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <path refid="analysis.extras.lucene.libs" />
