@@ -1485,7 +1485,6 @@
   <searchComponent name="terms" class="solr.TermsComponent"/>
 
   <!-- A request handler for demonstrating the terms component -->
-  <requestHandler name="/js" class="org.apache.solr.handler.js.JavaScriptRequestHandler" startup="lazy"/>
   <requestHandler name="/terms" class="solr.SearchHandler" startup="lazy">
      <lst name="defaults">
       <bool name="terms">true</bool>
