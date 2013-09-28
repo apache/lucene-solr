@@ -1037,6 +1037,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   public void testChangeCodec() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // disable merges to simplify test assertions.
     conf.setCodec(new Lucene45Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
