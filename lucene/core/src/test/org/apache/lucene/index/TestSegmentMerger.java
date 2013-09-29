@@ -78,7 +78,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
+    final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null);
 
     SegmentMerger merger = new SegmentMerger(Arrays.<AtomicReader>asList(reader1, reader2),
         si, InfoStream.getDefault(), mergedDir,
@@ -89,7 +89,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = new SegmentReader(new SegmentInfoPerCommit(
                                                          new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged,
-                                                                         false, codec, null, null),
+                                                                         false, codec, null),
                                                          0, -1L, -1L),
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);

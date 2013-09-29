@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -60,8 +59,6 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
   
-  private Map<String,String> attributes;
-
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
@@ -85,7 +82,7 @@ public final class SegmentInfo {
    * the codecs package.</p>
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, 
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
+                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
@@ -94,7 +91,6 @@ public final class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
     this.diagnostics = diagnostics;
-    this.attributes = attributes;
   }
 
   /**
@@ -259,40 +255,4 @@ public final class SegmentInfo {
     }
   }
     
-  /**
-   * Get a codec attribute value, or null if it does not exist
-   */
-  public String getAttribute(String key) {
-    if (attributes == null) {
-      return null;
-    } else {
-      return attributes.get(key);
-    }
-  }
-  
-  /**
-   * Puts a codec attribute value.
-   * <p>
-   * This is a key-value mapping for the field that the codec can use
-   * to store additional metadata, and will be available to the codec
-   * when reading the segment via {@link #getAttribute(String)}
-   * <p>
-   * If a value already exists for the field, it will be replaced with 
-   * the new value.
-   */
-  public String putAttribute(String key, String value) {
-    if (attributes == null) {
-      attributes = new HashMap<String,String>();
-    }
-    return attributes.put(key, value);
-  }
-  
-  /**
-   * Returns the internal codec attributes map.
-   *
-   * @return internal codec attributes map. May be null if no mappings exist.
-   */
-  public Map<String,String> attributes() {
-    return attributes;
-  }
 }

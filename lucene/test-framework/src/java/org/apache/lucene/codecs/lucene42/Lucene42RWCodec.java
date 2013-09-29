@@ -23,6 +23,9 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoWriter;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -30,8 +33,31 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 @SuppressWarnings("deprecation")
 public class Lucene42RWCodec extends Lucene42Codec {
+
   private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
   private static final NormsFormat norms = new Lucene42NormsFormat();
+
+  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
+    @Override
+    public FieldInfosWriter getFieldInfosWriter() throws IOException {
+      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        return super.getFieldInfosWriter();
+      } else {
+        return new Lucene42FieldInfosWriter();
+      }
+    }
+  };
+  
+  private final SegmentInfoFormat segmentInfosFormat = new Lucene40SegmentInfoFormat() {
+    @Override
+    public org.apache.lucene.codecs.SegmentInfoWriter getSegmentInfoWriter() {
+      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        return super.getSegmentInfoWriter();
+      } else {
+        return new Lucene40SegmentInfoWriter();
+      }
+    }
+  };
 
   @Override
   public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -45,16 +71,12 @@ public class Lucene42RWCodec extends Lucene42Codec {
   
   @Override
   public FieldInfosFormat fieldInfosFormat() {
-    return new Lucene42FieldInfosFormat() {
-      @Override
-      public FieldInfosWriter getFieldInfosWriter() throws IOException {
-        if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-          return super.getFieldInfosWriter();
-        } else {
-          return new Lucene42FieldInfosWriter();
-        }
-      }
-    };
+    return fieldInfosFormat;
+  }
+  
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfosFormat;
   }
   
 }

@@ -21,6 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoWriter;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
 import org.apache.lucene.util.LuceneTestCase;
@@ -31,18 +34,36 @@ import org.apache.lucene.util.LuceneTestCase;
 @SuppressWarnings("deprecation")
 public class Lucene45RWCodec extends Lucene45Codec {
   
+  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
+    @Override
+    public FieldInfosWriter getFieldInfosWriter() throws IOException {
+      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        return super.getFieldInfosWriter();
+      } else {
+        return new Lucene42FieldInfosWriter();
+      }
+    }
+  };
+  
+  private final SegmentInfoFormat segmentInfosFormat = new Lucene40SegmentInfoFormat() {
+    @Override
+    public org.apache.lucene.codecs.SegmentInfoWriter getSegmentInfoWriter() {
+      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
+        return super.getSegmentInfoWriter();
+      } else {
+        return new Lucene40SegmentInfoWriter();
+      }
+    }
+  };
+
   @Override
   public FieldInfosFormat fieldInfosFormat() {
-    return new Lucene42FieldInfosFormat() {
-      @Override
-      public FieldInfosWriter getFieldInfosWriter() throws IOException {
-        if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-          return super.getFieldInfosWriter();
-        } else {
-          return new Lucene42FieldInfosWriter();
-        }
-      }
-    };
+    return fieldInfosFormat;
   }
-  
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfosFormat;
+  }
+
 }

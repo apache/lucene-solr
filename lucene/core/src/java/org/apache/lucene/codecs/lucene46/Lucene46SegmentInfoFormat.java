@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,11 +27,11 @@ import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
 
 /**
- * Lucene 4.0 Segment info format.
+ * Lucene 4.6 Segment info format.
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Attributes, Files
+ *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files
  * </ul>
  * </p>
  * Data types:
@@ -41,7 +41,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
- *   <li>Diagnostics, Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>Diagnostics --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  * </ul>
  * </p>
@@ -60,21 +60,19 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *       for each segment it creates. It includes metadata like the current Lucene
  *       version, OS, Java version, why the segment was created (merge, flush,
  *       addIndexes), etc.</li>
- *   <li>Attributes: a key-value map of codec-private attributes.</li>
  *   <li>Files is a list of files referred to by this segment.</li>
  * </ul>
  * </p>
  * 
  * @see SegmentInfos
  * @lucene.experimental
- * @deprecated Only for reading old 4.0-4.5 segments
  */
-@Deprecated
-public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
-  private final SegmentInfoReader reader = new Lucene40SegmentInfoReader();
+public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
+  private final SegmentInfoReader reader = new Lucene46SegmentInfoReader();
+  private final SegmentInfoWriter writer = new Lucene46SegmentInfoWriter();
 
   /** Sole constructor. */
-  public Lucene40SegmentInfoFormat() {
+  public Lucene46SegmentInfoFormat() {
   }
   
   @Override
@@ -84,12 +82,12 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
 
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {
-    throw new UnsupportedOperationException("this codec can only be used for reading");
+    return writer;
   }
 
   /** File extension used to store {@link SegmentInfo}. */
   public final static String SI_EXTENSION = "si";
-  static final String CODEC_NAME = "Lucene40SegmentInfo";
+  static final String CODEC_NAME = "Lucene46SegmentInfo";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 }

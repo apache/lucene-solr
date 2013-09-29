@@ -522,11 +522,6 @@ public class CheckIndex {
           msg(infoStream, "    diagnostics = " + diagnostics);
         }
 
-        Map<String,String> atts = info.info.attributes();
-        if (atts != null && !atts.isEmpty()) {
-          msg(infoStream, "    attributes = " + atts);
-        }
-
         if (!info.hasDeletions()) {
           msg(infoStream, "    no deletions");
           segInfoStat.hasDeletions = false;

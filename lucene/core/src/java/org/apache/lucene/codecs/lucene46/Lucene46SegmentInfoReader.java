@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,28 +32,26 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.0 implementation of {@link SegmentInfoReader}.
+ * Lucene 4.6 implementation of {@link SegmentInfoReader}.
  * 
- * @see Lucene40SegmentInfoFormat
+ * @see Lucene46SegmentInfoFormat
  * @lucene.experimental
- * @deprecated Only for reading old 4.0-4.5 segments
  */
-@Deprecated
-public class Lucene40SegmentInfoReader extends SegmentInfoReader {
+public class Lucene46SegmentInfoReader extends SegmentInfoReader {
 
   /** Sole constructor. */
-  public Lucene40SegmentInfoReader() {
+  public Lucene46SegmentInfoReader() {
   }
 
   @Override
   public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene46SegmentInfoFormat.SI_EXTENSION);
     final IndexInput input = dir.openInput(fileName, context);
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene40SegmentInfoFormat.CODEC_NAME,
-                                   Lucene40SegmentInfoFormat.VERSION_START,
-                                   Lucene40SegmentInfoFormat.VERSION_CURRENT);
+      CodecUtil.checkHeader(input, Lucene46SegmentInfoFormat.CODEC_NAME,
+                                   Lucene46SegmentInfoFormat.VERSION_START,
+                                   Lucene46SegmentInfoFormat.VERSION_CURRENT);
       final String version = input.readString();
       final int docCount = input.readInt();
       if (docCount < 0) {
@@ -61,7 +59,6 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       }
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();
-      input.readStringStringMap(); // read deprecated attributes
       final Set<String> files = input.readStringSet();
       
       if (input.getFilePointer() != input.length()) {

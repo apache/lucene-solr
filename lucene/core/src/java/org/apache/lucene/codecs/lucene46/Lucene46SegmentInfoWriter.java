@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,33 +32,32 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Lucene 4.0 implementation of {@link SegmentInfoWriter}.
  * 
- * @see Lucene40SegmentInfoFormat
+ * @see Lucene46SegmentInfoFormat
  * @lucene.experimental
  */
-public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
+public class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Sole constructor. */
-  public Lucene40SegmentInfoWriter() {
+  public Lucene46SegmentInfoWriter() {
   }
 
   /** Save a single segment's info. */
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene46SegmentInfoFormat.SI_EXTENSION);
     si.addFile(fileName);
 
     final IndexOutput output = dir.createOutput(fileName, ioContext);
 
     boolean success = false;
     try {
-      CodecUtil.writeHeader(output, Lucene40SegmentInfoFormat.CODEC_NAME, Lucene40SegmentInfoFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(output, Lucene46SegmentInfoFormat.CODEC_NAME, Lucene46SegmentInfoFormat.VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
-      output.writeStringStringMap(si.attributes());
       output.writeStringSet(si.files());
 
       success = true;
