@@ -49,6 +49,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
+import org.apache.lucene.codecs.lucene45.Lucene45RWCodec;
 import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
@@ -178,6 +179,13 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
                                                   !shouldAvoidCodec("Lucene42"))) { 
       codec = Codec.forName("Lucene42");
       assert codec instanceof Lucene42RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
+    } else if ("Lucene45".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+                                                 "random".equals(TEST_POSTINGSFORMAT) &&
+                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
+                                                  randomVal == 5 &&
+                                                  !shouldAvoidCodec("Lucene45"))) { 
+      codec = Codec.forName("Lucene45");
+      assert codec instanceof Lucene45RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
       // the user wired postings or DV: this is messy
       // refactor into RandomCodec....
