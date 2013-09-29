@@ -19,7 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.store.Directory;
@@ -51,8 +55,8 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
   // write
   private long nextWriteFieldInfosGen;
 
-  // Tracks the files with field updates
-  private Set<String> updatesFiles = new HashSet<String>();
+  // Track the per-generation updates files
+  private final Map<Long,Set<String>> genUpdatesFiles = new HashMap<Long,Set<String>>();
   
   private volatile long sizeInBytes = -1;
 
@@ -86,14 +90,15 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
     }
   }
 
-  /** Returns the files which contains field updates. */
-  public Set<String> getUpdatesFiles() {
-    return new HashSet<String>(updatesFiles);
+  /** Returns the per generation updates files. */
+  public Map<Long,Set<String>> getUpdatesFiles() {
+    return Collections.unmodifiableMap(genUpdatesFiles);
   }
   
-  /** Called when we succeed in writing field updates. */
-  public void addUpdatesFiles(Set<String> files) {
-    updatesFiles.addAll(files);
+  /** Sets the updates file names per generation. Does not deep clone the map. */
+  public void setGenUpdatesFiles(Map<Long,Set<String>> genUpdatesFiles) {
+    this.genUpdatesFiles.clear();
+    this.genUpdatesFiles.putAll(genUpdatesFiles);
   }
   
   /** Called when we succeed in writing deletes */
@@ -151,7 +156,9 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
     info.getCodec().liveDocsFormat().files(this, files);
 
     // Must separately add any field updates files
-    files.addAll(updatesFiles);
+    for (Set<String> updateFiles : genUpdatesFiles.values()) {
+      files.addAll(updateFiles);
+    }
     
     return files;
   }
@@ -248,7 +255,10 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
     other.nextWriteDelGen = nextWriteDelGen;
     other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
     
-    other.updatesFiles.addAll(updatesFiles);
+    // deep clone
+    for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
+      other.genUpdatesFiles.put(e.getKey(), new HashSet<String>(e.getValue()));
+    }
     
     return other;
   }

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
@@ -351,6 +352,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
     // We can write directly to the actual name (vs to a
     // .tmp & renaming it) because the file is not live
     // until segments file is written:
+    FieldInfos fieldInfos = null;
     boolean success = false;
     try {
       Codec codec = info.info.getCodec();
@@ -385,7 +387,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
             builder.addOrUpdate(f, NumericDocValuesField.TYPE);
           }
           
-          final FieldInfos fieldInfos = builder.finish();
+          fieldInfos = builder.finish();
           final long nextFieldInfosGen = info.getNextFieldInfosGen();
           final String segmentSuffix = Long.toString(nextFieldInfosGen, Character.MAX_RADIX);
           final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, IOContext.DEFAULT, segmentSuffix);
@@ -502,10 +504,25 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
         copyUpdatesToMerging();
       }
       numericUpdates.clear();
+      
+      // create a new map, keeping only the gens that are in use
+      Map<Long,Set<String>> genUpdatesFiles = info.getUpdatesFiles();
+      Map<Long,Set<String>> newGenUpdatesFiles = new HashMap<Long,Set<String>>();
+      final long fieldInfosGen = info.getFieldInfosGen();
+      for (FieldInfo fi : fieldInfos) {
+        long dvGen = fi.getDocValuesGen();
+        if (dvGen != -1 && !newGenUpdatesFiles.containsKey(dvGen)) {
+          if (dvGen == fieldInfosGen) {
+            newGenUpdatesFiles.put(fieldInfosGen, trackingDir.getCreatedFiles());
+          } else {
+            newGenUpdatesFiles.put(dvGen, genUpdatesFiles.get(dvGen));
+          }
+        }
+      }
+      
+      info.setGenUpdatesFiles(newGenUpdatesFiles);
     }
 
-    info.addUpdatesFiles(trackingDir.getCreatedFiles());
-    
     return true;
   }
 

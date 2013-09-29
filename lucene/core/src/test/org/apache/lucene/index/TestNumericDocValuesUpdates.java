@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -28,8 +29,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -917,10 +918,11 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
-    final int numThreads = atLeast(3);
+    final int numThreads = _TestUtil.nextInt(random(), 3, 6);
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
+      doc.add(new StringField("id", "doc" + i, Store.NO));
       double group = random().nextDouble();
       String g;
       if (group < 0.1) g = "g0";
@@ -937,20 +939,21 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     }
     
     final CountDownLatch done = new CountDownLatch(numThreads);
+    final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
     
     // same thread updates a field as well as reopens
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
       final String f = "f" + i;
       final String cf = "cf" + i;
-      final int numThreadUpdates = atLeast(40);
       threads[i] = new Thread("UpdateThread-" + i) {
         @Override
         public void run() {
+          DirectoryReader reader = null;
+          boolean success = false;
           try {
             Random random = random();
-            int numUpdates = numThreadUpdates;
-            while (numUpdates-- > 0) {
+            while (numUpdates.getAndDecrement() > 0) {
               double group = random.nextDouble();
               Term t;
               if (group < 0.1) t = new Term("updKey", "g0");
@@ -965,20 +968,43 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
               if (random.nextDouble() < 0.2) {
                 // delete a random document
                 int doc = random.nextInt(numDocs);
+//                System.out.println("[" + Thread.currentThread().getName() + "] deleteDoc=doc" + doc);
                 writer.deleteDocuments(new Term("id", "doc" + doc));
               }
-              
-              if (random.nextDouble() < 0.1) {
-                writer.commit(); // rarely commit
+  
+              if (random.nextDouble() < 0.05) { // commit every 20 updates on average
+//                  System.out.println("[" + Thread.currentThread().getName() + "] commit");
+                writer.commit();
               }
               
-              if (random.nextDouble() < 0.3) { // obtain NRT reader (apply updates)
-                DirectoryReader.open(writer, true).close();
+              if (random.nextDouble() < 0.1) { // reopen NRT reader (apply updates), on average once every 10 updates
+                if (reader == null) {
+//                  System.out.println("[" + Thread.currentThread().getName() + "] open NRT");
+                  reader = DirectoryReader.open(writer, true);
+                } else {
+//                  System.out.println("[" + Thread.currentThread().getName() + "] reopen NRT");
+                  DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer, true);
+                  if (r2 != null) {
+                    reader.close();
+                    reader = r2;
+                  }
+                }
               }
             }
+//            System.out.println("[" + Thread.currentThread().getName() + "] DONE");
+            success = true;
           } catch (IOException e) {
             throw new RuntimeException(e);
           } finally {
+            if (reader != null) {
+              try {
+                reader.close();
+              } catch (IOException e) {
+                if (success) { // suppress this exception only if there was another exception
+                  throw new RuntimeException(e);
+                }
+              }
+            }
             done.countDown();
           }
         }
@@ -1151,6 +1177,32 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     reader.close();
     
     IOUtils.close(dir1, dir2);
+  }
+
+  @Test
+  public void testDeleteUnusedUpdatesFiles() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "d0", Store.NO));
+    doc.add(new NumericDocValuesField("f", 1L));
+    writer.addDocument(doc);
+
+    // create _0_1.fnm
+    writer.updateNumericDocValue(new Term("id", "d0"), "f", 2L);
+    writer.commit();
+
+    // create _0_2.fnm, and _0_1.fnm should be deleted
+    writer.updateNumericDocValue(new Term("id", "d0"), "f", 2L);
+    writer.commit();
+
+    assertTrue(dir.fileExists("_0_2.fnm"));
+    assertFalse("old generation field infos file should not exist in the directory: _0_1.fnm", dir.fileExists("_0_1.fnm"));
+    
+    writer.close();
+    dir.close();
   }
   
 }

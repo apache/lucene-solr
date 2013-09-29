@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -349,7 +350,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         }
         SegmentInfoPerCommit siPerCommit = new SegmentInfoPerCommit(info, delCount, delGen, fieldInfosGen);
         if (format >= VERSION_46) {
-          siPerCommit.addUpdatesFiles(input.readStringSet());
+          int numGensUpdatesFiles = input.readInt();
+          final Map<Long,Set<String>> genUpdatesFiles;
+          if (numGensUpdatesFiles == 0) {
+            genUpdatesFiles = Collections.emptyMap();
+          } else {
+            genUpdatesFiles = new HashMap<Long,Set<String>>(numGensUpdatesFiles);
+            for (int i = 0; i < numGensUpdatesFiles; i++) {
+              genUpdatesFiles.put(input.readLong(), input.readStringSet());
+            }
+          }
+          siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
         }
         add(siPerCommit);
       }
@@ -420,7 +431,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         segnOutput.writeLong(siPerCommit.getDelGen());
         segnOutput.writeInt(siPerCommit.getDelCount());
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
-        segnOutput.writeStringSet(siPerCommit.getUpdatesFiles());
+        final Map<Long,Set<String>> genUpdatesFiles = siPerCommit.getUpdatesFiles();
+        segnOutput.writeInt(genUpdatesFiles.size());
+        for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
+          segnOutput.writeLong(e.getKey());
+          segnOutput.writeStringSet(e.getValue());
+        }
         assert si.dir == directory;
 
         assert siPerCommit.getDelCount() <= si.getDocCount();

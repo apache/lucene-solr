@@ -110,7 +110,7 @@ public final class SegmentReader extends AtomicReader {
         final DocValuesFormat dvFormat = codec.docValuesFormat();
         // initialize the per generation numericDVProducers and put the correct
         // DVProducer for each field
-        final Map<Long,List<FieldInfo>> genInfos = getGenInfos(si);
+        final Map<Long,List<FieldInfo>> genInfos = getGenInfos();
         
 //        System.out.println("[" + Thread.currentThread().getName() + "] SR.init: new reader: " + si + "; gens=" + genInfos.keySet());
 
@@ -178,7 +178,7 @@ public final class SegmentReader extends AtomicReader {
         final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
         
         final DocValuesFormat dvFormat = codec.docValuesFormat();
-        final Map<Long,List<FieldInfo>> genInfos = getGenInfos(si);
+        final Map<Long,List<FieldInfo>> genInfos = getGenInfos();
         
         for (Entry<Long,List<FieldInfo>> e : genInfos.entrySet()) {
           Long gen = e.getKey();
@@ -244,7 +244,7 @@ public final class SegmentReader extends AtomicReader {
   }
   
   // returns a gen->List<FieldInfo> mapping. Fields without DV updates have gen=-1
-  private Map<Long,List<FieldInfo>> getGenInfos(SegmentInfoPerCommit si) {
+  private Map<Long,List<FieldInfo>> getGenInfos() {
     final Map<Long,List<FieldInfo>> genInfos = new HashMap<Long,List<FieldInfo>>();
     for (FieldInfo fi : fieldInfos) {
       if (fi.getDocValuesType() == null) {
