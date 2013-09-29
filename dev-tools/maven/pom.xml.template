@@ -48,7 +48,7 @@
     <slf4j.version>1.6.6</slf4j.version>
     <log4j.version>1.2.16</log4j.version>
     <tika.version>1.4</tika.version>
-    <httpcomponents.version>4.2.3</httpcomponents.version>
+    <httpcomponents.version>4.2.6</httpcomponents.version>
     <commons-io.version>2.1</commons-io.version>
     <restlet.version>2.1.1</restlet.version>
     <hadoop.version>2.0.5-alpha</hadoop.version>
