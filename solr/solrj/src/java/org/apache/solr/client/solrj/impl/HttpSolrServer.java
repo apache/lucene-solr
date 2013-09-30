@@ -412,8 +412,19 @@ public class HttpSolrServer extends SolrServer {
         if (!contentType.equals(procCt)) {
           // unexpected content type
           String msg = "Expected content type " + procCt + " but got " + contentType + ".";
-          RemoteSolrException e = new RemoteSolrException(httpStatus, msg + " " +
-              IOUtils.toString(respBody), null);
+          Header encodingHeader = response.getEntity().getContentEncoding();
+          String encoding;
+          if (encodingHeader != null) {
+            encoding = encodingHeader.getValue();
+          } else {
+            encoding = "UTF-8"; // try UTF-8
+          }
+          try {
+            msg = msg + " " + IOUtils.toString(respBody, encoding);
+          } catch (IOException e) {
+            new RemoteSolrException(httpStatus, "Could not parse response with encoding " + encoding, e);
+          }
+          RemoteSolrException e = new RemoteSolrException(httpStatus, msg, null);
           throw e;
         }
       }
