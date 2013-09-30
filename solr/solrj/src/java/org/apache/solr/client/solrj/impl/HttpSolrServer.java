@@ -422,7 +422,7 @@ public class HttpSolrServer extends SolrServer {
           try {
             msg = msg + " " + IOUtils.toString(respBody, encoding);
           } catch (IOException e) {
-            new RemoteSolrException(httpStatus, "Could not parse response with encoding " + encoding, e);
+            throw new RemoteSolrException(httpStatus, "Could not parse response with encoding " + encoding, e);
           }
           RemoteSolrException e = new RemoteSolrException(httpStatus, msg, null);
           throw e;
