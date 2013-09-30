@@ -49,7 +49,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+
 import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
+
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -1002,7 +1005,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return "application/octet-stream";
+        return BinaryResponseParser.BINARY_CONTENT_TYPE;
       }
 
       @Override

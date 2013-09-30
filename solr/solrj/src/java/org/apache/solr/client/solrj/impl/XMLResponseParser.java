@@ -32,6 +32,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ import java.util.Locale;
  */
 public class XMLResponseParser extends ResponseParser
 {
+  public static final String XML_CONTENT_TYPE = "application/xml; charset=UTF-8";
   public static Logger log = LoggerFactory.getLogger(XMLResponseParser.class);
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
@@ -77,6 +79,11 @@ public class XMLResponseParser extends ResponseParser
   public String getWriterType()
   {
     return "xml";
+  }
+  
+  @Override
+  public String getContentType() {
+    return XML_CONTENT_TYPE;
   }
 
   @Override

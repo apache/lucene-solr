@@ -22,6 +22,7 @@ import java.util.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -57,7 +58,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return "application/octet-stream";
+    return BinaryResponseParser.BINARY_CONTENT_TYPE;
   }
 
   @Override
