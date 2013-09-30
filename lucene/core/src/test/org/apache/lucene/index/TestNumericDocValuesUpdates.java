@@ -1190,17 +1190,24 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     doc.add(new NumericDocValuesField("f", 1L));
     writer.addDocument(doc);
 
-    // create _0_1.fnm
+    // create first gen of update files
     writer.updateNumericDocValue(new Term("id", "d0"), "f", 2L);
     writer.commit();
+    int numFiles = dir.listAll().length;
 
-    // create _0_2.fnm, and _0_1.fnm should be deleted
-    writer.updateNumericDocValue(new Term("id", "d0"), "f", 2L);
-    writer.commit();
-
-    assertTrue(dir.fileExists("_0_2.fnm"));
-    assertFalse("old generation field infos file should not exist in the directory: _0_1.fnm", dir.fileExists("_0_1.fnm"));
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(2L, r.leaves().get(0).reader().getNumericDocValues("f").get(0));
+    r.close();
     
+    // create second gen of update files, first gen should be deleted
+    writer.updateNumericDocValue(new Term("id", "d0"), "f", 5L);
+    writer.commit();
+    assertEquals(numFiles, dir.listAll().length);
+
+    r = DirectoryReader.open(dir);
+    assertEquals(5L, r.leaves().get(0).reader().getNumericDocValues("f").get(0));
+    r.close();
+
     writer.close();
     dir.close();
   }
