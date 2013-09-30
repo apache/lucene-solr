@@ -304,6 +304,9 @@ Bug Fixes
 * SOLR-5279: Implicit properties don't seem to exist on core RELOAD
   (elyograg, hossman, Steve Rowe) 
 
+* SOLR-5291: Solrj does not propagate the root cause to the user for many errors.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -317,6 +320,8 @@ Optimizations
 
 * SOLR-4816: CloudSolrServer now uses multiple threads to send updates by default.  
   (Joel Bernstein via Mark Miller)
+
+* SOLR-3530: Better error messages / Content-Type validation in SolrJ. (Mark Miller, hossman)
 
 Other Changes
 ----------------------

@@ -120,7 +120,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
   protected final void assertFileNotInZooKeeper(String fileName) throws Exception {
     // Stolen from AbstractBadConfigTestBase
-    String errString = "returned non ok status:404, message:Not Found";
+    String errString = "Not Found";
     ignoreException(Pattern.quote(errString));
     String rawContent = null;
     try {
