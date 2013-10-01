@@ -1550,7 +1550,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
     try {
-      docWriter.updateNumericDocValue(term, field, value);
+      if (docWriter.updateNumericDocValue(term, field, value)) {
+        processEvents(true, false);
+      }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateNumericDocValue");
     }

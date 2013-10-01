@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
@@ -61,6 +62,29 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // make sure we don't set the doc's value to 0, to not confuse with a document that's missing values
     doc.add(new NumericDocValuesField("val", id + 1));
     return doc;
+  }
+  
+  @Test
+  public void testUpdatesAreFlushed() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setRAMBufferSizeMB(0.00000001));
+    writer.addDocument(doc(0)); // val=1
+    writer.addDocument(doc(1)); // val=2
+    writer.addDocument(doc(3)); // val=2
+    writer.commit();
+    assertEquals(1, writer.getFlushDeletesCount());
+    writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 5L);
+    assertEquals(2, writer.getFlushDeletesCount());
+    writer.updateNumericDocValue(new Term("id", "doc-1"), "val", 6L);
+    assertEquals(3, writer.getFlushDeletesCount());
+    writer.updateNumericDocValue(new Term("id", "doc-2"), "val", 7L); 
+    assertEquals(4, writer.getFlushDeletesCount());
+    writer.getConfig().setRAMBufferSizeMB(1000d);
+    writer.updateNumericDocValue(new Term("id", "doc-2"), "val", 7L);
+    assertEquals(4, writer.getFlushDeletesCount());
+    writer.close();
+    dir.close();
   }
   
   @Test
