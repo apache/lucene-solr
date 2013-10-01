@@ -17,8 +17,10 @@ package org.apache.lucene.queries.function.docvalues;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
@@ -79,6 +81,44 @@ public abstract class LongDocValues extends FunctionValues {
   @Override
   public String toString(int doc) {
     return vs.description() + '=' + strVal(doc);
+  }
+  
+  protected long externalToLong(String extVal) {
+    return Long.parseLong(extVal);
+  }
+  
+  @Override
+  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+    long lower,upper;
+
+    // instead of using separate comparison functions, adjust the endpoints.
+
+    if (lowerVal==null) {
+      lower = Long.MIN_VALUE;
+    } else {
+      lower = externalToLong(lowerVal);
+      if (!includeLower && lower < Long.MAX_VALUE) lower++;
+    }
+
+     if (upperVal==null) {
+      upper = Long.MAX_VALUE;
+    } else {
+      upper = externalToLong(upperVal);
+      if (!includeUpper && upper > Long.MIN_VALUE) upper--;
+    }
+
+    final long ll = lower;
+    final long uu = upper;
+
+    return new ValueSourceScorer(reader, this) {
+      @Override
+      public boolean matchesValue(int doc) {
+        long val = longVal(doc);
+        // only check for deleted if it's the default value
+        // if (val==0 && reader.isDeleted(doc)) return false;
+        return val >= ll && val <= uu;
+      }
+    };
   }
 
   @Override

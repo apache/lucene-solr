@@ -49,7 +49,7 @@ class ExpressionComparator extends FieldComparator<Double> {
     try {
       Map<String,Object> context = new HashMap<String,Object>();
       assert scorer != null;
-      context.put("scorer", new ScoreFunctionValues(scorer));
+      context.put("scorer", scorer);
       scores = source.getValues(context, readerContext);
     } catch (IOException e) {
       throw new RuntimeException(e);

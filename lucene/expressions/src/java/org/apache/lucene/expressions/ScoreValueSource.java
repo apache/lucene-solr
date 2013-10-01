@@ -20,27 +20,28 @@ package org.apache.lucene.expressions;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorer;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- * A {@link ValueSource} which uses the {@link ScoreFunctionValues} passed through
+ * A {@link ValueSource} which uses the {@link Scorer} passed through
  * the context map by {@link ExpressionComparator}.
  */
 @SuppressWarnings({"rawtypes"})
 class ScoreValueSource extends ValueSource {
 
   /**
-   * <code>context</code> must contain a key "scorer" which is a {@link FunctionValues}.
+   * <code>context</code> must contain a key "scorer" which is a {@link Scorer}.
    */
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    FunctionValues v = (FunctionValues) context.get("scorer");
+    Scorer v = (Scorer) context.get("scorer");
     if (v == null) {
       throw new IllegalStateException("Expressions referencing the score can only be used for sorting");
     }
-    return v;
+    return new ScoreFunctionValues(this, v);
   }
 
   @Override
@@ -55,6 +56,6 @@ class ScoreValueSource extends ValueSource {
 
   @Override
   public String description() {
-    return "ValueSource to expose scorer passed by ExpressionComparator";
+    return "score()";
   }
 }

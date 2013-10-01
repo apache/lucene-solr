@@ -19,15 +19,18 @@ package org.apache.lucene.expressions;
 import java.io.IOException;
 
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Scorer;
 
 /**
  * A utility class to allow expressions to access the score as a {@link FunctionValues}.
  */
-class ScoreFunctionValues extends FunctionValues {
+class ScoreFunctionValues extends DoubleDocValues {
   final Scorer scorer;
 
-  ScoreFunctionValues(Scorer scorer) {
+  ScoreFunctionValues(ValueSource parent, Scorer scorer) {
+    super(parent);
     this.scorer = scorer;
   }
   
@@ -39,10 +42,5 @@ class ScoreFunctionValues extends FunctionValues {
     } catch (IOException exception) {
       throw new RuntimeException(exception);
     }
-  }
-  
-  @Override
-  public String toString(int document) {
-    return "ScoreFunctionValues(" + document + ": " + doubleVal(document) + ")";
   }
 }

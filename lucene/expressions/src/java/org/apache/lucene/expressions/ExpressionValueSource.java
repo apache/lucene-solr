@@ -17,6 +17,7 @@ package org.apache.lucene.expressions;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -79,7 +80,7 @@ final class ExpressionValueSource extends ValueSource {
       externalValues[i] = values;
     }
 
-    return new ExpressionFunctionValues(expression, externalValues);
+    return new ExpressionFunctionValues(this, expression, externalValues);
   }
 
   @Override
@@ -89,19 +90,48 @@ final class ExpressionValueSource extends ValueSource {
 
   @Override
   public String description() {
-    return "ExpressionValueSource(" + expression.sourceText + ")";
+    return "expr(" + expression.sourceText + ")";
+  }
+  
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result
+        + ((expression == null) ? 0 : expression.hashCode());
+    result = prime * result + (needsScores ? 1231 : 1237);
+    result = prime * result + Arrays.hashCode(variables);
+    return result;
   }
 
   @Override
-  public int hashCode() {
-    return System.identityHashCode(this);
-  }
-  
-  @Override
   public boolean equals(Object obj) {
-    return obj == this;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    ExpressionValueSource other = (ExpressionValueSource) obj;
+    if (expression == null) {
+      if (other.expression != null) {
+        return false;
+      }
+    } else if (!expression.equals(other.expression)) {
+      return false;
+    }
+    if (needsScores != other.needsScores) {
+      return false;
+    }
+    if (!Arrays.equals(variables, other.variables)) {
+      return false;
+    }
+    return true;
   }
-  
+
   boolean needsScores() {
     return needsScores;
   }
