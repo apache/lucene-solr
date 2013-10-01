@@ -32,13 +32,13 @@
     </configurations>
 
     <dependencies defaultconf="default">
-      <dependency org="org.apache.ant" name="ant" rev="1.8.2" transitive="false" />
+      <dependency org="org.apache.ant" name="ant" rev="${/org.apache.ant/ant}" transitive="false" />
 
-      <dependency org="junit" name="junit" rev="4.10" transitive="false" conf="default->*;junit4-stdalone->*">
+      <dependency org="junit" name="junit" rev="${/junit/junit}" transitive="false" conf="default->*;junit4-stdalone->*">
         <exclude org="org.hamcrest" module="hamcrest-core"/>
       </dependency>
-      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="2.0.10" transitive="false" conf="default->*;junit4-stdalone->*" />
-      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="2.0.10" transitive="false" conf="default->*;junit4-stdalone->*" />
+      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="${/com.carrotsearch.randomizedtesting/junit4-ant}" transitive="false" conf="default->*;junit4-stdalone->*" />
+      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="${/com.carrotsearch.randomizedtesting/randomizedtesting-runner}" transitive="false" conf="default->*;junit4-stdalone->*" />
 
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>

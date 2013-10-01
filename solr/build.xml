@@ -282,10 +282,11 @@
   </target>
 
   <target name="-check-forbidden-java-apis">
+    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
+      <bundledSignatures name="commons-io-unsafe-${/commons-io/commons-io}"/>
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
         <include name="base.txt" />
         <include name="servlet-api.txt" />

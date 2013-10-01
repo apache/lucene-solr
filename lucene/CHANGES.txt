@@ -76,6 +76,11 @@ Changes in backwards compatibility policy
   had a custom Directory implementation that extended Directory, you need to
   extend BaseDirectory instead. (Adrien Grand)
 
+Build
+
+* LUCENE-5249: All Lucene/Solr modules should use the same dependency versions
+  (Steve Rowe)
+
 ======================= Lucene 4.5.0 =======================
 
 New features

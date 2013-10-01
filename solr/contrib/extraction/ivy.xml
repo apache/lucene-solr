@@ -20,39 +20,39 @@
     <info organisation="org.apache.solr" module="extraction"/>
     <dependencies>
       <!-- Tika JARs -->
-      <dependency org="org.apache.tika" name="tika-core" rev="1.4" transitive="false"/>
-      <dependency org="org.apache.tika" name="tika-parsers" rev="1.4" transitive="false"/>
+      <dependency org="org.apache.tika" name="tika-core" rev="${/org.apache.tika/tika-core}" transitive="false"/>
+      <dependency org="org.apache.tika" name="tika-parsers" rev="${/org.apache.tika/tika-parsers}" transitive="false"/>
       <!-- Tika dependencies - see http://tika.apache.org/1.3/gettingstarted.html#Using_Tika_as_a_Maven_dependency -->
       <!-- When upgrading Tika, upgrade dependencies versions and add any new ones
            (except slf4j-api, commons-codec, commons-logging, geronimo-stax-api_1.0_spec) -->
-      <dependency org="org.gagravarr" name="vorbis-java-tika" rev="0.1" transitive="false"/>
-      <dependency org="org.gagravarr" name="vorbis-java-core" rev="0.1" transitive="false"/>
-      <dependency org="edu.ucar" name="netcdf" rev="4.2-min" transitive="false"/>
-      <dependency org="org.apache.james" name="apache-mime4j-core" rev="0.7.2" transitive="false"/>
-      <dependency org="org.apache.james" name="apache-mime4j-dom" rev="0.7.2" transitive="false"/>
-      <dependency org="org.apache.commons" name="commons-compress" rev="1.4.1" transitive="false"/>
-      <dependency org="org.apache.pdfbox" name="pdfbox" rev="1.8.1" transitive="false"/>
-      <dependency org="org.apache.pdfbox" name="fontbox" rev="1.8.1" transitive="false"/>
-      <dependency org="org.apache.pdfbox" name="jempbox" rev="1.8.1" transitive="false"/>
-      <dependency org="org.bouncycastle" name="bcmail-jdk15" rev="1.45" transitive="false"/>
-      <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="1.45" transitive="false"/>
-      <dependency org="org.apache.poi" name="poi" rev="3.9" transitive="false"/>
-      <dependency org="org.apache.poi" name="poi-scratchpad" rev="3.9" transitive="false"/>
-      <dependency org="org.apache.poi" name="poi-ooxml" rev="3.9" transitive="false"/>
-      <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="3.9" transitive="false"/>
-      <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="2.3.0" transitive="false"/>
-      <dependency org="dom4j" name="dom4j" rev="1.6.1" transitive="false"/>
-      <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="1.2.1" transitive="false"/>
-      <dependency org="com.googlecode.mp4parser" name="isoparser" rev="1.0-RC-1" transitive="false"/>
-      <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.6.2" transitive="false"/>
-      <dependency org="de.l3s.boilerpipe" name="boilerpipe" rev="1.1.0" transitive="false"/>
-      <dependency org="rome" name="rome" rev="0.9" transitive="false"/>
-      <dependency org="jdom" name="jdom" rev="1.0" transitive="false"/>
-      <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="1.0.3" transitive="false"/>
-      <dependency org="org.tukaani" name="xz" rev="1.0" transitive="false"/>
+      <dependency org="org.gagravarr" name="vorbis-java-tika" rev="${/org.gagravarr/vorbis-java-tika}" transitive="false"/>
+      <dependency org="org.gagravarr" name="vorbis-java-core" rev="${/org.gagravarr/vorbis-java-core}" transitive="false"/>
+      <dependency org="edu.ucar" name="netcdf" rev="${/edu.ucar/netcdf}" transitive="false"/>
+      <dependency org="org.apache.james" name="apache-mime4j-core" rev="${/org.apache.james/apache-mime4j-core}" transitive="false"/>
+      <dependency org="org.apache.james" name="apache-mime4j-dom" rev="${/org.apache.james/apache-mime4j-dom}" transitive="false"/>
+      <dependency org="org.apache.commons" name="commons-compress" rev="${/org.apache.commons/commons-compress}" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="pdfbox" rev="${/org.apache.pdfbox/pdfbox}" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="fontbox" rev="${/org.apache.pdfbox/fontbox}" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="jempbox" rev="${/org.apache.pdfbox/jempbox}" transitive="false"/>
+      <dependency org="org.bouncycastle" name="bcmail-jdk15" rev="${/org.bouncycastle/bcmail-jdk15}" transitive="false"/>
+      <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="${/org.bouncycastle/bcprov-jdk15}" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi" rev="${/org.apache.poi/poi}" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-scratchpad" rev="${/org.apache.poi/poi-scratchpad}" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-ooxml" rev="${/org.apache.poi/poi-ooxml}" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="${/org.apache.poi/poi-ooxml-schemas}" transitive="false"/>
+      <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="${/org.apache.xmlbeans/xmlbeans}" transitive="false"/>
+      <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" transitive="false"/>
+      <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="${/org.ccil.cowan.tagsoup/tagsoup}" transitive="false"/>
+      <dependency org="com.googlecode.mp4parser" name="isoparser" rev="${/com.googlecode.mp4parser/isoparser}" transitive="false"/>
+      <dependency org="com.drewnoakes" name="metadata-extractor" rev="${/com.drewnoakes/metadata-extractor}" transitive="false"/>
+      <dependency org="de.l3s.boilerpipe" name="boilerpipe" rev="${/de.l3s.boilerpipe/boilerpipe}" transitive="false"/>
+      <dependency org="rome" name="rome" rev="${/rome/rome}" transitive="false"/>
+      <dependency org="jdom" name="jdom" rev="${/jdom/jdom}" transitive="false"/>
+      <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" transitive="false"/>
+      <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" transitive="false"/>
       <!-- Other ExtracingRequestHandler dependencies -->
-      <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
-      <dependency org="xerces" name="xercesImpl" rev="2.9.1" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
+      <dependency org="xerces" name="xercesImpl" rev="${/xerces/xercesImpl}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

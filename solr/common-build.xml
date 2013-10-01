@@ -57,10 +57,6 @@
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
-  <!-- defined here to be able to make the forbidden-api checker correctly
-   reference it. 'ivy.xml' is also referencing this property. -->
-  <property name="commons-io.version" value="2.1" />
-
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
          the base classpath, as well as copied into the lucene-libs dir 
