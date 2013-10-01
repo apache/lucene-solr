@@ -23,10 +23,10 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="javax.activation" name="activation" rev="1.1" conf="compile->*"/>
-    <dependency org="javax.mail" name="mail" rev="1.4.1"  conf="compile->*"/>
+    <dependency org="javax.activation" name="activation" rev="${/javax.activation/activation}" conf="compile->*"/>
+    <dependency org="javax.mail" name="mail" rev="${/javax.mail/mail}"  conf="compile->*"/>
     
-    <dependency org="org.easymock" name="easymock" rev="3.0" conf="test->*"/>
+    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

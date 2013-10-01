@@ -21,6 +21,8 @@
 
   <property name="local-maven2-dir" value="${user.home}/.m2/repository/" />
   
+  <properties file="${ivy.settings.dir}/ivy-versions.properties" override="false"/>
+  
   <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-shared.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>

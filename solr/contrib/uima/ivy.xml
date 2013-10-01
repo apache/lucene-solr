@@ -19,12 +19,12 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="uima"/>
     <dependencies>
-      <dependency org="commons-digester" name="commons-digester" rev="2.0" transitive="false"/>
-      <dependency org="org.apache.uima" name="AlchemyAPIAnnotator" rev="2.3.1" transitive="false"/>
-      <dependency org="org.apache.uima" name="OpenCalaisAnnotator" rev="2.3.1" transitive="false"/>
-      <dependency org="org.apache.uima" name="Tagger" rev="2.3.1" transitive="false"/>
-      <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="2.3.1" transitive="false"/>
-      <dependency org="org.apache.uima" name="uimaj-core" rev="2.3.1" transitive="false"/>
+      <dependency org="commons-digester" name="commons-digester" rev="${/commons-digester/commons-digester}" transitive="false"/>
+      <dependency org="org.apache.uima" name="AlchemyAPIAnnotator" rev="${/org.apache.uima/AlchemyAPIAnnotator}" transitive="false"/>
+      <dependency org="org.apache.uima" name="OpenCalaisAnnotator" rev="${/org.apache.uima/OpenCalaisAnnotator}" transitive="false"/>
+      <dependency org="org.apache.uima" name="Tagger" rev="${/org.apache.uima/Tagger}" transitive="false"/>
+      <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" transitive="false"/>
+      <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

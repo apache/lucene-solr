@@ -19,15 +19,15 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="analysis-extras"/>
     <dependencies>
-      <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
       <!-- 
         Although the 3rd party morfologik jars are not dependencies of code in 
         the analysis-extras contrib, they must remain here in order to
         populate the Solr distribution
        -->
-      <dependency org="org.carrot2" name="morfologik-polish" rev="1.7.1" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-fsa" rev="1.7.1" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-stemming" rev="1.7.1" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

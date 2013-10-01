@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="sandbox"/>
     <dependencies>
-      <dependency org="jakarta-regexp" name="jakarta-regexp" rev="1.4" transitive="false"/>
+      <dependency org="jakarta-regexp" name="jakarta-regexp" rev="${/jakarta-regexp/jakarta-regexp}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>
