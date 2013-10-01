@@ -17,16 +17,19 @@ package org.apache.lucene.expressions;
  */
 
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 
 /** A {@link FunctionValues} which evaluates an expression */
-class ExpressionFunctionValues extends FunctionValues {
+class ExpressionFunctionValues extends DoubleDocValues {
   final Expression expression;
   final FunctionValues[] functionValues;
   
   int currentDocument = -1;
   double currentValue;
   
-  public ExpressionFunctionValues(Expression expression, FunctionValues[] functionValues) {
+  ExpressionFunctionValues(ValueSource parent, Expression expression, FunctionValues[] functionValues) {
+    super(parent);
     if (expression == null) {
       throw new NullPointerException();
     }
@@ -45,15 +48,5 @@ class ExpressionFunctionValues extends FunctionValues {
     }
     
     return currentValue;
-  }
-  
-  @Override
-  public Object objectVal(int doc) {
-    return doubleVal(doc);
-  }
-  
-  @Override
-  public String toString(int document) {    
-    return "ExpressionFunctionValues(" + document + ": " + objectVal(document) + ")";
   }
 }

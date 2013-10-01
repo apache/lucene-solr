@@ -91,37 +91,8 @@ public class LongFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-        long lower,upper;
-
-        // instead of using separate comparison functions, adjust the endpoints.
-
-        if (lowerVal==null) {
-          lower = Long.MIN_VALUE;
-        } else {
-          lower = externalToLong(lowerVal);
-          if (!includeLower && lower < Long.MAX_VALUE) lower++;
-        }
-
-         if (upperVal==null) {
-          upper = Long.MAX_VALUE;
-        } else {
-          upper = externalToLong(upperVal);
-          if (!includeUpper && upper > Long.MIN_VALUE) upper--;
-        }
-
-        final long ll = lower;
-        final long uu = upper;
-
-        return new ValueSourceScorer(reader, this) {
-          @Override
-          public boolean matchesValue(int doc) {
-            long val = arr.get(doc);
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
-            return val >= ll && val <= uu;
-          }
-        };
+      protected long externalToLong(String extVal) {
+        return LongFieldSource.this.externalToLong(extVal);
       }
 
       @Override

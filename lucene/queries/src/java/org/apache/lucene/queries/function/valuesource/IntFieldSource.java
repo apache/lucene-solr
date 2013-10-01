@@ -101,40 +101,6 @@ public class IntFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-        int lower,upper;
-
-        // instead of using separate comparison functions, adjust the endpoints.
-
-        if (lowerVal==null) {
-          lower = Integer.MIN_VALUE;
-        } else {
-          lower = Integer.parseInt(lowerVal);
-          if (!includeLower && lower < Integer.MAX_VALUE) lower++;
-        }
-
-         if (upperVal==null) {
-          upper = Integer.MAX_VALUE;
-        } else {
-          upper = Integer.parseInt(upperVal);
-          if (!includeUpper && upper > Integer.MIN_VALUE) upper--;
-        }
-
-        final int ll = lower;
-        final int uu = upper;
-
-        return new ValueSourceScorer(reader, this) {
-          @Override
-          public boolean matchesValue(int doc) {
-            int val = arr.get(doc);
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
-            return val >= ll && val <= uu;
-          }
-        };
-      }
-
-      @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
           private final MutableValueInt mval = new MutableValueInt();
