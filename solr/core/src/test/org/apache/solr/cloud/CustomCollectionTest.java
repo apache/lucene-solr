@@ -414,6 +414,12 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     //TODO debug the following case
     assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
 
+    collectionClient.deleteByQuery("*:*");
+    collectionClient.commit();
+
+    collectionClient.add (getDoc( id,100,shard_fld, "b!doc1"));
+    collectionClient.commit();
+    assertEquals(1, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "b!")).getResults().getNumFound());
 
   }
 
