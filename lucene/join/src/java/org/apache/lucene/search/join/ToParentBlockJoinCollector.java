@@ -283,6 +283,7 @@ public class ToParentBlockJoinCollector extends Collector {
   }
 
   private void enroll(ToParentBlockJoinQuery query, ToParentBlockJoinQuery.BlockJoinScorer scorer) {
+    scorer.trackPendingChildHits();
     final Integer slot = joinQueryID.get(query);
     if (slot == null) {
       joinQueryID.put(query, joinScorers.length);

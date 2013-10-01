@@ -49,6 +49,12 @@ API Changes:
   with IndexSearcher when an ExecutorService is specified.
   (Ryan Ernst, Mike McCandless, Robert Muir)
 
+Optimizations
+
+* LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
+  doc ids and child scores if the ToParentBlockJoinCollector is used.
+  (Martijn van Groningen)
+
 Documentation
 
 * LUCENE-5211: Better javadocs and error checking of 'format' option in 
