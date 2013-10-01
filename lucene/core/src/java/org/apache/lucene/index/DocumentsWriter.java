@@ -170,7 +170,7 @@ final class DocumentsWriter {
   }
   
   private final boolean applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    if (flushControl.doApplyAllDeletes()) {
+    if (flushControl.getAndResetApplyAllDeletes()) {
       if (deleteQueue != null && !flushControl.isFullFlush()) {
         ticketQueue.addDeletes(deleteQueue);
       }

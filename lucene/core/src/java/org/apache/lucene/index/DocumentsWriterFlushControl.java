@@ -429,7 +429,7 @@ final class DocumentsWriterFlushControl  {
     return flushingWriters.size();
   }
   
-  public boolean doApplyAllDeletes() {
+  public boolean getAndResetApplyAllDeletes() {
     return flushDeletes.getAndSet(false);
   }
 
