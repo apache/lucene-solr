@@ -135,6 +135,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     testCustomCollectionsAPI();
     testRouteFieldForHashRouter();
+    testCreateShardRepFactor();
     if (DEBUG) {
       super.printLayout();
     }
@@ -423,7 +424,49 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   }
 
+  private void testCreateShardRepFactor() throws Exception  {
+    String collectionName = "testCreateShardRepFactor";
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    CloudSolrServer client = null;
+    try {
+      client = createCloudClient(null);
+      Map<String, Object> props = ZkNodeProps.makeMap(
+          REPLICATION_FACTOR, 1,
+          MAX_SHARDS_PER_NODE, 5,
+          NUM_SLICES, 2,
+          "shards", "a,b",
+          "router.name", "implicit");
 
+      createCollection(collectionInfos, collectionName, props, client);
+    } finally {
+      if (client != null) client.shutdown();
+    }
+    ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
+    waitForRecoveriesToFinish(collectionName, zkStateReader, false);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATESHARD.toString());
+    params.set("collection", collectionName);
+    params.set("shard", "x");
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+
+    waitForRecoveriesToFinish(collectionName, zkStateReader, false);
+
+    int replicaCount = 0;
+    int attempts = 0;
+    while (true) {
+      if (attempts > 30) fail("Not enough active replicas in the shard 'x'");
+      zkStateReader.updateClusterState(true);
+      attempts++;
+      replicaCount = zkStateReader.getClusterState().getSlice(collectionName, "x").getReplicas().size();
+      if (replicaCount >= 1) break;
+      Thread.sleep(500);
+    }
+
+    assertEquals("CREATESHARD API created more than replicationFactor number of replicas", 1, replicaCount);
+  }
 
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
