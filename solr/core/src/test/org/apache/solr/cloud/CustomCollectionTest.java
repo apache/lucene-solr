@@ -220,6 +220,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertEquals("implicit", ((Map)coll.get(ROUTER)).get("name") );
     assertNotNull(coll.getStr(REPLICATION_FACTOR));
     assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
+    assertNull("A shard of a Collection configured with implicit router must have null range",
+        coll.getSlice("a").getRange());
 
     List<String> collectionNameList = new ArrayList<String>();
     collectionNameList.addAll(collectionInfos.keySet());
