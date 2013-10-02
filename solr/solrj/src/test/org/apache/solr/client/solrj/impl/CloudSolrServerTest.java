@@ -194,53 +194,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     
     del("*:*");
     commit();
-    
-    indexr(id, 0, "a_t", "to come to the aid of their country.");
-    
-    CloudJettyRunner shard1Leader = shardToLeaderJetty.get("shard1");
-    CloudJettyRunner shard2Leader = shardToLeaderJetty.get("shard2");
-    
-    if (cloudClient.isUpdatesToLeaders()) {
-      // compare leaders list
-      assertEquals(2, cloudClient.getLeaderUrlLists().get("collection1").size());
-      HashSet<String> leaderUrlSet = new HashSet<String>();
-      leaderUrlSet.addAll(cloudClient.getLeaderUrlLists().get("collection1"));
-      assertTrue("fail check for leader:" + shard1Leader.url + " in "
-          + leaderUrlSet, leaderUrlSet.contains(shard1Leader.url + "/"));
-      assertTrue("fail check for leader:" + shard2Leader.url + " in "
-          + leaderUrlSet, leaderUrlSet.contains(shard2Leader.url + "/"));
-      
-      // compare replicas list
-      Set<String> replicas = new HashSet<String>();
-      List<CloudJettyRunner> jetties = shardToJetty.get("shard1");
-      for (CloudJettyRunner cjetty : jetties) {
-        replicas.add(cjetty.url);
-      }
-      jetties = shardToJetty.get("shard2");
-      for (CloudJettyRunner cjetty : jetties) {
-        replicas.add(cjetty.url);
-      }
-      replicas.remove(shard1Leader.url);
-      replicas.remove(shard2Leader.url);
-      
-      assertEquals(replicas.size(),
-          cloudClient.getReplicasLists().get("collection1").size());
-      
-      for (String url : cloudClient.getReplicasLists().get("collection1")) {
-        assertTrue("fail check for replica:" + url + " in " + replicas,
-            replicas.contains(stripTrailingSlash(url)));
-      }
-    }
-    
   }
-
-  private String stripTrailingSlash(String url) {
-    if (url.endsWith("/")) {
-      return url.substring(0, url.length() - 1);
-    }
-    return url;
-  }
-  
   
   @Override
   protected void indexr(Object... fields) throws Exception {
