@@ -90,6 +90,8 @@ Bug Fixes
 
 * SOLR-5263: Fix CloudSolrServer URL cache update race. (Jessica Cheng, Mark Miller)
 
+* SOLR-5297: Admin UI - Threads Screen missing Icon (steffkes)
+
 Security
 ----------------------
 
