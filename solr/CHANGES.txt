@@ -88,6 +88,8 @@ Bug Fixes
 * SOLR-5296: Creating a collection with implicit router adds shard ranges
   to each shard. (shalin)
 
+* SOLR-5263: Fix CloudSolrServer URL cache update race. (Jessica Cheng, Mark Miller)
+
 Security
 ----------------------
 
