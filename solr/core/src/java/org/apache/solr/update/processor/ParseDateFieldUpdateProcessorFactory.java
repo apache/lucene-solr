@@ -150,7 +150,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       defaultTimeZone = DateTimeZone.forID(defaultTimeZoneParam.toString());
     }
 
-    Collection<String> formatsParam = oneOrMany(args, FORMATS_PARAM);
+    Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {
         formats.put(value, DateTimeFormat.forPattern(value).withZone(defaultTimeZone).withLocale(locale));

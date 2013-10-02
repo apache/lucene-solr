@@ -217,7 +217,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       String fieldType = fieldTypeObj.toString();
 
       Collection<String> valueClasses
-          = FieldMutatingUpdateProcessorFactory.oneOrMany(typeMappingNamedList, VALUE_CLASS_PARAM);
+          = typeMappingNamedList.removeConfigArgs(VALUE_CLASS_PARAM);
       if (valueClasses.isEmpty()) {
         throw new SolrException(SERVER_ERROR, 
             "Each '" + TYPE_MAPPING_PARAM + "' <lst/> must contain at least one '" + VALUE_CLASS_PARAM + "' <str>");

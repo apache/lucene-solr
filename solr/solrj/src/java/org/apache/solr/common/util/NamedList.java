@@ -19,9 +19,13 @@ package org.apache.solr.common.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.SolrException;
 
 /**
  * A simple container class for modeling an ordered list of name/value pairs.
@@ -257,7 +261,23 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     }
     return result;
   }
-
+  
+  /**
+   * Removes all values matching the specified name
+   *
+   * @param name Name
+   */
+  private void killAll(String name) {
+    int sz = size();
+    // Go through the list backwards, removing matches as found.
+    for (int i = sz - 1; i >= 0; i--) {
+      String n = getName(i);
+      if (name==n || (name!=null && name.equals(n))) {
+        remove(i);
+      }
+    }
+  }
+  
   /**
    * Recursively parses the NamedList structure to arrive at a specific element.
    * As you descend the NamedList tree, the last element can be any type,
@@ -470,6 +490,83 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return null;
   }
 
+  /**
+   * Removes and returns all values for the specified name.  Returns null if
+   * no matches found.  This method will return all matching objects,
+   * regardless of data type.  If you are parsing Solr config options, the
+   * {@link #removeConfigArgs(String)} method will probably work better.
+   *
+   * @param name Name
+   * @return List of values
+   */
+  public List<T> removeAll(String name) {
+    List<T> result = new ArrayList<T>();
+    result = getAll(name);
+    if (result.size() > 0 ) {
+      killAll(name);
+      return result;
+    }
+    return null;
+  }
+
+  /**
+   * Used for getting one or many arguments from NamedList objects that hold
+   * configuration parameters. Finds all entries in the NamedList that match
+   * the given name. If they are all strings or arrays of strings, remove them
+   * from the NamedList and return the individual elements as a {@link Collection}.
+   * Parameter order will be preserved if the returned collection is handled as
+   * an {@link ArrayList}. Throws SolrException if any of the values associated
+   * with the name are not strings or arrays of strings.  If exception is
+   * thrown, the NamedList is not modified.  Returns an empty collection if no
+   * matches found.  If you need to remove and retrieve all matching items from
+   * the NamedList regardless of data type, use {@link #removeAll(String)} instead.
+   * 
+   * @param name
+   *          The key to look up in the NamedList.
+   * @return A collection of the values found.
+   * @throws SolrException
+   *           If values are found for the input key that are not strings or
+   *           arrays of strings.
+   */
+  @SuppressWarnings("rawtypes")
+  public Collection<String> removeConfigArgs(final String name)
+      throws SolrException {
+    List<T> objects = getAll(name);
+    List<String> collection = new ArrayList<String>(size() / 2);
+    final String err = "init arg '" + name + "' must be a string "
+        + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
+    
+    for (Object o : objects) {
+      if (o instanceof String) {
+        collection.add((String) o);
+        continue;
+      }
+      
+      // If it's an array, convert to List (which is a Collection).
+      if (o instanceof Object[]) {
+        o = Arrays.asList((Object[]) o);
+      }
+      
+      // If it's a Collection, collect each value.
+      if (o instanceof Collection) {
+        for (Object item : (Collection) o) {
+          if (!(item instanceof String)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + item.getClass());
+          }
+          collection.add((String) item);
+        }
+        continue;
+      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
+    }
+    
+    if (collection.size() > 0) {
+      killAll(name);
+    }
+    
+    return collection;
+  }
+  
   public void clear() {
     nvPairs.clear();
   }
