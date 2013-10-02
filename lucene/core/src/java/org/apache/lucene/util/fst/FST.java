@@ -400,14 +400,14 @@ public final class FST<T> {
     return size;
   }
 
-  void finish(long startNode) throws IOException {
-    if (this.startNode != -1) {
+  void finish(long newStartNode) throws IOException {
+    if (startNode != -1) {
       throw new IllegalStateException("already finished");
     }
-    if (startNode == FINAL_END_NODE && emptyOutput != null) {
-      startNode = 0;
+    if (newStartNode == FINAL_END_NODE && emptyOutput != null) {
+      newStartNode = 0;
     }
-    this.startNode = startNode;
+    startNode = newStartNode;
     bytes.finish();
 
     cacheRootArcs();
