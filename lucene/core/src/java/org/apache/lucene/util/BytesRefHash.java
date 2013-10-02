@@ -383,7 +383,7 @@ public final class BytesRefHash {
     return ids[findHash(bytes, code)];
   }
   
-  private final int findHash(BytesRef bytes, int code) {
+  private int findHash(BytesRef bytes, int code) {
     assert bytesStart != null : "bytesStart is null - not initialized";
     // final position
     int hashPos = code & hashMask;
@@ -578,7 +578,7 @@ public final class BytesRefHash {
   }
 
   /** A simple {@link BytesStartArray} that tracks
-   *  memory allocation using a private {@link AtomicLong}
+   *  memory allocation using a private {@link Counter}
    *  instance.  */
   public static class DirectBytesStartArray extends BytesStartArray {
     // TODO: can't we just merge this w/

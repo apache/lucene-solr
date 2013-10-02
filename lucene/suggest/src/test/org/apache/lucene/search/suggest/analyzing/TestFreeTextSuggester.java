@@ -1,0 +1,576 @@
+package org.apache.lucene.search.suggest.analyzing;
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.search.suggest.TermFreq;
+import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
+
+public class TestFreeTextSuggester extends LuceneTestCase {
+
+  public void testBasic() throws Exception {
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo bar baz blah", 50),
+        new TermFreq("boo foo bar foo bee", 20)
+    );
+
+    Analyzer a = new MockAnalyzer(random());
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+
+    for(int i=0;i<2;i++) {
+
+      // Uses bigram model and unigram backoff:
+      assertEquals("foo bar/0.67 foo bee/0.33 baz/0.04 blah/0.04 boo/0.04",
+                   toString(sug.lookup("foo b", 10)));
+
+      // Uses only bigram model:
+      assertEquals("foo bar/0.67 foo bee/0.33",
+                   toString(sug.lookup("foo ", 10)));
+
+      // Uses only unigram model:
+      assertEquals("foo/0.33",
+                   toString(sug.lookup("foo", 10)));
+
+      // Uses only unigram model:
+      assertEquals("bar/0.22 baz/0.11 bee/0.11 blah/0.11 boo/0.11",
+                   toString(sug.lookup("b", 10)));
+
+      // Try again after save/load:
+      File tmpDir = _TestUtil.getTempDir("FreeTextSuggesterTest");
+      tmpDir.mkdir();
+
+      File path = new File(tmpDir, "suggester");
+
+      OutputStream os = new FileOutputStream(path);
+      sug.store(os);
+      os.close();
+
+      InputStream is = new FileInputStream(path);
+      sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
+      sug.load(is);
+      is.close();
+    }
+  }
+
+  public void testIllegalByteDuringBuild() throws Exception {
+    // Default separator is INFORMATION SEPARATOR TWO
+    // (0x1e), so no input token is allowed to contain it
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo\u001ebar baz", 50)
+    );
+    FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
+    try {
+      sug.build(new TermFreqArrayIterator(keys));
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  public void testIllegalByteDuringQuery() throws Exception {
+    // Default separator is INFORMATION SEPARATOR TWO
+    // (0x1e), so no input token is allowed to contain it
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo bar baz", 50)
+    );
+    FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
+    sug.build(new TermFreqArrayIterator(keys));
+
+    try {
+      sug.lookup("foo\u001eb", 10);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  @Ignore
+  public void testWiki() throws Exception {
+    final LineFileDocs lfd = new LineFileDocs(null, "/lucenedata/enwiki/enwiki-20120502-lines-1k.txt", false);
+    // Skip header:
+    lfd.nextDoc();
+    FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
+    sug.build(new TermFreqIterator() {
+
+        private int count;
+
+        @Override
+        public long weight() {
+          return 1;
+        }
+
+        @Override
+        public BytesRef next() {
+          Document doc;
+          try {
+            doc = lfd.nextDoc();
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+          }
+          if (doc == null) {
+            return null;
+          }
+          if (count++ == 10000) {
+            return null;
+          }
+          return new BytesRef(doc.get("body"));
+        }
+      });
+    if (VERBOSE) {
+      System.out.println(sug.sizeInBytes() + " bytes");
+
+      List<LookupResult> results = sug.lookup("general r", 10);
+      System.out.println("results:");
+      for(LookupResult result : results) {
+        System.out.println("  " + result);
+      }
+    }
+  }
+
+  // Make sure you can suggest based only on unigram model:
+  public void testUnigrams() throws Exception {
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo bar baz blah boo foo bar foo bee", 50)
+    );
+
+    Analyzer a = new MockAnalyzer(random());
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 1, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+    // Sorts first by count, descending, second by term, ascending
+    assertEquals("bar/0.22 baz/0.11 bee/0.11 blah/0.11 boo/0.11",
+                 toString(sug.lookup("b", 10)));
+  }
+
+  // Make sure the last token is not duplicated
+  public void testNoDupsAcrossGrams() throws Exception {
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo bar bar bar bar", 50)
+    );
+    Analyzer a = new MockAnalyzer(random());
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+    assertEquals("foo bar/1.00",
+                 toString(sug.lookup("foo b", 10)));
+  }
+
+  // Lookup of just empty string produces unicode only matches:
+  public void testEmptyString() throws Exception {
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("foo bar bar bar bar", 50)
+    );
+    Analyzer a = new MockAnalyzer(random());
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+    try {
+      sug.lookup("", 10);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  // With one ending hole, ShingleFilter produces "of _" and
+  // we should properly predict from that:
+  public void testEndingHole() throws Exception {
+    // Just deletes "of"
+    Analyzer a = new Analyzer() {
+        @Override
+        public TokenStreamComponents createComponents(String field, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader);
+          CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
+          return new TokenStreamComponents(tokenizer, new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet));
+        }
+      };
+
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("wizard of oz", 50)
+    );
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+    assertEquals("wizard _ oz/1.00",
+                 toString(sug.lookup("wizard of", 10)));
+
+    // Falls back to unigram model, with backoff 0.4 times
+    // prop 0.5:
+    assertEquals("oz/0.20",
+                 toString(sug.lookup("wizard o", 10)));
+  }
+
+  // If the number of ending holes exceeds the ngrams window
+  // then there are no predictions, because ShingleFilter
+  // does not produce e.g. a hole only "_ _" token:
+  public void testTwoEndingHoles() throws Exception {
+    // Just deletes "of"
+    Analyzer a = new Analyzer() {
+        @Override
+        public TokenStreamComponents createComponents(String field, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader);
+          CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
+          return new TokenStreamComponents(tokenizer, new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet));
+        }
+      };
+
+    Iterable<TermFreq> keys = shuffle(
+        new TermFreq("wizard of of oz", 50)
+    );
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
+    sug.build(new TermFreqArrayIterator(keys));
+    assertEquals("",
+                 toString(sug.lookup("wizard of of", 10)));
+  }
+
+  private static Comparator<LookupResult> byScoreThenKey = new Comparator<LookupResult>() {
+    @Override
+    public int compare(LookupResult a, LookupResult b) {
+      if (a.value > b.value) {
+        return -1;
+      } else if (a.value < b.value) {
+        return 1;
+      } else {
+        // Tie break by UTF16 sort order:
+        return ((String) a.key).compareTo((String) b.key);
+      }
+    }
+  };
+
+  public void testRandom() throws IOException {
+    String[] terms = new String[_TestUtil.nextInt(random(), 2, 10)];
+    Set<String> seen = new HashSet<String>();
+    while (seen.size() < terms.length) {
+      String token = _TestUtil.randomSimpleString(random(), 1, 5);
+      if (!seen.contains(token)) {
+        terms[seen.size()] = token;
+        seen.add(token);
+      }
+    }
+
+    Analyzer a = new MockAnalyzer(random());
+
+    int numDocs = atLeast(10);
+    long totTokens = 0;
+    final String[][] docs = new String[numDocs][];
+    for(int i=0;i<numDocs;i++) {
+      docs[i] = new String[atLeast(100)];
+      if (VERBOSE) {
+        System.out.print("  doc " + i + ":");
+      }
+      for(int j=0;j<docs[i].length;j++) {
+        docs[i][j] = getZipfToken(terms);
+        if (VERBOSE) {
+          System.out.print(" " + docs[i][j]);
+        }
+      }
+      if (VERBOSE) {
+        System.out.println();
+      }
+      totTokens += docs[i].length;
+    }
+
+    int grams = _TestUtil.nextInt(random(), 1, 4);
+
+    if (VERBOSE) {
+      System.out.println("TEST: " + terms.length + " terms; " + numDocs + " docs; " + grams + " grams");
+    }
+
+    // Build suggester model:
+    FreeTextSuggester sug = new FreeTextSuggester(a, a, grams, (byte) 0x20);
+    sug.build(new TermFreqIterator() {
+        int upto;
+
+        @Override
+        public BytesRef next() {
+          if (upto == docs.length) {
+            return null;
+          } else {
+            StringBuilder b = new StringBuilder();
+            for(String token : docs[upto]) {
+              b.append(' ');
+              b.append(token);
+            }
+            upto++;
+            return new BytesRef(b.toString());
+          }
+        }
+
+        @Override
+        public long weight() {
+          return random().nextLong();
+        }
+      });
+
+    // Build inefficient but hopefully correct model:
+    List<Map<String,Integer>> gramCounts = new ArrayList<Map<String,Integer>>(grams);
+    for(int gram=0;gram<grams;gram++) {
+      if (VERBOSE) {
+        System.out.println("TEST: build model for gram=" + gram);
+      }
+      Map<String,Integer> model = new HashMap<String,Integer>();
+      gramCounts.add(model);
+      for(String[] doc : docs) {
+        for(int i=0;i<doc.length-gram;i++) {
+          StringBuilder b = new StringBuilder();
+          for(int j=i;j<=i+gram;j++) {
+            if (j > i) {
+              b.append(' ');
+            }
+            b.append(doc[j]);
+          }
+          String token = b.toString();
+          Integer curCount = model.get(token);
+          if (curCount == null) {
+            model.put(token, 1);
+          } else {
+            model.put(token, 1 + curCount);
+          }
+          if (VERBOSE) {
+            System.out.println("  add '" + token + "' -> count=" + model.get(token));
+          }
+        }
+      }
+    }
+
+    int lookups = atLeast(100);
+    for(int iter=0;iter<lookups;iter++) {
+      String[] tokens = new String[_TestUtil.nextInt(random(), 1, 5)];
+      for(int i=0;i<tokens.length;i++) {
+        tokens[i] = getZipfToken(terms);
+      }
+
+      // Maybe trim last token; be sure not to create the
+      // empty string:
+      int trimStart;
+      if (tokens.length == 1) {
+        trimStart = 1;
+      } else {
+        trimStart = 0;
+      }
+      int trimAt = _TestUtil.nextInt(random(), trimStart, tokens[tokens.length-1].length());
+      tokens[tokens.length-1] = tokens[tokens.length-1].substring(0, trimAt);
+
+      int num = _TestUtil.nextInt(random(), 1, 100);
+      StringBuilder b = new StringBuilder();
+      for(String token : tokens) {
+        b.append(' ');
+        b.append(token);
+      }
+      String query = b.toString();
+      query = query.substring(1);
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " query='" + query + "' num=" + num);
+      }
+
+      // Expected:
+      List<LookupResult> expected = new ArrayList<LookupResult>();
+      double backoff = 1.0;
+      seen = new HashSet<String>();
+
+      if (VERBOSE) {
+        System.out.println("  compute expected");
+      }
+      for(int i=grams-1;i>=0;i--) {
+        if (VERBOSE) {
+          System.out.println("    grams=" + i);
+        }
+
+        if (tokens.length < i+1) {
+          // Don't have enough tokens to use this model
+          if (VERBOSE) {
+            System.out.println("      skip");
+          }
+          continue;
+        }
+
+        if (i == 0 && tokens[tokens.length-1].length() == 0) {
+          // Never suggest unigrams from empty string:
+          if (VERBOSE) {
+            System.out.println("      skip unigram priors only");
+          }
+          continue;
+        }
+
+        // Build up "context" ngram:
+        b = new StringBuilder();
+        for(int j=tokens.length-i-1;j<tokens.length-1;j++) {
+          b.append(' ');
+          b.append(tokens[j]);
+        }
+        String context = b.toString();
+        if (context.length() > 0) {
+          context = context.substring(1);
+        }
+        if (VERBOSE) {
+          System.out.println("      context='" + context + "'");
+        }
+        long contextCount;
+        if (context.length() == 0) {
+          contextCount = totTokens;
+        } else {
+          Integer count = gramCounts.get(i-1).get(context);
+          if (count == null) {
+            // We never saw this context:
+            backoff *= FreeTextSuggester.ALPHA;
+            if (VERBOSE) {
+              System.out.println("      skip: never saw context");
+            }
+            continue;
+          }
+          contextCount = count;
+        }
+        if (VERBOSE) {
+          System.out.println("      contextCount=" + contextCount);
+        }
+        Map<String,Integer> model = gramCounts.get(i);
+
+        // First pass, gather all predictions for this model:
+        if (VERBOSE) {
+          System.out.println("      find terms w/ prefix=" + tokens[tokens.length-1]);
+        }
+        List<LookupResult> tmp = new ArrayList<LookupResult>();
+        for(String term : terms) {
+          if (term.startsWith(tokens[tokens.length-1])) {
+            if (VERBOSE) {
+              System.out.println("        term=" + term);
+            }
+            if (seen.contains(term)) {
+              if (VERBOSE) {
+                System.out.println("          skip seen");
+              }
+              continue;
+            }
+            String ngram = (context + " " + term).trim();
+            Integer count = model.get(ngram);
+            if (count != null) {
+              LookupResult lr = new LookupResult(ngram, (long) (Long.MAX_VALUE * (backoff * (double) count / contextCount)));
+              tmp.add(lr);
+              if (VERBOSE) {
+                System.out.println("      add tmp key='" + lr.key + "' score=" + lr.value);
+              }
+            }
+          }
+        }
+
+        // Second pass, trim to only top N, and fold those
+        // into overall suggestions:
+        Collections.sort(tmp, byScoreThenKey);
+        if (tmp.size() > num) {
+          tmp.subList(num, tmp.size()).clear();
+        }
+        for(LookupResult result : tmp) {
+          String key = result.key.toString();
+          int idx = key.lastIndexOf(' ');
+          String lastToken;
+          if (idx != -1) {
+            lastToken = key.substring(idx+1);
+          } else {
+            lastToken = key;
+          }
+          if (!seen.contains(lastToken)) {
+            seen.add(lastToken);
+            expected.add(result);
+            if (VERBOSE) {
+              System.out.println("      keep key='" + result.key + "' score=" + result.value);
+            }
+          }
+        }
+        
+        backoff *= FreeTextSuggester.ALPHA;
+      }
+
+      Collections.sort(expected, byScoreThenKey);
+
+      if (expected.size() > num) {
+        expected.subList(num, expected.size()).clear();
+      }
+
+      // Actual:
+      List<LookupResult> actual = sug.lookup(query, num);
+
+      if (VERBOSE) {
+        System.out.println("  expected: " + expected);
+        System.out.println("    actual: " + actual);
+      }
+
+      assertEquals(expected.toString(), actual.toString());
+    }
+  }
+
+  private static String getZipfToken(String[] tokens) {
+    // Zipf-like distribution:
+    for(int k=0;k<tokens.length;k++) {
+      if (random().nextBoolean() || k == tokens.length-1) {
+        return tokens[k];
+      }
+    }
+    assert false;
+    return null;
+  }
+
+  private static String toString(List<LookupResult> results) {
+    StringBuilder b = new StringBuilder();
+    for(LookupResult result : results) {
+      b.append(' ');
+      b.append(result.key);
+      b.append('/');
+      b.append(String.format(Locale.ROOT, "%.2f", ((double) result.value)/Long.MAX_VALUE));
+    }
+    return b.toString().trim();
+  }
+
+  @SafeVarargs
+  private final <T> Iterable<T> shuffle(T...values) {
+    final List<T> asList = new ArrayList<T>(values.length);
+    for (T value : values) {
+      asList.add(value);
+    }
+    Collections.shuffle(asList, random());
+    return asList;
+  }
+}
+
