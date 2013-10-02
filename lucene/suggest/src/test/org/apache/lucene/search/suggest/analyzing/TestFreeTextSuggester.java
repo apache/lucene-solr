@@ -48,9 +48,11 @@ import org.apache.lucene.search.suggest.TermFreqArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Ignore;
 
+@SuppressCodecs("Lucene3x")
 public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
