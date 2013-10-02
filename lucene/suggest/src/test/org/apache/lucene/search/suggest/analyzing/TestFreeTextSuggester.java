@@ -573,7 +573,6 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     return b.toString().trim();
   }
 
-  @SafeVarargs
   private final <T> Iterable<T> shuffle(T...values) {
     final List<T> asList = new ArrayList<T>(values.length);
     for (T value : values) {
