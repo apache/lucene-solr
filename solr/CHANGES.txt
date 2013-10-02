@@ -85,6 +85,9 @@ Bug Fixes
 * SOLR-5295: The CREATESHARD collection API creates maxShardsPerNode number of
   replicas if replicationFactor is not specified. (Brett Hoerner, shalin)
 
+* SOLR-5296: Creating a collection with implicit router adds shard ranges
+  to each shard. (shalin)
+
 Security
 ----------------------
 
