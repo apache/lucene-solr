@@ -33,6 +33,11 @@ New Features
   on best effort which was not user-friendly.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-5214: Add new FreeTextSuggester, to predict the next word
+  using a simple ngram language model.  This is useful for the "long
+  tail" suggestions, when a primary suggester fails to find a
+  suggestion.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
