@@ -244,47 +244,6 @@ public abstract class FieldMutatingUpdateProcessorFactory
   }
 
   /**
-   * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key referred to.  Throws an error if the key didn't refer
-   * to one or more strings (or arrays of strings)
-   * @exception SolrException invalid arr/str structure.
-   * @deprecated Replaced by {@link NamedList#removeConfigArgs(String)}.  Will be
-   * removed in version 5.0.
-   */
-  @Deprecated
-  public static Collection<String> oneOrMany(final NamedList args, final String key) {
-    List<String> result = new ArrayList<String>(args.size() / 2);
-    final String err = "init arg '" + key + "' must be a string "
-      + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
-    
-    for (Object o = args.remove(key); null != o; o = args.remove(key)) {
-      if (o instanceof String) {
-        result.add((String)o);
-        continue;
-      }
-      
-      if (o instanceof Object[]) {
-        o = Arrays.asList((Object[]) o);
-      }
-      
-      if (o instanceof Collection) {
-        for (Object item : (Collection)o) {
-          if (! (item instanceof String)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + item.getClass());
-          }
-          result.add((String)item);
-        }
-        continue;
-      }
-      
-      // who knows what the hell we have
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
-    }
-    
-    return result;
-  }
-
-  /**
    * Removes the first instance of the key from NamedList, returning the Boolean
    * that key referred to, or null if the key is not specified.
    * @exception SolrException invalid type or structure
