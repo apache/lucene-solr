@@ -512,7 +512,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   }
   
   @Test
-  public void testUpdateNonDocValueField() throws Exception {
+  public void testUpdateNonNumericDocValuesField() throws Exception {
     // we don't support adding new fields or updating existing non-numeric-dv
     // fields through numeric updates
     Directory dir = newDirectory();
@@ -811,7 +811,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // first segment with NDV
     Document doc = new Document();
     doc.add(new StringField("id", "doc0", Store.NO));
-    doc.add(new NumericDocValuesField("ndv", 5));
+    doc.add(new NumericDocValuesField("ndv", 3));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "doc4", Store.NO)); // document without 'ndv' field
     writer.addDocument(doc);
     writer.commit();
     
@@ -819,9 +822,17 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     doc = new Document();
     doc.add(new StringField("id", "doc1", Store.NO));
     writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "doc2", Store.NO)); // document that isn't updated
+    writer.addDocument(doc);
     writer.commit();
     
-    // update document in the second segment
+    // update document in the first segment - should not affect docsWithField of
+    // the document without NDV field
+    writer.updateNumericDocValue(new Term("id", "doc0"), "ndv", 5L);
+    
+    // update document in the second segment - field should be added and we should
+    // be able to handle the other document correctly (e.g. no NPE)
     writer.updateNumericDocValue(new Term("id", "doc1"), "ndv", 5L);
     writer.close();
 
@@ -829,9 +840,12 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     for (AtomicReaderContext context : reader.leaves()) {
       AtomicReader r = context.reader();
       NumericDocValues ndv = r.getNumericDocValues("ndv");
-      for (int i = 0; i < r.maxDoc(); i++) {
-        assertEquals(5L, ndv.get(i));
-      }
+      Bits docsWithField = r.getDocsWithField("ndv");
+      assertNotNull(docsWithField);
+      assertTrue(docsWithField.get(0));
+      assertEquals(5L, ndv.get(0));
+      assertFalse(docsWithField.get(1));
+      assertEquals(0L, ndv.get(1));
     }
     reader.close();
 
@@ -1233,6 +1247,33 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     r.close();
 
     writer.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testUpdatesOrder() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("upd", "t1", Store.NO));
+    doc.add(new StringField("upd", "t2", Store.NO));
+    doc.add(new NumericDocValuesField("f1", 1L));
+    doc.add(new NumericDocValuesField("f2", 1L));
+    writer.addDocument(doc);
+    writer.updateNumericDocValue(new Term("upd", "t1"), "f1", 2L); // update f1 to 2
+    writer.updateNumericDocValue(new Term("upd", "t1"), "f2", 2L); // update f2 to 2
+    writer.updateNumericDocValue(new Term("upd", "t2"), "f1", 3L); // update f1 to 3
+    writer.updateNumericDocValue(new Term("upd", "t2"), "f2", 3L); // update f2 to 3
+    writer.updateNumericDocValue(new Term("upd", "t1"), "f1", 4L); // update f1 to 4 (but not f2)
+    writer.close();
+    
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(4, reader.leaves().get(0).reader().getNumericDocValues("f1").get(0));
+    assertEquals(3, reader.leaves().get(0).reader().getNumericDocValues("f2").get(0));
+    reader.close();
+    
     dir.close();
   }
   

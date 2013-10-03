@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -78,9 +79,13 @@ class FrozenBufferedDeletes { // TODO (DVU_RENAME) FrozenBufferedUpdates?
       upto++;
     }
 
+    // TODO if a Term affects multiple fields, we could keep the updates key'd by Term
+    // so that it maps to all fields it affects, sorted by their docUpto, and traverse
+    // that Term only once, applying the update to all fields that still need to be
+    // updated. 
     List<NumericUpdate> allUpdates = new ArrayList<NumericUpdate>();
     int numericUpdatesSize = 0;
-    for (Map<String,NumericUpdate> fieldUpdates : deletes.numericUpdates.values()) {
+    for (LinkedHashMap<Term,NumericUpdate> fieldUpdates : deletes.numericUpdates.values()) {
       for (NumericUpdate update : fieldUpdates.values()) {
         allUpdates.add(update);
         numericUpdatesSize += update.sizeInBytes();

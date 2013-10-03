@@ -66,29 +66,32 @@ class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
 
   /* Rough logic: NumericUpdate calculates its actual size,
    * including the update Term and DV field (String). The 
-   * per-term map holds a reference to the update Term, and
+   * per-field map holds a reference to the updated field, and
    * therefore we only account for the object reference and 
    * map space itself. This is incremented when we first see
-   * an update Term.
-   * LinkedHashMap has an array[Entry] w/ varying load factor 
-   * (say 2*POINTER). Entry is an object w/ Term key, Map val, 
-   * int hash, Entry next, Entry before, Entry after (OBJ_HEADER + 5*POINTER + INT).
-   * Term (key) is counted only as POINTER.
-   * Map (val) is counted as OBJ_HEADER, array[Entry] ref + header, 4*INT, 1*FLOAT,
-   * Set (entrySet) (2*OBJ_HEADER + ARRAY_HEADER + 2*POINTER + 4*INT + FLOAT)
-   */
-  final static int BYTES_PER_NUMERIC_UPDATE_TERM_ENTRY = 
-      9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
-      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
-  
-  /* Rough logic: Incremented when we see another field for an already updated
-   * Term.
+   * an updated field.
+   * 
    * HashMap has an array[Entry] w/ varying load
    * factor (say 2*POINTER). Entry is an object w/ String key, 
-   * NumericUpdate val, int hash, Entry next (OBJ_HEADER + 3*POINTER + INT).
-   * NumericUpdate returns its own size, and therefore isn't accounted for here.
+   * LinkedHashMap val, int hash, Entry next (OBJ_HEADER + 3*POINTER + INT).
+   * 
+   * LinkedHashMap (val) is counted as OBJ_HEADER, array[Entry] ref + header, 4*INT, 1*FLOAT,
+   * Set (entrySet) (2*OBJ_HEADER + ARRAY_HEADER + 2*POINTER + 4*INT + FLOAT)
    */
-  final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_NUMERIC_FIELD_ENTRY =
+      7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
+      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
+      
+  /* Rough logic: Incremented when we see another Term for an already updated
+   * field.
+   * LinkedHashMap has an array[Entry] w/ varying load factor 
+   * (say 2*POINTER). Entry is an object w/ Term key, NumericUpdate val, 
+   * int hash, Entry next, Entry before, Entry after (OBJ_HEADER + 5*POINTER + INT).
+   * 
+   * Term (key) is counted only as POINTER.
+   * NumericUpdate (val) counts its own size and isn't accounted for here.
+   */
+  final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
   
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numNumericUpdates = new AtomicInteger();
@@ -96,12 +99,14 @@ class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Integer> docIDs = new ArrayList<Integer>();
 
-  // Map<updateTerm,Map<dvField,NumericUpdate>>
-  // LinkedHashMap because we need to preserve the order of the updates. That
-  // is, if two terms update the same document and same DV field, whoever came
-  // in last should win. LHM guarantees we iterate on the map in insertion
-  // order.
-  final Map<Term,Map<String,NumericUpdate>> numericUpdates = new LinkedHashMap<Term,Map<String,NumericUpdate>>();
+  // Map<dvField,Map<updateTerm,NumericUpdate>>
+  // For each field we keep an ordered list of NumericUpdates, key'd by the
+  // update Term. LinkedHashMap guarantees we will later traverse the map in
+  // insertion order (so that if two terms affect the same document, the last
+  // one that came in wins), and helps us detect faster if the same Term is
+  // used to update the same field multiple times (so we later traverse it
+  // only once).
+  final Map<String,LinkedHashMap<Term,NumericUpdate>> numericUpdates = new HashMap<String,LinkedHashMap<Term,NumericUpdate>>();
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -180,13 +185,13 @@ class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
   }
  
   public void addNumericUpdate(NumericUpdate update, int docIDUpto) {
-    Map<String,NumericUpdate> termUpdates = numericUpdates.get(update.term);
-    if (termUpdates == null) {
-      termUpdates = new HashMap<String,NumericUpdate>();
-      numericUpdates.put(update.term, termUpdates);
-      bytesUsed.addAndGet(BYTES_PER_NUMERIC_UPDATE_TERM_ENTRY);
+    LinkedHashMap<Term,NumericUpdate> fieldUpdates = numericUpdates.get(update.field);
+    if (fieldUpdates == null) {
+      fieldUpdates = new LinkedHashMap<Term,NumericUpdate>();
+      numericUpdates.put(update.field, fieldUpdates);
+      bytesUsed.addAndGet(BYTES_PER_NUMERIC_FIELD_ENTRY);
     }
-    final NumericUpdate current = termUpdates.get(update.field);
+    final NumericUpdate current = fieldUpdates.get(update.term);
     if (current != null && docIDUpto < current.docIDUpto) {
       // Only record the new number if it's greater than or equal to the current
       // one. This is important because if multiple threads are replacing the
@@ -196,7 +201,12 @@ class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
     }
 
     update.docIDUpto = docIDUpto;
-    termUpdates.put(update.field, update);
+    // since it's a LinkedHashMap, we must first remove the Term entry so that
+    // it's added last (we're interested in insertion-order).
+    if (current != null) {
+      fieldUpdates.remove(update.term);
+    }
+    fieldUpdates.put(update.term, update);
     numNumericUpdates.incrementAndGet();
     if (current == null) {
       bytesUsed.addAndGet(BYTES_PER_NUMERIC_UPDATE_ENTRY + update.sizeInBytes());

@@ -409,6 +409,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
               fieldsConsumer.addNumericField(fieldInfo, new Iterable<Number>() {
                 @SuppressWarnings("synthetic-access")
                 final NumericDocValues currentValues = reader.getNumericDocValues(field);
+                final Bits docsWithField = reader.getDocsWithField(field);
                 @Override
                 public Iterator<Number> iterator() {
                   return new Iterator<Number>() {
@@ -429,7 +430,10 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
                       }
                       Long updatedValue = updates.get(curDoc);
                       if (updatedValue == null) {
-                        updatedValue = Long.valueOf(currentValues.get(curDoc));
+                        // only read the current value if the document had a value before
+                        if (currentValues != null && docsWithField.get(curDoc)) {
+                          updatedValue = currentValues.get(curDoc);
+                        }
                       } else if (updatedValue == NumericUpdate.MISSING) {
                         updatedValue = null;
                       }
