@@ -387,7 +387,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
         currentField = term.field();
         Terms terms = fields.terms(currentField);
         if (terms != null) {
-          termsEnum = terms.iterator(null);
+          termsEnum = terms.iterator(termsEnum);
         } else {
           termsEnum = null;
         }
