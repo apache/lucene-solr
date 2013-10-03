@@ -242,34 +242,4 @@ public abstract class FieldMutatingUpdateProcessorFactory
     return FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
 
   }
-
-  /**
-   * Removes the first instance of the key from NamedList, returning the Boolean
-   * that key referred to, or null if the key is not specified.
-   * @exception SolrException invalid type or structure
-   * @deprecated Use {@link NamedList#removeBooleanArg} instead.  Will be
-   * removed in 5.0.
-   */
-  @Deprecated
-  public static Boolean getBooleanArg(final NamedList args, final String key) {
-    Boolean bool;
-    List values = args.getAll(key);
-    if (0 == values.size()) {
-      return null;
-    }
-    if (values.size() > 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Only one '" + key + "' is allowed");
-    }
-    Object o = args.remove(key);
-    if (o instanceof Boolean) {
-      bool = (Boolean)o;
-    } else if (o instanceof CharSequence) {
-      bool = Boolean.parseBoolean(o.toString());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "'" + key + "' must have type 'bool' or 'str'; found " + o.getClass());
-    }
-    return bool;
-  }
 }
