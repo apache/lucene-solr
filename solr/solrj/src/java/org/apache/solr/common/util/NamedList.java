@@ -494,7 +494,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * Removes and returns all values for the specified name.  Returns null if
    * no matches found.  This method will return all matching objects,
    * regardless of data type.  If you are parsing Solr config options, the
-   * {@link #removeConfigArgs(String)} method will probably work better.
+   * {@link #removeConfigArgs(String)} or {@link #removeBooleanArg(String)}
+   * methods will probably work better.
    *
    * @param name Name
    * @return List of values
@@ -510,6 +511,46 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
+   * Used for getting a boolean argument from a NamedList object.  If the name
+   * is not present, returns null.  If there is more than one value with that
+   * name, or if the value found is not a Boolean or a String, throws an
+   * exception.  If there is only one value present and it is a Boolean or a
+   * String, the value is removed and returned as a Boolean. If an exception
+   * is thrown, the NamedList is not modified. See {@link #removeAll(String)}
+   * and {@link #removeConfigArgs(String)} for additional ways of gathering
+   * configuration information from a NamedList.
+   * 
+   * @param name
+   *          The key to look up in the NamedList.
+   * @return The boolean value found.
+   * @throws SolrException
+   *           If multiple values are found for the name or the value found is
+   *           not a Boolean or a String.
+   */
+  public Boolean removeBooleanArg(final String name) {
+    Boolean bool;
+    List<T> values = getAll(name);
+    if (0 == values.size()) {
+      return null;
+    }
+    if (values.size() > 1) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Only one '" + name + "' is allowed");
+    }
+    Object o = get(name);
+    if (o instanceof Boolean) {
+      bool = (Boolean)o;
+    } else if (o instanceof CharSequence) {
+      bool = Boolean.parseBoolean(o.toString());
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "'" + name + "' must have type 'bool' or 'str'; found " + o.getClass());
+    }
+    remove(name);
+    return bool;
+  }
+  
+  /**
    * Used for getting one or many arguments from NamedList objects that hold
    * configuration parameters. Finds all entries in the NamedList that match
    * the given name. If they are all strings or arrays of strings, remove them
@@ -520,6 +561,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * thrown, the NamedList is not modified.  Returns an empty collection if no
    * matches found.  If you need to remove and retrieve all matching items from
    * the NamedList regardless of data type, use {@link #removeAll(String)} instead.
+   * The {@link #removeBooleanArg(String)} method can be used for retrieving a
+   * boolean argument.
    * 
    * @param name
    *          The key to look up in the NamedList.

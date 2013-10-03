@@ -160,8 +160,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
     // resolve this into actual Class objects later
     params.typeClass = args.removeConfigArgs("typeClass");
 
-    // getBooleanArg() returns null if the arg is not specified
-    params.fieldNameMatchesSchemaField = getBooleanArg(args, "fieldNameMatchesSchemaField");
+    // Returns null if the arg is not specified
+    params.fieldNameMatchesSchemaField = args.removeBooleanArg("fieldNameMatchesSchemaField");
     
     return params;
   }
@@ -247,7 +247,10 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * Removes the first instance of the key from NamedList, returning the Boolean
    * that key referred to, or null if the key is not specified.
    * @exception SolrException invalid type or structure
+   * @deprecated Use {@link NamedList#removeBooleanArg} instead.  Will be
+   * removed in 5.0.
    */
+  @Deprecated
   public static Boolean getBooleanArg(final NamedList args, final String key) {
     Boolean bool;
     List values = args.getAll(key);
