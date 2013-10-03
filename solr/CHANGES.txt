@@ -65,6 +65,15 @@ Apache ZooKeeper 3.4.5
 Detailed Change List
 ----------------------
 
+Upgrading from Solr 4.5.0
+----------------------
+
+* If you are using methods from FieldMutatingUpdateProcessorFactory for getting
+  configuration information (oneOrMany or getBooleanArg), those methods have
+  been moved to NamedList and renamed to removeConfigArgs and removeBooleanArg,
+  respectively.  The original methods are deprecated, to be removed in 5.0.
+  See SOLR-5264.
+
 New Features
 ----------------------
 
@@ -114,6 +123,9 @@ Other Changes
   (hossman)
 
 * SOLR-5273: Update HttpComponents to 4.2.5 and 4.2.6. (Mark Miller)
+
+* SOLR-5264: Move methods for getting config information from
+             FieldMutatingUpdateProcessorFactory to NamedList. (Shawn Heisey)
 
 ==================  4.5.0 ==================
 
