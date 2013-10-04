@@ -59,9 +59,7 @@ final class SegmentCoreReaders {
   final DocValuesProducer normsProducer;
 
   final int termsIndexDivisor;
-  
-  private final Object ownerCoreCacheKey;
-  
+
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
@@ -109,11 +107,6 @@ final class SegmentCoreReaders {
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context, int termsIndexDivisor) throws IOException {
-
-    // SegmentReader uses us as the coreCacheKey; we cannot
-    // call owner.getCoreCacheKey() because that will return
-    // null!:
-    this.ownerCoreCacheKey = this;
 
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
@@ -347,7 +340,9 @@ final class SegmentCoreReaders {
   private void notifyCoreClosedListeners() {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
-        listener.onClose(ownerCoreCacheKey);
+        // SegmentReader uses our instance as its
+        // coreCacheKey:
+        listener.onClose(this);
       }
     }
   }
