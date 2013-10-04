@@ -84,4 +84,29 @@
       </licenses>
     </sequential>
   </macrodef>
+
+  <macrodef name="lib-versions-check-macro">
+    <attribute name="dir"/>
+    <attribute name="centralized.versions.file"/>
+    <sequential>
+      <!-- 
+        Verify that the '/org/name' keys in ivy-versions.properties are sorted
+        lexically and are neither duplicates nor orphans, and that all
+         dependencies in all ivy.xml files use rev="${/org/name}" format.
+        -->
+      <echo>Lib versions check under: @{dir}</echo>
+      <libversions centralizedVersionsFile="@{centralized.versions.file}">
+        <fileset dir="@{dir}">
+          <include name="**/ivy.xml" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+        </fileset>
+      </libversions>
+    </sequential>
+  </macrodef>
 </project>
