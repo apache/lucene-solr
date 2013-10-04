@@ -78,9 +78,9 @@ class FieldCacheImpl implements FieldCache {
   }
 
   @Override
-  public synchronized void purge(AtomicReader r) {
+  public synchronized void purgeByCacheKey(Object coreCacheKey) {
     for(Cache c : caches.values()) {
-      c.purge(r);
+      c.purgeByCacheKey(coreCacheKey);
     }
   }
 
@@ -110,8 +110,8 @@ class FieldCacheImpl implements FieldCache {
   // per-segment fieldcaches don't purge until the shared core closes.
   final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
     @Override
-    public void onClose(SegmentReader owner) {
-      FieldCacheImpl.this.purge(owner);
+    public void onClose(Object ownerCoreCacheKey) {
+      FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
     }
   };
 
@@ -120,7 +120,7 @@ class FieldCacheImpl implements FieldCache {
     @Override
     public void onClose(IndexReader owner) {
       assert owner instanceof AtomicReader;
-      FieldCacheImpl.this.purge((AtomicReader) owner);
+      FieldCacheImpl.this.purgeByCacheKey(((AtomicReader) owner).getCoreCacheKey());
     }
   };
   
@@ -155,10 +155,9 @@ class FieldCacheImpl implements FieldCache {
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
-    public void purge(AtomicReader r) {
-      Object readerKey = r.getCoreCacheKey();
+    public void purgeByCacheKey(Object coreCacheKey) {
       synchronized(readerCache) {
-        readerCache.remove(readerKey);
+        readerCache.remove(coreCacheKey);
       }
     }
 

@@ -94,6 +94,11 @@ Bug Fixes
   its state, which could result in exceptions being thrown, as well as
   incorrect ordinals returned from getParent. (Shai Erera)
 
+* LUCENE-5254: Fixed bounded memory leak, where objects like live
+  docs bitset were not freed from an starting reader after reopening
+  to a new reader and closing the original one.  (Shai Erera, Mike
+  McCandless)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible

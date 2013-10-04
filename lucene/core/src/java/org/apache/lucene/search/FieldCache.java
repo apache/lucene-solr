@@ -29,6 +29,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -260,7 +261,7 @@ public interface FieldCache {
    *
    * @see #getInts(AtomicReader, String, IntParser, boolean)
    */
-  public Ints getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
+  public Ints getInts(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /**
    * Returns an {@link Ints} over the values found in documents in the given
@@ -286,7 +287,7 @@ public interface FieldCache {
    * @throws IOException
    *           If any error occurs.
    */
-  public Ints getInts (AtomicReader reader, String field, IntParser parser, boolean setDocsWithField) throws IOException;
+  public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField) throws IOException;
 
   /**
    * Returns a {@link Floats} over the values found in documents in the given
@@ -294,7 +295,7 @@ public interface FieldCache {
    *
    * @see #getFloats(AtomicReader, String, FloatParser, boolean)
    */
-  public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
+  public Floats getFloats(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /**
    * Returns a {@link Floats} over the values found in documents in the given
@@ -320,7 +321,7 @@ public interface FieldCache {
    * @throws IOException
    *           If any error occurs.
    */
-  public Floats getFloats (AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField) throws IOException;
+  public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField) throws IOException;
 
   /**
    * Returns a {@link Longs} over the values found in documents in the given
@@ -401,14 +402,14 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public BinaryDocValues getTerms (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Expert: just like {@link #getTerms(AtomicReader,String,boolean)},
    *  but you can specify whether more RAM should be consumed in exchange for
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public BinaryDocValues getTerms (AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -420,7 +421,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public SortedDocValues getTermsIndex (AtomicReader reader, String field) throws IOException;
+  public SortedDocValues getTermsIndex(AtomicReader reader, String field) throws IOException;
 
   /** Expert: just like {@link
    *  #getTermsIndex(AtomicReader,String)}, but you can specify
@@ -428,7 +429,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public SortedDocValues getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
+  public SortedDocValues getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
@@ -533,7 +534,7 @@ public interface FieldCache {
    * </p>
    * @lucene.experimental
    */
-  public abstract CacheEntry[] getCacheEntries();
+  public CacheEntry[] getCacheEntries();
 
   /**
    * <p>
@@ -546,16 +547,17 @@ public interface FieldCache {
    * </p>
    * @lucene.experimental
    */
-  public abstract void purgeAllCaches();
+  public void purgeAllCaches();
 
   /**
    * Expert: drops all cache entries associated with this
-   * reader.  NOTE: this reader must precisely match the
-   * reader that the cache entry is keyed on. If you pass a
-   * top-level reader, it usually will have no effect as
-   * Lucene now caches at the segment reader level.
+   * reader {@link IndexReader#getCoreCacheKey}.  NOTE: this cache key must
+   * precisely match the reader that the cache entry is
+   * keyed on. If you pass a top-level reader, it usually
+   * will have no effect as Lucene now caches at the segment
+   * reader level.
    */
-  public abstract void purge(AtomicReader r);
+  public void purgeByCacheKey(Object coreCacheKey);
 
   /**
    * If non-null, FieldCacheImpl will warn whenever

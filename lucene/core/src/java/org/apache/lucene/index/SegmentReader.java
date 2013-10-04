@@ -407,6 +407,8 @@ public final class SegmentReader extends AtomicReader {
   // same entry in the FieldCache.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
+    // NOTE: if this every changes, be sure to fix
+    // SegmentCoreReader's ownerCoreCacheKey to match!
     return core;
   }
 
@@ -576,9 +578,9 @@ public final class SegmentReader extends AtomicReader {
    * @lucene.experimental
    */
   public static interface CoreClosedListener {
-    /** Invoked when the shared core of the provided {@link
+    /** Invoked when the shared core of the original {@code
      *  SegmentReader} has closed. */
-    public void onClose(SegmentReader owner);
+    public void onClose(Object ownerCoreCacheKey);
   }
   
   /** Expert: adds a CoreClosedListener to this reader's shared core */
