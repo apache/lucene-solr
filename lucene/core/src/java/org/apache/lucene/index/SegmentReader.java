@@ -407,8 +407,9 @@ public final class SegmentReader extends AtomicReader {
   // same entry in the FieldCache.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
-    // NOTE: if this every changes, be sure to fix
-    // SegmentCoreReader's ownerCoreCacheKey to match!
+    // NOTE: if this ever changes, be sure to fix
+    // SegmentCoreReader.notifyCoreClosedListeners to match!
+    // Today it passes "this" as its coreCacheKey:
     return core;
   }
 

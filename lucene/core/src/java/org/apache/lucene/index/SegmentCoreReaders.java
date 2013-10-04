@@ -53,8 +53,6 @@ final class SegmentCoreReaders {
   final FieldsProducer fields;
   final DocValuesProducer normsProducer;
 
-  private final Object ownerCoreCacheKey;
-  
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
@@ -88,11 +86,6 @@ final class SegmentCoreReaders {
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context) throws IOException {
-
-    // SegmentReader uses us as the coreCacheKey; we cannot
-    // call owner.getCoreCacheKey() because that will return
-    // null!:
-    this.ownerCoreCacheKey = this;
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
@@ -175,7 +168,9 @@ final class SegmentCoreReaders {
   private void notifyCoreClosedListeners() {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
-        listener.onClose(ownerCoreCacheKey);
+        // SegmentReader uses our instance as its
+        // coreCacheKey:
+        listener.onClose(this);
       }
     }
   }
