@@ -90,6 +90,9 @@ Build
 
 * LUCENE-5249: All Lucene/Solr modules should use the same dependency versions
   (Steve Rowe)
+  
+* LUCENE-5257: Lock down centralized versioning of ivy dependencies
+  (Steve Rowe)
 
 ======================= Lucene 4.5.0 =======================
 
