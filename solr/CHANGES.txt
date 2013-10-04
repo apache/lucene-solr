@@ -101,6 +101,8 @@ Bug Fixes
 
 * SOLR-5297: Admin UI - Threads Screen missing Icon (steffkes)
 
+* SOLR-5301: DELETEALIAS command prints CREATEALIAS in logs (janhoy)
+
 Security
 ----------------------
 
