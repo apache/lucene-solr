@@ -60,7 +60,7 @@ final class SegmentCoreReaders {
 
   final int termsIndexDivisor;
   
-  private final SegmentReader owner;
+  private final Object ownerCoreCacheKey;
   
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
@@ -109,7 +109,12 @@ final class SegmentCoreReaders {
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context, int termsIndexDivisor) throws IOException {
-    
+
+    // SegmentReader uses us as the coreCacheKey; we cannot
+    // call owner.getCoreCacheKey() because that will return
+    // null!:
+    this.ownerCoreCacheKey = this;
+
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
     }
@@ -166,12 +171,6 @@ final class SegmentCoreReaders {
         decRef();
       }
     }
-    
-    // Must assign this at the end -- if we hit an
-    // exception above core, we don't want to attempt to
-    // purge the FieldCache (will hit NPE because core is
-    // not assigned yet).
-    this.owner = owner;
   }
   
   void incRef() {
@@ -348,7 +347,7 @@ final class SegmentCoreReaders {
   private void notifyCoreClosedListeners() {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
-        listener.onClose(owner);
+        listener.onClose(ownerCoreCacheKey);
       }
     }
   }
@@ -368,9 +367,5 @@ final class SegmentCoreReaders {
         ((fields!=null) ? fields.ramBytesUsed() : 0) + 
         ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
         ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);
-  }
-  @Override
-  public String toString() {
-    return "SegmentCoreReader(owner=" + owner + ")";
   }
 }

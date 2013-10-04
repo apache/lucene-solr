@@ -132,7 +132,7 @@ public class QueryUtils {
   
   public static void purgeFieldCache(IndexReader r) throws IOException {
     // this is just a hack, to get an atomic reader that contains all subreaders for insanity checks
-    FieldCache.DEFAULT.purge(SlowCompositeReaderWrapper.wrap(r));
+    FieldCache.DEFAULT.purgeByCacheKey(SlowCompositeReaderWrapper.wrap(r).getCoreCacheKey());
   }
   
   /** This is a MultiReader that can be used for randomly wrapping other readers
