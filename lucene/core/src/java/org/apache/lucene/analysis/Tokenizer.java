@@ -85,8 +85,9 @@ public abstract class Tokenizer extends TokenStream {
   public final void setReader(Reader input) throws IOException {
     if (input == null) {
       throw new NullPointerException("input must not be null");
+    } else if (this.input != ILLEGAL_STATE_READER) {
+      throw new IllegalStateException("TokenStream contract violation: close() call missing");
     }
-    this.input = ILLEGAL_STATE_READER;
     this.inputPending = input;
     assert setReaderTestPoint();
   }

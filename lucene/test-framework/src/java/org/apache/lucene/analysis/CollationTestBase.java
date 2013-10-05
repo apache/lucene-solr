@@ -266,6 +266,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
       termAtt.fillBytesRef();
       // ensure we make a copy of the actual bytes too
       map.put(term, BytesRef.deepCopyOf(bytes));
+      assertFalse(ts.incrementToken());
+      ts.end();
+      ts.close();
     }
     
     Thread threads[] = new Thread[numThreads];
@@ -284,6 +287,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
               assertTrue(ts.incrementToken());
               termAtt.fillBytesRef();
               assertEquals(expected, bytes);
+              assertFalse(ts.incrementToken());
+              ts.end();
+              ts.close();
             }
           } catch (IOException e) {
             throw new RuntimeException(e);

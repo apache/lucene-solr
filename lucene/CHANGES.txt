@@ -80,6 +80,10 @@ New Features
   on best effort which was not user-friendly.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-5240: Tokenizers now throw an IllegalStateException if the
+  consumer neglects to call close() on the previous stream before consuming
+  the next one. (Uwe Schindler, Robert Muir)
+
 * LUCENE-5214: Add new FreeTextSuggester, to predict the next word
   using a simple ngram language model.  This is useful for the "long
   tail" suggestions, when a primary suggester fails to find a
