@@ -103,6 +103,9 @@ Bug Fixes
 
 * SOLR-5301: DELETEALIAS command prints CREATEALIAS in logs (janhoy)
 
+* SOLR-5255: Remove unnecessary call to fetch and watch live nodes in ZkStateReader
+  cluster watcher. (Jessica Cheng via shalin)
+
 Security
 ----------------------
 

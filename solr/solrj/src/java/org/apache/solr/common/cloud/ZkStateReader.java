@@ -218,11 +218,6 @@ public class ZkStateReader {
               Stat stat = new Stat();
               byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
-              List<String> liveNodes = zkClient.getChildren(
-                  LIVE_NODES_ZKNODE, this, true);
-     
-              Set<String> liveNodesSet = new HashSet<String>();
-              liveNodesSet.addAll(liveNodes);
               Set<String> ln = ZkStateReader.this.clusterState.getLiveNodes();
               ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln);
               // update volatile
