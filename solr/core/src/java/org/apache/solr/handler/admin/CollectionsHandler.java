@@ -370,12 +370,15 @@ public class CollectionsHandler extends RequestHandlerBase {
     String name = req.getParams().required().get("collection");
     // TODO : add support for multiple shards
     String shard = req.getParams().required().get("shard");
-    // TODO : add support for shard range
+    String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
 
     Map<String,Object> props = new HashMap<String,Object>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
     props.put("collection", name);
     props.put(ZkStateReader.SHARD_ID_PROP, shard);
+    if (rangesStr != null)  {
+      props.put(CoreAdminParams.RANGES, rangesStr);
+    }
 
     ZkNodeProps m = new ZkNodeProps(props);
 

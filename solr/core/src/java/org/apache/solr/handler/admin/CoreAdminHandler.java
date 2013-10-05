@@ -231,7 +231,22 @@ public class CoreAdminHandler extends RequestHandlerBase {
     List<DocRouter.Range> ranges = null;
 
     String[] pathsArr = params.getParams("path");
-    String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
+    String rangesStr = params.get(CoreAdminParams.RANGES);    // ranges=a-b,c-d,e-f
+    if (rangesStr != null)  {
+      String[] rangesArr = rangesStr.split(",");
+      if (rangesArr.length == 0 || rangesArr.length == 1) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least two ranges specified to split an index");
+      } else  {
+        ranges = new ArrayList<DocRouter.Range>(rangesArr.length);
+        for (String r : rangesArr) {
+          try {
+            ranges.add(DocRouter.DEFAULT.fromString(r));
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Exception parsing hexadecimal hash range: " + r, e);
+          }
+        }
+      }
+    }
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
 
@@ -257,9 +272,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = clusterState.getSlice(collectionName, sliceName);
-        DocRouter.Range currentRange = slice.getRange();
         router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-        ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
+        if (ranges == null) {
+          DocRouter.Range currentRange = slice.getRange();
+          ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
+        }
         Map m = (Map) collection.get(DOC_ROUTER);
         if (m != null)  {
           routeFieldName = (String) m.get("field");
