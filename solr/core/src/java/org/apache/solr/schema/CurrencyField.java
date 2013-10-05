@@ -148,7 +148,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       provider = c.newInstance();
       provider.init(args);
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error instantiating exhange rate provider "+exchangeRateProviderClass+": " + e.getMessage(), e);
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Error instantiating exchange rate provider "+exchangeRateProviderClass+": " + e.getMessage(), e);
     }
   }
 
