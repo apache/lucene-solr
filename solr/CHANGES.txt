@@ -84,7 +84,10 @@ New Features
   (shalin)
  
 * SOLR-5274: Allow JettySolrRunner SSL config to be specified via a constructor.
-  (Mark Miller) 
+  (Mark Miller)
+
+* SOLR-5300: Shards can be split by specifying arbitrary number of hash ranges
+  within the shard's hash range. (shalin)
 
 Bug Fixes
 ----------------------

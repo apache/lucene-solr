@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.http.params.CoreConnectionPNames;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -45,6 +44,7 @@ import org.junit.Before;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,7 +123,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
-    final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
+    List<DocRouter.Range> subRanges = new ArrayList<DocRouter.Range>();
+    if (usually())  {
+      List<DocRouter.Range> ranges = router.partitionRange(4, shard1Range);
+      // 75% of range goes to shard1_0 and the rest to shard1_1
+      subRanges.add(new DocRouter.Range(ranges.get(0).min, ranges.get(2).max));
+      subRanges.add(ranges.get(3));
+    } else  {
+      subRanges = router.partitionRange(2, shard1Range);
+    }
+    final List<DocRouter.Range> ranges = subRanges;
     final int[] docCounts = new int[ranges.size()];
     int numReplicas = shard1.getReplicas().size();
 
@@ -167,7 +176,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       for (int i = 0; i < 3; i++) {
         try {
-          splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+          splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges);
           log.info("Layout after split: \n");
           printLayout();
           break;
@@ -252,7 +261,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     for (int i = 0; i < 3; i++) {
       try {
-        splitShard(collectionName, SHARD1);
+        splitShard(collectionName, SHARD1, null);
         break;
       } catch (HttpSolrServer.RemoteSolrException e) {
         if (e.code() != 500) {
@@ -339,11 +348,21 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  protected void splitShard(String collection, String shardId) throws SolrServerException, IOException {
+  protected void splitShard(String collection, String shardId, List<DocRouter.Range> subRanges) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.SPLITSHARD.toString());
     params.set("collection", collection);
     params.set("shard", shardId);
+    if (subRanges != null)  {
+      StringBuilder ranges = new StringBuilder();
+      for (int i = 0; i < subRanges.size(); i++) {
+        DocRouter.Range subRange = subRanges.get(i);
+        ranges.append(subRange.toString());
+        if (i < subRanges.size() - 1)
+          ranges.append(",");
+      }
+      params.set("ranges", ranges.toString());
+    }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 

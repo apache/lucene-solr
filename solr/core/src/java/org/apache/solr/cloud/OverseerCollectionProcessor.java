@@ -484,9 +484,32 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       range = new PlainIdRouter().fullRange();
     }
 
-    // todo: fixed to two partitions?
-    // todo: accept the range as a param to api?
-    List<DocRouter.Range> subRanges = router.partitionRange(2, range);
+    List<DocRouter.Range> subRanges = null;
+    String rangesStr = message.getStr(CoreAdminParams.RANGES);
+    if (rangesStr != null)  {
+      String[] ranges = rangesStr.split(",");
+      if (ranges.length == 0 || ranges.length == 1) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least two ranges specified to split a shard");
+      } else  {
+        subRanges = new ArrayList<DocRouter.Range>(ranges.length);
+        for (int i = 0; i < ranges.length; i++) {
+          String r = ranges[i];
+          try {
+            subRanges.add(DocRouter.DEFAULT.fromString(r));
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Exception in parsing hexadecimal hash range: " + r, e);
+          }
+          if (!subRanges.get(i).isSubsetOf(range)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Specified hash range: " + r + " is not a subset of parent shard's range: " + range.toString());
+          }
+        }
+      }
+    } else  {
+      // todo: fixed to two partitions?
+      subRanges = router.partitionRange(2, range);
+    }
+
     try {
       List<String> subSlices = new ArrayList<String>(subRanges.size());
       List<String> subShardNames = new ArrayList<String>(subRanges.size());
@@ -579,6 +602,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         String subShardName = subShardNames.get(i);
         params.add(CoreAdminParams.TARGET_CORE, subShardName);
       }
+      params.set(CoreAdminParams.RANGES, rangesStr);
 
       sendShardRequest(parentShardLeader.getNodeName(), params);
       collectShardResponses(results, true, "SPLITSHARD failed to invoke SPLIT core admin command");
