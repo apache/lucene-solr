@@ -217,6 +217,8 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       ts.reset();
       while (ts.incrementToken()) {
       }
+      ts.end();
+      ts.close();
     }
   }
   
@@ -240,6 +242,8 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       while (ts.incrementToken()) {
         assertTrue(UnicodeUtil.validUTF16String(termAtt));
       }
+      ts.end();
+      ts.close();
     }
   }
 
@@ -630,6 +634,8 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       final TokenStream ts = analyzer.tokenStream("ignored", line);
       ts.reset();
       while(ts.incrementToken());
+      ts.end();
+      ts.close();
     }
     String[] sentences = line.split("、|。");
     if (VERBOSE) {
@@ -642,6 +648,8 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
         final TokenStream ts = analyzer.tokenStream("ignored", sentence);
         ts.reset();
         while(ts.incrementToken());
+        ts.end();
+        ts.close();
       }
     }
     if (VERBOSE) {

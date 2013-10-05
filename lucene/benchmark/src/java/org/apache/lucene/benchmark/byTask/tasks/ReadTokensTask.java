@@ -89,6 +89,8 @@ public class ReadTokensTask extends PerfTask {
         termAtt.fillBytesRef();
         tokenCount++;
       }
+      stream.end();
+      stream.close();
     }
     totalTokenCount += tokenCount;
     return tokenCount;

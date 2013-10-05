@@ -59,6 +59,8 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
       while (ts.incrementToken()) {
         assertTrue(UnicodeUtil.validUTF16String(termAtt));
       }
+      ts.end();
+      ts.close();
     }
   }
   

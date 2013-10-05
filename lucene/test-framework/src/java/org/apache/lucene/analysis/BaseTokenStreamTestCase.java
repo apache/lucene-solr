@@ -401,6 +401,20 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       ts.end();
       ts.close();
     }
+    
+    // check for a missing close()
+    ts = a.tokenStream("bogus", input);
+    ts.reset();
+    while (ts.incrementToken()) {}
+    ts.end();
+    try {
+      ts = a.tokenStream("bogus", input);
+      fail("didn't get expected exception when close() not called");
+    } catch (IllegalStateException expected) {
+      // ok
+    } finally {
+      ts.close();
+    }
   }
 
   // simple utility method for testing stemmers

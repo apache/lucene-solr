@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.NumericType;
@@ -51,8 +49,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -111,12 +107,6 @@ public class TrieField extends PrimitiveFieldType {
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);
       }
     }
-
-    CharFilterFactory[] filterFactories = new CharFilterFactory[0];
-    TokenFilterFactory[] tokenFilterFactories = new TokenFilterFactory[0];
-    analyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(type, precisionStep), tokenFilterFactories);
-    // for query time we only need one token, so we use the biggest possible precisionStep:
-    queryAnalyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(type, Integer.MAX_VALUE), tokenFilterFactories);
   }
 
   @Override
@@ -223,7 +213,7 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public boolean isTokenized() {
-    return true;
+    return false;
   }
 
   @Override
@@ -382,24 +372,29 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public void readableToIndexed(CharSequence val, BytesRef result) {
     String s = val.toString();
-    switch (type) {
-      case INTEGER:
-        NumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, result);
-        break;
-      case FLOAT:
-        NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
-        break;
-      case LONG:
-        NumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, result);
-        break;
-      case DOUBLE:
-        NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
-        break;
-      case DATE:
-        NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, result);
-        break;
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+    try {
+      switch (type) {
+        case INTEGER:
+          NumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, result);
+          break;
+        case FLOAT:
+          NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
+          break;
+        case LONG:
+          NumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, result);
+          break;
+        case DOUBLE:
+          NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
+          break;
+        case DATE:
+          NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, result);
+          break;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+      }
+    } catch (NumberFormatException nfe) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "Invalid Number: " + val);
     }
   }
 
