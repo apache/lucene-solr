@@ -109,6 +109,9 @@ Bug Fixes
 * SOLR-5255: Remove unnecessary call to fetch and watch live nodes in ZkStateReader
   cluster watcher. (Jessica Cheng via shalin)
 
+* SOLR-5305: Admin UI - Reloading System-Information on Dashboard does not work 
+  anymore (steffkes)
+
 Security
 ----------------------
 
