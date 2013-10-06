@@ -1273,8 +1273,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       docCount += numDocs;
 
-      // We should hit exc when trying to write the live
-      // docs, here:
       IndexReader r = w.getReader();
       assertEquals(docCount-deleteCount, r.numDocs());
       r.close();
