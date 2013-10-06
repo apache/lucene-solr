@@ -1228,21 +1228,21 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     d.close();
   }
 
+  private static class FakeIOException extends IOException {
+  }
+
   // Make sure if we hit disk full, and then later disk
   // frees up, and we successfully close IW or open an NRT
   // reader, we don't lose any deletes:
   public void testNoLostDeletesOnDiskFull() throws Exception {
 
     int deleteCount = 0;
-    int idUpto = 0;
     int docBase = 0;
     int docCount = 0;
 
     MockDirectoryWrapper dir = newMockDirectory();
     final AtomicBoolean shouldFail = new AtomicBoolean();
     dir.failOn(new MockDirectoryWrapper.Failure() {
-
-          boolean failedAlready;
 
           @Override
           public void eval(MockDirectoryWrapper dir) throws IOException {
@@ -1259,7 +1259,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                       new Throwable().printStackTrace(System.out);
                     }
                     shouldFail.set(false);
-                    throw new IOException("now fail on purpose");
+                    throw new FakeIOException();
                   } else {
                     break;
                   }
@@ -1302,7 +1302,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
 
         w.close();
-      } catch (IOException ioe) {
+      } catch (FakeIOException ioe) {
         // expected
         if (VERBOSE) {
           System.out.println("TEST: w.close() hit expected IOE");
