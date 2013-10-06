@@ -1227,7 +1227,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testNoLostDeletesOnDiskFull() throws Exception {
 
     int deleteCount = 0;
-    int idUpto = 0;
     int docBase = 0;
     int docCount = 0;
 
