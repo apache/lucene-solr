@@ -157,6 +157,10 @@ public class TestJavascriptFunction extends LuceneTestCase {
     assertEvaluatesTo("floor(-1.1)", -2);
   }
   
+  public void testHaversinMethod() throws Exception {
+    assertEvaluatesTo("haversin(40.7143528,-74.0059731,40.759011,-73.9844722)", 5.285885589128);
+  }
+  
   public void testLnMethod() throws Exception {
     assertEvaluatesTo("ln(0)", Double.NEGATIVE_INFINITY);
     assertEvaluatesTo("ln(" + Math.E + ")", 1);

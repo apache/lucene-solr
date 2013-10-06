@@ -1,6 +1,7 @@
 package org.apache.lucene.expressions;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -10,6 +11,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -51,18 +53,24 @@ public class  TestDemoExpressions extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 5));
+    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
     doc.add(newStringField("id", "2", Field.Store.YES));
     doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 20));
+    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
     doc.add(newStringField("id", "3", Field.Store.YES));
     doc.add(newTextField("body", "crappy contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 2));
+    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
     iw.addDocument(doc);
     
     reader = iw.getReader();
@@ -179,5 +187,23 @@ public class  TestDemoExpressions extends LuceneTestCase {
       float actual = ((Double)d.fields[0]).floatValue();
       assertEquals(expected, actual, CheckHits.explainToleranceDelta(expected, actual));
     }
+  }
+  
+  public void testDistanceSort() throws Exception {
+    Expression distance = JavascriptCompiler.compile("haversin(40.7143528,-74.0059731,latitude,longitude)");
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
+    bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
+    Sort sort = new Sort(distance.getSortField(bindings, false));
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+    
+    FieldDoc d = (FieldDoc) td.scoreDocs[0];
+    assertEquals(0.4621D, (Double)d.fields[0], 1E-4);
+    
+    d = (FieldDoc) td.scoreDocs[1];
+    assertEquals(1.0550D, (Double)d.fields[0], 1E-4);
+    
+    d = (FieldDoc) td.scoreDocs[2];
+    assertEquals(5.2859D, (Double)d.fields[0], 1E-4);
   }
 }
