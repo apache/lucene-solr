@@ -47,6 +47,18 @@ import org.apache.lucene.util.RefCount;
  */
 public final class SegmentReader extends AtomicReader {
 
+  private static final class DocValuesRefCount extends RefCount<DocValuesProducer> {
+
+    public DocValuesRefCount(DocValuesProducer object) {
+      super(object);
+    }
+    
+    @Override
+    protected void release() throws IOException {
+      object.close();
+    }
+  }
+  
   private final SegmentInfoPerCommit si;
   private final Bits liveDocs;
 
@@ -261,7 +273,7 @@ public final class SegmentReader extends AtomicReader {
     return genInfos;
   }
 
-  private RefCount<DocValuesProducer> newDocValuesProducer(SegmentInfoPerCommit si, IOContext context, Directory dir, 
+  private RefCount<DocValuesProducer> newDocValuesProducer(SegmentInfoPerCommit si, IOContext context, Directory dir,
       DocValuesFormat dvFormat, Long gen, List<FieldInfo> infos) throws IOException {
     Directory dvDir = dir;
     String segmentSuffix = "";
@@ -272,12 +284,7 @@ public final class SegmentReader extends AtomicReader {
 
     // set SegmentReadState to list only the fields that are relevant to that gen
     SegmentReadState srs = new SegmentReadState(dvDir, si.info, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])), context, segmentSuffix);
-    return new RefCount<DocValuesProducer>(dvFormat.fieldsProducer(srs)) {
-      @Override
-      protected void release() throws IOException {
-        object.close();
-      }
-    };
+    return new DocValuesRefCount(dvFormat.fieldsProducer(srs));
   }
 
   @Override
@@ -302,6 +309,10 @@ public final class SegmentReader extends AtomicReader {
           }
         }
       }
+      genDVProducers.clear();
+      dvProducers.clear();
+      docValuesLocal.close();
+      docsWithFieldLocal.close();
       if (t != null) {
         if (t instanceof IOException) throw (IOException) t;
         if (t instanceof RuntimeException) throw (RuntimeException) t;
