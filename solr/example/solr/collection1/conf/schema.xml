@@ -106,16 +106,20 @@
       trailing underscores (e.g. _version_) are reserved.
    -->
 
-   <!-- _version_ is a required field, DO NOT REMOVE. --> 
+   <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
+      or Solr won't start. _version_ and update log are required for SolrCloud
+   --> 
    <field name="_version_" type="long" indexed="true" stored="true"/>
    
    <!-- points to the root document of a block of nested documents. Required for nested
-      document support, may be removed otherwise -->
+      document support, may be removed otherwise
+   -->
    <field name="_root_" type="string" indexed="true" stored="false"/>
 
-   <!-- While not required, a <uniqueKey> is present in almost all Solr installations,
-      only remove the "id" field if you have very good reason to. See the 
-      <uniqueKey> declaration below -->   
+   <!-- Only remove the "id" field if you have a very good reason to. While not strictly
+     required, it is highly recommended. A <uniqueKey> is present in almost all Solr 
+     installations. See the <uniqueKey> declaration below where <uniqueKey> is set to "id".
+   -->   
    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
         
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
