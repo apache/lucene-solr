@@ -575,8 +575,8 @@ class DocumentsWriterPerThread {
     } finally {
       if (!success) {
         if (infoStream.isEnabled("DWPT")) {
-          infoStream.message("DWPT", "hit exception " +
-              "reating compound file for newly flushed segment " + newSegment.info.name);
+          infoStream.message("DWPT",
+                             "hit exception creating compound file for newly flushed segment " + newSegment.info.name);
         }
       }
     }

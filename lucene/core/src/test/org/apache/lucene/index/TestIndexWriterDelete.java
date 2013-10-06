@@ -1217,4 +1217,100 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  // Make sure if we hit disk full, and then later disk
+  // frees up, and we successfully close IW or open an NRT
+  // reader, we don't lose any deletes:
+  public void testNoLostDeletesOnDiskFull() throws Exception {
+
+    int deleteCount = 0;
+    int idUpto = 0;
+    int docBase = 0;
+    int docCount = 0;
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    final AtomicBoolean shouldFail = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+
+          boolean failedAlready;
+
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            StackTraceElement[] trace = new Exception().getStackTrace();
+            if (shouldFail.get()) {
+              for (int i = 0; i < trace.length; i++) {
+                if ("writeLiveDocs".equals(trace[i].getMethodName())) {
+                  // Only sometimes throw the exc, so we get
+                  // it sometimes on creating the file, on
+                  // flushing buffer, on closing the file:
+                  if (random().nextInt(3) == 2) {
+                    if (VERBOSE) {
+                      System.out.println("TEST: now fail; exc:");
+                      new Throwable().printStackTrace(System.out);
+                    }
+                    shouldFail.set(false);
+                    throw new IOException("now fail on purpose");
+                  } else {
+                    break;
+                  }
+                }
+              }
+            }
+          }
+      });
+
+    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+      int numDocs = atLeast(100);
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " numDocs=" + numDocs + " docBase=" + docBase);
+      }
+      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      IndexWriter w = new IndexWriter(dir, iwc);
+      for(int i=0;i<numDocs;i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", ""+(docBase+i), Field.Store.NO));
+        w.addDocument(doc);
+      }
+      docCount += numDocs;
+
+      // We should hit exc when trying to write the live
+      // docs, here:
+      IndexReader r = w.getReader();
+      assertEquals(docCount-deleteCount, r.numDocs());
+      r.close();
+
+      // TODO: we could also install an infoStream and try
+      // to fail in "more evil" places inside BDS
+
+      shouldFail.set(true);
+
+      try {
+
+        for(int i=0;i<numDocs;i++) {
+          if (random().nextInt(10) == 7) {
+            deleteCount++;
+            w.deleteDocuments(new Term("id", ""+(docBase+i)));
+          }
+        }
+
+        w.close();
+      } catch (IOException ioe) {
+        // expected
+        if (VERBOSE) {
+          System.out.println("TEST: w.close() hit expected IOE");
+        }
+        // No exception should happen here (we only fail once):
+        w.close();
+      }
+      shouldFail.set(false);
+
+      r = DirectoryReader.open(dir);
+      assertEquals(docCount-deleteCount, r.numDocs());
+      r.close();
+
+      docBase += numDocs;
+    }
+
+    dir.close();
+  }
 }
