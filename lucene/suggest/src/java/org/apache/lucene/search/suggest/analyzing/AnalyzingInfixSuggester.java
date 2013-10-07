@@ -352,9 +352,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       occur = BooleanClause.Occur.SHOULD;
     }
 
-    try {
+    try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
       //long t0 = System.currentTimeMillis();
-      TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
       ts.reset();
       final CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       final OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -464,40 +463,39 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  result is set on each {@link
    *  LookupResult#highlightKey} member. */
   protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
-    TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    ts.reset();
-    StringBuilder sb = new StringBuilder();
-    int upto = 0;
-    while (ts.incrementToken()) {
-      String token = termAtt.toString();
-      int startOffset = offsetAtt.startOffset();
+    try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      ts.reset();
+      StringBuilder sb = new StringBuilder();
+      int upto = 0;
+      while (ts.incrementToken()) {
+        String token = termAtt.toString();
+        int startOffset = offsetAtt.startOffset();
+        int endOffset = offsetAtt.endOffset();
+        if (upto < startOffset) {
+          addNonMatch(sb, text.substring(upto, startOffset));
+          upto = startOffset;
+        } else if (upto > startOffset) {
+          continue;
+        }
+        
+        if (matchedTokens.contains(token)) {
+          // Token matches.
+          addWholeMatch(sb, text.substring(startOffset, endOffset), token);
+          upto = endOffset;
+        } else if (prefixToken != null && token.startsWith(prefixToken)) {
+          addPrefixMatch(sb, text.substring(startOffset, endOffset), token, prefixToken);
+          upto = endOffset;
+        }
+      }
+      ts.end();
       int endOffset = offsetAtt.endOffset();
-      if (upto < startOffset) {
-        addNonMatch(sb, text.substring(upto, startOffset));
-        upto = startOffset;
-      } else if (upto > startOffset) {
-        continue;
+      if (upto < endOffset) {
+        addNonMatch(sb, text.substring(upto));
       }
-
-      if (matchedTokens.contains(token)) {
-        // Token matches.
-        addWholeMatch(sb, text.substring(startOffset, endOffset), token);
-        upto = endOffset;
-      } else if (prefixToken != null && token.startsWith(prefixToken)) {
-        addPrefixMatch(sb, text.substring(startOffset, endOffset), token, prefixToken);
-        upto = endOffset;
-      }
+      return sb.toString();
     }
-    ts.end();
-    int endOffset = offsetAtt.endOffset();
-    if (upto < endOffset) {
-      addNonMatch(sb, text.substring(upto));
-    }
-    ts.close();
-
-    return sb.toString();
   }
 
   /** Called while highlighting a single result, to append a

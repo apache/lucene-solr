@@ -91,20 +91,19 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
       throw new IOException("You must first call Classifier#train");
     }
     Long output = 0l;
-    TokenStream tokenStream = analyzer.tokenStream(textFieldName,
-        new StringReader(text));
-    CharTermAttribute charTermAttribute = tokenStream
+    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
+      CharTermAttribute charTermAttribute = tokenStream
         .addAttribute(CharTermAttribute.class);
-    tokenStream.reset();
-    while (tokenStream.incrementToken()) {
-      String s = charTermAttribute.toString();
-      Long d = Util.get(fst, new BytesRef(s));
-      if (d != null) {
-        output += d;
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        String s = charTermAttribute.toString();
+        Long d = Util.get(fst, new BytesRef(s));
+        if (d != null) {
+          output += d;
+        }
       }
+      tokenStream.end();
     }
-    tokenStream.end();
-    tokenStream.close();
 
     return new ClassificationResult<>(output >= threshold, output.doubleValue());
   }

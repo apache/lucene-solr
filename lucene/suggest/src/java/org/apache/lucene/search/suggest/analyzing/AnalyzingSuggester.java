@@ -827,14 +827,15 @@ public class AnalyzingSuggester extends Lookup {
   }
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
- // Analyze surface form:
-    TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString());
+    // Analyze surface form:
+    Automaton automaton = null;
+    try (TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString())) {
 
-    // Create corresponding automaton: labels are bytes
-    // from each analyzed token, with byte 0 used as
-    // separator between tokens:
-    Automaton automaton = ts2a.toAutomaton(ts);
-    ts.close();
+      // Create corresponding automaton: labels are bytes
+      // from each analyzed token, with byte 0 used as
+      // separator between tokens:
+      automaton = ts2a.toAutomaton(ts);
+    }
 
     replaceSep(automaton);
     automaton = convertAutomaton(automaton);
@@ -854,9 +855,10 @@ public class AnalyzingSuggester extends Lookup {
   final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
-    TokenStream ts = queryAnalyzer.tokenStream("", key.toString());
-    Automaton automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
-    ts.close();
+    Automaton automaton = null;
+    try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
+      automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
+    }
 
     // TODO: we could use the end offset to "guess"
     // whether the final token was a partial token; this

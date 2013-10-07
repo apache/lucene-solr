@@ -72,34 +72,36 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   @SuppressWarnings("unused")
   private void dumpTokens(String input) throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", input);
-    ts.reset();
+    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", input)) {
+      ts.reset();
 
-    MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
-    CharTermAttribute charTerm = ts.getAttribute(CharTermAttribute.class);
-    while (ts.incrementToken()) {
-      System.out.println(charTerm.toString() + " => " + attribute.getTags());
+      MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
+      CharTermAttribute charTerm = ts.getAttribute(CharTermAttribute.class);
+      while (ts.incrementToken()) {
+        System.out.println(charTerm.toString() + " => " + attribute.getTags());
+      }
+      ts.end();
     }
   }
 
   /** Test reuse of MorfologikFilter with leftover stems. */
   public final void testLeftoverStems() throws IOException {
     Analyzer a = getTestAnalyzer();
-    TokenStream ts_1 = a.tokenStream("dummy", "liście");
-    CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
-    ts_1.reset();
-    ts_1.incrementToken();
-    assertEquals("first stream", "liście", termAtt_1.toString());
-    ts_1.end();
-    ts_1.close();
+    try (TokenStream ts_1 = a.tokenStream("dummy", "liście")) {
+      CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
+      ts_1.reset();
+      ts_1.incrementToken();
+      assertEquals("first stream", "liście", termAtt_1.toString());
+      ts_1.end();
+    }
 
-    TokenStream ts_2 = a.tokenStream("dummy", "danych");
-    CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
-    ts_2.reset();
-    ts_2.incrementToken();
-    assertEquals("second stream", "dany", termAtt_2.toString());
-    ts_2.end();
-    ts_2.close();
+    try (TokenStream ts_2 = a.tokenStream("dummy", "danych")) {
+      CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
+      ts_2.reset();
+      ts_2.incrementToken();
+      assertEquals("second stream", "dany", termAtt_2.toString());
+      ts_2.end();
+    }
   }
 
   /** Test stemming of mixed-case tokens. */
@@ -140,28 +142,27 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście");
-
-    ts.reset();
-    assertPOSToken(ts, "liście",  
+    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście")) {
+      ts.reset();
+      assertPOSToken(ts, "liście",  
         "subst:sg:acc:n2",
         "subst:sg:nom:n2",
         "subst:sg:voc:n2");
 
-    assertPOSToken(ts, "liść",  
+      assertPOSToken(ts, "liść",  
         "subst:pl:acc:m3",
         "subst:pl:nom:m3",
         "subst:pl:voc:m3");
 
-    assertPOSToken(ts, "list",  
+      assertPOSToken(ts, "list",  
         "subst:sg:loc:m3",
         "subst:sg:voc:m3");
 
-    assertPOSToken(ts, "lista", 
+      assertPOSToken(ts, "lista", 
         "subst:sg:dat:f",
         "subst:sg:loc:f");
-    ts.end();
-    ts.close();
+      ts.end();
+    }
   }
 
   /** */

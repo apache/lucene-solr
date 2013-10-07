@@ -449,252 +449,251 @@ public class FreeTextSuggester extends Lookup {
 
   /** Retrieve suggestions. */
   public List<LookupResult> lookup(final CharSequence key, int num) throws IOException {
-    TokenStream ts = queryAnalyzer.tokenStream("", key.toString());
-    TermToBytesRefAttribute termBytesAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    PositionLengthAttribute posLenAtt = ts.addAttribute(PositionLengthAttribute.class);
-    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    ts.reset();
-
-    BytesRef[] lastTokens = new BytesRef[grams];
-    //System.out.println("lookup: key='" + key + "'");
-
-    // Run full analysis, but save only the
-    // last 1gram, last 2gram, etc.:
-    BytesRef tokenBytes = termBytesAtt.getBytesRef();
-    int maxEndOffset = -1;
-    boolean sawRealToken = false;
-    while(ts.incrementToken()) {
-      termBytesAtt.fillBytesRef();
-      sawRealToken |= tokenBytes.length > 0;
-      // TODO: this is somewhat iffy; today, ShingleFilter
-      // sets posLen to the gram count; maybe we should make
-      // a separate dedicated att for this?
-      int gramCount = posLenAtt.getPositionLength();
-
-      assert gramCount <= grams;
-
-      // Safety: make sure the recalculated count "agrees":
-      if (countGrams(tokenBytes) != gramCount) {
-        throw new IllegalArgumentException("tokens must not contain separator byte; got token=" + tokenBytes + " but gramCount=" + gramCount + " does not match recalculated count=" + countGrams(tokenBytes));
+    try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
+      TermToBytesRefAttribute termBytesAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      PositionLengthAttribute posLenAtt = ts.addAttribute(PositionLengthAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      ts.reset();
+      
+      BytesRef[] lastTokens = new BytesRef[grams];
+      //System.out.println("lookup: key='" + key + "'");
+      
+      // Run full analysis, but save only the
+      // last 1gram, last 2gram, etc.:
+      BytesRef tokenBytes = termBytesAtt.getBytesRef();
+      int maxEndOffset = -1;
+      boolean sawRealToken = false;
+      while(ts.incrementToken()) {
+        termBytesAtt.fillBytesRef();
+        sawRealToken |= tokenBytes.length > 0;
+        // TODO: this is somewhat iffy; today, ShingleFilter
+        // sets posLen to the gram count; maybe we should make
+        // a separate dedicated att for this?
+        int gramCount = posLenAtt.getPositionLength();
+        
+        assert gramCount <= grams;
+        
+        // Safety: make sure the recalculated count "agrees":
+        if (countGrams(tokenBytes) != gramCount) {
+          throw new IllegalArgumentException("tokens must not contain separator byte; got token=" + tokenBytes + " but gramCount=" + gramCount + " does not match recalculated count=" + countGrams(tokenBytes));
+        }
+        maxEndOffset = Math.max(maxEndOffset, offsetAtt.endOffset());
+        lastTokens[gramCount-1] = BytesRef.deepCopyOf(tokenBytes);
       }
-      maxEndOffset = Math.max(maxEndOffset, offsetAtt.endOffset());
-      lastTokens[gramCount-1] = BytesRef.deepCopyOf(tokenBytes);
-    }
-    ts.end();
-
-    if (!sawRealToken) {
-      throw new IllegalArgumentException("no tokens produced by analyzer, or the only tokens were empty strings");
-    }
-
-    // Carefully fill last tokens with _ tokens;
-    // ShingleFilter appraently won't emit "only hole"
-    // tokens:
-    int endPosInc = posIncAtt.getPositionIncrement();
-
-    // Note this will also be true if input is the empty
-    // string (in which case we saw no tokens and
-    // maxEndOffset is still -1), which in fact works out OK
-    // because we fill the unigram with an empty BytesRef
-    // below:
-    boolean lastTokenEnded = offsetAtt.endOffset() > maxEndOffset || endPosInc > 0;
-    ts.close();
-    //System.out.println("maxEndOffset=" + maxEndOffset + " vs " + offsetAtt.endOffset());
-
-    if (lastTokenEnded) {
-      //System.out.println("  lastTokenEnded");
-      // If user hit space after the last token, then
-      // "upgrade" all tokens.  This way "foo " will suggest
-      // all bigrams starting w/ foo, and not any unigrams
-      // starting with "foo":
-      for(int i=grams-1;i>0;i--) {
-        BytesRef token = lastTokens[i-1];
-        if (token == null) {
+      ts.end();
+      
+      if (!sawRealToken) {
+        throw new IllegalArgumentException("no tokens produced by analyzer, or the only tokens were empty strings");
+      }
+      
+      // Carefully fill last tokens with _ tokens;
+      // ShingleFilter appraently won't emit "only hole"
+      // tokens:
+      int endPosInc = posIncAtt.getPositionIncrement();
+      
+      // Note this will also be true if input is the empty
+      // string (in which case we saw no tokens and
+      // maxEndOffset is still -1), which in fact works out OK
+      // because we fill the unigram with an empty BytesRef
+      // below:
+      boolean lastTokenEnded = offsetAtt.endOffset() > maxEndOffset || endPosInc > 0;
+      //System.out.println("maxEndOffset=" + maxEndOffset + " vs " + offsetAtt.endOffset());
+      
+      if (lastTokenEnded) {
+        //System.out.println("  lastTokenEnded");
+        // If user hit space after the last token, then
+        // "upgrade" all tokens.  This way "foo " will suggest
+        // all bigrams starting w/ foo, and not any unigrams
+        // starting with "foo":
+        for(int i=grams-1;i>0;i--) {
+          BytesRef token = lastTokens[i-1];
+          if (token == null) {
+            continue;
+          }
+          token.grow(token.length+1);
+          token.bytes[token.length] = separator;
+          token.length++;
+          lastTokens[i] = token;
+        }
+        lastTokens[0] = new BytesRef();
+      }
+      
+      Arc<Long> arc = new Arc<Long>();
+      
+      BytesReader bytesReader = fst.getBytesReader();
+      
+      // Try highest order models first, and if they return
+      // results, return that; else, fallback:
+      double backoff = 1.0;
+      
+      List<LookupResult> results = new ArrayList<LookupResult>(num);
+      
+      // We only add a given suffix once, from the highest
+      // order model that saw it; for subsequent lower order
+      // models we skip it:
+      final Set<BytesRef> seen = new HashSet<BytesRef>();
+      
+      for(int gram=grams-1;gram>=0;gram--) {
+        BytesRef token = lastTokens[gram];
+        // Don't make unigram predictions from empty string:
+        if (token == null || (token.length == 0 && key.length() > 0)) {
+          // Input didn't have enough tokens:
+          //System.out.println("  gram=" + gram + ": skip: not enough input");
           continue;
         }
-        token.grow(token.length+1);
-        token.bytes[token.length] = separator;
-        token.length++;
-        lastTokens[i] = token;
-      }
-      lastTokens[0] = new BytesRef();
-    }
-
-    Arc<Long> arc = new Arc<Long>();
-
-    BytesReader bytesReader = fst.getBytesReader();
-
-    // Try highest order models first, and if they return
-    // results, return that; else, fallback:
-    double backoff = 1.0;
-
-    List<LookupResult> results = new ArrayList<LookupResult>(num);
-
-    // We only add a given suffix once, from the highest
-    // order model that saw it; for subsequent lower order
-    // models we skip it:
-    final Set<BytesRef> seen = new HashSet<BytesRef>();
-
-    for(int gram=grams-1;gram>=0;gram--) {
-      BytesRef token = lastTokens[gram];
-      // Don't make unigram predictions from empty string:
-      if (token == null || (token.length == 0 && key.length() > 0)) {
-        // Input didn't have enough tokens:
-        //System.out.println("  gram=" + gram + ": skip: not enough input");
-        continue;
-      }
-
-      if (endPosInc > 0 && gram <= endPosInc) {
-        // Skip hole-only predictions; in theory we
-        // shouldn't have to do this, but we'd need to fix
-        // ShingleFilter to produce only-hole tokens:
-        //System.out.println("  break: only holes now");
-        break;
-      }
-
-      //System.out.println("try " + (gram+1) + " gram token=" + token.utf8ToString());
-
-      // TODO: we could add fuzziness here
-      // match the prefix portion exactly
-      //Pair<Long,BytesRef> prefixOutput = null;
-      Long prefixOutput = null;
-      try {
-        prefixOutput = lookupPrefix(fst, bytesReader, token, arc);
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
-      //System.out.println("  prefixOutput=" + prefixOutput);
-
-      if (prefixOutput == null) {
-        // This model never saw this prefix, e.g. the
-        // trigram model never saw context "purple mushroom"
-        backoff *= ALPHA;
-        continue;
-      }
-
-      // TODO: we could do this division at build time, and
-      // bake it into the FST?
-
-      // Denominator for computing scores from current
-      // model's predictions:
-      long contextCount = totTokens;
-
-      BytesRef lastTokenFragment = null;
-
-      for(int i=token.length-1;i>=0;i--) {
-        if (token.bytes[token.offset+i] == separator) {
-          BytesRef context = new BytesRef(token.bytes, token.offset, i);
-          Long output = Util.get(fst, Util.toIntsRef(context, new IntsRef()));
-          assert output != null;
-          contextCount = decodeWeight(output);
-          lastTokenFragment = new BytesRef(token.bytes, token.offset + i + 1, token.length - i - 1);
+        
+        if (endPosInc > 0 && gram <= endPosInc) {
+          // Skip hole-only predictions; in theory we
+          // shouldn't have to do this, but we'd need to fix
+          // ShingleFilter to produce only-hole tokens:
+          //System.out.println("  break: only holes now");
           break;
         }
-      }
-
-      final BytesRef finalLastToken;
-
-      if (lastTokenFragment == null) {
-        finalLastToken = BytesRef.deepCopyOf(token);
-      } else {
-        finalLastToken = BytesRef.deepCopyOf(lastTokenFragment);
-      }
-      assert finalLastToken.offset == 0;
-
-      CharsRef spare = new CharsRef();
-
-      // complete top-N
-      MinResult<Long> completions[] = null;
-      try {
-
-        // Because we store multiple models in one FST
-        // (1gram, 2gram, 3gram), we must restrict the
-        // search so that it only considers the current
-        // model.  For highest order model, this is not
-        // necessary since all completions in the FST
-        // must be from this model, but for lower order
-        // models we have to filter out the higher order
-        // ones:
-
-        // Must do num+seen.size() for queue depth because we may
-        // reject up to seen.size() paths in acceptResult():
-        Util.TopNSearcher<Long> searcher = new Util.TopNSearcher<Long>(fst, num, num+seen.size(), weightComparator) {
-
-          BytesRef scratchBytes = new BytesRef();
-
-          @Override
-          protected void addIfCompetitive(Util.FSTPath<Long> path) {
-            if (path.arc.label != separator) {
-              //System.out.println("    keep path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
-              super.addIfCompetitive(path);
-            } else {
-              //System.out.println("    prevent path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
-            }
-          }
-
-          @Override
-          protected boolean acceptResult(IntsRef input, Long output) {
-            Util.toBytesRef(input, scratchBytes);
-            finalLastToken.grow(finalLastToken.length + scratchBytes.length);
-            int lenSav = finalLastToken.length;
-            finalLastToken.append(scratchBytes);
-            //System.out.println("    accept? input='" + scratchBytes.utf8ToString() + "'; lastToken='" + finalLastToken.utf8ToString() + "'; return " + (seen.contains(finalLastToken) == false));
-            boolean ret = seen.contains(finalLastToken) == false;
-
-            finalLastToken.length = lenSav;
-            return ret;
-          }
-        };
-
-        // since this search is initialized with a single start node 
-        // it is okay to start with an empty input path here
-        searcher.addStartPaths(arc, prefixOutput, true, new IntsRef());
-
-        completions = searcher.search();
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
-
-      int prefixLength = token.length;
-
-      BytesRef suffix = new BytesRef(8);
-      //System.out.println("    " + completions.length + " completions");
-
-      nextCompletion:
-      for (MinResult<Long> completion : completions) {
-        token.length = prefixLength;
-        // append suffix
-        Util.toBytesRef(completion.input, suffix);
-        token.append(suffix);
-
-        //System.out.println("    completion " + token.utf8ToString());
-
-        // Skip this path if a higher-order model already
-        // saw/predicted its last token:
-        BytesRef lastToken = token;
+        
+        //System.out.println("try " + (gram+1) + " gram token=" + token.utf8ToString());
+        
+        // TODO: we could add fuzziness here
+        // match the prefix portion exactly
+        //Pair<Long,BytesRef> prefixOutput = null;
+        Long prefixOutput = null;
+        try {
+          prefixOutput = lookupPrefix(fst, bytesReader, token, arc);
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+        //System.out.println("  prefixOutput=" + prefixOutput);
+        
+        if (prefixOutput == null) {
+          // This model never saw this prefix, e.g. the
+          // trigram model never saw context "purple mushroom"
+          backoff *= ALPHA;
+          continue;
+        }
+        
+        // TODO: we could do this division at build time, and
+        // bake it into the FST?
+        
+        // Denominator for computing scores from current
+        // model's predictions:
+        long contextCount = totTokens;
+        
+        BytesRef lastTokenFragment = null;
+        
         for(int i=token.length-1;i>=0;i--) {
           if (token.bytes[token.offset+i] == separator) {
-            assert token.length-i-1 > 0;
-            lastToken = new BytesRef(token.bytes, token.offset+i+1, token.length-i-1);
+            BytesRef context = new BytesRef(token.bytes, token.offset, i);
+            Long output = Util.get(fst, Util.toIntsRef(context, new IntsRef()));
+            assert output != null;
+            contextCount = decodeWeight(output);
+            lastTokenFragment = new BytesRef(token.bytes, token.offset + i + 1, token.length - i - 1);
             break;
           }
         }
-        if (seen.contains(lastToken)) {
-          //System.out.println("      skip dup " + lastToken.utf8ToString());
-          continue nextCompletion;
+        
+        final BytesRef finalLastToken;
+        
+        if (lastTokenFragment == null) {
+          finalLastToken = BytesRef.deepCopyOf(token);
+        } else {
+          finalLastToken = BytesRef.deepCopyOf(lastTokenFragment);
         }
-        seen.add(BytesRef.deepCopyOf(lastToken));
-        spare.grow(token.length);
-        UnicodeUtil.UTF8toUTF16(token, spare);
-        LookupResult result = new LookupResult(spare.toString(), (long) (Long.MAX_VALUE * backoff * ((double) decodeWeight(completion.output)) / contextCount));
-        results.add(result);
-        assert results.size() == seen.size();
-        //System.out.println("  add result=" + result);
+        assert finalLastToken.offset == 0;
+        
+        CharsRef spare = new CharsRef();
+        
+        // complete top-N
+        MinResult<Long> completions[] = null;
+        try {
+          
+          // Because we store multiple models in one FST
+          // (1gram, 2gram, 3gram), we must restrict the
+          // search so that it only considers the current
+          // model.  For highest order model, this is not
+          // necessary since all completions in the FST
+          // must be from this model, but for lower order
+          // models we have to filter out the higher order
+          // ones:
+          
+          // Must do num+seen.size() for queue depth because we may
+          // reject up to seen.size() paths in acceptResult():
+          Util.TopNSearcher<Long> searcher = new Util.TopNSearcher<Long>(fst, num, num+seen.size(), weightComparator) {
+            
+            BytesRef scratchBytes = new BytesRef();
+            
+            @Override
+            protected void addIfCompetitive(Util.FSTPath<Long> path) {
+              if (path.arc.label != separator) {
+                //System.out.println("    keep path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
+                super.addIfCompetitive(path);
+              } else {
+                //System.out.println("    prevent path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
+              }
+            }
+            
+            @Override
+            protected boolean acceptResult(IntsRef input, Long output) {
+              Util.toBytesRef(input, scratchBytes);
+              finalLastToken.grow(finalLastToken.length + scratchBytes.length);
+              int lenSav = finalLastToken.length;
+              finalLastToken.append(scratchBytes);
+              //System.out.println("    accept? input='" + scratchBytes.utf8ToString() + "'; lastToken='" + finalLastToken.utf8ToString() + "'; return " + (seen.contains(finalLastToken) == false));
+              boolean ret = seen.contains(finalLastToken) == false;
+              
+              finalLastToken.length = lenSav;
+              return ret;
+            }
+          };
+          
+          // since this search is initialized with a single start node 
+          // it is okay to start with an empty input path here
+          searcher.addStartPaths(arc, prefixOutput, true, new IntsRef());
+          
+          completions = searcher.search();
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+        
+        int prefixLength = token.length;
+        
+        BytesRef suffix = new BytesRef(8);
+        //System.out.println("    " + completions.length + " completions");
+        
+        nextCompletion:
+          for (MinResult<Long> completion : completions) {
+            token.length = prefixLength;
+            // append suffix
+            Util.toBytesRef(completion.input, suffix);
+            token.append(suffix);
+            
+            //System.out.println("    completion " + token.utf8ToString());
+            
+            // Skip this path if a higher-order model already
+            // saw/predicted its last token:
+            BytesRef lastToken = token;
+            for(int i=token.length-1;i>=0;i--) {
+              if (token.bytes[token.offset+i] == separator) {
+                assert token.length-i-1 > 0;
+                lastToken = new BytesRef(token.bytes, token.offset+i+1, token.length-i-1);
+                break;
+              }
+            }
+            if (seen.contains(lastToken)) {
+              //System.out.println("      skip dup " + lastToken.utf8ToString());
+              continue nextCompletion;
+            }
+            seen.add(BytesRef.deepCopyOf(lastToken));
+            spare.grow(token.length);
+            UnicodeUtil.UTF8toUTF16(token, spare);
+            LookupResult result = new LookupResult(spare.toString(), (long) (Long.MAX_VALUE * backoff * ((double) decodeWeight(completion.output)) / contextCount));
+            results.add(result);
+            assert results.size() == seen.size();
+            //System.out.println("  add result=" + result);
+          }
+        backoff *= ALPHA;
       }
-      backoff *= ALPHA;
-    }
-
-    Collections.sort(results, new Comparator<LookupResult>() {
+      
+      Collections.sort(results, new Comparator<LookupResult>() {
         @Override
         public int compare(LookupResult a, LookupResult b) {
           if (a.value > b.value) {
@@ -707,12 +706,13 @@ public class FreeTextSuggester extends Lookup {
           }
         }
       });
-
-    if (results.size() > num) {
-      results.subList(num, results.size()).clear();
+      
+      if (results.size() > num) {
+        results.subList(num, results.size()).clear();
+      }
+      
+      return results;
     }
-
-    return results;
   }
 
   /** weight -> cost */

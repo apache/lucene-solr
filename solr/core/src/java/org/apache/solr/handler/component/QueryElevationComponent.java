@@ -344,16 +344,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return query;
     }
     StringBuilder norm = new StringBuilder();
-    TokenStream tokens = analyzer.tokenStream("", query);
-    tokens.reset();
+    try (TokenStream tokens = analyzer.tokenStream("", query)) {
+      tokens.reset();
 
-    CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
-    while (tokens.incrementToken()) {
-      norm.append(termAtt.buffer(), 0, termAtt.length());
+      CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
+      while (tokens.incrementToken()) {
+        norm.append(termAtt.buffer(), 0, termAtt.length());
+      }
+      tokens.end();
+      return norm.toString();
     }
-    tokens.end();
-    tokens.close();
-    return norm.toString();
   }
 
   //---------------------------------------------------------------------------------

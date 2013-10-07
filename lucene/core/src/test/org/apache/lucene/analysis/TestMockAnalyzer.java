@@ -98,13 +98,13 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     String testString = "t";
     
     Analyzer analyzer = new MockAnalyzer(random());
-    TokenStream stream = analyzer.tokenStream("dummy", testString);
-    stream.reset();
-    while (stream.incrementToken()) {
-      // consume
+    try (TokenStream stream = analyzer.tokenStream("dummy", testString)) {
+      stream.reset();
+      while (stream.incrementToken()) {
+        // consume
+      }
+      stream.end();
     }
-    stream.end();
-    stream.close();
     
     assertAnalyzesTo(analyzer, testString, new String[] { "t" });
   }
@@ -121,13 +121,13 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       StringReader reader = new StringReader(s);
       MockCharFilter charfilter = new MockCharFilter(reader, 2);
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      TokenStream ts = analyzer.tokenStream("bogus", charfilter);
-      ts.reset();
-      while (ts.incrementToken()) {
-        ;
+      try (TokenStream ts = analyzer.tokenStream("bogus", charfilter)) {
+        ts.reset();
+        while (ts.incrementToken()) {
+          ;
+        }
+        ts.end();
       }
-      ts.end();
-      ts.close();
     }
   }
   

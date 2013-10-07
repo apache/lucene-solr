@@ -123,18 +123,18 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
-      TokenStream ts = analyzer.tokenStream("foo", s);
-      ts.reset();
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      while (ts.incrementToken()) {
-        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
-        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
-          cp = highlightedText.codePointAt(j);
-          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+      try (TokenStream ts = analyzer.tokenStream("foo", s)) {
+        ts.reset();
+        OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+        while (ts.incrementToken()) {
+          String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+          for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+            cp = highlightedText.codePointAt(j);
+            assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+          }
         }
+        ts.end();
       }
-      ts.end();
-      ts.close();
     }
     // just for fun
     checkRandomData(random(), analyzer, num);
@@ -161,18 +161,18 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
-      TokenStream ts = analyzer.tokenStream("foo", s);
-      ts.reset();
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      while (ts.incrementToken()) {
-        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
-        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
-          cp = highlightedText.codePointAt(j);
-          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+      try (TokenStream ts = analyzer.tokenStream("foo", s)) {
+        ts.reset();
+        OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+        while (ts.incrementToken()) {
+          String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+          for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+            cp = highlightedText.codePointAt(j);
+            assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+          }
         }
+        ts.end();
       }
-      ts.end();
-      ts.close();
     }
     // just for fun
     checkRandomData(random(), analyzer, num);

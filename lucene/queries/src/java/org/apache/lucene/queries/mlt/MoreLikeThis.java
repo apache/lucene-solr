@@ -777,31 +777,31 @@ public final class MoreLikeThis {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
     }
-    TokenStream ts = analyzer.tokenStream(fieldName, r);
-    int tokenCount = 0;
-    // for every token
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    ts.reset();
-    while (ts.incrementToken()) {
-      String word = termAtt.toString();
-      tokenCount++;
-      if (tokenCount > maxNumTokensParsed) {
-        break;
-      }
-      if (isNoiseWord(word)) {
-        continue;
-      }
+    try (TokenStream ts = analyzer.tokenStream(fieldName, r)) {
+      int tokenCount = 0;
+      // for every token
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      ts.reset();
+      while (ts.incrementToken()) {
+        String word = termAtt.toString();
+        tokenCount++;
+        if (tokenCount > maxNumTokensParsed) {
+          break;
+        }
+        if (isNoiseWord(word)) {
+          continue;
+        }
 
-      // increment frequency
-      Int cnt = termFreqMap.get(word);
-      if (cnt == null) {
-        termFreqMap.put(word, new Int());
-      } else {
-        cnt.x++;
+        // increment frequency
+        Int cnt = termFreqMap.get(word);
+        if (cnt == null) {
+          termFreqMap.put(word, new Int());
+        } else {
+          cnt.x++;
+        }
       }
+      ts.end();
     }
-    ts.end();
-    ts.close();
   }
 
 

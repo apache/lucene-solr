@@ -403,58 +403,49 @@ public abstract class SolrQueryParserBase {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
-    TokenStream source;
-    try {
-      source = analyzer.tokenStream(field, queryText);
-      source.reset();
-    } catch (IOException e) {
-      throw new SyntaxError("Unable to initialize TokenStream to analyze query text", e);
-    }
-    CachingTokenFilter buffer = new CachingTokenFilter(source);
+    CachingTokenFilter buffer = null;
     TermToBytesRefAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
-
-    buffer.reset();
-
-    if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-      termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-    }
-    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-    }
-
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
-
-    boolean hasMoreTokens = false;
-    if (termAtt != null) {
-      try {
-        hasMoreTokens = buffer.incrementToken();
-        while (hasMoreTokens) {
-          numTokens++;
-          int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-          if (positionIncrement != 0) {
-            positionCount += positionIncrement;
-          } else {
-            severalTokensAtSamePosition = true;
-          }
-          hasMoreTokens = buffer.incrementToken();
-        }
-      } catch (IOException e) {
-        // ignore
-      }
-    }
-    try {
-      // rewind the buffer stream
+    
+    try (TokenStream source = analyzer.tokenStream(field, queryText)) {
+      source.reset();
+      buffer = new CachingTokenFilter(source);
       buffer.reset();
 
-      // close original stream - all tokens buffered
-      source.close();
+      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
+        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
+      }
+      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
+      }
+
+      boolean hasMoreTokens = false;
+      if (termAtt != null) {
+        try {
+          hasMoreTokens = buffer.incrementToken();
+          while (hasMoreTokens) {
+            numTokens++;
+            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+            if (positionIncrement != 0) {
+              positionCount += positionIncrement;
+            } else {
+              severalTokensAtSamePosition = true;
+            }
+            hasMoreTokens = buffer.incrementToken();
+          }
+        } catch (IOException e) {
+          // ignore
+        }
+      }
+    } catch (IOException e) {
+      throw new SyntaxError("Error analyzing query text", e);
     }
-    catch (IOException e) {
-      throw new SyntaxError("Cannot close TokenStream analyzing query text", e);
-    }
+    
+    // rewind the buffer stream
+    buffer.reset();
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
 

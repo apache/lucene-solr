@@ -85,15 +85,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
-      TokenStream tokenStream = null;
-      try {
-        tokenStream = analyzer.tokenStream(context.getFieldName(), value);
+      try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
+        NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
+        namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
+        return namedList;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-      NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
-      namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
-      return namedList;
     }
 
     TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
@@ -139,10 +137,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param analyzer The analyzer to use.
    */
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
-    TokenStream tokenStream = null;
-    try {
+    try (TokenStream tokenStream = analyzer.tokenStream("", query)){
       final Set<BytesRef> tokens = new HashSet<BytesRef>();
-      tokenStream = analyzer.tokenStream("", query);
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef bytes = bytesAtt.getBytesRef();
 
@@ -157,8 +153,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       return tokens;
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
-    } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
     }
   }
 

@@ -165,43 +165,43 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
         @Override
         protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
-          TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
-          CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-          OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-          ts.reset();
-          List<LookupHighlightFragment> fragments = new ArrayList<LookupHighlightFragment>();
-          int upto = 0;
-          while (ts.incrementToken()) {
-            String token = termAtt.toString();
-            int startOffset = offsetAtt.startOffset();
-            int endOffset = offsetAtt.endOffset();
-            if (upto < startOffset) {
-              fragments.add(new LookupHighlightFragment(text.substring(upto, startOffset), false));
-              upto = startOffset;
-            } else if (upto > startOffset) {
-              continue;
-            }
-
-            if (matchedTokens.contains(token)) {
-              // Token matches.
-              fragments.add(new LookupHighlightFragment(text.substring(startOffset, endOffset), true));
-              upto = endOffset;
-            } else if (prefixToken != null && token.startsWith(prefixToken)) {
-              fragments.add(new LookupHighlightFragment(text.substring(startOffset, startOffset+prefixToken.length()), true));
-              if (prefixToken.length() < token.length()) {
-                fragments.add(new LookupHighlightFragment(text.substring(startOffset+prefixToken.length(), startOffset+token.length()), false));
+          try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
+            CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+            OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+            ts.reset();
+            List<LookupHighlightFragment> fragments = new ArrayList<LookupHighlightFragment>();
+            int upto = 0;
+            while (ts.incrementToken()) {
+              String token = termAtt.toString();
+              int startOffset = offsetAtt.startOffset();
+              int endOffset = offsetAtt.endOffset();
+              if (upto < startOffset) {
+                fragments.add(new LookupHighlightFragment(text.substring(upto, startOffset), false));
+                upto = startOffset;
+              } else if (upto > startOffset) {
+                continue;
               }
-              upto = endOffset;
+              
+              if (matchedTokens.contains(token)) {
+                // Token matches.
+                fragments.add(new LookupHighlightFragment(text.substring(startOffset, endOffset), true));
+                upto = endOffset;
+              } else if (prefixToken != null && token.startsWith(prefixToken)) {
+                fragments.add(new LookupHighlightFragment(text.substring(startOffset, startOffset+prefixToken.length()), true));
+                if (prefixToken.length() < token.length()) {
+                  fragments.add(new LookupHighlightFragment(text.substring(startOffset+prefixToken.length(), startOffset+token.length()), false));
+                }
+                upto = endOffset;
+              }
             }
+            ts.end();
+            int endOffset = offsetAtt.endOffset();
+            if (upto < endOffset) {
+              fragments.add(new LookupHighlightFragment(text.substring(upto), false));
+            }
+            
+            return fragments;
           }
-          ts.end();
-          int endOffset = offsetAtt.endOffset();
-          if (upto < endOffset) {
-            fragments.add(new LookupHighlightFragment(text.substring(upto), false));
-          }
-          ts.close();
-
-          return fragments;
         }
       };
     suggester.build(new TermFreqPayloadArrayIterator(keys));

@@ -85,14 +85,14 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<String>();
-    TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc);
-    CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-    tokenStream.reset();
-    while (tokenStream.incrementToken()) {
-      result.add(charTermAttribute.toString());
+    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc)) {
+      CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        result.add(charTermAttribute.toString());
+      }
+      tokenStream.end();
     }
-    tokenStream.end();
-    tokenStream.close();
     return result.toArray(new String[result.size()]);
   }
 

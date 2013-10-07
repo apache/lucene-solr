@@ -249,16 +249,16 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testTokenAttributes() throws Exception {
-    TokenStream ts = a.tokenStream("dummy", "This is a test");
-    ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
-    ts.reset();
-    while (ts.incrementToken()) {
-      assertEquals(UScript.LATIN, scriptAtt.getCode());
-      assertEquals(UScript.getName(UScript.LATIN), scriptAtt.getName());
-      assertEquals(UScript.getShortName(UScript.LATIN), scriptAtt.getShortName());
-      assertTrue(ts.reflectAsString(false).contains("script=Latin"));
+    try (TokenStream ts = a.tokenStream("dummy", "This is a test")) {
+      ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
+      ts.reset();
+      while (ts.incrementToken()) {
+        assertEquals(UScript.LATIN, scriptAtt.getCode());
+        assertEquals(UScript.getName(UScript.LATIN), scriptAtt.getName());
+        assertEquals(UScript.getShortName(UScript.LATIN), scriptAtt.getShortName());
+        assertTrue(ts.reflectAsString(false).contains("script=Latin"));
+      }
+      ts.end();
     }
-    ts.end();
-    ts.close();
   }
 }

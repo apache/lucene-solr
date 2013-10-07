@@ -184,9 +184,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装。");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", sb.toString());
-    stream.reset();
-    while (stream.incrementToken()) {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
     }
   }
   
@@ -197,9 +199,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", sb.toString());
-    stream.reset();
-    while (stream.incrementToken()) {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
     }
   }
   

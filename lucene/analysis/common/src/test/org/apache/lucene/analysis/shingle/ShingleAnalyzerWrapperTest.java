@@ -95,17 +95,19 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", "this sentence");
-    int j = -1;
+    try (TokenStream ts = analyzer.tokenStream("content", "this sentence")) {
+      int j = -1;
     
-    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
-    ts.reset();
-    while (ts.incrementToken()) {
-      j += posIncrAtt.getPositionIncrement();
-      String termText = termAtt.toString();
-      q.add(new Term("content", termText), j);
+      ts.reset();
+      while (ts.incrementToken()) {
+        j += posIncrAtt.getPositionIncrement();
+        String termText = termAtt.toString();
+        q.add(new Term("content", termText), j);
+      }
+      ts.end();
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
@@ -121,16 +123,16 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", "test sentence");
+    try (TokenStream ts = analyzer.tokenStream("content", "test sentence")) {
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    
-    ts.reset();
-
-    while (ts.incrementToken()) {
-      String termText =  termAtt.toString();
-      q.add(new TermQuery(new Term("content", termText)),
+      ts.reset();
+      while (ts.incrementToken()) {
+        String termText =  termAtt.toString();
+        q.add(new TermQuery(new Term("content", termText)),
             BooleanClause.Occur.SHOULD);
+      }
+      ts.end();
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
