@@ -44,6 +44,7 @@ import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -276,17 +277,23 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     for (int i = 0; i < numTestPoints; i++) {
       String term = _TestUtil.randomSimpleString(random());
+      IOException priorException = null;
       TokenStream ts = analyzer.tokenStream("fake", term);
-      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
-      ts.reset();
-      assertTrue(ts.incrementToken());
-      termAtt.fillBytesRef();
-      // ensure we make a copy of the actual bytes too
-      map.put(term, BytesRef.deepCopyOf(bytes));
-      assertFalse(ts.incrementToken());
-      ts.end();
-      ts.close();
+      try {
+        TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+        BytesRef bytes = termAtt.getBytesRef();
+        ts.reset();
+        assertTrue(ts.incrementToken());
+        termAtt.fillBytesRef();
+        // ensure we make a copy of the actual bytes too
+        map.put(term, BytesRef.deepCopyOf(bytes));
+        assertFalse(ts.incrementToken());
+        ts.end();
+      } catch (IOException e) {
+        priorException = e;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorException, ts);
+      }
     }
     
     Thread threads[] = new Thread[numThreads];
@@ -298,16 +305,22 @@ public abstract class CollationTestBase extends LuceneTestCase {
             for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
               String term = mapping.getKey();
               BytesRef expected = mapping.getValue();
+              IOException priorException = null;
               TokenStream ts = analyzer.tokenStream("fake", term);
-              TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-              BytesRef bytes = termAtt.getBytesRef();
-              ts.reset();
-              assertTrue(ts.incrementToken());
-              termAtt.fillBytesRef();
-              assertEquals(expected, bytes);
-              assertFalse(ts.incrementToken());
-              ts.end();
-              ts.close();
+              try {
+                TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+                BytesRef bytes = termAtt.getBytesRef();
+                ts.reset();
+                assertTrue(ts.incrementToken());
+                termAtt.fillBytesRef();
+                assertEquals(expected, bytes);
+                assertFalse(ts.incrementToken());
+                ts.end();
+              } catch (IOException e) {
+                priorException = e;
+              } finally {
+                IOUtils.closeWhileHandlingException(priorException, ts);
+              }
             }
           } catch (IOException e) {
             throw new RuntimeException(e);

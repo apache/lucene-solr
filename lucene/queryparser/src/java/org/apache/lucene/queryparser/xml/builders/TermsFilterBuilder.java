@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -54,8 +55,9 @@ public class TermsFilterBuilder implements FilterBuilder {
     String text = DOMUtils.getNonBlankTextOrFail(e);
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 
+    TokenStream ts = null;
     try {
-      TokenStream ts = analyzer.tokenStream(fieldName, text);
+      ts = analyzer.tokenStream(fieldName, text);
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
@@ -64,10 +66,11 @@ public class TermsFilterBuilder implements FilterBuilder {
         terms.add(BytesRef.deepCopyOf(bytes));
       }
       ts.end();
-      ts.close();
     }
     catch (IOException ioe) {
       throw new RuntimeException("Error constructing terms from index:" + ioe);
+    } finally {
+      IOUtils.closeWhileHandlingException(ts);
     }
     return new TermsFilter(fieldName, terms);
   }

@@ -88,12 +88,14 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       TokenStream tokenStream = null;
       try {
         tokenStream = analyzer.tokenStream(context.getFieldName(), value);
+        NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
+        namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
+        return namedList;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      } finally {
+        IOUtils.closeWhileHandlingException(tokenStream);
       }
-      NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
-      namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
-      return namedList;
     }
 
     TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
@@ -141,8 +143,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
     TokenStream tokenStream = null;
     try {
-      final Set<BytesRef> tokens = new HashSet<BytesRef>();
       tokenStream = analyzer.tokenStream("", query);
+      final Set<BytesRef> tokens = new HashSet<BytesRef>();
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef bytes = bytesAtt.getBytesRef();
 

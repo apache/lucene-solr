@@ -624,16 +624,22 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
+          IOException priorException = null;
           TokenStream ts = analyzer.tokenStream("ignore", term);
-          CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
-          ts.reset();
-          while(ts.incrementToken()) {
-            String text = termAttr.toString();
-            doc.add(text);
-            sb.append(text).append(' ');
+          try {
+            CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+            ts.reset();
+            while(ts.incrementToken()) {
+              String text = termAttr.toString();
+              doc.add(text);
+              sb.append(text).append(' ');
+            }
+            ts.end();
+          } catch (IOException e) {
+            priorException = e;
+          } finally {
+            IOUtils.closeWhileHandlingException(priorException, ts);
           }
-          ts.end();
-          ts.close();
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));

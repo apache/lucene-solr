@@ -44,6 +44,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNod
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * This processor verifies if {@link ConfigurationKeys#ANALYZER}
@@ -113,52 +114,48 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       String text = fieldNode.getTextAsString();
       String field = fieldNode.getFieldAsString();
 
-      TokenStream source;
-      try {
-        source = this.analyzer.tokenStream(field, text);
-        source.reset();
-      } catch (IOException e1) {
-        throw new RuntimeException(e1);
-      }
-      CachingTokenFilter buffer = new CachingTokenFilter(source);
-
+      CachingTokenFilter buffer = null;
       PositionIncrementAttribute posIncrAtt = null;
       int numTokens = 0;
       int positionCount = 0;
       boolean severalTokensAtSamePosition = false;
-
-      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-      }
-
+      
+      TokenStream source = null;
       try {
+        source = this.analyzer.tokenStream(field, text);
+        source.reset();
+        buffer = new CachingTokenFilter(source);
 
-        while (buffer.incrementToken()) {
-          numTokens++;
-          int positionIncrement = (posIncrAtt != null) ? posIncrAtt
-              .getPositionIncrement() : 1;
-          if (positionIncrement != 0) {
-            positionCount += positionIncrement;
-
-          } else {
-            severalTokensAtSamePosition = true;
-          }
-
+        if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+          posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
         }
 
-      } catch (IOException e) {
-        // ignore
-      }
+        try {
 
-      try {
-        // rewind the buffer stream
-        buffer.reset();
+          while (buffer.incrementToken()) {
+            numTokens++;
+            int positionIncrement = (posIncrAtt != null) ? posIncrAtt
+                .getPositionIncrement() : 1;
+            if (positionIncrement != 0) {
+              positionCount += positionIncrement;
 
-        // close original stream - all tokens buffered
-        source.close();
+            } else {
+              severalTokensAtSamePosition = true;
+            }
+
+          }
+
+        } catch (IOException e) {
+          // ignore
+        }
       } catch (IOException e) {
-        // ignore
+        throw new RuntimeException(e);
+      } finally {
+        IOUtils.closeWhileHandlingException(source);
       }
+      
+      // rewind the buffer stream
+      buffer.reset();
 
       if (!buffer.hasAttribute(CharTermAttribute.class)) {
         return new NoTokenFoundQueryNode();

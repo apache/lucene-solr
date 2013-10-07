@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
@@ -98,13 +99,19 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     String testString = "t";
     
     Analyzer analyzer = new MockAnalyzer(random());
+    Exception priorException = null;
     TokenStream stream = analyzer.tokenStream("dummy", testString);
-    stream.reset();
-    while (stream.incrementToken()) {
-      // consume
+    try {
+      stream.reset();
+      while (stream.incrementToken()) {
+        // consume
+      }
+      stream.end();
+    } catch (Exception e) {
+      priorException = e;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorException, stream);
     }
-    stream.end();
-    stream.close();
     
     assertAnalyzesTo(analyzer, testString, new String[] { "t" });
   }
@@ -121,13 +128,19 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       StringReader reader = new StringReader(s);
       MockCharFilter charfilter = new MockCharFilter(reader, 2);
       MockAnalyzer analyzer = new MockAnalyzer(random());
+      Exception priorException = null;
       TokenStream ts = analyzer.tokenStream("bogus", charfilter);
-      ts.reset();
-      while (ts.incrementToken()) {
-        ;
+      try {
+        ts.reset();
+        while (ts.incrementToken()) {
+          ;
+        }
+        ts.end();
+      } catch (Exception e) {
+        priorException = e;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorException, ts);
       }
-      ts.end();
-      ts.close();
     }
   }
   

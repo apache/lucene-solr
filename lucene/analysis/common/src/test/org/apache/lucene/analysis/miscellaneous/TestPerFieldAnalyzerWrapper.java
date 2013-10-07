@@ -9,6 +9,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.IOUtils;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,22 +39,34 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
     TokenStream tokenStream = analyzer.tokenStream("field", text);
-    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("WhitespaceAnalyzer does not lowercase",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("WhitespaceAnalyzer does not lowercase",
                  "Qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(tokenStream);
+    }
 
     tokenStream = analyzer.tokenStream("special", text);
-    termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("SimpleAnalyzer lowercases",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(tokenStream);
+    }
   }
   
   public void testCharFilters() throws Exception {

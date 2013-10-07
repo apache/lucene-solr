@@ -34,6 +34,7 @@ import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfigur
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
@@ -501,63 +502,55 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
-
-    TokenStream source;
-    try {
-      source = analyzer.tokenStream(field, queryText);
-      source.reset();
-    } catch (IOException e) {
-      ParseException p = new ParseException("Unable to initialize TokenStream to analyze query text");
-      p.initCause(e);
-      throw p;
-    }
-    CachingTokenFilter buffer = new CachingTokenFilter(source);
+    CachingTokenFilter buffer = null;
     TermToBytesRefAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
-
-    buffer.reset();
-
-    if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-      termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-    }
-    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-    }
-
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
-
-    boolean hasMoreTokens = false;
-    if (termAtt != null) {
-      try {
-        hasMoreTokens = buffer.incrementToken();
-        while (hasMoreTokens) {
-          numTokens++;
-          int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-          if (positionIncrement != 0) {
-            positionCount += positionIncrement;
-          } else {
-            severalTokensAtSamePosition = true;
-          }
-          hasMoreTokens = buffer.incrementToken();
-        }
-      } catch (IOException e) {
-        // ignore
-      }
-    }
+    boolean hasMoreTokens = false;    
+    
+    TokenStream source = null;
     try {
-      // rewind the buffer stream
+      source = analyzer.tokenStream(field, queryText);
+      source.reset();
+      buffer = new CachingTokenFilter(source);
       buffer.reset();
 
-      // close original stream - all tokens buffered
-      source.close();
-    }
-    catch (IOException e) {
-      ParseException p = new ParseException("Cannot close TokenStream analyzing query text");
+      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
+        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
+      }
+      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
+      }
+
+      if (termAtt != null) {
+        try {
+          hasMoreTokens = buffer.incrementToken();
+          while (hasMoreTokens) {
+            numTokens++;
+            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+            if (positionIncrement != 0) {
+              positionCount += positionIncrement;
+            } else {
+              severalTokensAtSamePosition = true;
+            }
+            hasMoreTokens = buffer.incrementToken();
+          }
+        } catch (IOException e) {
+          // ignore
+        }
+      }
+    } catch (IOException e) {
+      ParseException p = new ParseException("Eror analyzing query text");
       p.initCause(e);
       throw p;
+    } finally {
+      IOUtils.closeWhileHandlingException(source);
     }
+    
+    // rewind the buffer stream
+    buffer.reset();
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
 
@@ -843,38 +836,28 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   }
 
   protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
-    TokenStream source;
-
     if (analyzerIn == null) analyzerIn = analyzer;
 
+    TokenStream source = null;
     try {
       source = analyzerIn.tokenStream(field, part);
       source.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
-    }
       
-    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
+      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef bytes = termAtt.getBytesRef();
 
-    try {
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
       termAtt.fillBytesRef();
       if (source.incrementToken())
         throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
-    } catch (IOException e) {
-      throw new RuntimeException("error analyzing range part: " + part, e);
-    }
-      
-    try {
       source.end();
-      source.close();
+      return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
+      throw new RuntimeException("Error analyzing multiTerm term: " + part, e);
+    } finally {
+      IOUtils.closeWhileHandlingException(source);
     }
-    
-    return BytesRef.deepCopyOf(bytes);
   }
 
   /**

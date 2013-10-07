@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -138,35 +139,27 @@ public class TextField extends FieldType {
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
 
-    TokenStream source;
+    TokenStream source = null;
     try {
       source = analyzerIn.tokenStream(field, part);
       source.reset();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
-    }
 
-    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
+      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef bytes = termAtt.getBytesRef();
 
-    try {
       if (!source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
       termAtt.fillBytesRef();
       if (source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
+
+      source.end();
+      return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"error analyzing range part: " + part, e);
+    } finally {
+      IOUtils.closeWhileHandlingException(source);
     }
-
-    try {
-      source.end();
-      source.close();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
-    }
-
-    return BytesRef.deepCopyOf(bytes);
   }
 
 
@@ -178,58 +171,54 @@ public class TextField extends FieldType {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
-    TokenStream source;
-    try {
-      source = analyzer.tokenStream(field, queryText);
-      source.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);
-    }
-    CachingTokenFilter buffer = new CachingTokenFilter(source);
+    CachingTokenFilter buffer = null;
     CharTermAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
-
-    buffer.reset();
-
-    if (buffer.hasAttribute(CharTermAttribute.class)) {
-      termAtt = buffer.getAttribute(CharTermAttribute.class);
-    }
-    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-    }
-
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
 
-    boolean hasMoreTokens = false;
-    if (termAtt != null) {
-      try {
-        hasMoreTokens = buffer.incrementToken();
-        while (hasMoreTokens) {
-          numTokens++;
-          int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-          if (positionIncrement != 0) {
-            positionCount += positionIncrement;
-          } else {
-            severalTokensAtSamePosition = true;
-          }
-          hasMoreTokens = buffer.incrementToken();
-        }
-      } catch (IOException e) {
-        // ignore
-      }
-    }
+    TokenStream source = null;
     try {
-      // rewind the buffer stream
+      source = analyzer.tokenStream(field, queryText);
+      source.reset();
+      buffer = new CachingTokenFilter(source);
+      
       buffer.reset();
+      
+      if (buffer.hasAttribute(CharTermAttribute.class)) {
+        termAtt = buffer.getAttribute(CharTermAttribute.class);
+      }
+      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
+      }
+      
+      boolean hasMoreTokens = false;
+      if (termAtt != null) {
+        try {
+          hasMoreTokens = buffer.incrementToken();
+          while (hasMoreTokens) {
+            numTokens++;
+            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+            if (positionIncrement != 0) {
+              positionCount += positionIncrement;
+            } else {
+              severalTokensAtSamePosition = true;
+            }
+            hasMoreTokens = buffer.incrementToken();
+          }
+        } catch (IOException e) {
+          // ignore
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      IOUtils.closeWhileHandlingException(source);
+    }
 
-      // close original stream - all tokens buffered
-      source.close();
-    }
-    catch (IOException e) {
-      // ignore
-    }
+    // rewind the buffer stream
+    buffer.reset();
 
     if (numTokens == 0)
       return null;

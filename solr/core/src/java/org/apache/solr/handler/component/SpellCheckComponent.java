@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -464,28 +465,31 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     Collection<Token> result = new ArrayList<Token>();
     assert analyzer != null;
     TokenStream ts = analyzer.tokenStream("", q);
-    ts.reset();
-    // TODO: support custom attributes
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    
-    while (ts.incrementToken()){
-      Token token = new Token();
-      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-      token.setType(typeAtt.type());
-      token.setFlags(flagsAtt.getFlags());
-      token.setPayload(payloadAtt.getPayload());
-      token.setPositionIncrement(posIncAtt.getPositionIncrement());
-      result.add(token);
+    try {
+      ts.reset();
+      // TODO: support custom attributes
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
+      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
+      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      
+      while (ts.incrementToken()){
+        Token token = new Token();
+        token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
+        token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+        token.setType(typeAtt.type());
+        token.setFlags(flagsAtt.getFlags());
+        token.setPayload(payloadAtt.getPayload());
+        token.setPositionIncrement(posIncAtt.getPositionIncrement());
+        result.add(token);
+      }
+      ts.end();
+      return result;
+    } finally {
+      IOUtils.closeWhileHandlingException(ts);
     }
-    ts.end();
-    ts.close();
-    return result;
   }
 
   protected SolrSpellChecker getSpellChecker(SolrParams params) {

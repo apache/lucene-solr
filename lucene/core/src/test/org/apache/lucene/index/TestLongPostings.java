@@ -30,6 +30,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.FixedBitSet;
@@ -47,30 +48,35 @@ public class TestLongPostings extends LuceneTestCase {
       if (other != null && s.equals(other)) {
         continue;
       }
-      final TokenStream ts = a.tokenStream("foo", s);
-      final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
-      final BytesRef termBytes = termAtt.getBytesRef();
-      ts.reset();
+      IOException priorException = null;
+      TokenStream ts = a.tokenStream("foo", s);
+      try {
+        final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
+        final BytesRef termBytes = termAtt.getBytesRef();
+        ts.reset();
 
-      int count = 0;
-      boolean changed = false;
+        int count = 0;
+        boolean changed = false;
 
-      while(ts.incrementToken()) {
-        termAtt.fillBytesRef();
-        if (count == 0 && !termBytes.utf8ToString().equals(s)) {
-          // The value was changed during analysis.  Keep iterating so the
-          // tokenStream is exhausted.
-          changed = true;
+        while(ts.incrementToken()) {
+          termAtt.fillBytesRef();
+          if (count == 0 && !termBytes.utf8ToString().equals(s)) {
+            // The value was changed during analysis.  Keep iterating so the
+            // tokenStream is exhausted.
+            changed = true;
+          }
+          count++;
         }
-        count++;
-      }
 
-      ts.end();
-      ts.close();
-
-      // Did we iterate just once and the value was unchanged?
-      if (!changed && count == 1) {
-        return s;
+        ts.end();
+        // Did we iterate just once and the value was unchanged?
+        if (!changed && count == 1) {
+          return s;
+        }
+      } catch (IOException e) {
+        priorException = e;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorException, ts);
       }
     }
   }

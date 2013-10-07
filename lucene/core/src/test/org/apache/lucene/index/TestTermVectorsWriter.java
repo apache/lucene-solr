@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** tests for writing term vectors */
@@ -174,17 +175,24 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
+    IOException priorException = null;
     TokenStream stream = analyzer.tokenStream("field", "abcd   ");
-    stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
-    stream = new CachingTokenFilter(stream);
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = new Field("field", stream, customType);
-    doc.add(f);
-    doc.add(f);
-    w.addDocument(doc);
+    try {
+      stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
+      TokenStream cachedStream = new CachingTokenFilter(stream);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectorOffsets(true);
+      Field f = new Field("field", cachedStream, customType);
+      doc.add(f);
+      doc.add(f);
+      w.addDocument(doc);
+    } catch (IOException e) {
+      priorException = e;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorException, stream);
+    }
     w.close();
 
     IndexReader r = DirectoryReader.open(dir);

@@ -8,6 +8,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
@@ -49,9 +50,11 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);
 
+    List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
+
+    TokenStream ts = null;
     try {
-      List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
-      TokenStream ts = analyzer.tokenStream(fieldName, value);
+      ts = analyzer.tokenStream(fieldName, value);
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
@@ -61,13 +64,14 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
         clausesList.add(stq);
       }
       ts.end();
-      ts.close();
       SpanOrQuery soq = new SpanOrQuery(clausesList.toArray(new SpanQuery[clausesList.size()]));
       soq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
       return soq;
     }
     catch (IOException ioe) {
       throw new ParserException("IOException parsing value:" + value);
+    } finally {
+      IOUtils.closeWhileHandlingException(ts);
     }
   }
 

@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * A test class for ShingleAnalyzerWrapper as regards queries and scoring.
@@ -96,16 +97,21 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     PhraseQuery q = new PhraseQuery();
 
     TokenStream ts = analyzer.tokenStream("content", "this sentence");
-    int j = -1;
+    try {
+      int j = -1;
     
-    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
-    ts.reset();
-    while (ts.incrementToken()) {
-      j += posIncrAtt.getPositionIncrement();
-      String termText = termAtt.toString();
-      q.add(new Term("content", termText), j);
+      ts.reset();
+      while (ts.incrementToken()) {
+        j += posIncrAtt.getPositionIncrement();
+        String termText = termAtt.toString();
+        q.add(new Term("content", termText), j);
+      }
+      ts.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(ts);
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
@@ -122,15 +128,18 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     BooleanQuery q = new BooleanQuery();
 
     TokenStream ts = analyzer.tokenStream("content", "test sentence");
+    try {
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    
-    ts.reset();
-
-    while (ts.incrementToken()) {
-      String termText =  termAtt.toString();
-      q.add(new TermQuery(new Term("content", termText)),
+      ts.reset();
+      while (ts.incrementToken()) {
+        String termText =  termAtt.toString();
+        q.add(new TermQuery(new Term("content", termText)),
             BooleanClause.Occur.SHOULD);
+      }
+      ts.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(ts);
     }
 
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;

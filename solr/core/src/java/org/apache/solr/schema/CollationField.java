@@ -209,37 +209,27 @@ public class CollationField extends FieldType {
    * its just that all methods are synced), this keeps things 
    * simple (we already have a threadlocal clone in the reused TS)
    */
-  private BytesRef analyzeRangePart(String field, String part) {
-    TokenStream source;
-      
+  private BytesRef analyzeRangePart(String field, String part) {    
+    TokenStream source = null;
     try {
       source = analyzer.tokenStream(field, part);
-      source.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);
-    }
-      
-    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
+      source.reset();    
+      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef bytes = termAtt.getBytesRef();
 
-    // we control the analyzer here: most errors are impossible
-    try {
+      // we control the analyzer here: most errors are impossible
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
       termAtt.fillBytesRef();
       assert !source.incrementToken();
-    } catch (IOException e) {
-      throw new RuntimeException("error analyzing range part: " + part, e);
-    }
       
-    try {
       source.end();
-      source.close();
+      return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
+      throw new RuntimeException("Unable to analyze range part: " + part, e);
+    } finally {
+      IOUtils.closeQuietly(source);
     }
-      
-    return BytesRef.deepCopyOf(bytes);
   }
   
   @Override

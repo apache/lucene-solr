@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -54,13 +55,16 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomUnicodeString(random(), 100);
       TokenStream ts = analyzer.tokenStream("foo", s);
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      ts.reset();
-      while (ts.incrementToken()) {
-        assertTrue(UnicodeUtil.validUTF16String(termAtt));
+      try {
+        CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+        ts.reset();
+        while (ts.incrementToken()) {
+          assertTrue(UnicodeUtil.validUTF16String(termAtt));
+        }
+        ts.end();
+      } finally {
+        IOUtils.closeWhileHandlingException(ts);
       }
-      ts.end();
-      ts.close();
     }
   }
   

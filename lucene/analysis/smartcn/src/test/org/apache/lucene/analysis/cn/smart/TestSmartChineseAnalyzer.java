@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
@@ -185,8 +186,13 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
     TokenStream stream = analyzer.tokenStream("", sb.toString());
-    stream.reset();
-    while (stream.incrementToken()) {
+    try {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(stream);
     }
   }
   
@@ -198,8 +204,13 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
     TokenStream stream = analyzer.tokenStream("", sb.toString());
-    stream.reset();
-    while (stream.incrementToken()) {
+    try {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(stream);
     }
   }
   

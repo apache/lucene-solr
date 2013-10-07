@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -163,7 +164,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
   protected String analyzeSingleChunk(String field, String termStr, String chunk) throws ParseException{
     String analyzed = null;
     TokenStream stream = null;
-    try{
+    try {
       stream = getAnalyzer().tokenStream(field, chunk);
       stream.reset();
       CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
@@ -186,7 +187,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
           multipleOutputs.append('"');
         }
         stream.end();
-        stream.close();
         if (null != multipleOutputs) {
           throw new ParseException(
               String.format(getLocale(),
@@ -196,12 +196,13 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
         // nothing returned by analyzer.  Was it a stop word and the user accidentally
         // used an analyzer with stop words?
         stream.end();
-        stream.close();
         throw new ParseException(String.format(getLocale(), "Analyzer returned nothing for \"%s\"", chunk));
       }
     } catch (IOException e){
       throw new ParseException(
           String.format(getLocale(), "IO error while trying to analyze single term: \"%s\"", termStr));
+    } finally {
+      IOUtils.closeWhileHandlingException(stream);
     }
     return analyzed;
   }

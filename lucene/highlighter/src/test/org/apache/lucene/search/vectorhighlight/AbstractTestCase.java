@@ -43,6 +43,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
@@ -171,19 +172,22 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     List<BytesRef> bytesRefs = new ArrayList<BytesRef>();
 
     TokenStream tokenStream = analyzer.tokenStream(field, text);
-    TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+    try {
+      TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
 
-    BytesRef bytesRef = termAttribute.getBytesRef();
+      BytesRef bytesRef = termAttribute.getBytesRef();
 
-    tokenStream.reset();
+      tokenStream.reset();
     
-    while (tokenStream.incrementToken()) {
-      termAttribute.fillBytesRef();
-      bytesRefs.add(BytesRef.deepCopyOf(bytesRef));
-    }
+      while (tokenStream.incrementToken()) {
+        termAttribute.fillBytesRef();
+        bytesRefs.add(BytesRef.deepCopyOf(bytesRef));
+      }
 
-    tokenStream.end();
-    tokenStream.close();
+      tokenStream.end();
+    } finally {
+      IOUtils.closeWhileHandlingException(tokenStream);
+    }
 
     return bytesRefs;
   }
