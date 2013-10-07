@@ -34,10 +34,10 @@ import java.util.List;
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
-  private int separator = '!';
+  private static final int separator = '!';
 
   // separator used to optionally specify number of bits to allocate toward first part.
-  private int bitsSeparator = '/';
+  private static final int bitsSeparator = '/';
   private int bits = 16;
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
@@ -62,28 +62,18 @@ public class CompositeIdRouter extends HashBasedRouter {
   @Override
   public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
     String shardFieldName = getRouteField(collection);
-    String part1 = null;
-    int idx = 0;
-    int commaIdx = 0;
-
-    if(shardFieldName == null || doc == null) {
-      idx = id.indexOf(separator);
-      if (idx < 0) {
-        return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
-      }
-      part1 = id.substring(0, idx);
-      commaIdx = part1.indexOf(bitsSeparator);
-
-    } else {
+    if (shardFieldName != null && doc != null) {
       Object o = doc.getFieldValue(shardFieldName);
-      if (o != null) {
-        part1 = o.toString();
-        return Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
-      } else {
+      if (o == null)
         throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "No value for :"+shardFieldName + ". Unable to identify shard");
-      }
+      id = o.toString();
     }
-
+    int idx = id.indexOf(separator);
+    if (idx < 0) {
+      return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+    }
+    String part1 = id.substring(0, idx);
+    int commaIdx = part1.indexOf(bitsSeparator);
     int m1 = mask1;
     int m2 = mask2;
 
