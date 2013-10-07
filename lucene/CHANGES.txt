@@ -56,6 +56,9 @@ Bug Fixes
   to a new reader and closing the original one.  (Shai Erera, Mike
   McCandless)
 
+* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an 
+  NRT reader hit exceptions. (Shai Erera)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
