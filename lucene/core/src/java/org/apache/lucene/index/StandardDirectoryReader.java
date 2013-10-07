@@ -82,10 +82,9 @@ final class StandardDirectoryReader extends DirectoryReader {
 
     final SegmentInfos segmentInfos = infos.clone();
     int infosUpto = 0;
-    for (int i=0;i<numSegments;i++) {
-      IOException prior = null;
-      boolean success = false;
-      try {
+    boolean success = false;
+    try {
+      for (int i = 0; i < numSegments; i++) {
         // NOTE: important that we use infos not
         // segmentInfos here, so that we are passing the
         // actual instance of SegmentInfoPerCommit in
@@ -106,17 +105,24 @@ final class StandardDirectoryReader extends DirectoryReader {
         } finally {
           writer.readerPool.release(rld);
         }
-        success = true;
-      } catch(IOException ex) {
-        prior = ex;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(prior, readers);
+      }
+      StandardDirectoryReader result = new StandardDirectoryReader(dir,
+          readers.toArray(new SegmentReader[readers.size()]), writer,
+          segmentInfos, applyAllDeletes);
+      success = true;
+      return result;
+    } finally {
+      if (!success) {
+        for (SegmentReader r : readers) {
+          try {
+            r.decRef();
+          } catch (Throwable th) {
+            // ignore any exception that is thrown here to not mask any original
+            // exception. 
+          }
         }
       }
     }
-    return new StandardDirectoryReader(dir, readers.toArray(new SegmentReader[readers.size()]),
-      writer, segmentInfos, applyAllDeletes);
   }
 
   /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */

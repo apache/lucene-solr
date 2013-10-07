@@ -264,9 +264,8 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
   }
 
   /**
-   * Returns a ref to a clone.  NOTE: this clone is not
-   * enrolled in the pool, so you should simply close()
-   * it when you're done (ie, do not call release()).
+   * Returns a ref to a clone. NOTE: you should decRef() the reader when you're
+   * dont (ie do not call close()).
    */
   public synchronized SegmentReader getReadOnlyClone(IOContext context) throws IOException {
     getReader(true, context).decRef(); // make sure we enroll a new reader if there are field updates
