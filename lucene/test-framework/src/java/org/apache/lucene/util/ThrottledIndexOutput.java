@@ -108,11 +108,13 @@ public class ThrottledIndexOutput extends IndexOutput {
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
     final long before = System.nanoTime();
+    // TODO: sometimes, write only half the bytes, then
+    // sleep, then 2nd half, then sleep, so we sometimes
+    // interrupt having only written not all bytes
     delegate.writeBytes(b, offset, length);
     timeElapsed += System.nanoTime() - before;
     pendingBytes += length;
     sleep(getDelay(false));
-
   }
 
   protected long getDelay(boolean closing) {

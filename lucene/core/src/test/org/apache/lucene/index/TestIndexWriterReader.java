@@ -37,6 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -159,6 +160,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r2));
     
     r1.close();
+    assertTrue(r2.isCurrent());
     writer.close();
     assertTrue(r2.isCurrent());
     
@@ -1074,10 +1076,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     w.close();
     d.close();
-  }
-  
-  private static final class FakeIOException extends IOException {
-    public FakeIOException() {}
   }
   
   @Test
