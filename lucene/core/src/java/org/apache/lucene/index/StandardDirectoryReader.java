@@ -61,8 +61,9 @@ final class StandardDirectoryReader extends DirectoryReader {
           } catch(IOException ex) {
             prior = ex;
           } finally {
-            if (!success)
+            if (!success) {
               IOUtils.closeWhileHandlingException(prior, readers);
+            }
           }
         }
         return new StandardDirectoryReader(directory, readers, null, sis, false);
@@ -99,7 +100,7 @@ final class StandardDirectoryReader extends DirectoryReader {
             readers.add(reader);
             infosUpto++;
           } else {
-            reader.close();
+            reader.decRef();
             segmentInfos.remove(infosUpto);
           }
         } finally {
@@ -214,12 +215,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           }
         }
         // throw the first exception
-        if (prior != null) {
-          if (prior instanceof IOException) throw (IOException) prior;
-          if (prior instanceof RuntimeException) throw (RuntimeException) prior;
-          if (prior instanceof Error) throw (Error) prior;
-          throw new RuntimeException(prior);
-        }
+        IOUtils.reThrow(prior);
       }
     }    
     return new StandardDirectoryReader(directory, newReaders, null, infos, false);
@@ -359,7 +355,9 @@ final class StandardDirectoryReader extends DirectoryReader {
       try {
         r.decRef();
       } catch (Throwable t) {
-        if (firstExc == null) firstExc = t;
+        if (firstExc == null) {
+          firstExc = t;
+        }
       }
     }
 
@@ -370,12 +368,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    if (firstExc != null) {
-      if (firstExc instanceof IOException) throw (IOException) firstExc;
-      if (firstExc instanceof RuntimeException) throw (RuntimeException) firstExc;
-      if (firstExc instanceof Error) throw (Error) firstExc;
-      throw new RuntimeException(firstExc);
-    }
+    IOUtils.reThrow(firstExc);
   }
 
   @Override

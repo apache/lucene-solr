@@ -525,6 +525,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     reader = null;
     directory.close();
     directory = null;
+    qp = null;
   }
   
 }

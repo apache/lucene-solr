@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RefCount;
 
 /**
@@ -313,12 +314,7 @@ public final class SegmentReader extends AtomicReader {
       dvProducers.clear();
       docValuesLocal.close();
       docsWithFieldLocal.close();
-      if (t != null) {
-        if (t instanceof IOException) throw (IOException) t;
-        if (t instanceof RuntimeException) throw (RuntimeException) t;
-        if (t instanceof Error) throw (Error) t;
-        throw new RuntimeException(t);
-      }
+      IOUtils.reThrow(t);
     }
   }
 

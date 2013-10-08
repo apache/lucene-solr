@@ -1025,13 +1025,23 @@ public class TestIndexWriter extends LuceneTestCase {
     @Override
     public void run() {
       // LUCENE-2239: won't work with NIOFS/MMAP
-      Directory dir = new MockDirectoryWrapper(random, new RAMDirectory());
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
+
+      // When interrupt arrives in w.close(), when it's
+      // writing liveDocs, this can lead to double-write of
+      // _X_N.del:
+      //dir.setPreventDoubleWrite(false);
       IndexWriter w = null;
       while(!finish) {
         try {
 
           while(!finish) {
             if (w != null) {
+              // If interrupt arrives inside here, it's
+              // fine: we will cycle back and the first
+              // thing we do is try to close again,
+              // i.e. we'll never try to open a new writer
+              // until this one successfully closes:
               w.close();
               w = null;
             }

@@ -230,12 +230,7 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
 
   /** Returns a description of this segment. */
   public String toString(Directory dir, int pendingDelCount) {
-    return info.toString(dir, delCount + pendingDelCount);
-  }
-
-  @Override
-  public String toString() {
-    String s = info.toString(info.dir, delCount);
+    String s = info.toString(dir, delCount + pendingDelCount);
     if (delGen != -1) {
       s += ":delGen=" + delGen;
     }
@@ -243,6 +238,11 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
       s += ":fieldInfosGen=" + fieldInfosGen;
     }
     return s;
+  }
+
+  @Override
+  public String toString() {
+    return toString(info.dir, 0);
   }
 
   @Override

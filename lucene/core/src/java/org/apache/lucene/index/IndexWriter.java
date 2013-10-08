@@ -450,6 +450,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
 
     public synchronized void release(ReadersAndLiveDocs rld) throws IOException {
+      release(rld, true);
+    }
+
+    public synchronized void release(ReadersAndLiveDocs rld, boolean assertInfoLive) throws IOException {
 
       // Matches incRef in get:
       rld.decRef();
@@ -463,11 +467,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 //        System.out.println("[" + Thread.currentThread().getName() + "] ReaderPool.release: " + rld.info);
         if (rld.writeLiveDocs(directory)) {
           // Make sure we only write del docs and field updates for a live segment:
-          assert infoIsLive(rld.info);
-          // Must checkpoint w/ deleter, because we just
-          // created new _X_N.del and field updates files.
-          deleter.checkpoint(segmentInfos, false);
+          assert assertInfoLive == false || infoIsLive(rld.info);
+          // Must checkpoint because we just
+          // created new _X_N.del and field updates files;
+          // don't call IW.checkpoint because that also
+          // increments SIS.version, which we do not want to
+          // do here: it was done previously (after we
+          // invoked BDS.applyDeletes), whereas here all we
+          // did was move the state to disk:
+          checkpointNoSIS();
         }
+        //System.out.println("IW: done writeLiveDocs for info=" + rld.info);
 
 //        System.out.println("[" + Thread.currentThread().getName() + "] ReaderPool.release: drop readers " + rld.info);
         rld.dropReaders();
@@ -487,12 +497,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           if (doSave && rld.writeLiveDocs(directory)) {
             // Make sure we only write del docs and field updates for a live segment:
             assert infoIsLive(rld.info);
-            // Must checkpoint w/ deleter, because we just
-            // created created new _X_N.del and field updates files.
-            deleter.checkpoint(segmentInfos, false);
+            // Must checkpoint because we just
+            // created new _X_N.del and field updates files;
+            // don't call IW.checkpoint because that also
+            // increments SIS.version, which we do not want to
+            // do here: it was done previously (after we
+            // invoked BDS.applyDeletes), whereas here all we
+            // did was move the state to disk:
+            checkpointNoSIS();
           }
         } catch (Throwable t) {
-          if (priorE != null) {
+          if (doSave) {
+            IOUtils.reThrow(t);
+          } else if (priorE == null) {
             priorE = t;
           }
         }
@@ -510,15 +527,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         try {
           rld.dropReaders();
         } catch (Throwable t) {
-          if (priorE != null) {
+          if (doSave) {
+            IOUtils.reThrow(t);
+          } else if (priorE == null) {
             priorE = t;
           }
         }
       }
       assert readerMap.size() == 0;
-      if (priorE != null) {
-        throw new RuntimeException(priorE);
-      }
+      IOUtils.reThrow(priorE);
     }
 
     /**
@@ -537,10 +554,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             // Make sure we only write del docs and updates for a live segment:
             assert infoIsLive(info);
 
-            // Must checkpoint w/ deleter, because we just
-            // created new _X_N.del and field updates files.
+            // Must checkpoint because we just
+            // created new _X_N.del and field updates files;
+            // don't call IW.checkpoint because that also
+            // increments SIS.version, which we do not want to
+            // do here: it was done previously (after we
+            // invoked BDS.applyDeletes), whereas here all we
+            // did was move the state to disk:
             deleter.checkpoint(segmentInfos, false);
-            
+            checkpointNoSIS();
+
             // we wrote field updates, reopen the reader
             if (hasFieldUpdates) {
               rld.reopenReader(IOContext.READ);
@@ -1005,19 +1028,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         infoStream.message("IW", "now call final commit()");
       }
 
+      // Must do this before commitInternal, in case any of
+      // the dropped readers in the pool wrote a new live
+      // docs: 
+      synchronized(this) {
+        readerPool.dropAll(true);
+      }
+
       if (doFlush) {
         commitInternal();
       }
 
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "at close: " + segString());
+      synchronized(this) {
+        deleter.close();
       }
+
       // used by assert below
       final DocumentsWriter oldWriter = docWriter;
-      synchronized(this) {
-        readerPool.dropAll(true);
+
+      synchronized (this) {
         docWriter = null;
-        deleter.close();
+      }
+
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "at close: " + segString());
       }
 
       if (writeLock != null) {
@@ -2259,6 +2293,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     deleter.checkpoint(segmentInfos, false);
   }
 
+  /** Checkpoints with IndexFileDeleter, so it's aware of
+   *  new files, and increments changeCount, so on
+   *  close/commit we will write a new segments file, but
+   *  does NOT bump segmentInfos.version. */
+  synchronized void checkpointNoSIS() throws IOException {
+    changeCount++;
+    deleter.checkpoint(segmentInfos, false);
+  }
+
   /** Called internally if any index state has changed. */
   synchronized void changed() {
     changeCount++;
@@ -2911,6 +2954,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         segmentInfos.updateGeneration(pendingCommit);
         lastCommitChangeCount = pendingCommitChangeCount;
         rollbackSegments = pendingCommit.createBackupSegmentInfos();
+        // NOTE: don't use this.checkpoint() here, because
+        // we do not want to increment changeCount:
         deleter.checkpoint(pendingCommit, true);
       } finally {
         // Matches the incRef done in prepareCommit:
@@ -3334,15 +3379,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     assert merge.info.info.getDocCount() != 0 || keepFullyDeletedSegments || dropSegment;
 
-    segmentInfos.applyMergeChanges(merge, dropSegment);
-
     if (mergedDeletes != null) {
       if (dropSegment) {
-//        System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMerge: dropChanges " + merge.info);
         mergedDeletes.dropChanges();
       }
-      readerPool.release(mergedDeletes);
+      // Pass false for assertInfoLive because the merged
+      // segment is not yet live (only below do we commit it
+      // to the segmentInfos):
+      readerPool.release(mergedDeletes, false);
     }
+
+    // Must do this after readerPool.release, in case an
+    // exception is hit e.g. writing the live docs for the
+    // merge segment, in which case we need to abort the
+    // merge:
+    segmentInfos.applyMergeChanges(merge, dropSegment);
 
     if (dropSegment) {
       assert !segmentInfos.contains(merge.info);
@@ -3407,17 +3458,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       // in which case we must throw it so, for example, the
       // rollbackTransaction code in addIndexes* is
       // executed.
-      if (merge.isExternal)
+      if (merge.isExternal) {
         throw (MergePolicy.MergeAbortedException) t;
-    } else if (t instanceof IOException)
-      throw (IOException) t;
-    else if (t instanceof RuntimeException)
-      throw (RuntimeException) t;
-    else if (t instanceof Error)
-      throw (Error) t;
-    else
-      // Should not get here
-      throw new RuntimeException(t);
+      }
+    } else {
+      IOUtils.reThrow(t);
+    }
   }
 
   /**
@@ -3736,11 +3782,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
     
     // If any error occured, throw it.
-    if (!suppressExceptions && th != null) {
-      if (th instanceof IOException) throw (IOException) th;
-      if (th instanceof RuntimeException) throw (RuntimeException) th;
-      if (th instanceof Error) throw (Error) th;
-      throw new RuntimeException(th);
+    if (!suppressExceptions) {
+      IOUtils.reThrow(th);
     }
   }
 
