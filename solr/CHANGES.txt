@@ -89,6 +89,9 @@ New Features
 * SOLR-5300: Shards can be split by specifying arbitrary number of hash ranges
   within the shard's hash range. (shalin)
 
+* SOLR-5226: Add Lucene index heap usage to the Solr admin UI. 
+  (Areek Zillur via Robert Muir)
+
 Bug Fixes
 ----------------------
 * SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.
