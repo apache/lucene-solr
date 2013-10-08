@@ -115,6 +115,9 @@ Bug Fixes
 * SOLR-5305: Admin UI - Reloading System-Information on Dashboard does not work 
   anymore (steffkes)
 
+* SOLR-5314: Shard split action should use soft commits instead of hard commits
+  to make sub shard data visible. (Kalle Aaltonen, shalin)
+
 Security
 ----------------------
 
