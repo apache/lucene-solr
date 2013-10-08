@@ -89,6 +89,10 @@ New Features
   tail" suggestions, when a primary suggester fails to find a
   suggestion.  (Mike McCandless)
 
+* LUCENE-5251: New DocumentDictionary allows building suggesters via
+  contents of existing field, weight and optionally payload stored
+  fields in an index (Areek Zillur via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
