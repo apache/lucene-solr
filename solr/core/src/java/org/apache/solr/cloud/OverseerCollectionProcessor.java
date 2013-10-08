@@ -699,16 +699,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       collectShardResponses(results, true,
           "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
 
+      log.info("Calling soft commit to make sub shard updates visible");
       String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
       // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
       // and we force open a searcher so that we have documents to show upon switching states
       UpdateResponse updateResponse = null;
       try {
-        updateResponse = commit(coreUrl, true);
+        updateResponse = softCommit(coreUrl);
         processResponse(results, null, coreUrl, updateResponse, slice);
       } catch (Exception e) {
         processResponse(results, e, coreUrl, updateResponse, slice);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib commit on: " + coreUrl, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib softCommit on: " + coreUrl, e);
       }
 
       log.info("Successfully created all replica shards for all sub-slices "
@@ -735,16 +736,15 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
 
-  static UpdateResponse commit(String url, boolean openSearcher) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
     HttpSolrServer server = null;
     try {
       server = new HttpSolrServer(url);
       server.setConnectionTimeout(30000);
-      server.setSoTimeout(60000);
+      server.setSoTimeout(120000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
-      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, openSearcher);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
       return ureq.process(server);
     } finally {
       if (server != null) {
