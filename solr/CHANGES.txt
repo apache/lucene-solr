@@ -147,6 +147,9 @@ Other Changes
 * SOLR-5319: Remove unused and incorrect router name from Collection ZK nodes.
   (Jessica Cheng via shalin)
 
+* SOLR-5321: Remove unnecessary code in Overseer.updateState method which tries to
+  use router name from message where none is ever sent. (shalin)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
