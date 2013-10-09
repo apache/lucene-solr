@@ -35,7 +35,7 @@
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
 
     <!-- you might need to tweak this from china so it works -->
-    <ibiblio name="working-chinese-mirror" root="http://mirror.netcologne.de/maven2" m2compatible="true" />
+    <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
 
     <!--
     <filesystem name="local-maven-2" m2compatible="true" local="true">

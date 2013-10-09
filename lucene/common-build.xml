@@ -363,7 +363,7 @@
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
-  <property name="ivy_bootstrap_url2" value="http://mirror.netcologne.de/maven2"/>
+  <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
   <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
