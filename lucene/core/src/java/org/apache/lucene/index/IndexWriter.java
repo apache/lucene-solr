@@ -561,7 +561,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             // do here: it was done previously (after we
             // invoked BDS.applyDeletes), whereas here all we
             // did was move the state to disk:
-            deleter.checkpoint(segmentInfos, false);
             checkpointNoSIS();
 
             // we wrote field updates, reopen the reader
