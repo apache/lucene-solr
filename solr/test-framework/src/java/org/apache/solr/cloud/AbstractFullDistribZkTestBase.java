@@ -1537,7 +1537,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     createCollection(null, collectionName, numShards, numReplicas, maxShardsPerNode, null, null);
   }
 
-  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client )  throws SolrServerException, IOException{
+  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client)  throws SolrServerException, IOException{
+    createCollection(collectionInfos, collectionName, collectionProps, client, null);
+  }
+  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client, String confSetName)  throws SolrServerException, IOException{
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
@@ -1552,7 +1555,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if(numShards==null){
       numShards = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(REPLICATION_FACTOR);
     }
-
+    
+    if (confSetName != null) {
+      params.set("collection.configName", confSetName);
+    }
+    
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<Integer>();
     list.add(numShards);
@@ -1590,6 +1597,18 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         CREATE_NODE_SET, createNodeSetStr,
         MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
+  }
+  
+  protected void createCollection(Map<String,List<Integer>> collectionInfos,
+      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
+
+    createCollection(collectionInfos, collectionName,
+        ZkNodeProps.makeMap(
+        NUM_SLICES, numShards,
+        REPLICATION_FACTOR, numReplicas,
+        CREATE_NODE_SET, createNodeSetStr,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        client, configName);
   }
 
   @Override
