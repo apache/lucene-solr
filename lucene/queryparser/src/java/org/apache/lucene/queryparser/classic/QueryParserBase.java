@@ -23,9 +23,7 @@ import java.text.DateFormat;
 import java.util.*;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
@@ -34,13 +32,14 @@ import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfigur
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
-public abstract class QueryParserBase implements CommonQueryParserConfiguration {
-
+public abstract class QueryParserBase extends QueryBuilder implements CommonQueryParserConfiguration {
+  
   /** Do not catch this exception in your code, it means you are using methods that you should no longer use. */
   public static class MethodRemovedUseAnother extends Throwable {}
 
@@ -65,9 +64,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   boolean lowercaseExpandedTerms = true;
   MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   boolean allowLeadingWildcard = false;
-  boolean enablePositionIncrements = true;
 
-  Analyzer analyzer;
   String field;
   int phraseSlop = 0;
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
@@ -88,6 +85,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
 
   // So the generated QueryParser(CharStream) won't error out
   protected QueryParserBase() {
+    super(null);
   }
 
   /** Initializes a query parser.  Called by the QueryParser constructor
@@ -96,7 +94,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    *  @param a   used to find terms in the query text.
    */
   public void init(Version matchVersion, String f, Analyzer a) {
-    analyzer = a;
+    setAnalyzer(a);
     field = f;
     setAutoGeneratePhraseQueries(false);
   }
@@ -133,15 +131,6 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
       e.initCause(tmc);
       throw e;
     }
-  }
-
-
-   /**
-   * @return Returns the analyzer.
-   */
-  @Override
-  public Analyzer getAnalyzer() {
-    return analyzer;
   }
 
   /**
@@ -245,29 +234,6 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   @Override
   public boolean getAllowLeadingWildcard() {
     return allowLeadingWildcard;
-  }
-
-  /**
-   * Set to <code>true</code> to enable position increments in result query.
-   * <p>
-   * When set, result phrase and multi-phrase queries will
-   * be aware of position increments.
-   * Useful when e.g. a StopFilter increases the position increment of
-   * the token that follows an omitted token.
-   * <p>
-   * Default: true.
-   */
-  @Override
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
-  }
-
-  /**
-   * @see #setEnablePositionIncrements(boolean)
-   */
-  @Override
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
   }
 
   /**
@@ -488,193 +454,15 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
-    return newFieldQuery(analyzer, field, queryText, quoted);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted);
   }
   
   /**
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted)  throws ParseException {
-    // Use the analyzer to get all the tokens, and then build a TermQuery,
-    // PhraseQuery, or nothing based on the term count
-    CachingTokenFilter buffer = null;
-    TermToBytesRefAttribute termAtt = null;
-    PositionIncrementAttribute posIncrAtt = null;
-    int numTokens = 0;
-    int positionCount = 0;
-    boolean severalTokensAtSamePosition = false;
-    boolean hasMoreTokens = false;    
-    
-    try (TokenStream source = analyzer.tokenStream(field, queryText)) {
-      source.reset();
-      buffer = new CachingTokenFilter(source);
-      buffer.reset();
-
-      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-      }
-      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-      }
-
-      if (termAtt != null) {
-        try {
-          hasMoreTokens = buffer.incrementToken();
-          while (hasMoreTokens) {
-            numTokens++;
-            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-            if (positionIncrement != 0) {
-              positionCount += positionIncrement;
-            } else {
-              severalTokensAtSamePosition = true;
-            }
-            hasMoreTokens = buffer.incrementToken();
-          }
-        } catch (IOException e) {
-          // ignore
-        }
-      }
-    } catch (IOException e) {
-      ParseException p = new ParseException("Eror analyzing query text");
-      p.initCause(e);
-      throw p;
-    }
-    
-    // rewind the buffer stream
-    buffer.reset();
-
-    BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
-
-    if (numTokens == 0)
-      return null;
-    else if (numTokens == 1) {
-      try {
-        boolean hasNext = buffer.incrementToken();
-        assert hasNext == true;
-        termAtt.fillBytesRef();
-      } catch (IOException e) {
-        // safe to ignore, because we know the number of tokens
-      }
-      return newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-    } else {
-      if (severalTokensAtSamePosition || (!quoted && !autoGeneratePhraseQueries)) {
-        if (positionCount == 1 || (!quoted && !autoGeneratePhraseQueries)) {
-          // no phrase query:
-          
-          if (positionCount == 1) {
-            // simple case: only one position, with synonyms
-            BooleanQuery q = newBooleanQuery(true);
-            for (int i = 0; i < numTokens; i++) {
-              try {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                termAtt.fillBytesRef();
-              } catch (IOException e) {
-                // safe to ignore, because we know the number of tokens
-              }
-              Query currentQuery = newTermQuery(
-                  new Term(field, BytesRef.deepCopyOf(bytes)));
-              q.add(currentQuery, BooleanClause.Occur.SHOULD);
-            }
-            return q;
-          } else {
-            // multiple positions
-            BooleanQuery q = newBooleanQuery(false);
-            final BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-            Query currentQuery = null;
-            for (int i = 0; i < numTokens; i++) {
-              try {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                termAtt.fillBytesRef();
-              } catch (IOException e) {
-                // safe to ignore, because we know the number of tokens
-              }
-              if (posIncrAtt != null && posIncrAtt.getPositionIncrement() == 0) {
-                if (!(currentQuery instanceof BooleanQuery)) {
-                  Query t = currentQuery;
-                  currentQuery = newBooleanQuery(true);
-                  ((BooleanQuery)currentQuery).add(t, BooleanClause.Occur.SHOULD);
-                }
-                ((BooleanQuery)currentQuery).add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
-              } else {
-                if (currentQuery != null) {
-                  q.add(currentQuery, occur);
-                }
-                currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-              }
-            }
-            q.add(currentQuery, occur);
-            return q;
-          }
-        }
-        else {
-          // phrase query:
-          MultiPhraseQuery mpq = newMultiPhraseQuery();
-          mpq.setSlop(phraseSlop);
-          List<Term> multiTerms = new ArrayList<Term>();
-          int position = -1;
-          for (int i = 0; i < numTokens; i++) {
-            int positionIncrement = 1;
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              termAtt.fillBytesRef();
-              if (posIncrAtt != null) {
-                positionIncrement = posIncrAtt.getPositionIncrement();
-              }
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
-            }
-
-            if (positionIncrement > 0 && multiTerms.size() > 0) {
-              if (enablePositionIncrements) {
-                mpq.add(multiTerms.toArray(new Term[0]),position);
-              } else {
-                mpq.add(multiTerms.toArray(new Term[0]));
-              }
-              multiTerms.clear();
-            }
-            position += positionIncrement;
-            multiTerms.add(new Term(field, BytesRef.deepCopyOf(bytes)));
-          }
-          if (enablePositionIncrements) {
-            mpq.add(multiTerms.toArray(new Term[0]),position);
-          } else {
-            mpq.add(multiTerms.toArray(new Term[0]));
-          }
-          return mpq;
-        }
-      }
-      else {
-        PhraseQuery pq = newPhraseQuery();
-        pq.setSlop(phraseSlop);
-        int position = -1;
-
-        for (int i = 0; i < numTokens; i++) {
-          int positionIncrement = 1;
-
-          try {
-            boolean hasNext = buffer.incrementToken();
-            assert hasNext == true;
-            termAtt.fillBytesRef();
-            if (posIncrAtt != null) {
-              positionIncrement = posIncrAtt.getPositionIncrement();
-            }
-          } catch (IOException e) {
-            // safe to ignore, because we know the number of tokens
-          }
-
-          if (enablePositionIncrements) {
-            position += positionIncrement;
-            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)),position);
-          } else {
-            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)));
-          }
-        }
-        return pq;
-      }
-    }
+    BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+    return createFieldQuery(analyzer, occur, field, queryText, quoted || autoGeneratePhraseQueries, phraseSlop);
   }
 
 
@@ -741,15 +529,6 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   }
 
  /**
-  * Builds a new BooleanQuery instance
-  * @param disableCoord disable coord
-  * @return new BooleanQuery instance
-  */
-  protected BooleanQuery newBooleanQuery(boolean disableCoord) {
-    return new BooleanQuery(disableCoord);
-  }
-
- /**
   * Builds a new BooleanClause instance
   * @param q sub query
   * @param occur how this clause should occur when matching documents
@@ -757,31 +536,6 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   */
   protected BooleanClause newBooleanClause(Query q, BooleanClause.Occur occur) {
     return new BooleanClause(q, occur);
-  }
-
-  /**
-   * Builds a new TermQuery instance
-   * @param term term
-   * @return new TermQuery instance
-   */
-  protected Query newTermQuery(Term term){
-    return new TermQuery(term);
-  }
-
-  /**
-   * Builds a new PhraseQuery instance
-   * @return new PhraseQuery instance
-   */
-  protected PhraseQuery newPhraseQuery(){
-    return new PhraseQuery();
-  }
-
-  /**
-   * Builds a new MultiPhraseQuery instance
-   * @return new MultiPhraseQuery instance
-   */
-  protected MultiPhraseQuery newMultiPhraseQuery(){
-    return new MultiPhraseQuery();
   }
 
   /**
@@ -823,11 +577,11 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
 
   // TODO: Should this be protected instead?
   private BytesRef analyzeMultitermTerm(String field, String part) {
-    return analyzeMultitermTerm(field, part, analyzer);
+    return analyzeMultitermTerm(field, part, getAnalyzer());
   }
 
   protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
-    if (analyzerIn == null) analyzerIn = analyzer;
+    if (analyzerIn == null) analyzerIn = getAnalyzer();
 
     try (TokenStream source = analyzerIn.tokenStream(field, part)) {
       source.reset();
