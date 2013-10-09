@@ -46,6 +46,10 @@ New Features
   contents of existing field, weight and optionally payload stored
   fields in an index (Areek Zillur via Mike McCandless)
 
+* LUCENE-5261: Add QueryBuilder, a simple API to build queries from
+  the analysis chain directly, or to make it easier to implement
+  query parsers.  (Robert Muir, Uwe Schindler)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
