@@ -308,18 +308,12 @@ public class Overseer {
         Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
         log.info("Update state numShards={} message={}", numShards, message);
 
-        String router = message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME);
         List<String> shardNames  = new ArrayList<String>();
 
         //collection does not yet exist, create placeholders if num shards is specified
         boolean collectionExists = state.getCollections().contains(collection);
         if (!collectionExists && numShards!=null) {
-          if(ImplicitDocRouter.NAME.equals(router)){
-            getShardNames(shardNames, message.getStr("shards",null));
-            numShards = shardNames.size();
-          }else {
-            getShardNames(numShards, shardNames);
-          }
+          getShardNames(numShards, shardNames);
           state = createCollection(state, collection, shardNames, message);
         }
         
