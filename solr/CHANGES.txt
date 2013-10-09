@@ -144,6 +144,9 @@ Other Changes
 * SOLR-5264: Move methods for getting config information from
              FieldMutatingUpdateProcessorFactory to NamedList. (Shawn Heisey)
 
+* SOLR-5319: Remove unused and incorrect router name from Collection ZK nodes.
+  (Jessica Cheng via shalin)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
