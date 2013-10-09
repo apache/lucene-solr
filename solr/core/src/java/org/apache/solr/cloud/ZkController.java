@@ -1160,18 +1160,6 @@ public final class ZkController {
             getConfName(collection, collectionPath, collectionProps);
           }
 
-          if (collectionProps.get(DocCollection.DOC_ROUTER) == null) {
-            Object numShards = collectionProps.get(ZkStateReader.NUM_SHARDS_PROP);
-            if (numShards == null) {
-              numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
-            }
-            if (numShards == null) {
-              collectionProps.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
-            } else {
-              collectionProps.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", DocRouter.DEFAULT_NAME));
-            }
-          }
-
           collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
 
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
