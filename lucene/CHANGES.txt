@@ -67,6 +67,10 @@ Bug Fixes
   descriptor exhaustion, hit at unlucky times inside IndexWriter could
   lead to silently losing deletions. (Shai Erera, Mike McCandless)
 
+* LUCENE-5264: CommonTermsQuery ignored minMustMatch if only high-frequent
+  terms were present in the query and the high-frequent operator was set
+  to SHOULD. (Simon Willnauer)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
