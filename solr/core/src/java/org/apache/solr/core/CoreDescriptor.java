@@ -19,9 +19,11 @@ package org.apache.solr.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.PropertiesUtil;
 
@@ -132,6 +134,19 @@ public class CoreDescriptor {
    */
   public CoreDescriptor(CoreContainer container, String name, String instanceDir,
                         Properties coreProps) {
+    this(container, name, instanceDir, coreProps, null);
+  }
+  
+  /**
+   * Create a new CoreDescriptor.
+   * @param container       the CoreDescriptor's container
+   * @param name            the CoreDescriptor's name
+   * @param instanceDir     a String containing the instanceDir
+   * @param coreProps       a Properties object of the properties for this core
+   * @param params          additional params
+   */
+  public CoreDescriptor(CoreContainer container, String name, String instanceDir,
+                        Properties coreProps, SolrParams params) {
 
     this.coreContainer = container;
 
@@ -169,6 +184,9 @@ public class CoreDescriptor {
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (container.isZooKeeperAware()) {
       cloudDesc = new CloudDescriptor(name, coreProperties);
+      if (params != null) {
+        cloudDesc.setParams(params);
+      }
     }
     else {
       cloudDesc = null;

@@ -118,6 +118,9 @@ Bug Fixes
 * SOLR-5314: Shard split action should use soft commits instead of hard commits
   to make sub shard data visible. (Kalle Aaltonen, shalin)
 
+* SOLR-5306: Extra collection creation parameters like collection.configName are
+  not being respected. (Mark Miller, Liang Tianyu, Nathan Neulinger)
+
 Security
 ----------------------
 

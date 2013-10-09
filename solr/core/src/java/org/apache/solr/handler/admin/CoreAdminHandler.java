@@ -455,7 +455,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       coreProps.setProperty(propName, propValue);
     }
 
-    return new CoreDescriptor(container, name, instancedir, coreProps);
+    return new CoreDescriptor(container, name, instancedir, coreProps, params);
   }
 
   private static String checkNotEmpty(String value, String message) {
