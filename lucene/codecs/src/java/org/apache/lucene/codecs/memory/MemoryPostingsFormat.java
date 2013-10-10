@@ -832,6 +832,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }

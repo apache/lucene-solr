@@ -748,6 +748,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
+    public boolean hasFreqs() {
+      return true;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return (flags & OFFSETS) != 0;
     }

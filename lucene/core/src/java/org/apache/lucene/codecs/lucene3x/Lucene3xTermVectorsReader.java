@@ -349,6 +349,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return true;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return storeOffsets;
     }

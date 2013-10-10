@@ -185,6 +185,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }

@@ -675,6 +675,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return hasFreq;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return hasOffsets;
     }

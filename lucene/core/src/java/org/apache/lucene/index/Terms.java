@@ -109,7 +109,11 @@ public abstract class Terms {
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract int getDocCount() throws IOException;
-  
+
+  /** Returns true if documents in this field store
+   *  per-document term frequency ({@link DocsEnum#freq}). */
+  public abstract boolean hasFreqs();
+
   /** Returns true if documents in this field store offsets. */
   public abstract boolean hasOffsets();
   

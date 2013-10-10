@@ -368,6 +368,11 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
+    public boolean hasFreqs() {
+      return true;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return storeOffsets;
     }

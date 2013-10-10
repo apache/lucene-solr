@@ -37,6 +37,7 @@ public final class MultiTerms extends Terms {
   private final Terms[] subs;
   private final ReaderSlice[] subSlices;
   private final Comparator<BytesRef> termComp;
+  private final boolean hasFreqs;
   private final boolean hasOffsets;
   private final boolean hasPositions;
   private final boolean hasPayloads;
@@ -53,6 +54,7 @@ public final class MultiTerms extends Terms {
     
     Comparator<BytesRef> _termComp = null;
     assert subs.length > 0 : "inefficient: don't use MultiTerms over one sub";
+    boolean _hasFreqs = true;
     boolean _hasOffsets = true;
     boolean _hasPositions = true;
     boolean _hasPayloads = false;
@@ -67,12 +69,14 @@ public final class MultiTerms extends Terms {
           throw new IllegalStateException("sub-readers have different BytesRef.Comparators; cannot merge");
         }
       }
+      _hasFreqs &= subs[i].hasFreqs();
       _hasOffsets &= subs[i].hasOffsets();
       _hasPositions &= subs[i].hasPositions();
       _hasPayloads |= subs[i].hasPayloads();
     }
 
     termComp = _termComp;
+    hasFreqs = _hasFreqs;
     hasOffsets = _hasOffsets;
     hasPositions = _hasPositions;
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
@@ -160,6 +164,11 @@ public final class MultiTerms extends Terms {
   @Override
   public Comparator<BytesRef> getComparator() {
     return termComp;
+  }
+
+  @Override
+  public boolean hasFreqs() {
+    return hasFreqs;
   }
 
   @Override

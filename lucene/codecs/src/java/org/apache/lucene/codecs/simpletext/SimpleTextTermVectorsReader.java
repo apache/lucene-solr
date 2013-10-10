@@ -297,6 +297,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return true;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return hasOffsets;
     }

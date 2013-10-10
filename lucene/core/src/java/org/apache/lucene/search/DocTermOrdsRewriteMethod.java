@@ -121,6 +121,11 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
         }
 
         @Override
+        public boolean hasFreqs() {
+          return false;
+        }
+
+        @Override
         public boolean hasOffsets() {
           return false;
         }

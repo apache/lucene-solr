@@ -281,6 +281,11 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
 
       @Override
+      public boolean hasFreqs() {
+        return delegateTerms.hasFreqs();
+      }
+
+      @Override
       public boolean hasOffsets() {
         return delegateTerms.hasOffsets();
       }
