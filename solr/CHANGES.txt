@@ -121,6 +121,9 @@ Bug Fixes
 * SOLR-5306: Extra collection creation parameters like collection.configName are
   not being respected. (Mark Miller, Liang Tianyu, Nathan Neulinger)
 
+* SOLR-5317: SolrCore persistence bugs if defining SolrCores in solr.xml.
+  (Mark Miller, Yago Riveiro)
+
 Security
 ----------------------
 
