@@ -800,10 +800,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       }
       
       assertEquals(
-          SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
-              + core.getName()),
-          SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
-              "instanceDir")));
+         new File(SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
+              + core.getName())).getAbsolutePath(),
+          new File(SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
+              "instanceDir"))).getAbsolutePath());
     }
   }
 
