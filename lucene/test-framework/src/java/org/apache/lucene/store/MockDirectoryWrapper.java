@@ -1004,4 +1004,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
   }
+
+  /** Use this when throwing fake {@code IOException},
+   *  e.g. from {@link MockDirectoryWrapper.Failure}. */
+  public static class FakeIOException extends IOException {
+  }
 }

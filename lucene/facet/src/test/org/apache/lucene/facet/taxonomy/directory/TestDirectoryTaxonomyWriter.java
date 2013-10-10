@@ -413,4 +413,27 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     dir.close();
   }
   
+  
+  @Test
+  public void testReplaceTaxoWithLargeTaxonomy() throws Exception {
+    Directory srcTaxoDir = newDirectory(), targetTaxoDir = newDirectory();
+    
+    // build source, large, taxonomy
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(srcTaxoDir);
+    int ord = taxoWriter.addCategory(new CategoryPath("A/1/1/1/1/1/1", '/'));
+    taxoWriter.close();
+    
+    taxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
+    int ordinal = taxoWriter.addCategory(new CategoryPath("B/1", '/'));
+    assertEquals(1, taxoWriter.getParent(ordinal)); // call getParent to initialize taxoArrays
+    taxoWriter.commit();
+    
+    taxoWriter.replaceTaxonomy(srcTaxoDir);
+    assertEquals(ord - 1, taxoWriter.getParent(ord));
+    taxoWriter.close();
+    
+    srcTaxoDir.close();
+    targetTaxoDir.close();
+  }
+  
 }

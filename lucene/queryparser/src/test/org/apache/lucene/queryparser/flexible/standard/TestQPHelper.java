@@ -70,6 +70,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 /**
@@ -81,7 +83,17 @@ import org.junit.Ignore;
 // TODO: really this should extend QueryParserTestBase too!
 public class TestQPHelper extends LuceneTestCase {
 
-  public static Analyzer qpAnalyzer = new QPTestAnalyzer();
+  public static Analyzer qpAnalyzer;
+
+  @BeforeClass
+  public static void beforeClass() {
+    qpAnalyzer = new QPTestAnalyzer();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    qpAnalyzer = null;
+  }
 
   public static final class QPTestFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

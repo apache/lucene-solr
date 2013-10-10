@@ -40,6 +40,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -322,7 +323,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           int value = 100;
           try {
             latch.await();
-            for (int i = 0; i < 1000; i++) {
+            for (int j = 0; j < 1000; j++) {
               Document doc = new Document();
               doc.add(newTextField("content", "aaa", Field.Store.NO));
               doc.add(newStringField("id", String.valueOf(id++), Field.Store.YES));
@@ -1226,5 +1227,175 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertNotNull(MultiFields.getLiveDocs(r));
     r.close();
     d.close();
+  }
+
+  // Make sure if we hit a transient IOException (e.g., disk
+  // full), and then the exception stops (e.g., disk frees
+  // up), so we successfully close IW or open an NRT
+  // reader, we don't lose any deletes:
+  public void testNoLostDeletesOnIOException() throws Exception {
+
+    int deleteCount = 0;
+    int docBase = 0;
+    int docCount = 0;
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    final AtomicBoolean shouldFail = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            StackTraceElement[] trace = new Exception().getStackTrace();
+            if (shouldFail.get() == false) {
+              return;
+            }
+
+            boolean sawSeal = false;
+            boolean sawWrite = false;
+            for (int i = 0; i < trace.length; i++) {
+              if ("sealFlushedSegment".equals(trace[i].getMethodName())) {
+                sawSeal = true;
+                break;
+              }
+              if ("writeLiveDocs".equals(trace[i].getMethodName())) {
+                sawWrite = true;
+              }
+            }
+
+            // Don't throw exc if we are "flushing", else
+            // the segment is aborted and docs are lost:
+            if (sawWrite && sawSeal == false && random().nextInt(3) == 2) {
+              // Only sometimes throw the exc, so we get
+              // it sometimes on creating the file, on
+              // flushing buffer, on closing the file:
+              if (VERBOSE) {
+                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+                new Throwable().printStackTrace(System.out);
+              }
+              shouldFail.set(false);
+              throw new FakeIOException();
+            }
+          }
+      });
+
+    RandomIndexWriter w = null;
+
+    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+      int numDocs = atLeast(100);
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " numDocs=" + numDocs + " docBase=" + docBase + " delCount=" + deleteCount);
+      }
+      if (w == null) {
+        IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+        final MergeScheduler ms = iwc.getMergeScheduler();
+        if (ms instanceof ConcurrentMergeScheduler) {
+          final ConcurrentMergeScheduler suppressFakeIOE = new ConcurrentMergeScheduler() {
+              @Override
+              protected void handleMergeException(Throwable exc) {
+                // suppress only FakeIOException:
+                if (!(exc instanceof FakeIOException)) {
+                  super.handleMergeException(exc);
+                }
+              }
+            };
+          final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
+          suppressFakeIOE.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
+          suppressFakeIOE.setMergeThreadPriority(cms.getMergeThreadPriority());
+          iwc.setMergeScheduler(suppressFakeIOE);
+        }
+        w = new RandomIndexWriter(random(), dir, iwc);
+        // Since we hit exc during merging, a partial
+        // forceMerge can easily return when there are still
+        // too many segments in the index:
+        w.setDoRandomForceMergeAssert(false);
+      }
+      for(int i=0;i<numDocs;i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", ""+(docBase+i), Field.Store.NO));
+        w.addDocument(doc);
+      }
+      docCount += numDocs;
+
+      // TODO: we could make the test more evil, by letting
+      // it throw more than one exc, randomly, before "recovering"
+
+      // TODO: we could also install an infoStream and try
+      // to fail in "more evil" places inside BDS
+
+      shouldFail.set(true);
+
+      try {
+
+        for(int i=0;i<numDocs;i++) {
+          if (random().nextInt(10) == 7) {
+            if (VERBOSE) {
+              System.out.println("  delete id=" + (docBase+i));
+            }
+            deleteCount++;
+            w.deleteDocuments(new Term("id", ""+(docBase+i)));
+          }
+        }
+
+        // Trigger writeLiveDocs so we hit fake exc:
+        IndexReader r = w.getReader(true);
+
+        // Sometimes we will make it here (we only randomly
+        // throw the exc):
+        assertEquals(docCount-deleteCount, r.numDocs());
+        r.close();
+
+        // TODO: also call w.close() in here, sometimes,
+        // so we sometimes get a fail via dropAll
+
+      } catch (FakeIOException ioe) {
+        // expected
+        if (VERBOSE) {
+          System.out.println("TEST: w.close() hit expected IOE");
+        }
+        // No exception should happen here (we only fail once):
+      }
+      shouldFail.set(false);
+
+      IndexReader r;
+
+      if (random().nextBoolean()) {
+        // Open non-NRT reader, to make sure the "on
+        // disk" bits are good:
+        if (VERBOSE) {
+          System.out.println("TEST: verify against non-NRT reader");
+        }
+        w.commit();
+        r = DirectoryReader.open(dir);
+      } else {
+        if (VERBOSE) {
+          System.out.println("TEST: verify against NRT reader");
+        }
+        r = w.getReader();
+      }
+      assertEquals(docCount-deleteCount, r.numDocs());
+      r.close();
+
+      // Sometimes re-use RIW, other times open new one:
+      if (random().nextBoolean()) {
+        if (VERBOSE) {
+          System.out.println("TEST: close writer");
+        }
+        w.close();
+        w = null;
+      }
+
+      docBase += numDocs;
+    }
+
+    if (w != null) {
+      w.close();
+    }
+
+    // Final verify:
+    IndexReader r = DirectoryReader.open(dir);
+    assertEquals(docCount-deleteCount, r.numDocs());
+    r.close();
+
+    dir.close();
   }
 }

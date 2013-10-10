@@ -64,8 +64,9 @@ final class StandardDirectoryReader extends DirectoryReader {
           } catch(IOException ex) {
             prior = ex;
           } finally {
-            if (!success)
+            if (!success) {
               IOUtils.closeWhileHandlingException(prior, readers);
+            }
           }
         }
         return new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false);
@@ -85,10 +86,9 @@ final class StandardDirectoryReader extends DirectoryReader {
 
     final SegmentInfos segmentInfos = infos.clone();
     int infosUpto = 0;
-    for (int i=0;i<numSegments;i++) {
-      IOException prior = null;
-      boolean success = false;
-      try {
+    boolean success = false;
+    try {
+      for (int i = 0; i < numSegments; i++) {
         // NOTE: important that we use infos not
         // segmentInfos here, so that we are passing the
         // actual instance of SegmentInfoPerCommit in
@@ -103,23 +103,30 @@ final class StandardDirectoryReader extends DirectoryReader {
             readers.add(reader);
             infosUpto++;
           } else {
-            reader.close();
+            reader.decRef();
             segmentInfos.remove(infosUpto);
           }
         } finally {
           writer.readerPool.release(rld);
         }
-        success = true;
-      } catch(IOException ex) {
-        prior = ex;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(prior, readers);
+      }
+      StandardDirectoryReader result = new StandardDirectoryReader(dir,
+          readers.toArray(new SegmentReader[readers.size()]), writer,
+          segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(), applyAllDeletes);
+      success = true;
+      return result;
+    } finally {
+      if (!success) {
+        for (SegmentReader r : readers) {
+          try {
+            r.decRef();
+          } catch (Throwable th) {
+            // ignore any exception that is thrown here to not mask any original
+            // exception. 
+          }
         }
       }
     }
-    return new StandardDirectoryReader(dir, readers.toArray(new SegmentReader[readers.size()]),
-      writer, segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(), applyAllDeletes);
   }
 
   /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
@@ -177,7 +184,7 @@ final class StandardDirectoryReader extends DirectoryReader {
             // Steal the ref returned by SegmentReader ctor:
             assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
             assert infos.info(i).hasDeletions();
-            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core, IOContext.READ);
+            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core);
           }
         }
         success = true;
@@ -204,12 +211,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           }
         }
         // throw the first exception
-        if (prior != null) {
-          if (prior instanceof IOException) throw (IOException) prior;
-          if (prior instanceof RuntimeException) throw (RuntimeException) prior;
-          if (prior instanceof Error) throw (Error) prior;
-          throw new RuntimeException(prior);
-        }
+        IOUtils.reThrow(prior);
       }
     }    
     return new StandardDirectoryReader(directory, newReaders, null, infos, termInfosIndexDivisor, false);
@@ -349,7 +351,9 @@ final class StandardDirectoryReader extends DirectoryReader {
       try {
         r.decRef();
       } catch (Throwable t) {
-        if (firstExc == null) firstExc = t;
+        if (firstExc == null) {
+          firstExc = t;
+        }
       }
     }
 
@@ -360,12 +364,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    if (firstExc != null) {
-      if (firstExc instanceof IOException) throw (IOException) firstExc;
-      if (firstExc instanceof RuntimeException) throw (RuntimeException) firstExc;
-      if (firstExc instanceof Error) throw (Error) firstExc;
-      throw new RuntimeException(firstExc);
-    }
+    IOUtils.reThrow(firstExc);
   }
 
   @Override

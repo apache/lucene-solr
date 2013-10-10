@@ -58,7 +58,7 @@ public final class SegmentReader extends AtomicReader {
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        liveDocs = si.info.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
+        liveDocs = si.info.getCodec().liveDocsFormat().readLiveDocs(directory(), si, IOContext.READONCE);
       } else {
         assert si.getDelCount() == 0;
         liveDocs = null;
@@ -80,9 +80,9 @@ public final class SegmentReader extends AtomicReader {
   /** Create new SegmentReader sharing core from a previous
    *  SegmentReader and loading new live docs from a new
    *  deletes file.  Used by openIfChanged. */
-  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, IOContext context) throws IOException {
+  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core) throws IOException {
     this(si, core,
-         si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, context),
+         si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE),
          si.info.getDocCount() - si.getDelCount());
   }
 
@@ -209,6 +209,9 @@ public final class SegmentReader extends AtomicReader {
   // same entry in the FieldCache.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
+    // NOTE: if this ever changes, be sure to fix
+    // SegmentCoreReader.notifyCoreClosedListeners to match!
+    // Today it passes "this" as its coreCacheKey:
     return core;
   }
 
@@ -273,9 +276,9 @@ public final class SegmentReader extends AtomicReader {
    * @lucene.experimental
    */
   public static interface CoreClosedListener {
-    /** Invoked when the shared core of the provided {@link
+    /** Invoked when the shared core of the original {@code
      *  SegmentReader} has closed. */
-    public void onClose(SegmentReader owner);
+    public void onClose(Object ownerCoreCacheKey);
   }
   
   /** Expert: adds a CoreClosedListener to this reader's shared core */

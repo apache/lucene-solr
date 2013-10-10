@@ -214,18 +214,13 @@ public class CommonTermsQuery extends Query {
        * if lowFreq is empty we rewrite the high freq terms in a conjunction to
        * prevent slow queries.
        */
-      if (highFreqOccur == Occur.MUST) {
-        highFreq.setBoost(getBoost());
-        return highFreq;
-      } else {
-        BooleanQuery highFreqConjunction = new BooleanQuery();
+      if (highFreq.getMinimumNumberShouldMatch() == 0 && highFreqOccur != Occur.MUST) {
         for (BooleanClause booleanClause : highFreq) {
-          highFreqConjunction.add(booleanClause.getQuery(), Occur.MUST);
+            booleanClause.setOccur(Occur.MUST);
         }
-        highFreqConjunction.setBoost(getBoost());
-        return highFreqConjunction;
-        
       }
+      highFreq.setBoost(getBoost());
+      return highFreq;
     } else if (highFreq.clauses().isEmpty()) {
       // only do low freq terms - we don't have high freq terms
       lowFreq.setBoost(getBoost());

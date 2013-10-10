@@ -37,6 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -44,6 +45,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 public class TestIndexWriterReader extends LuceneTestCase {
   
@@ -158,6 +160,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r2));
     
     r1.close();
+    assertTrue(r2.isCurrent());
     writer.close();
     assertTrue(r2.isCurrent());
     
@@ -1074,4 +1077,60 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.close();
     d.close();
   }
+  
+  @Test
+  public void testNRTOpenExceptions() throws Exception {
+    // LUCENE-5262: test that several failed attempts to obtain an NRT reader
+    // don't leak file handles.
+    MockDirectoryWrapper dir = newMockDirectory();
+    final AtomicBoolean shouldFail = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        if (shouldFail.get()) {
+          for (int i = 0; i < trace.length; i++) {
+            if ("getReadOnlyClone".equals(trace[i].getMethodName())) {
+              if (VERBOSE) {
+                System.out.println("TEST: now fail; exc:");
+                new Throwable().printStackTrace(System.out);
+              }
+              shouldFail.set(false);
+              throw new FakeIOException();
+            }
+          }
+        }
+      }
+    });
+    
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges from getting in the way
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    // create a segment and open an NRT reader
+    writer.addDocument(new Document());
+    writer.getReader().close();
+    
+    // add a new document so a new NRT reader is required
+    writer.addDocument(new Document());
+
+    // try to obtain an NRT reader twice: first time it fails and closes all the
+    // other NRT readers. second time it fails, but also fails to close the
+    // other NRT reader, since it is already marked closed!
+    for (int i = 0; i < 2; i++) {
+      shouldFail.set(true);
+      try {
+        writer.getReader().close();
+      } catch (FakeIOException e) {
+        // expected
+        if (VERBOSE) {
+          System.out.println("hit expected fake IOE");
+        }
+      }
+    }
+    
+    writer.close();
+    dir.close();
+  }
+
 }

@@ -90,11 +90,8 @@ public final class IOUtils {
 
     if (priorException != null) {
       throw priorException;
-    } else if (th != null) {
-      if (th instanceof IOException) throw (IOException) th;
-      if (th instanceof RuntimeException) throw (RuntimeException) th;
-      if (th instanceof Error) throw (Error) th;
-      throw new RuntimeException(th);
+    } else {
+      reThrow(th);
     }
   }
 
@@ -119,11 +116,8 @@ public final class IOUtils {
 
     if (priorException != null) {
       throw priorException;
-    } else if (th != null) {
-      if (th instanceof IOException) throw (IOException) th;
-      if (th instanceof RuntimeException) throw (RuntimeException) th;
-      if (th instanceof Error) throw (Error) th;
-      throw new RuntimeException(th);
+    } else {
+      reThrow(th);
     }
   }
 
@@ -153,12 +147,7 @@ public final class IOUtils {
       }
     }
 
-    if (th != null) {
-      if (th instanceof IOException) throw (IOException) th;
-      if (th instanceof RuntimeException) throw (RuntimeException) th;
-      if (th instanceof Error) throw (Error) th;
-      throw new RuntimeException(th);
-    }
+    reThrow(th);
   }
   
   /**
@@ -181,12 +170,7 @@ public final class IOUtils {
       }
     }
 
-    if (th != null) {
-      if (th instanceof IOException) throw (IOException) th;
-      if (th instanceof RuntimeException) throw (RuntimeException) th;
-      if (th instanceof Error) throw (Error) th;
-      throw new RuntimeException(th);
-    }
+    reThrow(th);
   }
 
   /**
@@ -238,7 +222,7 @@ public final class IOUtils {
    * @param exception this exception should get the suppressed one added
    * @param suppressed the suppressed exception
    */
-  private static final void addSuppressed(Throwable exception, Throwable suppressed) {
+  private static void addSuppressed(Throwable exception, Throwable suppressed) {
     if (SUPPRESS_METHOD != null && exception != null && suppressed != null) {
       try {
         SUPPRESS_METHOD.invoke(exception, suppressed);
@@ -359,6 +343,27 @@ public final class IOUtils {
       }
     } finally {
       close(fis, fos);
+    }
+  }
+
+  /**
+   * Simple utilty method that takes a previously caught
+   * {@code Throwable} and rethrows either {@code
+   * IOException} or an unchecked exception.  If the
+   * argument is null then this method does nothing.
+   */
+  public static void reThrow(Throwable th) throws IOException {
+    if (th != null) {
+      if (th instanceof IOException) {
+        throw (IOException) th;
+      }
+      if (th instanceof RuntimeException) {
+        throw (RuntimeException) th;
+      }
+      if (th instanceof Error) {
+        throw (Error) th;
+      }
+      throw new RuntimeException(th);
     }
   }
 }
