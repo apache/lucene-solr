@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -140,10 +143,13 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   @Override
   public final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    doPersist(buildSolrXML(cc.getCoreDescriptors()));
+    List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
+    cds.addAll(cc.getCoreDescriptors());
+    cds.addAll(Arrays.asList(coreDescriptors));
+    doPersist(buildSolrXML(cds));
   }
 
-  protected void doPersist(String xml) {
+  protected synchronized void doPersist(String xml) {
     File file = new File(cfg.config.getResourceLoader().getInstanceDir(), ConfigSolr.SOLR_XML_FILE);
     try {
       Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
@@ -163,12 +169,14 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   @Override
   public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    this.persist(cc, coreDescriptors);
+    // coreDescriptors is kind of a useless param - we persist the current state off cc
+    this.persist(cc);
   }
 
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
-    this.persist(cc, oldCD, newCD);
+    // we don't need those params, we just write out the current cc state
+    this.persist(cc);
   }
 
   @Override
