@@ -303,7 +303,7 @@ sammy.get
                 $.ajax
                 (
                   {
-                    url : environment_basepath + '/admin/system?wt=json',
+                    url : config.solr_path + '/admin/info/system?wt=json',
                     dataType : 'json',
                     context : this,
                     beforeSend : function( arr, form, options )

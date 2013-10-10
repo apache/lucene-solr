@@ -386,7 +386,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private boolean createShard(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    log.info("create shard invoked");
+    log.info("Create shard invoked: {}", message);
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
     if(collectionName == null || shard ==null)
@@ -395,19 +395,18 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     DocCollection collection = clusterState.getCollection(collectionName);
     int maxShardsPerNode = collection.getInt(MAX_SHARDS_PER_NODE, 1);
-    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(MAX_SHARDS_PER_NODE, 1));
-//    int minReplicas = message.getInt("minReplicas",repFactor);
-    String createNodeSetStr =message.getStr(CREATE_NODE_SET);
+    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
+    String createNodeSetStr = message.getStr(CREATE_NODE_SET);
 
     ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, numSlices, maxShardsPerNode, repFactor, createNodeSetStr);
 
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
-    // wait for a while until we don't see the collection
+    // wait for a while until we see the shard
     long waitUntil = System.currentTimeMillis() + 30000;
     boolean created = false;
     while (System.currentTimeMillis() < waitUntil) {
       Thread.sleep(100);
-      created = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard) !=null;
+      created = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard) != null;
       if (created) break;
     }
     if (!created)
@@ -677,16 +676,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       collectShardResponses(results, true,
           "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
 
+      log.info("Calling soft commit to make sub shard updates visible");
       String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
       // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
       // and we force open a searcher so that we have documents to show upon switching states
       UpdateResponse updateResponse = null;
       try {
-        updateResponse = commit(coreUrl, true);
+        updateResponse = softCommit(coreUrl);
         processResponse(results, null, coreUrl, updateResponse, slice);
       } catch (Exception e) {
         processResponse(results, e, coreUrl, updateResponse, slice);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib commit on: " + coreUrl, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib softCommit on: " + coreUrl, e);
       }
 
       log.info("Successfully created all replica shards for all sub-slices "
@@ -713,16 +713,15 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
 
-  static UpdateResponse commit(String url, boolean openSearcher) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
     HttpSolrServer server = null;
     try {
       server = new HttpSolrServer(url);
       server.setConnectionTimeout(30000);
-      server.setSoTimeout(60000);
+      server.setSoTimeout(120000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
-      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, openSearcher);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
       return ureq.process(server);
     } finally {
       if (server != null) {

@@ -71,7 +71,7 @@ limitations under the License.
 }
 
 #content #threads #thread-dump tbody .WAITING a,
-#content #threads #thread-dump tbody .TIMED_WAITING .a
+#content #threads #thread-dump tbody .TIMED_WAITING a
 {
   background-image: url( ../../img/ico/hourglass.png );
 }

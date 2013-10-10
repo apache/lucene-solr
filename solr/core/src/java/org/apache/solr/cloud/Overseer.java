@@ -413,10 +413,11 @@ public class Overseer {
       }
 
       private ClusterState createCollection(ClusterState state, String collectionName, List<String> shards , ZkNodeProps message) {
-        log.info("Create collection {} with shards {}", collectionName, shards);;
+        log.info("Create collection {} with shards {}", collectionName, shards);
 
-//        String routerName = message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME);
-        DocRouter router = DocRouter.getDocRouter(message.getStr(OverseerCollectionProcessor.ROUTER,DocRouter.DEFAULT_NAME));
+        Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
+        String routerName = routerSpec.get("name") == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get("name");
+        DocRouter router = DocRouter.getDocRouter(routerName);
 
         List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
 
@@ -447,7 +448,7 @@ public class Overseer {
           }
           if(val != null) collectionProps.put(e.getKey(),val);
         }
-        collectionProps.put(DocCollection.DOC_ROUTER, DocRouter.getRouterSpec(message));
+        collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 

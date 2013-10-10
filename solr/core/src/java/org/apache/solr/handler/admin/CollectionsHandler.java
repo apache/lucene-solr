@@ -111,6 +111,12 @@ public class CollectionsHandler extends RequestHandlerBase {
               "Core container instance missing");
     }
 
+    // Make sure that the core is ZKAware
+    if(!cores.isZooKeeperAware()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Solr instance is not running in SolrCloud mode.");
+    }
+
     // Pick the action
     SolrParams params = req.getParams();
     CollectionAction action = null;
@@ -256,7 +262,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         OverseerCollectionProcessor.DELETEALIAS, "name", name);
     
-    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+    handleResponse(OverseerCollectionProcessor.DELETEALIAS, m, rsp);
   }
 
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {

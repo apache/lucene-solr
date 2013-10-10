@@ -135,6 +135,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     testCustomCollectionsAPI();
     testRouteFieldForHashRouter();
+    testCreateShardRepFactor();
     if (DEBUG) {
       super.printLayout();
     }
@@ -201,7 +202,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
       List<Integer> list = entry.getValue();
       checkForCollection(collection, list, null);
 
-      String url = getUrlFromZk(collection);
+      String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collection);
 
       HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -219,6 +220,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertEquals("implicit", ((Map)coll.get(ROUTER)).get("name") );
     assertNotNull(coll.getStr(REPLICATION_FACTOR));
     assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
+    assertNull("A shard of a Collection configured with implicit router must have null range",
+        coll.getSlice("a").getRange());
 
     List<String> collectionNameList = new ArrayList<String>();
     collectionNameList.addAll(collectionInfos.keySet());
@@ -226,7 +229,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
 
-    String url = getUrlFromZk(collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -325,7 +328,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    url = getUrlFromZk(collectionName);
+    url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     collectionClient = new HttpSolrServer(url);
 
@@ -386,7 +389,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    String url = getUrlFromZk(collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
 
     HttpSolrServer collectionClient = new HttpSolrServer(url);
 
@@ -417,11 +420,52 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   }
 
+  private void testCreateShardRepFactor() throws Exception  {
+    String collectionName = "testCreateShardRepFactor";
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    CloudSolrServer client = null;
+    try {
+      client = createCloudClient(null);
+      Map<String, Object> props = ZkNodeProps.makeMap(
+          REPLICATION_FACTOR, 1,
+          MAX_SHARDS_PER_NODE, 5,
+          NUM_SLICES, 2,
+          "shards", "a,b",
+          "router.name", "implicit");
+
+      createCollection(collectionInfos, collectionName, props, client);
+    } finally {
+      if (client != null) client.shutdown();
+    }
+    ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
+    waitForRecoveriesToFinish(collectionName, zkStateReader, false);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATESHARD.toString());
+    params.set("collection", collectionName);
+    params.set("shard", "x");
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+
+    waitForRecoveriesToFinish(collectionName, zkStateReader, false);
+
+    int replicaCount = 0;
+    int attempts = 0;
+    while (true) {
+      if (attempts > 30) fail("Not enough active replicas in the shard 'x'");
+      zkStateReader.updateClusterState(true);
+      attempts++;
+      replicaCount = zkStateReader.getClusterState().getSlice(collectionName, "x").getReplicas().size();
+      if (replicaCount >= 1) break;
+      Thread.sleep(500);
+    }
+
+    assertEquals("CREATESHARD API created more than replicationFactor number of replicas", 1, replicaCount);
+  }
 
 
-
-  private String getUrlFromZk(String collection) {
-    ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
+  public static String getUrlFromZk(ClusterState clusterState, String collection) {
     Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
 
     if (slices == null) {

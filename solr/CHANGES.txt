@@ -22,6 +22,44 @@ $Id$
 
 ==================  4.5.1 ==================
 
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.
+  (Anshum Gupta, Mark Miller)
+
+* SOLR-5295: The CREATESHARD collection API creates maxShardsPerNode number of
+  replicas if replicationFactor is not specified. (Brett Hoerner, shalin)
+
+* SOLR-5296: Creating a collection with implicit router adds shard ranges
+  to each shard. (shalin)
+
+* SOLR-5263: Fix CloudSolrServer URL cache update race. (Jessica Cheng, Mark Miller)
+
+* SOLR-5297: Admin UI - Threads Screen missing Icon (steffkes)
+
+* SOLR-5301: DELETEALIAS command prints CREATEALIAS in logs (janhoy)
+
+* SOLR-5255: Remove unnecessary call to fetch and watch live nodes in ZkStateReader
+  cluster watcher. (Jessica Cheng via shalin)
+
+* SOLR-5305: Admin UI - Reloading System-Information on Dashboard does not work
+  anymore (steffkes)
+
+* SOLR-5314: Shard split action should use soft commits instead of hard commits
+  to make sub shard data visible. (Kalle Aaltonen, shalin)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
