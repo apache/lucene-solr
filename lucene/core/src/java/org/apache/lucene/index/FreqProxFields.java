@@ -104,6 +104,11 @@ class FreqProxFields extends Fields {
     }
   
     @Override
+    public boolean hasFreqs() {
+      return terms.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;      
+    }
+
+    @Override
     public boolean hasOffsets() {
       // NOTE: the in-memory buffer may have indexed offsets
       // because that's what FieldInfo said when we started,

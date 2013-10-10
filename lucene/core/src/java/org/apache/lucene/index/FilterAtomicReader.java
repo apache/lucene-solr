@@ -119,6 +119,11 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return in.hasFreqs();
+    }
+
+    @Override
     public boolean hasOffsets() {
       return in.hasOffsets();
     }

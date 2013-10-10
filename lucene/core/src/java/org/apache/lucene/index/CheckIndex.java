@@ -744,10 +744,40 @@ public class CheckIndex {
         continue;
       }
       
+      final boolean hasFreqs = terms.hasFreqs();
       final boolean hasPositions = terms.hasPositions();
+      final boolean hasPayloads = terms.hasPayloads();
       final boolean hasOffsets = terms.hasOffsets();
-      // term vectors cannot omit TF
-      final boolean hasFreqs = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+
+      // term vectors cannot omit TF:
+      final boolean expectedHasFreqs = (isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0);
+
+      if (hasFreqs != expectedHasFreqs) {
+        throw new RuntimeException("field \"" + field + "\" should have hasFreqs=" + expectedHasFreqs + " but got " + hasFreqs);
+      }
+
+      if (hasFreqs == false) {
+        if (terms.getSumTotalTermFreq() != -1) {
+          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
+        }
+      }
+
+      if (!isVectors) {
+        final boolean expectedHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+        if (hasPositions != expectedHasPositions) {
+          throw new RuntimeException("field \"" + field + "\" should have hasPositions=" + expectedHasPositions + " but got " + hasPositions);
+        }
+
+        final boolean expectedHasPayloads = fieldInfo.hasPayloads();
+        if (hasPayloads != expectedHasPayloads) {
+          throw new RuntimeException("field \"" + field + "\" should have hasPayloads=" + expectedHasPayloads + " but got " + hasPayloads);
+        }
+
+        final boolean expectedHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        if (hasOffsets != expectedHasOffsets) {
+          throw new RuntimeException("field \"" + field + "\" should have hasOffsets=" + expectedHasOffsets + " but got " + hasOffsets);
+        }
+      }
 
       final TermsEnum termsEnum = terms.iterator(null);
       
@@ -787,6 +817,12 @@ public class CheckIndex {
         
         docs = termsEnum.docs(liveDocs, docs);
         postings = termsEnum.docsAndPositions(liveDocs, postings);
+
+        if (hasFreqs == false) {
+          if (termsEnum.totalTermFreq() != -1) {
+            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be -1)");   
+          }
+        }
         
         if (hasOrd) {
           long ord = -1;
@@ -829,6 +865,13 @@ public class CheckIndex {
             }
             status.totPos += freq;
             totalTermFreq += freq;
+          } else {
+            // When a field didn't index freq, it must
+            // consistently "lie" and pretend that freq was
+            // 1:
+            if (docs2.freq() != 1) {
+              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
+            }
           }
           docCount++;
           

@@ -103,6 +103,9 @@ New Features
   the analysis chain directly, or to make it easier to implement
   query parsers.  (Robert Muir, Uwe Schindler)
 
+* LUCENE-5270: Add Terms.hasFreqs, to determine whether a given field
+  indexed per-doc term frequencies.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead

@@ -691,6 +691,11 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return fieldData.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return fieldData.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }

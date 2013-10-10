@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -85,10 +84,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
       boolean wroteField = false;
 
       boolean hasPositions = terms.hasPositions();
-
-      // TODO: shouldn't we add hasFreqs to Terms?
-      // then we don't need FieldInfos here?
-      boolean hasFreqs = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_ONLY) > 0;
+      boolean hasFreqs = terms.hasFreqs();
       boolean hasPayloads = fieldInfo.hasPayloads();
       boolean hasOffsets = terms.hasOffsets();
 

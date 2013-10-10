@@ -825,6 +825,11 @@ public class MemoryIndex {
             }
 
             @Override
+            public boolean hasFreqs() {
+              return true;
+            }
+
+            @Override
             public boolean hasOffsets() {
               return storeOffsets;
             }
