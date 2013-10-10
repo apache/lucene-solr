@@ -92,6 +92,9 @@ New Features
 * SOLR-5226: Add Lucene index heap usage to the Solr admin UI. 
   (Areek Zillur via Robert Muir)
 
+* SOLR-5324: Make sub shard replica recovery and shard state switch asynchronous.
+  (Yago Riveiro, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.

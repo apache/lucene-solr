@@ -38,6 +38,7 @@ public class CloudDescriptor {
    * Use the values from {@link Slice} instead */
   volatile String shardRange = null;
   volatile String shardState = Slice.ACTIVE;
+  volatile String shardParent = null;
 
   volatile boolean isLeader = false;
   volatile String lastPublished = ZkStateReader.ACTIVE;
@@ -45,6 +46,7 @@ public class CloudDescriptor {
   public static final String SHARD_STATE = "shardState";
   public static final String NUM_SHARDS = "numShards";
   public static final String SHARD_RANGE = "shardRange";
+  public static final String SHARD_PARENT = "shardParent";
 
   public CloudDescriptor(String coreName, Properties props) {
     this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
@@ -55,6 +57,7 @@ public class CloudDescriptor {
     this.shardState = props.getProperty(CloudDescriptor.SHARD_STATE, Slice.ACTIVE);
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
     this.shardRange = props.getProperty(CloudDescriptor.SHARD_RANGE, null);
+    this.shardParent = props.getProperty(CloudDescriptor.SHARD_PARENT, null);
   }
   
   public String getLastPublished() {
@@ -133,5 +136,13 @@ public class CloudDescriptor {
 
   public void setShardState(String shardState) {
     this.shardState = shardState;
+  }
+
+  public String getShardParent() {
+    return shardParent;
+  }
+
+  public void setShardParent(String shardParent) {
+    this.shardParent = shardParent;
   }
 }

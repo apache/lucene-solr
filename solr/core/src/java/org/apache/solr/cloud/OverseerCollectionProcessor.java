@@ -524,18 +524,19 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         if (oSlice != null) {
           if (Slice.ACTIVE.equals(oSlice.getState())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
-          } else if (Slice.CONSTRUCTION.equals(oSlice.getState()))  {
-            for (Replica replica : oSlice.getReplicas()) {
-              if (clusterState.liveNodesContain(replica.getNodeName())) {
-                String core = replica.getStr("core");
-                log.info("Unloading core: " + core + " from node: " + replica.getNodeName());
-                ModifiableSolrParams params = new ModifiableSolrParams();
-                params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-                params.set(CoreAdminParams.CORE, core);
-                params.set(CoreAdminParams.DELETE_INDEX, "true");
-                sendShardRequest(replica.getNodeName(), params);
-              } else  {
-                log.warn("Replica {} exists in shard {} but is not live and cannot be unloaded", replica, oSlice);
+          } else if (Slice.CONSTRUCTION.equals(oSlice.getState()) || Slice.RECOVERY.equals(oSlice.getState()))  {
+            // delete the shards
+            for (String sub : subSlices) {
+              log.info("Sub-shard: {} already exists therefore requesting its deletion", sub);
+              Map<String, Object> propMap = new HashMap<String, Object>();
+              propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
+              propMap.put(COLLECTION_PROP, collectionName);
+              propMap.put(SHARD_ID_PROP, sub);
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              try {
+                deleteShard(clusterState, m, new NamedList());
+              } catch (Exception e) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + sub, e);
               }
             }
           }
@@ -564,6 +565,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         params.set(CoreAdminParams.SHARD, subSlice);
         params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
         params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
+        params.set(CoreAdminParams.SHARD_PARENT, parentSlice.getName());
 
         sendShardRequest(nodeName, params);
       }
@@ -689,7 +691,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           cmd.setCoreName(subShardNames.get(i-1));
           cmd.setNodeName(subShardNodeName);
           cmd.setCoreNodeName(coreNodeName);
-          cmd.setState(ZkStateReader.ACTIVE);
+          cmd.setState(ZkStateReader.RECOVERING);
           cmd.setCheckLive(true);
           cmd.setOnlyIfLeader(true);
           sendShardRequest(nodeName, new ModifiableSolrParams(cmd.getParams()));
@@ -698,6 +700,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
       collectShardResponses(results, true,
           "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
+
+      log.info("Successfully created all replica shards for all sub-slices " + subSlices);
 
       log.info("Calling soft commit to make sub shard updates visible");
       String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
@@ -712,20 +716,31 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib softCommit on: " + coreUrl, e);
       }
 
-      log.info("Successfully created all replica shards for all sub-slices "
-          + subSlices);
-
-      log.info("Requesting update shard state");
-      DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
-      Map<String, Object> propMap = new HashMap<String, Object>();
-      propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
-      propMap.put(slice, Slice.INACTIVE);
-      for (String subSlice : subSlices) {
-        propMap.put(subSlice, Slice.ACTIVE);
+      if (repFactor == 1) {
+        // switch sub shard states to 'active'
+        log.info("Replication factor is 1 so switching shard states");
+        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        Map<String, Object> propMap = new HashMap<String, Object>();
+        propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+        propMap.put(slice, Slice.INACTIVE);
+        for (String subSlice : subSlices) {
+          propMap.put(subSlice, Slice.ACTIVE);
+        }
+        propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        inQueue.offer(ZkStateReader.toJSON(m));
+      } else  {
+        log.info("Requesting shard state be set to 'recovery'");
+        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        Map<String, Object> propMap = new HashMap<String, Object>();
+        propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+        for (String subSlice : subSlices) {
+          propMap.put(subSlice, Slice.RECOVERY);
+        }
+        propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        inQueue.offer(ZkStateReader.toJSON(m));
       }
-      propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
-      ZkNodeProps m = new ZkNodeProps(propMap);
-      inQueue.offer(ZkStateReader.toJSON(m));
 
       return true;
     } catch (SolrException e) {
@@ -819,7 +834,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
-    if (!(slice.getRange() == null || slice.getState().equals(Slice.INACTIVE))) {
+    if (!(slice.getRange() == null || slice.getState().equals(Slice.INACTIVE) || slice.getState().equals(Slice.RECOVERY))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The slice: " + slice.getName() + " is currently "
           + slice.getState() + ". Only INACTIVE (or custom-hashed) slices can be deleted.");

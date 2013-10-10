@@ -234,7 +234,7 @@ public class Overseer {
 
     private ClusterState updateShardState(ClusterState clusterState, ZkNodeProps message) {
       String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-      log.info("Update shard state invoked for collection: " + collection);
+      log.info("Update shard state invoked for collection: " + collection + " with message: " + message);
       for (String key : message.keySet()) {
         if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;
         if (QUEUE_OPERATION.equals(key)) continue;
@@ -245,6 +245,9 @@ public class Overseer {
         }
         log.info("Update shard state " + key + " to " + message.getStr(key));
         Map<String, Object> props = slice.shallowCopy();
+        if (Slice.RECOVERY.equals(props.get(Slice.STATE)) && Slice.ACTIVE.equals(message.getStr(key))) {
+          props.remove(Slice.PARENT);
+        }
         props.put(Slice.STATE, message.getStr(key));
         Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
         clusterState = updateSlice(clusterState, collection, newSlice);
@@ -344,14 +347,6 @@ public class Overseer {
         replicaProps.putAll(message.getProperties());
         // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
         if (slice != null) {
-          String sliceState = slice.getState();
-          
-          // throw an exception if the slice is not yet active.
-
-          //if(!sliceState.equals(Slice.ACTIVE)) {
-          //  throw new SolrException(ErrorCode.BAD_REQUEST, "Can not assign core to a non-active slice [" + slice.getName() + "]");
-          //}
-          
           Replica oldReplica = slice.getReplicasMap().get(coreNodeName);
           if (oldReplica != null && oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
             replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
@@ -380,6 +375,7 @@ public class Overseer {
           // remove shard specific properties
           String shardRange = (String) replicaProps.remove(ZkStateReader.SHARD_RANGE_PROP);
           String shardState = (String) replicaProps.remove(ZkStateReader.SHARD_STATE_PROP);
+          String shardParent = (String) replicaProps.remove(ZkStateReader.SHARD_PARENT_PROP);
 
 
           Replica replica = new Replica(coreNodeName, replicaProps);
@@ -390,6 +386,9 @@ public class Overseer {
           Map<String,Replica> replicas;
 
           if (slice != null) {
+            state = checkAndCompleteShardSplit(state, collection, coreNodeName, sliceName, replicaProps);
+            // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
+            slice = state.getSlice(collection, sliceName);
             sliceProps = slice.getProperties();
             replicas = slice.getReplicasCopy();
           } else {
@@ -397,6 +396,7 @@ public class Overseer {
             sliceProps = new HashMap<String, Object>();
             sliceProps.put(Slice.RANGE, shardRange);
             sliceProps.put(Slice.STATE, shardState);
+            sliceProps.put(Slice.PARENT, shardParent);
           }
 
           replicas.put(replica.getName(), replica);
@@ -406,7 +406,72 @@ public class Overseer {
           return newClusterState;
       }
 
-      private ClusterState createCollection(ClusterState state, String collectionName, List<String> shards , ZkNodeProps message) {
+    private ClusterState checkAndCompleteShardSplit(ClusterState state, String collection, String coreNodeName, String sliceName, Map<String,Object> replicaProps) {
+      Slice slice = state.getSlice(collection, sliceName);
+      Map<String, Object> sliceProps = slice.getProperties();
+      String sliceState = slice.getState();
+      if (Slice.RECOVERY.equals(sliceState))  {
+        log.info("Shard: {} is in recovery state", sliceName);
+        // is this replica active?
+        if (ZkStateReader.ACTIVE.equals(replicaProps.get(ZkStateReader.STATE_PROP))) {
+          log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
+          // are all other replicas also active?
+          boolean allActive = true;
+          for (Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
+            if (coreNodeName.equals(entry.getKey()))  continue;
+            if (!Slice.ACTIVE.equals(entry.getValue().getStr(Slice.STATE))) {
+              allActive = false;
+              break;
+            }
+          }
+          if (allActive)  {
+            log.info("Shard: {} - all replicas are active. Finding status of fellow sub-shards", sliceName);
+            // find out about other sub shards
+            Map<String, Slice> allSlicesCopy = new HashMap<String, Slice>(state.getSlicesMap(collection));
+            List<Slice> subShardSlices = new ArrayList<Slice>();
+            outer:
+            for (Entry<String, Slice> entry : allSlicesCopy.entrySet()) {
+              if (sliceName.equals(entry.getKey()))
+                continue;
+              Slice otherSlice = entry.getValue();
+              if (Slice.RECOVERY.equals(otherSlice.getState())) {
+                if (slice.getParent() != null && slice.getParent().equals(otherSlice.getParent()))  {
+                  log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
+                  // this is a fellow sub shard so check if all replicas are active
+                  for (Entry<String, Replica> sliceEntry : otherSlice.getReplicasMap().entrySet()) {
+                    if (!ZkStateReader.ACTIVE.equals(sliceEntry.getValue().getStr(ZkStateReader.STATE_PROP)))  {
+                      allActive = false;
+                      break outer;
+                    }
+                  }
+                  log.info("Shard: {} - Fellow sub-shard: {} has all replicas active", sliceName, otherSlice.getName());
+                  subShardSlices.add(otherSlice);
+                }
+              }
+            }
+            if (allActive)  {
+              // hurray, all sub shard replicas are active
+              log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE. Preparing to switch shard states.", sliceName);
+              String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
+
+              Map<String, Object> propMap = new HashMap<String, Object>();
+              propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+              propMap.put(parentSliceName, Slice.INACTIVE);
+              propMap.put(sliceName, Slice.ACTIVE);
+              for (Slice subShardSlice : subShardSlices) {
+                propMap.put(subShardSlice.getName(), Slice.ACTIVE);
+              }
+              propMap.put(ZkStateReader.COLLECTION_PROP, collection);
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              state = updateShardState(state, m);
+            }
+          }
+        }
+      }
+      return state;
+    }
+
+    private ClusterState createCollection(ClusterState state, String collectionName, List<String> shards , ZkNodeProps message) {
         log.info("Create collection {} with shards {}", collectionName, shards);
 
         Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
