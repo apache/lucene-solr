@@ -60,6 +60,9 @@ Bug Fixes
 * SOLR-5314: Shard split action should use soft commits instead of hard commits
   to make sub shard data visible. (Kalle Aaltonen, shalin)
 
+* SOLR-5327: SOLR-4915, "The root cause should be returned to the user when a SolrCore create
+  call fails", was reverted. (Mark Miller)
+  
 ==================  4.5.0 ==================
 
 Versions of Major Components
