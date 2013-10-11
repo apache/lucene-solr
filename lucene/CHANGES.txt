@@ -106,6 +106,8 @@ New Features
 * LUCENE-5270: Add Terms.hasFreqs, to determine whether a given field
   indexed per-doc term frequencies.  (Mike McCandless)
 
+* LUCENE-5269: Add CodepointCountFilter. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
@@ -132,8 +134,7 @@ Bug Fixes
   to SHOULD. (Simon Willnauer)
 
 * LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
-  unicode characters incorrectly. Adds CodepointCountFilter.
-  (Mike McCandless, Robert Muir)
+  unicode characters incorrectly. (Mike McCandless, Robert Muir)
 
 API Changes:
 
