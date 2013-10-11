@@ -248,6 +248,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         + System.currentTimeMillis() + "halfcollection" + "_hdn";
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(2);
+    if (secondConfigSet) {
+      createCmd.setCollectionConfigName("conf1");
+    }
     createNewSolrServer("", baseUrl).request(createCmd);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -267,6 +270,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("numShards", 2);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     resp = createNewSolrServer("", baseUrl).request(request);
   }
   
@@ -274,8 +280,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   private void deleteCollectionWithDownNodes() throws Exception {
     String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     // now try to remove a collection when a couple of it's nodes are down
-    createCollection(null, "halfdeletedcollection2", 3, 2, 6,
-        createNewSolrServer("", baseUrl), null);
+    if (secondConfigSet) {
+      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+          createNewSolrServer("", baseUrl), null, "conf2");
+    } else {
+      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+          createNewSolrServer("", baseUrl), null);
+    }
     
     waitForRecoveriesToFinish("halfdeletedcollection2", false);
     
@@ -329,6 +340,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "collection";
     // No Name
     // params.set("name", collectionName);
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -346,6 +360,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "collection";
     params.set("name", collectionName);
     params.set("numShards", 2);
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     params.set(REPLICATION_FACTOR, 10);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -364,6 +381,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "acollection";
     params.set("name", collectionName);
     params.set(REPLICATION_FACTOR, 10);
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -382,6 +402,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("name", collectionName);
     params.set(REPLICATION_FACTOR, 10);
     params.set("numShards", 0);
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -404,6 +427,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         + System.currentTimeMillis() + "halfcollection" + "_3n";
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
+    if (secondConfigSet) {
+      createCmd.setCollectionConfigName("conf1");
+    }
     createNewSolrServer("", baseUrl).request(createCmd);
     
     createCmd = new Create();
@@ -413,6 +439,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         + System.currentTimeMillis() + "halfcollection" + "_3n";
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
+    if (secondConfigSet) {
+      createCmd.setCollectionConfigName("conf1");
+    }
     createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1))).request(createCmd);
     
     params = new ModifiableSolrParams();
@@ -421,6 +450,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("name", collectionName);
     params.set("numShards", 2);
     params.set("wt", "xml");
+    
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     
     String nn1 = ((SolrDispatchFilter) jettys.get(0).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
     String nn2 =  ((SolrDispatchFilter) jettys.get(1).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
@@ -434,6 +467,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     SimpleOrderedMap success = (SimpleOrderedMap) resp.get("success");
     SimpleOrderedMap failure = (SimpleOrderedMap) resp.get("failure");
 
+    assertNotNull(resp.toString(), success);
+    assertNotNull(resp.toString(), failure);
+    
     String val1 = success.getVal(0).toString();
     String val2 = failure.getVal(0).toString();
     assertTrue(val1.contains("SolrException") || val2.contains("SolrException"));
@@ -451,6 +487,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String collectionName = "nodes_used_collection";
 
     params.set("name", collectionName);
+    
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
+    
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     createNewSolrServer("", baseUrl).request(request);
@@ -520,9 +561,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
           // and use this CloudSolrServer to create the collection
           client = createCloudClient("awholynewcollection_" + i);
         }
-        
-        createCollection(collectionInfos, "awholynewcollection_" + i,
-            numShards, replicationFactor, maxShardsPerNode, client, null);
+        if (secondConfigSet) {
+          createCollection(collectionInfos, "awholynewcollection_" + i,
+              numShards, replicationFactor, maxShardsPerNode, client, null, "conf2");
+        } else {
+          createCollection(collectionInfos, "awholynewcollection_" + i,
+              numShards, replicationFactor, maxShardsPerNode, client, null);
+        }
       } finally {
         if (client != null) client.shutdown();
       }
@@ -565,6 +610,19 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish("awholynewcollection_" + j, zkStateReader, false);
+      
+      if (secondConfigSet) {
+        // let's see if they are using the second config set
+        byte[] data = zkStateReader.getZkClient()
+            .getData(
+                ZkStateReader.COLLECTIONS_ZKNODE + "/" + "awholynewcollection_"
+                    + j, null, null, true);
+        assertNotNull(data);
+        ZkNodeProps props = ZkNodeProps.load(data);
+        String configName = props.getStr(ZkController.CONFIGNAME_PROP);
+        assertEquals("conf2", configName);
+        
+      }
     }
     
     checkInstanceDirs(jettys.get(0)); 
@@ -658,6 +716,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "acollectionafterbaddelete";
 
     params.set("name", collectionName);
+    if (secondConfigSet) {
+      params.set("collection.configName", "conf1");
+    }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     createNewSolrServer("", baseUrl).request(request);
@@ -688,7 +749,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     try {
       exp = false;
       try {
-      createCollection(collectionInfos, "awholynewcollection_" + cnt, numShards, replicationFactor, maxShardsPerNode, client, null);
+        createCollection(collectionInfos, "awholynewcollection_" + cnt,
+            numShards, replicationFactor, maxShardsPerNode, client, null, "conf1");
       } catch (SolrException e) {
         exp = true;
       }
@@ -718,7 +780,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionInfos = new HashMap<String,List<Integer>>();
     client = createCloudClient("awholynewcollection_" + (cnt+1));
     try {
-      createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','));
+      createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','), "conf1");
     } finally {
       client.shutdown();
     }
