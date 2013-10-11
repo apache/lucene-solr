@@ -148,8 +148,6 @@ public class SolrXMLCoresLocator implements CoresLocator {
   public synchronized final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
     
-    System.err.println("Persist existing cores:" + cc.getCoreDescriptors());
-    System.err.println("Persist new cores:" + cc.getCoreDescriptors());
     cds.addAll(cc.getCoreDescriptors());
     cds.addAll(Arrays.asList(coreDescriptors));
 
