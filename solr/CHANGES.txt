@@ -97,35 +97,6 @@ New Features
 
 Bug Fixes
 ----------------------
-* SOLR-4590: Collections API should return a nice error when not in SolrCloud mode.
-  (Anshum Gupta, Mark Miller)
-
-* SOLR-5295: The CREATESHARD collection API creates maxShardsPerNode number of
-  replicas if replicationFactor is not specified. (Brett Hoerner, shalin)
-
-* SOLR-5296: Creating a collection with implicit router adds shard ranges
-  to each shard. (shalin)
-
-* SOLR-5263: Fix CloudSolrServer URL cache update race. (Jessica Cheng, Mark Miller)
-
-* SOLR-5297: Admin UI - Threads Screen missing Icon (steffkes)
-
-* SOLR-5301: DELETEALIAS command prints CREATEALIAS in logs (janhoy)
-
-* SOLR-5255: Remove unnecessary call to fetch and watch live nodes in ZkStateReader
-  cluster watcher. (Jessica Cheng via shalin)
-
-* SOLR-5305: Admin UI - Reloading System-Information on Dashboard does not work 
-  anymore (steffkes)
-
-* SOLR-5314: Shard split action should use soft commits instead of hard commits
-  to make sub shard data visible. (Kalle Aaltonen, shalin)
-
-* SOLR-5306: Extra collection creation parameters like collection.configName are
-  not being respected. (Mark Miller, Liang Tianyu, Nathan Neulinger)
-
-* SOLR-5317: SolrCore persistence bugs if defining SolrCores in solr.xml.
-  (Mark Miller, Yago Riveiro)
 
 Security
 ----------------------
