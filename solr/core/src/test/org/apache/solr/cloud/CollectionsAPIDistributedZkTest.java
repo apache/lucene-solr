@@ -65,6 +65,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -99,6 +100,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
+
+  // we randomly use a second config set rather than just one
+  private boolean secondConfigSet = random().nextBoolean();
+
+  private boolean oldStyleSolrXml = false;
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -109,12 +115,49 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
+    useJettyDataDir = false;
+    
+    oldStyleSolrXml = random().nextBoolean();
+    if (oldStyleSolrXml) {
+      System.err.println("Using old style solr.xml");
+    } else {
+      System.err.println("Using new style solr.xml");
+    }
+    if (secondConfigSet ) {
+      String zkHost = zkServer.getZkHost();
+      String zkAddress = zkServer.getZkAddress();
+      SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
+      zkClient.makePath("/solr", false, true);
+      zkClient.close();
+
+      zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
+
+      File solrhome = new File(TEST_HOME());
+      
+      // for now, always upload the config and schema to the canonical names
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "solrconfig.xml", "solrconfig.xml");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "schema.xml", "schema.xml");
+
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "stopwords.txt");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "protwords.txt");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "currency.xml");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "open-exchange-rates.json");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "old_synonyms.txt");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "synonyms.txt");
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "elevate.xml");
+      zkClient.close();
+    }
+
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    // test old style and new style solr.xml
+    return oldStyleSolrXml ? "solr-no-core-old-style.xml" : "solr-no-core.xml";
   }
 
   
@@ -498,6 +541,27 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
+    
+    // sometimes we restart one of the jetty nodes
+    if (random().nextBoolean()) {
+      JettySolrRunner jetty = jettys.get(random().nextInt(jettys.size()));
+      ChaosMonkey.stop(jetty);
+      ChaosMonkey.start(jetty);
+      
+      for (Entry<String,List<Integer>> entry : collectionInfosEntrySet) {
+        String collection = entry.getKey();
+        List<Integer> list = entry.getValue();
+        checkForCollection(collection, list, null);
+        
+        String url = getUrlFromZk(collection);
+        
+        HttpSolrServer collectionClient = new HttpSolrServer(url);
+        
+        // poll for a second - it can take a moment before we are ready to serve
+        waitForNon403or404or503(collectionClient);
+      }
+    }
+
     ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish("awholynewcollection_" + j, zkStateReader, false);
@@ -668,16 +732,18 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         .getFilter()).getCores();
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
-      // look for core props file
-      assertTrue("Could not find expected core.properties file",
-          new File((String) core.getStatistics().get("instanceDir"),
-              "core.properties").exists());
+      if (!oldStyleSolrXml) {
+        // look for core props file
+        assertTrue("Could not find expected core.properties file",
+            new File((String) core.getStatistics().get("instanceDir"),
+                "core.properties").exists());
+      }
       
       assertEquals(
-          SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
-              + core.getName()),
-          SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
-              "instanceDir")));
+         new File(SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
+              + core.getName())).getAbsolutePath(),
+          new File(SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
+              "instanceDir"))).getAbsolutePath());
     }
   }
 

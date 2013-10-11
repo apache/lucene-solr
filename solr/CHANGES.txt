@@ -62,6 +62,9 @@ Bug Fixes
 
 * SOLR-5327: SOLR-4915, "The root cause should be returned to the user when a SolrCore create
   call fails", was reverted. (Mark Miller)
+
+* SOLR-5317: SolrCore persistence bugs if defining SolrCores in solr.xml.
+  (Mark Miller, Yago Riveiro)
   
 ==================  4.5.0 ==================
 

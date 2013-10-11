@@ -148,7 +148,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Map<String,Replica> shards = entry.getValue().getReplicasMap();
         for (Map.Entry<String,Replica> shard : shards.entrySet()) {
-          if (verbose) System.out.println("rstate:"
+          if (verbose) System.out.println("replica:" + shard.getValue().getName() + " rstate:"
               + shard.getValue().getStr(ZkStateReader.STATE_PROP)
               + " live:"
               + clusterState.liveNodesContain(shard.getValue().getNodeName()));
