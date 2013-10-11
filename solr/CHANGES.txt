@@ -180,7 +180,14 @@ Bug Fixes
 
 * SOLR-5325: ZooKeeper connection loss can cause the Overseer to stop processing
   commands. (Christine Poerschke, Mark Miller, Jessica Cheng)
-  
+
+Other Changes
+----------------------
+
+* SOLR-5323: Disable ClusteringComponent by default in collection1 example.
+  The solr.clustering.enabled system property needs to be set to 'true'
+  to enable the clustering contrib (reverts SOLR-4708). (Dawid Weiss)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components
