@@ -245,13 +245,13 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new EdgeNGramTokenizer(TEST_VERSION_CURRENT, reader, 2, 94);
         //TokenStream stream = new SopTokenFilter(tokenizer);
-        TokenStream stream = new ShingleFilter(tokenizer, 54);
+        TokenStream stream = new ShingleFilter(tokenizer, 5);
         //stream = new SopTokenFilter(stream);
         stream = new NGramTokenFilter(TEST_VERSION_CURRENT, stream, 55, 83);
         //stream = new SopTokenFilter(stream);
         return new TokenStreamComponents(tokenizer, stream);
       }  
     };
-    checkRandomData(random(), analyzer, 10);
+    checkRandomData(random(), analyzer, 2000);
   }
 }
