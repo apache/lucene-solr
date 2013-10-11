@@ -71,11 +71,14 @@
     </sequential>
   </target>
 
-  <target name="module-jars-to-solr"
-          depends="jar-test-framework">
+  <target name="module-jars-to-solr" depends="-unpack-lucene-tgz">
+    <pathconvert property="relative.solr.test.framework.lucene.libs" pathsep=",">
+      <path refid="solr.test.framework.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <path refid="solr.test.framework.lucene.libs" />
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.solr.test.framework.lucene.libs}"/>
     </copy>
   </target>
 

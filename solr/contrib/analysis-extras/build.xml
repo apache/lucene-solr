@@ -49,11 +49,14 @@
     code in the analysis-extras contrib, they must remain here in order to
     populate the Solr distribution
    -->
-  <target name="module-jars-to-solr"
-          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik">
+  <target name="module-jars-to-solr" depends="-unpack-lucene-tgz">
+    <pathconvert property="relative.analysis.extras.lucene.libs" pathsep=",">
+      <path refid="analysis.extras.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <path refid="analysis.extras.lucene.libs" />
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.analysis.extras.lucene.libs}"/>
     </copy>
   </target>
 

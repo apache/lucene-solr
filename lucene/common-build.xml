@@ -490,12 +490,35 @@
     <jarify/>
   </target>
 
+  <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
+  <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
+  <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
+  <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
+  <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
+    <ant dir="${common.dir}" target="package-tgz" inheritall="false"/>
+  </target>
+  <target name="-unpack-lucene-tgz" unless="lucene.tgz.unpack.dir.exists">
+    <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
+    <mkdir dir="${lucene.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}"/>
+  </target>
+  <property name="dist.jar.dir.prefix" value="${lucene.tgz.unpack.dir}/lucene"/>
+  <pathconvert property="dist.jar.dir.suffix">
+    <mapper>
+      <chainedmapper>
+        <globmapper from="${common.dir}*" to="*"/>
+        <globmapper from="*build.xml" to="*"/>
+      </chainedmapper>
+    </mapper>
+    <path location="${ant.file}"/>
+  </pathconvert>
+
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
     <element name="parent-poms" optional="yes"/>
     <element name="credentials" optional="yes"/>
     <attribute name="pom.xml"/>
-    <attribute name="jar.file" default="${build.dir}/${final.name}.jar"/>
+    <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
@@ -1353,9 +1376,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <target name="dist-maven"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common"/>
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, -unpack-lucene-tgz, dist-maven-common"/>
   <target name="dist-maven-common"
-          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+          depends="jar-src, javadocs, install-maven-tasks, filter-pom-templates">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
@@ -1379,9 +1402,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <target name="dist-maven-src-java"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common-src-java"/>
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, -unpack-lucene-tgz, dist-maven-common-src-java"/>
   <target name="dist-maven-common-src-java"
-          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+          depends="-unpack-lucene-tgz, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
