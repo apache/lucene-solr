@@ -49,7 +49,7 @@ public class TestScoredDocIDsUtils extends FacetTestCase {
       bits.flip(idx, idx + 1);
     }
     
-    FixedBitSet verify = new FixedBitSet(bits);
+    FixedBitSet verify = bits.clone();
 
     ScoredDocIDs scoredDocIDs = ScoredDocIdsUtils.createScoredDocIds(bits, n); 
 
