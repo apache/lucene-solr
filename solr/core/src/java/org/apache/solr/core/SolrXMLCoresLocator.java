@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,11 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -142,23 +145,33 @@ public class SolrXMLCoresLocator implements CoresLocator {
   }
 
   @Override
-  public final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+  public synchronized final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
+    
+    System.err.println("Persist existing cores:" + cc.getCoreDescriptors());
+    System.err.println("Persist new cores:" + cc.getCoreDescriptors());
     cds.addAll(cc.getCoreDescriptors());
     cds.addAll(Arrays.asList(coreDescriptors));
+
     doPersist(buildSolrXML(cds));
   }
 
-  protected synchronized void doPersist(String xml) {
+  protected void doPersist(String xml) {
     File file = new File(cfg.config.getResourceLoader().getInstanceDir(), ConfigSolr.SOLR_XML_FILE);
+    Writer writer = null;
+    FileOutputStream fos = null;
     try {
-      Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
+      fos = new FileOutputStream(file);
+      writer = new OutputStreamWriter(fos, Charsets.UTF_8);
       writer.write(xml);
       writer.close();
       logger.info("Persisted core descriptions to {}", file.getAbsolutePath());
-    }
-    catch (IOException e) {
-      logger.error("Couldn't persist core descriptions to {} : {}", file.getAbsolutePath(), e);
+    } catch (IOException e) {
+      logger.error("Couldn't persist core descriptions to {} : {}",
+          file.getAbsolutePath(), e);
+    } finally {
+      IOUtils.closeQuietly(writer);
+      IOUtils.closeQuietly(fos);
     }
   }
 
