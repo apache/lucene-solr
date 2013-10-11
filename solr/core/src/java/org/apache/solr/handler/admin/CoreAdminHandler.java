@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -48,6 +49,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -486,9 +488,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (coreContainer.getZkController() != null) {
         coreContainer.preRegisterInZk(dcore);
       }
+
+      // make sure we can write out the descriptor first
       coreContainer.getCoresLocator().create(coreContainer, dcore);
+      
       SolrCore core = coreContainer.create(dcore);
+      
       coreContainer.register(dcore.getName(), core, false);
+      
+      if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
+        // hack - in this case we persist once more because a core create race might
+        // have dropped entries.
+        coreContainer.getCoresLocator().create(coreContainer);
+      }
       rsp.add("core", core.getName());
     }
     catch (Exception ex) {
