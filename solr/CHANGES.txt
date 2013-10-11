@@ -178,6 +178,9 @@ Bug Fixes
 * SOLR-5327: SOLR-4915, "The root cause should be returned to the user when a SolrCore create
   call fails", was reverted. (Mark Miller)
 
+* SOLR-5325: ZooKeeper connection loss can cause the Overseer to stop processing
+  commands. (Christine Poerschke, Mark Miller, Jessica Cheng)
+  
 ==================  4.5.0 ==================
 
 Versions of Major Components

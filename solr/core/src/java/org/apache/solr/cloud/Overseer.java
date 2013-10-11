@@ -56,8 +56,9 @@ public class Overseer {
 
   private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
-
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
+  
+  static enum LeaderStatus { DONT_KNOW, NO, YES };
   
   private class ClusterStateUpdater implements Runnable, ClosableThread {
     
@@ -82,7 +83,12 @@ public class Overseer {
     @Override
     public void run() {
         
-      if (!this.isClosed && amILeader()) {
+      LeaderStatus isLeader = amILeader();
+      while (isLeader == LeaderStatus.DONT_KNOW) {
+        log.debug("am_i_leader unclear {}", isLeader);
+        isLeader = amILeader();  // not a no, not a yes, try ask again
+      }
+      if (!this.isClosed && LeaderStatus.YES == isLeader) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
         synchronized (reader.getUpdateLock()) { // XXX this only protects
@@ -96,14 +102,24 @@ public class Overseer {
               ClusterState clusterState = reader.getClusterState();
               log.info("Replaying operations from work queue.");
               
-              while (head != null && amILeader()) {
-                final ZkNodeProps message = ZkNodeProps.load(head);
-                final String operation = message.getStr(QUEUE_OPERATION);
-                clusterState = processMessage(clusterState, message, operation);
-                zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                    ZkStateReader.toJSON(clusterState), true);
-                
-                workQueue.poll();
+              while (head != null) {
+                isLeader = amILeader();
+                if (LeaderStatus.NO == isLeader) {
+                  break;
+                }
+                else if (LeaderStatus.YES == isLeader) {
+                  final ZkNodeProps message = ZkNodeProps.load(head);
+                  final String operation = message.getStr(QUEUE_OPERATION);
+                  clusterState = processMessage(clusterState, message, operation);
+                  zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                      ZkStateReader.toJSON(clusterState), true);
+                  
+                  workQueue.poll(); // poll-ing removes the element we got by peek-ing
+                }
+                else {
+                  log.info("am_i_leader unclear {}", isLeader);                  
+                  // re-peek below in case our 'head' value is out-of-date by now
+                }
                 
                 head = workQueue.peek();
               }
@@ -126,7 +142,15 @@ public class Overseer {
       }
       
       log.info("Starting to work on the main queue");
-      while (!this.isClosed && amILeader()) {
+      while (!this.isClosed) {
+        isLeader = amILeader();
+        if (LeaderStatus.NO == isLeader) {
+          break;
+        }
+        else if (LeaderStatus.YES != isLeader) {
+          log.debug("am_i_leader unclear {}", isLeader);                  
+          continue; // not a no, not a yes, try ask again
+        }
         synchronized (reader.getUpdateLock()) {
           try {
             byte[] head = stateUpdateQueue.peek();
@@ -275,20 +299,28 @@ public class Overseer {
       return clusterState;
     }
 
-      private boolean amILeader() {
-        try {
-          ZkNodeProps props = ZkNodeProps.load(zkClient.getData("/overseer_elect/leader", null, null, true));
-          if(myId.equals(props.getStr("id"))) {
-            return true;
-          }
-        } catch (KeeperException e) {
-          log.warn("", e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+    private LeaderStatus amILeader() {
+      try {
+        ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
+            "/overseer_elect/leader", null, null, true));
+        if (myId.equals(props.getStr("id"))) {
+          return LeaderStatus.YES;
         }
-        log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
-        return false;
+      } catch (KeeperException e) {
+        if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
+          log.error("", e);
+          return LeaderStatus.DONT_KNOW;
+        } else if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+          log.info("", e);
+        } else {
+          log.warn("", e);
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
+      log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
+      return LeaderStatus.NO;
+    }
     
       /**
        * Try to assign core to the cluster. 

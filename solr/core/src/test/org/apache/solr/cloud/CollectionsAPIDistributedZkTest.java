@@ -605,6 +605,19 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       }
     }
 
+    // sometimes we restart zookeeper
+    if (random().nextBoolean()) {
+      zkServer.shutdown();
+      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+      zkServer.run();
+    }
+    
+    // sometimes we cause a connection loss - sometimes it will hit the overseer
+    if (random().nextBoolean()) {
+      JettySolrRunner jetty = jettys.get(random().nextInt(jettys.size()));
+      ChaosMonkey.causeConnectionLoss(jetty);
+    }
+    
     ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish("awholynewcollection_" + j, zkStateReader, false);
