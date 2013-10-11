@@ -69,6 +69,9 @@ Bug Fixes
  * SOLR-5306: Extra collection creation parameters like collection.configName are
   not being respected. (Mark Miller, Liang Tianyu, Nathan Neulinger)  
   
+* SOLR-5325: ZooKeeper connection loss can cause the Overseer to stop processing
+  commands. (Christine Poerschke, Mark Miller, Jessica Cheng)
+  
 ==================  4.5.0 ==================
 
 Versions of Major Components

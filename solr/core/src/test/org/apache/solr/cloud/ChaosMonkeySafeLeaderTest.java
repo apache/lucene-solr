@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
@@ -137,6 +138,28 @@ public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    
+    // try and make a collection to make sure the overseer has survived the expiration and session loss
+
+    // sometimes we restart zookeeper as well
+    if (random().nextBoolean()) {
+      zkServer.shutdown();
+      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+      zkServer.run();
+    }
+    
+    CloudSolrServer client = createCloudClient("collection1");
+    try {
+        createCollection(null, "testcollection",
+            1, 1, 1, client, null, "conf1");
+
+    } finally {
+      client.shutdown();
+    }
+    List<Integer> numShardsNumReplicas = new ArrayList<Integer>(2);
+    numShardsNumReplicas.add(1);
+    numShardsNumReplicas.add(1);
+    checkForCollection("testcollection",numShardsNumReplicas, null);
   }
 
   private void randomlyEnableAutoSoftCommit() {

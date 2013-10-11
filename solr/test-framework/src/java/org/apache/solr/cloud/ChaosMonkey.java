@@ -153,11 +153,11 @@ public class ChaosMonkey {
     }
   }
   
-  private void causeConnectionLoss(JettySolrRunner jetty) {
+  public static void causeConnectionLoss(JettySolrRunner jetty) {
     causeConnectionLoss(jetty, ZkTestServer.TICK_TIME * 2 + 200);
   }
   
-  private void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
+  public static void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
         .getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
