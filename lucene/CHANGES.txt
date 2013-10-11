@@ -143,6 +143,9 @@ API Changes:
   with IndexSearcher when an ExecutorService is specified.
   (Ryan Ernst, Mike McCandless, Robert Muir)
 
+* LUCENE-5275: Change AttributeSource.toString() to display the current
+  state of attributes. (Robert Muir)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child

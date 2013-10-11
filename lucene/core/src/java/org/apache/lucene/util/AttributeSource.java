@@ -501,4 +501,13 @@ public class AttributeSource {
     }
   }
 
+  /**
+   * Returns a string consisting of the class's simple name, the hex representation of the identity hash code,
+   * and the current reflection of all attributes.
+   * @see #reflectAsString(boolean)
+   */
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this)) + " " + reflectAsString(false);
+  }
 }
