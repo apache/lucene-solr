@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.LengthFilter;
+import org.apache.lucene.analysis.miscellaneous.CodepointCountFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -81,7 +81,7 @@ public final class NGramTokenFilter extends TokenFilter {
    * @param maxGram the largest n-gram to generate
    */
   public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
-    super(new LengthFilter(version, input, minGram, Integer.MAX_VALUE));
+    super(new CodepointCountFilter(version, input, minGram, Integer.MAX_VALUE));
     this.version = version;
     this.charUtils = version.onOrAfter(Version.LUCENE_44)
         ? CharacterUtils.getInstance(version)
