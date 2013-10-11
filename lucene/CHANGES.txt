@@ -19,7 +19,7 @@ Bug Fixes
   to a new reader and closing the original one.  (Shai Erera, Mike
   McCandless)
 
-* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an
+* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an 
   NRT reader hit exceptions. (Shai Erera)
 
 * LUCENE-5263: Transient IOExceptions, e.g. due to disk full or file
@@ -29,6 +29,10 @@ Bug Fixes
 * LUCENE-5264: CommonTermsQuery ignored minMustMatch if only high-frequent
   terms were present in the query and the high-frequent operator was set
   to SHOULD. (Simon Willnauer)
+
+* LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
+  unicode characters incorrectly. (Mike McCandless, Robert Muir)
+
 
 ======================= Lucene 4.5.0 =======================
 
