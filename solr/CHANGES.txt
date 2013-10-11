@@ -159,6 +159,25 @@ Other Changes
 * SOLR-5321: Remove unnecessary code in Overseer.updateState method which tries to
   use router name from message where none is ever sent. (shalin)
 
+==================  4.5.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-5327: SOLR-4915, "The root cause should be returned to the user when a SolrCore create
+  call fails", was reverted. (Mark Miller)
+
 ==================  4.5.0 ==================
 
 Versions of Major Components

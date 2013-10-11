@@ -518,8 +518,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
       
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                              "Error CREATEing SolrCore '" + dcore.getName() + "': " +
-                              ex.getMessage(), ex);
+          "Error CREATEing SolrCore '" + dcore.getName() + "': " +
+          ex.getMessage() + rootMsg, ex);
     }
   }
 
