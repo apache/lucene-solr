@@ -144,15 +144,19 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, 
-            new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 2, 4));
-      }    
-    };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    for (int i = 0; i < 10; i++) {
+      final int min = _TestUtil.nextInt(random(), 2, 10);
+      final int max = _TestUtil.nextInt(random(), min, 20);
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, 
+              new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, min, max));
+        }    
+      };
+      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+    }
   }
   
   public void testEmptyTerm() throws Exception {

@@ -107,15 +107,19 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, reader, 2, 4);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }    
-    };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, 1027, false, false);
+    for (int i = 0; i < 10; i++) {
+      final int min = _TestUtil.nextInt(random(), 2, 10);
+      final int max = _TestUtil.nextInt(random(), min, 20);
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new NGramTokenizer(TEST_VERSION_CURRENT, reader, min, max);
+          return new TokenStreamComponents(tokenizer, tokenizer);
+        }    
+      };
+      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 1027);
+    }
   }
 
   private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {

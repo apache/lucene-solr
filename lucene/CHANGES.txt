@@ -131,6 +131,10 @@ Bug Fixes
   terms were present in the query and the high-frequent operator was set
   to SHOULD. (Simon Willnauer)
 
+* LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
+  unicode characters incorrectly. Adds CodepointCountFilter.
+  (Mike McCandless, Robert Muir)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
