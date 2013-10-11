@@ -38,16 +38,16 @@ import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
- * slow queries due to "common" terms like stopwords. This query basically
- * builds 2 queries off the {@link #add(Term) added} terms where low-frequency
+ * slow queries due to "common" terms like stopwords. This query
+ * builds 2 queries off the {@link #add(Term) added} terms: low-frequency
  * terms are added to a required boolean clause and high-frequency terms are
  * added to an optional boolean clause. The optional clause is only executed if
- * the required "low-frequency' clause matches. Scores produced by this query
- * will be slightly different to plain {@link BooleanQuery} scorer mainly due to
- * differences in the {@link Similarity#coord(int,int) number of leave queries}
- * in the required boolean clause. In the most cases high-frequency terms are
+ * the required "low-frequency" clause matches. Scores produced by this query
+ * will be slightly different than plain {@link BooleanQuery} scorer mainly due to
+ * differences in the {@link Similarity#coord(int,int) number of leaf queries}
+ * in the required boolean clause. In most cases, high-frequency terms are
  * unlikely to significantly contribute to the document score unless at least
- * one of the low-frequency terms are matched such that this query can improve
+ * one of the low-frequency terms are matched.  This query can improve
  * query execution times significantly if applicable.
  * <p>
  * {@link CommonTermsQuery} has several advantages over stopword filtering at
@@ -173,7 +173,7 @@ public class CommonTermsQuery extends Query {
     if (minNrShouldMatch >= 1.0f || minNrShouldMatch == 0.0f) {
       return (int) minNrShouldMatch;
     }
-    return (int) (Math.round(minNrShouldMatch * numOptional));
+    return Math.round(minNrShouldMatch * numOptional);
   }
   
   protected Query buildQuery(final int maxDoc,
