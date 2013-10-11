@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -140,8 +141,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   @Override
   public void run() {
        log.info("Process current queue of collection creations");
-       while (amILeader() && !isClosed) {
+       LeaderStatus isLeader = amILeader();
+       while (isLeader == LeaderStatus.DONT_KNOW) {
+         log.debug("am_i_leader unclear {}", isLeader);
+         isLeader = amILeader();  // not a no, not a yes, try ask again
+       }
+       while (!this.isClosed) {
          try {
+           isLeader = amILeader();
+           if (LeaderStatus.NO == isLeader) {
+             break;
+           }
+           else if (LeaderStatus.YES != isLeader) {
+             log.debug("am_i_leader unclear {}", isLeader);                  
+             continue; // not a no, not a yes, try asking again
+           }
+           
            QueueEvent head = workQueue.peek(true);
            final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
            log.info("Overseer Collection Processor: Get the message id:" + head.getId() + " message:" + message.toString());
@@ -172,20 +187,27 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     isClosed = true;
   }
   
-  protected boolean amILeader() {
+  protected LeaderStatus amILeader() {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           "/overseer_elect/leader", null, null, true));
       if (myId.equals(props.getStr("id"))) {
-        return true;
+        return LeaderStatus.YES;
       }
     } catch (KeeperException e) {
-      log.warn("", e);
+      if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
+        log.error("", e);
+        return LeaderStatus.DONT_KNOW;
+      } else if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+        log.info("", e);
+      } else {
+        log.warn("", e);
+      }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
     log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
-    return false;
+    return LeaderStatus.NO;
   }
   
   
