@@ -182,6 +182,8 @@ Bug Fixes
 * SOLR-5325: ZooKeeper connection loss can cause the Overseer to stop processing
   commands. (Christine Poerschke, Mark Miller, Jessica Cheng)
 
+* SOLR-4327: HttpSolrServer can leak connections on errors. (Karl Wright, Mark Miller)
+
 Other Changes
 ----------------------
 

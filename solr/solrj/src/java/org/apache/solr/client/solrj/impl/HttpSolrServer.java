@@ -360,7 +360,7 @@ public class HttpSolrServer extends SolrServer {
     
     InputStream respBody = null;
     boolean shouldClose = true;
-    
+    boolean success = false;
     try {
       // Execute the method.
       final HttpResponse response = httpClient.execute(method);
@@ -404,6 +404,7 @@ public class HttpSolrServer extends SolrServer {
         rsp.add("stream", respBody);
         // Only case where stream should not be closed
         shouldClose = false;
+        success = true;
         return rsp;
       }
       
@@ -462,6 +463,7 @@ public class HttpSolrServer extends SolrServer {
         }
         throw new RemoteSolrException(httpStatus, reason, null);
       }
+      success = true;
       return rsp;
     } catch (ConnectException e) {
       throw new SolrServerException("Server refused connection at: "
@@ -478,6 +480,9 @@ public class HttpSolrServer extends SolrServer {
         try {
           respBody.close();
         } catch (Throwable t) {} // ignore
+        if (!success) {
+          method.abort();
+        }
       }
     }
   }
