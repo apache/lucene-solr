@@ -125,6 +125,13 @@ Build
 * LUCENE-5249, LUCENE-5257: All Lucene/Solr modules should use the same
   dependency versions. (Steve Rowe)
 
+Tests
+
+* LUCENE-5278: Fix MockTokenizer to work better with more regular expression
+  patterns. Previously it could only behave like CharTokenizer (where a character
+  is either a "word" character or not), but now it gives a general longest-match
+  behavior.  (Nik Everett via Robert Muir)
+
 ======================= Lucene 4.5.0 =======================
 
 New features
