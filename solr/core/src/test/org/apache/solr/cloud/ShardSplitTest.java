@@ -198,6 +198,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       }
     }
 
+    waitForRecoveriesToFinish(false);
     checkDocCountsAndShardStates(docCounts, numReplicas);
   }
 
@@ -273,6 +274,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         }
       }
     }
+
+    waitForRecoveriesToFinish(collectionName, false);
 
     assertEquals(docCounts[0], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_0")).getResults().getNumFound());
     assertEquals(docCounts[1], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_1")).getResults().getNumFound());

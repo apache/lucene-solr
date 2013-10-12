@@ -856,7 +856,7 @@ public final class SolrCore implements SolrInfoMBean {
       
       cd.getCloudDescriptor().setShardState(null);
       cd.getCloudDescriptor().setShardRange(null);
-      
+      cd.getCloudDescriptor().setShardParent(null);
     }
     // For debugging   
 //    numOpens.incrementAndGet();
