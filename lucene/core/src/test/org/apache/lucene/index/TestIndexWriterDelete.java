@@ -1313,6 +1313,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       // to fail in "more evil" places inside BDS
 
       shouldFail.set(true);
+      boolean doClose = false;
 
       try {
 
@@ -1333,9 +1334,16 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         // throw the exc):
         assertEquals(docCount-deleteCount, r.numDocs());
         r.close();
-
-        // TODO: also call w.close() in here, sometimes,
-        // so we sometimes get a fail via dropAll
+        
+        // Sometimes close, so the disk full happens on close:
+        if (random().nextBoolean()) {
+          if (VERBOSE) {
+            System.out.println("  now close writer");
+          }
+          doClose = true;
+          w.close();
+          w = null;
+        }
 
       } catch (FakeIOException ioe) {
         // expected
@@ -1348,13 +1356,23 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       IndexReader r;
 
-      if (random().nextBoolean()) {
+      if (doClose && w != null) {
+        if (VERBOSE) {
+          System.out.println("  now 2nd close writer");
+        }
+        w.close();
+        w = null;
+      }
+
+      if (w == null || random().nextBoolean()) {
         // Open non-NRT reader, to make sure the "on
         // disk" bits are good:
         if (VERBOSE) {
           System.out.println("TEST: verify against non-NRT reader");
         }
-        w.commit();
+        if (w != null) {
+          w.commit();
+        }
         r = DirectoryReader.open(dir);
       } else {
         if (VERBOSE) {
@@ -1366,7 +1384,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       r.close();
 
       // Sometimes re-use RIW, other times open new one:
-      if (random().nextBoolean()) {
+      if (w != null && random().nextBoolean()) {
         if (VERBOSE) {
           System.out.println("TEST: close writer");
         }

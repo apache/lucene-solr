@@ -1027,18 +1027,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         infoStream.message("IW", "now call final commit()");
       }
 
-      // Must do this before commitInternal, in case any of
-      // the dropped readers in the pool wrote a new live
-      // docs: 
-      synchronized(this) {
-        readerPool.dropAll(true);
-      }
-
       if (doFlush) {
         commitInternal();
       }
 
       synchronized(this) {
+        // commitInternal calls ReaderPool.commit, which
+        // writes any pending liveDocs from ReaderPool, so
+        // it's safe to drop all readers now:
+        readerPool.dropAll(true);
         deleter.close();
       }
 
