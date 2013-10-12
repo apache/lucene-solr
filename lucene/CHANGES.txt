@@ -124,6 +124,10 @@ Build
 
 * LUCENE-5249, LUCENE-5257: All Lucene/Solr modules should use the same
   dependency versions. (Steve Rowe)
+  
+* LUCENE-5273: Binary artifacts in Lucene and Solr convenience binary
+  distributions accompanying a release, including on Maven Central,
+  should be identical across all distributions. (Steve Rowe)
 
 Tests
 

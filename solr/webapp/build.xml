@@ -42,7 +42,7 @@
 
   <target name="dist"
           description="Creates the Solr WAR Distribution file."
-          depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
+          depends="test, init-dist, dist-core, dist-solrj, -unpack-lucene-tgz, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"
                     spec.version="${spec.version}"/>
@@ -63,8 +63,9 @@
     </war>
   </target>
 
-  <target name="dist-maven" depends="dist, filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom">
-    <m2-deploy jar.file="${dist}/solr-${version}.war"
+  <target name="dist-maven" 
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, -unpack-solr-tgz">
+    <m2-deploy jar.file="${solr.tgz.unpack.dir}/solr-${version}/dist/solr-${version}.war"
                pom.xml="${filtered.pom.templates.dir}/solr/webapp/pom.xml"/>
   </target>
 </project>

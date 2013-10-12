@@ -44,7 +44,23 @@
   <property name="changes.target.dir" location="${dest}/docs/changes"/>
   <property name="license.dir" location="${common-solr.dir}/licenses"/>
 
+  <property name="solr.tgz.unpack.dir" location="${common-solr.dir}/build/solr.tgz.unpacked"/>
+  <property name="dist.jar.dir.prefix" value="${solr.tgz.unpack.dir}/solr"/>
+  <property name="dist.jar.dir.suffix" value="dist"/>
+
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
+
+  <property name="solr.tgz.file" location="${common-solr.dir}/package/solr-${version}.tgz"/>
+  <available file="${solr.tgz.file}" property="solr.tgz.exists"/>
+  <available type="dir" file="${solr.tgz.unpack.dir}" property="solr.tgz.unpack.dir.exists"/>
+  <target name="-ensure-solr-tgz-exists" unless="solr.tgz.exists">
+    <ant dir="${common-solr.dir}" target="create-package" inheritall="false"/>
+  </target>
+  <target name="-unpack-solr-tgz" unless="${solr.tgz.unpack.dir.exists}">
+    <antcall target="-ensure-solr-tgz-exists"/>
+    <mkdir dir="${solr.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}"/>
+  </target>
 
   <!-- backwards compatibility with existing targets/tasks; TODO: remove this! -->
   <property name="fullnamever" value="${final.name}"/>
@@ -142,19 +158,17 @@
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
-  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
-    <!-- TODO: clean this up -->
+  <target name="lucene-jars-to-solr" depends="-unpack-lucene-tgz">
     <sequential>
-    <ant dir="${common.dir}" target="default" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <path refid="solr.lucene.libs" />
-      <!-- NOTE: lucene-core is not already included in "solr.lucene.libs" 
-	   because of it's use in classpaths.
-      -->
-      <fileset file="${lucene-core.jar}" />
-    </copy>
+      <pathconvert property="relative.solr.lucene.libs" pathsep=",">
+        <path refid="solr.lucene.libs"/>
+        <fileset file="${lucene-core.jar}"/>
+        <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <mkdir dir="${lucene-libs}"/>
+      <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+        <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.solr.lucene.libs}"/>
+      </copy>
     </sequential>
   </target>
 
@@ -309,10 +323,10 @@
   </target>
 
   <target name="dist-maven"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common"/>
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, -unpack-solr-tgz, dist-maven-common"/>
 
   <target name="dist-maven-src-java"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common-src-java"/>
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, -unpack-solr-tgz, dist-maven-common-src-java"/>
 
   <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
     <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">

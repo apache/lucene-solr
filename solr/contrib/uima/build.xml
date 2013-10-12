@@ -26,15 +26,23 @@
 
   <import file="../contrib-build.xml"/>
   
-  <path id="classpath">
+  <path id="uima.lucene.libs">
     <pathelement path="${analyzers-uima.jar}"/>
+  </path>
+
+  <path id="classpath">
+    <path refid="uima.lucene.libs"/>
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="module-jars-to-solr" depends="jar-analyzers-uima">
+  <target name="module-jars-to-solr" depends="-unpack-lucene-tgz">
+    <pathconvert property="relative.uima.lucene.libs" pathsep=",">
+      <path refid="uima.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <fileset file="${analyzers-uima.jar}"/>
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.uima.lucene.libs}"/>
     </copy>
   </target>
 
