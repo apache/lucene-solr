@@ -64,6 +64,11 @@ public class MockTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   int off = 0;
+  
+  // buffered state (previous codepoint and offset). we replay this once we
+  // hit a reject state in case its permissible as the start of a new term.
+  int bufferedCodePoint = -1; // -1 indicates empty buffer
+  int bufferedOff = -1;
 
   // TODO: "register" with LuceneTestCase to ensure all streams are closed() ?
   // currently, we can only check that the lifecycle is correct if someone is reusing,
@@ -121,8 +126,16 @@ public class MockTokenizer extends Tokenizer {
                             : "incrementToken() called while in wrong state: " + streamState;
     clearAttributes();
     for (;;) {
-      int startOffset = off;
-      int cp = readCodePoint();
+      int startOffset;
+      int cp;
+      if (bufferedCodePoint >= 0) {
+        cp = bufferedCodePoint;
+        startOffset = bufferedOff;
+        bufferedCodePoint = -1;
+      } else {
+        startOffset = off;
+        cp = readCodePoint();
+      }
       if (cp < 0) {
         break;
       } else if (isTokenChar(cp)) {
@@ -138,6 +151,14 @@ public class MockTokenizer extends Tokenizer {
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
         
+        if (termAtt.length() < maxTokenLength) {
+          // buffer up, in case the "rejected" char can start a new word of its own
+          bufferedCodePoint = cp;
+          bufferedOff = endOffset;
+        } else {
+          // otherwise, its because we hit term limit.
+          bufferedCodePoint = -1;
+        }
         int correctedStartOffset = correctOffset(startOffset);
         int correctedEndOffset = correctOffset(endOffset);
         assert correctedStartOffset >= 0;
@@ -146,8 +167,11 @@ public class MockTokenizer extends Tokenizer {
         lastOffset = correctedStartOffset;
         assert correctedEndOffset >= correctedStartOffset;
         offsetAtt.setOffset(correctedStartOffset, correctedEndOffset);
-        streamState = State.INCREMENT;
-        return true;
+        if (state == -1 || runAutomaton.isAccept(state)) {
+          // either we hit a reject state (longest match), or end-of-text, but in an accept state
+          streamState = State.INCREMENT;
+          return true;
+        }
       }
     }
     streamState = State.INCREMENT_FALSE;
@@ -203,9 +227,11 @@ public class MockTokenizer extends Tokenizer {
   }
 
   protected boolean isTokenChar(int c) {
-    state = runAutomaton.step(state, c);
     if (state < 0) {
       state = runAutomaton.getInitialState();
+    }
+    state = runAutomaton.step(state, c);
+    if (state < 0) {
       return false;
     } else {
       return true;
@@ -221,6 +247,7 @@ public class MockTokenizer extends Tokenizer {
     super.reset();
     state = runAutomaton.getInitialState();
     lastOffset = off = 0;
+    bufferedCodePoint = -1;
     assert !enableChecks || streamState != State.RESET : "double reset()";
     streamState = State.RESET;
   }

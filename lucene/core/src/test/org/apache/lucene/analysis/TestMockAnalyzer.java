@@ -7,6 +7,7 @@ import java.util.Random;
 
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -62,6 +63,83 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "aba4cadaba-Shazam" });
     assertAnalyzesTo(a, "break+on/Nothing",
         new String[] { "break+on/Nothing" });
+    // currently though emits no tokens for empty string: maybe we can do it,
+    // but we don't want to emit tokens infinitely...
+    assertAnalyzesTo(a, "", new String[0]);
+  }
+  
+  // Test some regular expressions as tokenization patterns
+  /** Test a configuration where each character is a term */
+  public void testSingleChar() throws Exception {
+    CharacterRunAutomaton single =
+        new CharacterRunAutomaton(new RegExp(".").toAutomaton());
+    Analyzer a = new MockAnalyzer(random(), single, false);
+    assertAnalyzesTo(a, "foobar",
+        new String[] { "f", "o", "o", "b", "a", "r" },
+        new int[] { 0, 1, 2, 3, 4, 5 },
+        new int[] { 1, 2, 3, 4, 5, 6 }
+    );
+    checkRandomData(random(), a, 100);
+  }
+  
+  /** Test a configuration where two characters makes a term */
+  public void testTwoChars() throws Exception {
+    CharacterRunAutomaton single =
+        new CharacterRunAutomaton(new RegExp("..").toAutomaton());
+    Analyzer a = new MockAnalyzer(random(), single, false);
+    assertAnalyzesTo(a, "foobar",
+        new String[] { "fo", "ob", "ar"},
+        new int[] { 0, 2, 4 },
+        new int[] { 2, 4, 6 }
+    );
+    // make sure when last term is a "partial" match that end() is correct
+    assertTokenStreamContents(a.tokenStream("bogus", "fooba"),
+        new String[] { "fo", "ob" },
+        new int[] { 0, 2 },
+        new int[] { 2, 4 },
+        new int[] { 1, 1 },
+        new Integer(5)
+    );
+    checkRandomData(random(), a, 100);
+  }
+  
+  /** Test a configuration where three characters makes a term */
+  public void testThreeChars() throws Exception {
+    CharacterRunAutomaton single =
+        new CharacterRunAutomaton(new RegExp("...").toAutomaton());
+    Analyzer a = new MockAnalyzer(random(), single, false);
+    assertAnalyzesTo(a, "foobar",
+        new String[] { "foo", "bar"},
+        new int[] { 0, 3 },
+        new int[] { 3, 6 }
+    );
+    // make sure when last term is a "partial" match that end() is correct
+    assertTokenStreamContents(a.tokenStream("bogus", "fooba"),
+        new String[] { "foo" },
+        new int[] { 0 },
+        new int[] { 3 },
+        new int[] { 1 },
+        new Integer(5)
+    );
+    checkRandomData(random(), a, 100);
+  }
+  
+  /** Test a configuration where word starts with one uppercase */
+  public void testUppercase() throws Exception {
+    CharacterRunAutomaton single =
+        new CharacterRunAutomaton(new RegExp("[A-Z][a-z]*").toAutomaton());
+    Analyzer a = new MockAnalyzer(random(), single, false);
+    assertAnalyzesTo(a, "FooBarBAZ",
+        new String[] { "Foo", "Bar", "B", "A", "Z"},
+        new int[] { 0, 3, 6, 7, 8 },
+        new int[] { 3, 6, 7, 8, 9 }
+    );
+    assertAnalyzesTo(a, "aFooBar",
+        new String[] { "Foo", "Bar" },
+        new int[] { 1, 4 },
+        new int[] { 4, 7 }
+    );
+    checkRandomData(random(), a, 100);
   }
   
   /** Test a configuration that behaves a lot like StopAnalyzer */
@@ -94,6 +172,29 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1, 2 });
   }
   
+  /** Test MockTokenizer encountering a too long token */
+  public void testTooLongToken() throws Exception {
+    Analyzer whitespace = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false, 5);
+        return new TokenStreamComponents(t, t);
+      }
+    };
+    
+    assertTokenStreamContents(whitespace.tokenStream("bogus", "test 123 toolong ok "),
+        new String[] { "test", "123", "toolo", "ng", "ok" },
+        new int[] { 0, 5, 9, 14, 17 },
+        new int[] { 4, 8, 14, 16, 19 },
+        new Integer(20));
+    
+    assertTokenStreamContents(whitespace.tokenStream("bogus", "test 123 toolo"),
+        new String[] { "test", "123", "toolo" },
+        new int[] { 0, 5, 9 },
+        new int[] { 4, 8, 14 },
+        new Integer(14));
+  }
+  
   public void testLUCENE_3042() throws Exception {
     String testString = "t";
     
@@ -112,6 +213,25 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new MockAnalyzer(random()), atLeast(1000));
+  }
+  
+  /** blast some random strings through differently configured tokenizers */
+  public void testRandomRegexps() throws Exception {
+    int iters = atLeast(30);
+    for (int i = 0; i < iters; i++) {
+      final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()));
+      final boolean lowercase = random().nextBoolean();
+      final int limit = _TestUtil.nextInt(random(), 0, 500);
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer t = new MockTokenizer(reader, dfa, lowercase, limit);
+          return new TokenStreamComponents(t, t);
+        }
+      };
+      checkRandomData(random(), a, 100);
+      a.close();
+    }
   }
   
   public void testForwardOffsets() throws Exception {
