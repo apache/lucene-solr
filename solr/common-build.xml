@@ -59,7 +59,9 @@
   <target name="-unpack-solr-tgz" unless="${solr.tgz.unpack.dir.exists}">
     <antcall target="-ensure-solr-tgz-exists"/>
     <mkdir dir="${solr.tgz.unpack.dir}"/>
-    <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}">
+      <patternset refid="patternset.lucene.solr.jars"/>
+    </untar>
   </target>
 
   <!-- backwards compatibility with existing targets/tasks; TODO: remove this! -->
