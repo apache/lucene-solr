@@ -188,7 +188,8 @@ Build
   
 * LUCENE-5273: Binary artifacts in Lucene and Solr convenience binary
   distributions accompanying a release, including on Maven Central,
-  should be identical across all distributions. (Steve Rowe, Uwe Schindler)
+  should be identical across all distributions. (Steve Rowe, Uwe Schindler,
+  Shalin Shekhar Mangar)
 
 Tests
 

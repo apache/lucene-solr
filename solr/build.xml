@@ -465,8 +465,14 @@
   </target>
 
   <target name="create-package"
-          description="Packages the Solr Binary Distribution"
-          depends="init-dist, dist, example, documentation">
+          description="Packages the Solr Binary Distribution">
+    <antcall inheritall="true">
+      <param name="called.from.create-package" value="true"/>
+      <target name="init-dist"/>
+      <target name="dist"/>
+      <target name="example"/>
+      <target name="documentation"/>
+    </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/solr-webapp" includes="**/*"/>
