@@ -41,10 +41,10 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.TermFreq;
-import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.search.suggest.TermFreqPayload;
+import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -54,14 +54,14 @@ import org.junit.Ignore;
 public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo bar baz blah", 50),
-        new TermFreq("boo foo bar foo bee", 20)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo bar baz blah", 50),
+        new TermFreqPayload("boo foo bar foo bee", 20)
     );
 
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
 
     for(int i=0;i<2;i++) {
 
@@ -101,12 +101,12 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringBuild() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo\u001ebar baz", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo\u001ebar baz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
     try {
-      sug.build(new TermFreqArrayIterator(keys));
+      sug.build(new TermFreqPayloadArrayIterator(keys));
       fail("did not hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -116,11 +116,11 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringQuery() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo bar baz", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo bar baz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
 
     try {
       sug.lookup("foo\u001eb", 10);
@@ -136,7 +136,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Skip header:
     lfd.nextDoc();
     FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
-    sug.build(new TermFreqIterator() {
+    sug.build(new TermFreqPayloadIterator() {
 
         private int count;
 
@@ -161,6 +161,16 @@ public class TestFreeTextSuggester extends LuceneTestCase {
           }
           return new BytesRef(doc.get("body"));
         }
+
+        @Override
+        public BytesRef payload() {
+          return null;
+        }
+
+        @Override
+        public boolean hasPayloads() {
+          return false;
+        }
       });
     if (VERBOSE) {
       System.out.println(sug.sizeInBytes() + " bytes");
@@ -175,13 +185,13 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure you can suggest based only on unigram model:
   public void testUnigrams() throws Exception {
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo bar baz blah boo foo bar foo bee", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo bar baz blah boo foo bar foo bee", 50)
     );
 
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 1, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
     // Sorts first by count, descending, second by term, ascending
     assertEquals("bar/0.22 baz/0.11 bee/0.11 blah/0.11 boo/0.11",
                  toString(sug.lookup("b", 10)));
@@ -189,24 +199,24 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure the last token is not duplicated
   public void testNoDupsAcrossGrams() throws Exception {
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo bar bar bar bar", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo bar bar bar bar", 50)
     );
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
     assertEquals("foo bar/1.00",
                  toString(sug.lookup("foo b", 10)));
   }
 
   // Lookup of just empty string produces unicode only matches:
   public void testEmptyString() throws Exception {
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("foo bar bar bar bar", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("foo bar bar bar bar", 50)
     );
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
     try {
       sug.lookup("", 10);
       fail("did not hit exception");
@@ -228,11 +238,11 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
       };
 
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("wizard of oz", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("wizard of oz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
     assertEquals("wizard _ oz/1.00",
                  toString(sug.lookup("wizard of", 10)));
 
@@ -256,11 +266,11 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
       };
 
-    Iterable<TermFreq> keys = shuffle(
-        new TermFreq("wizard of of oz", 50)
+    Iterable<TermFreqPayload> keys = shuffle(
+        new TermFreqPayload("wizard of of oz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
-    sug.build(new TermFreqArrayIterator(keys));
+    sug.build(new TermFreqPayloadArrayIterator(keys));
     assertEquals("",
                  toString(sug.lookup("wizard of of", 10)));
   }
@@ -320,7 +330,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
     // Build suggester model:
     FreeTextSuggester sug = new FreeTextSuggester(a, a, grams, (byte) 0x20);
-    sug.build(new TermFreqIterator() {
+    sug.build(new TermFreqPayloadIterator() {
         int upto;
 
         @Override
@@ -341,6 +351,16 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         @Override
         public long weight() {
           return random().nextLong();
+        }
+
+        @Override
+        public BytesRef payload() {
+          return null;
+        }
+
+        @Override
+        public boolean hasPayloads() {
+          return false;
         }
       });
 

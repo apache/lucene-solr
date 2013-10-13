@@ -17,20 +17,67 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester; // javadocs
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester; // javadocs
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester; // javadocs
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Interface for enumerating term,weight,payload triples;
- * currently only {@link AnalyzingSuggester} and {@link
- * FuzzySuggester} support payloads.
+ * currently only {@link AnalyzingSuggester}, {@link
+ * FuzzySuggester} and {@link AnalyzingInfixSuggester} support payloads.
  */
-public interface TermFreqPayloadIterator extends TermFreqIterator {
+public interface TermFreqPayloadIterator extends BytesRefIterator {
 
+  /** A term's weight, higher numbers mean better suggestions. */
+  public long weight();
+  
   /** An arbitrary byte[] to record per suggestion.  See
    *  {@link LookupResult#payload} to retrieve the payload
    *  for each suggestion. */
   public BytesRef payload();
+
+  /** Returns true if the iterator has payloads */
+  public boolean hasPayloads();
+  
+  /**
+   * Wraps a BytesRefIterator as a TermFreqPayloadIterator, with all weights
+   * set to <code>1</code> and carries no payload
+   */
+  public static class TermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
+    private final BytesRefIterator wrapped;
+    
+    /** 
+     * Creates a new wrapper, wrapping the specified iterator and 
+     * specifying a weight value of <code>1</code> for all terms 
+     * and nullifies associated payloads.
+     */
+    public TermFreqPayloadIteratorWrapper(BytesRefIterator wrapped) {
+      this.wrapped = wrapped;
+    }
+
+    @Override
+    public long weight() {
+      return 1;
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      return wrapped.next();
+    }
+
+    @Override
+    public BytesRef payload() {
+      return null;
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return false;
+    }
+  }
 }

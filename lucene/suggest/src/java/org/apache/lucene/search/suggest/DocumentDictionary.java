@@ -47,12 +47,6 @@ import org.apache.lucene.util.BytesRefIterator;
  *      The term, weight and (optionally) payload fields supplied
  *      are required for ALL documents and has to be stored
  *    </li>
- *    <li>
- *      This Dictionary implementation is not compatible with the following Suggesters: 
- *      {@link JaspellLookup}, {@link TSTLookup}, {@link FSTCompletionLookup},
- *      {@link WFSTCompletionLookup} and {@link AnalyzingInfixSuggester}. 
- *      see https://issues.apache.org/jira/browse/LUCENE-5260
- *    </li>
  *  </ul>
  */
 public class DocumentDictionary implements Dictionary {
@@ -95,7 +89,7 @@ public class DocumentDictionary implements Dictionary {
   final class TermWeightPayloadIterator implements TermFreqPayloadIterator {
     private final int docCount;
     private final Set<String> relevantFields;
-    private final boolean withPayload;
+    private final boolean hasPayloads;
     private final Bits liveDocs;
     private int currentDocId = -1;
     private long currentWeight;
@@ -106,13 +100,13 @@ public class DocumentDictionary implements Dictionary {
      * index. setting <code>withPayload</code> to false, implies an iterator
      * over only term and weight.
      */
-    public TermWeightPayloadIterator(boolean withPayload) throws IOException {
+    public TermWeightPayloadIterator(boolean hasPayloads) throws IOException {
       docCount = reader.maxDoc() - 1;
-      this.withPayload = withPayload;
+      this.hasPayloads = hasPayloads;
       currentPayload = null;
       liveDocs = MultiFields.getLiveDocs(reader);
       List<String> relevantFieldList;
-      if(withPayload) {
+      if(hasPayloads) {
         relevantFieldList = Arrays.asList(field, weightField, payloadField);
       } else {
         relevantFieldList = Arrays.asList(field, weightField);
@@ -135,7 +129,7 @@ public class DocumentDictionary implements Dictionary {
 
         StoredDocument doc = reader.document(currentDocId, relevantFields);
         
-        if (withPayload) {
+        if (hasPayloads) {
           StorableField payload = doc.getField(payloadField);
           if (payload == null) {
             throw new IllegalArgumentException(payloadField + " does not exist");
@@ -168,6 +162,11 @@ public class DocumentDictionary implements Dictionary {
     @Override
     public BytesRef payload() {
       return currentPayload;
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return hasPayloads;
     }
     
   }

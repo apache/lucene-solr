@@ -65,7 +65,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.Lookup;
@@ -176,19 +175,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public void build(TermFreqIterator iter) throws IOException {
+  public void build(TermFreqPayloadIterator iter) throws IOException {
 
     if (searcher != null) {
       searcher.getIndexReader().close();
       searcher = null;
     }
 
-    TermFreqPayloadIterator payloads;
-    if (iter instanceof TermFreqPayloadIterator) {
-      payloads = (TermFreqPayloadIterator) iter;
-    } else {
-      payloads = null;
-    }
+
     Directory dirTmp = getDirectory(new File(indexPath.toString() + ".tmp"));
 
     IndexWriter w = null;
@@ -236,7 +230,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       doc.add(weightField);
 
       Field payloadField;
-      if (payloads != null) {
+      if (iter.hasPayloads()) {
         payloadField = new BinaryDocValuesField("payloads", new BytesRef());
         doc.add(payloadField);
       } else {
@@ -250,8 +244,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         textGramField.setStringValue(textString);
         textDVField.setBytesValue(text);
         weightField.setLongValue(iter.weight());
-        if (payloads != null) {
-          payloadField.setBytesValue(payloads.payload());
+        if (iter.hasPayloads()) {
+          payloadField.setBytesValue(iter.payload());
         }
         w.addDocument(doc);
       }

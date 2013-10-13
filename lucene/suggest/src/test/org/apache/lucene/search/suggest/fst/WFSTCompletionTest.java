@@ -20,8 +20,8 @@ package org.apache.lucene.search.suggest.fst;
 import java.util.*;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.TermFreq;
-import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.search.suggest.TermFreqPayload;
+import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -29,16 +29,16 @@ import org.apache.lucene.util._TestUtil;
 public class WFSTCompletionTest extends LuceneTestCase {
   
   public void testBasic() throws Exception {
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("foo", 50),
-        new TermFreq("bar", 10),
-        new TermFreq("barbar", 12),
-        new TermFreq("barbara", 6)
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+        new TermFreqPayload("foo", 50),
+        new TermFreqPayload("bar", 10),
+        new TermFreqPayload("barbar", 12),
+        new TermFreqPayload("barbara", 6)
     };
     
     Random random = new Random(random().nextLong());
     WFSTCompletionLookup suggester = new WFSTCompletionLookup();
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     
     // top N of 2, but only foo is available
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random), false, 2);
@@ -81,9 +81,9 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(true);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 20),
-          new TermFreq("x", 2),
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[] {
+          new TermFreqPayload("x y", 20),
+          new TermFreqPayload("x", 2),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -105,9 +105,9 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 20),
-          new TermFreq("x", 2),
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[] {
+          new TermFreqPayload("x y", 20),
+          new TermFreqPayload("x", 2),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -131,7 +131,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     
-    TermFreq[] keys = new TermFreq[numWords];
+    TermFreqPayload[] keys = new TermFreqPayload[numWords];
     
     for (int i = 0; i < numWords; i++) {
       String s;
@@ -150,11 +150,11 @@ public class WFSTCompletionTest extends LuceneTestCase {
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
       slowCompletor.put(s, (long)weight);
-      keys[i] = new TermFreq(s, weight);
+      keys[i] = new TermFreqPayload(s, weight);
     }
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
 
     Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
@@ -205,16 +205,16 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq(key1, 50),
-          new TermFreq(key2, 50),
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[] {
+          new TermFreqPayload(key1, 50),
+          new TermFreqPayload(key2, 50),
         }));
   }
 
   public void testEmpty() throws Exception {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[0]));
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
   }

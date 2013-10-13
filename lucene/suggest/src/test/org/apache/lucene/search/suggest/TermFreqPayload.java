@@ -23,14 +23,32 @@ public final class TermFreqPayload {
   public final BytesRef term;
   public final long v;
   public final BytesRef payload;
+  public final boolean hasPayloads;
 
-  public TermFreqPayload(String term, long v, BytesRef payload) {
-    this(new BytesRef(term), v, payload);
+  public TermFreqPayload(BytesRef term, long v, BytesRef payload) {
+    this(term, v, payload, true);
   }
   
-  public TermFreqPayload(BytesRef term, long v, BytesRef payload) {
+  public TermFreqPayload(String term, long v, BytesRef payload) {
+    this(new BytesRef(term), v, payload, true);
+  }
+  
+  public TermFreqPayload(BytesRef term, long v) {
+    this(term, v, null, false);
+  }
+  
+  public TermFreqPayload(String term, long v) {
+    this(new BytesRef(term), v, null, false);
+  }
+  
+  public TermFreqPayload(BytesRef term, long v, BytesRef payload, boolean hasPayloads) {
     this.term = term;
     this.v = v;
     this.payload = payload;
+    this.hasPayloads = hasPayloads;
+  }
+  
+  public boolean hasPayloads() {
+    return hasPayloads;
   }
 }

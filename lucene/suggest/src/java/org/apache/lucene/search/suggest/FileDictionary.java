@@ -21,7 +21,7 @@ package org.apache.lucene.search.suggest;
 import java.io.*;
 
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -57,11 +57,11 @@ public class FileDictionary implements Dictionary {
   }
 
   @Override
-  public TermFreqIterator getWordsIterator() {
+  public TermFreqPayloadIterator getWordsIterator() {
     return new FileIterator();
   }
 
-  final class FileIterator implements TermFreqIterator {
+  final class FileIterator implements TermFreqPayloadIterator {
     private long curFreq;
     private final BytesRef spare = new BytesRef();
     
@@ -97,6 +97,16 @@ public class FileDictionary implements Dictionary {
         IOUtils.close(in);
         return null;
       }
+    }
+
+    @Override
+    public BytesRef payload() {
+      return null;
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return false;
     }
   }
 }

@@ -20,26 +20,33 @@ package org.apache.lucene.search.suggest;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link TermFreqIterator} over a sequence of {@link TermFreq}s.
+ * A {@link TermFreqPayloadIterator} over a sequence of {@link TermFreqPayload}s.
  */
 public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterator {
   private final Iterator<TermFreqPayload> i;
+  private final boolean hasPayloads;
+  private boolean first;
   private TermFreqPayload current;
   private final BytesRef spare = new BytesRef();
 
   public TermFreqPayloadArrayIterator(Iterator<TermFreqPayload> i) {
     this.i = i;
+    if (i.hasNext()) {
+      current = i.next();
+      first = true;
+      this.hasPayloads = current.hasPayloads;
+    } else {
+      this.hasPayloads = false;
+    }
   }
 
   public TermFreqPayloadArrayIterator(TermFreqPayload[] i) {
     this(Arrays.asList(i));
   }
-
   public TermFreqPayloadArrayIterator(Iterable<TermFreqPayload> i) {
     this(i.iterator());
   }
@@ -51,8 +58,12 @@ public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterat
 
   @Override
   public BytesRef next() {
-    if (i.hasNext()) {
-      current = i.next();
+    if (i.hasNext() || (first && current!=null)) {
+      if (first) {
+        first = false;
+      } else {
+        current = i.next();
+      }
       spare.copyBytes(current.term);
       return spare;
     }
@@ -62,5 +73,10 @@ public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterat
   @Override
   public BytesRef payload() {
     return current.payload;
+  }
+
+  @Override
+  public boolean hasPayloads() {
+    return hasPayloads;
   }
 }

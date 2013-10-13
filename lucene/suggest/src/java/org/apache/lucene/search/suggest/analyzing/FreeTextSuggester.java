@@ -54,7 +54,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort;
@@ -274,15 +273,15 @@ public class FreeTextSuggester extends Lookup {
   }
 
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
+  public void build(TermFreqPayloadIterator iterator) throws IOException {
     build(iterator, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
   }
 
   /** Build the suggest index, using up to the specified
    *  amount of temporary RAM while building.  Note that
    *  the weights for the suggestions are ignored. */
-  public void build(TermFreqIterator iterator, double ramBufferSizeMB) throws IOException {
-    if (iterator instanceof TermFreqPayloadIterator) {
+  public void build(TermFreqPayloadIterator iterator, double ramBufferSizeMB) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("payloads are not supported");
     }
 

@@ -59,7 +59,7 @@ public class HighFrequencyDictionary implements Dictionary {
     return new HighFrequencyIterator();
   }
 
-  final class HighFrequencyIterator implements TermFreqIterator {
+  final class HighFrequencyIterator implements TermFreqPayloadIterator {
     private final BytesRef spare = new BytesRef();
     private final TermsEnum termsEnum;
     private int minNumDocs;
@@ -97,6 +97,16 @@ public class HighFrequencyDictionary implements Dictionary {
         }
       }
       return  null;
+    }
+
+    @Override
+    public BytesRef payload() {
+      return null;
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return false;
     }
   }
 }

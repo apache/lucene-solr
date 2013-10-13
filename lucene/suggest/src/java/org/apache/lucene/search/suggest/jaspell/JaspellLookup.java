@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
@@ -47,13 +46,13 @@ public class JaspellLookup extends Lookup {
   
   /** 
    * Creates a new empty trie 
-   * @see #build(TermFreqIterator)
+   * @see #build(TermFreqPayloadIterator)
    * */
   public JaspellLookup() {}
 
   @Override
-  public void build(TermFreqIterator tfit) throws IOException {
-    if (tfit instanceof TermFreqPayloadIterator) {
+  public void build(TermFreqPayloadIterator tfit) throws IOException {
+    if (tfit.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     trie = new JaspellTernarySearchTrie();

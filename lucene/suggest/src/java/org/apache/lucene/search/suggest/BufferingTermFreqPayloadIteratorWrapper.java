@@ -18,7 +18,8 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
-import org.apache.lucene.search.spell.TermFreqIterator;
+
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -27,22 +28,30 @@ import org.apache.lucene.util.Counter;
  * This wrapper buffers incoming elements.
  * @lucene.experimental
  */
-public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
+public class BufferingTermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
   // TODO keep this for now
   /** buffered term entries */
   protected BytesRefArray entries = new BytesRefArray(Counter.newCounter());
+  /** buffered payload entries */
+  protected BytesRefArray payloads = new BytesRefArray(Counter.newCounter());
   /** current buffer position */
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */
   protected long[] freqs = new long[1];
   private final BytesRef spare = new BytesRef();
+  private final BytesRef payloadSpare = new BytesRef();
+  private final boolean hasPayloads;
   
   /** Creates a new iterator, buffering entries from the specified iterator */
-  public BufferingTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+  public BufferingTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
     BytesRef spare;
     int freqIndex = 0;
+    hasPayloads = source.hasPayloads();
     while((spare = source.next()) != null) {
       entries.append(spare);
+      if (hasPayloads) {
+        payloads.append(source.payload());
+      }
       if (freqIndex >= freqs.length) {
         freqs = ArrayUtil.grow(freqs, freqs.length+1);
       }
@@ -63,5 +72,18 @@ public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
       return spare;
     }
     return null;
+  }
+
+  @Override
+  public BytesRef payload() {
+    if (hasPayloads && curPos < payloads.size()) {
+      return payloads.get(payloadSpare, curPos);
+    }
+    return null;
+  }
+
+  @Override
+  public boolean hasPayloads() {
+    return hasPayloads;
   }
 }

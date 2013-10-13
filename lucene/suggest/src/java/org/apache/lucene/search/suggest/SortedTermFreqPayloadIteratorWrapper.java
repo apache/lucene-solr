@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesReader;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -34,23 +34,25 @@ import org.apache.lucene.util.IOUtils;
  * This wrapper buffers incoming elements and makes sure they are sorted based on given comparator.
  * @lucene.experimental
  */
-public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
+public class SortedTermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
   
-  private final TermFreqIterator source;
+  private final TermFreqPayloadIterator source;
   private File tempInput;
   private File tempSorted;
   private final ByteSequencesReader reader;
   private final Comparator<BytesRef> comparator;
+  private final boolean hasPayloads;
   private boolean done = false;
   
   private long weight;
   private final BytesRef scratch = new BytesRef();
+  private BytesRef payload = new BytesRef();
   
   /**
    * Creates a new sorted wrapper, using {@link
    * BytesRef#getUTF8SortedAsUnicodeComparator} for
    * sorting. */
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+  public SortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
     this(source, BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
@@ -58,7 +60,8 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
    * Creates a new sorted wrapper, sorting by BytesRef
    * (ascending) then cost (ascending).
    */
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator) throws IOException {
+  public SortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source, Comparator<BytesRef> comparator) throws IOException {
+    this.hasPayloads = source.hasPayloads();
     this.source = source;
     this.comparator = comparator;
     this.reader = sort();
@@ -74,6 +77,9 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
       ByteArrayDataInput input = new ByteArrayDataInput();
       if (reader.read(scratch)) {
         weight = decode(scratch, input);
+        if (hasPayloads) {
+          payload = decodePayload(scratch, input);
+        }
         success = true;
         return scratch;
       }
@@ -91,6 +97,19 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   @Override
   public long weight() {
     return weight;
+  }
+
+  @Override
+  public BytesRef payload() {
+    if (hasPayloads) {
+      return payload;
+    }
+    return null;
+  }
+
+  @Override
+  public boolean hasPayloads() {
+    return hasPayloads;
   }
 
   /** Sortes by BytesRef (ascending) then cost (ascending). */
@@ -111,6 +130,10 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
       rightScratch.length = right.length;
       long leftCost = decode(leftScratch, input);
       long rightCost = decode(rightScratch, input);
+      if (hasPayloads) {
+        decodePayload(leftScratch, input);
+        decodePayload(rightScratch, input);
+      }
       int cmp = comparator.compare(leftScratch, rightScratch);
       if (cmp != 0) {
         return cmp;
@@ -133,7 +156,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
 
       while ((spare = source.next()) != null) {
-        encode(writer, output, buffer, spare, source.weight());
+        encode(writer, output, buffer, spare, source.payload(), source.weight());
       }
       writer.close();
       new Sort(tieBreakByCostComparator).sort(tempInput, tempSorted);
@@ -164,13 +187,18 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     }
   }
   
-  /** encodes an entry (bytes+weight) to the provided writer */
-  protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
-    if (spare.length + 8 >= buffer.length) {
-      buffer = ArrayUtil.grow(buffer, spare.length + 8);
+  /** encodes an entry (bytes+(payload)+weight) to the provided writer */
+  protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, long weight) throws IOException {
+    int requiredLength = spare.length + 8 + ((hasPayloads) ? 2 + payload.length : 0);
+    if (requiredLength >= buffer.length) {
+      buffer = ArrayUtil.grow(buffer, requiredLength);
     }
     output.reset(buffer);
     output.writeBytes(spare.bytes, spare.offset, spare.length);
+    if (hasPayloads) {
+      output.writeBytes(payload.bytes, payload.offset, payload.length);
+      output.writeShort((short) payload.length);
+    }
     output.writeLong(weight);
     writer.write(buffer, 0, output.getPosition());
   }
@@ -181,5 +209,19 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     tmpInput.skipBytes(scratch.length - 8); // suggestion
     scratch.length -= 8; // long
     return tmpInput.readLong();
+  }
+  
+  /** decodes the payload at the current position */
+  protected BytesRef decodePayload(BytesRef scratch, ByteArrayDataInput tmpInput) {
+    tmpInput.reset(scratch.bytes);
+    tmpInput.skipBytes(scratch.length - 2); // skip to payload size
+    short payloadLength = tmpInput.readShort(); // read payload size
+    tmpInput.setPosition(scratch.length - 2 - payloadLength); // setPosition to start of payload
+    BytesRef payloadScratch = new BytesRef(payloadLength); 
+    tmpInput.readBytes(payloadScratch.bytes, 0, payloadLength); // read payload
+    payloadScratch.length = payloadLength;
+    scratch.length -= 2; // payload length info (short)
+    scratch.length -= payloadLength; // payload
+    return payloadScratch;
   }
 }
