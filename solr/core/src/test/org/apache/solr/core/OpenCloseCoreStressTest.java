@@ -52,14 +52,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private final Object locker = new Object();
 
-  private int numCores = 20;
+  private int numCores = TEST_NIGHTLY ? 7 : 5;
   private Map<String, Long> coreCounts;
   private List<String> coreNames;
 
   static final int COMMIT_WITHIN = 5000;
 
-  final int indexingThreads = 15;
-  final int queryThreads = 15;
+  final int indexingThreads = TEST_NIGHTLY ? 9 : 5;
+  final int queryThreads = TEST_NIGHTLY ? 9 : 5;
 
   final int resetInterval = 30 * 60; // minutes to report then delete everything
   long cumulativeDocs = 0;
@@ -75,22 +75,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   static String savedFactory;
 
-  //  Keep the indexes from being randomly generated.
-  @BeforeClass
-  public static void beforeClass() {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-  }
-
   @Before
   public void setupServer() throws Exception {
     coreCounts = new TreeMap<String, Long>();
@@ -98,7 +82,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     cumulativeDocs = 0;
 
     solrHomeDirectory = new File(TEMP_DIR, "OpenCloseCoreStressTest_");
-    FileUtils.deleteDirectory(solrHomeDirectory); // Insure that a failed test didn't leave something lying around.
+    FileUtils.deleteDirectory(solrHomeDirectory); // Ensure that a failed test didn't leave something lying around.
 
     jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
   }
@@ -111,14 +95,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   @Test
   @Slow
-  public void test30SecondsOld() throws Exception {
-    doStress(30, true);
+  public void test15SecondsOld() throws Exception {
+    doStress(15, true);
   }
 
   @Test
   @Slow
-  public void test30SecondsNew() throws Exception {
-    doStress(30, false);
+  public void test15SecondsNew() throws Exception {
+    doStress(15, false);
   }
 
   @Test
