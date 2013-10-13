@@ -72,6 +72,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -750,7 +751,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   
-  @Test
+  @Test @Ignore("https://issues.apache.org/jira/browse/SOLR-5343")
   public void doTestStressReplication() throws Exception {
     // change solrconfig on slave
     // this has no entry for pollinginterval
