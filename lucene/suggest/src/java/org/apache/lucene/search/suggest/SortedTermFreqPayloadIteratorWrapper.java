@@ -143,7 +143,13 @@ public class SortedTermFreqPayloadIteratorWrapper implements TermFreqPayloadIter
       if (cmp != 0) {
         return cmp;
       }
-      return Long.compare(leftCost, rightCost);
+      if (leftCost < rightCost) {
+        return -1;
+      } else if (rightCost < leftCost) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   };
   
