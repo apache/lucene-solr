@@ -30,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -40,9 +42,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -1222,9 +1225,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   // Make sure if we hit a transient IOException (e.g., disk
   // full), and then the exception stops (e.g., disk frees
   // up), so we successfully close IW or open an NRT
-  // reader, we don't lose any deletes:
-  public void testNoLostDeletesOnIOException() throws Exception {
-
+  // reader, we don't lose any deletes or updates:
+  public void testNoLostDeletesOrUpdatesOnIOException() throws Exception {
     int deleteCount = 0;
     int docBase = 0;
     int docCount = 0;
@@ -1232,42 +1234,42 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     final AtomicBoolean shouldFail = new AtomicBoolean();
     dir.failOn(new MockDirectoryWrapper.Failure() {
-
-          @Override
-          public void eval(MockDirectoryWrapper dir) throws IOException {
-            StackTraceElement[] trace = new Exception().getStackTrace();
-            if (shouldFail.get() == false) {
-              return;
-            }
-
-            boolean sawSeal = false;
-            boolean sawWrite = false;
-            for (int i = 0; i < trace.length; i++) {
-              if ("sealFlushedSegment".equals(trace[i].getMethodName())) {
-                sawSeal = true;
-                break;
-              }
-              if ("writeLiveDocs".equals(trace[i].getMethodName())) {
-                sawWrite = true;
-              }
-            }
-
-            // Don't throw exc if we are "flushing", else
-            // the segment is aborted and docs are lost:
-            if (sawWrite && sawSeal == false && random().nextInt(3) == 2) {
-              // Only sometimes throw the exc, so we get
-              // it sometimes on creating the file, on
-              // flushing buffer, on closing the file:
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              shouldFail.set(false);
-              throw new FakeIOException();
-            }
+      
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        if (shouldFail.get() == false) {
+          return;
+        }
+        
+        boolean sawSeal = false;
+        boolean sawWrite = false;
+        for (int i = 0; i < trace.length; i++) {
+          if ("sealFlushedSegment".equals(trace[i].getMethodName())) {
+            sawSeal = true;
+            break;
           }
-      });
-
+          if ("writeLiveDocs".equals(trace[i].getMethodName())) {
+            sawWrite = true;
+          }
+        }
+        
+        // Don't throw exc if we are "flushing", else
+        // the segment is aborted and docs are lost:
+        if (sawWrite && sawSeal == false && random().nextInt(3) == 2) {
+          // Only sometimes throw the exc, so we get
+          // it sometimes on creating the file, on
+          // flushing buffer, on closing the file:
+          if (VERBOSE) {
+            System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+            new Throwable().printStackTrace(System.out);
+          }
+          shouldFail.set(false);
+          throw new FakeIOException();
+        }
+      }
+    });
+    
     RandomIndexWriter w = null;
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
@@ -1293,6 +1295,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           suppressFakeIOE.setMergeThreadPriority(cms.getMergeThreadPriority());
           iwc.setMergeScheduler(suppressFakeIOE);
         }
+        
         w = new RandomIndexWriter(random(), dir, iwc);
         // Since we hit exc during merging, a partial
         // forceMerge can easily return when there are still
@@ -1302,6 +1305,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for(int i=0;i<numDocs;i++) {
         Document doc = new Document();
         doc.add(new StringField("id", ""+(docBase+i), Field.Store.NO));
+        doc.add(new NumericDocValuesField("f", 1L));
+        doc.add(new NumericDocValuesField("cf", 2L));
         w.addDocument(doc);
       }
       docCount += numDocs;
@@ -1317,13 +1322,27 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       try {
 
+        boolean defaultCodecSupportsFieldUpdates = defaultCodecSupportsFieldUpdates();
         for(int i=0;i<numDocs;i++) {
           if (random().nextInt(10) == 7) {
-            if (VERBOSE) {
-              System.out.println("  delete id=" + (docBase+i));
+            boolean fieldUpdate = defaultCodecSupportsFieldUpdates && random().nextBoolean();
+            if (fieldUpdate) {
+              long value = iter;
+              if (VERBOSE) {
+                System.out.println("  update id=" + (docBase+i) + " to value " + value);
+              }
+              w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "f", value);
+              w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "cf", value * 2);
             }
-            deleteCount++;
-            w.deleteDocuments(new Term("id", ""+(docBase+i)));
+            
+            // sometimes do both deletes and updates
+            if (!fieldUpdate || random().nextBoolean()) {
+              if (VERBOSE) {
+                System.out.println("  delete id=" + (docBase+i));
+              }
+              deleteCount++;
+              w.deleteDocuments(new Term("id", ""+(docBase+i)));
+            }
           }
         }
 
@@ -1345,12 +1364,18 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           w = null;
         }
 
-      } catch (FakeIOException ioe) {
-        // expected
-        if (VERBOSE) {
-          System.out.println("TEST: w.close() hit expected IOE");
+      } catch (IOException ioe) {
+        // FakeIOException can be thrown from mergeMiddle, in which case IW
+        // registers it before our CMS gets to suppress it. IW.forceMerge later
+        // throws it as a wrapped IOE, so don't fail in this case.
+        if (ioe instanceof FakeIOException || (ioe.getCause() != null && ioe.getCause() instanceof FakeIOException)) {
+          // expected
+          if (VERBOSE) {
+            System.out.println("TEST: w.close() hit expected IOE");
+          }
+        } else {
+          throw ioe;
         }
-        // No exception should happen here (we only fail once):
       }
       shouldFail.set(false);
 
@@ -1381,6 +1406,17 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         r = w.getReader();
       }
       assertEquals(docCount-deleteCount, r.numDocs());
+      for (AtomicReaderContext context : r.leaves()) {
+        Bits liveDocs = context.reader().getLiveDocs();
+        NumericDocValues f = context.reader().getNumericDocValues("f");
+        NumericDocValues cf = context.reader().getNumericDocValues("cf");
+        for (int i = 0; i < context.reader().maxDoc(); i++) {
+          if (liveDocs == null || liveDocs.get(i)) {
+            assertEquals("doc=" + (docBase + i), cf.get(i), f.get(i) * 2);
+          }
+        }
+      }
+
       r.close();
 
       // Sometimes re-use RIW, other times open new one:
