@@ -93,6 +93,10 @@ API Changes:
 * LUCENE-5275: Change AttributeSource.toString() to display the current
   state of attributes. (Robert Muir)
 
+* LUCENE-5277: Modify FixedBitSet copy constructor to take an additional
+  numBits parameter to allow growing/shrinking the copied bitset. You can
+  use FixedBitSet.clone() if you only need to clone the bitset. (Shai Erera)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child

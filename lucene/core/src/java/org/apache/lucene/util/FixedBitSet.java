@@ -35,7 +35,6 @@ import org.apache.lucene.search.DocIdSetIterator;
  *
  * @lucene.internal
  **/
-
 public final class FixedBitSet extends DocIdSet implements Bits {
   private final long[] bits;
   private final int numBits;
@@ -63,15 +62,18 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     }
     this.numBits = numBits;
     this.bits = storedBits;
-  }  
+  }
   
-  
-  /** Makes full copy. */
-  public FixedBitSet(FixedBitSet other) {
-    bits = new long[other.wordLength];
-    System.arraycopy(other.bits, 0, bits, 0, other.wordLength);
-    numBits = other.numBits;
-    wordLength = other.wordLength;
+  /**
+   * Makes a full copy of the bits, while allowing to expand/shrink the bitset.
+   * If {@code numBits &lt; other.numBits}, then only the first {@code numBits}
+   * are copied from other.
+   */
+  public FixedBitSet(FixedBitSet other, int numBits) {
+    wordLength = bits2words(numBits);
+    bits = new long[wordLength];
+    System.arraycopy(other.bits, 0, bits, 0, Math.min(other.wordLength, wordLength));
+    this.numBits = numBits;
   }
 
   @Override
@@ -404,7 +406,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
 
   @Override
   public FixedBitSet clone() {
-    return new FixedBitSet(this);
+    return new FixedBitSet(this, numBits);
   }
 
   /** returns true if both sets have the same bits set */
