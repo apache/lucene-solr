@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort.SortInfo;
@@ -43,7 +42,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
+ * to discretize any "weights" as passed from in {@link TermFreqPayloadIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -96,7 +95,7 @@ public class FSTCompletionLookup extends Lookup {
 
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method. The number of weight
+   * {@link #build(TermFreqPayloadIterator)} method. The number of weight
    * discretization buckets is set to {@link FSTCompletion#DEFAULT_BUCKETS} and
    * exact matches are promoted to the top of the suggestions list.
    */
@@ -106,7 +105,7 @@ public class FSTCompletionLookup extends Lookup {
 
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method.
+   * {@link #build(TermFreqPayloadIterator)} method.
    * 
    * @param buckets
    *          The number of weight discretization buckets (see
@@ -141,8 +140,8 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public void build(TermFreqIterator tfit) throws IOException {
-    if (tfit instanceof TermFreqPayloadIterator) {
+  public void build(TermFreqPayloadIterator tfit) throws IOException {
+    if (tfit.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     File tempInput = File.createTempFile(

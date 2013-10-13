@@ -25,11 +25,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
-import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
+import org.apache.lucene.search.suggest.SortedTermFreqPayloadIteratorWrapper;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -93,12 +92,12 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
-    if (iterator instanceof TermFreqPayloadIterator) {
+  public void build(TermFreqPayloadIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     BytesRef scratch = new BytesRef();
-    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
+    TermFreqPayloadIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
@@ -255,14 +254,15 @@ public class WFSTCompletionLookup extends Lookup {
     return Integer.MAX_VALUE - (int)value;
   }
   
-  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqIteratorWrapper {
+  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqPayloadIteratorWrapper {
 
-    WFSTTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+    WFSTTermFreqIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
       super(source);
+      assert source.hasPayloads() == false;
     }
 
     @Override
-    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
+    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, long weight) throws IOException {
       if (spare.length + 4 >= buffer.length) {
         buffer = ArrayUtil.grow(buffer, spare.length + 4);
       }

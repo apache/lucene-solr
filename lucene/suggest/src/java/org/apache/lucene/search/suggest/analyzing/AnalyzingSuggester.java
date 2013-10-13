@@ -31,7 +31,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort;
@@ -381,19 +380,13 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
+  public void build(TermFreqPayloadIterator iterator) throws IOException {
     String prefix = getClass().getSimpleName();
     File directory = Sort.defaultTempDir();
     File tempInput = File.createTempFile(prefix, ".input", directory);
     File tempSorted = File.createTempFile(prefix, ".sorted", directory);
 
-    TermFreqPayloadIterator payloads;
-    if (iterator instanceof TermFreqPayloadIterator) {
-      payloads = (TermFreqPayloadIterator) iterator;
-    } else {
-      payloads = null;
-    }
-    hasPayloads = payloads != null;
+    hasPayloads = iterator.hasPayloads();
 
     Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
     Sort.ByteSequencesReader reader = null;
@@ -432,7 +425,7 @@ public class AnalyzingSuggester extends Lookup {
             if (surfaceForm.length > (Short.MAX_VALUE-2)) {
               throw new IllegalArgumentException("cannot handle surface form > " + (Short.MAX_VALUE-2) + " in length (got " + surfaceForm.length + ")");
             }
-            payload = payloads.payload();
+            payload = iterator.payload();
             // payload + surfaceLength (short)
             requiredLength += payload.length + 2;
           } else {
@@ -470,7 +463,7 @@ public class AnalyzingSuggester extends Lookup {
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
-      new Sort(new AnalyzingComparator(payloads != null)).sort(tempInput, tempSorted);
+      new Sort(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
 
       // Free disk space:
       tempInput.delete();

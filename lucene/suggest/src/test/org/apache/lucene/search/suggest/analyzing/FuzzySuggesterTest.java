@@ -41,8 +41,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.TermFreq;
-import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.search.suggest.TermFreqPayload;
+import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -54,16 +54,16 @@ import org.apache.lucene.util.fst.Util;
 public class FuzzySuggesterTest extends LuceneTestCase {
   
   public void testRandomEdits() throws IOException {
-    List<TermFreq> keys = new ArrayList<TermFreq>();
+    List<TermFreqPayload> keys = new ArrayList<TermFreqPayload>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
-      keys.add(new TermFreq("boo" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+      keys.add(new TermFreqPayload("boo" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
     }
-    keys.add(new TermFreq("foo bar boo far", 12));
+    keys.add(new TermFreqPayload("foo bar boo far", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
                                                   0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       String addRandomEdit = addRandomEdit("foo bar boo", FuzzySuggester.DEFAULT_NON_FUZZY_PREFIX);
@@ -75,16 +75,16 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
   
   public void testNonLatinRandomEdits() throws IOException {
-    List<TermFreq> keys = new ArrayList<TermFreq>();
+    List<TermFreqPayload> keys = new ArrayList<TermFreqPayload>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
-      keys.add(new TermFreq("буу" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+      keys.add(new TermFreqPayload("буу" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
     }
-    keys.add(new TermFreq("фуу бар буу фар", 12));
+    keys.add(new TermFreqPayload("фуу бар буу фар", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
         0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, true);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       String addRandomEdit = addRandomEdit("фуу бар буу", 0);
@@ -97,15 +97,15 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
   public void testKeyword() throws Exception {
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("foo", 50),
-        new TermFreq("bar", 10),
-        new TermFreq("barbar", 12),
-        new TermFreq("barbara", 6)
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+        new TermFreqPayload("foo", 50),
+        new TermFreqPayload("bar", 10),
+        new TermFreqPayload("barbar", 12),
+        new TermFreqPayload("barbara", 6)
     };
     
     FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("bariar", random()), false, 2);
     assertEquals(2, results.size());
@@ -172,14 +172,14 @@ public class FuzzySuggesterTest extends LuceneTestCase {
    * basic "standardanalyzer" test with stopword removal
    */
   public void testStandard() throws Exception {
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("the ghost of christmas past", 50),
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+        new TermFreqPayload("the ghost of christmas past", 50),
     };
     
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     FuzzySuggester suggester = new FuzzySuggester(standard);
     suggester.setPreservePositionIncrements(false);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
@@ -200,16 +200,16 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
 
   public void testNoSeps() throws Exception {
-    TermFreq[] keys = new TermFreq[] {
-      new TermFreq("ab cd", 0),
-      new TermFreq("abcd", 1),
+    TermFreqPayload[] keys = new TermFreqPayload[] {
+      new TermFreqPayload("ab cd", 0),
+      new TermFreqPayload("abcd", 1),
     };
 
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
     FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3, false);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
     // that the user's current query has ended at a word, 
@@ -270,12 +270,12 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
     };
 
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("wifi network is slow", 50),
-        new TermFreq("wi fi network is fast", 10),
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+        new TermFreqPayload("wifi network is slow", 50),
+        new TermFreqPayload("wi fi network is fast", 10),
     };
     FuzzySuggester suggester = new FuzzySuggester(analyzer);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup("wifi network", false, 10);
     if (VERBOSE) {
@@ -290,7 +290,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testEmpty() throws Exception {
     FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
-    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[0]));
 
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
@@ -344,12 +344,12 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
     };
 
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("ab xc", 50),
-        new TermFreq("ba xd", 50),
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+        new TermFreqPayload("ab xc", 50),
+        new TermFreqPayload("ba xd", 50),
     };
     FuzzySuggester suggester = new FuzzySuggester(analyzer);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("ab x", false, 1);
     assertTrue(results.size() == 1);
   }
@@ -418,11 +418,11 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     Analyzer a = getUnusualAnalyzer();
     FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, false);
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 1),
-          new TermFreq("x y z", 3),
-          new TermFreq("x", 2),
-          new TermFreq("z z z", 20),
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[] {
+          new TermFreqPayload("x y", 1),
+          new TermFreqPayload("x y z", 3),
+          new TermFreqPayload("x", 2),
+          new TermFreqPayload("z z z", 20),
         }));
 
     //System.out.println("ALL: " + suggester.lookup("x y", false, 6));
@@ -458,11 +458,11 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     Analyzer a = getUnusualAnalyzer();
     FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 1),
-          new TermFreq("x y z", 3),
-          new TermFreq("x", 2),
-          new TermFreq("z z z", 20),
+    suggester.build(new TermFreqPayloadArrayIterator(new TermFreqPayload[] {
+          new TermFreqPayload("x y", 1),
+          new TermFreqPayload("x y z", 3),
+          new TermFreqPayload("x", 2),
+          new TermFreqPayload("z z z", 20),
         }));
 
     for(int topN=1;topN<6;topN++) {
@@ -491,19 +491,19 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
   
   // Holds surface form separately:
-  private static class TermFreq2 implements Comparable<TermFreq2> {
+  private static class TermFreqPayload2 implements Comparable<TermFreqPayload2> {
     public final String surfaceForm;
     public final String analyzedForm;
     public final long weight;
 
-    public TermFreq2(String surfaceForm, String analyzedForm, long weight) {
+    public TermFreqPayload2(String surfaceForm, String analyzedForm, long weight) {
       this.surfaceForm = surfaceForm;
       this.analyzedForm = analyzedForm;
       this.weight = weight;
     }
 
     @Override
-    public int compareTo(TermFreq2 other) {
+    public int compareTo(TermFreqPayload2 other) {
       int cmp = analyzedForm.compareTo(other.analyzedForm);
       if (cmp != 0) {
         return cmp;
@@ -596,11 +596,11 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     int numQueries = atLeast(100);
     
-    final List<TermFreq2> slowCompletor = new ArrayList<TermFreq2>();
+    final List<TermFreqPayload2> slowCompletor = new ArrayList<TermFreqPayload2>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     final Set<String> seen = new HashSet<String>();
     
-    TermFreq[] keys = new TermFreq[numQueries];
+    TermFreqPayload[] keys = new TermFreqPayload[numQueries];
 
     boolean preserveSep = random().nextBoolean();
     boolean unicodeAware = random().nextBoolean();
@@ -666,17 +666,17 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
-      keys[i] = new TermFreq(key, weight);
+      keys[i] = new TermFreqPayload(key, weight);
 
-      slowCompletor.add(new TermFreq2(key, analyzedKey, weight));
+      slowCompletor.add(new TermFreqPayload2(key, analyzedKey, weight));
     }
 
     if (VERBOSE) {
       // Don't just sort original list, to avoid VERBOSE
       // altering the test:
-      List<TermFreq2> sorted = new ArrayList<TermFreq2>(slowCompletor);
+      List<TermFreqPayload2> sorted = new ArrayList<TermFreqPayload2>(slowCompletor);
       Collections.sort(sorted);
-      for(TermFreq2 ent : sorted) {
+      for(TermFreqPayload2 ent : sorted) {
         System.out.println("  surface='" + ent.surfaceForm + " analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
       }
     }
@@ -684,7 +684,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     FuzzySuggester suggester = new FuzzySuggester(a, a,
                                                   preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3, unicodeAware);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
 
     for (String prefix : allPrefixes) {
 
@@ -756,7 +756,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       assertTrue(automaton.isDeterministic());
       // TODO: could be faster... but its slowCompletor for a reason
       BytesRef spare = new BytesRef();
-      for (TermFreq2 e : slowCompletor) {
+      for (TermFreqPayload2 e : slowCompletor) {
         spare.copyChars(e.analyzedForm);
         Set<IntsRef> finiteStrings = suggester.toFiniteStrings(spare, tokenStreamToAutomaton);
         for (IntsRef intsRef : finiteStrings) {
@@ -825,14 +825,14 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random());
     FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3, false);
 
-    List<TermFreq> keys = Arrays.asList(new TermFreq[] {
-        new TermFreq("a", 40),
-        new TermFreq("a ", 50),
-        new TermFreq(" a", 60),
+    List<TermFreqPayload> keys = Arrays.asList(new TermFreqPayload[] {
+        new TermFreqPayload("a", 40),
+        new TermFreqPayload("a ", 50),
+        new TermFreqPayload(" a", 60),
       });
 
     Collections.shuffle(keys, random());
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
 
     List<LookupResult> results = suggester.lookup("a", false, 5);
     assertEquals(2, results.size());
@@ -846,15 +846,15 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random());
     FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, 2, true, 1, 3, false);
 
-    List<TermFreq> keys = Arrays.asList(new TermFreq[] {
-        new TermFreq("foo bar", 40),
-        new TermFreq("foo bar baz", 50),
-        new TermFreq("barbaz", 60),
-        new TermFreq("barbazfoo", 10),
+    List<TermFreqPayload> keys = Arrays.asList(new TermFreqPayload[] {
+        new TermFreqPayload("foo bar", 40),
+        new TermFreqPayload("foo bar baz", 50),
+        new TermFreqPayload("barbaz", 60),
+        new TermFreqPayload("barbazfoo", 10),
       });
 
     Collections.shuffle(keys, random());
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
 
     assertEquals("[foo bar baz/50, foo bar/40]", suggester.lookup("foobar", false, 5).toString());
     assertEquals("[foo bar baz/50]", suggester.lookup("foobarbaz", false, 5).toString());
@@ -929,25 +929,25 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testRandom2() throws Throwable {
     final int NUM = atLeast(200);
-    final List<TermFreq> answers = new ArrayList<TermFreq>();
+    final List<TermFreqPayload> answers = new ArrayList<TermFreqPayload>();
     final Set<String> seen = new HashSet<String>();
     for(int i=0;i<NUM;i++) {
       final String s = randomSimpleString(8);
       if (!seen.contains(s)) {
-        answers.add(new TermFreq(s, random().nextInt(1000)));
+        answers.add(new TermFreqPayload(s, random().nextInt(1000)));
         seen.add(s);
       }
     }
 
-    Collections.sort(answers, new Comparator<TermFreq>() {
+    Collections.sort(answers, new Comparator<TermFreqPayload>() {
         @Override
-        public int compare(TermFreq a, TermFreq b) {
+        public int compare(TermFreqPayload a, TermFreqPayload b) {
           return a.term.compareTo(b.term);
         }
       });
     if (VERBOSE) {
       System.out.println("\nTEST: targets");
-      for(TermFreq tf : answers) {
+      for(TermFreqPayload tf : answers) {
         System.out.println("  " + tf.term.utf8ToString() + " freq=" + tf.v);
       }
     }
@@ -965,7 +965,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
 
     Collections.shuffle(answers, random());
-    suggest.build(new TermFreqArrayIterator(answers.toArray(new TermFreq[answers.size()])));
+    suggest.build(new TermFreqPayloadArrayIterator(answers.toArray(new TermFreqPayload[answers.size()])));
 
     final int ITERS = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
@@ -1004,10 +1004,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
   }
 
-  private List<LookupResult> slowFuzzyMatch(int prefixLen, int maxEdits, boolean allowTransposition, List<TermFreq> answers, String frag) {
+  private List<LookupResult> slowFuzzyMatch(int prefixLen, int maxEdits, boolean allowTransposition, List<TermFreqPayload> answers, String frag) {
     final List<LookupResult> results = new ArrayList<LookupResult>();
     final int fragLen = frag.length();
-    for(TermFreq tf : answers) {
+    for(TermFreqPayload tf : answers) {
       //System.out.println("  check s=" + tf.term.utf8ToString());
       boolean prefixMatches = true;
       for(int i=0;i<prefixLen;i++) {

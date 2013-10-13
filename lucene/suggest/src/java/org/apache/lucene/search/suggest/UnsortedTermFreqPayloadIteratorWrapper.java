@@ -20,7 +20,7 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -28,16 +28,17 @@ import org.apache.lucene.util.BytesRef;
  * random order.
  * @lucene.experimental
  */
-public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
+public class UnsortedTermFreqPayloadIteratorWrapper extends BufferingTermFreqPayloadIteratorWrapper {
   // TODO keep this for now
   private final int[] ords;
   private int currentOrd = -1;
   private final BytesRef spare = new BytesRef();
+  private final BytesRef payloadSpare = new BytesRef();
   /** 
    * Creates a new iterator, wrapping the specified iterator and
    * returning elements in a random order.
    */
-  public UnsortedTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+  public UnsortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
     super(source);
     ords = new int[entries.size()];
     Random random = new Random();
@@ -54,13 +55,24 @@ public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWr
   
   @Override
   public long weight() {
+    assert currentOrd == ords[curPos];
     return freqs[currentOrd];
   }
 
   @Override
   public BytesRef next() throws IOException {
     if (++curPos < entries.size()) {
-      return entries.get(spare, (currentOrd = ords[curPos]));  
+      currentOrd = ords[curPos];
+      return entries.get(spare, currentOrd);  
+    }
+    return null;
+  }
+  
+  @Override
+  public BytesRef payload() {
+    if (hasPayloads() && curPos < payloads.size()) {
+      assert currentOrd == ords[curPos];
+      return payloads.get(payloadSpare, currentOrd);
     }
     return null;
   }

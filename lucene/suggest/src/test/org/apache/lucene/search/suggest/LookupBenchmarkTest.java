@@ -72,12 +72,12 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   /**
    * Input term/weight pairs.
    */
-  private static TermFreq [] dictionaryInput;
+  private static TermFreqPayload [] dictionaryInput;
 
   /**
    * Benchmark term/weight pairs (randomized order).
    */
-  private static List<TermFreq> benchmarkInput;
+  private static List<TermFreqPayload> benchmarkInput;
 
   /**
    * Loads terms and frequencies from Wikipedia (cached).
@@ -85,9 +85,9 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   @BeforeClass
   public static void setup() throws Exception {
     assert false : "disable assertions before running benchmarks!";
-    List<TermFreq> input = readTop50KWiki();
+    List<TermFreqPayload> input = readTop50KWiki();
     Collections.shuffle(input, random);
-    LookupBenchmarkTest.dictionaryInput = input.toArray(new TermFreq [input.size()]);
+    LookupBenchmarkTest.dictionaryInput = input.toArray(new TermFreqPayload [input.size()]);
     Collections.shuffle(input, random);
     LookupBenchmarkTest.benchmarkInput = input;
   }
@@ -97,8 +97,8 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   /**
    * Collect the multilingual input for benchmarks/ tests.
    */
-  public static List<TermFreq> readTop50KWiki() throws Exception {
-    List<TermFreq> input = new ArrayList<TermFreq>();
+  public static List<TermFreqPayload> readTop50KWiki() throws Exception {
+    List<TermFreqPayload> input = new ArrayList<TermFreqPayload>();
     URL resource = LookupBenchmarkTest.class.getResource("Top50KWiki.utf8");
     assert resource != null : "Resource missing: Top50KWiki.utf8";
 
@@ -109,7 +109,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       assertTrue("No | separator?: " + line, tab >= 0);
       int weight = Integer.parseInt(line.substring(tab + 1));
       String key = line.substring(0, tab);
-      input.add(new TermFreq(key, weight));
+      input.add(new TermFreqPayload(key, weight));
     }
     br.close();
     return input;
@@ -163,7 +163,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   /**
    * Create {@link Lookup} instance and populate it. 
    */
-  private Lookup buildLookup(Class<? extends Lookup> cls, TermFreq[] input) throws Exception {
+  private Lookup buildLookup(Class<? extends Lookup> cls, TermFreqPayload[] input) throws Exception {
     Lookup lookup = null;
     try {
       lookup = cls.newInstance();
@@ -176,7 +176,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
         lookup = ctor.newInstance(a);
       }
     }
-    lookup.build(new TermFreqArrayIterator(input));
+    lookup.build(new TermFreqPayloadArrayIterator(input));
     return lookup;
   }
 
@@ -220,7 +220,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       final Lookup lookup = buildLookup(cls, dictionaryInput);
 
       final List<String> input = new ArrayList<String>(benchmarkInput.size());
-      for (TermFreq tf : benchmarkInput) {
+      for (TermFreqPayload tf : benchmarkInput) {
         String s = tf.term.utf8ToString();
         String sub = s.substring(0, Math.min(s.length(), 
             minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1)));

@@ -97,6 +97,10 @@ API Changes:
   numBits parameter to allow growing/shrinking the copied bitset. You can
   use FixedBitSet.clone() if you only need to clone the bitset. (Shai Erera)
 
+* LUCENE-5260: Use TermFreqPayloadIterator for all suggesters; those
+  suggesters that can't support payloads will throw an exception if
+  hasPayloads() is true.  (Areek Zillur via Mike McCandless)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
