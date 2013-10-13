@@ -484,10 +484,9 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            example/** client/README.txt client/ruby/solr-ruby/** 
-                            contrib/**/lib/** contrib/**/README.txt 
+                            example/** contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
-                  excludes="lib/README.committers.txt **/data/ **/logs/* 
+                  excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
                             **/*pom.xml.template" />
