@@ -473,6 +473,9 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     int numCategories = atLeast(10);
     int numA = 0, numB = 0;
     Random random = random();
+    // add the two categories for which we'll also add children (so asserts are simpler)
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new CategoryPath("b"));
     for (int i = 0; i < numCategories; i++) {
       if (random.nextBoolean()) {
         taxoWriter.addCategory(new CategoryPath("a", Integer.toString(i)));
