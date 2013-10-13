@@ -42,7 +42,7 @@
 
   <target name="dist"
           description="Creates the Solr WAR Distribution file."
-          depends="test, init-dist, dist-core, dist-solrj, -unpack-lucene-tgz, lucene-jars-to-solr">
+          depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"
                     spec.version="${spec.version}"/>

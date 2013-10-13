@@ -160,8 +160,24 @@
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
-  <target name="lucene-jars-to-solr" depends="-unpack-lucene-tgz">
+  <target name="lucene-jars-to-solr" 
+          depends="-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
+  
+  <target name="-lucene-jars-to-solr-not-for-package" unless="called.from.create-package">
     <sequential>
+      <antcall target="prep-lucene-jars" inheritall="true"/>
+      <property name="solr.deps.compiled" value="true"/>
+      <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+        <path refid="solr.lucene.libs" />
+        <!-- NOTE: lucene-core is not already included in "solr.lucene.libs" because of its use in classpaths. -->
+        <fileset file="${lucene-core.jar}" />
+      </copy>
+    </sequential>
+  </target>
+  
+  <target name="-lucene-jars-to-solr-package" if="called.from.create-package">
+    <sequential>
+      <antcall target="-unpack-lucene-tgz" inheritall="true"/>
       <pathconvert property="relative.solr.lucene.libs" pathsep=",">
         <path refid="solr.lucene.libs"/>
         <fileset file="${lucene-core.jar}"/>
