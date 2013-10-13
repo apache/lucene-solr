@@ -496,6 +496,11 @@
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
   <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
+  <patternset id="patternset.lucene.solr.archives">
+    <include name="**/lucene-*.jar"/>
+    <include name="**/solr-*.jar"/>
+    <include name="**/solr-*.war"/>
+  </patternset>
   <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
   <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
     <ant dir="${common.dir}" target="package-tgz" inheritall="false"/>
@@ -503,7 +508,9 @@
   <target name="-unpack-lucene-tgz" unless="lucene.tgz.unpack.dir.exists">
     <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
     <mkdir dir="${lucene.tgz.unpack.dir}"/>
-    <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}">
+      <patternset refid="patternset.lucene.solr.archives"/>
+    </untar>
   </target>
   <property name="dist.jar.dir.prefix" value="${lucene.tgz.unpack.dir}/lucene"/>
   <pathconvert property="dist.jar.dir.suffix">
