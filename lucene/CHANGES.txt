@@ -83,6 +83,9 @@ Bug Fixes
 * LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
   unicode characters incorrectly. (Mike McCandless, Robert Muir)
 
+* LUCENE-5272: OpenBitSet.ensureCapacity did not modify numBits, causing 
+  false assertion errors in fastSet. (Shai Erera)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
