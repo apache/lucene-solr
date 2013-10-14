@@ -80,6 +80,9 @@ public class HdfsTestUtil {
   
   public static String getDataDir(MiniDFSCluster dfsCluster, String dataDir)
       throws IOException {
+    if (dataDir == null) {
+      return null;
+    }
     URI uri = dfsCluster.getURI();
     String dir = uri.toString()
         + "/"
