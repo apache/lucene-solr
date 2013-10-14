@@ -49,6 +49,11 @@ New Features
   encode term metadata, and all dictionary implementations can now plug in any 
   PostingsBaseFormat. (Han Jiang, Mike McCandless)
 
+* LUCENE-5268: Full cutover of all postings formats to the "pull"
+  FieldsConsumer API, removing PushFieldsConsumer.  Added new
+  PushPostingsWriterBase for single-pass push of docs/positions to the
+  postings format.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile

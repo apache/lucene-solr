@@ -25,7 +25,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
-import org.apache.lucene.util.LongsRef;
 
 /**
  * An FST {@link Outputs} implementation for 
@@ -86,6 +85,11 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       }
       hash += docFreq + totalTermFreq;
       return hash;
+    }
+
+    @Override
+    public String toString() {
+      return "FSTTermOutputs$TermData longs=" + Arrays.toString(longs) + " bytes=" + Arrays.toString(bytes) + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq;
     }
 
     @Override
@@ -221,6 +225,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
   @Override
   public void write(TermData data, DataOutput out) throws IOException {
+    assert hasPos || data.totalTermFreq == -1;
     int bit0 = allZero(data.longs) ? 0 : 1;
     int bit1 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1) << 1;
     int bit2 = ((data.docFreq == 0)  ? 0 : 1) << 2;

@@ -23,20 +23,21 @@ import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PostingsConsumer;
+import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.PushFieldsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -119,7 +120,7 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 
-public class FSTTermsWriter extends PushFieldsConsumer {
+public class FSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
   static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
   public static final int TERMS_VERSION_START = 0;
@@ -128,15 +129,16 @@ public class FSTTermsWriter extends PushFieldsConsumer {
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   final IndexOutput out;
+  final int maxDoc;
   final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
 
   public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
-    super(state);
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
 
     this.postingsWriter = postingsWriter;
     this.fieldInfos = state.fieldInfos;
     this.out = state.directory.createOutput(termsFileName, state.context);
+    this.maxDoc = state.segmentInfo.getDocCount();
 
     boolean success = false;
     try {
@@ -149,19 +151,53 @@ public class FSTTermsWriter extends PushFieldsConsumer {
       }
     }
   }
+
   private void writeHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
   }
+
   private void writeTrailer(IndexOutput out, long dirStart) throws IOException {
     out.writeLong(dirStart);
   }
 
   @Override
-  public TermsConsumer addField(FieldInfo field) throws IOException {
-    return new TermsWriter(field);
+  public void write(Fields fields) throws IOException {
+    try {
+      for(String field : fields) {
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          continue;
+        }
+        FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        boolean hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+        TermsEnum termsEnum = terms.iterator(null);
+        TermsWriter termsWriter = termsWriter = new TermsWriter(fieldInfo);
+
+        long sumTotalTermFreq = 0;
+        long sumDocFreq = 0;
+        FixedBitSet docsSeen = new FixedBitSet(maxDoc);
+
+        while (true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+            
+          BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen);
+          if (termState != null) {
+            termsWriter.finishTerm(term, termState);
+            sumTotalTermFreq += termState.totalTermFreq;
+            sumDocFreq += termState.docFreq;
+          }
+        }
+
+        termsWriter.finish(hasFreq ? sumTotalTermFreq : -1, sumDocFreq, docsSeen.cardinality());
+      }
+    } finally {
+      close();
+    }
   }
 
-  @Override
   public void close() throws IOException {
     IOException ioe = null;
     try {
@@ -208,7 +244,7 @@ public class FSTTermsWriter extends PushFieldsConsumer {
     }
   }
 
-  final class TermsWriter extends TermsConsumer {
+  final class TermsWriter {
     private final Builder<FSTTermOutputs.TermData> builder;
     private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
@@ -226,22 +262,13 @@ public class FSTTermsWriter extends PushFieldsConsumer {
       this.builder = new Builder<FSTTermOutputs.TermData>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
-    @Override
-    public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      postingsWriter.startTerm();
-      return postingsWriter;
-    }
-
-    @Override
-    public void finishTerm(BytesRef text, TermStats stats) throws IOException {
+    public void finishTerm(BytesRef text, BlockTermState state) throws IOException {
       // write term meta data into fst
-      final BlockTermState state = postingsWriter.newTermState();
       final FSTTermOutputs.TermData meta = new FSTTermOutputs.TermData();
       meta.longs = new long[longsSize];
       meta.bytes = null;
-      meta.docFreq = state.docFreq = stats.docFreq;
-      meta.totalTermFreq = state.totalTermFreq = stats.totalTermFreq;
-      postingsWriter.finishTerm(state);
+      meta.docFreq = state.docFreq;
+      meta.totalTermFreq = state.totalTermFreq;
       postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
       final int bytesSize = (int)metaWriter.getFilePointer();
       if (bytesSize > 0) {
@@ -253,7 +280,6 @@ public class FSTTermsWriter extends PushFieldsConsumer {
       numTerms++;
     }
 
-    @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {

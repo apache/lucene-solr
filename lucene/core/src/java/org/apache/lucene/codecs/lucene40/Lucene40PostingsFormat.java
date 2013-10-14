@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PostingsWriterBase; // javadocs
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
 import org.apache.lucene.index.FieldInfos; // javadocs

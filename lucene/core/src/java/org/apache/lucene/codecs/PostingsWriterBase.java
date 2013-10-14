@@ -17,29 +17,29 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Closeable;
+import java.io.IOException;
 
+import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
+import org.apache.lucene.index.DocsEnum; // javadocs
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
- * Extension of {@link PostingsConsumer} to support pluggable term dictionaries.
- * <p>
- * This class contains additional hooks to interact with the provided
- * term dictionaries such as {@link BlockTreeTermsWriter}. If you want
- * to re-use an existing implementation and are only interested in
- * customizing the format of the postings list, extend this class
- * instead.
+ * Class that plugs into term dictionaries, such as {@link
+ * BlockTreeTermsWriter}, and handles writing postings.
  * 
  * @see PostingsReaderBase
  * @lucene.experimental
  */
 // TODO: find a better name; this defines the API that the
 // terms dict impls use to talk to a postings impl.
-// TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
-public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
+// TermsDict + PostingsReader/WriterBase == FieldsProducer/Consumer
+public abstract class PostingsWriterBase implements Closeable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -51,18 +51,16 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
    *  the provided {@code termsOut}. */
   public abstract void init(IndexOutput termsOut) throws IOException;
 
-  /** Return a newly created empty TermState */
-  public abstract BlockTermState newTermState() throws IOException;
-
-  /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(BlockTermState)} is done, only if the term has at least one
-   *  document. */
-  public abstract void startTerm() throws IOException;
-
-  /** Finishes the current term.  The provided {@link
-   *  BlockTermState} contains the term's summary statistics, 
-   *  and will holds metadata from PBF when returned */
-  public abstract void finishTerm(BlockTermState state) throws IOException;
+  /** Write all postings for one term; use the provided
+   *  {@link TermsEnum} to pull a {@link DocsEnum} or {@link
+   *  DocsAndPositionsEnum}.  This method should not
+   *  re-position the {@code TermsEnum}!  It is already
+   *  positioned on the term that should be written.  This
+   *  method must set the bit in the provided {@link
+   *  FixedBitSet} for every docID written.  If no docs
+   *  were written, this method should return null, and the
+   *  terms dict will skip the term. */
+  public abstract BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException;
 
   /**
    * Encode metadata as long[] and byte[]. {@code absolute} controls whether 

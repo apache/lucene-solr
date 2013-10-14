@@ -17,6 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +25,17 @@ import java.util.List;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -174,7 +179,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public class BlockTreeTermsWriter extends PushFieldsConsumer {
+public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
@@ -228,12 +233,12 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
+  final int maxDoc;
   final int minItemsInBlock;
   final int maxItemsInBlock;
 
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
-  FieldInfo currentField;
 
   private static class FieldMetaData {
     public final FieldInfo fieldInfo;
@@ -273,7 +278,6 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
                               int maxItemsInBlock)
     throws IOException
   {
-    super(state);
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
@@ -286,6 +290,8 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
     if (2*(minItemsInBlock-1) > maxItemsInBlock) {
       throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
     }
+
+    maxDoc = state.segmentInfo.getDocCount();
 
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
     out = state.directory.createOutput(termsFileName, state.context);
@@ -303,7 +309,6 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
       indexOut = state.directory.createOutput(termsIndexFileName, state.context);
       writeIndexHeader(indexOut);
 
-      currentField = null;
       this.postingsWriter = postingsWriter;
       // segment = state.segmentName;
 
@@ -338,16 +343,46 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
   private void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
     indexOut.writeLong(dirStart);    
   }
-  
-  @Override
-  public TermsConsumer addField(FieldInfo field) throws IOException {
-    //DEBUG = field.name.equals("id");
-    //if (DEBUG) System.out.println("\nBTTW.addField seg=" + segment + " field=" + field.name);
-    assert currentField == null || currentField.name.compareTo(field.name) < 0;
-    currentField = field;
-    return new TermsWriter(field);
-  }
 
+  @Override
+  public void write(Fields fields) throws IOException {
+
+    boolean success = false;
+    try {
+      String lastField = null;
+      for(String field : fields) {
+        assert lastField == null || lastField.compareTo(field) < 0;
+        lastField = field;
+
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          continue;
+        }
+
+        TermsEnum termsEnum = terms.iterator(null);
+
+        TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
+
+        while (true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          termsWriter.write(term, termsEnum);
+        }
+
+        termsWriter.finish();
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(this);
+      } else {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
+  }
+  
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
     assert fp < (1L << 62);
     return (fp << 2) | (hasTerms ? OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? OUTPUT_FLAG_IS_FLOOR : 0);
@@ -488,13 +523,13 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
 
   final RAMOutputStream scratchBytes = new RAMOutputStream();
 
-  class TermsWriter extends TermsConsumer {
+  class TermsWriter {
     private final FieldInfo fieldInfo;
     private final int longsSize;
     private long numTerms;
+    final FixedBitSet docsSeen;
     long sumTotalTermFreq;
     long sumDocFreq;
-    int docCount;
     long indexStartFP;
 
     // Used only to partition terms into the block tree; we
@@ -1000,6 +1035,7 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
 
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
+      docsSeen = new FixedBitSet(maxDoc);
 
       noOutputs = NoOutputs.getSingleton();
 
@@ -1017,42 +1053,27 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
       this.longsSize = postingsWriter.setField(fieldInfo);
     }
     
-    @Override
-    public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      //if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment);
-      postingsWriter.startTerm();
-      /*
-      if (fieldInfo.name.equals("id")) {
-        postingsWriter.termID = Integer.parseInt(text.utf8ToString());
-      } else {
-        postingsWriter.termID = -1;
-      }
-      */
-      return postingsWriter;
-    }
-
     private final IntsRef scratchIntsRef = new IntsRef();
 
-    @Override
-    public void finishTerm(BytesRef text, TermStats stats) throws IOException {
+    /** Writes one term's worth of postings. */
+    public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
 
-      assert stats.docFreq > 0;
-      //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
+      BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+      if (state != null) {
+        assert state.docFreq != 0;
+        assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;
+        sumDocFreq += state.docFreq;
+        sumTotalTermFreq += state.totalTermFreq;
+        blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
 
-      blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
-      BlockTermState state = postingsWriter.newTermState();
-      state.docFreq = stats.docFreq;
-      state.totalTermFreq = stats.totalTermFreq;
-      postingsWriter.finishTerm(state);
-
-      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
-      pending.add(term);
-      numTerms++;
+        PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
+        pending.add(term);
+        numTerms++;
+      }
     }
 
     // Finishes all terms in this field
-    @Override
-    public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
+    public void finish() throws IOException {
       if (numTerms > 0) {
         blockBuilder.finish();
 
@@ -1061,10 +1082,6 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
         final PendingBlock root = (PendingBlock) pending.get(0);
         assert root.prefix.length == 0;
         assert root.index.getEmptyOutput() != null;
-
-        this.sumTotalTermFreq = sumTotalTermFreq;
-        this.sumDocFreq = sumDocFreq;
-        this.docCount = docCount;
 
         // Write FST to index
         indexStartFP = indexOut.getFilePointer();
@@ -1085,12 +1102,12 @@ public class BlockTreeTermsWriter extends PushFieldsConsumer {
                                      indexStartFP,
                                      sumTotalTermFreq,
                                      sumDocFreq,
-                                     docCount,
+                                     docsSeen.cardinality(),
                                      longsSize));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
-        assert docCount == 0;
+        assert docsSeen.cardinality() == 0;
       }
     }
 

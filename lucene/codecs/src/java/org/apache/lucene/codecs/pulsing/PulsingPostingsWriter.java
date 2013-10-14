@@ -18,21 +18,24 @@ package org.apache.lucene.codecs.pulsing;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 
 // TODO: we now inline based on total TF of the term,
@@ -66,21 +69,31 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   final static int VERSION_CURRENT = VERSION_META_ARRAY;
 
   private SegmentWriteState segmentState;
-  private IndexOutput termsOut;
 
   private List<FieldMetaData> fields;
 
+  // Reused by writeTerm:
+  private DocsEnum docsEnum;
+  private DocsAndPositionsEnum posEnum;
+  private int enumFlags;
+
+  private final RAMOutputStream buffer = new RAMOutputStream();
+
   private IndexOptions indexOptions;
-  private boolean storePayloads;
 
   // information for wrapped PF, in current field
   private int longsSize;
   private long[] longs;
+  private boolean fieldHasFreqs;
+  private boolean fieldHasPositions;
+  private boolean fieldHasOffsets;
+  private boolean fieldHasPayloads;
   boolean absolute;
 
   private static class PulsingTermState extends BlockTermState {
     private byte[] bytes;
     private BlockTermState wrappedState;
+
     @Override
     public String toString() {
       if (bytes != null) {
@@ -89,20 +102,6 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
         return "not inlined wrapped=" + wrappedState;
       }
     }
-  }
-
-  // one entry per position
-  private final Position[] pending;
-  private int pendingCount = 0;                           // -1 once we've hit too many positions
-  private Position currentDoc;                    // first Position entry of current doc
-
-  private static final class Position {
-    BytesRef payload;
-    int termFreq;                                 // only incremented on first position for a given doc
-    int pos;
-    int docID;
-    int startOffset;
-    int endOffset;
   }
 
   private static final class FieldMetaData {
@@ -120,17 +119,14 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   // non-inlined terms:
   final PostingsWriterBase wrappedPostingsWriter;
 
+  final int maxPositions;
+
   /** If the total number of positions (summed across all docs
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
   public PulsingPostingsWriter(SegmentWriteState state, int maxPositions, PostingsWriterBase wrappedPostingsWriter) {
-
-    pending = new Position[maxPositions];
-    for(int i=0;i<maxPositions;i++) {
-      pending[i] = new Position();
-    }
     fields = new ArrayList<FieldMetaData>();
-
+    this.maxPositions = maxPositions;
     // We simply wrap another postings writer, but only call
     // on it when tot positions is >= the cutoff:
     this.wrappedPostingsWriter = wrappedPostingsWriter;
@@ -139,23 +135,162 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut) throws IOException {
-    this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
-    termsOut.writeVInt(pending.length); // encode maxPositions in header
+    termsOut.writeVInt(maxPositions); // encode maxPositions in header
     wrappedPostingsWriter.init(termsOut);
   }
 
   @Override
-  public BlockTermState newTermState() throws IOException {
-    PulsingTermState state = new PulsingTermState();
-    state.wrappedState = wrappedPostingsWriter.newTermState();
-    return state;
-  }
+  public BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException {
 
-  @Override
-  public void startTerm() {
-    //if (DEBUG) System.out.println("PW   startTerm");
-    assert pendingCount == 0;
+    // First pass: figure out whether we should pulse this term
+    long posCount = 0;
+
+    if (fieldHasPositions == false) {
+      // No positions:
+      docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
+      assert docsEnum != null;
+      while (posCount <= maxPositions) {
+        if (docsEnum.nextDoc() == DocsEnum.NO_MORE_DOCS) {
+          break;
+        }
+        posCount++;
+      }
+    } else {
+      posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
+      assert posEnum != null;
+      while (posCount <= maxPositions) {
+        if (posEnum.nextDoc() == DocsEnum.NO_MORE_DOCS) {
+          break;
+        }
+        posCount += posEnum.freq();
+      }
+    }
+
+    if (posCount == 0) {
+      // All docs were deleted
+      return null;
+    }
+
+    // Second pass: write postings
+    if (posCount > maxPositions) {
+      // Too many positions; do not pulse.  Just lset
+      // wrapped postingsWriter encode the postings:
+
+      PulsingTermState state = new PulsingTermState();
+      state.wrappedState = wrappedPostingsWriter.writeTerm(term, termsEnum, docsSeen);
+      state.docFreq = state.wrappedState.docFreq;
+      state.totalTermFreq = state.wrappedState.totalTermFreq;
+      return state;
+    } else {
+      // Pulsed:
+      if (fieldHasPositions == false) {
+        docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
+      } else {
+        posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
+        docsEnum = posEnum;
+      }
+      assert docsEnum != null;
+
+      // There were few enough total occurrences for this
+      // term, so we fully inline our postings data into
+      // terms dict, now:
+
+      // TODO: it'd be better to share this encoding logic
+      // in some inner codec that knows how to write a
+      // single doc / single position, etc.  This way if a
+      // given codec wants to store other interesting
+      // stuff, it could use this pulsing codec to do so
+
+      int lastDocID = 0;
+      int lastPayloadLength = -1;
+      int lastOffsetLength = -1;
+
+      int docFreq = 0;
+      long totalTermFreq = 0;
+      while (true) {
+        int docID = docsEnum.nextDoc();
+        if (docID == DocsEnum.NO_MORE_DOCS) {
+          break;
+        }
+        docsSeen.set(docID);
+
+        int delta = docID - lastDocID;
+        lastDocID = docID;
+
+        docFreq++;
+
+        if (fieldHasFreqs) {
+          int freq = docsEnum.freq();
+          totalTermFreq += freq;
+
+          if (freq == 1) {
+            buffer.writeVInt((delta << 1) | 1);
+          } else {
+            buffer.writeVInt(delta << 1);
+            buffer.writeVInt(freq);
+          }
+
+          if (fieldHasPositions) {
+            int lastPos = 0;
+            int lastOffset = 0;
+            for(int posIDX=0;posIDX<freq;posIDX++) {
+              int pos = posEnum.nextPosition();
+              int posDelta = pos - lastPos;
+              lastPos = pos;
+              int payloadLength;
+              BytesRef payload;
+              if (fieldHasPayloads) {
+                payload = posEnum.getPayload();
+                payloadLength = payload == null ? 0 : payload.length;
+                if (payloadLength != lastPayloadLength) {
+                  buffer.writeVInt((posDelta << 1)|1);
+                  buffer.writeVInt(payloadLength);
+                  lastPayloadLength = payloadLength;
+                } else {
+                  buffer.writeVInt(posDelta << 1);
+                }
+              } else {
+                payloadLength = 0;
+                payload = null;
+                buffer.writeVInt(posDelta);
+              }
+
+              if (fieldHasOffsets) {
+                int startOffset = posEnum.startOffset();
+                int endOffset = posEnum.endOffset();
+                int offsetDelta = startOffset - lastOffset;
+                int offsetLength = endOffset - startOffset;
+                if (offsetLength != lastOffsetLength) {
+                  buffer.writeVInt(offsetDelta << 1 | 1);
+                  buffer.writeVInt(offsetLength);
+                } else {
+                  buffer.writeVInt(offsetDelta << 1);
+                }
+                lastOffset = startOffset;
+                lastOffsetLength = offsetLength;             
+              }
+            
+              if (payloadLength > 0) {
+                assert fieldHasPayloads;
+                assert payload != null;
+                buffer.writeBytes(payload.bytes, payload.offset, payload.length);
+              }
+            }
+          }
+        } else {
+          buffer.writeVInt(delta);
+        }
+      }
+      
+      PulsingTermState state = new PulsingTermState();
+      state.bytes = new byte[(int) buffer.getFilePointer()];
+      state.docFreq = docFreq;
+      state.totalTermFreq = fieldHasFreqs ? totalTermFreq : -1;
+      buffer.writeTo(state.bytes, 0);
+      buffer.reset();
+      return state;
+    }
   }
 
   // TODO: -- should we NOT reuse across fields?  would
@@ -167,215 +302,35 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   public int setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.getIndexOptions();
     //if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
-    storePayloads = fieldInfo.hasPayloads();
+    fieldHasPayloads = fieldInfo.hasPayloads();
     absolute = false;
     longsSize = wrappedPostingsWriter.setField(fieldInfo);
     longs = new long[longsSize];
     fields.add(new FieldMetaData(fieldInfo.number, longsSize));
+
+    fieldHasFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    fieldHasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+
+    if (fieldHasFreqs == false) {
+      enumFlags = 0;
+    } else if (fieldHasPositions == false) {
+      enumFlags = DocsEnum.FLAG_FREQS;
+    } else if (fieldHasOffsets == false) {
+      if (fieldHasPayloads) {
+        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+      } else {
+        enumFlags = 0;
+      }
+    } else {
+      if (fieldHasPayloads) {
+        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+      } else {
+        enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+      }
+    }
     return 0;
     //DEBUG = BlockTreeTermsWriter.DEBUG;
-  }
-
-  private boolean DEBUG;
-
-  @Override
-  public void startDoc(int docID, int termDocFreq) throws IOException {
-    assert docID >= 0: "got docID=" + docID;
-
-    /*
-    if (termID != -1) {
-      if (docID == 0) {
-        baseDocID = termID;
-      } else if (baseDocID + docID != termID) {
-        throw new RuntimeException("WRITE: baseDocID=" + baseDocID + " docID=" + docID + " termID=" + termID);
-      }
-    }
-    */
-
-    //if (DEBUG) System.out.println("PW     doc=" + docID);
-
-    if (pendingCount == pending.length) {
-      push();
-      //if (DEBUG) System.out.println("PW: wrapped.finishDoc");
-      wrappedPostingsWriter.finishDoc();
-    }
-
-    if (pendingCount != -1) {
-      assert pendingCount < pending.length;
-      currentDoc = pending[pendingCount];
-      currentDoc.docID = docID;
-      if (indexOptions == IndexOptions.DOCS_ONLY) {
-        pendingCount++;
-      } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) { 
-        pendingCount++;
-        currentDoc.termFreq = termDocFreq;
-      } else {
-        currentDoc.termFreq = termDocFreq;
-      }
-    } else {
-      // We've already seen too many docs for this term --
-      // just forward to our fallback writer
-      wrappedPostingsWriter.startDoc(docID, termDocFreq);
-    }
-  }
-
-  @Override
-  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
-
-    //if (DEBUG) System.out.println("PW       pos=" + position + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
-    if (pendingCount == pending.length) {
-      push();
-    }
-
-    if (pendingCount == -1) {
-      // We've already seen too many docs for this term --
-      // just forward to our fallback writer
-      wrappedPostingsWriter.addPosition(position, payload, startOffset, endOffset);
-    } else {
-      // buffer up
-      final Position pos = pending[pendingCount++];
-      pos.pos = position;
-      pos.startOffset = startOffset;
-      pos.endOffset = endOffset;
-      pos.docID = currentDoc.docID;
-      if (payload != null && payload.length > 0) {
-        if (pos.payload == null) {
-          pos.payload = BytesRef.deepCopyOf(payload);
-        } else {
-          pos.payload.copyBytes(payload);
-        }
-      } else if (pos.payload != null) {
-        pos.payload.length = 0;
-      }
-    }
-  }
-
-  @Override
-  public void finishDoc() throws IOException {
-    // if (DEBUG) System.out.println("PW     finishDoc");
-    if (pendingCount == -1) {
-      wrappedPostingsWriter.finishDoc();
-    }
-  }
-
-  private final RAMOutputStream buffer = new RAMOutputStream();
-
-  // private int baseDocID;
-
-  /** Called when we are done adding docs to this term */
-  @Override
-  public void finishTerm(BlockTermState _state) throws IOException {
-    PulsingTermState state = (PulsingTermState) _state;
-
-    // if (DEBUG) System.out.println("PW   finishTerm docCount=" + stats.docFreq + " pendingCount=" + pendingCount + " pendingTerms.size()=" + pendingTerms.size());
-
-    assert pendingCount > 0 || pendingCount == -1;
-
-    if (pendingCount == -1) {
-      state.wrappedState.docFreq = state.docFreq;
-      state.wrappedState.totalTermFreq = state.totalTermFreq;
-      state.bytes = null;
-      wrappedPostingsWriter.finishTerm(state.wrappedState);
-    } else {
-      // There were few enough total occurrences for this
-      // term, so we fully inline our postings data into
-      // terms dict, now:
-
-      // TODO: it'd be better to share this encoding logic
-      // in some inner codec that knows how to write a
-      // single doc / single position, etc.  This way if a
-      // given codec wants to store other interesting
-      // stuff, it could use this pulsing codec to do so
-
-      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-        int lastDocID = 0;
-        int pendingIDX = 0;
-        int lastPayloadLength = -1;
-        int lastOffsetLength = -1;
-        while(pendingIDX < pendingCount) {
-          final Position doc = pending[pendingIDX];
-
-          final int delta = doc.docID - lastDocID;
-          lastDocID = doc.docID;
-
-          // if (DEBUG) System.out.println("  write doc=" + doc.docID + " freq=" + doc.termFreq);
-
-          if (doc.termFreq == 1) {
-            buffer.writeVInt((delta<<1)|1);
-          } else {
-            buffer.writeVInt(delta<<1);
-            buffer.writeVInt(doc.termFreq);
-          }
-
-          int lastPos = 0;
-          int lastOffset = 0;
-          for(int posIDX=0;posIDX<doc.termFreq;posIDX++) {
-            final Position pos = pending[pendingIDX++];
-            assert pos.docID == doc.docID;
-            final int posDelta = pos.pos - lastPos;
-            lastPos = pos.pos;
-            // if (DEBUG) System.out.println("    write pos=" + pos.pos);
-            final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
-            if (storePayloads) {
-              if (payloadLength != lastPayloadLength) {
-                buffer.writeVInt((posDelta << 1)|1);
-                buffer.writeVInt(payloadLength);
-                lastPayloadLength = payloadLength;
-              } else {
-                buffer.writeVInt(posDelta << 1);
-              }
-            } else {
-              buffer.writeVInt(posDelta);
-            }
-            
-            if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-              //System.out.println("write=" + pos.startOffset + "," + pos.endOffset);
-              int offsetDelta = pos.startOffset - lastOffset;
-              int offsetLength = pos.endOffset - pos.startOffset;
-              if (offsetLength != lastOffsetLength) {
-                buffer.writeVInt(offsetDelta << 1 | 1);
-                buffer.writeVInt(offsetLength);
-              } else {
-                buffer.writeVInt(offsetDelta << 1);
-              }
-              lastOffset = pos.startOffset;
-              lastOffsetLength = offsetLength;             
-            }
-            
-            if (payloadLength > 0) {
-              assert storePayloads;
-              buffer.writeBytes(pos.payload.bytes, 0, pos.payload.length);
-            }
-          }
-        }
-      } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
-        int lastDocID = 0;
-        for(int posIDX=0;posIDX<pendingCount;posIDX++) {
-          final Position doc = pending[posIDX];
-          final int delta = doc.docID - lastDocID;
-          assert doc.termFreq != 0;
-          if (doc.termFreq == 1) {
-            buffer.writeVInt((delta<<1)|1);
-          } else {
-            buffer.writeVInt(delta<<1);
-            buffer.writeVInt(doc.termFreq);
-          }
-          lastDocID = doc.docID;
-        }
-      } else if (indexOptions == IndexOptions.DOCS_ONLY) {
-        int lastDocID = 0;
-        for(int posIDX=0;posIDX<pendingCount;posIDX++) {
-          final Position doc = pending[posIDX];
-          buffer.writeVInt(doc.docID - lastDocID);
-          lastDocID = doc.docID;
-        }
-      }
-
-      state.bytes = new byte[(int) buffer.getFilePointer()];
-      buffer.writeTo(state.bytes, 0);
-      buffer.reset();
-    }
-    pendingCount = 0;
   }
 
   @Override
@@ -419,40 +374,5 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     } finally {
       IOUtils.closeWhileHandlingException(out);
     }
-  }
-
-  // Pushes pending positions to the wrapped codec
-  private void push() throws IOException {
-    // if (DEBUG) System.out.println("PW now push @ " + pendingCount + " wrapped=" + wrappedPostingsWriter);
-    assert pendingCount == pending.length;
-      
-    wrappedPostingsWriter.startTerm();
-      
-    // Flush all buffered docs
-    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-      Position doc = null;
-      for(Position pos : pending) {
-        if (doc == null) {
-          doc = pos;
-          // if (DEBUG) System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
-          wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
-        } else if (doc.docID != pos.docID) {
-          assert pos.docID > doc.docID;
-          // if (DEBUG) System.out.println("PW: wrapped.finishDoc");
-          wrappedPostingsWriter.finishDoc();
-          doc = pos;
-          // if (DEBUG) System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
-          wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
-        }
-        // if (DEBUG) System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
-        wrappedPostingsWriter.addPosition(pos.pos, pos.payload, pos.startOffset, pos.endOffset);
-      }
-      //wrappedPostingsWriter.finishDoc();
-    } else {
-      for(Position doc : pending) {
-        wrappedPostingsWriter.startDoc(doc.docID, indexOptions == IndexOptions.DOCS_ONLY ? 0 : doc.termFreq);
-      }
-    }
-    pendingCount = -1;
   }
 }

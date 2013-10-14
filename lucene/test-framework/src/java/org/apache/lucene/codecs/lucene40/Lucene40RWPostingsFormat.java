@@ -1,13 +1,5 @@
 package org.apache.lucene.codecs.lucene40;
 
-import java.io.IOException;
-
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +16,14 @@ import org.apache.lucene.util.LuceneTestCase;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Read-write version of {@link Lucene40PostingsFormat} for testing.

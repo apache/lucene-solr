@@ -17,30 +17,26 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
+
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
 
 
 /**
@@ -52,7 +48,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see Lucene41SkipWriter for details about skipping setting and postings layout.
  * @lucene.experimental
  */
-public final class Lucene41PostingsWriter extends PostingsWriterBase {
+public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
 
   /** 
    * Expert: The maximum number of skip levels. Smaller values result in 
@@ -76,12 +72,6 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   final static IntBlockTermState emptyState = new IntBlockTermState();
   IntBlockTermState lastState;
-
-  // How current field indexes postings:
-  private boolean fieldHasFreqs;
-  private boolean fieldHasPositions;
-  private boolean fieldHasOffsets;
-  private boolean fieldHasPayloads;
 
   // Holds starting file pointers for current term:
   private long docStartFP;
@@ -241,15 +231,11 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   @Override
   public int setField(FieldInfo fieldInfo) {
-    IndexOptions indexOptions = fieldInfo.getIndexOptions();
-    fieldHasFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-    fieldHasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    fieldHasPayloads = fieldInfo.hasPayloads();
-    skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
+    super.setField(fieldInfo);
+    skipWriter.setField(writePositions, writeOffsets, writePayloads);
     lastState = emptyState;
-    if (fieldHasPositions) {
-      if (fieldHasPayloads || fieldHasOffsets) {
+    if (writePositions) {
+      if (writePayloads || writeOffsets) {
         return 3;  // doc + pos + pay FP
       } else {
         return 2;  // doc + pos FP
@@ -262,9 +248,9 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   @Override
   public void startTerm() {
     docStartFP = docOut.getFilePointer();
-    if (fieldHasPositions) {
+    if (writePositions) {
       posStartFP = posOut.getFilePointer();
-      if (fieldHasPayloads || fieldHasOffsets) {
+      if (writePayloads || writeOffsets) {
         payStartFP = payOut.getFilePointer();
       }
     }
@@ -301,7 +287,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     // if (DEBUG) {
     //   System.out.println("  docDeltaBuffer[" + docBufferUpto + "]=" + docDelta);
     // }
-    if (fieldHasFreqs) {
+    if (writeFreqs) {
       freqBuffer[docBufferUpto] = termDocFreq;
     }
     docBufferUpto++;
@@ -312,7 +298,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       //   System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       // }
       forUtil.writeBlock(docDeltaBuffer, encoded, docOut);
-      if (fieldHasFreqs) {
+      if (writeFreqs) {
         // if (DEBUG) {
         //   System.out.println("  write freq block @ fp=" + docOut.getFilePointer());
         // }
@@ -329,14 +315,13 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     lastStartOffset = 0;
   }
 
-  /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
     // if (DEBUG) {
-    //   System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (fieldHasPayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
+    //   System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (writePayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
     // }
     posDeltaBuffer[posBufferUpto] = position - lastPosition;
-    if (fieldHasPayloads) {
+    if (writePayloads) {
       if (payload == null || payload.length == 0) {
         // no payload
         payloadLengthBuffer[posBufferUpto] = 0;
@@ -350,7 +335,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       }
     }
 
-    if (fieldHasOffsets) {
+    if (writeOffsets) {
       assert startOffset >= lastStartOffset;
       assert endOffset >= startOffset;
       offsetStartDeltaBuffer[posBufferUpto] = startOffset - lastStartOffset;
@@ -366,13 +351,13 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       // }
       forUtil.writeBlock(posDeltaBuffer, encoded, posOut);
 
-      if (fieldHasPayloads) {
+      if (writePayloads) {
         forUtil.writeBlock(payloadLengthBuffer, encoded, payOut);
         payOut.writeVInt(payloadByteUpto);
         payOut.writeBytes(payloadBytes, 0, payloadByteUpto);
         payloadByteUpto = 0;
       }
-      if (fieldHasOffsets) {
+      if (writeOffsets) {
         forUtil.writeBlock(offsetStartDeltaBuffer, encoded, payOut);
         forUtil.writeBlock(offsetLengthBuffer, encoded, payOut);
       }
@@ -433,7 +418,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       for(int i=0;i<docBufferUpto;i++) {
         final int docDelta = docDeltaBuffer[i];
         final int freq = freqBuffer[i];
-        if (!fieldHasFreqs) {
+        if (!writeFreqs) {
           docOut.writeVInt(docDelta);
         } else if (freqBuffer[i] == 1) {
           docOut.writeVInt((docDelta<<1)|1);
@@ -446,10 +431,10 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
     final long lastPosBlockOffset;
 
-    if (fieldHasPositions) {
+    if (writePositions) {
       // if (DEBUG) {
       //   if (posBufferUpto > 0) {
-      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posStartFP=" + posStartFP + " hasPayloads=" + fieldHasPayloads + " hasOffsets=" + fieldHasOffsets);
+      //     System.out.println("  write pos vInt block (count=" + posBufferUpto + ") at fp=" + posOut.getFilePointer() + " posStartFP=" + posStartFP + " hasPayloads=" + writePayloads + " hasOffsets=" + writeOffsets);
       //   }
       // }
 
@@ -474,7 +459,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
         int payloadBytesReadUpto = 0;
         for(int i=0;i<posBufferUpto;i++) {
           final int posDelta = posDeltaBuffer[i];
-          if (fieldHasPayloads) {
+          if (writePayloads) {
             final int payloadLength = payloadLengthBuffer[i];
             if (payloadLength != lastPayloadLength) {
               lastPayloadLength = payloadLength;
@@ -499,7 +484,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
             posOut.writeVInt(posDelta);
           }
 
-          if (fieldHasOffsets) {
+          if (writeOffsets) {
             // if (DEBUG) {
             //   System.out.println("          write offset @ pos.fp=" + posOut.getFilePointer());
             // }
@@ -515,7 +500,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
           }
         }
 
-        if (fieldHasPayloads) {
+        if (writePayloads) {
           assert payloadBytesReadUpto == payloadByteUpto;
           payloadByteUpto = 0;
         }
@@ -562,16 +547,16 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       lastState = emptyState;
     }
     longs[0] = state.docStartFP - lastState.docStartFP;
-    if (fieldHasPositions) {
+    if (writePositions) {
       longs[1] = state.posStartFP - lastState.posStartFP;
-      if (fieldHasPayloads || fieldHasOffsets) {
+      if (writePayloads || writeOffsets) {
         longs[2] = state.payStartFP - lastState.payStartFP;
       }
     }
     if (state.singletonDocID != -1) {
       out.writeVInt(state.singletonDocID);
     }
-    if (fieldHasPositions) {
+    if (writePositions) {
       if (state.lastPosBlockOffset != -1) {
         out.writeVLong(state.lastPosBlockOffset);
       }

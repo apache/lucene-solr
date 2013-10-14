@@ -48,16 +48,12 @@ public abstract class FieldsConsumer {
   /** Write all fields, terms and postings.  This the "pull"
    *  API, allowing you to iterate more than once over the
    *  postings, somewhat analogous to using a DOM API to
-   *  traverse an XML tree.  Alternatively, if you subclass
-   *  {@link PushFieldsConsumer}, then all postings are
-   *  pushed in a single pass, somewhat analogous to using a
-   *  SAX API to traverse an XML tree.
+   *  traverse an XML tree.
    *
-   *  <p>This API is has certain restrictions vs {@link
-   *  PushFieldsConsumer}:
+   *  <p><b>Notes</b>:
    *
    *  <ul>
-   *    <li> You must compute index statistics yourself,
+   *    <li> You must compute index statistics,
    *         including each Term's docFreq and totalTermFreq,
    *         as well as the summary sumTotalTermFreq,
    *         sumTotalDocFreq and docCount.

@@ -21,16 +21,15 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -38,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
  *  to .pyl, skip data to .skp
  *
  * @lucene.experimental */
-public final class SepPostingsWriter extends PostingsWriterBase {
+public final class SepPostingsWriter extends PushPostingsWriterBase {
   final static String CODEC = "SepPostingsWriter";
 
   final static String DOC_EXTENSION = "doc";
@@ -85,10 +84,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
 
   final int totalNumDocs;
 
-  boolean storePayloads;
   IndexOptions indexOptions;
-
-  FieldInfo fieldInfo;
 
   int lastPayloadLength;
   int lastPosition;
@@ -190,13 +186,12 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public int setField(FieldInfo fieldInfo) {
-    this.fieldInfo = fieldInfo;
+    super.setField(fieldInfo);
     this.indexOptions = fieldInfo.getIndexOptions();
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
       throw new UnsupportedOperationException("this codec cannot index offsets");
     }
     skipListWriter.setIndexOptions(indexOptions);
-    storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.hasPayloads();
     lastPayloadFP = 0;
     lastSkipFP = 0;
     lastState = setEmptyState();
@@ -233,7 +228,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
       // TODO: -- awkward we have to make these two
       // separate calls to skipper
       //System.out.println("    buffer skip lastDocID=" + lastDocID);
-      skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength);
+      skipListWriter.setSkipData(lastDocID, writePayloads, lastPayloadLength);
       skipListWriter.bufferSkip(df);
     }
 
@@ -254,7 +249,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
     assert delta >= 0: "position=" + position + " lastPosition=" + lastPosition;            // not quite right (if pos=0 is repeated twice we don't catch it)
     lastPosition = position;
 
-    if (storePayloads) {
+    if (writePayloads) {
       final int payloadLength = payload == null ? 0 : payload.length;
       if (payloadLength != lastPayloadLength) {
         lastPayloadLength = payloadLength;
@@ -344,7 +339,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
       if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         lastState.posIndex.copyFrom(state.posIndex, false);
         lastState.posIndex.write(out, absolute);
-        if (storePayloads) {
+        if (writePayloads) {
           if (absolute) {
             out.writeVLong(state.payloadFP);
           } else {

@@ -28,15 +28,12 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.PushFieldsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -118,9 +115,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
    * "blm" file. This PostingsFormat delegates to a choice of delegate
    * PostingsFormat for encoding all other postings data. This choice of
    * constructor defaults to the {@link DefaultBloomFilterFactory} for
-   * configuring per-field BloomFilters.  Note that the
-   * wrapped PostingsFormat must use a {@link PushFieldsConsumer}
-   * for writing.
+   * configuring per-field BloomFilters.
    * 
    * @param delegatePostingsFormat
    *          The PostingsFormat that records all the non-bloom filter data i.e.
@@ -144,11 +139,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           + " has been constructed without a choice of PostingsFormat");
     }
     FieldsConsumer fieldsConsumer = delegatePostingsFormat.fieldsConsumer(state);
-    if (!(fieldsConsumer instanceof PushFieldsConsumer)) {
-      throw new UnsupportedOperationException("Wrapped PostingsFormat must return a PushFieldsConsumer");
-    }
-    return new BloomFilteredFieldsConsumer(
-              (PushFieldsConsumer) fieldsConsumer, state);
+    return new BloomFilteredFieldsConsumer(fieldsConsumer, state);
   }
   
   @Override
@@ -315,7 +306,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         this.delegateTermsEnum = null;
       }
       
-      private final TermsEnum delegate() throws IOException {
+      private TermsEnum delegate() throws IOException {
         if (delegateTermsEnum == null) {
           /* pull the iterator only if we really need it -
            * this can be a relativly heavy operation depending on the 
@@ -327,12 +318,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public final BytesRef next() throws IOException {
+      public BytesRef next() throws IOException {
         return delegate().next();
       }
       
       @Override
-      public final boolean seekExact(BytesRef text)
+      public boolean seekExact(BytesRef text)
           throws IOException {
         // The magical fail-fast speed up that is the entire point of all of
         // this code - save a disk seek if there is a match on an in-memory
@@ -346,33 +337,33 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public final SeekStatus seekCeil(BytesRef text)
+      public SeekStatus seekCeil(BytesRef text)
           throws IOException {
         return delegate().seekCeil(text);
       }
       
       @Override
-      public final void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) throws IOException {
         delegate().seekExact(ord);
       }
       
       @Override
-      public final BytesRef term() throws IOException {
+      public BytesRef term() throws IOException {
         return delegate().term();
       }
       
       @Override
-      public final long ord() throws IOException {
+      public long ord() throws IOException {
         return delegate().ord();
       }
       
       @Override
-      public final int docFreq() throws IOException {
+      public int docFreq() throws IOException {
         return delegate().docFreq();
       }
       
       @Override
-      public final long totalTermFreq() throws IOException {
+      public long totalTermFreq() throws IOException {
         return delegate().totalTermFreq();
       }
       
@@ -401,35 +392,60 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
   }
   
-  class BloomFilteredFieldsConsumer extends PushFieldsConsumer {
-    private PushFieldsConsumer delegateFieldsConsumer;
+  class BloomFilteredFieldsConsumer extends FieldsConsumer {
+    private FieldsConsumer delegateFieldsConsumer;
     private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<FieldInfo,FuzzySet>();
     private SegmentWriteState state;
     
-    public BloomFilteredFieldsConsumer(PushFieldsConsumer fieldsConsumer,
+    public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer,
         SegmentWriteState state) {
-      super(state);
       this.delegateFieldsConsumer = fieldsConsumer;
       this.state = state;
     }
-    
+
     @Override
-    public TermsConsumer addField(FieldInfo field) throws IOException {
-      FuzzySet bloomFilter = bloomFilterFactory.getSetForField(state,field);
-      if (bloomFilter != null) {
-        assert bloomFilters.containsKey(field) == false;
-        bloomFilters.put(field, bloomFilter);
-        return new WrappedTermsConsumer(delegateFieldsConsumer.addField(field), bloomFilter);
-      } else {
-        // No, use the unfiltered fieldsConsumer - we are not interested in
-        // recording any term Bitsets.
-        return delegateFieldsConsumer.addField(field);
+    public void write(Fields fields) throws IOException {
+      try {
+        for(String field : fields) {
+          Terms terms = fields.terms(field);
+          if (terms == null) {
+            continue;
+          }
+          FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+          TermsEnum termsEnum = terms.iterator(null);
+
+          FuzzySet bloomFilter = null;
+
+          DocsEnum docsEnum = null;
+          while (true) {
+            BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            if (bloomFilter == null) {
+              bloomFilter = bloomFilterFactory.getSetForField(state, fieldInfo);
+              if (bloomFilter == null) {
+                // Field not bloom'd
+                break;
+              }
+              assert bloomFilters.containsKey(field) == false;
+              bloomFilters.put(fieldInfo, bloomFilter);
+            }
+            // Make sure there's at least one doc for this term:
+            docsEnum = termsEnum.docs(null, docsEnum, 0);
+            if (docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+              bloomFilter.addValue(term);
+            }
+          }
+        }
+      } finally {
+        close();
       }
+
+      delegateFieldsConsumer.write(fields);
     }
-    
-    @Override
+
     public void close() throws IOException {
-      delegateFieldsConsumer.close();
       // Now we are done accumulating values for these fields
       List<Entry<FieldInfo,FuzzySet>> nonSaturatedBlooms = new ArrayList<Map.Entry<FieldInfo,FuzzySet>>();
       
@@ -474,38 +490,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         rightSizedSet = bloomFilter;
       }
       rightSizedSet.serialize(bloomOutput);
-    }
-    
-  }
-  
-  class WrappedTermsConsumer extends TermsConsumer {
-    private TermsConsumer delegateTermsConsumer;
-    private FuzzySet bloomFilter;
-    
-    public WrappedTermsConsumer(TermsConsumer termsConsumer,FuzzySet bloomFilter) {
-      this.delegateTermsConsumer = termsConsumer;
-      this.bloomFilter = bloomFilter;
-    }
-    
-    @Override
-    public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      return delegateTermsConsumer.startTerm(text);
-    }
-    
-    @Override
-    public void finishTerm(BytesRef text, TermStats stats) throws IOException {
-      
-      // Record this term in our BloomFilter
-      if (stats.docFreq > 0) {
-        bloomFilter.addValue(text);
-      }
-      delegateTermsConsumer.finishTerm(text, stats);
-    }
-    
-    @Override
-    public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount)
-        throws IOException {
-      delegateTermsConsumer.finish(sumTotalTermFreq, sumDocFreq, docCount);
     }
   }
 }

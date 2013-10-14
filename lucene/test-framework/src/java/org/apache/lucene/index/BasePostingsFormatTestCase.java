@@ -543,7 +543,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   
     @Override
     public boolean hasPayloads() {
-      return fieldInfo.hasPayloads();
+      return allowPayloads && fieldInfo.hasPayloads();
     }
   }
 
@@ -633,15 +633,12 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         throw new IllegalArgumentException("liveDocs must be null");
       }
       if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-        System.out.println("no: max");
         return null;
       }
       if ((flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
-        System.out.println("no: offsets");
         return null;
       }
       if ((flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0 && allowPayloads == false) {
-        System.out.println("no: payloads");
         return null;
       }
       return getSeedPostings(current.getKey().utf8ToString(), current.getValue(), false, maxAllowed, allowPayloads);
