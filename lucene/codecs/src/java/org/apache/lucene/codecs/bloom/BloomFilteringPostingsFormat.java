@@ -405,6 +405,15 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     @Override
     public void write(Fields fields) throws IOException {
+
+      // Delegate must write first: it may have opened files
+      // on creating the class
+      // (e.g. Lucene41PostingsConsumer), and write() will
+      // close them; alternatively, if we delayed pulling
+      // the fields consumer until here, we could do it
+      // afterwards:
+      delegateFieldsConsumer.write(fields);
+
       try {
         for(String field : fields) {
           Terms terms = fields.terms(field);
@@ -441,8 +450,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       } finally {
         close();
       }
-
-      delegateFieldsConsumer.write(fields);
     }
 
     public void close() throws IOException {
@@ -491,5 +498,10 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       rightSizedSet.serialize(bloomOutput);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "BloomFilteringPostingsFormat(" + delegatePostingsFormat + ")";
   }
 }
