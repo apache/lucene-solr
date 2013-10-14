@@ -3357,14 +3357,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     assert merge.info.info.getDocCount() != 0 || keepFullyDeletedSegments || dropSegment;
 
     if (mergedDeletes != null) {
-      // Pass false for assertInfoLive because the merged
-      // segment is not yet live (only below do we commit it
-      // to the segmentInfos):
       boolean success = false;
       try {
         if (dropSegment) {
           mergedDeletes.dropChanges();
         }
+        // Pass false for assertInfoLive because the merged
+        // segment is not yet live (only below do we commit it
+        // to the segmentInfos):
         readerPool.release(mergedDeletes, false);
         success = true;
       } finally {
