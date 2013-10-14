@@ -95,6 +95,8 @@ New Features
 * SOLR-5324: Make sub shard replica recovery and shard state switch asynchronous.
   (Yago Riveiro, shalin)
 
+* SOLR-5338: Split shards by a route key using split.key parameter. (shalin)
+
 Bug Fixes
 ----------------------
 

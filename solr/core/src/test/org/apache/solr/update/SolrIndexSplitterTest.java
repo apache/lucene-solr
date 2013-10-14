@@ -273,6 +273,12 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     bytes = id2.getBytes("UTF-8");
     int maxHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
 
+    if (minHash > maxHash)  {
+      int temp = maxHash;
+      maxHash = minHash;
+      minHash = temp;
+    }
+
     PlainIdRouter router = new PlainIdRouter();
     DocRouter.Range fullRange = new DocRouter.Range(minHash, maxHash);
     return router.partitionRange(2, fullRange);

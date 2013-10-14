@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -487,8 +489,34 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     log.info("Split shard invoked");
     String collectionName = message.getStr("collection");
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    Slice parentSlice = clusterState.getSlice(collectionName, slice);
-    
+    String splitKey = message.getStr("split.key");
+
+    DocCollection collection = clusterState.getCollection(collectionName);
+    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+
+    Slice parentSlice = null;
+
+    if (slice == null)  {
+      if (router instanceof CompositeIdRouter) {
+        Collection<Slice> searchSlices = router.getSearchSlicesSingle(splitKey, new ModifiableSolrParams(), collection);
+        if (searchSlices.isEmpty()) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an active shard for split.key: " + splitKey);
+        }
+        if (searchSlices.size() > 1)  {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Splitting a split.key: " + splitKey + " which spans multiple shards is not supported");
+        }
+        parentSlice = searchSlices.iterator().next();
+        slice = parentSlice.getName();
+        log.info("Split by route.key: {}, parent shard is: {} ", splitKey, slice);
+      } else  {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Split by route key can only be used with CompositeIdRouter or subclass. Found router: " + router.getClass().getName());
+      }
+    } else  {
+      parentSlice = clusterState.getSlice(collectionName, slice);
+    }
+
     if (parentSlice == null) {
       if(clusterState.getCollections().contains(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
@@ -499,8 +527,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
     // find the leader for the shard
     Replica parentShardLeader = clusterState.getLeader(collectionName, slice);
-    DocCollection collection = clusterState.getCollection(collectionName);
-    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
       range = new PlainIdRouter().fullRange();
@@ -525,6 +551,23 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             throw new SolrException(ErrorCode.BAD_REQUEST,
                 "Specified hash range: " + r + " is not a subset of parent shard's range: " + range.toString());
           }
+        }
+      }
+    } else if (splitKey != null)  {
+      if (router instanceof CompositeIdRouter) {
+        CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+        subRanges = compositeIdRouter.partitionRangeByKey(splitKey, range);
+        if (subRanges.size() == 1)  {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "The split.key: " + splitKey + " has a hash range that is exactly equal to hash range of shard: " + slice);
+        }
+        log.info("Partitioning parent shard " + slice + " range: " + parentSlice.getRange() + " yields: " + subRanges);
+        rangesStr = "";
+        for (int i = 0; i < subRanges.size(); i++) {
+          DocRouter.Range subRange = subRanges.get(i);
+          rangesStr += subRange.toString();
+          if (i < subRanges.size() - 1)
+            rangesStr += ',';
         }
       }
     } else  {

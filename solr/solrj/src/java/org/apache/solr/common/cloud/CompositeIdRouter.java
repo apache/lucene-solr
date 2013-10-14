@@ -93,6 +93,31 @@ public class CompositeIdRouter extends HashBasedRouter {
     return (hash1 & m1) | (hash2 & m2);
   }
 
+  public Range keyHashRange(String routeKey) {
+    int idx = routeKey.indexOf(separator);
+    if (idx < 0) {
+      throw new IllegalArgumentException("Route key must be a composite id");
+    }
+    String part1 = routeKey.substring(0, idx);
+    int commaIdx = part1.indexOf(bitsSeparator);
+    int m1 = mask1;
+    int m2 = mask2;
+
+    if (commaIdx > 0) {
+      int firstBits = getBits(part1, commaIdx);
+      if (firstBits >= 0) {
+        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
+        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
+        part1 = part1.substring(0, commaIdx);
+      }
+    }
+
+    int hash = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
+    int min = hash & m1;
+    int max = min | m2;
+    return new Range(min, max);
+  }
+
   @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
@@ -149,6 +174,27 @@ public class CompositeIdRouter extends HashBasedRouter {
     return targetSlices;
   }
 
+  public List<Range> partitionRangeByKey(String key, Range range) {
+    List<Range> result = new ArrayList<Range>(3);
+    Range keyRange = keyHashRange(key);
+    if (!keyRange.overlaps(range)) {
+      throw new IllegalArgumentException("Key range does not overlap given range");
+    }
+    if (keyRange.equals(range)) {
+      return Collections.singletonList(keyRange);
+    } else if (keyRange.isSubsetOf(range)) {
+      result.add(new Range(range.min, keyRange.min - 1));
+      result.add(keyRange);
+      result.add((new Range(keyRange.max + 1, range.max)));
+    } else if (range.includes(keyRange.max))  {
+      result.add(new Range(range.min, keyRange.max));
+      result.add(new Range(keyRange.max + 1, range.max));
+    } else  {
+      result.add(new Range(range.min, keyRange.min - 1));
+      result.add(new Range(keyRange.min, range.max));
+    }
+    return result;
+  }
 
   @Override
   public List<Range> partitionRange(int partitions, Range range) {
