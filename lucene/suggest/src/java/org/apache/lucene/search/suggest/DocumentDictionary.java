@@ -27,12 +27,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
-import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester; // javadoc
-import org.apache.lucene.search.suggest.fst.FSTCompletionLookup; // javadoc
-import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup; // javadoc
-import org.apache.lucene.search.suggest.jaspell.JaspellLookup; // javadoc
-import org.apache.lucene.search.suggest.tst.TSTLookup; // javadoc
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
@@ -83,10 +77,10 @@ public class DocumentDictionary implements Dictionary {
   
   @Override
   public BytesRefIterator getWordsIterator() throws IOException {
-    return new TermWeightPayloadIterator(payloadField!=null);
+    return new DocumentInputIterator(payloadField!=null);
   }
     
-  final class TermWeightPayloadIterator implements TermFreqPayloadIterator {
+  final class DocumentInputIterator implements InputIterator {
     private final int docCount;
     private final Set<String> relevantFields;
     private final boolean hasPayloads;
@@ -100,7 +94,7 @@ public class DocumentDictionary implements Dictionary {
      * index. setting <code>withPayload</code> to false, implies an iterator
      * over only term and weight.
      */
-    public TermWeightPayloadIterator(boolean hasPayloads) throws IOException {
+    public DocumentInputIterator(boolean hasPayloads) throws IOException {
       docCount = reader.maxDoc() - 1;
       this.hasPayloads = hasPayloads;
       currentPayload = null;

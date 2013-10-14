@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -32,13 +31,13 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestTermFreqPayloadIterator extends LuceneTestCase {
+public class TestInputIterator extends LuceneTestCase {
   
   public void testEmpty() throws Exception {
-    TermFreqPayloadArrayIterator iterator = new TermFreqPayloadArrayIterator(new TermFreqPayload[0]);
-    TermFreqPayloadIterator wrapper = new SortedTermFreqPayloadIteratorWrapper(iterator, BytesRef.getUTF8SortedAsUnicodeComparator());
+    InputArrayIterator iterator = new InputArrayIterator(new Input[0]);
+    InputIterator wrapper = new SortedInputIterator(iterator, BytesRef.getUTF8SortedAsUnicodeComparator());
     assertNull(wrapper.next());
-    wrapper = new UnsortedTermFreqPayloadIteratorWrapper(iterator);
+    wrapper = new UnsortedInputIterator(iterator);
     assertNull(wrapper.next());
   }
   
@@ -49,8 +48,8 @@ public class TestTermFreqPayloadIterator extends LuceneTestCase {
     Comparator<BytesRef> comparator = random.nextBoolean() ? BytesRef.getUTF8SortedAsUnicodeComparator() : BytesRef.getUTF8SortedAsUTF16Comparator();
     TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<>(comparator);
     TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<>(comparator);
-    TermFreqPayload[] unsorted = new TermFreqPayload[num];
-    TermFreqPayload[] unsortedWithoutPayload = new TermFreqPayload[num];
+    Input[] unsorted = new Input[num];
+    Input[] unsortedWithoutPayload = new Input[num];
 
     for (int i = 0; i < num; i++) {
       BytesRef key;
@@ -62,12 +61,12 @@ public class TestTermFreqPayloadIterator extends LuceneTestCase {
       long value = random.nextLong();
       sortedWithoutPayload.put(key, value);
       sorted.put(key, new SimpleEntry<>(value, payload));
-      unsorted[i] = new TermFreqPayload(key, value, payload);
-      unsortedWithoutPayload[i] = new TermFreqPayload(key, value);
+      unsorted[i] = new Input(key, value, payload);
+      unsortedWithoutPayload[i] = new Input(key, value);
     }
     
     // test the sorted iterator wrapper with payloads
-    TermFreqPayloadIterator wrapper = new SortedTermFreqPayloadIteratorWrapper(new TermFreqPayloadArrayIterator(unsorted), comparator);
+    InputIterator wrapper = new SortedInputIterator(new InputArrayIterator(unsorted), comparator);
     Iterator<Map.Entry<BytesRef, SimpleEntry<Long, BytesRef>>> expected = sorted.entrySet().iterator();
     while (expected.hasNext()) {
       Map.Entry<BytesRef,SimpleEntry<Long, BytesRef>> entry = expected.next();
@@ -79,7 +78,7 @@ public class TestTermFreqPayloadIterator extends LuceneTestCase {
     assertNull(wrapper.next());
     
     // test the unsorted iterator wrapper with payloads
-    wrapper = new UnsortedTermFreqPayloadIteratorWrapper(new TermFreqPayloadArrayIterator(unsorted));
+    wrapper = new UnsortedInputIterator(new InputArrayIterator(unsorted));
     TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> actual = new TreeMap<>();
     BytesRef key;
     while ((key = wrapper.next()) != null) {
@@ -90,7 +89,7 @@ public class TestTermFreqPayloadIterator extends LuceneTestCase {
     assertEquals(sorted, actual);
 
     // test the sorted iterator wrapper without payloads
-    TermFreqPayloadIterator wrapperWithoutPayload = new SortedTermFreqPayloadIteratorWrapper(new TermFreqPayloadArrayIterator(unsortedWithoutPayload), comparator);
+    InputIterator wrapperWithoutPayload = new SortedInputIterator(new InputArrayIterator(unsortedWithoutPayload), comparator);
     Iterator<Map.Entry<BytesRef, Long>> expectedWithoutPayload = sortedWithoutPayload.entrySet().iterator();
     while (expectedWithoutPayload.hasNext()) {
       Map.Entry<BytesRef, Long> entry = expectedWithoutPayload.next();
@@ -102,7 +101,7 @@ public class TestTermFreqPayloadIterator extends LuceneTestCase {
     assertNull(wrapperWithoutPayload.next());
     
     // test the unsorted iterator wrapper without payloads
-    wrapperWithoutPayload = new UnsortedTermFreqPayloadIteratorWrapper(new TermFreqPayloadArrayIterator(unsortedWithoutPayload));
+    wrapperWithoutPayload = new UnsortedInputIterator(new InputArrayIterator(unsortedWithoutPayload));
     TreeMap<BytesRef, Long> actualWithoutPayload = new TreeMap<>();
     while ((key = wrapperWithoutPayload.next()) != null) {
       long value = wrapperWithoutPayload.weight();

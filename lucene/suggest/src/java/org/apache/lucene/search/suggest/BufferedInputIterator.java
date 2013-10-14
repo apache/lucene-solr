@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -28,7 +27,7 @@ import org.apache.lucene.util.Counter;
  * This wrapper buffers incoming elements.
  * @lucene.experimental
  */
-public class BufferingTermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
+public class BufferedInputIterator implements InputIterator {
   // TODO keep this for now
   /** buffered term entries */
   protected BytesRefArray entries = new BytesRefArray(Counter.newCounter());
@@ -43,7 +42,7 @@ public class BufferingTermFreqPayloadIteratorWrapper implements TermFreqPayloadI
   private final boolean hasPayloads;
   
   /** Creates a new iterator, buffering entries from the specified iterator */
-  public BufferingTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
+  public BufferedInputIterator(InputIterator source) throws IOException {
     BytesRef spare;
     int freqIndex = 0;
     hasPayloads = source.hasPayloads();

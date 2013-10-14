@@ -25,9 +25,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.SortedTermFreqPayloadIteratorWrapper;
+import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
@@ -45,19 +45,19 @@ public class TSTLookup extends Lookup {
   
   /** 
    * Creates a new TSTLookup with an empty Ternary Search Tree.
-   * @see #build(TermFreqPayloadIterator)
+   * @see #build(InputIterator)
    */
   public TSTLookup() {}
 
   @Override
-  public void build(TermFreqPayloadIterator tfit) throws IOException {
+  public void build(InputIterator tfit) throws IOException {
     if (tfit.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     root = new TernaryTreeNode();
 
     // make sure it's sorted and the comparator uses UTF16 sort order
-    tfit = new SortedTermFreqPayloadIteratorWrapper(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
+    tfit = new SortedInputIterator(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
 
     ArrayList<String> tokens = new ArrayList<String>();
     ArrayList<Number> vals = new ArrayList<Number>();

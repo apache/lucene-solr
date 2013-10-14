@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesReader;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -34,9 +33,9 @@ import org.apache.lucene.util.IOUtils;
  * This wrapper buffers incoming elements and makes sure they are sorted based on given comparator.
  * @lucene.experimental
  */
-public class SortedTermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
+public class SortedInputIterator implements InputIterator {
   
-  private final TermFreqPayloadIterator source;
+  private final InputIterator source;
   private File tempInput;
   private File tempSorted;
   private final ByteSequencesReader reader;
@@ -52,7 +51,7 @@ public class SortedTermFreqPayloadIteratorWrapper implements TermFreqPayloadIter
    * Creates a new sorted wrapper, using {@link
    * BytesRef#getUTF8SortedAsUnicodeComparator} for
    * sorting. */
-  public SortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
+  public SortedInputIterator(InputIterator source) throws IOException {
     this(source, BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
@@ -60,7 +59,7 @@ public class SortedTermFreqPayloadIteratorWrapper implements TermFreqPayloadIter
    * Creates a new sorted wrapper, sorting by BytesRef
    * (ascending) then cost (ascending).
    */
-  public SortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source, Comparator<BytesRef> comparator) throws IOException {
+  public SortedInputIterator(InputIterator source, Comparator<BytesRef> comparator) throws IOException {
     this.hasPayloads = source.hasPayloads();
     this.source = source;
     this.comparator = comparator;

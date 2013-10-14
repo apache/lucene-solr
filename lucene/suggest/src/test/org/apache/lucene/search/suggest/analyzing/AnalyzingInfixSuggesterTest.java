@@ -34,8 +34,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.TermFreqPayload;
-import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
+import org.apache.lucene.search.suggest.Input;
+import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -47,9 +47,9 @@ import org.apache.lucene.util._TestUtil;
 public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("lend me your ear", 8, new BytesRef("foobar")),
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar")),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -61,7 +61,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newDirectory();
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
 
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("ear", random()), 10, true, true);
     assertEquals(2, results.size());
@@ -95,9 +95,9 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testAfterLoad() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("lend me your ear", 8, new BytesRef("foobar")),
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar")),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -109,7 +109,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newFSDirectory(path);
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     suggester.close();
 
     suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a, 3) {
@@ -150,8 +150,8 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
   @SuppressWarnings("unchecked")
   public void testHighlightAsObject() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -204,7 +204,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           }
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
 
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("ear", random()), 10, true, true);
     assertEquals(1, results.size());
@@ -230,9 +230,9 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testRandomMinPrefixLength() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("lend me your ear", 8, new BytesRef("foobar")),
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar")),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -245,7 +245,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newFSDirectory(path);
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
 
     for(int i=0;i<2;i++) {
       for(int j=0;j<2;j++) {
@@ -312,8 +312,8 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testHighlight() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -325,7 +325,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newDirectory();
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("penn", random()), 10, true, true);
     assertEquals(1, results.size());
     assertEquals("a <b>penn</b>y saved is a <b>penn</b>y earned", results.get(0).key);
@@ -333,8 +333,8 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testHighlightCaseChange() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("a Penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("a Penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -346,7 +346,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newDirectory();
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("penn", random()), 10, true, true);
     assertEquals(1, results.size());
     assertEquals("a <b>Penn</b>y saved is a <b>penn</b>y earned", results.get(0).key);
@@ -367,7 +367,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newDirectory();
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     results = suggester.lookup(_TestUtil.stringToCharSequence("penn", random()), 10, true, true);
     assertEquals(1, results.size());
     assertEquals("a <b>Penny</b> saved is a <b>penny</b> earned", results.get(0).key);
@@ -375,8 +375,8 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
   }
 
   public void testDoubleClose() throws Exception {
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
     };
 
     File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
@@ -388,7 +388,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
           return newDirectory();
         }
       };
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     suggester.close();
     suggester.close();
   }
@@ -422,11 +422,11 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
       };
 
-    TermFreqPayload keys[] = new TermFreqPayload[] {
-      new TermFreqPayload("a bob for apples", 10, new BytesRef("foobaz")),
+    Input keys[] = new Input[] {
+      new Input("a bob for apples", 10, new BytesRef("foobaz")),
     };
 
-    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("a", random()), 10, true, true);
     assertEquals(1, results.size());
     assertEquals("a bob for <b>a</b>pples", results.get(0).key);

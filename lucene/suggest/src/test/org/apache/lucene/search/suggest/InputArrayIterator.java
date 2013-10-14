@@ -20,20 +20,19 @@ package org.apache.lucene.search.suggest;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link TermFreqPayloadIterator} over a sequence of {@link TermFreqPayload}s.
+ * A {@link InputIterator} over a sequence of {@link Input}s.
  */
-public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterator {
-  private final Iterator<TermFreqPayload> i;
+public final class InputArrayIterator implements InputIterator {
+  private final Iterator<Input> i;
   private final boolean hasPayloads;
   private boolean first;
-  private TermFreqPayload current;
+  private Input current;
   private final BytesRef spare = new BytesRef();
 
-  public TermFreqPayloadArrayIterator(Iterator<TermFreqPayload> i) {
+  public InputArrayIterator(Iterator<Input> i) {
     this.i = i;
     if (i.hasNext()) {
       current = i.next();
@@ -44,10 +43,10 @@ public final class TermFreqPayloadArrayIterator implements TermFreqPayloadIterat
     }
   }
 
-  public TermFreqPayloadArrayIterator(TermFreqPayload[] i) {
+  public InputArrayIterator(Input[] i) {
     this(Arrays.asList(i));
   }
-  public TermFreqPayloadArrayIterator(Iterable<TermFreqPayload> i) {
+  public InputArrayIterator(Iterable<Input> i) {
     this(i.iterator());
   }
   

@@ -19,7 +19,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.DocumentDictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -78,7 +77,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
-    TermFreqPayloadIterator tfp = (TermFreqPayloadIterator) dictionary.getWordsIterator();
+    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = tfp.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -105,7 +104,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    TermFreqPayloadIterator tfp = (TermFreqPayloadIterator) dictionary.getWordsIterator();
+    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = tfp.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -153,7 +152,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(ir.numDocs(), docs.size());
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    TermFreqPayloadIterator tfp = (TermFreqPayloadIterator) dictionary.getWordsIterator();
+    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = tfp.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
