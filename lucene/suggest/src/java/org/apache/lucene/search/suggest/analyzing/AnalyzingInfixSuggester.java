@@ -65,8 +65,8 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -175,7 +175,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public void build(TermFreqPayloadIterator iter) throws IOException {
+  public void build(InputIterator iter) throws IOException {
 
     if (searcher != null) {
       searcher.getIndexReader().close();

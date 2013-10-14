@@ -19,29 +19,30 @@ package org.apache.lucene.search.suggest;
 
 import org.apache.lucene.util.BytesRef;
 
-public final class TermFreqPayload {
+/** corresponds to {@link InputIterator}'s entries */
+public final class Input {
   public final BytesRef term;
   public final long v;
   public final BytesRef payload;
   public final boolean hasPayloads;
 
-  public TermFreqPayload(BytesRef term, long v, BytesRef payload) {
+  public Input(BytesRef term, long v, BytesRef payload) {
     this(term, v, payload, true);
   }
   
-  public TermFreqPayload(String term, long v, BytesRef payload) {
+  public Input(String term, long v, BytesRef payload) {
     this(new BytesRef(term), v, payload, true);
   }
   
-  public TermFreqPayload(BytesRef term, long v) {
+  public Input(BytesRef term, long v) {
     this(term, v, null, false);
   }
   
-  public TermFreqPayload(String term, long v) {
+  public Input(String term, long v) {
     this(new BytesRef(term), v, null, false);
   }
   
-  public TermFreqPayload(BytesRef term, long v, BytesRef payload, boolean hasPayloads) {
+  public Input(BytesRef term, long v, BytesRef payload, boolean hasPayloads) {
     this.term = term;
     this.v = v;
     this.payload = payload;

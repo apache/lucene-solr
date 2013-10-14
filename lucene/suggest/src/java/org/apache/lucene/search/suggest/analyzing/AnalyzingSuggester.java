@@ -31,7 +31,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -380,7 +380,7 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   @Override
-  public void build(TermFreqPayloadIterator iterator) throws IOException {
+  public void build(InputIterator iterator) throws IOException {
     String prefix = getClass().getSimpleName();
     File directory = Sort.defaultTempDir();
     File tempInput = File.createTempFile(prefix, ".input", directory);

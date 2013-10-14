@@ -25,10 +25,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
-import org.apache.lucene.search.suggest.SortedTermFreqPayloadIteratorWrapper;
+import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -92,12 +92,12 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   @Override
-  public void build(TermFreqPayloadIterator iterator) throws IOException {
+  public void build(InputIterator iterator) throws IOException {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     BytesRef scratch = new BytesRef();
-    TermFreqPayloadIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
+    InputIterator iter = new WFSTInputIterator(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
@@ -254,9 +254,9 @@ public class WFSTCompletionLookup extends Lookup {
     return Integer.MAX_VALUE - (int)value;
   }
   
-  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqPayloadIteratorWrapper {
+  private final class WFSTInputIterator extends SortedInputIterator {
 
-    WFSTTermFreqIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
+    WFSTInputIterator(InputIterator source) throws IOException {
       super(source);
       assert source.hasPayloads() == false;
     }

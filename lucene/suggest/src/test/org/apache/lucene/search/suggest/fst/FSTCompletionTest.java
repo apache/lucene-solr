@@ -28,8 +28,8 @@ import org.apache.lucene.util.*;
  * Unit tests for {@link FSTCompletion}.
  */
 public class FSTCompletionTest extends LuceneTestCase {
-  public static TermFreqPayload tf(String t, int v) {
-    return new TermFreqPayload(t, v);
+  public static Input tf(String t, int v) {
+    return new Input(t, v);
   }
 
   private FSTCompletion completion;
@@ -40,15 +40,15 @@ public class FSTCompletionTest extends LuceneTestCase {
     super.setUp();
 
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
-    for (TermFreqPayload tf : evalKeys()) {
+    for (Input tf : evalKeys()) {
       builder.add(tf.term, (int) tf.v);
     }
     completion = builder.build();
     completionAlphabetical = new FSTCompletion(completion.getFST(), false, true);
   }
 
-  private TermFreqPayload[] evalKeys() {
-    final TermFreqPayload[] keys = new TermFreqPayload[] {
+  private Input[] evalKeys() {
+    final Input[] keys = new Input[] {
         tf("one", 0),
         tf("oneness", 1),
         tf("onerous", 1),
@@ -157,17 +157,17 @@ public class FSTCompletionTest extends LuceneTestCase {
     FSTCompletionLookup lookup = new FSTCompletionLookup(10, true);
     
     Random r = random();
-    List<TermFreqPayload> keys = new ArrayList<TermFreqPayload>();
+    List<Input> keys = new ArrayList<Input>();
     for (int i = 0; i < 5000; i++) {
-      keys.add(new TermFreqPayload(_TestUtil.randomSimpleString(r), -1));
+      keys.add(new Input(_TestUtil.randomSimpleString(r), -1));
     }
 
-    lookup.build(new TermFreqPayloadArrayIterator(keys));
+    lookup.build(new InputArrayIterator(keys));
 
     // All the weights were constant, so all returned buckets must be constant, whatever they
     // are.
     Long previous = null; 
-    for (TermFreqPayload tf : keys) {
+    for (Input tf : keys) {
       Long current = ((Number)lookup.get(_TestUtil.bytesToCharSequence(tf.term, random()))).longValue();
       if (previous != null) {
         assertEquals(previous, current);
@@ -177,11 +177,11 @@ public class FSTCompletionTest extends LuceneTestCase {
   }  
 
   public void testMultilingualInput() throws Exception {
-    List<TermFreqPayload> input = LookupBenchmarkTest.readTop50KWiki();
+    List<Input> input = LookupBenchmarkTest.readTop50KWiki();
 
     FSTCompletionLookup lookup = new FSTCompletionLookup();
-    lookup.build(new TermFreqPayloadArrayIterator(input));
-    for (TermFreqPayload tf : input) {
+    lookup.build(new InputArrayIterator(input));
+    for (Input tf : input) {
       assertNotNull("Not found: " + tf.term.toString(), lookup.get(_TestUtil.bytesToCharSequence(tf.term, random())));
       assertEquals(tf.term.utf8ToString(), lookup.lookup(_TestUtil.bytesToCharSequence(tf.term, random()), true, 1).get(0).key.toString());
     }
@@ -198,17 +198,17 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    List<TermFreqPayload> freqs = new ArrayList<TermFreqPayload>();
+    List<Input> freqs = new ArrayList<Input>();
     Random rnd = random();
     for (int i = 0; i < 2500 + rnd.nextInt(2500); i++) {
       int weight = rnd.nextInt(100); 
-      freqs.add(new TermFreqPayload("" + rnd.nextLong(), weight));
+      freqs.add(new Input("" + rnd.nextLong(), weight));
     }
 
     FSTCompletionLookup lookup = new FSTCompletionLookup();
-    lookup.build(new TermFreqPayloadArrayIterator(freqs.toArray(new TermFreqPayload[freqs.size()])));
+    lookup.build(new InputArrayIterator(freqs.toArray(new Input[freqs.size()])));
 
-    for (TermFreqPayload tf : freqs) {
+    for (Input tf : freqs) {
       final String term = tf.term.utf8ToString();
       for (int i = 1; i < term.length(); i++) {
         String prefix = term.substring(0, i);

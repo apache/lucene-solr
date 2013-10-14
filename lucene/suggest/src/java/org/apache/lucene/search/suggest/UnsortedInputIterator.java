@@ -20,7 +20,6 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -28,7 +27,7 @@ import org.apache.lucene.util.BytesRef;
  * random order.
  * @lucene.experimental
  */
-public class UnsortedTermFreqPayloadIteratorWrapper extends BufferingTermFreqPayloadIteratorWrapper {
+public class UnsortedInputIterator extends BufferedInputIterator {
   // TODO keep this for now
   private final int[] ords;
   private int currentOrd = -1;
@@ -38,7 +37,7 @@ public class UnsortedTermFreqPayloadIteratorWrapper extends BufferingTermFreqPay
    * Creates a new iterator, wrapping the specified iterator and
    * returning elements in a random order.
    */
-  public UnsortedTermFreqPayloadIteratorWrapper(TermFreqPayloadIterator source) throws IOException {
+  public UnsortedInputIterator(InputIterator source) throws IOException {
     super(source);
     ords = new int[entries.size()];
     Random random = new Random();

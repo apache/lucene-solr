@@ -1,4 +1,4 @@
-package org.apache.lucene.search.spell;
+package org.apache.lucene.search.suggest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,11 +28,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
- * Interface for enumerating term,weight,payload triples;
+ * Interface for enumerating term,weight,payload triples for suggester consumption;
  * currently only {@link AnalyzingSuggester}, {@link
  * FuzzySuggester} and {@link AnalyzingInfixSuggester} support payloads.
  */
-public interface TermFreqPayloadIterator extends BytesRefIterator {
+public interface InputIterator extends BytesRefIterator {
 
   /** A term's weight, higher numbers mean better suggestions. */
   public long weight();
@@ -46,10 +46,10 @@ public interface TermFreqPayloadIterator extends BytesRefIterator {
   public boolean hasPayloads();
   
   /**
-   * Wraps a BytesRefIterator as a TermFreqPayloadIterator, with all weights
+   * Wraps a BytesRefIterator as a suggester InputIterator, with all weights
    * set to <code>1</code> and carries no payload
    */
-  public static class TermFreqPayloadIteratorWrapper implements TermFreqPayloadIterator {
+  public static class InputIteratorWrapper implements InputIterator {
     private final BytesRefIterator wrapped;
     
     /** 
@@ -57,18 +57,13 @@ public interface TermFreqPayloadIterator extends BytesRefIterator {
      * specifying a weight value of <code>1</code> for all terms 
      * and nullifies associated payloads.
      */
-    public TermFreqPayloadIteratorWrapper(BytesRefIterator wrapped) {
+    public InputIteratorWrapper(BytesRefIterator wrapped) {
       this.wrapped = wrapped;
     }
 
     @Override
     public long weight() {
       return 1;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return wrapped.getComparator();
     }
 
     @Override
@@ -84,6 +79,11 @@ public interface TermFreqPayloadIterator extends BytesRefIterator {
     @Override
     public boolean hasPayloads() {
       return false;
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return wrapped.getComparator();
     }
   }
 }

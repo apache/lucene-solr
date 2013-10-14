@@ -22,7 +22,6 @@ import java.io.*;
 import java.util.Comparator;
 
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -58,11 +57,11 @@ public class FileDictionary implements Dictionary {
   }
 
   @Override
-  public TermFreqPayloadIterator getWordsIterator() {
+  public InputIterator getWordsIterator() {
     return new FileIterator();
   }
 
-  final class FileIterator implements TermFreqPayloadIterator {
+  final class FileIterator implements InputIterator {
     private long curFreq;
     private final BytesRef spare = new BytesRef();
     
