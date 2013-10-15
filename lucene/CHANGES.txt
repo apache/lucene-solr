@@ -172,6 +172,9 @@ Optimizations
   doc ids and child scores if the ToParentBlockJoinCollector is used.
   (Martijn van Groningen)
 
+* LUCENE-5236: EliasFanoDocIdSet now has an index and uses broadword bit
+  selection to speed-up advance(). (Paul Elschot via Adrien Grand)
+
 Documentation
 
 * LUCENE-5211: Better javadocs and error checking of 'format' option in 

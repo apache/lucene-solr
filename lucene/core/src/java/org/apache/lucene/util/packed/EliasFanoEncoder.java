@@ -19,6 +19,7 @@ package org.apache.lucene.util.packed;
 
 import java.util.Arrays;
 
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.FixedBitSet; // for javadocs
 
 
@@ -64,10 +65,12 @@ import org.apache.lucene.util.FixedBitSet; // for javadocs
  * In this implementation the values in the sequence can be given as <code>long</code>,
  * <code>numValues = 0</code> and <code>upperBound = 0</code> are allowed,
  * and each of the upper and lower bit arrays should fit in a <code>long[]</code>.
+ * <br>
+ * An index of positions of zero's in the upper bits is also built.
  * <p>
  * This implementation is based on this article:
  * <br>
- * Sebastiano Vigna, "Quasi Succinct Indices", June 19, 2012, sections 3 and 4.
+ * Sebastiano Vigna, "Quasi Succinct Indices", June 19, 2012, sections 3, 4 and 9.
  * Retrieved from http://arxiv.org/pdf/1206.4300 .
  *
  * <p>The articles originally describing the Elias-Fano representation are:
@@ -91,6 +94,19 @@ public class EliasFanoEncoder {
   long numEncoded = 0L;
   long lastEncoded = 0L;
 
+  /** The default index interval for zero upper bits. */
+  public static final long DEFAULT_INDEX_INTERVAL = 256;
+  final long numIndexEntries;
+  final long indexInterval;
+  final int nIndexEntryBits;
+  /** upperZeroBitPositionIndex[i] (filled using packValue) will contain the bit position
+   *  just after the zero bit ((i+1) * indexInterval) in the upper bits.
+   */
+  final long[] upperZeroBitPositionIndex;
+  long currentEntryIndex; // also indicates how many entries in the index are valid.
+
+
+
   /**
    * Construct an Elias-Fano encoder.
    * After construction, call {@link #encodeNext} <code>numValues</code> times to encode
@@ -101,6 +117,10 @@ public class EliasFanoEncoder {
    *                or is the first higher than the actual maximum.
    *                <br>When <code>numValues >= (upperBound/3)</code>
    *                a {@link FixedBitSet} will take less space.
+   * @param indexInterval The number of high zero bits for which a single index entry is built.
+   *                The index will have at most <code>2 * numValues / indexInterval</code> entries
+   *                and each index entry will use at most <code>ceil(log2(3 * numValues))</code> bits,
+   *                see {@link EliasFanoEncoder}.
    * @throws IllegalArgumentException when:
    *         <ul>
    *         <li><code>numValues</code> is negative, or
@@ -108,10 +128,13 @@ public class EliasFanoEncoder {
    *         <li>the low bits do not fit in a <code>long[]</code>:
    *             <code>(L * numValues / 64) > Integer.MAX_VALUE</code>, or
    *         <li>the high bits do not fit in a <code>long[]</code>:
-   *             <code>(2 * numValues / 64) > Integer.MAX_VALUE</code>.
+   *             <code>(2 * numValues / 64) > Integer.MAX_VALUE</code>, or
+   *         <li><code>indexInterval < 2</code>,
+   *         <li>the index bits do not fit in a <code>long[]</code>:
+   *             <code>(numValues / indexInterval * ceil(2log(3 * numValues)) / 64) > Integer.MAX_VALUE</code>.
    *         </ul>
    */
-  public EliasFanoEncoder(long numValues, long upperBound) {
+  public EliasFanoEncoder(long numValues, long upperBound, long indexInterval) {
     if (numValues < 0L) {
       throw new IllegalArgumentException("numValues should not be negative: " + numValues);
     }
@@ -145,18 +168,42 @@ public class EliasFanoEncoder {
       throw new IllegalArgumentException("numLongsForHighBits too large to index a long array: " + numLongsForHighBits);
     }
     this.upperLongs = new long[(int) numLongsForHighBits];
+    if (indexInterval < 2) {
+      throw new IllegalArgumentException("indexInterval should at least 2: " + indexInterval);
+    }
+    // For the index:
+    long maxHighValue = upperBound >>> this.numLowBits;
+    long nIndexEntries = maxHighValue / indexInterval; // no zero value index entry
+    this.numIndexEntries = (nIndexEntries >= 0) ? nIndexEntries : 0;
+    long maxIndexEntry = maxHighValue + numValues - 1; // clear upper bits, set upper bits, start at zero
+    this.nIndexEntryBits = (maxIndexEntry <= 0) ? 0
+                          : (64 - Long.numberOfLeadingZeros(maxIndexEntry - 1));
+    long numLongsForIndexBits = numLongsForBits(numIndexEntries * nIndexEntryBits);
+    if (numLongsForIndexBits > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("numLongsForIndexBits too large to index a long array: " + numLongsForIndexBits);
+    }
+    this.upperZeroBitPositionIndex = new long[(int) numLongsForIndexBits];
+    this.currentEntryIndex = 0;
+    this.indexInterval = indexInterval;
   }
 
-  private static long numLongsForBits(long numBits) {
+  /**
+  * Construct an Elias-Fano encoder using {@link #DEFAULT_INDEX_INTERVAL}.
+  */
+  public EliasFanoEncoder(long numValues, long upperBound) {
+    this(numValues, upperBound, DEFAULT_INDEX_INTERVAL);
+  }
+
+  private static long numLongsForBits(long numBits) { // Note: int version in FixedBitSet.bits2words()
     assert numBits >= 0 : numBits;
     return (numBits + (Long.SIZE-1)) >>> LOG2_LONG_SIZE;
   }
 
   /** Call at most <code>numValues</code> times to encode a non decreasing sequence of non negative numbers.
    * @param x The next number to be encoded.
+   * @throws IllegalStateException when called more than <code>numValues</code> times.
    * @throws IllegalArgumentException when:
    *         <ul>
-   *         <li>called more than <code>numValues</code> times, or
    *         <li><code>x</code> is smaller than an earlier encoded value, or
    *         <li><code>x</code> is larger than <code>upperBound</code>.
    *         </ul>
@@ -171,10 +218,19 @@ public class EliasFanoEncoder {
     if (x > upperBound) {
       throw new IllegalArgumentException(x + " larger than upperBound " + upperBound);
     }
-    encodeUpperBits(x >>> numLowBits);
+    long highValue = x >>> numLowBits;
+    encodeUpperBits(highValue);
     encodeLowerBits(x & lowerBitsMask);
-    numEncoded++;
     lastEncoded = x;
+    // Add index entries:
+    long indexValue = (currentEntryIndex + 1) * indexInterval;
+    while (indexValue <= highValue) { 
+      long afterZeroBitPosition = indexValue + numEncoded;
+      packValue(afterZeroBitPosition, upperZeroBitPositionIndex, nIndexEntryBits, currentEntryIndex);
+      currentEntryIndex += 1;
+      indexValue += indexInterval;
+    }
+    numEncoded++;
   }
 
   private void encodeUpperBits(long highValue) {
@@ -198,25 +254,28 @@ public class EliasFanoEncoder {
     }
   }
 
-  /** Provide an indication that is better to use an {@link EliasFanoEncoder} than a {@link FixedBitSet}
+  /** Provide an indication that it is better to use an {@link EliasFanoEncoder} than a {@link FixedBitSet}
    *  to encode document identifiers.
    *  This indication is not precise and may change in the future.
    *  <br>An EliasFanoEncoder is favoured when the size of the encoding by the EliasFanoEncoder
-   *  is at most 5/6 of the size of the FixedBitSet.
-   *  <br>This condition is the same as comparing estimates of the number of bits accessed by a pair of FixedBitSets and
+   *  (including some space for its index) is at most about 5/6 of the size of the FixedBitSet,
+   *  this is the same as comparing estimates of the number of bits accessed by a pair of FixedBitSets and
    *  by a pair of non indexed EliasFanoDocIdSets when determining the intersections of the pairs.
+   *  <br>A bit set is preferred when <code>upperbound <= 256</code>.
+   *  <br>It is assumed that {@link #DEFAULT_INDEX_INTERVAL} is used.
    *  @param numValues The number of document identifiers that is to be encoded. Should be non negative.
-   *  @param upperBound The maximum possible value for a document identifier. Should be at least numValues.
+   *  @param upperBound The maximum possible value for a document identifier. Should be at least <code>numValues</code>.
    */
   public static boolean sufficientlySmallerThanBitSet(long numValues, long upperBound) {
     /* When (upperBound / 6) == numValues,
      * the number of bits per entry for the EliasFanoEncoder is 2 + ceil(2log(upperBound/numValues)) == 5.
-     */
-    /* For intersecting two bit sets upperBound bits are accessed, roughly half of one, half of the other.
+     *
+     * For intersecting two bit sets upperBound bits are accessed, roughly half of one, half of the other.
      * For intersecting two EliasFano sequences without index on the upper bits,
      * all (2 * 3 * numValues) upper bits are accessed.
      */
-    return (upperBound / 6) > numValues;
+    return (upperBound > (4 * Long.SIZE)) // prefer a bit set when it takes no more than 4 longs.
+            && (upperBound / 7) > numValues; // 6 + 1 to allow some room for the index.
   }
 
   /**
@@ -237,6 +296,11 @@ public class EliasFanoEncoder {
   public long[] getUpperBits() {
     return upperLongs;
   }
+  
+  /** Expert. The index bits. */
+  public long[] getIndexBits() {
+    return upperZeroBitPositionIndex;
+  }
 
   @Override
   public String toString() {
@@ -248,11 +312,16 @@ public class EliasFanoEncoder {
     s.append(" numLowBits " + numLowBits);
     s.append("\nupperLongs[" + upperLongs.length + "]");
     for (int i = 0; i < upperLongs.length; i++) {
-      s.append(" " + longHex(upperLongs[i]));
+      s.append(" " + ToStringUtils.longHex(upperLongs[i]));
     }
     s.append("\nlowerLongs[" + lowerLongs.length + "]");
     for (int i = 0; i < lowerLongs.length; i++) {
-      s.append(" " + longHex(lowerLongs[i]));
+      s.append(" " + ToStringUtils.longHex(lowerLongs[i]));
+    }
+    s.append("\nindexInterval: " + indexInterval + ", nIndexEntryBits: " + nIndexEntryBits);
+    s.append("\nupperZeroBitPositionIndex[" + upperZeroBitPositionIndex.length + "]");
+    for (int i = 0; i < upperZeroBitPositionIndex.length; i++) { 
+      s.append(" " + ToStringUtils.longHex(upperZeroBitPositionIndex[i]));
     }
     return s.toString();
   }
@@ -267,29 +336,19 @@ public class EliasFanoEncoder {
     return (this.numValues == oefs.numValues)
         && (this.numEncoded == oefs.numEncoded)
         && (this.numLowBits == oefs.numLowBits)
+        && (this.numIndexEntries == oefs.numIndexEntries)
+        && (this.indexInterval == oefs.indexInterval) // no need to check index content
         && Arrays.equals(this.upperLongs, oefs.upperLongs)
         && Arrays.equals(this.lowerLongs, oefs.lowerLongs);
   }
 
   @Override
   public int hashCode() {
-    int h = ((int) (numValues + numEncoded))
-        ^ numLowBits
-        ^ Arrays.hashCode(upperLongs)
-        ^ Arrays.hashCode(lowerLongs);
+    int h = ((int) (31*(numValues + 7*(numEncoded + 5*(numLowBits + 3*(numIndexEntries + 11*indexInterval))))))
+            ^ Arrays.hashCode(upperLongs)
+            ^ Arrays.hashCode(lowerLongs);
     return h;
   }
 
-  public static String longHex(long x) {
-    String hx = Long.toHexString(x);
-    StringBuilder sb = new StringBuilder("0x");
-    int l = 16 - hx.length();
-    while (l > 0) {
-      sb.append('0');
-      l--;
-    }
-    sb.append(hx);
-    return sb.toString();
-  }
 }
 

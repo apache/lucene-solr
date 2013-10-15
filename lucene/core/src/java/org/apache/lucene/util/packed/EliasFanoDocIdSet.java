@@ -22,21 +22,38 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
+import org.apache.lucene.util.FixedBitSet; // for javadocs
+
 
 /** A DocIdSet in Elias-Fano encoding.
  * @lucene.internal
  */
 public class EliasFanoDocIdSet extends DocIdSet {
   final EliasFanoEncoder efEncoder;
-  /*
-   * Construct an EliasFanoDocIdSet.
-   * @param numValues The number of values that can be encoded.
-   * @param upperBound  At least the highest value that will be encoded.
+
+  /**
+   * Construct an EliasFanoDocIdSet. For efficient encoding, the parameters should be chosen as low as possible.
+   * @param numValues At least the number of document ids that will be encoded.
+   * @param upperBound  At least the highest document id that will be encoded.
    */
   public EliasFanoDocIdSet(int numValues, int upperBound) {
     efEncoder = new EliasFanoEncoder(numValues, upperBound);
   }
 
+  /** Provide an indication that is better to use an {@link EliasFanoDocIdSet} than a {@link FixedBitSet}
+   *  to encode document identifiers.
+   *  @param numValues The number of document identifiers that is to be encoded. Should be non negative.
+   *  @param upperBound The maximum possible value for a document identifier. Should be at least <code>numValues</code>.
+   *  @return See {@link EliasFanoEncoder#sufficientlySmallerThanBitSet(long, long)}
+   */
+  public static boolean sufficientlySmallerThanBitSet(long numValues, long upperBound) {
+    return EliasFanoEncoder.sufficientlySmallerThanBitSet(numValues, upperBound);
+  }
+
+  /** Encode the document ids from a DocIdSetIterator.
+   *  @param disi This DocIdSetIterator should provide document ids that are consistent
+   *              with <code>numValues</code> and <code>upperBound</code> as provided to the constructor.  
+   */
   public void encodeFromDisi(DocIdSetIterator disi) throws IOException {
     while (efEncoder.numEncoded < efEncoder.numValues) {
       int x = disi.nextDoc();
@@ -67,10 +84,10 @@ public class EliasFanoDocIdSet extends DocIdSet {
         return curDocId;
       }
 
-      private int setCurDocID(long nextValue) {
-        curDocId = (nextValue == EliasFanoDecoder.NO_MORE_VALUES)
+      private int setCurDocID(long value) {
+        curDocId = (value == EliasFanoDecoder.NO_MORE_VALUES)
             ?  NO_MORE_DOCS
-                : (int) nextValue;
+                : (int) value;
         return curDocId;
       }
 
@@ -86,12 +103,14 @@ public class EliasFanoDocIdSet extends DocIdSet {
 
       @Override
       public long cost() {
-        return efDecoder.numEncoded;
+        return efDecoder.numEncoded();
       }
     };
   }
 
-  /** This DocIdSet implementation is cacheable. @return <code>true</code> */
+  /** This DocIdSet implementation is cacheable.
+   * @return <code>true</code>
+   */
   @Override
   public boolean isCacheable() {
     return true;
