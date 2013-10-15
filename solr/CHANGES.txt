@@ -186,6 +186,9 @@ Bug Fixes
 
 * SOLR-4327: HttpSolrServer can leak connections on errors. (Karl Wright, Mark Miller)
 
+* SOLR-5349: CloudSolrServer - ZK timeout arguments passed to ZkStateReader are flipped.
+  (Ricardo Merizalde via shalin)
+
 Other Changes
 ----------------------
 
