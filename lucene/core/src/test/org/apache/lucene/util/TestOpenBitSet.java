@@ -349,7 +349,7 @@ public class TestOpenBitSet extends BaseDocIdSetTestCase<OpenBitSet> {
     // test ensureCapacityWords
     int numWords = random().nextInt(10) + 2; // make sure we grow the array (at least 128 bits)
     bits.ensureCapacityWords(numWords);
-    bit = _TestUtil.nextInt(random(), 128, numWords << 6); // pick a higher bit than 128, but still within range
+    bit = _TestUtil.nextInt(random(), 127, (numWords << 6)-1); // pick a bit >= to 128, but still within range
     bits.fastSet(bit);
     assertTrue(bits.fastGet(bit));
     bits.fastClear(bit);
