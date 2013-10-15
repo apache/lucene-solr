@@ -335,11 +335,11 @@ public class TestOpenBitSet extends BaseDocIdSetTestCase<OpenBitSet> {
     OpenBitSet bits = new OpenBitSet(1);
     int bit = random().nextInt(100) + 10;
     bits.ensureCapacity(bit); // make room for more bits
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+    bits.ensureCapacity(bit + 1);
     bits.fastSet(bit);
     assertTrue(bits.fastGet(bit));
-    bits.ensureCapacity(bit + 1);
-    bits.fastSet(bit + 1);
-    assertTrue(bits.fastGet(bit + 1));
     bits.ensureCapacity(3); // should not change numBits nor grow the array
     bits.fastSet(3);
     assertTrue(bits.fastGet(3));
