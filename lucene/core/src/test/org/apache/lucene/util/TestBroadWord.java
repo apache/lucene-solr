@@ -20,7 +20,7 @@ package org.apache.lucene.util;
 
 public class TestBroadWord extends LuceneTestCase {
   private void tstRank(long x) {
-    assertEquals("rank9(" + x + ")", Long.bitCount(x), BroadWord.rank9(x));
+    assertEquals("rank(" + x + ")", Long.bitCount(x), BroadWord.bitCount(x));
   }
 
   public void testRank1() {
@@ -34,7 +34,7 @@ public class TestBroadWord extends LuceneTestCase {
 
   private void tstSelect(long x, int r, int exp) {
     assertEquals("selectNaive(" + x + "," + r + ")", exp, BroadWord.selectNaive(x, r));
-    assertEquals("select9(" + x + "," + r + ")", exp, BroadWord.select9(x, r));
+    assertEquals("select(" + x + "," + r + ")", exp, BroadWord.select(x, r));
   }
 
   public void testSelectFromZero() {
@@ -77,7 +77,7 @@ public class TestBroadWord extends LuceneTestCase {
   public void testPerfSelectAllBitsBroad() {
     for (int j = 0; j < 100000; j++) { // 1000000 for real perf test
       for (int i = 0; i < 64; i++) {
-        assertEquals(i, BroadWord.select9(0xFFFFFFFFFFFFFFFFL, i+1));
+        assertEquals(i, BroadWord.select(0xFFFFFFFFFFFFFFFFL, i+1));
       }
     }
   }

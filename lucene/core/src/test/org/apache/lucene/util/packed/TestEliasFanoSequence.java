@@ -21,13 +21,13 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestEliasFanoSequence extends LuceneTestCase {
 
-  private static EliasFanoEncoder makeEncoder(long[] values) {
+  private static EliasFanoEncoder makeEncoder(long[] values, long indexInterval) {
     long upperBound = -1L;
     for (long value: values) {
       assertTrue(value >= upperBound); // test data ok
       upperBound = value;
     }
-    EliasFanoEncoder efEncoder = new EliasFanoEncoder(values.length, upperBound);
+    EliasFanoEncoder efEncoder = new EliasFanoEncoder(values.length, upperBound, indexInterval);
     for (long value: values) {
       efEncoder.encodeNext(value);
     }
@@ -64,13 +64,13 @@ public class TestEliasFanoSequence extends LuceneTestCase {
         long advanceValue = efd.advanceToValue(expValue);
         assertFalse("advanceValue at end too early", EliasFanoDecoder.NO_MORE_VALUES == advanceValue);
         assertEquals(expValue, advanceValue);
-        assertEquals(index, efd.index());
+        assertEquals(index, efd.currentIndex());
         previousValue = expValue;
       }
       index++;
     }
     long advanceValue = efd.advanceToValue(previousValue+1);
-    assertEquals(EliasFanoDecoder.NO_MORE_VALUES, advanceValue);
+    assertEquals("at end", EliasFanoDecoder.NO_MORE_VALUES, advanceValue);
   }
 
   private static void tstDecodeAdvanceToMultiples(long[] values, EliasFanoDecoder efd, final long m) {
@@ -86,7 +86,7 @@ public class TestEliasFanoSequence extends LuceneTestCase {
         long advanceValue = efd.advanceToValue(mm);
         assertFalse("advanceValue at end too early", EliasFanoDecoder.NO_MORE_VALUES == advanceValue);
         assertEquals(expValue, advanceValue);
-        assertEquals(index, efd.index());
+        assertEquals(index, efd.currentIndex());
         previousValue = expValue;
         do {
           mm += m;
@@ -118,7 +118,7 @@ public class TestEliasFanoSequence extends LuceneTestCase {
         long backValue = efd.backToValue(mm);
         assertFalse("backToValue at end too early", EliasFanoDecoder.NO_MORE_VALUES == backValue);
         assertEquals(expValue, backValue);
-        assertEquals(index, efd.index());
+        assertEquals(index, efd.currentIndex());
         previousValue = expValue;
         do {
           mm -= m;
@@ -146,23 +146,29 @@ public class TestEliasFanoSequence extends LuceneTestCase {
   }
 
   private static void tstEFS(long[] values, long[] expHighLongs, long[] expLowLongs) {
-    EliasFanoEncoder efEncoder = makeEncoder(values);
+    EliasFanoEncoder efEncoder = makeEncoder(values, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
     tstEqual("upperBits", expHighLongs, efEncoder.getUpperBits());
     tstEqual("lowerBits", expLowLongs, efEncoder.getLowerBits());
     tstDecodeAll(efEncoder, values);
   }
 
   private static void tstEFS2(long[] values) {
-    EliasFanoEncoder efEncoder = makeEncoder(values);
+    EliasFanoEncoder efEncoder = makeEncoder(values, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
     tstDecodeAll(efEncoder, values);
   }
 
   private static void tstEFSadvanceToAndBackToMultiples(long[] values, long maxValue, long minAdvanceMultiple) {
-    EliasFanoEncoder efEncoder = makeEncoder(values);
+    EliasFanoEncoder efEncoder = makeEncoder(values, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
     for (long m = minAdvanceMultiple; m <= maxValue; m += 1) {
       tstDecodeAdvanceToMultiples(values, efEncoder.getDecoder(), m);
       tstDecodeBackToMultiples(values, efEncoder.getDecoder(), m);
     }
+  }
+
+  private EliasFanoEncoder tstEFVI(long[] values, long indexInterval, long[] expIndexBits) {
+    EliasFanoEncoder efEncVI = makeEncoder(values, indexInterval);
+    tstEqual("upperZeroBitPositionIndex", expIndexBits, efEncVI.getIndexBits());
+    return efEncVI;
   }
 
   public void testEmpty() {
@@ -223,29 +229,31 @@ public class TestEliasFanoSequence extends LuceneTestCase {
 
   public void testHashCodeEquals() {
     long[] values = new long[] {5,8,8,15,32};
-    EliasFanoEncoder efEncoder1 = makeEncoder(values);
-    EliasFanoEncoder efEncoder2 = makeEncoder(values);
+    EliasFanoEncoder efEncoder1 = makeEncoder(values, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
+    EliasFanoEncoder efEncoder2 = makeEncoder(values, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
     assertEquals(efEncoder1, efEncoder2);
     assertEquals(efEncoder1.hashCode(), efEncoder2.hashCode());
 
-    EliasFanoEncoder efEncoder3 = makeEncoder(new long[] {1,2,3});
+    EliasFanoEncoder efEncoder3 = makeEncoder(new long[] {1,2,3}, EliasFanoEncoder.DEFAULT_INDEX_INTERVAL);
     assertFalse(efEncoder1.equals(efEncoder3));
     assertFalse(efEncoder3.equals(efEncoder1));
     assertFalse(efEncoder1.hashCode() == efEncoder3.hashCode()); // implementation ok for these.
   }
 
   public void testMonotoneSequences() {
-    for (int s = 2; s < 1222; s++) {
+    //for (int s = 2; s < 1222; s++) {
+    for (int s = 2; s < 4422; s++) {
       long[] values = new long[s];
       for (int i = 0; i < s; i++) {
-        values[i] = (i/2);
+        values[i] = (i/2); // upperbound smaller than number of values, only upper bits encoded
       }
       tstEFS2(values);
     }
   }
 
   public void testStrictMonotoneSequences() {
-    for (int s = 2; s < 1222; s++) {
+    // for (int s = 2; s < 1222; s++) {
+    for (int s = 2; s < 4422; s++) {
       long[] values = new long[s];
       for (int i = 0; i < s; i++) {
         values[i] = i * ((long) i - 1) / 2; // Add a gap of (s-1) to previous
@@ -277,5 +285,98 @@ public class TestEliasFanoSequence extends LuceneTestCase {
       tstEFSadvanceToAndBackToMultiples(values, values[s-1], 10);
     }
   }
+
+  public void testEmptyIndex() {
+    long indexInterval = 2;
+    long[] emptyLongs = new long[0];
+    tstEFVI(emptyLongs, indexInterval, emptyLongs);
+  }
+  public void testMaxContentEmptyIndex() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,1};
+    long[] emptyLongs = new long[0];
+    tstEFVI(twoLongs, indexInterval, emptyLongs);
+  }
+
+  public void testMinContentNonEmptyIndex() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,2};
+    long[] indexLongs = new long[] {3}; // high bits 1001, index position after zero bit.
+    tstEFVI(twoLongs, indexInterval, indexLongs);
+  }
+
+  public void testIndexAdvanceToLast() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,2};
+    long[] indexLongs = new long[] {3}; // high bits 1001
+    EliasFanoEncoder efEncVI = tstEFVI(twoLongs, indexInterval, indexLongs);
+    assertEquals(2, efEncVI.getDecoder().advanceToValue(2));
+  }
+
+  public void testIndexAdvanceToAfterLast() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,2};
+    long[] indexLongs = new long[] {3}; // high bits 1001
+    EliasFanoEncoder efEncVI = tstEFVI(twoLongs, indexInterval, indexLongs);
+    assertEquals(EliasFanoDecoder.NO_MORE_VALUES, efEncVI.getDecoder().advanceToValue(3));
+  }
+
+  public void testIndexAdvanceToFirst() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,2};
+    long[] indexLongs = new long[] {3}; // high bits 1001
+    EliasFanoEncoder efEncVI = tstEFVI(twoLongs, indexInterval, indexLongs);
+    assertEquals(0, efEncVI.getDecoder().advanceToValue(0));
+  }
+  
+  public void testTwoIndexEntries() {
+    long indexInterval = 2;
+    long[] twoLongs = new long[] {0,1,2,3,4,5};
+    long[] indexLongs = new long[] {4 + 8*16}; // high bits 0b10101010101
+    EliasFanoEncoder efEncVI = tstEFVI(twoLongs, indexInterval, indexLongs);
+    EliasFanoDecoder efDecVI = efEncVI.getDecoder();
+    assertEquals("advance 0", 0, efDecVI.advanceToValue(0));
+    assertEquals("advance 5", 5, efDecVI.advanceToValue(5));
+    assertEquals("advance 6", EliasFanoDecoder.NO_MORE_VALUES, efDecVI.advanceToValue(5));
+  }
+
+  public void testExample2a() { // Figure 2 from Vigna 2012 paper
+    long indexInterval = 4;
+    long[] values = new long[] {5,8,8,15,32}; // two low bits, high values 1,2,2,3,8.
+    long[] indexLongs = new long[] {8 + 12*16}; // high bits 0b 0001 0000 0101 1010
+    EliasFanoEncoder efEncVI = tstEFVI(values, indexInterval, indexLongs);
+    EliasFanoDecoder efDecVI = efEncVI.getDecoder();
+    assertEquals("advance 22", 32, efDecVI.advanceToValue(22));
+  }
+
+  public void testExample2b() { // Figure 2 from Vigna 2012 paper
+    long indexInterval = 4;
+    long[] values = new long[] {5,8,8,15,32}; // two low bits, high values 1,2,2,3,8.
+    long[] indexLongs = new long[] {8 + 12*16}; // high bits 0b 0001 0000 0101 1010
+    EliasFanoEncoder efEncVI = tstEFVI(values, indexInterval, indexLongs);
+    EliasFanoDecoder efDecVI = efEncVI.getDecoder();
+    assertEquals("initial next", 5, efDecVI.nextValue());
+    assertEquals("advance 22", 32, efDecVI.advanceToValue(22));
+  }
+
+  public void testExample2NoIndex1() { // Figure 2 from Vigna 2012 paper, no index, test broadword selection.
+    long indexInterval = 16;
+    long[] values = new long[] {5,8,8,15,32}; // two low bits, high values 1,2,2,3,8.
+    long[] indexLongs = new long[0]; // high bits 0b 0001 0000 0101 1010
+    EliasFanoEncoder efEncVI = tstEFVI(values, indexInterval, indexLongs);
+    EliasFanoDecoder efDecVI = efEncVI.getDecoder();
+    assertEquals("advance 22", 32, efDecVI.advanceToValue(22));
+  }
+
+  public void testExample2NoIndex2() { // Figure 2 from Vigna 2012 paper, no index, test broadword selection.
+    long indexInterval = 16;
+    long[] values = new long[] {5,8,8,15,32}; // two low bits, high values 1,2,2,3,8.
+    long[] indexLongs = new long[0]; // high bits 0b 0001 0000 0101 1010
+    EliasFanoEncoder efEncVI = tstEFVI(values, indexInterval, indexLongs);
+    EliasFanoDecoder efDecVI = efEncVI.getDecoder();
+    assertEquals("initial next", 5, efDecVI.nextValue());
+    assertEquals("advance 22", 32, efDecVI.advanceToValue(22));
+  }
+
 }
 
