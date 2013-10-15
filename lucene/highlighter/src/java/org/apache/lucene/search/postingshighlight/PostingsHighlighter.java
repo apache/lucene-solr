@@ -107,7 +107,7 @@ public class PostingsHighlighter {
   private PassageScorer defaultScorer;
   
   /**
-   * Creates a new highlighter with default parameters.
+   * Creates a new highlighter with {@link #DEFAULT_MAX_LENGTH}.
    */
   public PostingsHighlighter() {
     this(DEFAULT_MAX_LENGTH);
