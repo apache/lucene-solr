@@ -342,15 +342,15 @@ public class KoreanFilter extends TokenFilter {
     morphQueue.add(new IndexWord(term,0));
     if(term.length()<2) return; // 1글자 한자는 색인어로 한글을 추출하지 않는다.
     
-    List<StringBuffer> candiList = new ArrayList<StringBuffer>();
-    candiList.add(new StringBuffer());
+    List<StringBuilder> candiList = new ArrayList<StringBuilder>();
+    candiList.add(new StringBuilder());
     
     for(int i=0;i<term.length();i++) {
 
       char[] chs = HanjaUtils.convertToHangul(term.charAt(i));      
       if(chs==null) continue;
     
-      List<StringBuffer> removeList = new ArrayList<StringBuffer>(); // 제거될 후보를 저장  
+      List<StringBuilder> removeList = new ArrayList<StringBuilder>(); // 제거될 후보를 저장  
       
       int caniSize = candiList.size();
       
@@ -361,8 +361,8 @@ public class KoreanFilter extends TokenFilter {
           
           if(k==4) break; // 4개 이상의 음을 가지고 있는 경우 첫번째 음으로만 처리를 한다.
           
-          StringBuffer sb = candiList.get(j);
-          if(k>0) sb = new StringBuffer(origin);
+          StringBuilder sb = candiList.get(j);
+          if(k>0) sb = new StringBuilder(origin);
           
           sb.append(chs[k]);          
           if(k>0)  candiList.add(sb);
@@ -377,7 +377,7 @@ public class KoreanFilter extends TokenFilter {
         candiList = candiList.subList(0, 1); // 첫번째만 생성하고 나머지는 버림
       } 
       
-      for(StringBuffer rsb : removeList) {
+      for(StringBuilder rsb : removeList) {
         if(candiList.size()>1) candiList.remove(rsb);
       }
     }
