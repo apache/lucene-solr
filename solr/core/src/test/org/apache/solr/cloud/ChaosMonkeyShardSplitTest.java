@@ -135,7 +135,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       killerThread.start();
       killCounter.incrementAndGet();
 
-      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, null);
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, null, null);
 
       log.info("Layout after split: \n");
       printLayout();

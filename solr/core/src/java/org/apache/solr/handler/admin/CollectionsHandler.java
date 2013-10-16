@@ -369,13 +369,31 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Splitting shard : " + req.getParamString());
     String name = req.getParams().required().get("collection");
     // TODO : add support for multiple shards
-    String shard = req.getParams().required().get("shard");
+    String shard = req.getParams().get("shard");
     String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
+    String splitKey = req.getParams().get("split.key");
+
+    if (splitKey == null && shard == null) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: shard");
+    }
+    if (splitKey != null && shard != null)  {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Only one of 'shard' or 'split.key' should be specified");
+    }
+    if (splitKey != null && rangesStr != null)  {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Only one of 'ranges' or 'split.key' should be specified");
+    }
 
     Map<String,Object> props = new HashMap<String,Object>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
     props.put("collection", name);
-    props.put(ZkStateReader.SHARD_ID_PROP, shard);
+    if (shard != null)  {
+      props.put(ZkStateReader.SHARD_ID_PROP, shard);
+    }
+    if (splitKey != null) {
+      props.put("split.key", splitKey);
+    }
     if (rangesStr != null)  {
       props.put(CoreAdminParams.RANGES, rangesStr);
     }
