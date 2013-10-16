@@ -26,7 +26,8 @@ import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 
 public class EomiUtil {
-  
+  private EomiUtil() {}
+
   public static final String RESULT_FAIL = "0";
   
   public static final String RESULT_SUCCESS = "1";

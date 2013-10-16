@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ko.utils;
 
 // nocommit: parts of this class seems to borrowed from commons-lang, add correct attribution!
 class StringEscapeUtil {
+  private StringEscapeUtil() {}
   
   /**
    * <p>

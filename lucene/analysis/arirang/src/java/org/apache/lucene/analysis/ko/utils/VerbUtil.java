@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 public class VerbUtil {
+  private VerbUtil() {}
 
   public static final Map<String, String> verbSuffix = new HashMap<String, String>();
   

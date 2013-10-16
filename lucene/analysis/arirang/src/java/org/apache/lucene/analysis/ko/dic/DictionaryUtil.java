@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.utils.Trie;
 
 public class DictionaryUtil {
+  private DictionaryUtil() {}
   
   private static Trie<String,WordEntry> dictionary;
   

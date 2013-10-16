@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 public class NounUtil {
+  private NounUtil() {}
 
   private static final List<String> DNouns = new ArrayList<String>();
     

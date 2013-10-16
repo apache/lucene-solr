@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.ko.morph.WordEntry;
  * 동사의 불규칙 변형을 처리하는 Utility Class
  */
 public class IrregularUtil {
+  private IrregularUtil() {}
   
   // ㅂ 불규칙
   public static final char IRR_TYPE_BIUP = 'B';

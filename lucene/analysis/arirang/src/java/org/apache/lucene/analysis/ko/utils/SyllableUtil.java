@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class SyllableUtil {
+  private SyllableUtil() {}
 
   public static int IDX_JOSA1 = 0; // 조사의 첫음절로 사용되는 음절 49개
   public static int IDX_JOSA2 = 1; // 조사의 두 번째 이상의 음절로 사용되는 음절 58개

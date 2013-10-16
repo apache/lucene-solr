@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
  * 결합이 가능한 조건을 처리하는 클래스
  */
 public class ConstraintUtil {
+  private ConstraintUtil() {}
 
   private static Map<String, String> hahes = new HashMap<String, String>(); // "글로벌화해 ", "민족화해" 처럼 화해와 결합이 가능한 명사
   static {

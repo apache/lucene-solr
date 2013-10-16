@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 public class MorphUtil {
+  private MorphUtil() {}
 
   private static final char[] CHOSEONG = {
       'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ',

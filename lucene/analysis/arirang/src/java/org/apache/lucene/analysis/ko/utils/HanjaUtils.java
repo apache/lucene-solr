@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class HanjaUtils {
+  private HanjaUtils() {}
 
   private static Map<String, char[]> mapHanja;
   
