@@ -1162,6 +1162,32 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  public static class IValsPercent extends IVals {
+    final int[] percentAndValue;
+    public IValsPercent(int... percentAndValue) {
+      this.percentAndValue = percentAndValue;
+    }
+
+    @Override
+    public int getInt() {
+      int r = between(0,99);
+      int cumulative = 0;
+      for (int i=0; i<percentAndValue.length; i+=2) {
+        cumulative += percentAndValue[i];
+        if (r < cumulative) {
+          return percentAndValue[i+1];
+        }
+      }
+
+      return percentAndValue[percentAndValue.length-1];
+    }
+
+    @Override
+    public Comparable get() {
+      return getInt();
+    }
+  }
+
   public static class FVal extends Vals {
     final float min;
     final float max;
@@ -1280,14 +1306,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected class FldType {
     public String fname;
-    public IRange numValues;
+    public IVals numValues;
     public Vals vals;
 
     public FldType(String fname, Vals vals) {
       this(fname, ZERO_ONE, vals);
     }
 
-    public FldType(String fname, IRange numValues, Vals vals) {
+    public FldType(String fname, IVals numValues, Vals vals) {
       this.fname = fname;
       this.numValues = numValues;
       this.vals = vals;      
