@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
