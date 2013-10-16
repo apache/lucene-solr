@@ -561,6 +561,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "The split.key: " + splitKey + " has a hash range that is exactly equal to hash range of shard: " + slice);
         }
+        for (DocRouter.Range subRange : subRanges) {
+          if (subRange.min == subRange.max) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "The split.key: " + splitKey + " must be a compositeId");
+          }
+        }
         log.info("Partitioning parent shard " + slice + " range: " + parentSlice.getRange() + " yields: " + subRanges);
         rangesStr = "";
         for (int i = 0; i < subRanges.size(); i++) {
