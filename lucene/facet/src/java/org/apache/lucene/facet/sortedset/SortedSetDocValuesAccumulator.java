@@ -33,7 +33,6 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
@@ -44,7 +43,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
-/** A {@link TaxonomyFacetsAccumulator} that uses previously
+/** A {@link FacetsAccumulator} that uses previously
  *  indexed {@link SortedSetDocValuesFacetFields} to perform faceting,
  *  without require a separate taxonomy index.  Faceting is
  *  a bit slower (~25%), and there is added cost on every
