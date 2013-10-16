@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ko;
  */
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,8 +38,6 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
 import org.apache.lucene.analysis.ko.utils.HanjaUtils;
-import org.apache.lucene.analysis.ko.IndexWord;
-import org.apache.lucene.analysis.ko.KoreanTokenizer;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;

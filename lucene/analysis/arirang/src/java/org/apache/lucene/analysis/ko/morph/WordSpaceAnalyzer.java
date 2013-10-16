@@ -18,25 +18,16 @@ package org.apache.lucene.analysis.ko.morph;
  */
 
 import java.util.ArrayList;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.utils.MorphUtil;
 import org.apache.lucene.analysis.ko.utils.SyllableUtil;
 import org.apache.lucene.analysis.ko.utils.VerbUtil;
-import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
-import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
-import org.apache.lucene.analysis.ko.morph.MorphException;
-import org.apache.lucene.analysis.ko.morph.PatternConstants;
-import org.apache.lucene.analysis.ko.morph.WSOuputComparator;
-import org.apache.lucene.analysis.ko.morph.WSOutput;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 public class WordSpaceAnalyzer {
 
