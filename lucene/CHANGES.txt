@@ -175,6 +175,8 @@ Optimizations
 * LUCENE-5236: EliasFanoDocIdSet now has an index and uses broadword bit
   selection to speed-up advance(). (Paul Elschot via Adrien Grand)
 
+* LUCENE-5266: Improved number of read calls and branches in DirectPackedReader. (Ryan Ernst)
+
 Documentation
 
 * LUCENE-5211: Better javadocs and error checking of 'format' option in 
