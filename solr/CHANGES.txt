@@ -189,6 +189,10 @@ Bug Fixes
 * SOLR-5349: CloudSolrServer - ZK timeout arguments passed to ZkStateReader are flipped.
   (Ricardo Merizalde via shalin)
 
+* SOLR-5330: facet.method=fcs on single values fields could sometimes result
+  in incorrect facet labels. (Michael Froh, yonik)
+
+
 Other Changes
 ----------------------
 
