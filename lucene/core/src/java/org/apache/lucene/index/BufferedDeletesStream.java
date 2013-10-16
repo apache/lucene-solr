@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -125,14 +127,10 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     // If non-null, contains segments that are 100% deleted
     public final List<SegmentInfoPerCommit> allDeleted;
 
-    // True if any actual numeric docvalues updates took place
-    public final boolean anyNumericDVUpdates;
-    
-    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted, boolean anyNumericDVUpdates) {
+    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
       this.allDeleted = allDeleted;
-      this.anyNumericDVUpdates = anyNumericDVUpdates;
     }
   }
 
@@ -151,7 +149,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
-      return new ApplyDeletesResult(false, nextGen++, null, false);
+      return new ApplyDeletesResult(false, nextGen++, null);
     }
 
     assert checkDeleteStats();
@@ -160,7 +158,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
       if (infoStream.isEnabled("BD")) {
         infoStream.message("BD", "applyDeletes: no deletes; skipping");
       }
-      return new ApplyDeletesResult(false, nextGen++, null, false);
+      return new ApplyDeletesResult(false, nextGen++, null);
     }
 
     if (infoStream.isEnabled("BD")) {
@@ -175,7 +173,6 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
 
     CoalescedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
-    boolean anyNewUpdates = false;
 
     int infosIDX = infos2.size()-1;
     int delIDX = deletes.size()-1;
@@ -213,21 +210,25 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        final SegmentReader reader = rld.getReader(false, IOContext.READ); // don't apply deletes, as we're about to add more!
+        final SegmentReader reader = rld.getReader(IOContext.READ);
         int delCount = 0;
         final boolean segAllDeletes;
         try {
+          Map<String,NumericFieldUpdates> fieldUpdates = null;
           if (coalescedDeletes != null) {
             //System.out.println("    del coalesced");
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
-            anyNewUpdates |= applyNumericDocValueUpdates(coalescedDeletes.numericDVUpdates, rld, reader);
+            fieldUpdates = applyNumericDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, fieldUpdates);
           }
           //System.out.println("    del exact");
           // Don't delete by Term here; DocumentsWriterPerThread
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), rld, reader);
-          anyNewUpdates |= applyNumericDocValueUpdates(Arrays.asList(packet.updates), rld, reader); 
+          fieldUpdates = applyNumericDocValuesUpdates(Arrays.asList(packet.updates), rld, reader, fieldUpdates);
+          if (!fieldUpdates.isEmpty()) {
+            rld.writeFieldUpdates(info.info.dir, fieldUpdates);
+          }
           final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
           assert fullDelCount <= rld.info.info.getDocCount();
           segAllDeletes = fullDelCount == rld.info.info.getDocCount();
@@ -268,17 +269,20 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
           final ReadersAndLiveDocs rld = readerPool.get(info, true);
-          final SegmentReader reader = rld.getReader(false, IOContext.READ); // don't apply deletes, as we're about to add more!
+          final SegmentReader reader = rld.getReader(IOContext.READ);
           int delCount = 0;
           final boolean segAllDeletes;
           try {
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
-            anyNewUpdates |= applyNumericDocValueUpdates(coalescedDeletes.numericDVUpdates, rld, reader);
+            Map<String,NumericFieldUpdates> fieldUpdates = applyNumericDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, null);
+            if (!fieldUpdates.isEmpty()) {
+              rld.writeFieldUpdates(info.info.dir, fieldUpdates);
+            }
             final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
             assert fullDelCount <= rld.info.info.getDocCount();
             segAllDeletes = fullDelCount == rld.info.info.getDocCount();
-          } finally {   
+          } finally {
             rld.release(reader);
             readerPool.release(rld);
           }
@@ -292,7 +296,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
           }
 
           if (infoStream.isEnabled("BD")) {
-            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedDeletes + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(gen);
@@ -307,7 +311,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
 
-    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted, anyNewUpdates);
+    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
   }
 
   synchronized long getNextGen() {
@@ -432,43 +436,61 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     return delCount;
   }
 
-  // NumericDocValue Updates
-  private synchronized boolean applyNumericDocValueUpdates(Iterable<NumericUpdate> updates, ReadersAndLiveDocs rld, SegmentReader reader) throws IOException {
+  // NumericDocValues Updates
+  // If otherFieldUpdates != null, we need to merge the updates into them
+  private synchronized Map<String,NumericFieldUpdates> applyNumericDocValuesUpdates(Iterable<NumericUpdate> updates, 
+      ReadersAndLiveDocs rld, SegmentReader reader, Map<String,NumericFieldUpdates> otherFieldUpdates) throws IOException {
     Fields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
-      return false;
+      return Collections.emptyMap();
     }
 
+    // TODO: we can process the updates per DV field, from last to first so that
+    // if multiple terms affect same document for the same field, we add an update
+    // only once (that of the last term). To do that, we can keep a bitset which
+    // marks which documents have already been updated. So e.g. if term T1
+    // updates doc 7, and then we process term T2 and it updates doc 7 as well,
+    // we don't apply the update since we know T1 came last and therefore wins
+    // the update.
+    // We can also use that bitset as 'liveDocs' to pass to TermEnum.docs(), so
+    // that these documents aren't even returned.
+    
+    String currentField = null;
     TermsEnum termsEnum = null;
     DocsEnum docs = null;
-    boolean any = false;
+    final Map<String,NumericFieldUpdates> result = otherFieldUpdates == null ? new HashMap<String,NumericFieldUpdates>() : otherFieldUpdates;
     //System.out.println(Thread.currentThread().getName() + " numericDVUpdate reader=" + reader);
     for (NumericUpdate update : updates) {
       Term term = update.term;
       int limit = update.docIDUpto;
       
-      // TODO: we rely on the map being ordered by updates order, not by terms order.
-      // we need that so that if two terms update the same document, the one that came
-      // last wins.
-      // alternatively, we could keep a map from doc->lastUpto and apply the update
-      // in terms order, where an update is applied only if its docIDUpto is greater
-      // than lastUpto.
-      // but, since app can send two updates, in order, which will have same upto, we
-      // cannot rely solely on docIDUpto, and need to have our own gen, which is
-      // incremented with every update.
+      // TODO: we traverse the terms in update order (not term order) so that we
+      // apply the updates in the correct order, i.e. if two terms udpate the
+      // same document, the last one that came in wins, irrespective of the
+      // terms lexical order.
+      // we can apply the updates in terms order if we keep an updatesGen (and
+      // increment it with every update) and attach it to each NumericUpdate. Note
+      // that we cannot rely only on docIDUpto because an app may send two updates
+      // which will get same docIDUpto, yet will still need to respect the order
+      // those updates arrived.
       
-      // Unlike applyTermDeletes, we visit terms in update order, not term order.
-      // Therefore we cannot assume we can only seek forwards and must ask for a
-      // new TermsEnum
-      Terms terms = fields.terms(term.field);
-      if (terms == null) { // no terms in that field
-        termsEnum = null;
+      if (!term.field().equals(currentField)) {
+        // if we change the code to process updates in terms order, enable this assert
+//        assert currentField == null || currentField.compareTo(term.field()) < 0;
+        currentField = term.field();
+        Terms terms = fields.terms(currentField);
+        if (terms != null) {
+          termsEnum = terms.iterator(termsEnum);
+        } else {
+          termsEnum = null;
+          continue; // no terms in that field
+        }
+      }
+
+      if (termsEnum == null) {
         continue;
       }
-      
-      termsEnum = terms.iterator(termsEnum);
-
       // System.out.println("  term=" + term);
 
       if (termsEnum.seekExact(term.bytes())) {
@@ -477,18 +499,22 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
       
         //System.out.println("BDS: got docsEnum=" + docsEnum);
 
+        NumericFieldUpdates fieldUpdates = result.get(update.field);
+        if (fieldUpdates == null) {
+          fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(reader.maxDoc());
+          result.put(update.field, fieldUpdates);
+        }
         int doc;
         while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           //System.out.println(Thread.currentThread().getName() + " numericDVUpdate term=" + term + " doc=" + docID);
           if (doc >= limit) {
             break; // no more docs that can be updated for this term
           }
-          rld.updateNumericDocValue(update.field, doc, update.value);
-          any = true;
+          fieldUpdates.add(doc, update.value);
         }
       }
     }
-    return any;
+    return result;
   }
 
   public static class QueryAndLimit {

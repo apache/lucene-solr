@@ -747,7 +747,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new StringField("id", "doc-" + docID, Store.NO));
         doc.add(new StringField("key", "all", Store.NO)); // update key
-        // add all fields with their current (updated value)
+        // add all fields with their current value
         for (int f = 0; f < fieldValues.length; f++) {
           doc.add(new NumericDocValuesField("f" + f, fieldValues[f]));
         }
@@ -804,7 +804,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
           int maxDoc = r.maxDoc();
           for (int doc = 0; doc < maxDoc; doc++) {
             if (liveDocs == null || liveDocs.get(doc)) {
-              //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + ndv.get(doc));
+//              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + ndv.get(doc));
               if (fieldHasValue[field]) {
                 assertTrue(docsWithField.get(doc));
                 assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
@@ -1282,6 +1282,75 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  @Test
+  public void testTonsOfUpdates() throws Exception {
+    // LUCENE-5248: make sure that when there are many updates, we don't use too much RAM
+    Directory dir = newDirectory();
+    final Random random = random();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
+    conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH); // don't flush by doc
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
+    final int numDocs = atLeast(20000);
+    final int numNumericFields = atLeast(5);
+    final int numTerms = _TestUtil.nextInt(random, 10, 100); // terms should affect many docs
+    Set<String> updateTerms = new HashSet<String>();
+    while (updateTerms.size() < numTerms) {
+      updateTerms.add(_TestUtil.randomSimpleString(random));
+    }
+
+//    System.out.println("numDocs=" + numDocs + " numNumericFields=" + numNumericFields + " numTerms=" + numTerms);
+    
+    // build a large index with many NDV fields and update terms
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numUpdateTerms = _TestUtil.nextInt(random, 1, numTerms / 10);
+      for (int j = 0; j < numUpdateTerms; j++) {
+        doc.add(new StringField("upd", RandomPicks.randomFrom(random, updateTerms), Store.NO));
+      }
+      for (int j = 0; j < numNumericFields; j++) {
+        long val = random.nextInt();
+        doc.add(new NumericDocValuesField("f" + j, val));
+        doc.add(new NumericDocValuesField("cf" + j, val * 2));
+      }
+      writer.addDocument(doc);
+    }
+    
+    writer.commit(); // commit so there's something to apply to
+    
+    // set to flush every 2048 bytes (approximately every 12 updates), so we get
+    // many flushes during numeric updates
+    writer.getConfig().setRAMBufferSizeMB(2048.0 / 1024 / 1024);
+    final int numUpdates = atLeast(100);
+//    System.out.println("numUpdates=" + numUpdates);
+    for (int i = 0; i < numUpdates; i++) {
+      int field = random.nextInt(numNumericFields);
+      Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
+      long value = random.nextInt();
+      writer.updateNumericDocValue(updateTerm, "f" + field, value);
+      writer.updateNumericDocValue(updateTerm, "cf" + field, value * 2);
+    }
+
+    writer.close();
+    
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : reader.leaves()) {
+      for (int i = 0; i < numNumericFields; i++) {
+        AtomicReader r = context.reader();
+        NumericDocValues f = r.getNumericDocValues("f" + i);
+        NumericDocValues cf = r.getNumericDocValues("cf" + i);
+        for (int j = 0; j < r.maxDoc(); j++) {
+          assertEquals("reader=" + r + ", field=f" + i + ", doc=" + j, cf.get(j), f.get(j) * 2);
+        }
+      }
+    }
+    reader.close();
+    
+    dir.close();
+  }
   
   @Test
   public void testUpdatesOrder() throws Exception {
@@ -1305,6 +1374,54 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(4, reader.leaves().get(0).reader().getNumericDocValues("f1").get(0));
     assertEquals(3, reader.leaves().get(0).reader().getNumericDocValues("f2").get(0));
+    reader.close();
+    
+    dir.close();
+  }
+  
+  @Test
+  public void testUpdateAllDeletedSegment() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "doc", Store.NO));
+    doc.add(new NumericDocValuesField("f1", 1L));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.commit();
+    writer.deleteDocuments(new Term("id", "doc")); // delete all docs in the first segment
+    writer.addDocument(doc);
+    writer.updateNumericDocValue(new Term("id", "doc"), "f1", 2L);
+    writer.close();
+    
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(1, reader.leaves().size());
+    assertEquals(2L, reader.leaves().get(0).reader().getNumericDocValues("f1").get(0));
+    reader.close();
+    
+    dir.close();
+  }
+
+  @Test
+  public void testUpdateTwoNonexistingTerms() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "doc", Store.NO));
+    doc.add(new NumericDocValuesField("f1", 1L));
+    writer.addDocument(doc);
+    // update w/ multiple nonexisting terms in same field
+    writer.updateNumericDocValue(new Term("c", "foo"), "f1", 2L);
+    writer.updateNumericDocValue(new Term("c", "bar"), "f1", 2L);
+    writer.close();
+    
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(1, reader.leaves().size());
+    assertEquals(1L, reader.leaves().get(0).reader().getNumericDocValues("f1").get(0));
     reader.close();
     
     dir.close();
