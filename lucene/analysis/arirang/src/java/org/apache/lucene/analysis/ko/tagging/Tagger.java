@@ -21,12 +21,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
-import org.apache.lucene.analysis.ko.utils.FileUtil;
-import org.apache.lucene.analysis.ko.utils.KoreanEnv;
 import org.apache.lucene.analysis.ko.utils.Trie;
 
 /**
@@ -36,9 +35,7 @@ import org.apache.lucene.analysis.ko.utils.Trie;
 public class Tagger {
     
   private static Trie<String, String[]> occurrences;
-  
-  private static final String tagDicLoc = "tagger.dic";
-  
+    
   private static final String NILL = "NILL";
   
   private static final String NOPATN = "0";
@@ -276,7 +273,7 @@ public class Tagger {
     
     try {
       
-      List<String> strs = FileUtil.readLines(KoreanEnv.getInstance().getValue(tagDicLoc), "UTF-8");
+      List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
       
       for(String str : strs) {
         if(str==null) continue;
@@ -296,7 +293,7 @@ public class Tagger {
       }      
       
     } catch (Exception e) {
-      throw new MorphException("Fail to read the tagger dictionary.("+tagDicLoc+")\n"+e.getMessage());
+      throw new MorphException("Fail to read the tagger dictionary: "+e.getMessage());
     }
   }
 }

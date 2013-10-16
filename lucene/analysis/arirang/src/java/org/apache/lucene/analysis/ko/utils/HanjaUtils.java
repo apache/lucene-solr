@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class HanjaUtils {
@@ -30,7 +31,7 @@ public class HanjaUtils {
   
   public synchronized static void loadDictionary() throws MorphException {
     try {
-      List<String> strList = FileUtil.readLines("org/apache/lucene/analysis/ko/dic/mapHanja.dic","UTF-8");
+      List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC);
       mapHanja = new HashMap<String, char[]>();    
     
       for(int i=0;i<strList.size();i++) {

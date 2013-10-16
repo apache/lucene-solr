@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class SyllableUtil {
@@ -113,7 +114,7 @@ public class SyllableUtil {
     try{
       Syllables = new ArrayList<char[]>();
 
-      List<String> line = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_SYLLABLE_FEATURE),"UTF-8");  
+      List<String> line = DictionaryResources.readLines(DictionaryResources.FILE_SYLLABLE_FEATURE);  
       for(int i=0;i<line.size();i++) {        
         if(i!=0)
           Syllables.add(line.get(i).toCharArray());

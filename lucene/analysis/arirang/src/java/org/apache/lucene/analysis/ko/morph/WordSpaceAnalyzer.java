@@ -25,10 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
 import org.apache.lucene.analysis.ko.utils.MorphUtil;
 import org.apache.lucene.analysis.ko.utils.SyllableUtil;
 import org.apache.lucene.analysis.ko.utils.VerbUtil;
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;

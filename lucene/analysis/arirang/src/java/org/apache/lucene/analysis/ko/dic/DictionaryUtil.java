@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
+import org.apache.lucene.analysis.ko.utils.Trie;
 
 public class DictionaryUtil {
   
@@ -55,10 +56,10 @@ public class DictionaryUtil {
     List<String> compounds = null;
     List<String> abbrevs = null;
     try {
-      strList = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_DICTIONARY),"UTF-8");
-      strList.addAll(FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_EXTENSION),"UTF-8"));
-      compounds = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_COMPOUNDS),"UTF-8"); 
-      abbrevs = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_ABBREV),"UTF-8"); 
+      strList = DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY);
+      strList.addAll(DictionaryResources.readLines(DictionaryResources.FILE_EXTENSION));
+      compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
+      abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
     } catch (IOException e) {      
       new MorphException(e.getMessage(),e);
     } catch (Exception e) {
@@ -215,7 +216,7 @@ public class DictionaryUtil {
     try {
       if(uncompounds==null) {
         uncompounds = new HashMap<String,WordEntry>();
-        List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS),"UTF-8");  
+        List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS);  
         for(String compound: lines) {    
           String[] infos = compound.split("[:]+");
           if(infos.length!=2) continue;
@@ -235,7 +236,7 @@ public class DictionaryUtil {
     try {
       if(cjwords==null) {
         cjwords = new HashMap<String, String>();
-        List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ),"UTF-8");  
+        List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_CJ);  
         for(String cj: lines) {    
           String[] infos = cj.split("[:]+");
           if(infos.length!=2) continue;
@@ -252,7 +253,7 @@ public class DictionaryUtil {
   public static boolean existJosa(String str) throws MorphException {
     if(josas==null) {
       josas = new HashMap<String, String>();
-      readFile(josas,KoreanEnv.FILE_JOSA);
+      readFile(josas,DictionaryResources.FILE_JOSA);
     }  
     if(josas.get(str)==null) return false;
     else return true;
@@ -261,7 +262,7 @@ public class DictionaryUtil {
   public static boolean existEomi(String str)  throws MorphException {
     if(eomis==null) {
       eomis = new HashMap<String, String>();
-      readFile(eomis,KoreanEnv.FILE_EOMI);
+      readFile(eomis,DictionaryResources.FILE_EOMI);
     }
 
     if(eomis.get(str)==null) return false;
@@ -271,7 +272,7 @@ public class DictionaryUtil {
   public static boolean existPrefix(String str)  throws MorphException {
     if(prefixs==null) {
       prefixs = new HashMap<String, String>();
-      readFile(prefixs,KoreanEnv.FILE_PREFIX);
+      readFile(prefixs,DictionaryResources.FILE_PREFIX);
     }
 
     if(prefixs.get(str)==null) return false;
@@ -281,7 +282,7 @@ public class DictionaryUtil {
   public static boolean existSuffix(String str)  throws MorphException {
     if(suffixs==null) {
       suffixs = new HashMap<String, String>();
-      readFile(suffixs,KoreanEnv.FILE_SUFFIX);
+      readFile(suffixs,DictionaryResources.FILE_SUFFIX);
     }
 
     if(suffixs.get(str)!=null) return true;
@@ -315,11 +316,8 @@ public class DictionaryUtil {
    * @throws MorphException excepton
    */
   private static synchronized void readFile(HashMap<String, String> map, String dic) throws MorphException {    
-    
-    String path = KoreanEnv.getInstance().getValue(dic);
-
     try{
-      List<String> line = FileUtil.readLines(path,"UTF-8");
+      List<String> line = DictionaryResources.readLines(dic);
       for(int i=1;i<line.size();i++) {
         map.put(line.get(i).trim(), line.get(i));
       }

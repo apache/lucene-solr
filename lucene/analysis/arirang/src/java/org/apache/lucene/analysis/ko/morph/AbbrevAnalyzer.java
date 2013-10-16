@@ -3,7 +3,7 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

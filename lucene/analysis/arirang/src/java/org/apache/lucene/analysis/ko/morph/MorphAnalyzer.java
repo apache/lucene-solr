@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
-import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
 import org.apache.lucene.analysis.ko.utils.EomiUtil;
 import org.apache.lucene.analysis.ko.utils.IrregularUtil;
 import org.apache.lucene.analysis.ko.utils.MorphUtil;

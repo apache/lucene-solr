@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphException;

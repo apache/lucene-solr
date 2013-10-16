@@ -19,8 +19,6 @@ package org.apache.lucene.analysis.ko.utils;
 
 import java.io.Reader;
 import java.io.Writer;
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Builds a string from constituent parts providing a more flexible and powerful API
@@ -70,13 +68,6 @@ public class StrBuilder implements Cloneable {
    * The extra capacity for new builders.
    */
   static final int CAPACITY = 32;
-
-  /**
-   * Required for serialization support.
-   * 
-   * @see java.io.Serializable
-   */
-  private static final long serialVersionUID = 7628716375283629643L;
 
   /**
    * An empty immutable <code>char</code> array.

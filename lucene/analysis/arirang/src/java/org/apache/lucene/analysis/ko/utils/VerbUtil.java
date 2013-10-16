@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
