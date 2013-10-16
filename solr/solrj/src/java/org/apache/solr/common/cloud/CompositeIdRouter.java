@@ -96,7 +96,8 @@ public class CompositeIdRouter extends HashBasedRouter {
   public Range keyHashRange(String routeKey) {
     int idx = routeKey.indexOf(separator);
     if (idx < 0) {
-      throw new IllegalArgumentException("Route key must be a composite id");
+      int hash = sliceHash(routeKey, null, null, null);
+      return new Range(hash, hash);
     }
     String part1 = routeKey.substring(0, idx);
     int commaIdx = part1.indexOf(bitsSeparator);
