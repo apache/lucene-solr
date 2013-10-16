@@ -96,8 +96,14 @@ public class TestPackedInts extends LuceneTestCase {
         final Directory d = newDirectory();
         
         IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
-        PackedInts.Writer w = PackedInts.getWriter(
-                                out, valueCount, nbits, random().nextFloat());
+        final float acceptableOverhead;
+        if (iter == 0) {
+          // have the first iteration go through exact nbits
+          acceptableOverhead = 0.0f;
+        } else {
+          acceptableOverhead = random().nextFloat();
+        }
+        PackedInts.Writer w = PackedInts.getWriter(out, valueCount, nbits, acceptableOverhead);
         final long startFp = out.getFilePointer();
 
         final int actualValueCount = random().nextBoolean() ? valueCount : _TestUtil.nextInt(random(), 0, valueCount);
@@ -185,8 +191,7 @@ public class TestPackedInts extends LuceneTestCase {
                 + valueCount + " nbits=" + nbits + " for "
                 + intsEnum.getClass().getSimpleName();
             final int index = random().nextInt(valueCount);
-            long value = intsEnum.get(index);
-            assertEquals(msg, value, values[index]);
+            assertEquals(msg, values[index], intsEnum.get(index));
           }
           intsEnum.get(intsEnum.size() - 1);
           assertEquals(fp, in.getFilePointer());
