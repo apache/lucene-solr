@@ -149,7 +149,7 @@ public class IrregularUtil {
       ch = MorphUtil.makeChar(ch, 17);
     
       if(start.length()>2) 
-        start = Utilities.arrayToString(new String[]{start.substring(0,start.length()-2),Character.toString(ch)});
+        start = arrayToString(new String[]{start.substring(0,start.length()-2),Character.toString(ch)});
       else
         start = Character.toString(ch);    
 
@@ -159,6 +159,14 @@ public class IrregularUtil {
     }
 
     return null;     
+  }
+  
+  private static String arrayToString(String[] strs) {
+    StringBuffer sb = new StringBuffer();
+    for(String str:strs) {
+      sb.append(str);
+    }
+    return sb.toString();
   }
   
   /**
@@ -176,7 +184,7 @@ public class IrregularUtil {
     
     ch = MorphUtil.makeChar(ch, 7);
     if(start.length()>1) 
-      start = Utilities.arrayToString(new String[]{start.substring(0,start.length()-1),Character.toString(ch)});
+      start = arrayToString(new String[]{start.substring(0,start.length()-1),Character.toString(ch)});
     else
       start = Character.toString(ch);
     

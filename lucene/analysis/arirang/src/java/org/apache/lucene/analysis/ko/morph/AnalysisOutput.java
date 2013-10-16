@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.ko.utils.Utilities;
+import org.apache.lucene.analysis.ko.utils.MorphUtil;
 
 public class AnalysisOutput implements Cloneable {
 
@@ -38,7 +38,7 @@ public class AnalysisOutput implements Cloneable {
   private String stem;
   private char pos; // 3 simplified stem type
   private char pos2; // pos attr. for 'pos'
-  private char dinf; // pos info. in Han-dic
+  private char dinf; // pos inf in Han-dic
   private String nsfx; // index of noun suffix
   private String josa; // josa string
   private List<String> jlist = new ArrayList<String>(); // unit-josa sequence
@@ -256,6 +256,73 @@ public class AnalysisOutput implements Cloneable {
   }
   
   public String toString() {
-    return Utilities.buildOutputString(this);
+    StringBuffer buff = new StringBuffer();
+    
+    buff.append(MorphUtil.buildTypeString(getStem(),getPos()));
+    if(getNsfx()!=null)
+      buff.append(",").append(MorphUtil.buildTypeString(getNsfx(),PatternConstants.POS_SFX_N));
+    
+    if(getPatn()==PatternConstants.PTN_NJ || getPatn()==PatternConstants.PTN_ADVJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));
+    }else if(getPatn()==PatternConstants.PTN_NSM) {
+      buff.append(",").append(MorphUtil.buildTypeString(getVsfx(),PatternConstants.POS_SFX_V));
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));      
+    }else if(getPatn()==PatternConstants.PTN_NSMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(getVsfx(),PatternConstants.POS_SFX_V));
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_NEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));
+    }else if(getPatn()==PatternConstants.PTN_NSMXM) {
+      buff.append(",").append(MorphUtil.buildTypeString(getVsfx(),PatternConstants.POS_SFX_V));
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_COPULA));
+      buff.append(",").append(MorphUtil.buildTypeString(getXverb(),PatternConstants.POS_XVERB));    
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));
+    }else if(getPatn()==PatternConstants.PTN_NJCM) {
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_SFX_V));
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));  
+    }else if(getPatn()==PatternConstants.PTN_NSMXMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(getVsfx(),PatternConstants.POS_SFX_V));      
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(1),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(getXverb(),PatternConstants.POS_XVERB));  
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));  
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));        
+    }else if(getPatn()==PatternConstants.PTN_VM) {
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));        
+    }else if(getPatn()==PatternConstants.PTN_VMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));        
+    }else if(getPatn()==PatternConstants.PTN_VMCM) {
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(1),PatternConstants.POS_SFX_N));      
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));        
+    }else if(getPatn()==PatternConstants.PTN_VMXM) {
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(getXverb(),PatternConstants.POS_XVERB));
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getEomi(),PatternConstants.POS_EOMI));        
+    }else if(getPatn()==PatternConstants.PTN_VMXMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(1),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(getXverb(),PatternConstants.POS_XVERB));  
+      if(getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(getPomi(),PatternConstants.POS_PEOMI));  
+      buff.append(",").append(MorphUtil.buildTypeString(getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(getJosa(),PatternConstants.POS_JOSA));                
+    }
+    return buff.toString();
   }
 }

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.ko.utils.Utilities;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphException;
@@ -456,10 +455,23 @@ public class CompoundNounAnalyzer {
     return new CompoundEntry(input, 0, score==AnalysisOutput.SCORE_CORRECT,pos);
   }
   
+  private static boolean isAlphaNumeric(String text) {
+    
+    for(int i=0;i<text.length();i++)
+    {
+      int c = text.charAt(i);
+      if((c>=48 && c<=57) || (c>=65 && c<=90) || (c>=97 && c<=122)) {
+        continue;
+      }
+      return false;
+    }   
+    return true;
+  }
+  
   private boolean validCompound(String before, String after, boolean isFirst, int pos) throws MorphException {
 
     if(pos==1&&before.length()==1&&
-        (!isFirst||!(DictionaryUtil.existPrefix(before)||Utilities.isAlphaNumeric(before)))) return false;    
+        (!isFirst||!(DictionaryUtil.existPrefix(before) || isAlphaNumeric(before)))) return false;    
 
     if(after.length()==1&&!isFirst&&!DictionaryUtil.existSuffix(after)) return false;
 
