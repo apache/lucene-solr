@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
@@ -31,7 +32,7 @@ public class NounUtil {
   private static final List<String> DNouns = new ArrayList<String>();
     
   static {
-    String[] strs = new String[]{"등", "들","상","간","뿐","별"};
+    String[] strs = new String[]{"등", "들","상","간","뿐","별","적"};
     for(String str:strs) {
       DNouns.add(str);
     }
@@ -41,9 +42,9 @@ public class NounUtil {
    * 
    * 어간부가 음/기 로 끝나는 경우
    * 
-   * @param o
-   * @param candidates
-   * @throws MorphException
+   * @param o the analyzed output
+   * @param candidates  candidates
+   * @throws MorphException throw exception
    */
   public static boolean analysisMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
@@ -75,8 +76,8 @@ public class NounUtil {
      
     try {
       if(analysisVMJ(o.clone(),candidates)) return true;         
-      if(analysisVMXMJ(o.clone(),candidates)) return true;
       if(analysisNSMJ(o.clone(),candidates)) return true;
+      if(analysisVMXMJ(o.clone(),candidates)) return true;
     } catch (CloneNotSupportedException e) {
       throw new MorphException(e.getMessage(),e);
     }
@@ -95,9 +96,9 @@ public class NounUtil {
 
   /**
    * 용언 + '음/기' + 조사(PTN_VMXMJ)
-   * @param o
-   * @param candidates
-   * @throws MorphException
+   * @param o the analyzed output
+   * @param candidates  candidates
+   * @throws MorphException throw exception
    */
   public static boolean analysisVMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
@@ -120,9 +121,9 @@ public class NounUtil {
     
   /**
    * 용언 + '아/어' + 보조용언 + '음/기' + 조사(PTN_VMXMJ)
-   * @param o
-   * @param candidates
-   * @throws MorphException
+   * @param o the analyzed output
+   * @param candidates  candidates
+   * @throws MorphException throw exception
    */
   public static boolean analysisVMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
   
@@ -165,9 +166,9 @@ public class NounUtil {
     
   /**
    * 체언 + 용언화접미사 + '음/기' + 조사 (PTN_NSMJ)
-   * @param o
-   * @param candidates
-   * @throws MorphException
+   * @param o the analyzed output
+   * @param candidates  candidates
+   * @throws MorphException throw exception
    */
   public static boolean analysisNSMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
@@ -302,10 +303,10 @@ public class NounUtil {
    * 복합명사에서 단위명사를 분리해낸다.
    * 리스트의 가장 마지막에 위치한 단어가 최장단어이다.
    * @param str  복합명사
-   * @param pos
+   * @param pos the analysing start point
    * @param o    분석결과
    * return    단위명사 리스트
-   * @throws MorphException
+   * @throws MorphException throw exception
    */
   private static List<WordEntry> findNouns(String str, int pos, AnalysisOutput o) throws MorphException {
 
@@ -330,7 +331,7 @@ public class NounUtil {
     for(int i=1;i<str.length();i++) {    
       String sub = str.substring(0,i+1);    
       if(!DictionaryUtil.findWithPrefix(sub).hasNext()) break;
-      WordEntry entry = DictionaryUtil.getCNoun(sub);  
+      WordEntry entry = DictionaryUtil.getAllNoun(sub);  
       if(entry!=null) {          
         nList.add(entry);
       }
@@ -352,7 +353,7 @@ public class NounUtil {
     output.setNsfx(d);
     output.setStem(s);
           
-    WordEntry cnoun = DictionaryUtil.getCNoun(s);
+    WordEntry cnoun = DictionaryUtil.getAllNoun(s);
     if(cnoun != null)  {
       if(cnoun.getFeature(WordEntry.IDX_NOUN)=='2')
         output.setCNoun(cnoun.getCompounds());

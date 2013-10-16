@@ -48,7 +48,7 @@ public class MorphUtil {
   
   /**
    * 한글 한글자를 초성/중성/종성의 배열로 만들어 반환한다.
-   * @param c
+   * @param c the character to be decomposed
    */
   public static char[] decompose(char c) {
     char[] result = null;
@@ -101,8 +101,8 @@ public class MorphUtil {
 
   /**
    * 형태소 유형 출력을 위한 문자열을 생성한다.
-   * @param word
-   * @param type
+   * @param word  word to be printed
+   * @param type  the type of the input word
    */
   public static String buildTypeString(String word, char type) {
     StringBuffer sb = new StringBuffer();
@@ -138,9 +138,9 @@ public class MorphUtil {
   
   /**
    * 용언 + '음/기' + '이' + 어미, 체언 + '에서/부터/에서부터' + '이' + 어미
-   * @param output
-   * @param candidates
-   * @throws MorphException
+   * @param output  the output text
+   * @param candidates  the candidates
+   * @throws MorphException throw exception
    */
   public static void buildPtnCM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
     

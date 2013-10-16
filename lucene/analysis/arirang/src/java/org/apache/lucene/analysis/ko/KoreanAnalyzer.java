@@ -52,13 +52,15 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
     
   private Set<String> stopSet;
     
-  private boolean bigrammable = true;
+  private boolean bigrammable = false;
     
-  private boolean hasOrigin = true;
+  private boolean hasOrigin = false;
     
   private boolean exactMatch = false;
     
   private boolean originCNoun = true;
+  
+  private boolean isPositionInc = true;
   
   public static final String DIC_ENCODING = "UTF-8";
 
@@ -122,7 +124,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
     final KoreanTokenizer src = new KoreanTokenizer(matchVersion, reader);
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
+    TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun, isPositionInc);
     tok = new LowerCaseFilter(matchVersion, tok);
     tok = new StopFilter(matchVersion, tok, stopwords);
     return new TokenStreamComponents(src, tok) {
@@ -162,4 +164,13 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
   public void setExactMatch(boolean exact) {
     exactMatch = exact;
   }
+  
+  /**
+   * determin whether the position is increased.
+   * if false, the position is not increased when decompounding or bigramming 
+   */
+  public void setPositionInc(boolean isInc) {
+    isPositionInc = isInc;
+  }
+  
 }

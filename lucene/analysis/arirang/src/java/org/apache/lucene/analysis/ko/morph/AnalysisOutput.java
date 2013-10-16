@@ -49,6 +49,9 @@ public class AnalysisOutput implements Cloneable {
   private String vsfx; // verb suffix
   private char vtype; // irregular type
   
+  private int maxWordLen = 0; // the max length of words within compound nouns
+  private int dicWordLen = 0; // the sum of the length of words within compound nouns
+  
   public AnalysisOutput() {
     this.score = SCORE_FAIL;
   }
@@ -183,6 +186,22 @@ public class AnalysisOutput implements Cloneable {
   }
   public char getVtype() {
     return this.vtype;
+  }
+  
+  public int getMaxWordLen() {
+    return maxWordLen;
+  }
+
+  public void setMaxWordLen(int maxWordLen) {
+    this.maxWordLen = maxWordLen;
+  }
+
+  public int getDicWordLen() {
+    return dicWordLen;
+  }
+
+  public void setDicWordLen(int dicWordLen) {
+    this.dicWordLen = dicWordLen;
   }
   
   public void addCNoun(CompoundEntry w) {

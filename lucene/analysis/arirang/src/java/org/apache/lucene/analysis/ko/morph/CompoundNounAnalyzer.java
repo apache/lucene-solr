@@ -18,11 +18,17 @@ package org.apache.lucene.analysis.ko.morph;
  */
 
 import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
+import org.apache.lucene.analysis.ko.utils.Utilities;
+import org.apache.lucene.analysis.ko.morph.CompoundEntry;
+import org.apache.lucene.analysis.ko.morph.MorphException;
+import org.apache.lucene.analysis.ko.morph.PatternConstants;
+import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 /**
  * 복합명사를 분해한다.
@@ -47,6 +53,10 @@ public class CompoundNounAnalyzer {
 
   public List<CompoundEntry> analyze(String input) throws MorphException {
     
+    WordEntry entry = DictionaryUtil.getAllNoun(input);
+    if(entry!=null && entry.getCompounds().size()>0) 
+      return entry.getCompounds();
+    
     return analyze(input,true);
     
   }
@@ -54,274 +64,295 @@ public class CompoundNounAnalyzer {
   public List<CompoundEntry> analyze(String input, boolean isFirst) throws MorphException {
     
     int len = input.length();
-    if(len<3) return new ArrayList<CompoundEntry>();  
+    if(len<3) return new ArrayList<CompoundEntry>(); 
     
     List<CompoundEntry> outputs = new ArrayList<CompoundEntry>();
     
-    switch(len) {
-      case  3 :
-        analyze3Word(input,outputs,isFirst);
-        break;
-      case  4 :
-        analyze4Word(input,outputs,isFirst);
-        break;  
-      case  5 :
-        analyze5Word(input,outputs,isFirst);
-        break;
-      case  6 :
-        analyze6Word(input,outputs,isFirst);
-        break;  
-      default :
-        analyzeLongText(input,outputs,isFirst);        
-    }
+    analyze(input, outputs, isFirst);
 
     return outputs;
     
   }
     
-  private void analyze3Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
+  public boolean analyze(String input, List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
+    
+    int len = input.length();
+    boolean success = false;
+    
+    switch(len) {
+      case  3 :
+        success = analyze3Word(input,outputs,isFirst);
+        break;
+      case  4 :
+        success = analyze4Word(input,outputs,isFirst);
+        break;  
+      case  5 :
+        success = analyze5Word(input,outputs,isFirst);
+        break;
+//      case  6 :
+//        analyze6Word(input,outputs,isFirst);
+//        break;  
+      default :
+        success = analyzeLongText(input,outputs,isFirst);       
+    }
+    
+    return success;
+  }
+  
+  private boolean analyze3Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
 
     int[] units1 = {2,1};
     CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
     if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
       outputs.addAll(Arrays.asList(entries1));
-      return;    
+      return true;    
     }
 
     int[] units2 = {1,2};
     CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);
     if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()) {
       outputs.addAll(Arrays.asList(entries2));
+      return true;
     }
           
-  }  
+    return false;
+  } 
   
-  private void analyze4Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
+  private boolean analyze4Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
   
     if(!isFirst) {
       int[] units0 = {1,3};
       CompoundEntry[] entries0 = analysisBySplited(units0,input,isFirst);
       if(entries0!=null && entries0[0].isExist()&&entries0[1].isExist()) {
         outputs.addAll(Arrays.asList(entries0));
-        return;    
+        return true;    
       }
     }
-        
-    int[] units2 = {1,2,1};
-    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);  
-    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()&&entries2[2].isExist()) {
-      outputs.addAll(Arrays.asList(entries2));  
-      return;
+
+    int[] units3 = {3,1};
+    CompoundEntry[] entries3 = analysisBySplited(units3,input,isFirst);
+    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()) {
+      outputs.addAll(Arrays.asList(entries3));    
+      return true;    
     }
     
     int[] units1 = {2,2};
     CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
     if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
       outputs.addAll(Arrays.asList(entries1));    
-      return;    
+      return true;    
     }
+    
+    int[] units2 = {1,2,1};
+    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst); 
+    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()&&entries2[2].isExist()) {
+      outputs.addAll(Arrays.asList(entries2));  
+      return true;
+    }
+
 
     if(!exactMach&&entries1!=null && (entries1[0].isExist()||entries1[1].isExist())) {
       outputs.addAll(Arrays.asList(entries1));  
+      return true;
     }
+    
+    return false;
   }
   
-  private void analyze5Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
+  private boolean analyze5Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
       
     int[] units1 = {2,3};
     CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
     if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
       outputs.addAll(Arrays.asList(entries1));
-      return;    
+      return true;    
     }
     
     int[] units2 = {3,2};
     CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);
     if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()) {
       outputs.addAll(Arrays.asList(entries2));
-      return;    
+      return true;    
     }
     
     int[] units_1 = {4,1};
     CompoundEntry[] entries_1 = analysisBySplited(units_1,input,isFirst);
-    if(entries_1!=null && entries_1[0].isExist()&&entries_1[1].isExist()) {      
+    if(entries_1!=null && entries_1[0].isExist()&&entries_1[1].isExist()) {     
       outputs.addAll(Arrays.asList(entries_1));
-      return;    
+      return true;    
     }
     
     int[] units3 = {2,2,1};
     CompoundEntry[] entries3 = analysisBySplited(units3,input,isFirst);
-    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()&&entries3[2].isExist()) {      
+    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()&&entries3[2].isExist()) {     
       outputs.addAll(Arrays.asList(entries3));
-      return;
+      return true;
     }
     
     int[] units4 = {2,1,2};
     CompoundEntry[] entries4 = analysisBySplited(units4,input,isFirst);
-    if(entries4!=null && entries4[0].isExist()&&entries4[1].isExist()&&entries4[2].isExist()) {      
+    if(entries4!=null && entries4[0].isExist()&&entries4[1].isExist()&&entries4[2].isExist()) {     
       outputs.addAll(Arrays.asList(entries4));
-      return;
+      return true;
     }
     
     if(!exactMach&&entries1!=null && (entries1[0].isExist()||entries1[1].isExist())) {
       outputs.addAll(Arrays.asList(entries1));  
-      return;
+      return true;
     }
     
     if(!exactMach&&entries2!=null && (entries2[0].isExist()||entries2[1].isExist())) {  
       outputs.addAll(Arrays.asList(entries2));  
-      return;
+      return true;
     }
     
+    boolean is = false;
     if(!exactMach&&entries3!=null && (entries3[0].isExist()||entries3[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries3));  
-    }  
+      outputs.addAll(Arrays.asList(entries3));
+      is = true;
+    } 
     
     if(!exactMach&&entries4!=null && (entries4[0].isExist()||entries4[2].isExist())) {
-      outputs.addAll(Arrays.asList(entries4));  
-    }      
-  }
-  
-  private void analyze6Word(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
-    
-    int[] units3 = {2,4};
-    CompoundEntry[] entries3 = analysisBySplited(units3,input,isFirst);
-    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries3));
-      return;    
-    }
-    
-    int[] units4 = {4,2};
-    CompoundEntry[] entries4 = analysisBySplited(units4,input,isFirst);
-    if(entries4!=null && entries4[0].isExist()&&entries4[1].isExist()) {
       outputs.addAll(Arrays.asList(entries4));
-      return;    
-    }
+      is = true;
+    }   
     
-    int[] units2 = {3,3};
-    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);
-    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries2));
-      return;    
-    }
-    
-    int[] units6 = {3,2,1};
-    CompoundEntry[] entries6 = analysisBySplited(units6,input,isFirst);
-    if(entries6!=null && entries6[0].isExist()&&entries6[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries6));
-      return;    
-    }
-    
-    int[] units7 = {2,3,1};
-    CompoundEntry[] entries7 = analysisBySplited(units7,input,isFirst);
-    if(entries7!=null && entries7[0].isExist()&&entries7[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries7));
-      return;    
-    }
-    
-    int[] units1 = {2,2,2};
-    CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
-    if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()&&entries1[2].isExist()) {
-      outputs.addAll(Arrays.asList(entries1));
-      return;    
-    }        
-    
-    int[] units5 = {2,1,2,1};
-    CompoundEntry[] entries5 = analysisBySplited(units5,input,isFirst);
-    if(entries5!=null && entries5[0].isExist()&&entries5[1].isExist()&&entries5[2].isExist()&&entries5[3].isExist()) {
-      outputs.addAll(Arrays.asList(entries5));
-      return;    
-    }
-    
-    if(!exactMach&&entries1!=null && canCompound(entries1,2*score)) {
-      outputs.addAll(Arrays.asList(entries1));
-      return;    
-    }
-    
-    if(!exactMach&&entries2!=null && (entries2[0].isExist()||entries2[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries2));
-      return;    
-    }
-    
-    if(!exactMach&&entries3!=null && (entries3[0].isExist()||entries3[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries3));
-      return;    
-    }  
-    
-    if(!exactMach&&entries4!=null && (entries4[0].isExist()||entries4[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries4));  
-    }  
-      
+    return is;
   }
-  
-  private void analyzeLongText(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
-  
-    int pos = input.length()/2;
-    if(input.length()%2==1) pos++;
+   
+  private boolean analyzeLongText(String input,List<CompoundEntry> outputs, boolean isFirst) throws MorphException {
     
-    if(input.length()>20) return; // 20글자 이상의 복합명사는 무시함.
+    int len = input.length();
+    
+    // ignore less than 3 letters or more than 20 letters.
+    if(len>20) return false; 
+
+    boolean hasSuffix = isFirst && DictionaryUtil.existSuffix(input.substring(len-1));        
+    int pos = caculatePos(input, hasSuffix);
+    if(pos<1) return false; // fail to search a valid word segment
+    
+    if(pos==input.length()) {     
+      if(hasSuffix) {
+        outputs.add(
+            new CompoundEntry(input.substring(0,len-1), 0, true,PatternConstants.POS_NOUN));
+        outputs.add(
+            new CompoundEntry(input.substring(len-1), 0, true,PatternConstants.POS_NOUN));
+      } else {
+        outputs.add(
+            new CompoundEntry(input, 0, true,PatternConstants.POS_NOUN));
+
+      } 
+      
+      return true;
+    }
     
     int score = 0;
     List<CompoundEntry> results = new ArrayList<CompoundEntry>();
-    boolean hasContain = false;
-    
-    for(int i=pos;i>=2;i--) {
-      
-      String prev = input.substring(0,i);
-      String rear = input.substring(i);
-      
-      List<CompoundEntry> candidates = new ArrayList<CompoundEntry>();
-      
-      CompoundEntry prevEntry = analyzeSingle(prev);
-      if(prevEntry.isExist()) {
-        candidates.add(prevEntry);
-      } else {
-        List<CompoundEntry> list = analyze(prev, true);
-        if(list.size()==0) {
-          candidates.add(prevEntry);
-        } else {
-          candidates.addAll(list);
-        }
-      }
-      
-      CompoundEntry e = candidates.get(candidates.size()-1);    
-      if(!hasContain&&containWord(e.getWord(),input,i)) {
-        i -= e.getWord().length()-1;
-        hasContain=true;
-        continue;
-      }
-
-      CompoundEntry rearEntry = analyzeSingle(rear);
-      if(rearEntry.isExist()||rear.length()==3) {
-        candidates.add(rearEntry);
-      } else {
-        List<CompoundEntry> list = analyze(rear, false);
         
-        if(list.size()==0) {
-          if(!e.isExist())
-            candidates.set(candidates.size()-1, analyzeSingle(e.getWord()+rearEntry.getWord()));
-          else
-            candidates.add(rearEntry);
-        } else {
-          if(!e.isExist()) 
-            candidates.set(candidates.size()-1, analyzeSingle(e.getWord()+list.remove(0).getWord()));
-          candidates.addAll(list);
-        }
-      }
-      
-      int eval = evaluation(candidates);
-
-      if(results==null || score<eval || 
-          (score==eval && results.size()>candidates.size()) )  {
-        results = candidates;
-        score = eval;
-      }
-  
-      if(eval==110) break;
+    String prev = input.substring(0,pos);
+    String rear = input.substring(pos);
+    
+    boolean pSucess = false;
+    boolean rSuccess = false;
+    CompoundEntry pEntry = null;
+    CompoundEntry rEntry = null;
+    
+    WordEntry prvEntry = DictionaryUtil.getAllNoun(prev);
+    if(prvEntry==null) {
+      pSucess = analyze(prev, results, false);
+      if(!pSucess) results.add(new CompoundEntry(prev, 0, false,PatternConstants.POS_NOUN));
+    } else {
+      pSucess = true;
+      if(prvEntry.getFeature(WordEntry.IDX_NOUN)=='2')
+        results.addAll(prvEntry.getCompounds());
+      else
+        results.add(new CompoundEntry(prev, 0, true,PatternConstants.POS_NOUN));
     }
-
+    
+    WordEntry rearEntry = DictionaryUtil.getAllNoun(rear);
+    if(rearEntry==null) {
+      rSuccess = analyze(rear, results, false);
+      if(!rSuccess) results.add(new CompoundEntry(rear, 0, false,PatternConstants.POS_NOUN));
+    } else {
+      rSuccess = true;
+      if(rearEntry.getFeature(WordEntry.IDX_NOUN)=='2')
+        results.addAll(rearEntry.getCompounds());
+      else
+        results.add(new CompoundEntry(rear, 0, true,PatternConstants.POS_NOUN));
+    }
+    
+    if(!pSucess&&!rSuccess) {
+      return false;
+    }
+    
     outputs.addAll(results);
     
+    return true;
+  }
+  
+  /**
+   * calculate the position at which the long input should be divided into two segments.
+   * @param input the input string
+   * @return  the position
+   * @throws MorphException throw 
+   */
+  private int caculatePos(String input, boolean hasSuffix) throws MorphException {
+  
+    int pos = -1;
+    int len = input.length();
+    
+    int maxlen = 0;
+    for(int i=len-2;i>=0;i--) {
+      
+      String text = input.substring(i); 
+      String prvText = input.substring(0,i+1);
+      
+      int curmax = maxWord(text, hasSuffix, prvText);
+      
+      if(curmax>maxlen) {
+        maxlen = curmax;
+        if(i==0) pos = curmax;
+        else pos = i;
+      }
+    }
+    
+    return pos;
+  }
+  
+  /**
+   * find the max length of a word contained in a input text
+   * @param text  input text
+   * @param hasSuffix   whether the input text is including a suffix character at the end
+   * @return  the max length
+   * @throws MorphException  throw exception
+   */
+  private int maxWord(String text, boolean hasSuffix, String prvText) throws MorphException {
+    
+    int maxlen = 0;
+    boolean existPrv = false;
+    
+    // if previous text exist in the dictionary.
+    if(prvText.length()>=2) 
+      existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-2))!=null);
+    if(!existPrv&&prvText.length()>=3)
+      existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-3))!=null);
+    
+    for(int i=text.length();i>1;i--) {
+      
+      String seg = text.substring(0,i);
+      WordEntry entry = DictionaryUtil.getAllNoun(seg);
+      if(entry==null) continue;
+      
+      int len = 0;
+      if(i==text.length()-1 && hasSuffix && !existPrv)
+        len = i+1;
+      else
+        len = i;
+      
+      if(len>maxlen) maxlen = len;
+    }   
+    
+    return maxlen;
   }
   
   private int evaluation(List<CompoundEntry> candidates) {
@@ -363,119 +394,7 @@ public class CompoundNounAnalyzer {
     
   }
   
-//  private void analyzeLongText(String input,List outputs, boolean isFirst) throws MorphException {
-//    
-//    if(exactMach) return;
-//
-//    String[] words = splitByLongestWord(input);
-//    
-//    if(words==null) return;
-//
-//    if(isFirst&&words[0]!=null&&words[0].length()==1&&!DictionaryUtil.existPrefix(words[0])) return;
-//    if(words[2]!=null&&words[2].length()==1&&!DictionaryUtil.existSuffix(words[2])) return;
-//  
-//    CompoundEntry e1 = null;
-//    List list1 = null;
-//    boolean success1 = false;
-//    if(words[0]!=null) {
-//      e1 = analyzeSingle(words[0]);
-//      if(!e1.isExist()) list1 = analyze(words[0],false);
-//    }
-//    
-//    CompoundEntry e2 = null;
-//    List list2 = null;
-//    boolean success2 = false;
-//    if(words[2]!=null) {  
-//      e2 = analyzeSingle(words[2]);
-//      if(!e2.isExist()) list2 = analyze(words[2],false);
-//    }
-//    
-//    if(list1!=null&&list1.size()>0) {
-//      outputs.addAll(list1);
-//    }else if(e1!=null){
-//      outputs.add(e1);
-//    }
-//    
-//    outputs.add(analyzeSingle(words[1]));
-//    
-//    if(list2!=null&&list2.size()>0) {
-//      outputs.addAll(list2);        
-//    }else if(e2!=null){
-//      outputs.add(e2);
-//    }
-//  }
-  
-//  private String[] splitByLongestWord(String input) throws MorphException  {
-//    
-//    int pos = 0;
-//    String lngWord = "";
-//    int last = input.length()-1;
-//    boolean ftry = true;  
-//    
-//    for(int i=0;i<last;i++) {
-//      String ss = input.substring(i);
-//      String word =lookupWord(ss,ftry);      
-//      if(word!=null&&validCompound(word, ss.substring(word.length()), ftry,i+1)&&lngWord.length()<word.length()) {      
-//        lngWord = word;      
-//        pos = i;
-//        if(i==0) {
-//          ftry = false;
-//        }else {
-//          Matcher m = ALPHANUM_PATTERN.matcher(input.substring(0,i));
-//          if(!m.find()) {
-//            ftry = false;
-//          }          
-//        }
-//      }      
-//    }
-//    
-//    if("".equals(lngWord)) return null;
-//    
-//    String[] results = new String[3];
-//    int end = pos+lngWord.length();    
-//    
-//    if(pos!=0) results[0] = input.substring(0,pos);
-//    results[1] = lngWord;
-//
-//    if(end<input.length()) results[2] = input.substring(end);
-//    
-//    return results;
-//  }
-  
-//  private String lookupWord(String text, boolean ftry) throws MorphException  {
-//    
-//    String word = null;
-//    String prev = null;
-//        
-//    for(int i=2;i<=text.length();i++) {
-//      
-//      word = text.substring(0,i);
-//      Iterator prefix = DictionaryUtil.findWithPrefix(word);
-//      if(prefix.hasNext()) {
-//        prev = word;
-//        continue;
-//      }
-//      
-//      if(prev==null) return null;
-//      
-//      WordEntry entry = DictionaryUtil.getWordExceptVerb(prev);
-//      if(entry!=null) {
-//        String str = entry.getWord();  
-//        String suffix = text.substring(i-1,i);        
-//        if(ftry&&str.length()==2&&DictionaryUtil.existSuffix(suffix)) return null; // 2글자+접미어 결합이 많으므로  
-//        return str;
-//      }
-//      
-//      return null;
-//    }
-//    
-//    WordEntry entry = DictionaryUtil.getWordExceptVerb(text);
-//    if(entry!=null) return entry.getWord();
-//    
-//    return null;
-//    
-//  }
-  
+ 
   private CompoundEntry[] analysisBySplited(int[] units, String input, boolean isFirst) throws MorphException {
   
     CompoundEntry[] entries = new CompoundEntry[units.length];
@@ -513,9 +432,9 @@ public class CompoundNounAnalyzer {
   
   /**
    * 입력된 String 을 CompoundEntry 로 변환
-   * @param input
+   * @param input input
    * @return compound entry
-   * @throws MorphException
+   * @throws MorphException exception
    */
   private CompoundEntry analyzeSingle(String input) throws MorphException {
             
@@ -539,9 +458,10 @@ public class CompoundNounAnalyzer {
   
   private boolean validCompound(String before, String after, boolean isFirst, int pos) throws MorphException {
 
-    if(pos==1&&before.length()==1&&(!isFirst||!DictionaryUtil.existPrefix(before))) return false;    
+    if(pos==1&&before.length()==1&&
+        (!isFirst||!(DictionaryUtil.existPrefix(before)||Utilities.isAlphaNumeric(before)))) return false;    
 
-    if(after.length()==1&&!DictionaryUtil.existSuffix(after)) return false;
+    if(after.length()==1&&!isFirst&&!DictionaryUtil.existSuffix(after)) return false;
 
     if(pos!=1&&before.length()==1) {
       

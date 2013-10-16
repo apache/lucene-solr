@@ -44,7 +44,7 @@ public class FileUtil {
    * @param filename The name of the file (relative to the classpath) that is
    *  to be retrieved.
    * @return A file object representing the requested filename
-   * @throws Exception Thrown if the classloader can not be found or if
+   * @throws MorphException Thrown if the classloader can not be found or if
    *  the file can not be found in the classpath.
    */
   public static File getClassLoaderFile(String filename) throws MorphException  {
@@ -96,9 +96,8 @@ public class FileUtil {
    * @param fName  the file to read, must not be <code>null</code>
    * @param encoding  the encoding to use, <code>null</code> means platform default
    * @return the list of Strings representing each line in the file, never <code>null</code>
-   * @throws MorphException 
-   * @throws IOException 
-   * @throws Exception 
+   * @throws MorphException  throw exception
+   * @throws IOException  throw exception
    * @throws java.io.UnsupportedEncodingException if the encoding is not supported by the VM
    * @since Commons IO 1.1
    */

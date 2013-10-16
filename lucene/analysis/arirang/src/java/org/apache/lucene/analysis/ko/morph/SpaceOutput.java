@@ -69,7 +69,7 @@ public class SpaceOutput {
 
   /**
    * 
-   * @param word
+   * @param word  input word
    */
   public void addNRWord(String word) {
     addNRWord(word, AnalysisOutput.SCORE_CORRECT);
@@ -77,8 +77,8 @@ public class SpaceOutput {
   
   /**
    * 
-   * @param word
-   * @param score
+   * @param word  input word
+   * @param score input score
    */
   public void addNRWord(String word, int score) {
     AnalysisOutput output = new AnalysisOutput(word,null,null,PatternConstants.PTN_N,score);

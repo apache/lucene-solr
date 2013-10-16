@@ -22,10 +22,18 @@ package org.apache.lucene.analysis.ko;
  */
 public class IndexWord {
 
+  // the word to be indexed
   private String word;
   
+  // the offset from the start of input text
   private int offset = 0;
+
+  // when the input text is a chinese text, the korean sound text of it is extracted as a index word. 
+  private int increment = 1;
   
+  // the derived korean sound text has the <KOREAN> type
+  private String type;
+
   public IndexWord() {
     
   }
@@ -33,6 +41,16 @@ public class IndexWord {
   public IndexWord(String word, int pos) {
     this.word = word;
     this.offset = pos;
+  }
+  
+  public IndexWord(String word, int pos, int inc) {
+    this(word, pos);
+    this.increment = inc;
+  }
+  
+  public IndexWord(String word, int pos, int inc, String t) {
+    this(word, pos, inc);
+    this.type = t;
   }
   
   public String getWord() {
@@ -50,4 +68,20 @@ public class IndexWord {
   public void setOffset(int offset) {
     this.offset = offset;
   }
+  
+  public int getIncrement() {
+    return increment;
+  }
+
+  public void setIncrement(int increment) {
+    this.increment = increment;
+  }
+    
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  } 
 }

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class SyllableUtil {
 
-  public static int IDX_JOSA1 = 0; // 조사의 첫음절로 사용되는 음절 48개
+  public static int IDX_JOSA1 = 0; // 조사의 첫음절로 사용되는 음절 49개
   public static int IDX_JOSA2 = 1; // 조사의 두 번째 이상의 음절로 사용되는 음절 58개
   public static int IDX_EOMI1 = 2; // 어미의 첫음절로 사용되는 음절 72개
   public static int IDX_EOMI2 = 3; // 어미의 두 번째 이상의 음절로 사용되는 음절 105개
@@ -78,7 +78,7 @@ public class SyllableUtil {
    * 영자 또는 숫자일 경우는 모두 해당이 안되므로 가장 마지막 글자인 '힣' 의 음절특성을 반환한다.
    * 
    * @param idx '가'(0xAC00)이 0부터 유니코드에 의해 한글음절을 순차적으로 나열한 값
-   * @throws Exception 
+   * @throws MorphException throw exceptioin
    */
   public static char[] getFeature(int idx)  throws MorphException {
     
@@ -94,7 +94,7 @@ public class SyllableUtil {
   /**
    * 각 음절의 특성을 반환한다.
    * @param syl  음절 하나
-   * @throws Exception 
+   * @throws MorphException throw exception 
    */
   public static char[] getFeature(char syl) throws MorphException {
     
@@ -106,7 +106,7 @@ public class SyllableUtil {
   /**
    * 음절정보특성을 파일에서 읽는다.
    * 
-   * @throws Exception
+   * @throws MorphException throw exception
    */  
   private static List<char[]> getSyllableFeature() throws MorphException {
   

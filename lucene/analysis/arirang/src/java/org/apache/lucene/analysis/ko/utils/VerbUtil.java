@@ -32,13 +32,18 @@ public class VerbUtil {
   
   public static final Map<String, String> XVerb = new HashMap<String, String>();
   
+  public static final Map<String, String> wiAbbrevs = new HashMap<String, String>();
+  
   static {
     String[] suffixs = {
-        "이","하","되","내", "나", "스럽","시키","있","없","같","당하","만하","드리","받","짓"};
+        "이","하","되","내", "스럽","시키","있","없","같","당하","만하","드리","받","짓"};
     for(int i=0;i<suffixs.length;i++) verbSuffix.put(suffixs[i], suffixs[i]);
     
-    String[] xverbs = {"오","내","주","보","지","오르","올리"};
+    String[] xverbs = {"오","내","주","보","지","놓","하","가","오르","올리"};
     for(int i=0;i<xverbs.length;i++) XVerb.put(xverbs[i], xverbs[i]);
+    
+    String[] eomis = {"고","거나"}; // 이 축약이 일어나는 어미
+    for(int i=0;i<eomis.length;i++) wiAbbrevs.put(eomis[i], eomis[i]);
   }
   
   /**
@@ -105,11 +110,13 @@ public class VerbUtil {
       success = true;
     }
     if(!success) return false;
-     
-    if(success&&DictionaryUtil.getNoun(o.getStem())!=null) {       
+    
+    WordEntry entry = null;
+    if(success&&(entry=DictionaryUtil.getAllNoun(o.getStem()))!=null) { 
+      if(entry.getFeature(WordEntry.IDX_NOUN)=='2') {
+        o.setCNoun(entry.getCompounds());
+      }
       o.setScore(AnalysisOutput.SCORE_CORRECT);
-//     }else {
-//      NounUtil.confirmCNoun(o);
     }
      
     o.setPatn(PatternConstants.PTN_NJCM);
@@ -122,37 +129,36 @@ public class VerbUtil {
   /**
    * 어미부와 어간부가 분리된 상태에서 용언화접미사가 결합될 수 있는지 조사한다.
    * @param o  어미부와 어간부가 분리된 결과
-   * @param candidates
-   * @throws MorphException
+   * @param candidates  candidates
+   * @throws MorphException throw exception
    */
   public static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     if(o.getStem().endsWith("스러우")) o.setStem(o.getStem().substring(0,o.getStem().length()-3)+"스럽");
+
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());
-    if(idxVbSfix<1) return false;
-  
-    o.setVsfx(o.getStem().substring(idxVbSfix));
-    o.setStem(o.getStem().substring(0,idxVbSfix));
+    WordEntry entry = DictionaryUtil.getAllNoun(o.getStem());
+    
+    if(wiAbbrevs.get(o.getEomi())==null||entry==null) {
+      if(idxVbSfix<1) return false;     
+      o.setVsfx(o.getStem().substring(idxVbSfix));
+      o.setStem(o.getStem().substring(0,idxVbSfix));
+      entry = DictionaryUtil.getAllNoun(o.getStem());
+    } else { // 이 축약인 경우
+      if(entry==null) return false;
+      o.setVsfx("이");
+      o.setStem(o.getStem());
+    }
+
     o.setPatn(PatternConstants.PTN_NSM);
     o.setPos(PatternConstants.POS_NOUN);
-    
-    WordEntry entry = DictionaryUtil.getWordExceptVerb(o.getStem());
         
-//    if(entry==null&&NounUtil.confirmCNoun(o)&&o.getCNounList().size()>0)  {
-//      entry = DictionaryUtil.getNoun(o.getCNounList().get(o.getCNounList().size()-1).getWord());
-//    }
-
-//    if(entry==null) return false;
-//    if(entry==null) {
-//      NounUtil.confirmDNoun(o);
-//      if(o.getScore()!=AnalysisOutput.SCORE_CORRECT) return false;
-//    }
-
     if(entry!=null) {
       if(entry.getFeature(WordEntry.IDX_NOUN)=='0') return false;
       else if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
       else if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;
       else if(o.getVsfx().equals("내")&&entry.getFeature(WordEntry.IDX_NE)!='1') return false;
+      else if(o.getVsfx().equals("이")&&o.getEomi().equals("어")) return false;
       o.setScore(AnalysisOutput.SCORE_CORRECT); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.      
     }else {
       o.setScore(AnalysisOutput.SCORE_ANALYSIS); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.
@@ -160,7 +166,7 @@ public class VerbUtil {
   
     candidates.add(o);
 
-    return true;
+    return (o.getScore()==AnalysisOutput.SCORE_CORRECT);
 
   }
    
@@ -196,12 +202,15 @@ public class VerbUtil {
     
     if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
     if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;        
+    
     o.setScore(AnalysisOutput.SCORE_CORRECT);
+    if(entry.getFeature(WordEntry.IDX_NOUN)=='2') {
+      o.setCNoun(entry.getCompounds());
+    }
     
     candidates.add(o);            
-
-    
-    return true;     
+  
+    return (o.getScore()==AnalysisOutput.SCORE_CORRECT);     
   }
    
   public static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
@@ -240,11 +249,10 @@ public class VerbUtil {
         o.setPatn(PatternConstants.PTN_VMCM);
         o.setScore(AnalysisOutput.SCORE_CORRECT);
         candidates.add(o);
-        return true;
       }       
     }
      
-    return false;
+    return (o.getScore()==AnalysisOutput.SCORE_CORRECT);
      
   }
    
@@ -286,9 +294,8 @@ public class VerbUtil {
       o.setPatn(PatternConstants.PTN_VMXM);
       o.setScore(AnalysisOutput.SCORE_CORRECT);
       candidates.add(o);
-      return true;
     }  
 
-    return false;     
+    return (o.getScore()==AnalysisOutput.SCORE_CORRECT);     
   }
 }

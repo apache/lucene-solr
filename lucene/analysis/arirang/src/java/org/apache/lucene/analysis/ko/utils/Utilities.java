@@ -41,7 +41,6 @@ public class Utilities {
   
   public static String buildOutputString(AnalysisOutput o) {
     
-
     StringBuffer buff = new StringBuffer();
   
     buff.append(MorphUtil.buildTypeString(o.getStem(),o.getPos()));
@@ -57,6 +56,8 @@ public class Utilities {
       buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));      
     }else if(o.getPatn()==PatternConstants.PTN_NSMJ) {
       buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));      
       buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));
       buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
     }else if(o.getPatn()==PatternConstants.PTN_NSMXM) {
@@ -136,4 +137,28 @@ public class Utilities {
       return null;
     }
   }  
+  
+  public static boolean hasHanLetter(String text) {
+    for(int i=0;i<text.length();i++)
+    {
+      if(text.charAt(i)>='\uAC00' 
+          && text.charAt(i)<='\uD7A3')
+        return true;
+    }   
+    return false;
+  }
+  
+  public static boolean isAlphaNumeric(String text) {
+    
+    for(int i=0;i<text.length();i++)
+    {
+      int c = text.charAt(i);
+      if((c>=48 && c<=57) || (c>=65 && c<=90) || (c>=97 && c<=122)) {
+        continue;
+      }
+      return false;
+    }   
+    return true;
+  }
+  
 }

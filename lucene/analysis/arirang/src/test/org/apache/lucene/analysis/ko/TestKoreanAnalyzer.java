@@ -23,24 +23,58 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.junit.Ignore;
 
 public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
 
 
   public void testBasics() throws IOException {
     assertAnalyzesTo(new KoreanAnalyzer(TEST_VERSION_CURRENT), "자바로 전부 제작된 텍스트 검색 엔진 라이브러리",
-        new String[]{"자바로", "자바", "전부", "제작된", "제작", "텍스트", "검색", "엔진", "라이브러리"},
-        new int[]{0, 0, 4, 7, 7, 11, 15, 18, 21},
-        new int[]{3, 2, 6, 10, 9, 14, 17, 20, 26},
-        new int[]{1, 0, 1, 1, 0, 1, 1, 1, 1}
+        new String[]{"자바", "전부", "제작", "텍스트", "검색", "엔진", "라이브러리"},
+        new int[]{0, 4, 7, 11, 15, 18, 21},
+        new int[]{2, 6, 9, 14, 17, 20, 26},
+        new int[]{1, 1, 1, 1, 1, 1, 1}
     );
 
   }
 
+  public void testCompoundNoun() throws IOException {
+    
+    KoreanAnalyzer analyzer = new KoreanAnalyzer(TEST_VERSION_CURRENT);
+    analyzer.setOriginCNoun(true);
+    analyzer.setHasOrigin(false);
+    
+    assertAnalyzesTo(analyzer, "빅데이터",
+        new String[]{"빅데이터","빅", "데이터"},
+        new int[]{0,0, 1},
+        new int[]{4,1, 4},
+        new int[]{1,0, 1}
+    );
+
+    AnalysisOutput o = null;
+    
+  }
+  
+  @Ignore("TODO: Known issue for Soomyung to look into")
+  public void testCompoundNoun1() throws IOException {
+    
+    KoreanAnalyzer analyzer = new KoreanAnalyzer(TEST_VERSION_CURRENT);
+    analyzer.setOriginCNoun(false);
+    
+    assertAnalyzesTo(analyzer, "빅데이터",
+        new String[]{"빅", "데이터"},
+        new int[]{0, 1},
+        new int[]{1, 4},
+        new int[]{1, 1}
+    );
+
+  }
+  
   /**
    * TEST FAIL: useCharFilter=false text='\u02ac0\ucb2c\u2606 '
    * 

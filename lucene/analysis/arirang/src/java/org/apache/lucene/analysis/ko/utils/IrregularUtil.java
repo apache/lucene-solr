@@ -60,7 +60,7 @@ public class IrregularUtil {
 
     if(end.length()>0) jasos = MorphUtil.decompose(end.charAt(0));
 
-    if(end.startsWith("ㄴ")) {      
+    if(end.startsWith("ㄴ") || 'ㄴ'==jasos[0]) {      
       String[] irrs = restoreBIrregular(start,end);
       if(irrs!=null) return irrs;  
       irrs = restoreHIrregular(start,end);
@@ -97,9 +97,9 @@ public class IrregularUtil {
       if(irrs!=null) return irrs;  
       irrs = restoreELIrregular(start,end);
       if(irrs!=null) return irrs;        
-    }else if(end.startsWith("으")) {      
-      String[] irrs = restoreBIrregular(start,end);
-      if(irrs!=null) return irrs;        
+//    }else if(end.startsWith("으")) {      
+//      String[] irrs = restoreBIrregular(start,end);
+//      if(irrs!=null) return irrs;        
     }else if(jasos.length>1&&jasos[0]=='ㅇ'&&(jasos[1]=='ㅓ'||jasos[1]=='ㅏ')) {      
       String[] irrs = restoreDIrregular(start,end);
       if(irrs!=null) return irrs;  
@@ -128,9 +128,9 @@ public class IrregularUtil {
   
   /**
    * ㅂ 불규칙 원형을 복원한다. (돕다, 곱다)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreBIrregular(String start, String end) throws MorphException {
 
@@ -162,9 +162,9 @@ public class IrregularUtil {
   
   /**
    * ㄷ 불규칙 원형을 복원한다. (깨닫다, 묻다)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreDIrregular(String start, String end) throws MorphException {
     if(start==null||"".equals(start)) return null;
@@ -188,9 +188,9 @@ public class IrregularUtil {
   
   /**
    * ㅅ 불규칙 원형을 복원한다. (긋다--그어)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreSIrregular(String start, String end) throws MorphException {
     if(start==null||"".equals(start)) return null;
@@ -215,9 +215,9 @@ public class IrregularUtil {
   /**
    * 르 불규칙 원형을 복원한다. (흐르다-->흘러)
    * "따르다"는 ㄹ불규칙이 아니지만.. 인 것처럼 처리한다.
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreLIrregular(String start, String end) throws MorphException {
 
@@ -247,23 +247,28 @@ public class IrregularUtil {
   }
   
   /**
-   * ㄹ불규칙 원형을 복원한다. (길다-->긴, 알다-->안)
+   * ㄹ불규칙 원형을 복원한다. (길다-->긴, 알다-->안, 만들다-->만드는)
    * 어간의 끝소리인 ‘ㄹ’이 ‘ㄴ’, ‘ㄹ’, ‘ㅂ’, ‘오’, ‘시’ 앞에서 탈락하는 활용의 형식
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw excetion
    */
+  
   private static String[] restoreELIrregular(String start, String end) throws MorphException {
 
     if(start==null || start.length()==0 || end==null||end.length()==0) return null;
-          
-    if(!(end.charAt(0)=='ㄴ'||end.charAt(0)=='ㄹ'||end.charAt(0)=='ㅂ'||end.charAt(0)=='오'||end.charAt(0)=='시')) return null;
+       
+    char ch1 = end.charAt(0);   
+    char[] jasos1 = MorphUtil.decompose(ch1);
+    
+    if(!(end.charAt(0)=='ㄴ'||end.charAt(0)=='ㄹ'||end.charAt(0)=='ㅂ'|| jasos1[0]=='ㄴ' ||         
+        end.charAt(0)=='오' || end.charAt(0)=='시')) return null;
       
     char convEnd = MorphUtil.makeChar(start.charAt(start.length()-1), 8);
     start = start.substring(0,start.length()-1)+convEnd;
 
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null)
+    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_LIUL)
       return new String[]{start,end};  
     
     return null;
@@ -271,9 +276,9 @@ public class IrregularUtil {
   
   /**
    * 러 불규칙 원형을 복원한다. (이르다->이르러, 푸르다->푸르러)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreRUIrregular(String start, String end) throws MorphException {
 
@@ -301,9 +306,9 @@ public class IrregularUtil {
   
   /**
    * ㅎ 탈락 원형을 복원한다. (까맣다-->까만,까매서)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreHIrregular(String start, String end) throws MorphException {
     if(start==null||"".equals(start)||end==null||"".equals(end)) return null;
@@ -334,9 +339,9 @@ public class IrregularUtil {
 
   /**
    * 으 탈락 원형을 복원한다. (뜨다->더, 크다-커)
-   * @param start
-   * @param end
-   * @throws MorphException
+   * @param start start text
+   * @param end end text
+   * @throws MorphException throw exception
    */
   private static String[] restoreUIrregular(String start, String end) throws MorphException {
     if(start==null||"".equals(start)) return null;

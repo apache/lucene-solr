@@ -1007,13 +1007,13 @@
     <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer class="solr.KoreanTokenizerFactory"/>
-        <filter class="solr.KoreanFilterFactory" hasOrigin="true" hasCNoun="true"  bigrammable="true"/>
+        <filter class="solr.KoreanFilterFactory" hasOrigin="true" hasCNoun="true" bigrammable="true"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_ko.txt"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer class="solr.KoreanTokenizerFactory"/>
-        <filter class="solr.KoreanFilterFactory" hasOrigin="false" hasCNoun="false"  bigrammable="false"/>
+        <filter class="solr.KoreanFilterFactory" hasOrigin="false" hasCNoun="true" bigrammable="true"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_ko.txt"/>
       </analyzer>

@@ -43,6 +43,8 @@ public class DictionaryUtil {
   
   private static HashMap<String, String> cjwords;
   
+  private static HashMap<String, String> abbreviations;
+  
   /**
    * 사전을 로드한다.
    */
@@ -51,10 +53,12 @@ public class DictionaryUtil {
     dictionary = new Trie<String, WordEntry>(true);
     List<String> strList = null;
     List<String> compounds = null;
+    List<String> abbrevs = null;
     try {
       strList = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_DICTIONARY),"UTF-8");
       strList.addAll(FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_EXTENSION),"UTF-8"));
-      compounds = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_COMPOUNDS),"UTF-8");      
+      compounds = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_COMPOUNDS),"UTF-8"); 
+      abbrevs = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_ABBREV),"UTF-8"); 
     } catch (IOException e) {      
       new MorphException(e.getMessage(),e);
     } catch (Exception e) {
@@ -72,13 +76,30 @@ public class DictionaryUtil {
       dictionary.add(entry.getWord(), entry);
     }
     
-    for(String compound: compounds) {    
+    for(String compound: compounds) 
+    {    
       String[] infos = compound.split("[:]+");
-      if(infos.length!=2) continue;
-      WordEntry entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
+      if(infos.length!=3&&infos.length!=2) continue;
+      
+      WordEntry entry = null;
+      if(infos.length==2) 
+        entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
+      else 
+        entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray());
+      
       entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
       dictionary.add(entry.getWord(), entry);
     }
+    
+    abbreviations = new HashMap<String, String>();
+    
+    for(String abbrev: abbrevs) 
+    {    
+      String[] infos = abbrev.split("[:]+");
+      if(infos.length!=2) continue;      
+      abbreviations.put(infos[0].trim(), infos[1].trim());
+    }
+    
   }
 
   @SuppressWarnings({"rawtypes","unchecked"})
@@ -99,7 +120,11 @@ public class DictionaryUtil {
     if(entry==null) return null;
     
     if(entry.getFeature(WordEntry.IDX_NOUN)=='1'||
-        entry.getFeature(WordEntry.IDX_BUSA)=='1') return entry;
+        entry.getFeature(WordEntry.IDX_NOUN)=='2'||
+        entry.getFeature(WordEntry.IDX_BUSA)=='1'
+        ) 
+      return entry;
+    
     return null;
   }
   
@@ -112,7 +137,14 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getCNoun(String key) throws MorphException {  
+  /**
+   * 
+   * return all noun including compound noun
+   * @param key the lookup key text
+   * @return  WordEntry
+   * @throws MorphException throw exception
+   */
+  public static WordEntry getAllNoun(String key) throws MorphException {  
 
     WordEntry entry = getWord(key);
     if(entry==null) return null;
@@ -173,7 +205,12 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getUncompound(String key) throws MorphException {
+  public static String getAbbrevMorph(String key) throws MorphException {
+    if(abbreviations==null) loadDictionary();    
+    return abbreviations.get(key);
+  }
+  
+  public synchronized static WordEntry getUncompound(String key) throws MorphException {
     
     try {
       if(uncompounds==null) {
@@ -193,7 +230,7 @@ public class DictionaryUtil {
     return uncompounds.get(key);
   }
   
-  public static String getCJWord(String key) throws MorphException {
+  public synchronized static String getCJWord(String key) throws MorphException {
     
     try {
       if(cjwords==null) {
@@ -273,9 +310,9 @@ public class DictionaryUtil {
   
   /**
    * 
-   * @param map
-   * @param type  1: josa, 2: eomi
-   * @throws MorphException
+   * @param map map
+   * @param dic  1: josa, 2: eomi
+   * @throws MorphException excepton
    */
   private static synchronized void readFile(HashMap<String, String> map, String dic) throws MorphException {    
     

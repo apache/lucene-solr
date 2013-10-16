@@ -44,6 +44,8 @@ public class KoreanEnv {
   
   public static final String FILE_UNCOMPOUNDS = "uncompounds.dic";
     
+  public static final String FILE_ABBREV = "abbreviation.dic";
+  
   public static final String FILE_CJ = "cj.dic";
   
   public static final String FILE_KOREAN_PROPERTY = "org/apache/lucene/analysis/ko/korean.properties";
@@ -91,6 +93,7 @@ public class KoreanEnv {
     defaults.setProperty(FILE_SUFFIX,"org/apache/lucene/analysis/ko/dic/suffix.dic");  
     defaults.setProperty(FILE_COMPOUNDS,"org/apache/lucene/analysis/ko/dic/compounds.dic");  
     defaults.setProperty(FILE_UNCOMPOUNDS,"org/apache/lucene/analysis/ko/dic/uncompounds.dic");
+    defaults.setProperty(FILE_ABBREV,"org/apache/lucene/analysis/ko/dic/abbreviation.dic");
     defaults.setProperty(FILE_CJ,"org/apache/lucene/analysis/ko/dic/cj.dic");
   }
 
@@ -99,7 +102,6 @@ public class KoreanEnv {
    * Given a property file name, load the property file and return an object
    * representing the property values.
    *
-   * @param propertyFile The name of the property file to load.
    * @param def Default property values, or <code>null</code> if there are no defaults.
    * @return The loaded SortedProperties object.
    */

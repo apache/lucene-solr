@@ -68,10 +68,10 @@ public class MorphAnalyzer {
   
   /**
    * 
-   * @param input
-   * @param pos
+   * @param input input
+   * @param pos pos
    * @return candidates
-   * @throws MorphException
+   * @throws MorphException exception
    */
   public List<AnalysisOutput> analyze(String input, int pos) throws MorphException {    
 
@@ -79,7 +79,7 @@ public class MorphAnalyzer {
     boolean isVerbOnly = MorphUtil.hasVerbOnly(input);
 
     analysisByRule(input, candidates);    
-  
+    
     if(!isVerbOnly||candidates.size()==0) addSingleWord(input,candidates);
   
     Collections.sort(candidates,new AnalysisOutputComparator<AnalysisOutput>());
@@ -89,19 +89,23 @@ public class MorphAnalyzer {
     boolean correct = false;
     for(AnalysisOutput o:candidates) {
     
-      if(o.getScore()==AnalysisOutput.SCORE_CORRECT) {
-        if(o.getPatn()!=PatternConstants.PTN_NJ) correct=true;
-        // "활성화해"가 [활성화(N),하(t),어야(e)] 분석성공하였는데 [활성/화해]분해되는 것을 방지
-        if(o.getPatn()==PatternConstants.PTN_NSM) break; 
-        continue;
+      if(o.getScore()==AnalysisOutput.SCORE_CORRECT || isVerbOnly) {
+        break;
+//        if(o.getPatn()!=PatternConstants.PTN_NJ) correct=true;
+//        // "활성화해"가 [활성화(N),하(t),어야(e)] 분석성공하였는데 [활성/화해]분해되는 것을 방지
+//        if(o.getPatn()==PatternConstants.PTN_NSM) break; 
+//        continue;
       }
-
+      
       if(o.getPatn()<PatternConstants.PTN_VM&&o.getStem().length()>2) {
         if(!(correct&&o.getPatn()==PatternConstants.PTN_N)) confirmCNoun(o);
         if(o.getScore()>=AnalysisOutput.SCORE_COMPOUNDS) changed=true;
       }
     
     }
+    
+    if(correct)
+      filterInCorrect(candidates);
     
     if(changed) {
       Collections.sort(candidates,new AnalysisOutputComparator<AnalysisOutput>());  
@@ -120,51 +124,96 @@ public class MorphAnalyzer {
     AnalysisOutput compound = null;
     
     for(AnalysisOutput o:candidates) { 
-
+      
+      o.setSource(input);
       if(o.getScore()==AnalysisOutput.SCORE_FAIL) continue; // 분석에는 성공했으나, 제약조건에 실패
-      if(o.getScore()==AnalysisOutput.SCORE_CORRECT && o.getPos()!=PatternConstants.POS_NOUN ) {
+      
+      if(o.getScore()==AnalysisOutput.SCORE_CORRECT && o.getPos()!=PatternConstants.POS_NOUN ) 
+      {
         addResults(o,results,stems);
         hasCorrect = true;
-      }else if(o.getPos()==PatternConstants.POS_NOUN&&o.getScore()==AnalysisOutput.SCORE_CORRECT) {
+      }
+      else if(o.getPos()==PatternConstants.POS_NOUN
+          &&o.getScore()==AnalysisOutput.SCORE_CORRECT) 
+      {
         
         if((hasCorrect||correctCnoun)&&o.getCNounList().size()>0) continue;
         
-        if(o.getPos()==PatternConstants.POS_NOUN) {
+        if(o.getPos()==PatternConstants.POS_NOUN) 
+        {
           addResults(o,results,stems);
-        }else if(noun==null) {
+        }
+        else if(noun==null) 
+        {
           addResults(o,results,stems);
           noun = o;
-        } else if(o.getPatn()==PatternConstants.PTN_N||(o.getPatn()>noun.getPatn())||
+        }
+        else if(o.getPatn()==PatternConstants.PTN_N
+            ||(o.getPatn()>noun.getPatn())||
             (o.getPatn()==noun.getPatn()&&
-                o.getJosa()!=null&&noun.getJosa()!=null&&o.getJosa().length()>noun.getJosa().length())) {
+                o.getJosa()!=null&&noun.getJosa()!=null
+                &&o.getJosa().length()>noun.getJosa().length())) 
+        {
           results.remove(noun);
           addResults(o,results,stems);
           noun = o;
         }
         hasCorrectNoun=true;
 //        if(o.getCNounList().size()>0) correctCnoun = true;
-      }else if(o.getPos()==PatternConstants.POS_NOUN&&o.getCNounList().size()>0&&!hasCorrect&&!hasCorrectNoun) {
+      }
+      else if(o.getPos()==PatternConstants.POS_NOUN
+          &&o.getCNounList().size()>0&&!hasCorrect
+          &&!hasCorrectNoun) 
+      {
         double curatio = NounUtil.countFoundNouns(o);
         if(ratio<curatio&&(compound==null||(compound!=null&&compound.getJosa()==null))) {
           ratio  = curatio;
           compound = o;
         }
-      }else if(o.getPos()==PatternConstants.POS_NOUN&&!hasCorrect&&!hasCorrectNoun&&compound==null) {
-        addResults(o,results,stems);
-      }else if(o.getPatn()==PatternConstants.PTN_NSM) {
+      }
+      else if(o.getPos()==PatternConstants.POS_NOUN
+          &&!hasCorrect
+          &&!hasCorrectNoun&&compound==null) 
+      {
         addResults(o,results,stems);
       }
+      else if(o.getPatn()==PatternConstants.PTN_NSM) 
+      {
+        addResults(o,results,stems);
+      } else {
+//        System.out.println(o);
+//    	  System.out.println("do nothing");
+      }
     }      
-    
+
     if(compound!=null) addResults(compound,results,stems);
     
     if(results.size()==0) {
       AnalysisOutput output = new AnalysisOutput(input, null, null, PatternConstants.PTN_N, AnalysisOutput.SCORE_ANALYSIS);
+      output.setSource(input);
       output.setPos(PatternConstants.POS_NOUN);
       results.add(output);
     }
     
     return results;
+  }
+  
+  /**
+   * removed the candidate items when one more candidates in correct is found
+   * @param candidates  analysis candidates
+   */
+  private void filterInCorrect(List<AnalysisOutput> candidates) {
+    List<AnalysisOutput> removeds = new ArrayList<AnalysisOutput>();
+    
+    for(AnalysisOutput o : candidates) {
+      if(o.getScore()!=AnalysisOutput.SCORE_CORRECT)
+        removeds.add(o);
+    }
+    
+    for(AnalysisOutput o : removeds) {
+      candidates.remove(o);
+    }
+    
   }
   
   private void analysisByRule(String input, List<AnalysisOutput> candidates) throws MorphException {
@@ -248,10 +297,10 @@ public class MorphAnalyzer {
    * 용언 + '음/기' + 조사 (PTN_VMJ)
    * 용언 + '아/어' + 보조용언 + '음/기' + 조사(PTN_VMXMJ)
    * 
-   * @param stem
-   * @param end
-   * @param candidates
-   * @throws MorphException
+   * @param stem  stem
+   * @param end end
+   * @param candidates  candidates
+   * @throws MorphException exception
    */
   public void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) throws MorphException {
   
@@ -279,6 +328,7 @@ public class MorphAnalyzer {
         output.setPos(PatternConstants.POS_ETC);
         output.setPatn(PatternConstants.PTN_ADVJ);
       }
+      if(entry.getCompounds().size()>1) output.addCNoun(entry.getCompounds());
     }else {
       if(MorphUtil.hasVerbOnly(stem)) return;
     }
@@ -296,10 +346,10 @@ public class MorphAnalyzer {
    *  5. 도움이다 : 용언 + '음/기' + '이' + 어미 (PTN_VMCM) <br>
    *  6. 도와주다 : 용언 + '아/어' + 보조용언 + 어미 (PTN_VMXM) <br>
    *  
-   * @param stem
-   * @param end
-   * @param candidates
-   * @throws CloneNotSupportedException 
+   * @param stem  stem
+   * @param end end
+   * @param candidates  candidates
+   * @throws MorphException exception 
    */
   public void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) throws MorphException {
     
@@ -320,7 +370,9 @@ public class MorphAnalyzer {
         MorphUtil.buildPtnVM(output, candidates);
         
         char[] features = SyllableUtil.getFeature(stem.charAt(stem.length()-1)); // ㄹ불규칙일 경우
-        if(features[SyllableUtil.IDX_YNPLN]=='0'||morphs[1].charAt(0)!='ㄴ')   return;
+        if((features[SyllableUtil.IDX_YNPLN]=='0'||morphs[1].charAt(0)!='ㄴ')
+            &&!"는".equals(end))   // "갈(V),는" 분석될 수 있도록
+          return;
       }
 
       String[] irrs = IrregularUtil.restoreIrregularVerb(o.getStem(), o.getPomi()==null?o.getEomi():o.getPomi());
@@ -373,31 +425,37 @@ public class MorphAnalyzer {
    * 복합명사인지 조사하고, 복합명사이면 단위명사들을 찾는다.
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
    * 단위명사는 2글자 이상 단어에서만 찾는다.
-   * @throws MorphException
+   * @throws MorphException exception
    */
   public boolean confirmCNoun(AnalysisOutput o) throws MorphException  {
 
     if(o.getStem().length()<3) return false;
      
-    WordEntry cnoun = DictionaryUtil.getCNoun(o.getStem());
-    if(cnoun!=null && cnoun.getFeature(WordEntry.IDX_NOUN)=='2') {
-      o.addCNoun(cnoun.getCompounds());
-      o.setScore(AnalysisOutput.SCORE_CORRECT);
-      return true;
-    }
-     
+    
     List<CompoundEntry> results = cnAnalyzer.analyze(o.getStem());
-//       System.out.println(o);
-//       for(CompoundEntry c :results) System.out.println(c.getWord()+":"+c.isExist());
+
     boolean success = false;
        
     if(results.size()>1) {       
       o.setCNoun(results);
       success = true;
+      int maxWordLen = 0;
+      int dicWordLen = 0;
       for(CompoundEntry entry : results) {           
-        if(!entry.isExist()) success = false;
+        if(!entry.isExist()) 
+        {
+          success = false;
+        } 
+        else 
+        {
+          if(entry.getWord().length()>maxWordLen) 
+            maxWordLen = entry.getWord().length();
+          dicWordLen += entry.getWord().length();
+        }
       }
-      o.setScore(AnalysisOutput.SCORE_COMPOUNDS);         
+      o.setScore(AnalysisOutput.SCORE_COMPOUNDS);   
+      o.setMaxWordLen(maxWordLen);
+      o.setDicWordLen(dicWordLen);
     }
   
     if(success) {
@@ -405,7 +463,7 @@ public class MorphAnalyzer {
         o.setScore(AnalysisOutput.SCORE_CORRECT);
       } else {
         o.setScore(AnalysisOutput.SCORE_FAIL);
-        return false;
+        success = false;
       }
     } else {
       if(NounUtil.confirmDNoun(o)&&o.getScore()!=AnalysisOutput.SCORE_CORRECT) {
@@ -429,9 +487,9 @@ public class MorphAnalyzer {
       if("내".equals(o.getVsfx())&&cnouns.get(cnouns.size()-1).getWord().length()!=1) {
         WordEntry entry = DictionaryUtil.getWord(cnouns.get(cnouns.size()-1).getWord());
         if(entry!=null&&entry.getFeature(WordEntry.IDX_NE)=='0') return false;
-      }else if("하".equals(o.getVsfx())&&cnouns.get(cnouns.size()-1).getWord().length()==1) { 
-        // 짝사랑하다 와 같은 경우에 뒷글자가 1글자이면 제외
-        return false;
+//      }else if("하".equals(o.getVsfx())&&cnouns.get(cnouns.size()-1).getWord().length()==1) { 
+//        // 짝사랑하다 와 같은 경우에 뒷글자가 1글자이면 제외
+//        return false;
       }         
     }       
     return true;

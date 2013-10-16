@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko;
  */
 
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,6 +39,8 @@ import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
 import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
 import org.apache.lucene.analysis.ko.utils.HanjaUtils;
+import org.apache.lucene.analysis.ko.IndexWord;
+import org.apache.lucene.analysis.ko.KoreanTokenizer;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -55,11 +58,13 @@ public class KoreanFilter extends TokenFilter {
   
   private boolean bigrammable = true;
   
-  private boolean hasOrigin = true;
+  private boolean hasOrigin = false;
   
   private boolean originCNoun = true;
   
   private boolean exactMatch = false;
+  
+  private boolean isPositionInc = true;
   
   private char[] curTermBuffer;
     
@@ -118,6 +123,11 @@ public class KoreanFilter extends TokenFilter {
     this(input, bigram,has, match);
     this.originCNoun = cnoun;
   }
+
+  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean match, boolean cnoun, boolean isPositionInc) {
+    this(input, bigram,has, match, cnoun);
+    this.isPositionInc = isPositionInc;
+  }
   
   public final boolean incrementToken() throws IOException {
 
@@ -163,21 +173,19 @@ public class KoreanFilter extends TokenFilter {
     clearAttributes();
         
     IndexWord iw = morphQueue.removeFirst();
-    int pos = iw.getOffset();
 
     termAtt.copyBuffer(iw.getWord().toCharArray(), 0, iw.getWord().length());
-    offsetAtt.setOffset(tokStart+pos, tokStart + pos + iw.getWord().length());
-        
-    if(!isFirst && iw.getOffset()==0) {
-      posIncrAtt.setPositionIncrement(0);
-//          posLenAtt.setPositionLength(iw.getWord().length());
-    }
-        
+    offsetAtt.setOffset(iw.getOffset(), iw.getOffset() + iw.getWord().length());
+    
+    int inc = isPositionInc ?  iw.getIncrement() : 0;
+    
+    posIncrAtt.setPositionIncrement(inc);      
+    
   }
   
   /**
    * 한글을 분석한다.
-   * @throws MorphException
+   * @throws MorphException exception
    */
   private void analysisKorean(String input) throws MorphException {
 
@@ -185,99 +193,134 @@ public class KoreanFilter extends TokenFilter {
     if(outputs.size()==0) return;
     
     Map<String,IndexWord> map = new LinkedHashMap<String,IndexWord>();
-    if(hasOrigin) map.put(input, new IndexWord(input,0));
+    if(hasOrigin) map.put("0:"+input, new IndexWord(input,0));
 
     if(outputs.get(0).getScore()>=AnalysisOutput.SCORE_COMPOUNDS) {
-      extractKeyword(outputs, map);      
+      extractKeyword(outputs,offsetAtt.startOffset(), map, 0);      
     } else {
-      try {
+      
+      try
+      {
         List<AnalysisOutput> list = wsAnal.analyze(input);
         
-        List<AnalysisOutput> results = new ArrayList<AnalysisOutput>();      
-        if(list.size()>1) {
+        List<AnalysisOutput> results = new ArrayList<AnalysisOutput>();    
+        if(list.size()>1 && wsAnal.getOutputScore(list)>AnalysisOutput.SCORE_ANALYSIS) {
+          int offset = 0;
           for(AnalysisOutput o : list) {
-            if(hasOrigin) map.put(o.getSource(), new IndexWord(o.getSource(),0));        
+            if(hasOrigin) map.put(o.getSource(), new IndexWord(o.getSource(),offsetAtt.startOffset()+offset,1));        
             results.addAll(morph.analyze(o.getSource()));
-          }        
+            offset += o.getSource().length();
+          }       
         } else {
-          results.addAll(list);
+          results.addAll(outputs);
         }
-  
-        extractKeyword(results, map);
-      } catch(Exception e) {
-        extractKeyword(outputs, map);
+        extractKeyword(results, offsetAtt.startOffset(), map, 0);
+      }catch(Exception e) {
+        extractKeyword(outputs.subList(0, 1), offsetAtt.startOffset(), map, 0);
       }
+      
     }
-    
+        
     Iterator<String> iter = map.keySet().iterator();
     
     while(iter.hasNext()) {      
-      String text = iter.next();    
-      if(text.length()<=1) continue;  
+      String text = iter.next();      
       morphQueue.add(map.get(text));
     }
   
   }
   
-  private void extractKeyword(List<AnalysisOutput> outputs, Map<String,IndexWord> map) throws MorphException {
+  private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,IndexWord> map, int position) 
+      throws MorphException 
+  {
 
-    for(AnalysisOutput output : outputs) {  
-
-      if(output.getPos()!=PatternConstants.POS_VERB) {
-        if(originCNoun || (!originCNoun&&output.getCNounList().size()==0)) {
-          map.put(output.getStem(), new IndexWord(output.getStem(),0));  
-        }
-//      }else {
-//        map.put(output.getStem()+"다", new Integer(1));  
-      }    
-
-      if(exactMatch) continue;
-
-      if(output.getScore()>=AnalysisOutput.SCORE_COMPOUNDS) {
+    int maxDecompounds = 0;
+    int maxStem = 0;
+    
+    for(AnalysisOutput output : outputs) 
+    {
+      if(output.getPos()==PatternConstants.POS_VERB) continue; // extract keywords from only noun
+      if(!originCNoun&&output.getCNounList().size()>0) continue; // except compound nound
+      int inc = map.size()>0 ? 0 : 1;
+      map.put(position+":"+output.getStem(), new IndexWord(output.getStem(),startoffset,inc));
         
-        List<CompoundEntry> cnouns = output.getCNounList();
-        int start = 0;
-
-        for(int jj=0;jj<cnouns.size();jj++) {
-          
-          CompoundEntry cnoun = cnouns.get(jj);
-
-          if(cnoun.getWord().length()>1) map.put(cnoun.getWord(),  new IndexWord(cnoun.getWord(), start));
-          
-          if(jj==0 && cnoun.getWord().length()==1) {
-            map.put(cnoun.getWord()+cnouns.get(jj+1).getWord(),  new IndexWord(cnoun.getWord(), start));
-          } else if(jj>1 && cnoun.getWord().length()==1) {
-            String iw = cnouns.get(jj-1).getWord()+cnoun.getWord();
-            map.put(iw,  new IndexWord(iw, start-cnouns.get(jj-1).getWord().length()));
-          }
-          
-          start += cnoun.getWord().length();
-        }
-        
-      } else if(bigrammable) {
-        addBiagramToMap(output.getStem(),map);
-      }
+      if(output.getStem().length()>maxStem) maxStem = output.getStem().length();
+      if(output.getCNounList().size()>maxDecompounds) maxDecompounds = output.getCNounList().size();
     }
+
+    if(maxDecompounds>1) 
+    {      
+      for(int i=0; i<maxDecompounds; i++) 
+      {
+        position += i;
+        
+        int cPosition = position;
+        for(AnalysisOutput output : outputs) 
+        {
+          if(output.getPos()==PatternConstants.POS_VERB ||
+              output.getCNounList().size()<=i) continue;     
+          
+          CompoundEntry cEntry = output.getCNounList().get(i);
+          int cStartoffset = getStartOffset(output, i) + startoffset;
+          int inc = i==0 ? 0 : 1;
+          map.put((cPosition)+":"+cEntry.getWord(), 
+              new IndexWord(cEntry.getWord(),cStartoffset,inc));
+          
+          if(bigrammable&&!cEntry.isExist()) 
+            cPosition = addBiagramToMap(cEntry.getWord(), cStartoffset, map, cPosition);
+        }                
+      }      
+    } 
+    else 
+    {
+      for(AnalysisOutput output : outputs) 
+      {
+        if(output.getPos()==PatternConstants.POS_VERB) continue;
+        
+        if(bigrammable&&output.getScore()<AnalysisOutput.SCORE_COMPOUNDS) 
+          addBiagramToMap(output.getStem(), startoffset, map, position);   
+      }  
+    }    
   }
   
-  private void addBiagramToMap(String input, Map<String,IndexWord> map) {
-    
+  private int addBiagramToMap(String input, int startoffset, Map<String, IndexWord> map, int position) {
     int offset = 0;
     int strlen = input.length();
+    if(strlen<2) return position;
     
     while(offset<strlen-1) {
       
+      int inc = offset==0 ? 0 : 1;
+      
       if(isAlphaNumChar(input.charAt(offset))) {
         String text = findAlphaNumeric(input.substring(offset));
-        map.put(text,  new IndexWord(text, offset));
+        map.put(position+":"+text,  new IndexWord(text,startoffset+offset,inc));
         offset += text.length();
       } else {
         String text = input.substring(offset,
             offset+2>strlen?strlen:offset+2);
-        map.put(text,  new IndexWord(text, offset));
+        map.put(position+":"+text,  new IndexWord(text,startoffset+offset,inc));
         offset++;
       }
+      
+      position += 1;
     }
+    
+    return position-1;
+  }
+  
+  /**
+   * return the start offset of current decompounds entry.
+   * @param output  morphlogical analysis output
+   * @param index     the index of current decompounds entry
+   * @return        the start offset of current decoumpounds entry
+   */
+  private int getStartOffset(AnalysisOutput output, int index) {    
+    int sOffset = 0;
+    for(int i=0; i<index;i++) {
+      sOffset += output.getCNounList().get(i).getWord().length();
+    }
+    return sOffset;
   }
   
   private String findAlphaNumeric(String text) {
@@ -285,15 +328,17 @@ public class KoreanFilter extends TokenFilter {
     for(int i=0;i<text.length();i++) {
       if(!isAlphaNumChar(text.charAt(i))) break;
       pos++;
-    }        
+    }    
+    if(pos<text.length()) pos += 1;
+    
     return text.substring(0,pos);
   }
   
   /**
    * 한자는 2개이상의 한글 음으로 읽혀질 수 있다.
    * 두음법칙이 아님.
-   * @param term
-   * @throws MorphException
+   * @param term  term
+   * @throws MorphException exception
    */
   private void analysisChinese(String term) throws MorphException {  
     
@@ -376,7 +421,7 @@ public class KoreanFilter extends TokenFilter {
   
   private List<CompoundEntry> confirmCNoun(String input) throws MorphException {
     
-    WordEntry cnoun = DictionaryUtil.getCNoun(input);
+    WordEntry cnoun = DictionaryUtil.getAllNoun(input);
     if(cnoun!=null && cnoun.getFeature(WordEntry.IDX_NOUN)=='2') {
       return cnoun.getCompounds();
     }

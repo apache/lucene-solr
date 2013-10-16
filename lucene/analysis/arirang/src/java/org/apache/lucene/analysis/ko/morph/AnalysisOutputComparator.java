@@ -39,6 +39,18 @@ public class AnalysisOutputComparator<T> implements Comparator<T> {
     
     if(pattern!=0) return pattern;
     
+    if(out2.getScore()==AnalysisOutput.SCORE_COMPOUNDS &&
+        out1.getScore()==AnalysisOutput.SCORE_COMPOUNDS) {
+      if(out2.getMaxWordLen()!=out1.getMaxWordLen())
+        return out2.getMaxWordLen()-out1.getMaxWordLen();
+      if(out2.getDicWordLen()!=out1.getDicWordLen())
+        return out2.getDicWordLen()-out1.getDicWordLen();
+    }
+    
+    if(out2.getPatn()==out1.getPatn()) {
+      len = out2.getStem().length()-out1.getStem().length();
+    }
+    
     return len;
   }
 }

@@ -74,7 +74,7 @@ final void getText(CharTermAttribute t) {
 %}
 
 // korean word: a sequence of digits & letters & 
-KOREAN        = ({LETTER}|{NUM}|{DIGIT})* {HANLETTER}+ ({LETTER}|{DIGIT})*
+KOREAN        = ({LETTER}|{NUM}|{DIGIT})* {HANLETTER}+ ({LETTER}|{DIGIT})* {HANLETTER}*
 
 // basic word: a sequence of digits & letters
 ALPHANUM      = ({LETTER}|{DIGIT})+
