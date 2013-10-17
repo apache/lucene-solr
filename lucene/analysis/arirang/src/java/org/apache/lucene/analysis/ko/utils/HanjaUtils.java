@@ -44,9 +44,7 @@ public class HanjaUtils {
 
         if(hanInfos.length!=2) continue;
         
-        String hanja = StringEscapeUtil.unescapeJava(hanInfos[0]);
-
-        mapHanja.put(hanja, hanInfos[1].toCharArray());
+        mapHanja.put(hanInfos[0], hanInfos[1].toCharArray());
       }      
     } catch (IOException e) {
       throw new MorphException(e);
