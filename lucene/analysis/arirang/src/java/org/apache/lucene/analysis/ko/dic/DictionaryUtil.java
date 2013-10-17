@@ -20,104 +20,115 @@ package org.apache.lucene.analysis.ko.dic;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.utils.Trie;
 
 public class DictionaryUtil {
   private DictionaryUtil() {}
   
-  private static Trie<String,WordEntry> dictionary;
+  private static final Trie<String,WordEntry> dictionary = new Trie<String, WordEntry>(true);
   
-  private static HashMap<String, String> josas;
+  private static final Set<String> josas = new HashSet<String>();
   
-  private static HashMap<String, String> eomis;
+  private static final Set<String> eomis = new HashSet<String>();;
   
-  private static HashMap<String, String> prefixs;
+  private static final Set<String> prefixs = new HashSet<String>();;
   
-  private static HashMap<String, String> suffixs;
+  private static final Set<String> suffixs = new HashSet<String>();;
   
-  private static HashMap<String,WordEntry> uncompounds;
+  private static final Map<String,WordEntry> uncompounds = new HashMap<String,WordEntry>();
   
-  private static HashMap<String, String> cjwords;
+  private static final Map<String, String> cjwords = new HashMap<String,String>();
   
-  private static HashMap<String, String> abbreviations;
+  private static final Map<String, String> abbreviations = new HashMap<String,String>();
   
-  /**
-   * 사전을 로드한다.
-   */
-  public synchronized static void loadDictionary() throws MorphException {
-    
-    dictionary = new Trie<String, WordEntry>(true);
-    List<String> strList = null;
-    List<String> compounds = null;
-    List<String> abbrevs = null;
+  static {  
     try {
-      strList = DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY);
+      List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY);
       strList.addAll(DictionaryResources.readLines(DictionaryResources.FILE_EXTENSION));
-      compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
-      abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
+      List<String> compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
+      List<String> abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
+    
+      for(String str:strList) {
+        String[] infos = str.split("[,]+");
+        if(infos.length!=2) continue;
+        infos[1] = infos[1].trim();
+        if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
+        
+        WordEntry entry = new WordEntry(infos[0].trim(),infos[1].trim().toCharArray());
+        dictionary.add(entry.getWord(), entry);
+      }
+      
+      for(String compound: compounds) 
+      {    
+        String[] infos = compound.split("[:]+");
+        if(infos.length!=3&&infos.length!=2) continue;
+        
+        WordEntry entry = null;
+        if(infos.length==2) 
+          entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
+        else 
+          entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray());
+        
+        entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
+        dictionary.add(entry.getWord(), entry);
+      }
+      
+      for(String abbrev: abbrevs) 
+      {    
+        String[] infos = abbrev.split("[:]+");
+        if(infos.length!=2) continue;      
+        abbreviations.put(infos[0].trim(), infos[1].trim());
+      }
+      
+      List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS);  
+      for(String compound: lines) {    
+        String[] infos = compound.split("[:]+");
+        if(infos.length!=2) continue;
+        WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
+        entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
+        uncompounds.put(entry.getWord(), entry);
+      }      
+  
+      lines = DictionaryResources.readLines(DictionaryResources.FILE_CJ);  
+      for(String cj: lines) {    
+        String[] infos = cj.split("[:]+");
+        if(infos.length!=2) continue;
+        cjwords.put(infos[0], infos[1]);
+      }
+      
+      readFileToSet(josas,DictionaryResources.FILE_JOSA);
+      
+      readFileToSet(eomis,DictionaryResources.FILE_EOMI);
+      
+      readFileToSet(prefixs,DictionaryResources.FILE_PREFIX);
+  
+      readFileToSet(suffixs,DictionaryResources.FILE_SUFFIX);
+      
     } catch (IOException e) {      
-      new MorphException(e.getMessage(),e);
-    } catch (Exception e) {
-      new MorphException(e.getMessage(),e);
+      new Error("Cannot load resource",e);
     }
-    if(strList==null) throw new MorphException("dictionary is null");;
-    
-    for(String str:strList) {
-      String[] infos = str.split("[,]+");
-      if(infos.length!=2) continue;
-      infos[1] = infos[1].trim();
-      if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
-      
-      WordEntry entry = new WordEntry(infos[0].trim(),infos[1].trim().toCharArray());
-      dictionary.add(entry.getWord(), entry);
-    }
-    
-    for(String compound: compounds) 
-    {    
-      String[] infos = compound.split("[:]+");
-      if(infos.length!=3&&infos.length!=2) continue;
-      
-      WordEntry entry = null;
-      if(infos.length==2) 
-        entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
-      else 
-        entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray());
-      
-      entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
-      dictionary.add(entry.getWord(), entry);
-    }
-    
-    abbreviations = new HashMap<String, String>();
-    
-    for(String abbrev: abbrevs) 
-    {    
-      String[] infos = abbrev.split("[:]+");
-      if(infos.length!=2) continue;      
-      abbreviations.put(infos[0].trim(), infos[1].trim());
-    }
-    
   }
 
   @SuppressWarnings({"rawtypes","unchecked"})
-  public static Iterator<String[]> findWithPrefix(String prefix) throws MorphException {
-    if(dictionary==null) loadDictionary();
+  public static Iterator<String[]> findWithPrefix(String prefix) {
     return dictionary.getPrefixedBy(prefix);
   }
 
-  public static WordEntry getWord(String key) throws MorphException {    
-    if(dictionary==null) loadDictionary();
+  public static WordEntry getWord(String key) {    
     if(key.length()==0) return null;
     
     return (WordEntry)dictionary.get(key);
   }
   
-  public static WordEntry getWordExceptVerb(String key) throws MorphException {    
+  public static WordEntry getWordExceptVerb(String key) {    
     WordEntry entry = getWord(key);    
     if(entry==null) return null;
     
@@ -130,7 +141,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getNoun(String key) throws MorphException {  
+  public static WordEntry getNoun(String key) {  
 
     WordEntry entry = getWord(key);
     if(entry==null) return null;
@@ -144,9 +155,8 @@ public class DictionaryUtil {
    * return all noun including compound noun
    * @param key the lookup key text
    * @return  WordEntry
-   * @throws MorphException throw exception
    */
-  public static WordEntry getAllNoun(String key) throws MorphException {  
+  public static WordEntry getAllNoun(String key) {  
 
     WordEntry entry = getWord(key);
     if(entry==null) return null;
@@ -155,7 +165,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getVerb(String key) throws MorphException {
+  public static WordEntry getVerb(String key) {
     
     WordEntry entry = getWord(key);  
     if(entry==null) return null;
@@ -166,7 +176,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getAdverb(String key) throws MorphException {
+  public static WordEntry getAdverb(String key) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
 
@@ -174,7 +184,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getBusa(String key) throws MorphException {
+  public static WordEntry getBusa(String key) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
 
@@ -182,7 +192,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getIrrVerb(String key, char irrType) throws MorphException {
+  public static WordEntry getIrrVerb(String key, char irrType) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
 
@@ -191,7 +201,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getBeVerb(String key) throws MorphException {
+  public static WordEntry getBeVerb(String key) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
     
@@ -199,7 +209,7 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getDoVerb(String key) throws MorphException {
+  public static WordEntry getDoVerb(String key) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
     
@@ -207,94 +217,38 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static String getAbbrevMorph(String key) throws MorphException {
-    if(abbreviations==null) loadDictionary();    
+  public static String getAbbrevMorph(String key) {
     return abbreviations.get(key);
   }
   
-  public synchronized static WordEntry getUncompound(String key) throws MorphException {
-    
-    try {
-      if(uncompounds==null) {
-        uncompounds = new HashMap<String,WordEntry>();
-        List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS);  
-        for(String compound: lines) {    
-          String[] infos = compound.split("[:]+");
-          if(infos.length!=2) continue;
-          WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
-          entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
-          uncompounds.put(entry.getWord(), entry);
-        }      
-      }  
-    }catch(Exception e) {
-      throw new MorphException(e);
-    }
+  public static WordEntry getUncompound(String key) {
     return uncompounds.get(key);
   }
   
-  public synchronized static String getCJWord(String key) throws MorphException {
-    
-    try {
-      if(cjwords==null) {
-        cjwords = new HashMap<String, String>();
-        List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_CJ);  
-        for(String cj: lines) {    
-          String[] infos = cj.split("[:]+");
-          if(infos.length!=2) continue;
-          cjwords.put(infos[0], infos[1]);
-        }      
-      }  
-    }catch(Exception e) {
-      throw new MorphException(e);
-    }
+  public synchronized static String getCJWord(String key) {
     return cjwords.get(key);
-    
   }
   
-  public static boolean existJosa(String str) throws MorphException {
-    if(josas==null) {
-      josas = new HashMap<String, String>();
-      readFile(josas,DictionaryResources.FILE_JOSA);
-    }  
-    if(josas.get(str)==null) return false;
-    else return true;
+  public static boolean existJosa(String str) {
+    return josas.contains(str);
   }
   
-  public static boolean existEomi(String str)  throws MorphException {
-    if(eomis==null) {
-      eomis = new HashMap<String, String>();
-      readFile(eomis,DictionaryResources.FILE_EOMI);
-    }
-
-    if(eomis.get(str)==null) return false;
-    else return true;
+  public static boolean existEomi(String str) {
+    return eomis.contains(str);
   }
   
-  public static boolean existPrefix(String str)  throws MorphException {
-    if(prefixs==null) {
-      prefixs = new HashMap<String, String>();
-      readFile(prefixs,DictionaryResources.FILE_PREFIX);
-    }
-
-    if(prefixs.get(str)==null) return false;
-    else return true;
+  public static boolean existPrefix(String str) {
+    return prefixs.contains(str);
   }
   
-  public static boolean existSuffix(String str)  throws MorphException {
-    if(suffixs==null) {
-      suffixs = new HashMap<String, String>();
-      readFile(suffixs,DictionaryResources.FILE_SUFFIX);
-    }
-
-    if(suffixs.get(str)!=null) return true;
-    
-    return false;
+  public static boolean existSuffix(String str) {
+    return suffixs.contains(str);
   }
   
   /**
    * ㄴ,ㄹ,ㅁ,ㅂ과 eomi 가 결합하여 어미가 될 수 있는지 점검한다.
    */
-  public static String combineAndEomiCheck(char s, String eomi) throws MorphException {
+  public static String combineAndEomiCheck(char s, String eomi) {
   
     if(eomi==null) eomi="";
 
@@ -310,22 +264,10 @@ public class DictionaryUtil {
     
   }
   
-  /**
-   * 
-   * @param map map
-   * @param dic  1: josa, 2: eomi
-   * @throws MorphException excepton
-   */
-  private static synchronized void readFile(HashMap<String, String> map, String dic) throws MorphException {    
-    try{
-      List<String> line = DictionaryResources.readLines(dic);
-      for(int i=1;i<line.size();i++) {
-        map.put(line.get(i).trim(), line.get(i));
-      }
-    }catch(IOException e) {
-      throw new MorphException(e.getMessage(),e);
-    } catch (Exception e) {
-      throw new MorphException(e.getMessage(),e);
+  private static void readFileToSet(Set<String> set, String dic) throws IOException {    
+    List<String> line = DictionaryResources.readLines(dic);
+    for(int i=1;i<line.size();i++) {
+      set.add(line.get(i).trim());
     }
   }
   
