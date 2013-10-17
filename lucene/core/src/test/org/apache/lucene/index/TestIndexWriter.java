@@ -2249,6 +2249,11 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newTextField("myfield", "a b c", Field.Store.NO));
     writer.addDocument(doc);
     assertTrue(writer.hasUncommittedChanges());
+
+    // Must commit, waitForMerges, commit again, to be
+    // certain that hasUncommittedChanges returns false:
+    writer.commit();
+    writer.waitForMerges();
     writer.commit();
     assertFalse(writer.hasUncommittedChanges());
     writer.addDocument(doc);
@@ -2258,10 +2263,20 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newStringField("id", "xyz", Field.Store.YES));
     writer.addDocument(doc);
     assertTrue(writer.hasUncommittedChanges());
+
+    // Must commit, waitForMerges, commit again, to be
+    // certain that hasUncommittedChanges returns false:
+    writer.commit();
+    writer.waitForMerges();
     writer.commit();
     assertFalse(writer.hasUncommittedChanges());
     writer.deleteDocuments(new Term("id", "xyz"));
     assertTrue(writer.hasUncommittedChanges());
+
+    // Must commit, waitForMerges, commit again, to be
+    // certain that hasUncommittedChanges returns false:
+    writer.commit();
+    writer.waitForMerges();
     writer.commit();
     assertFalse(writer.hasUncommittedChanges());
     writer.close();

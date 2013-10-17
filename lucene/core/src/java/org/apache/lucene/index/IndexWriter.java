@@ -2880,7 +2880,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     commitInternal();
   }
 
-  /** Returns true if there are changes that have not been committed */
+  /** Returns true if there are changes that have not been
+   *  committed.  Note that if a merge kicked off as a
+   *  result of flushing a new segment during {@link
+   *  #commit}, or a concurrent merged finished,
+   *  this method may return true right after you
+   *  had just called {@link #commit}. */
   public final boolean hasUncommittedChanges() {
     return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedDeletesStream.any();
   }
