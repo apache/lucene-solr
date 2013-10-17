@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.ko.tagging;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,7 +35,32 @@ import org.apache.lucene.analysis.ko.utils.Trie;
  */
 public class Tagger {
     
-  private static Trie<String, String[]> occurrences;
+  private static final Trie<String, String[]> occurrences = new Trie<String, String[]>(true);;
+  static { 
+    try {
+      List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
+      
+      for(String str : strs) {
+        if(str==null) continue;
+        str = str.trim();
+        String[] syls = str.split("[:]+");
+        if(syls.length!=4) continue;
+        
+        String key = null;        
+        if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
+        else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
+
+        final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
+        String[] patns = joined.split("[/]+");
+        
+        occurrences.add(syls[0]+key, patns);
+        
+      }      
+      
+    } catch (IOException ioe) {
+      throw new Error("Fail to read the tagger dictionary.", ioe);
+    }
+  }
     
   private static final String NILL = "NILL";
   
@@ -261,39 +287,7 @@ public class Tagger {
 
   @SuppressWarnings("unchecked")
   public static synchronized Iterator<String[]> getGR(String prefix) throws MorphException {
-
-    if(occurrences==null) loadTaggerDic();
-
     return occurrences.getPrefixedBy(prefix);
   }
   
-  private static synchronized void loadTaggerDic() throws MorphException {
-    
-    occurrences = new Trie<String, String[]>(true);
-    
-    try {
-      
-      List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
-      
-      for(String str : strs) {
-        if(str==null) continue;
-        str = str.trim();
-        String[] syls = str.split("[:]+");
-        if(syls.length!=4) continue;
-        
-        String key = null;        
-        if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
-        else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
-
-        final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
-        String[] patns = joined.split("[/]+");
-        
-        occurrences.add(syls[0]+key, patns);
-        
-      }      
-      
-    } catch (Exception e) {
-      throw new MorphException("Fail to read the tagger dictionary: "+e.getMessage());
-    }
-  }
 }
