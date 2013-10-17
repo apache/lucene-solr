@@ -1391,9 +1391,6 @@
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
-    <!-- Declare a named clustering engine. Only one engine can be named 
-         "default" (and it becomes the default one for the search component). 
-      -->
     <lst name="engine">
       <str name="name">lingo</str>
 
