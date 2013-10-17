@@ -2253,6 +2253,17 @@ public class TestIndexWriter extends LuceneTestCase {
     assertFalse(writer.hasUncommittedChanges());
     writer.addDocument(doc);
     assertTrue(writer.hasUncommittedChanges());
+    writer.commit();
+    doc = new Document();
+    doc.add(newStringField("id", "xyz", Field.Store.YES));
+    writer.addDocument(doc);
+    assertTrue(writer.hasUncommittedChanges());
+    writer.commit();
+    assertFalse(writer.hasUncommittedChanges());
+    writer.deleteDocuments(new Term("id", "xyz"));
+    assertTrue(writer.hasUncommittedChanges());
+    writer.commit();
+    assertFalse(writer.hasUncommittedChanges());
     writer.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));

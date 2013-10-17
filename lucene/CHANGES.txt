@@ -144,6 +144,10 @@ Bug Fixes
 * LUCENE-5272: OpenBitSet.ensureCapacity did not modify numBits, causing 
   false assertion errors in fastSet. (Shai Erera)
 
+* LUCENE-5289: IndexWriter.hasUncommittedChanges was returning false
+  when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
+  Mike McCandless)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible

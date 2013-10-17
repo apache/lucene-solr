@@ -2882,7 +2882,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   /** Returns true if there are changes that have not been committed */
   public final boolean hasUncommittedChanges() {
-    return changeCount != lastCommitChangeCount;
+    return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedDeletesStream.any();
   }
 
   private final void commitInternal() throws IOException {
