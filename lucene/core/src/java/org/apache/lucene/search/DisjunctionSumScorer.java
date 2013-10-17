@@ -23,8 +23,6 @@ import java.io.IOException;
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 
  */
 class DisjunctionSumScorer extends DisjunctionScorer { 
-  /** The document number of the current match. */
-  private int doc = -1;
 
   /** The number of subscorers that provide the current match. */
   protected int nrMatchers = -1;
@@ -38,34 +36,16 @@ class DisjunctionSumScorer extends DisjunctionScorer {
    * @param coord Table of coordination factors
    */
   DisjunctionSumScorer(Weight weight, Scorer[] subScorers, float[] coord) throws IOException {
-    super(weight, subScorers, subScorers.length);
+    super(weight, subScorers);
 
     if (numScorers <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
     }
     this.coord = coord;
   }
-
-  @Override
-  public int nextDoc() throws IOException {
-    assert doc != NO_MORE_DOCS;
-    while(true) {
-      if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
-        heapAdjust(0);
-      } else {
-        heapRemoveRoot();
-        if (numScorers == 0) {
-          return doc = NO_MORE_DOCS;
-        }
-      }
-      if (subScorers[0].docID() != doc) {
-        afterNext();
-        return doc;
-      }
-    }
-  }
   
-  private void afterNext() throws IOException {
+  @Override
+  protected void afterNext() throws IOException {
     final Scorer sub = subScorers[0];
     doc = sub.docID();
     if (doc != NO_MORE_DOCS) {
@@ -96,43 +76,9 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   public float score() throws IOException { 
     return (float)score * coord[nrMatchers]; 
   }
-   
-  @Override
-  public int docID() {
-    return doc;
-  }
 
   @Override
   public int freq() throws IOException {
     return nrMatchers;
-  }
-
-  /**
-   * Advances to the first match beyond the current whose document number is
-   * greater than or equal to a given target. <br>
-   * The implementation uses the advance() method on the subscorers.
-   * 
-   * @param target
-   *          The target document number.
-   * @return the document whose number is greater than or equal to the given
-   *         target, or -1 if none exist.
-   */
-  @Override
-  public int advance(int target) throws IOException {
-    assert doc != NO_MORE_DOCS;
-    while(true) {
-      if (subScorers[0].advance(target) != NO_MORE_DOCS) {
-        heapAdjust(0);
-      } else {
-        heapRemoveRoot();
-        if (numScorers == 0) {
-          return doc = NO_MORE_DOCS;
-        }
-      }
-      if (subScorers[0].docID() >= target) {
-        afterNext();
-        return doc;
-      }
-    }
   }
 }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
@@ -154,17 +155,20 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
-      Scorer[] scorers = new Scorer[weights.size()];
-      int idx = 0;
+      List<Scorer> scorers = new ArrayList<Scorer>();
       for (Weight w : weights) {
         // we will advance() subscorers
         Scorer subScorer = w.scorer(context, true, false, acceptDocs);
         if (subScorer != null) {
-          scorers[idx++] = subScorer;
+          scorers.add(subScorer);
+
         }
       }
-      if (idx == 0) return null; // all scorers did not have documents
-      DisjunctionMaxScorer result = new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, idx);
+      if (scorers.isEmpty()) {
+        // no sub-scorers had any documents
+        return null;
+      }
+      DisjunctionMaxScorer result = new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers.toArray(new Scorer[scorers.size()]));
       return result;
     }
 
