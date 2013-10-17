@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,26 +29,25 @@ import org.apache.lucene.analysis.ko.morph.MorphException;
 public class HanjaUtils {
   private HanjaUtils() {}
 
-  private static Map<String, char[]> mapHanja;
-  
-  public synchronized static void loadDictionary() throws MorphException {
+  private static final Map<Character, char[]> mapHanja;
+  static {
     try {
       List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC);
-      mapHanja = new HashMap<String, char[]>();    
+      Map<Character, char[]> map = new HashMap<Character, char[]>();    
     
-      for(int i=0;i<strList.size();i++) {
-        
-        if(strList.get(i).length()<1||
-            strList.get(i).indexOf(",")==-1) continue;
+      for(String s : strList) {
+        if(s.isEmpty() || s.indexOf(",")==-1) continue;
 
-        String[] hanInfos = strList.get(i).split("[,]+");
+        String[] hanInfos = s.split("[,]+");
 
         if(hanInfos.length!=2) continue;
         
-        mapHanja.put(hanInfos[0], hanInfos[1].toCharArray());
-      }      
+        map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
+      }
+      
+      mapHanja = Collections.unmodifiableMap(map);
     } catch (IOException e) {
-      throw new MorphException(e);
+      throw new RuntimeException("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC);
     }
   }
   
@@ -56,14 +56,9 @@ public class HanjaUtils {
    * 하나의 한자는 여러 음으로 읽일 수 있으므로 가능한 모든 음을 한글로 반환한다.
    */
   public static char[] convertToHangul(char hanja) throws MorphException {
- 
-    if(mapHanja==null)  loadDictionary();
-
 //    if(hanja>0x9FFF||hanja<0x3400) return new char[]{hanja};
     
-    char[] result = mapHanja.get(new String(new char[]{hanja}));
-    if(result==null) return new char[]{hanja};
-    
-    return result;
+    final char[] result = mapHanja.get(hanja);
+    return (result==null) ? new char[]{hanja} : result;
   }
 }
