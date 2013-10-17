@@ -73,6 +73,8 @@ public class TestRangeAccumulator extends FacetTestCase {
       field.setLongValue(l);
       w.addDocument(doc);
     }
+    field.setLongValue(Long.MAX_VALUE);
+    w.addDocument(doc);
 
     IndexReader r = w.getReader();
     w.close();
@@ -82,7 +84,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         new LongRange("less than or equal to 10", 0L, true, 10L, true),
         new LongRange("over 90", 90L, false, 100L, false),
         new LongRange("90 or above", 90L, true, 100L, false),
-        new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false)));
+        new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true)));
     
     FacetsCollector fc = FacetsCollector.create(a);
 
@@ -90,7 +92,7 @@ public class TestRangeAccumulator extends FacetTestCase {
     s.search(new MatchAllDocsQuery(), fc);
     List<FacetResult> result = fc.getFacetResults();
     assertEquals(1, result.size());
-    assertEquals("field (0)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n", FacetTestUtils.toSimpleString(result.get(0)));
+    assertEquals("field (0)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n", FacetTestUtils.toSimpleString(result.get(0)));
     
     r.close();
     d.close();
