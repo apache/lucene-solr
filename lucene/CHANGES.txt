@@ -33,6 +33,9 @@ Bug Fixes
 * LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
   unicode characters incorrectly. (Mike McCandless, Robert Muir)
 
+* LUCENE-5289: IndexWriter.hasUncommittedChanges was returning false
+  when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
+  Mike McCandless)
 
 ======================= Lucene 4.5.0 =======================
 
