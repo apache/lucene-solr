@@ -8,9 +8,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -110,14 +108,7 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     Query q = new MatchAllDocsQuery();
     
-    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(fsp, reader, taxo) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new SumIntAssociationFacetsAggregator();
-      }
-    };
-    
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
@@ -142,14 +133,7 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     Query q = new MatchAllDocsQuery();
     
-    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(fsp, reader, taxo) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new SumFloatAssociationFacetsAggregator();
-      }
-    };
-    
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);

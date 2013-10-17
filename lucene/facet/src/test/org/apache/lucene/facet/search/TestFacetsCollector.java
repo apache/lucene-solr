@@ -89,14 +89,8 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetSearchParams sParams = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
-    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(sParams, r, taxo) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new SumScoreFacetsAggregator();
-      }
-    };
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetSearchParams fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
+    FacetsCollector fc = FacetsCollector.create(fsp, r, taxo);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
     ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
     csq.setBoost(2.0f);
@@ -335,12 +329,7 @@ public class TestFacetsCollector extends FacetTestCase {
     // assert IntFacetResultHandler
     fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
     if (random().nextBoolean()) {
-      fa = new TaxonomyFacetsAccumulator(fsp, r, taxo) {
-        @Override
-        public FacetsAggregator getAggregator() {
-          return new SumScoreFacetsAggregator();
-        }
-      };
+      fa = new TaxonomyFacetsAccumulator(fsp, r, taxo);
     } else {
       fa = new OldFacetsAccumulator(fsp, r, taxo);
     }
