@@ -97,6 +97,9 @@ New Features
 
 * SOLR-5338: Split shards by a route key using split.key parameter. (shalin)
 
+* SOLR-5353: Enhance CoreAdmin api to split a route key's documents from an index
+  and leave behind all other documents. (shalin)
+
 Bug Fixes
 ----------------------
 

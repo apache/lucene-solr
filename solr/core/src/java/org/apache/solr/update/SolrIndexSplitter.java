@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.core.SolrCore;
@@ -58,6 +59,7 @@ public class SolrIndexSplitter {
   int numPieces;
   int currPartition = 0;
   String routeFieldName;
+  String splitKey;
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
     searcher = cmd.getReq().getSearcher();
@@ -78,6 +80,9 @@ public class SolrIndexSplitter {
       field = searcher.getSchema().getUniqueKeyField();
     } else  {
       field = searcher.getSchema().getField(routeFieldName);
+    }
+    if (cmd.splitKey != null) {
+      splitKey = getRouteKey(cmd.splitKey);
     }
   }
 
@@ -174,11 +179,20 @@ public class SolrIndexSplitter {
       idRef = field.getType().indexedToReadable(term, idRef);
       String idString = idRef.toString();
 
+      if (splitKey != null) {
+        // todo have composite routers support these kind of things instead
+        String part1 = getRouteKey(idString);
+        if (part1 == null)
+          continue;
+        if (!splitKey.equals(part1))  {
+          continue;
+        }
+      }
+
       int hash = 0;
       if (hashRouter != null) {
         hash = hashRouter.sliceHash(idString, null, null, null);
       }
-      // int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
 
       docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
@@ -198,6 +212,22 @@ public class SolrIndexSplitter {
     }
 
     return docSets;
+  }
+
+  private String getRouteKey(String idString) {
+    int idx = idString.indexOf(CompositeIdRouter.separator);
+    if (idx <= 0) return null;
+    String part1 = idString.substring(0, idx);
+    int commaIdx = part1.indexOf(CompositeIdRouter.bitsSeparator);
+    if (commaIdx > 0) {
+      if (commaIdx + 1 < part1.length())  {
+        char ch = part1.charAt(commaIdx + 1);
+        if (ch >= '0' && ch <= '9') {
+          part1 = part1.substring(0, commaIdx);
+        }
+      }
+    }
+    return part1;
   }
 
 

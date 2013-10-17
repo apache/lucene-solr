@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.util.Hash;
@@ -96,7 +97,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       request = lrf.makeRequest("q", "dummy");
 
       SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null);
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
       new SolrIndexSplitter(command).split();
 
       Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
@@ -141,7 +142,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       request = lrf.makeRequest("q", "dummy");
 
       SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null);
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
       new SolrIndexSplitter(command).split();
 
       Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
@@ -198,7 +199,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       try {
         request = lrf.makeRequest("q", "dummy");
 
-        SplitIndexCommand command = new SplitIndexCommand(request, null, Lists.newArrayList(core1, core2), ranges, new PlainIdRouter(), null);
+        SplitIndexCommand command = new SplitIndexCommand(request, null, Lists.newArrayList(core1, core2), ranges, new PlainIdRouter(), null, null);
         new SolrIndexSplitter(command).split();
       } finally {
         if (request != null) request.close();
@@ -235,7 +236,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       request = lrf.makeRequest("q", "dummy");
 
       SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null, new PlainIdRouter(), null);
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null, new PlainIdRouter(), null, null);
       new SolrIndexSplitter(command).split();
 
       directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
@@ -261,6 +262,63 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       if (request != null) request.close(); // decrefs the searcher
       if (directory != null)  {
         // perhaps an assert failed, release the directory
+        h.getCore().getDirectoryFactory().release(directory);
+      }
+    }
+  }
+
+  @Test
+  public void testSplitByRouteKey() throws Exception  {
+    File indexDir = new File(TEMP_DIR, this.getClass().getName() + "testSplitByRouteKey");
+    if (indexDir.exists())  {
+      FileUtils.deleteDirectory(indexDir);
+    }
+    indexDir.mkdirs();
+
+    CompositeIdRouter r1 = new CompositeIdRouter();
+    String splitKey = "sea-line!";
+    String key2 = "soul-raising!";
+
+    // murmur2 has a collision on the above two keys
+    assertEquals(r1.keyHashRange(splitKey), r1.keyHashRange(key2));
+
+    /*
+    More strings with collisions on murmur2 for future reference:
+    "Drava" "dessert spoon"
+    "Bighorn" "pleasure lover"
+    "attributable to" "second edition"
+    "sea-line" "soul-raising"
+    "lift direction" "testimony meeting"
+     */
+
+    for (int i=0; i<10; i++)  {
+      assertU(adoc("id", splitKey + i));
+      assertU(adoc("id", key2 + i));
+    }
+    assertU(commit());
+    assertJQ(req("q", "*:*"), "/response/numFound==20");
+
+    DocRouter.Range splitKeyRange = r1.keyHashRange(splitKey);
+
+    LocalSolrQueryRequest request = null;
+    Directory directory = null;
+    try {
+      request = lrf.makeRequest("q", "dummy");
+      SplitIndexCommand command = new SplitIndexCommand(request,
+          Lists.newArrayList(indexDir.getAbsolutePath()), null, Lists.newArrayList(splitKeyRange), new CompositeIdRouter(), null, splitKey);
+      new SolrIndexSplitter(command).split();
+      directory = h.getCore().getDirectoryFactory().get(indexDir.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals("split index has wrong number of documents", 10, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = null;
+    } finally {
+      if (request != null)  {
+        request.close();
+      }
+      if (directory != null)  {
         h.getCore().getDirectoryFactory().release(directory);
       }
     }
