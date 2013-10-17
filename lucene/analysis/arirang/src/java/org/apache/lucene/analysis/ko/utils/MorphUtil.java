@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
@@ -117,7 +116,7 @@ public class MorphUtil {
   }
   
   
-  public static void buildPtnVM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
+  public static void buildPtnVM(AnalysisOutput output, List<AnalysisOutput> candidates) {
     
     String end = output.getEomi();
     if(output.getPomi()!=null) end = output.getPomi();
@@ -142,9 +141,8 @@ public class MorphUtil {
    * 용언 + '음/기' + '이' + 어미, 체언 + '에서/부터/에서부터' + '이' + 어미
    * @param output  the output text
    * @param candidates  the candidates
-   * @throws MorphException throw exception
    */
-  public static void buildPtnCM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
+  public static void buildPtnCM(AnalysisOutput output, List<AnalysisOutput> candidates) {
     
     char ch = output.getStem().charAt(output.getStem().length()-2);
     char[] jasos = MorphUtil.decompose(ch);
@@ -155,7 +153,7 @@ public class MorphUtil {
     }
   }
   
-  private static void buildPtnVMCM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
+  private static void buildPtnVMCM(AnalysisOutput output, List<AnalysisOutput> candidates) {
     String stem = output.getStem();
   
     output.setPatn(PatternConstants.PTN_VMCM);
@@ -191,7 +189,7 @@ public class MorphUtil {
     }
   }
 
-  public static boolean hasVerbOnly(String input) throws MorphException {
+  public static boolean hasVerbOnly(String input) {
     
     for(int i=input.length()-1;i>=0;i--) {
       char[] feature = SyllableUtil.getFeature(input.charAt(i));

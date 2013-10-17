@@ -30,7 +30,7 @@ public class AbbrevAnalyzer {
     this.morphAnalyzer = analyzer;
   }
   
-  public void analyze(String input, List<AnalysisOutput> candidates) throws MorphException {
+  public void analyze(String input, List<AnalysisOutput> candidates) {
     
     if(candidates==null ||
         candidates.size()==0 ||
@@ -43,7 +43,7 @@ public class AbbrevAnalyzer {
 //    morphAnalyzer.analyze(normInput, pos);
   }
   
-  private String lookupDictionary(String input) throws MorphException {
+  private String lookupDictionary(String input) {
   
     String word = null;
     
@@ -59,7 +59,7 @@ public class AbbrevAnalyzer {
     return word;
   }
   
-  private String[] findAbbrv(String end) throws MorphException {
+  private String[] findAbbrv(String end) {
     String[] abbrev = new String[2];
     
     for(int i=end.length()-1;i>0;i--) {

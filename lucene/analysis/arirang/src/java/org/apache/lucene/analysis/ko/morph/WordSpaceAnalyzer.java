@@ -38,7 +38,7 @@ public class WordSpaceAnalyzer {
     morphAnal.setExactCompound(false);
   }
   
-  public List<AnalysisOutput> analyze(String input)  throws MorphException {
+  public List<AnalysisOutput> analyze(String input)  {
 
     WSOutput output = new WSOutput();
     
@@ -145,9 +145,8 @@ public class WordSpaceAnalyzer {
    * @param snippet input
    * @param js  josa start position
    * @return  resulsts
-   * @throws MorphException throw exception
    */
-  private List<AnalysisOutput> anlysisWithJosa(String snippet, int js) throws MorphException {
+  private List<AnalysisOutput> anlysisWithJosa(String snippet, int js) {
 
     List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();
     if(js<1) return candidates;
@@ -195,9 +194,8 @@ public class WordSpaceAnalyzer {
    * @param snippet snippet
    * @param jstart  josa start position
    * @return  position
-   * @throws MorphException throw exception
    */
-  private int findJosaEnd(String snippet, int jstart) throws MorphException {
+  private int findJosaEnd(String snippet, int jstart) {
     
     int jend = jstart;
 
@@ -252,7 +250,7 @@ public class WordSpaceAnalyzer {
    * 목록의 1번지가 가장 큰 길이를 가진다.
    * @param candidates  candidates
    */
-  private void appendSingleWord(List<AnalysisOutput> candidates) throws MorphException {
+  private void appendSingleWord(List<AnalysisOutput> candidates) {
   
     if(candidates.size()==0) return;
     
@@ -277,7 +275,7 @@ public class WordSpaceAnalyzer {
     }       
   }
   
-  private void addSingleWord(String source, List<AnalysisOutput> candidates) throws MorphException {
+  private void addSingleWord(String source, List<AnalysisOutput> candidates) {
     
     WordEntry entry = DictionaryUtil.getWordExceptVerb(source);
     
@@ -295,7 +293,7 @@ public class WordSpaceAnalyzer {
     
   }
   
-  private List<AnalysisOutput> anlysisWithEomi(String snipt, int estart) throws MorphException {
+  private List<AnalysisOutput> anlysisWithEomi(String snipt, int estart) {
 
     List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();
     
@@ -367,7 +365,7 @@ public class WordSpaceAnalyzer {
   }
   
   private void anlysisWithEomiDetail(String input, List<AnalysisOutput> candidates ) 
-  throws MorphException {
+  {
 
     boolean eomiFlag = true;
     
@@ -403,9 +401,8 @@ public class WordSpaceAnalyzer {
    * 가장 큰 조사를 찾는다.
    * @param snippet snippet
    * @return  start position
-   * @throws MorphException throw exception
    */
-  private int findEomiEnd(String snippet, int estart) throws MorphException {
+  private int findEomiEnd(String snippet, int estart) {
     
     int jend = 0;
     
@@ -449,10 +446,9 @@ public class WordSpaceAnalyzer {
  * @param candidates  candates
  * @param input input
  * @return  valid position
- * @throws MorphException throw exception
  */
   private int validationAndAppend(WSOutput output, List<AnalysisOutput> candidates, String input)
-  throws MorphException {
+  {
     
     if(candidates.size()==0) return 0;
     
@@ -530,7 +526,7 @@ public class WordSpaceAnalyzer {
     return o;
   }
   
-  private void analysisCompouns(List<AnalysisOutput> candidates) throws MorphException {
+  private void analysisCompouns(List<AnalysisOutput> candidates) {
     
     // 복합명사 분해여부 결정하여 분해
     boolean changed = false;
@@ -558,9 +554,8 @@ public class WordSpaceAnalyzer {
    * @param ws  문자열에서 명사를 찾는 시작위치
    * @param es  문자열에서 명사를 찾는 끝 위치
    * @return  if founded
-   * @throws MorphException throw exception
    */
-  private boolean findNounWithinStr(String str, int ws, int es) throws MorphException {
+  private boolean findNounWithinStr(String str, int ws, int es) {
 
     if(str.length()<es) return false;
         
@@ -574,7 +569,7 @@ public class WordSpaceAnalyzer {
     return false;
   }
   
-  private boolean isNounPart(String str, int jstart) throws MorphException  {
+  private boolean isNounPart(String str, int jstart)  {
     
     if(true) return false;
     

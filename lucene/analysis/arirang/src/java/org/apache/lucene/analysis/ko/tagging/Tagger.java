@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
 import org.apache.lucene.analysis.ko.utils.Trie;
@@ -68,13 +67,13 @@ public class Tagger {
   
   private AnalysisOutput po;
   
-  public AnalysisOutput tagging(String psource, List<AnalysisOutput> pmorphs)  throws MorphException {
+  public AnalysisOutput tagging(String psource, List<AnalysisOutput> pmorphs)  {
           
     return tagging(psource, null, pmorphs, null);
     
   }
   
-  public AnalysisOutput tagging(String psource, String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  throws MorphException {
+  public AnalysisOutput tagging(String psource, String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  {
 
     if((pmorphs==null||pmorphs.size()==0)&&(rmorphs==null||rmorphs.size()==0)) return null;
   
@@ -92,7 +91,7 @@ public class Tagger {
    * 1. 첫번째는 어간으로 시작되는 문법 규칙을 찾는다.
    * 2. 두번째는 표층형으로 시작되는 문법규칙을 찾는다.
    */
-  private AnalysisOutput lookupBest(String psource,String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  throws MorphException {
+  private AnalysisOutput lookupBest(String psource,String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  {
     
     if(pmorphs.size()==1) return pmorphs.get(0);
 
@@ -111,7 +110,7 @@ public class Tagger {
    * 앞 어절에 의해 현재 어절을 결정한다.
    * 앞 어절은 NULL이 아니다.
    */
-  private AnalysisOutput lookupBestByPWord(String rsource, List<AnalysisOutput> rmorphs)  throws MorphException {
+  private AnalysisOutput lookupBestByPWord(String rsource, List<AnalysisOutput> rmorphs)  {
     
     List<AnalysisOutput> removes = new ArrayList<AnalysisOutput>();        
 
@@ -140,7 +139,7 @@ public class Tagger {
    * 뒷 어절에 의해 현재 어절이 결정된다.
    * 뒷 어절은 NULL이 아니다.
    */
-  private AnalysisOutput lookupBestByRWord(String psource, String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  throws MorphException {
+  private AnalysisOutput lookupBestByRWord(String psource, String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  {
     
     List<AnalysisOutput> removes = new ArrayList<AnalysisOutput>();
     
@@ -286,7 +285,7 @@ public class Tagger {
   }
 
   @SuppressWarnings("unchecked")
-  public static synchronized Iterator<String[]> getGR(String prefix) throws MorphException {
+  public static synchronized Iterator<String[]> getGR(String prefix) {
     return occurrences.getPrefixedBy(prefix);
   }
   

@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
@@ -95,7 +94,7 @@ public class VerbUtil {
   /**
    * 3. 학교에서이다 : 체언 + '에서/부터/에서부터' + '이' + 어미 (PTN_NJCM) <br>
    */
-  public static boolean ananlysisNJCM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
+  public static boolean ananlysisNJCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
  
     int strlen = o.getStem().length();
     boolean success = false;
@@ -132,9 +131,8 @@ public class VerbUtil {
    * 어미부와 어간부가 분리된 상태에서 용언화접미사가 결합될 수 있는지 조사한다.
    * @param o  어미부와 어간부가 분리된 결과
    * @param candidates  candidates
-   * @throws MorphException throw exception
    */
-  public static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
+  public static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     if(o.getStem().endsWith("스러우")) o.setStem(o.getStem().substring(0,o.getStem().length()-3)+"스럽");
 
@@ -172,7 +170,7 @@ public class VerbUtil {
 
   }
    
-  public static boolean ananlysisNSMXM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
+  public static boolean ananlysisNSMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
    
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
     if(idxXVerb==-1) return false;
@@ -215,7 +213,7 @@ public class VerbUtil {
     return (o.getScore()==AnalysisOutput.SCORE_CORRECT);     
   }
    
-  public static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
+  public static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
    
     int strlen = o.getStem().length();
      
@@ -263,7 +261,7 @@ public class VerbUtil {
    * 6. 도와주다 : 용언 + '아/어' + 보조용언 + 어미 (PTN_VMXM)
    * 
    */
-  public static boolean analysisVMXM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
+  public static boolean analysisVMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
 

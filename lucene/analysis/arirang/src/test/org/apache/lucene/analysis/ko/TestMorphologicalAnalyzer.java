@@ -3,12 +3,11 @@ package org.apache.lucene.analysis.ko;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
-import org.apache.lucene.analysis.ko.morph.MorphException;
-
-import junit.framework.TestCase;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -66,9 +65,8 @@ public class TestMorphologicalAnalyzer extends TestCase {
    * @param morphAnalyzer the Korean Morphlogical Analyzer
    * @param input the input phrase
    * @return  the stem extracted from the input
-   * @throws MorphException throw exception
    */
-  private String extractStem(MorphAnalyzer morphAnalyzer, String input) throws MorphException {
+  private String extractStem(MorphAnalyzer morphAnalyzer, String input) {
     
     List<AnalysisOutput> results = morphAnalyzer.analyze(input);
     

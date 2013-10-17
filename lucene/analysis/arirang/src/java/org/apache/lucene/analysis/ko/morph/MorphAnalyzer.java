@@ -58,7 +58,7 @@ public class MorphAnalyzer {
     cnAnalyzer.setExactMach(is);
   }
   
-  public List<AnalysisOutput> analyze(String input) throws MorphException {  
+  public List<AnalysisOutput> analyze(String input) {  
 
     if(input.endsWith("."))  
       return analyze(input.substring(0,input.length()-1), POS_END);
@@ -71,9 +71,8 @@ public class MorphAnalyzer {
    * @param input input
    * @param pos pos
    * @return candidates
-   * @throws MorphException exception
    */
-  public List<AnalysisOutput> analyze(String input, int pos) throws MorphException {    
+  public List<AnalysisOutput> analyze(String input, int pos) {    
 
     List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();        
     boolean isVerbOnly = MorphUtil.hasVerbOnly(input);
@@ -216,7 +215,7 @@ public class MorphAnalyzer {
     
   }
   
-  private void analysisByRule(String input, List<AnalysisOutput> candidates) throws MorphException {
+  private void analysisByRule(String input, List<AnalysisOutput> candidates) {
   
     boolean josaFlag = true;
     boolean eomiFlag = true;
@@ -260,7 +259,7 @@ public class MorphAnalyzer {
     }
   }
   
-  private void addSingleWord(String word, List<AnalysisOutput> candidates) throws MorphException {
+  private void addSingleWord(String word, List<AnalysisOutput> candidates) {
     
 //    if(candidates.size()!=0&&candidates.get(0).getScore()==AnalysisOutput.SCORE_CORRECT) return;
     
@@ -300,9 +299,8 @@ public class MorphAnalyzer {
    * @param stem  stem
    * @param end end
    * @param candidates  candidates
-   * @throws MorphException exception
    */
-  public void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) throws MorphException {
+  public void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) {
   
     if(stem==null||stem.length()==0) return;  
     
@@ -314,12 +312,7 @@ public class MorphAnalyzer {
     AnalysisOutput output = new AnalysisOutput(stem, end, null, PatternConstants.PTN_NJ);
     output.setPos(PatternConstants.POS_NOUN);
     
-    boolean success = false;
-    try {
-      success = NounUtil.analysisMJ(output.clone(), candidates);
-    } catch (CloneNotSupportedException e) {
-      throw new MorphException(e.getMessage(),e);
-    }
+    boolean success = NounUtil.analysisMJ(output.clone(), candidates);
 
     WordEntry entry = DictionaryUtil.getWordExceptVerb(stem);
     if(entry!=null) {
@@ -349,9 +342,8 @@ public class MorphAnalyzer {
    * @param stem  stem
    * @param end end
    * @param candidates  candidates
-   * @throws MorphException exception 
    */
-  public void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) throws MorphException {
+  public void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) {
     
     String[] morphs = EomiUtil.splitEomi(stem, end);
     if(morphs[0]==null) return; // 어미가 사전에 등록되어 있지 않다면....
@@ -361,55 +353,48 @@ public class MorphAnalyzer {
     AnalysisOutput o = new AnalysisOutput(pomis[0],null,morphs[1],PatternConstants.PTN_VM);
     o.setPomi(pomis[1]);
   
-    try {    
+    WordEntry entry = DictionaryUtil.getVerb(o.getStem());  
+    if(entry!=null&&!("을".equals(end)&&entry.getFeature(WordEntry.IDX_REGURA)==IrregularUtil.IRR_TYPE_LIUL)) {              
+      AnalysisOutput output = o.clone();
+      output.setScore(AnalysisOutput.SCORE_CORRECT);
+      MorphUtil.buildPtnVM(output, candidates);
+      
+      char[] features = SyllableUtil.getFeature(stem.charAt(stem.length()-1)); // ㄹ불규칙일 경우
+      if((features[SyllableUtil.IDX_YNPLN]=='0'||morphs[1].charAt(0)!='ㄴ')
+          &&!"는".equals(end))   // "갈(V),는" 분석될 수 있도록
+        return;
+    }
 
-      WordEntry entry = DictionaryUtil.getVerb(o.getStem());  
-      if(entry!=null&&!("을".equals(end)&&entry.getFeature(WordEntry.IDX_REGURA)==IrregularUtil.IRR_TYPE_LIUL)) {              
-        AnalysisOutput output = o.clone();
-        output.setScore(AnalysisOutput.SCORE_CORRECT);
-        MorphUtil.buildPtnVM(output, candidates);
-        
-        char[] features = SyllableUtil.getFeature(stem.charAt(stem.length()-1)); // ㄹ불규칙일 경우
-        if((features[SyllableUtil.IDX_YNPLN]=='0'||morphs[1].charAt(0)!='ㄴ')
-            &&!"는".equals(end))   // "갈(V),는" 분석될 수 있도록
-          return;
-      }
+    String[] irrs = IrregularUtil.restoreIrregularVerb(o.getStem(), o.getPomi()==null?o.getEomi():o.getPomi());
 
-      String[] irrs = IrregularUtil.restoreIrregularVerb(o.getStem(), o.getPomi()==null?o.getEomi():o.getPomi());
-
-      if(irrs!=null) { // 불규칙동사인 경우
-        AnalysisOutput output = o.clone();
-        output.setStem(irrs[0]);
-        if(output.getPomi()==null)
-          output.setEomi(irrs[1]);
-        else
-          output.setPomi(irrs[1]);
-        
+    if(irrs!=null) { // 불규칙동사인 경우
+      AnalysisOutput output = o.clone();
+      output.setStem(irrs[0]);
+      if(output.getPomi()==null)
+        output.setEomi(irrs[1]);
+      else
+        output.setPomi(irrs[1]);
+      
 //        entry = DictionaryUtil.getVerb(output.getStem());
 //        if(entry!=null && VerbUtil.constraintVerb(o.getStem(), o.getPomi()==null?o.getEomi():o.getPomi())) { // 4. 돕다 (PTN_VM)
-        output.setScore(AnalysisOutput.SCORE_CORRECT);
-        MorphUtil.buildPtnVM(output, candidates);
+      output.setScore(AnalysisOutput.SCORE_CORRECT);
+      MorphUtil.buildPtnVM(output, candidates);
 //        }        
-      }
-
-      if(VerbUtil.ananlysisNSM(o.clone(), candidates)) return;
-      
-      if(VerbUtil.ananlysisNSMXM(o.clone(), candidates)) return;
-      
-      // [체언 + '에서/에서부터' + '이' +  어미]
-      if(VerbUtil.ananlysisNJCM(o.clone(),candidates)) return;      
-      
-      if(VerbUtil.analysisVMCM(o.clone(),candidates)) return;  
-
-      VerbUtil.analysisVMXM(o.clone(), candidates);
-      
-    } catch (CloneNotSupportedException e) {
-      throw new MorphException(e.getMessage(),e);
     }
+
+    if(VerbUtil.ananlysisNSM(o.clone(), candidates)) return;
     
+    if(VerbUtil.ananlysisNSMXM(o.clone(), candidates)) return;
+    
+    // [체언 + '에서/에서부터' + '이' +  어미]
+    if(VerbUtil.ananlysisNJCM(o.clone(),candidates)) return;      
+    
+    if(VerbUtil.analysisVMCM(o.clone(),candidates)) return;  
+
+    VerbUtil.analysisVMXM(o.clone(), candidates);
   }    
   
-  public void analysisCNoun(List<AnalysisOutput> candidates) throws MorphException {
+  public void analysisCNoun(List<AnalysisOutput> candidates) {
     
     boolean success = false;
     for(AnalysisOutput o: candidates) {
@@ -425,9 +410,8 @@ public class MorphAnalyzer {
    * 복합명사인지 조사하고, 복합명사이면 단위명사들을 찾는다.
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
    * 단위명사는 2글자 이상 단어에서만 찾는다.
-   * @throws MorphException exception
    */
-  public boolean confirmCNoun(AnalysisOutput o) throws MorphException  {
+  public boolean confirmCNoun(AnalysisOutput o)  {
 
     if(o.getStem().length()<3) return false;
      
@@ -477,7 +461,7 @@ public class MorphAnalyzer {
        
   }  
      
-  private boolean constraint(AnalysisOutput o) throws MorphException  {
+  private boolean constraint(AnalysisOutput o)  {
        
     List<CompoundEntry> cnouns = o.getCNounList();
        

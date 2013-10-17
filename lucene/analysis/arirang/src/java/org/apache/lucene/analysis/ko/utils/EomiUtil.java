@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 
 public class EomiUtil {
@@ -39,9 +38,8 @@ public class EomiUtil {
   /**
    * 가장 길이가 긴 어미를 분리한다.
    * @param term  term
-   * @throws MorphException exception
    */
-  public static String[] longestEomi(String term) throws MorphException  {
+  public static String[] longestEomi(String term)  {
     
     String[] result = new String[2];
     result[0] = term;
@@ -125,7 +123,7 @@ public class EomiUtil {
   /**
    * 선어말어미를 분석한다.
    */
-  public static String[] splitPomi(String stem) throws MorphException  {
+  public static String[] splitPomi(String stem)  {
 
     //   results[0]:성공(1)/실패(0), results[1]: 어근, results[2]: 선어말어미
     String[] results = new String[2];  
@@ -236,7 +234,7 @@ public class EomiUtil {
   /**
    * 불규칙 용언의 원형을 구한다.
    */
-  public static List<AnalysisOutput> irregular(AnalysisOutput output) throws MorphException {
+  public static List<AnalysisOutput> irregular(AnalysisOutput output) {
     
     List<AnalysisOutput> results = new ArrayList<AnalysisOutput>();
   
@@ -252,18 +250,14 @@ public class EomiUtil {
     irregularEnding(irrs,output.getStem(),ending);
     irregularAO(irrs,output.getStem(),ending);
 
-    try {
-      for(String[] irr: irrs) {
-        AnalysisOutput result = output.clone();
-        result.setStem(irr[0]);
-        if(output.getPatn()==PatternConstants.PTN_VM) {
-          if(output.getPomi()==null) result.setEomi(irr[1]);
-          else result.setPomi(irr[1]);
-        }  
-        results.add(result);
-      }        
-    } catch (CloneNotSupportedException e) {
-      throw new MorphException(e.getMessage(),e);
+    for(String[] irr: irrs) {
+      AnalysisOutput result = output.clone();
+      result.setStem(irr[0]);
+      if(output.getPatn()==PatternConstants.PTN_VM) {
+        if(output.getPomi()==null) result.setEomi(irr[1]);
+        else result.setPomi(irr[1]);
+      }  
+      results.add(result);
     }
         
     return results;
@@ -547,7 +541,7 @@ public class EomiUtil {
     results[1] = pomi;
   }  
   
-  public static boolean IsNLMBSyl(char ech, char lch) throws MorphException {
+  public static boolean IsNLMBSyl(char ech, char lch) {
   
     char[] features = SyllableUtil.getFeature(ech);
 
@@ -575,7 +569,7 @@ public class EomiUtil {
    * 4. 어미 '아/어'가 탈락되는 어절
    * 5. '아/어'의 변이체 분리
    */
-  public static String[] splitEomi(String stem, String end) throws MorphException {
+  public static String[] splitEomi(String stem, String end) {
 
     String[] strs = new String[2];
     int strlen = stem.length();

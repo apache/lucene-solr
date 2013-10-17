@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.CompoundNounAnalyzer;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
@@ -139,18 +138,14 @@ public class KoreanFilter extends TokenFilter {
     curTermLength = termAtt.length();
     tokStart = offsetAtt.startOffset();    
     curType = typeAtt.type();
-
-    try {      
-      if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.KOREAN].equals(curType)) {            
-        analysisKorean(new String(curTermBuffer,0,termAtt.length()));
-      } else if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.CHINESE].equals(curType)) {
-        analysisChinese(new String(curTermBuffer,0,termAtt.length()));
-      } else {
-        analysisETC(new String(curTermBuffer,0,termAtt.length()));
-      }        
-    }catch(MorphException e) {
-      throw new IOException("Korean Filter MorphException\n"+e.getMessage());
-    }
+ 
+    if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.KOREAN].equals(curType)) {            
+      analysisKorean(new String(curTermBuffer,0,termAtt.length()));
+    } else if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.CHINESE].equals(curType)) {
+      analysisChinese(new String(curTermBuffer,0,termAtt.length()));
+    } else {
+      analysisETC(new String(curTermBuffer,0,termAtt.length()));
+    }        
 
     if(morphQueue!=null&&morphQueue.size()>0) {
       setTermBufferByQueue(true);  
@@ -182,9 +177,8 @@ public class KoreanFilter extends TokenFilter {
   
   /**
    * 한글을 분석한다.
-   * @throws MorphException exception
    */
-  private void analysisKorean(String input) throws MorphException {
+  private void analysisKorean(String input) {
 
     List<AnalysisOutput> outputs = morph.analyze(input);
     if(outputs.size()==0) return;
@@ -228,7 +222,7 @@ public class KoreanFilter extends TokenFilter {
   }
   
   private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,IndexWord> map, int position) 
-      throws MorphException 
+      
   {
 
     int maxDecompounds = 0;
@@ -335,9 +329,8 @@ public class KoreanFilter extends TokenFilter {
    * 한자는 2개이상의 한글 음으로 읽혀질 수 있다.
    * 두음법칙이 아님.
    * @param term  term
-   * @throws MorphException exception
    */
-  private void analysisChinese(String term) throws MorphException {  
+  private void analysisChinese(String term) {  
     
     morphQueue.add(new IndexWord(term,0));
     if(term.length()<2) return; // 1글자 한자는 색인어로 한글을 추출하지 않는다.
@@ -416,7 +409,7 @@ public class KoreanFilter extends TokenFilter {
     }    
   }
   
-  private List<CompoundEntry> confirmCNoun(String input) throws MorphException {
+  private List<CompoundEntry> confirmCNoun(String input) {
     
     WordEntry cnoun = DictionaryUtil.getAllNoun(input);
     if(cnoun!=null && cnoun.getFeature(WordEntry.IDX_NOUN)=='2') {
@@ -426,7 +419,7 @@ public class KoreanFilter extends TokenFilter {
     return cnAnalyzer.analyze(input);
   }
   
-  private void analysisETC(String term) throws MorphException {
+  private void analysisETC(String term) {
 
     final char[] buffer = termAtt.buffer();
     final int bufferLength = termAtt.length();

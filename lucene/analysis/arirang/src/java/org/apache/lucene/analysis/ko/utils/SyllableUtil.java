@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class SyllableUtil {
   private SyllableUtil() {}
@@ -73,58 +72,44 @@ public class SyllableUtil {
   
   public static int IDX_EOGAN = 39; // 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI 이거나 IDX_YNPNA 이후에 1이 있는 음절)
   
-  private static List<char[]> Syllables;  // 음절특성 정보
+  private static List<char[]> syllables;  // 음절특성 정보
   
   /**
    * 인덱스 값에 해당하는 음절의 특성을 반환한다.
    * 영자 또는 숫자일 경우는 모두 해당이 안되므로 가장 마지막 글자인 '힣' 의 음절특성을 반환한다.
    * 
    * @param idx '가'(0xAC00)이 0부터 유니코드에 의해 한글음절을 순차적으로 나열한 값
-   * @throws MorphException throw exceptioin
    */
-  public static char[] getFeature(int idx)  throws MorphException {
-    
-    if(Syllables==null) Syllables = getSyllableFeature();
-  
-    if(idx<0||idx>=Syllables.size()) 
-      return Syllables.get(Syllables.size()-1);
+  public static char[] getFeature(int idx)  {
+    if(idx<0||idx>=syllables.size()) 
+      return syllables.get(syllables.size()-1);
     else 
-      return Syllables.get(idx);
-    
+      return syllables.get(idx); 
   }
   
   /**
    * 각 음절의 특성을 반환한다.
    * @param syl  음절 하나
-   * @throws MorphException throw exception 
    */
-  public static char[] getFeature(char syl) throws MorphException {
+  public static char[] getFeature(char syl) {
     
     int idx = syl - 0xAC00;
     return getFeature(idx);
     
   }
   
-  /**
-   * 음절정보특성을 파일에서 읽는다.
-   * 
-   * @throws MorphException throw exception
-   */  
-  private static List<char[]> getSyllableFeature() throws MorphException {
-  
+  static {
     try{
-      Syllables = new ArrayList<char[]>();
+      syllables = new ArrayList<char[]>();
 
       List<String> line = DictionaryResources.readLines(DictionaryResources.FILE_SYLLABLE_FEATURE);  
       for(int i=0;i<line.size();i++) {        
         if(i!=0)
-          Syllables.add(line.get(i).toCharArray());
+          syllables.add(line.get(i).toCharArray());
       }
-    }catch(IOException e) {
-      throw new MorphException(e.getMessage());
+    }catch(IOException ioe) {
+      throw new Error("Cannot load ressource", ioe);
     } 
-
-    return Syllables;
   }  
   
   public static boolean isAlpanumeric(char ch) {
