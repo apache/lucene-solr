@@ -24,6 +24,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -70,13 +71,16 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     dir.close();
   }
 
-
   protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {
+     checkCorrectClassification(classifier, inputDoc, expectedResult, analyzer, textFieldName, classFieldName, null);
+  }
+
+  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
     AtomicReader atomicReader = null;
     try {
       populateSampleIndex(analyzer);
       atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(atomicReader, textFieldName, classFieldName, analyzer);
+      classifier.train(atomicReader, textFieldName, classFieldName, analyzer, query);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());

@@ -19,6 +19,8 @@ package org.apache.lucene.classification;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -43,6 +45,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   private String classFieldName;
   private IndexSearcher indexSearcher;
   private int k;
+  private Query query;
 
   /**
    * Create a {@link Classifier} using kNN algorithm
@@ -61,7 +64,16 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (mlt == null) {
       throw new IOException("You must first call Classifier#train");
     }
-    Query q = mlt.like(new StringReader(text), textFieldName);
+    Query q;
+    if (query != null) {
+      Query mltQuery = mlt.like(new StringReader(text), textFieldName);
+      BooleanQuery bq = new BooleanQuery();
+      bq.add(query, BooleanClause.Occur.MUST);
+      bq.add(mltQuery, BooleanClause.Occur.MUST);
+      q = bq;
+    } else {
+      q = mlt.like(new StringReader(text), textFieldName);
+    }
     TopDocs topDocs = indexSearcher.search(q, k);
     return selectClassFromNeighbors(topDocs);
   }
@@ -96,11 +108,20 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
+    train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
     this.textFieldName = textFieldName;
     this.classFieldName = classFieldName;
     mlt = new MoreLikeThis(atomicReader);
     mlt.setAnalyzer(analyzer);
     mlt.setFieldNames(new String[]{textFieldName});
     indexSearcher = new IndexSearcher(atomicReader);
+    this.query = query;
   }
 }

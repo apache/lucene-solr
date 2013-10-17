@@ -16,12 +16,6 @@
  */
 package org.apache.lucene.classification;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -33,6 +27,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -40,6 +35,11 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * A perceptron (see <code>http://en.wikipedia.org/wiki/Perceptron</code>) based
@@ -113,7 +113,16 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName,
-      String classFieldName, Analyzer analyzer) throws IOException {
+                    String classFieldName, Analyzer analyzer) throws IOException {
+    train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void train(AtomicReader atomicReader, String textFieldName,
+      String classFieldName, Analyzer analyzer, Query query) throws IOException {
     this.textTerms = MultiFields.getTerms(atomicReader, textFieldName);
 
     if (textTerms == null) {
@@ -151,8 +160,15 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     int batchCount = 0;
 
+    Query q;
+    if (query != null) {
+      q = query;
+    }
+    else {
+      q = new MatchAllDocsQuery();
+    }
     // do a *:* search and use stored field values
-    for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(),
+    for (ScoreDoc scoreDoc : indexSearcher.search(q,
         Integer.MAX_VALUE).scoreDocs) {
       StoredDocument doc = indexSearcher.doc(scoreDoc.doc);
 

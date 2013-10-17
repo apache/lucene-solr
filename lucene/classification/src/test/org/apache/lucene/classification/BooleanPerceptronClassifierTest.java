@@ -17,6 +17,8 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
 
 /**
@@ -32,6 +34,11 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
   @Test
   public void testExplicitThreshold() throws Exception {
     checkCorrectClassification(new BooleanPerceptronClassifier(100d, 1), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName);
+  }
+
+  @Test
+  public void testBasicUsageWithQuery() throws Exception {
+    checkCorrectClassification(new BooleanPerceptronClassifier(), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName, new TermQuery(new Term(textFieldName, "it")));
   }
 
   @Test
