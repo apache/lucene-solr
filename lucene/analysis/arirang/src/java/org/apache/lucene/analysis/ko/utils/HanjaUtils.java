@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
-import org.apache.lucene.analysis.ko.morph.MorphException;
 
 public class HanjaUtils {
   private HanjaUtils() {}
@@ -39,15 +38,14 @@ public class HanjaUtils {
         if(s.isEmpty() || s.indexOf(",")==-1) continue;
 
         String[] hanInfos = s.split("[,]+");
-
-        if(hanInfos.length!=2) continue;
+        if(hanInfos.length!=2 || hanInfos[0].length()!=1) throw new IOException("Invalid file format.");
         
         map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
       }
       
       mapHanja = Collections.unmodifiableMap(map);
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC, ioe);
     }
   }
   
@@ -55,7 +53,7 @@ public class HanjaUtils {
    * 한자에 대응하는 한글을 찾아서 반환한다.
    * 하나의 한자는 여러 음으로 읽일 수 있으므로 가능한 모든 음을 한글로 반환한다.
    */
-  public static char[] convertToHangul(char hanja) throws MorphException {
+  public static char[] convertToHangul(char hanja) {
 //    if(hanja>0x9FFF||hanja<0x3400) return new char[]{hanja};
     
     final char[] result = mapHanja.get(hanja);
