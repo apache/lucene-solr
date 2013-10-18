@@ -53,9 +53,6 @@ public class DictionaryUtil {
     try {
       List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY);
       strList.addAll(DictionaryResources.readLines(DictionaryResources.FILE_EXTENSION));
-      List<String> compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
-      List<String> abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
-    
       for(String str:strList) {
         String[] infos = str.split("[,]+");
         if(infos.length!=2) continue;
@@ -66,6 +63,7 @@ public class DictionaryUtil {
         dictionary.add(entry.getWord(), entry);
       }
       
+      List<String> compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
       for(String compound: compounds) 
       {    
         String[] infos = compound.split("[:]+");
@@ -81,6 +79,7 @@ public class DictionaryUtil {
         dictionary.add(entry.getWord(), entry);
       }
       
+      List<String> abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
       for(String abbrev: abbrevs) 
       {    
         String[] infos = abbrev.split("[:]+");
