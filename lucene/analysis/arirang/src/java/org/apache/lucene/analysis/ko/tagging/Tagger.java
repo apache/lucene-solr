@@ -19,14 +19,16 @@ package org.apache.lucene.analysis.ko.tagging;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
-import org.apache.lucene.analysis.ko.utils.Trie;
 
 /**
  * 여러개의 형태소분석 결과 중에 최적의 것을 선택한다.
@@ -34,28 +36,27 @@ import org.apache.lucene.analysis.ko.utils.Trie;
  */
 public class Tagger {
     
-  private static final Trie<String, String[]> occurrences = new Trie<String, String[]>(true);;
+  private static final NavigableMap<String, String[]> occurrences = new TreeMap<String, String[]>();;
   static { 
     try {
       List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
-      
       for(String str : strs) {
-        if(str==null) continue;
-        str = str.trim();
+        str=str.trim();
+        if(str.isEmpty()) continue;
         String[] syls = str.split("[:]+");
-        if(syls.length!=4) continue;
+        if(syls.length!=4)
+          throw new IOException("Invalid file format: "+Arrays.toString(syls));
         
-        String key = null;        
+        final String key;        
         if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
         else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
 
         final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
         String[] patns = joined.split("[/]+");
         
-        occurrences.add(syls[0]+key, patns);
-        
-      }      
-      
+        occurrences.put(syls[0]+key, patns);
+      }
+      System.out.println(occurrences);
     } catch (IOException ioe) {
       throw new Error("Fail to read the tagger dictionary.", ioe);
     }
@@ -202,8 +203,6 @@ public class Tagger {
   
   private boolean checkGrammer(String[] values, String psource, String rsource, AnalysisOutput pmorph, AnalysisOutput rmorph, boolean depFront) {
     
-    boolean ok = true;    
-    
     String pend = pmorph.getJosa();
     if(pend==null) pend = pmorph.getEomi();
 
@@ -284,9 +283,8 @@ public class Tagger {
     return false;    
   }
 
-  @SuppressWarnings("unchecked")
   public static Iterator<String[]> getGR(String prefix) {
-    return occurrences.getPrefixedBy(prefix);
+    return occurrences.subMap(prefix, prefix + "\uFFFF").values().iterator();
   }
   
 }

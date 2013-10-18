@@ -76,26 +76,20 @@ public class DictionaryResources {
 
   /**
    * Get the contents of a <code>Reader</code> as a list of Strings,
-   * one entry per line.
-   * <p>
-   * This method buffers the input internally, so there is no need to use a
-   * <code>BufferedReader</code>.
-   *
+   * one entry per line, removing comment lines starting with '!'.
    * @param input  the <code>Reader</code> to read from, not null
    * @return the list of Strings, never null
-   * @throws NullPointerException if the input is null
    * @throws IOException if an I/O error occurs
-   * @since Commons IO 1.1
    */
   private static List<String> readLines(Reader input) throws IOException {
     BufferedReader reader = new BufferedReader(input);
     List<String> list = new ArrayList<String>();
-    String line = reader.readLine();
-    while (line != null) {
-      if ( ! (line.startsWith("!") || line.startsWith("\uFEFF!"))) { // Skip comment lines starting with '!'
-        list.add(line);
+    String line;
+    while ((line = reader.readLine()) != null) {
+      if (line.startsWith("!") || line.startsWith("\uFEFF!")) { // Skip comment lines starting with '!'
+        continue;
       }
-      line = reader.readLine();
+      list.add(line);
     }
     return list;
   }
