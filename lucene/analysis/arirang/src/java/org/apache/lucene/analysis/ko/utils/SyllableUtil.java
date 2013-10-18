@@ -113,8 +113,4 @@ public class SyllableUtil {
     return getFeature(idx);
     
   }
-  
-  public static boolean isAlpanumeric(char ch) {
-    return (ch>='0'&&ch<='z');
-  }
 }

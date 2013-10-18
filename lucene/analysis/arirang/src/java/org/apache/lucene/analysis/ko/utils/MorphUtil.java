@@ -19,10 +19,8 @@ package org.apache.lucene.analysis.ko.utils;
 
 import java.util.List;
 
-import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 public class MorphUtil {
   private MorphUtil() {}
@@ -136,58 +134,6 @@ public class MorphUtil {
     }
     
   }
-  
-  /**
-   * 용언 + '음/기' + '이' + 어미, 체언 + '에서/부터/에서부터' + '이' + 어미
-   * @param output  the output text
-   * @param candidates  the candidates
-   */
-  public static void buildPtnCM(AnalysisOutput output, List<AnalysisOutput> candidates) {
-    
-    char ch = output.getStem().charAt(output.getStem().length()-2);
-    char[] jasos = MorphUtil.decompose(ch);
-    if(jasos.length==3||ch=='기') {
-      buildPtnVMCM(output,candidates);      
-    } else {
-      
-    }
-  }
-  
-  private static void buildPtnVMCM(AnalysisOutput output, List<AnalysisOutput> candidates) {
-    String stem = output.getStem();
-  
-    output.setPatn(PatternConstants.PTN_VMCM);
-    output.setPos(PatternConstants.POS_VERB);
-    
-    char ch = stem.charAt(stem.length()-2);
-    char[] jasos = MorphUtil.decompose(ch);
-
-    if(ch=='기') {
-      output.addElist("기");
-      output.addElist("이");
-      output.setStem(stem.substring(0,stem.length()-2));
-      
-      if(DictionaryUtil.getVerb(output.getStem())!=null)
-        candidates.add(output);
-    }else if(jasos[2]=='ㅁ') {
-      if(stem.length()>1) stem = stem.substring(0,stem.length()-2);
-      stem += MorphUtil.makeChar(ch, 0);
-      output.addElist("ㅁ");
-      output.addElist("이");
-      output.setStem(stem);
-
-      if(DictionaryUtil.getVerb(stem)!=null) 
-        candidates.add(output);
-      else {
-        String[] morphs = IrregularUtil.restoreIrregularVerb(stem,"ㅁ");
-        if(morphs!=null) {
-          output.setScore(AnalysisOutput.SCORE_CORRECT);
-          output.setStem(morphs[0]);
-          candidates.add(output);
-        }
-      }
-    }
-  }
 
   public static boolean hasVerbOnly(String input) {
     
@@ -196,44 +142,5 @@ public class MorphUtil {
       if(feature[SyllableUtil.IDX_WDSURF]=='1'&&input.length()>i) return true;
     }
     return false;
-  }
-  
-  /**
-   * 시제 선어미말을 만들어서 반환한다.
-   * @param preword  '아' 또는 '어'
-   * @param endword  어미[선어미말을 포함]
-   * @return '았' 또는 '었'을 만들어서 반환한다.
-   */
-  public static String makeTesnseEomi(String preword, String endword) {
-
-    if(preword==null||preword.length()==0) return endword;
-    if(endword==null||endword.length()==0) return preword;
-
-    if(endword.charAt(0)=='ㅆ') {
-      return preword.substring(0,preword.length()-1)+
-          makeChar(preword.charAt(preword.length()-1),20)+endword.substring(1,endword.length());    
-    } else if(endword.charAt(0)=='ㄴ') {
-      return preword.substring(0,preword.length()-1)+
-          makeChar(preword.charAt(preword.length()-1),4)+endword.substring(1,endword.length());
-    } else if(endword.charAt(0)=='ㄹ') {
-      return preword.substring(0,preword.length()-1)+
-          makeChar(preword.charAt(preword.length()-1),8)+endword.substring(1,endword.length());  
-    } else if(endword.charAt(0)=='ㅁ') {
-      return preword.substring(0,preword.length()-1)+
-          makeChar(preword.charAt(preword.length()-1),16)+endword.substring(1,endword.length());          
-    } else if(endword.charAt(0)=='ㅂ') {
-      return preword.substring(0,preword.length()-1)+
-          makeChar(preword.charAt(preword.length()-1),17)+endword.substring(1,endword.length());
-    }
-    return preword+endword;    
-  }
-  
-  /**
-   * 용언화접미사가 결합될 수 있는지 여부를 점검한다.
-   * 특히 사전에 등록된 되다, 하다형 의 접속이 가능한지를 조사한다.
-   */
-  public static boolean isValidSuffix(WordEntry entry, AnalysisOutput o) {
-    
-    return true;
   }
 }

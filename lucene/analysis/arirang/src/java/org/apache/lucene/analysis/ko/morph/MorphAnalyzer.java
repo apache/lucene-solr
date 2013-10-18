@@ -394,18 +394,6 @@ public class MorphAnalyzer {
     VerbUtil.analysisVMXM(o.clone(), candidates);
   }    
   
-  public void analysisCNoun(List<AnalysisOutput> candidates) {
-    
-    boolean success = false;
-    for(AnalysisOutput o: candidates) {
-      if(o.getPos()!=PatternConstants.POS_NOUN) continue;
-      if(o.getScore()==AnalysisOutput.SCORE_CORRECT) 
-        success=true;
-      else if(!success)
-        confirmCNoun(o);
-    }
-  }
-  
   /**
    * 복합명사인지 조사하고, 복합명사이면 단위명사들을 찾는다.
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.

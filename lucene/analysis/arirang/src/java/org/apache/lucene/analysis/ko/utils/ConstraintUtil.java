@@ -101,49 +101,6 @@ public class ConstraintUtil {
     if(hahes.get(key)!=null) return true;
     return false;
   }
-    
-  /**
-   * 어미가 ㄴ,ㄹ,ㅁ 으로 끝나는지 조사한다.
-   */
-  public static boolean isNLM(String eomi) {
-    
-    if(eomi==null || "".equals(eomi)) return false;
-    
-    if(eomiPnouns.get(eomi)!=null) return true;
-    
-    char[] chrs = MorphUtil.decompose(eomi.charAt(eomi.length()-1));
-    if(chrs.length==3  && eomiPnouns.get(Character.toString(chrs[2]))!=null) return true;
-    
-    return true;
-  }
-  
-  public static boolean isEomiPhrase(int ptn) {
-    
-    if(PTN_MLIST.get(ptn)!=null) return true;
-    
-    return false;
-  }
-  
-  public static boolean isJosaNounPhrase(int ptn) {
-    
-    if(PTN_JLIST.get(ptn)!=null) return true;
-    
-    return false;
-  }
-  
-  public static boolean isJosaAdvPhrase(int ptn) {
-    
-    if(PatternConstants.PTN_ADVJ==ptn) return true;
-    
-    return false;
-  }
-  
-  public static boolean isAdvPhrase(int ptn) {
-    
-    if(PatternConstants.PTN_ADVJ==ptn || PatternConstants.PTN_AID==ptn) return true;
-    
-    return false;
-  }
   
   public static boolean isTwoJosa(String josa) {
     

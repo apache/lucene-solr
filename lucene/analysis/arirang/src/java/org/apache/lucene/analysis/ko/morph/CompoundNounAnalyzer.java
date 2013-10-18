@@ -347,46 +347,6 @@ public class CompoundNounAnalyzer {
     return maxlen;
   }
   
-  private int evaluation(List<CompoundEntry> candidates) {
-    
-    int eval = 10;
-    
-    int one = 0;
-    int exist = 0;    
-    
-    for(CompoundEntry entry : candidates) {
-      if(entry.getWord().length()==1) one++;
-      if(entry.isExist()) exist++;
-    }
-    
-    if(one>3) return eval;
-    
-    eval = eval + (exist*100)/candidates.size() - (one*100)/candidates.size();
-    
-    return eval;
-  }
-  
-  private boolean containWord(String before, String input, int pos) {
-    
-    String prev = null;
-    for(int i=pos;i<input.length();i++) {
-      
-      String text = before+input.substring(pos,i+1);    
-      if(DictionaryUtil.findWithPrefix(text).hasNext()) {
-        prev = text;
-        continue;
-      }
-      
-      if(prev!=null&&DictionaryUtil.getNoun(prev)!=null) return true;
-      
-      break;
-    }
-
-    return false;
-    
-  }
-  
- 
   private CompoundEntry[] analysisBySplited(int[] units, String input, boolean isFirst) {
   
     CompoundEntry[] entries = new CompoundEntry[units.length];
@@ -408,18 +368,6 @@ public class CompoundNounAnalyzer {
     
     return entries;
     
-  }
-  
-  private boolean canCompound(CompoundEntry[] entries, int thredhold) {
-    
-    int achived = 0;
-    for(int i=0;i<entries.length;i++) {
-      if(entries[i].isExist()) achived += score;
-    }
-  
-    if(achived<thredhold) return false;
-    
-    return true;
   }
   
   /**

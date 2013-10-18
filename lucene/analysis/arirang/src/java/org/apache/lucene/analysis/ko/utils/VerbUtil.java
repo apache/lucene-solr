@@ -81,16 +81,6 @@ public class VerbUtil {
      
   }
    
-  public static boolean constraintVerb(String start, String end) {
-     
-    char[] schs = MorphUtil.decompose(start.charAt(start.length()-1));
-    char[] echs = MorphUtil.decompose(end.charAt(0));
-     
-    if(schs.length==3&&schs[2]=='ㄹ'&&echs[0]=='ㄹ') return false;
-     
-    return true;
-  }
-   
   /**
    * 3. 학교에서이다 : 체언 + '에서/부터/에서부터' + '이' + 어미 (PTN_NJCM) <br>
    */

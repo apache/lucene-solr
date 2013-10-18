@@ -216,121 +216,6 @@ public class NounUtil {
     return true;
   }
     
-     
-  /**
-   * 복합명사인지 조사하고, 복합명사이면 단위명사들을 찾는다.
-   * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
-   * 단위명사는 2글자 이상 단어에서만 찾는다.
-   * @param o
-   * @throws MorphException
-   */     
-//     public static boolean confirmCNoun(AnalysisOutput o)  {
-//
-//       if(o.getStem().length()<3) return false;
-//       if(o.getPatn()==PatternConstants.PTN_N
-//           &&DictionaryUtil.existJosa(o.getStem().substring(o.getStem().length()-2))) return false;
-//       
-//      List<CompoundEntry> results = new ArrayList();
-//      List<List> queue = new ArrayList();
-//      String prefix = o.getStem().substring(0,1);
-//      
-//      int pos = 0;
-//      boolean moreTwo =  false;
-//      while(pos<o.getStem().length()) {
-//
-//        List<WordEntry> nList = findNouns(o.getStem().substring(pos),queue.size(),o);
-//        if(nList==null) return false;
-//
-//        if(pos==0&&DictionaryUtil.existPrefix(prefix)) nList.add(new WordEntry(prefix));
-//
-//        if(nList.size()==0) {
-//          if(queue.size()==0) return false;
-//          List<WordEntry> tmpList = queue.get(queue.size()-1);
-//
-//          tmpList.remove(tmpList.size()-1);  
-//          pos -= results.get(queue.size()-1).getWord().length();        
-//          if(tmpList.size()==0) {        
-//            while(tmpList.size()==0) {        
-//              results.remove(queue.size()-1);                  
-//              queue.remove(tmpList);
-//              if(queue.size()==0) return false;
-//              
-//              tmpList = queue.get(queue.size()-1);              
-//              tmpList.remove(tmpList.size()-1);
-//              if(tmpList.size()==0) continue;
-//              
-//              pos -= results.get(queue.size()-1).getWord().length();          
-//              results.set(queue.size()-1, new CompoundEntry(tmpList.get(tmpList.size()-1).getWord(),pos));  
-//              pos += tmpList.get(tmpList.size()-1).getWord().length();            
-//                        
-//            }          
-//          }else {        
-//            results.set(queue.size()-1, new CompoundEntry(tmpList.get(tmpList.size()-1).getWord(),pos));
-//            pos += tmpList.get(tmpList.size()-1).getWord().length();
-//          }    
-//
-//        } else {
-//          queue.add(nList);
-//          WordEntry noun = nList.get(nList.size()-1);
-//          results.add(new CompoundEntry(noun.getWord(),pos));
-//          pos += noun.getWord().length();
-//          if(noun.getCompounds().size()>0) o.addCNoun(noun.getCompounds());
-//          if(noun.getWord().length()>1) moreTwo=true;
-//        }
-//      }
-//
-//      if(results.size()>1&&DNouns.contains(results.get(results.size()-1).getWord())) {
-//        CompoundEntry dnoun = results.remove(results.size()-1);
-//              o.setStem(o.getStem().substring(0,o.getStem().length()-dnoun.getWord().length()));
-//              o.setNsfx(dnoun.getWord());      
-//      }
-//      
-//      if(results.size()>1) o.addCNoun(results);  
-//      
-//      o.setScore(AnalysisOutput.SCORE_CORRECT);
-//      return true;
-//    }
-    
-  /**
-   * 복합명사에서 단위명사를 분리해낸다.
-   * 리스트의 가장 마지막에 위치한 단어가 최장단어이다.
-   * @param str  복합명사
-   * @param pos the analysing start point
-   * @param o    분석결과
-   * return    단위명사 리스트
-   */
-  private static List<WordEntry> findNouns(String str, int pos, AnalysisOutput o) {
-
-    List<WordEntry> nList = new ArrayList<WordEntry>();
-
-    if(str.length()==2&&DictionaryUtil.existSuffix(str.substring(0,1))&&DNouns.contains(str.substring(1))) {
-      o.setStem(o.getStem().substring(0,o.getStem().length()-1));
-      o.setNsfx(str.substring(1));
-      nList.add(new WordEntry(str.substring(0,1)));
-      return nList;
-    }else if(str.length()==2&&DictionaryUtil.existSuffix(str.substring(0,1))&&DictionaryUtil.existJosa(str.substring(1))) {
-      return null;
-    }
-      
-    if(pos>=2&&DictionaryUtil.existJosa(str)) return null;
-      
-    if(str.length()==1&&(DictionaryUtil.existSuffix(str)||DNouns.contains(str))) {
-      nList.add(new WordEntry(str));
-      return nList;
-    }
-
-    for(int i=1;i<str.length();i++) {    
-      String sub = str.substring(0,i+1);    
-      if(!DictionaryUtil.findWithPrefix(sub).hasNext()) break;
-      WordEntry entry = DictionaryUtil.getAllNoun(sub);  
-      if(entry!=null) {          
-        nList.add(entry);
-      }
-    }
-
-    return nList;      
-  }
-    
   /*
      * 마지막 음절이 명사형 접미사(등,상..)인지 조사한다.
      */
@@ -355,14 +240,6 @@ public class NounUtil {
           
     return true;
   }
-    
-//      public static int endsWithDNoun(String stem)   {
-//          for(int i = 0; i < DNouns.length; i++)
-//              if(stem.endsWith(DNouns[i]))
-//                  return stem.lastIndexOf(DNouns[i]);
-//
-//          return -1;
-//      }
       
   public static boolean endsWith2Josa(String input) {
 
