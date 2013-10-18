@@ -20,9 +20,10 @@ package org.apache.lucene.analysis.ko.tagging;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
@@ -36,10 +37,11 @@ import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
  */
 public class Tagger {
     
-  private static final NavigableMap<String, String[]> occurrences = new TreeMap<String, String[]>();;
-  static { 
+  private static final SortedMap<String, String[]> occurrences;
+  static {
     try {
-      List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
+      final SortedMap<String, String[]> map = new TreeMap<String, String[]>();;
+      final List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
       for(String str : strs) {
         str=str.trim();
         if(str.isEmpty()) continue;
@@ -54,11 +56,11 @@ public class Tagger {
         final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
         String[] patns = joined.split("[/]+");
         
-        occurrences.put(syls[0]+key, patns);
+        map.put(syls[0]+key, patns);
       }
-      System.out.println(occurrences);
+      occurrences = Collections.unmodifiableSortedMap(map);
     } catch (IOException ioe) {
-      throw new Error("Fail to read the tagger dictionary.", ioe);
+      throw new Error("Failed to read the tagger dictionary.", ioe);
     }
   }
     
