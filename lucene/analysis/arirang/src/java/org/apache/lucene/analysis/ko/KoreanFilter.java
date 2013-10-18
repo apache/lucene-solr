@@ -395,8 +395,9 @@ public class KoreanFilter extends TokenFilter {
         if(cnounMap.get(entry.getWord())!=null) continue;
          
         // 한글과 매치되는 한자를 짤라서 큐에 저장한다.           
-        morphQueue.add(new IndexWord(term.substring(offset,pos),offset));
-         
+        // nocommit: this is avoiding AIOOBE, original code:
+        // morphQueue.add(new IndexWord(term.substring(offset,pos),offset));
+        morphQueue.add(new IndexWord(term.substring(offset,Math.min(pos, term.length())),offset));
         cnounMap.put(entry.getWord(), entry.getWord());
          
         if(entry.getWord().length()<2) continue; //  한글은 2글자 이상만 저장한다.
@@ -456,4 +457,13 @@ public class KoreanFilter extends TokenFilter {
   public void setExactMatch(boolean match) {
     this.exactMatch = match;
   }
+
+  /* nocommit: i think this is needed? @Override
+  public void reset() throws IOException {
+    super.reset();
+    morphQueue.clear();
+    curTermBuffer = null;
+  }*/
+  
+  
 }
