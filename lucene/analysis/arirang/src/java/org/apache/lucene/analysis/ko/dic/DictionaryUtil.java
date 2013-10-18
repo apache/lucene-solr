@@ -225,7 +225,7 @@ public class DictionaryUtil {
     return uncompounds.get(key);
   }
   
-  public synchronized static String getCJWord(String key) {
+  public static String getCJWord(String key) {
     return cjwords.get(key);
   }
   

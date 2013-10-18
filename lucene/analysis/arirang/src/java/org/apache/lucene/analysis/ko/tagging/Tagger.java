@@ -285,7 +285,7 @@ public class Tagger {
   }
 
   @SuppressWarnings("unchecked")
-  public static synchronized Iterator<String[]> getGR(String prefix) {
+  public static Iterator<String[]> getGR(String prefix) {
     return occurrences.getPrefixedBy(prefix);
   }
   
