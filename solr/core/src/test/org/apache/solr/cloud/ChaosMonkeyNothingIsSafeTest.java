@@ -21,7 +21,7 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -52,10 +52,10 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
       @Override
       public void call(Object... data) {
-        SolrCmdDistributor.Request sreq = (SolrCmdDistributor.Request)data[1];
-        if (sreq.exception == null) return;
-        if (sreq.exception.getMessage().contains("Timeout")) {
-          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + sreq.exception.getMessage());
+        Exception e = (Exception) data[0];
+        if (e == null) return;
+        if (e.getMessage().contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
         }
       }
     };

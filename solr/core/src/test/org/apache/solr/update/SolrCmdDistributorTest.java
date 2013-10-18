@@ -21,10 +21,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.LogDocMergePolicy;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -36,17 +37,19 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
-import org.apache.solr.update.SolrCmdDistributor.Response;
+import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-
 import org.junit.BeforeClass;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
@@ -57,7 +60,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // being able to call optimize to have all deletes expunged.
     System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
   }
-  private UpdateShardHandler updateShardHandler;
+  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
+      new SolrjNamedThreadFactory("updateExecutor"));
   
   public SolrCmdDistributorTest() {
     fixShardCount = true;
@@ -103,7 +107,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(5, updateShardHandler);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateExecutor);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -129,9 +133,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     cmdDistrib.finish();
 
     
-    Response response = cmdDistrib.getResponse();
+    List<Error> errors = cmdDistrib.getErrors();
     
-    assertEquals(response.errors.toString(), 0, response.errors.size());
+    assertEquals(errors.toString(), 0, errors.size());
     
     long numFound = controlClient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
@@ -143,7 +147,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor(5, updateShardHandler);
+    cmdDistrib = new SolrCmdDistributor(updateExecutor);
     cmd.solrDoc = sdoc("id", 2);
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -167,9 +171,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
-    response = cmdDistrib.getResponse();
+    errors = cmdDistrib.getErrors();
     
-    assertEquals(response.errors.toString(), 0, response.errors.size());
+    assertEquals(errors.toString(), 0, errors.size());
     
     SolrDocumentList results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
@@ -186,7 +190,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     
 
-    cmdDistrib = new SolrCmdDistributor(5, updateShardHandler);
+    cmdDistrib = new SolrCmdDistributor(updateExecutor);
     
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -199,9 +203,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
 
-    response = cmdDistrib.getResponse();
+    errors = cmdDistrib.getErrors();
     
-    assertEquals(response.errors.toString(), 0, response.errors.size());
+    assertEquals(errors.toString(), 0, errors.size());
     
     
     results = controlClient.query(new SolrQuery("*:*")).getResults();
@@ -219,7 +223,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     int id = 5;
     
-    cmdDistrib = new SolrCmdDistributor(5, updateShardHandler);
+    cmdDistrib = new SolrCmdDistributor(updateExecutor);
     
     int cnt = atLeast(303);
     for (int i = 0; i < cnt; i++) {
@@ -289,18 +293,57 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           ((NamedList<Object>) resp.get("index")).get("numDocs"),
           ((NamedList<Object>) resp.get("index")).get("maxDoc"));
     }
+    
+    // Test RetryNode
+    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
+    long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    
+    nodes = new ArrayList<Node>();
 
+    nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+      @Override
+      public boolean checkRetry() {
+        ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
+            ZkStateReader.CORE_NAME_PROP, "");
+        this.nodeProps = new ZkCoreNodeProps(leaderProps);
+
+        return true;
+      }
+    };
+    
+
+    nodes.add(retryNode);
+    
+    
+    cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", 1111111);
+    params = new ModifiableSolrParams();
+
+    cmdDistrib.distribAdd(cmd, nodes, params);
+    
+    ccmd = new CommitUpdateCommand(null, false);
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+    cmdDistrib.distribCommit(ccmd, nodes, params);
+    cmdDistrib.finish();
+    
+    long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    
+    assertEquals(numFoundBefore + 1, numFoundAfter);
   }
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    updateShardHandler = new UpdateShardHandler(10000, 10000);
   }
   
   @Override
   public void tearDown() throws Exception {
-    updateShardHandler = null;
+    ExecutorUtil.shutdownNowAndAwaitTermination(updateExecutor);
     super.tearDown();
   }
 }
