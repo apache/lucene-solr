@@ -65,7 +65,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -105,8 +104,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("testExecutor"));
   
-  CompletionService<Request> completionService;
-  Set<Future<Request>> pending;
+  CompletionService<Object> completionService;
+  Set<Future<Object>> pending;
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -126,8 +125,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     sliceCount = 2;
     shardCount = 4;
-    completionService = new ExecutorCompletionService<Request>(executor);
-    pending = new HashSet<Future<Request>>();
+    completionService = new ExecutorCompletionService<Object>(executor);
+    pending = new HashSet<Future<Object>>();
     
   }
   
@@ -749,7 +748,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
    while (pending != null && pending.size() > 0) {
       
-      Future<Request> future = completionService.take();
+      Future<Object> future = completionService.take();
       pending.remove(future);
     }
     
@@ -875,7 +874,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
    while (pending != null && pending.size() > 0) {
       
-      Future<Request> future = completionService.take();
+      Future<Object> future = completionService.take();
       if (future == null) return;
       pending.remove(future);
     }
@@ -964,7 +963,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     while (pending != null && pending.size() > 0) {
       
-      Future<Request> future = completionService.take();
+      Future<Object> future = completionService.take();
       if (future == null) return;
       pending.remove(future);
     }
@@ -1077,7 +1076,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       pending.add(completionService.submit(call));
       while (pending != null && pending.size() > 0) {
         
-        Future<Request> future = completionService.take();
+        Future<Object> future = completionService.take();
         if (future == null) return;
         pending.remove(future);
       }

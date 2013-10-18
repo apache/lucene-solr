@@ -44,10 +44,10 @@ public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
       @Override
       public void call(Object... data) {
-        SolrCmdDistributor.Request sreq = (SolrCmdDistributor.Request)data[1];
-        if (sreq.exception == null) return;
-        if (sreq.exception.getMessage().contains("Timeout")) {
-          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + sreq.exception.getMessage());
+        Exception e = (Exception) data[0];
+        if (e == null) return;
+        if (e.getMessage().contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
         }
       }
     };

@@ -44,6 +44,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -72,14 +74,15 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       .getLogger(ConcurrentUpdateSolrServer.class);
   private HttpSolrServer server;
   final BlockingQueue<UpdateRequest> queue;
-  final ExecutorService scheduler = Executors.newCachedThreadPool(
-      new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
+  final ExecutorService scheduler;
   final Queue<Runner> runners;
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
+  boolean shutdownExecutor = false;
+  int pollQueueTime = 250;
 
   /**
-   * Uses an internaly managed HttpClient instance.
+   * Uses an internally managed HttpClient instance.
    * 
    * @param solrServerUrl
    *          The Solr server URL
@@ -91,18 +94,27 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   public ConcurrentUpdateSolrServer(String solrServerUrl, int queueSize,
       int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);
+    shutdownExecutor = true;
+  }
+  
+  public ConcurrentUpdateSolrServer(String solrServerUrl,
+      HttpClient client, int queueSize, int threadCount) {
+    this(solrServerUrl, null, queueSize, threadCount, Executors.newCachedThreadPool(
+        new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
+    shutdownExecutor = true;
   }
 
   /**
    * Uses the supplied HttpClient to send documents to the Solr server.
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl,
-      HttpClient client, int queueSize, int threadCount) {
+      HttpClient client, int queueSize, int threadCount, ExecutorService es) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
     queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
     this.threadCount = threadCount;
     runners = new LinkedList<Runner>();
+    scheduler = es;
   }
 
   /**
@@ -115,8 +127,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     public void run() {
       runnerLock.lock();
 
-      // info is ok since this should only happen once for each thread
-      log.info("starting runner: {}", this);
+      log.debug("starting runner: {}", this);
       HttpPost method = null;
       HttpResponse response = null;
       try {
@@ -169,14 +180,15 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                       }
                     }
                     out.flush();
-                    req = queue.poll(250, TimeUnit.MILLISECONDS);
+                    req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
                   }
                   if (isXml) {
                     out.write("</stream>".getBytes("UTF-8"));
                   }
 
                 } catch (InterruptedException e) {
-                  e.printStackTrace();
+                  Thread.currentThread().interrupt();
+                  log.warn("", e);
                 }
               }
             });
@@ -196,16 +208,13 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
             
             response = server.getHttpClient().execute(method);
             int statusCode = response.getStatusLine().getStatusCode();
-            log.info("Status for: "
-                + updateRequest.getDocuments().get(0).getFieldValue("id")
-                + " is " + statusCode);
             if (statusCode != HttpStatus.SC_OK) {
               StringBuilder msg = new StringBuilder();
               msg.append(response.getStatusLine().getReasonPhrase());
               msg.append("\n\n");
               msg.append("\n\n");
               msg.append("request: ").append(method.getURI());
-              handleError(new Exception(msg.toString()));
+              handleError(new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString()));
             }
           } finally {
             try {
@@ -213,6 +222,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                 response.getEntity().getContent().close();
               }
             } catch (Exception ex) {
+              log.warn("", ex);
             }
           }
         }
@@ -236,7 +246,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
           }
         }
 
-        log.info("finished: {}", this);
+        log.debug("finished: {}", this);
         runnerLock.unlock();
       }
     }
@@ -357,16 +367,18 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   @Override
   public void shutdown() {
     server.shutdown();
-    scheduler.shutdown();
-    try {
-      if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+    if (shutdownExecutor) {
+      scheduler.shutdown();
+      try {
+        if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+          scheduler.shutdownNow();
+          if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) log
+              .error("ExecutorService did not terminate");
+        }
+      } catch (InterruptedException ie) {
         scheduler.shutdownNow();
-        if (!scheduler.awaitTermination(60, TimeUnit.SECONDS))
-          log.error("ExecutorService did not terminate");
+        Thread.currentThread().interrupt();
       }
-    } catch (InterruptedException ie) {
-      scheduler.shutdownNow();
-      Thread.currentThread().interrupt();
     }
   }
   
@@ -384,18 +396,29 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
 
   public void shutdownNow() {
     server.shutdown();
-    scheduler.shutdownNow(); // Cancel currently executing tasks
-    try {
-      if (!scheduler.awaitTermination(30, TimeUnit.SECONDS))
-        log.error("ExecutorService did not terminate");
-    } catch (InterruptedException ie) {
-      scheduler.shutdownNow();
-      Thread.currentThread().interrupt();
+    if (shutdownExecutor) {
+      scheduler.shutdownNow(); // Cancel currently executing tasks
+      try {
+        if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) log
+            .error("ExecutorService did not terminate");
+      } catch (InterruptedException ie) {
+        scheduler.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
   public void setParser(ResponseParser responseParser) {
     server.setParser(responseParser);
+  }
+  
+  
+  /**
+   * @param pollQueueTime time for an open connection to wait for updates when
+   * the queue is empty. 
+   */
+  public void setPollQueueTime(int pollQueueTime) {
+    this.pollQueueTime = pollQueueTime;
   }
 
   public void setRequestWriter(RequestWriter requestWriter) {
