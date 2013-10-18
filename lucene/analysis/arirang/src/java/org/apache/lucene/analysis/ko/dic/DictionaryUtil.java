@@ -53,9 +53,11 @@ public class DictionaryUtil {
     try {
       final LineProcessor proc = new LineProcessor() {
         @Override
-        public void processLine(String line) {
+        public void processLine(String line) throws IOException {
           String[] infos = line.split("[,]+");
-          if(infos.length!=2) return;
+          if(infos.length!=2) {
+            throw new IOException("Invalid file format: "+line);
+          }
           infos[1] = infos[1].trim();
           if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
           
@@ -68,34 +70,41 @@ public class DictionaryUtil {
       
       DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS, new LineProcessor() {
         @Override
-        public void processLine(String compound) {
+        public void processLine(String compound) throws IOException {
           String[] infos = compound.split("[:]+");
-          if(infos.length!=3&&infos.length!=2) return;
+          if(infos.length!=3 && infos.length!=2) {
+            throw new IOException("Invalid file format: "+compound);
+          }
           
           final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
           final WordEntry entry;
-          if(infos.length==2) 
+          if(infos.length==2) {
             entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray(), c);
-          else 
+          } else { 
             entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray(), c);
+          }
           dictionary.add(entry.getWord(), entry);          
         }       
       }); 
       
       DictionaryResources.readLines(DictionaryResources.FILE_ABBREV, new LineProcessor() {
         @Override
-        public void processLine(String abbrev) {
+        public void processLine(String abbrev) throws IOException {
           String[] infos = abbrev.split("[:]+");
-          if(infos.length!=2) return;      
+          if(infos.length!=2) {
+            throw new IOException("Invalid file format: "+abbrev);
+          }
           abbreviations.put(infos[0].trim(), infos[1].trim());          
         }
       });
       
       DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS, new LineProcessor() {
         @Override
-        public void processLine(String compound) {
+        public void processLine(String compound) throws IOException {
           String[] infos = compound.split("[:]+");
-          if(infos.length!=2) return;
+          if(infos.length!=2) {
+            throw new IOException("Invalid file format: "+compound);
+          }
           WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
           uncompounds.put(entry.getWord(), entry);
         }
@@ -103,9 +112,11 @@ public class DictionaryUtil {
   
       DictionaryResources.readLines(DictionaryResources.FILE_CJ, new LineProcessor() {
         @Override
-        public void processLine(String cj) {
+        public void processLine(String cj) throws IOException {
           String[] infos = cj.split("[:]+");
-          if(infos.length!=2) return;
+          if(infos.length!=2) {
+            throw new IOException("Invalid file format: "+cj);
+          }
           cjwords.put(infos[0], infos[1]);
         }
       });
@@ -118,8 +129,8 @@ public class DictionaryUtil {
   
       readFileToSet(suffixs,DictionaryResources.FILE_SUFFIX);
       
-    } catch (IOException e) {      
-      new Error("Cannot load resource",e);
+    } catch (IOException e) {
+      throw new Error("Cannot load resource",e);
     }
   }
 

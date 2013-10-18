@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ko.tagging;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +46,7 @@ public class Tagger {
         public void processLine(String str) throws IOException {
           String[] syls = str.split("[:]+");
           if(syls.length!=4)
-            throw new IOException("Invalid file format: "+Arrays.toString(syls));
+            throw new IOException("Invalid file format: "+str);
           
           final String key;        
           if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
