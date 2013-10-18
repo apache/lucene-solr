@@ -45,8 +45,6 @@ public class Tagger {
       DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC, new LineProcessor() {
         @Override
         public void processLine(String str) throws IOException {
-          str=str.trim();
-          if(str.isEmpty()) return;
           String[] syls = str.split("[:]+");
           if(syls.length!=4)
             throw new IOException("Invalid file format: "+Arrays.toString(syls));

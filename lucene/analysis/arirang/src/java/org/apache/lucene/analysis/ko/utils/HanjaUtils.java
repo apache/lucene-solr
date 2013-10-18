@@ -35,11 +35,9 @@ public class HanjaUtils {
       DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC, new LineProcessor() {
         @Override
         public void processLine(String s) throws IOException {
-          if(s.isEmpty() || s.indexOf(",")==-1) return;
-
           String[] hanInfos = s.split("[,]+");
           if(hanInfos.length!=2 || hanInfos[0].length()!=1)
-            throw new IOException("Invalid file format.");
+            throw new IOException("Invalid file format: "+s);
           
           map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
         }

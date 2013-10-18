@@ -86,6 +86,9 @@ public class DictionaryResources {
       if (line.startsWith("!") || line.startsWith("\uFEFF!")) { // Skip comment lines starting with '!'
         continue;
       }
+      if (line.isEmpty()) {
+        continue;
+      }
       processor.processLine(line);
     }
   }
