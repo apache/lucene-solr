@@ -44,7 +44,7 @@ public class HanjaUtils {
       });      
       mapHanja = Collections.unmodifiableMap(map);
     } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC, ioe);
+      throw new Error("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC, ioe);
     }
   }
   
