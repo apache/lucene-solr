@@ -27,6 +27,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
+import org.apache.lucene.analysis.ko.dic.LineProcessor;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
@@ -41,23 +42,25 @@ public class Tagger {
   static {
     try {
       final SortedMap<String, String[]> map = new TreeMap<String, String[]>();;
-      final List<String> strs = DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC);
-      for(String str : strs) {
-        str=str.trim();
-        if(str.isEmpty()) continue;
-        String[] syls = str.split("[:]+");
-        if(syls.length!=4)
-          throw new IOException("Invalid file format: "+Arrays.toString(syls));
-        
-        final String key;        
-        if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
-        else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
+      DictionaryResources.readLines(DictionaryResources.FILE_TAG_DIC, new LineProcessor() {
+        @Override
+        public void processLine(String str) throws IOException {
+          str=str.trim();
+          if(str.isEmpty()) return;
+          String[] syls = str.split("[:]+");
+          if(syls.length!=4)
+            throw new IOException("Invalid file format: "+Arrays.toString(syls));
+          
+          final String key;        
+          if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
+          else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
 
-        final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
-        String[] patns = joined.split("[/]+");
-        
-        map.put(syls[0]+key, patns);
-      }
+          final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
+          String[] patns = joined.split("[/]+");
+          
+          map.put(syls[0]+key, patns);
+        }
+      });
       occurrences = Collections.unmodifiableSortedMap(map);
     } catch (IOException ioe) {
       throw new Error("Failed to read the tagger dictionary.", ioe);

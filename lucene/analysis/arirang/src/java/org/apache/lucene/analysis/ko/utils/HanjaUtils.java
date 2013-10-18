@@ -20,10 +20,10 @@ package org.apache.lucene.analysis.ko.utils;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
+import org.apache.lucene.analysis.ko.dic.LineProcessor;
 
 public class HanjaUtils {
   private HanjaUtils() {}
@@ -31,18 +31,19 @@ public class HanjaUtils {
   private static final Map<Character, char[]> mapHanja;
   static {
     try {
-      List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC);
-      Map<Character, char[]> map = new HashMap<Character, char[]>();    
-    
-      for(String s : strList) {
-        if(s.isEmpty() || s.indexOf(",")==-1) continue;
+      final Map<Character, char[]> map = new HashMap<Character, char[]>();    
+      DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC, new LineProcessor() {
+        @Override
+        public void processLine(String s) throws IOException {
+          if(s.isEmpty() || s.indexOf(",")==-1) return;
 
-        String[] hanInfos = s.split("[,]+");
-        if(hanInfos.length!=2 || hanInfos[0].length()!=1) throw new IOException("Invalid file format.");
-        
-        map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
-      }
-      
+          String[] hanInfos = s.split("[,]+");
+          if(hanInfos.length!=2 || hanInfos[0].length()!=1)
+            throw new IOException("Invalid file format.");
+          
+          map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
+        }
+      });      
       mapHanja = Collections.unmodifiableMap(map);
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC, ioe);

@@ -19,9 +19,11 @@ package org.apache.lucene.analysis.ko.utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
+import org.apache.lucene.analysis.ko.dic.LineProcessor;
 
 public class SyllableUtil {
   private SyllableUtil() {}
@@ -72,7 +74,21 @@ public class SyllableUtil {
   
   public static int IDX_EOGAN = 39; // 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI 이거나 IDX_YNPNA 이후에 1이 있는 음절)
   
-  private static List<char[]> syllables;  // 음절특성 정보
+  private static final List<char[]> syllables;  // 음절특성 정보
+  static {
+    try{
+      final List<char[]> list = new ArrayList<char[]>();
+      DictionaryResources.readLines(DictionaryResources.FILE_SYLLABLE_FEATURE, new LineProcessor() {
+        @Override
+        public void processLine(String line) throws IOException {
+          list.add(line.toCharArray());
+        }
+      });
+      syllables = Collections.unmodifiableList(list);
+    } catch(IOException ioe) {
+      throw new Error("Cannot load ressource", ioe);
+    } 
+  }
   
   /**
    * 인덱스 값에 해당하는 음절의 특성을 반환한다.
@@ -97,20 +113,6 @@ public class SyllableUtil {
     return getFeature(idx);
     
   }
-  
-  static {
-    try{
-      syllables = new ArrayList<char[]>();
-
-      List<String> line = DictionaryResources.readLines(DictionaryResources.FILE_SYLLABLE_FEATURE);  
-      for(int i=0;i<line.size();i++) {        
-        if(i!=0)
-          syllables.add(line.get(i).toCharArray());
-      }
-    }catch(IOException ioe) {
-      throw new Error("Cannot load ressource", ioe);
-    } 
-  }  
   
   public static boolean isAlpanumeric(char ch) {
     return (ch>='0'&&ch<='z');

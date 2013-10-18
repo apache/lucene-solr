@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
 
@@ -62,36 +60,34 @@ public class DictionaryResources {
 
   private DictionaryResources() {}
 
-  public static List<String> readLines(String file) throws IOException {
+  /**
+   * Get the contents of a <code>Reader</code> invoking {@link LineProcessor}
+   * for each line, removing comment lines starting with '!'.
+   * @param file the name of the dictionary resource to read
+   * @param processor lines are reported to this interface
+   * @throws IOException if an I/O error occurs
+   */
+  public static void readLines(String file, LineProcessor processor) throws IOException {
     InputStream in = null;
     try {
       in = DictionaryResources.class.getResourceAsStream(file);
       if (in == null)
         throw new FileNotFoundException(file);
-      return readLines(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
+      readLines(new InputStreamReader(in, IOUtils.CHARSET_UTF_8), processor);
     } finally {
       IOUtils.closeWhileHandlingException(in);
     }
   }
 
-  /**
-   * Get the contents of a <code>Reader</code> as a list of Strings,
-   * one entry per line, removing comment lines starting with '!'.
-   * @param input  the <code>Reader</code> to read from, not null
-   * @return the list of Strings, never null
-   * @throws IOException if an I/O error occurs
-   */
-  private static List<String> readLines(Reader input) throws IOException {
+  private static void readLines(Reader input, LineProcessor processor) throws IOException {
     BufferedReader reader = new BufferedReader(input);
-    List<String> list = new ArrayList<String>();
     String line;
     while ((line = reader.readLine()) != null) {
       if (line.startsWith("!") || line.startsWith("\uFEFF!")) { // Skip comment lines starting with '!'
         continue;
       }
-      list.add(line);
+      processor.processLine(line);
     }
-    return list;
   }
 
 }

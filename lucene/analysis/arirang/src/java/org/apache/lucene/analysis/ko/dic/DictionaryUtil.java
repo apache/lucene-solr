@@ -51,56 +51,65 @@ public class DictionaryUtil {
   
   static {  
     try {
-      List<String> strList = DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY);
-      strList.addAll(DictionaryResources.readLines(DictionaryResources.FILE_EXTENSION));
-      for(String str:strList) {
-        String[] infos = str.split("[,]+");
-        if(infos.length!=2) continue;
-        infos[1] = infos[1].trim();
-        if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
-        
-        WordEntry entry = new WordEntry(infos[0].trim(),infos[1].trim().toCharArray());
-        dictionary.add(entry.getWord(), entry);
-      }
+      final LineProcessor proc = new LineProcessor() {
+        @Override
+        public void processLine(String line) {
+          String[] infos = line.split("[,]+");
+          if(infos.length!=2) return;
+          infos[1] = infos[1].trim();
+          if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
+          
+          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].trim().toCharArray());
+          dictionary.add(entry.getWord(), entry);          
+        }
+      };
+      DictionaryResources.readLines(DictionaryResources.FILE_DICTIONARY, proc);
+      DictionaryResources.readLines(DictionaryResources.FILE_EXTENSION, proc);
       
-      List<String> compounds = DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS); 
-      for(String compound: compounds) 
-      {    
-        String[] infos = compound.split("[:]+");
-        if(infos.length!=3&&infos.length!=2) continue;
-        
-        final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
-        final WordEntry entry;
-        if(infos.length==2) 
-          entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray(), c);
-        else 
-          entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray(), c);
-        dictionary.add(entry.getWord(), entry);
-      }
+      DictionaryResources.readLines(DictionaryResources.FILE_COMPOUNDS, new LineProcessor() {
+        @Override
+        public void processLine(String compound) {
+          String[] infos = compound.split("[:]+");
+          if(infos.length!=3&&infos.length!=2) return;
+          
+          final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
+          final WordEntry entry;
+          if(infos.length==2) 
+            entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray(), c);
+          else 
+            entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray(), c);
+          dictionary.add(entry.getWord(), entry);          
+        }       
+      }); 
       
-      List<String> abbrevs = DictionaryResources.readLines(DictionaryResources.FILE_ABBREV); 
-      for(String abbrev: abbrevs) 
-      {    
-        String[] infos = abbrev.split("[:]+");
-        if(infos.length!=2) continue;      
-        abbreviations.put(infos[0].trim(), infos[1].trim());
-      }
+      DictionaryResources.readLines(DictionaryResources.FILE_ABBREV, new LineProcessor() {
+        @Override
+        public void processLine(String abbrev) {
+          String[] infos = abbrev.split("[:]+");
+          if(infos.length!=2) return;      
+          abbreviations.put(infos[0].trim(), infos[1].trim());          
+        }
+      });
       
-      List<String> lines = DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS);  
-      for(String compound: lines) {    
-        String[] infos = compound.split("[:]+");
-        if(infos.length!=2) continue;
-        WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
-        uncompounds.put(entry.getWord(), entry);
-      }      
+      DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS, new LineProcessor() {
+        @Override
+        public void processLine(String compound) {
+          String[] infos = compound.split("[:]+");
+          if(infos.length!=2) return;
+          WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
+          uncompounds.put(entry.getWord(), entry);
+        }
+      });
   
-      lines = DictionaryResources.readLines(DictionaryResources.FILE_CJ);  
-      for(String cj: lines) {    
-        String[] infos = cj.split("[:]+");
-        if(infos.length!=2) continue;
-        cjwords.put(infos[0], infos[1]);
-      }
-      
+      DictionaryResources.readLines(DictionaryResources.FILE_CJ, new LineProcessor() {
+        @Override
+        public void processLine(String cj) {
+          String[] infos = cj.split("[:]+");
+          if(infos.length!=2) return;
+          cjwords.put(infos[0], infos[1]);
+        }
+      });
+
       readFileToSet(josas,DictionaryResources.FILE_JOSA);
       
       readFileToSet(eomis,DictionaryResources.FILE_EOMI);
@@ -261,11 +270,13 @@ public class DictionaryUtil {
     
   }
   
-  private static void readFileToSet(Set<String> set, String dic) throws IOException {    
-    List<String> line = DictionaryResources.readLines(dic);
-    for(int i=1;i<line.size();i++) {
-      set.add(line.get(i).trim());
-    }
+  private static void readFileToSet(final Set<String> set, String dic) throws IOException {    
+    DictionaryResources.readLines(dic, new LineProcessor() {
+      @Override
+      public void processLine(String line) {
+        set.add(line.trim());
+      }
+    });
   }
   
   private static List<CompoundEntry> compoundArrayToList(String source, String[] arr) {
