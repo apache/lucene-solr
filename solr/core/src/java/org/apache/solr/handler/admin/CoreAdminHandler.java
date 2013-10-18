@@ -236,8 +236,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String rangesStr = params.get(CoreAdminParams.RANGES);    // ranges=a-b,c-d,e-f
     if (rangesStr != null)  {
       String[] rangesArr = rangesStr.split(",");
-      if (rangesArr.length == 0 || rangesArr.length == 1) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least two ranges specified to split an index");
+      if (rangesArr.length == 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least one range specified to split an index");
       } else  {
         ranges = new ArrayList<DocRouter.Range>(rangesArr.length);
         for (String r : rangesArr) {
