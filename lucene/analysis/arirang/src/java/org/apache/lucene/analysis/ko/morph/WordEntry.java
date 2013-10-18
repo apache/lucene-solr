@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko.morph;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class WordEntry {
@@ -36,43 +37,31 @@ public class WordEntry {
   /**
    * 단어
    */
-  private String word;
+  private final String word;
   
   /**
    * 단어특성
    */
-  private char[] features;
+  private final char[] features;
   
-  private List<CompoundEntry> compounds = new ArrayList<CompoundEntry>();
-  
-  public WordEntry() {
-    
-  }
+  private final List<CompoundEntry> compounds;
   
   public WordEntry(String word) {
-    this.word = word;
+    this(word, null);
   }
   
   public WordEntry(String word, char[] cs) {
+    this(word, cs, Collections.<CompoundEntry>emptyList());
+  }
+  
+  public WordEntry(String word, char[] cs, List<CompoundEntry> compounds) {
     this.word = word;
     this.features = cs;
-  }
-  
-  public WordEntry(String word, List<CompoundEntry> c) {
-    this.word = word;
-    this.compounds = c;
-  }
-  
-  public void setWord(String w) {
-    this.word = w;
+    this.compounds = Collections.unmodifiableList(compounds);
   }
   
   public String getWord() {
     return this.word;
-  }
-  
-  public void setFeatures(char[] cs) {
-    this.features = cs;
   }
   
   public char getFeature(int index) {
@@ -82,10 +71,6 @@ public class WordEntry {
   
   public char[] getFeatures() {
     return this.features;
-  }
-  
-  public void setCompounds(List<CompoundEntry> c) {
-    this.compounds = c;
   }
   
   public List<CompoundEntry> getCompounds() {

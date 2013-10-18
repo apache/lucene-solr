@@ -69,13 +69,12 @@ public class DictionaryUtil {
         String[] infos = compound.split("[:]+");
         if(infos.length!=3&&infos.length!=2) continue;
         
-        WordEntry entry = null;
+        final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
+        final WordEntry entry;
         if(infos.length==2) 
-          entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
+          entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray(), c);
         else 
-          entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray());
-        
-        entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
+          entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray(), c);
         dictionary.add(entry.getWord(), entry);
       }
       
@@ -91,8 +90,7 @@ public class DictionaryUtil {
       for(String compound: lines) {    
         String[] infos = compound.split("[:]+");
         if(infos.length!=2) continue;
-        WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
-        entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
+        WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
         uncompounds.put(entry.getWord(), entry);
       }      
   
