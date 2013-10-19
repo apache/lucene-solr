@@ -48,12 +48,6 @@ public class DictionaryResources {
   public static final String FILE_COMPOUNDS = "compounds.dic";  
   
   public static final String FILE_UNCOMPOUNDS = "uncompounds.dic";
-    
-  public static final String FILE_ABBREV = "abbreviation.dic";
-  
-  public static final String FILE_CJ = "cj.dic";
-  
-  public static final String FILE_TAG_DIC = "tagger.dic";
   
   public static final String FILE_MAP_HANJA_DIC = "mapHanja.dic";
 
