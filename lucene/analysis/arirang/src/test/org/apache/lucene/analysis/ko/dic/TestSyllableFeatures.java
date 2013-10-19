@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,20 +19,20 @@ package org.apache.lucene.analysis.ko.utils;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.hasFeature;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.JOSA1;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.JOSA2;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.EOMI2;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPNA;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPLA;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPMA;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPBA;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPAH;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.YNPLN;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.WDSURF;
-import static org.apache.lucene.analysis.ko.utils.SyllableUtil.EOGAN;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.EOGAN;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.EOMI2;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.JOSA1;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.JOSA2;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.WDSURF;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPAH;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPBA;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPLA;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPLN;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPMA;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.YNPNA;
+import static org.apache.lucene.analysis.ko.dic.SyllableFeatures.hasFeature;
 
-public class TestSyllableUtil extends LuceneTestCase {
+public class TestSyllableFeatures extends LuceneTestCase {
   
   public void testGa() {
     assertTrue(hasFeature('가', JOSA1));

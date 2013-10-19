@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,13 +18,12 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 /**
  * 
  * 동사의 불규칙 변형을 처리하는 Utility Class
  */
-public class IrregularUtil {
+class IrregularUtil {
   private IrregularUtil() {}
   
   // ㅂ 불규칙

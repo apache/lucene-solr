@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,28 +17,29 @@ package org.apache.lucene.analysis.ko.utils;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.ko.dic.HanjaMapper;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestHanjaUtils extends LuceneTestCase {
+public class TestHanjaMapper extends LuceneTestCase {
   
   public void testOneToOne() {
-    assertEquals("구",  new String(HanjaUtils.convertToHangul('㐀')));
-    assertEquals("인",  new String(HanjaUtils.convertToHangul('印')));
+    assertEquals("구",  new String(HanjaMapper.convertToHangul('㐀')));
+    assertEquals("인",  new String(HanjaMapper.convertToHangul('印')));
   }
   
   public void testOneToMany() {
-    assertEquals("기지",  new String(HanjaUtils.convertToHangul('枳')));
+    assertEquals("기지",  new String(HanjaMapper.convertToHangul('枳')));
   }
   
   public void testOutOfBounds() {
-    assertEquals("\u33FF", new String(HanjaUtils.convertToHangul('\u33FF')));
-    assertEquals("A", new String(HanjaUtils.convertToHangul('A')));
-    assertEquals("\uFF09", new String(HanjaUtils.convertToHangul('\uFF09')));
+    assertEquals("\u33FF", new String(HanjaMapper.convertToHangul('\u33FF')));
+    assertEquals("A", new String(HanjaMapper.convertToHangul('A')));
+    assertEquals("\uFF09", new String(HanjaMapper.convertToHangul('\uFF09')));
   }
   
   public void testEitherHangulOrItselfBack() {
     for (int i = 0; i <= 0xFFFF; i++) {
-      char res[] = HanjaUtils.convertToHangul((char)i);
+      char res[] = HanjaMapper.convertToHangul((char)i);
       if (res.length == 1 && res[0] == i) {
         continue;
       } else {

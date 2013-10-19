@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,15 +22,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
-public class HanjaUtils {
-  private HanjaUtils() {}
+public class HanjaMapper {
+  private HanjaMapper() {}
 
   private static final int HANJA_START = 0x3400;
   private static final MonotonicBlockPackedReader index;

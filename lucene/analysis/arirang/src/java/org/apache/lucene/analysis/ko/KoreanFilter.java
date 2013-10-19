@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
+import org.apache.lucene.analysis.ko.dic.HanjaMapper;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.CompoundNounAnalyzer;
@@ -36,7 +37,6 @@ import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
-import org.apache.lucene.analysis.ko.utils.HanjaUtils;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -340,7 +340,7 @@ public class KoreanFilter extends TokenFilter {
     
     for(int i=0;i<term.length();i++) {
 
-      char[] chs = HanjaUtils.convertToHangul(term.charAt(i));      
+      char[] chs = HanjaMapper.convertToHangul(term.charAt(i));      
       if(chs==null) continue;
     
       List<StringBuilder> removeList = new ArrayList<StringBuilder>(); // 제거될 후보를 저장  

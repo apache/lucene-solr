@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,10 +19,9 @@ package org.apache.lucene.analysis.ko.utils;
 
 import java.util.List;
 
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.PatternConstants;
+import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 
-public class MorphUtil {
+class MorphUtil {
   private MorphUtil() {}
 
   private static final char[] CHOSEONG = {
@@ -137,7 +136,7 @@ public class MorphUtil {
 
   public static boolean hasVerbOnly(String input) {
     for (int i = input.length()-1; i >=0; i--) {
-      if (SyllableUtil.hasFeature(input.charAt(i), SyllableUtil.WDSURF)) {
+      if (SyllableFeatures.hasFeature(input.charAt(i), SyllableFeatures.WDSURF)) {
         assert input.length() > i;
         return true;
       }

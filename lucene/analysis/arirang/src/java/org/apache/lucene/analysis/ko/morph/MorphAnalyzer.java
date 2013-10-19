@@ -23,13 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
-import org.apache.lucene.analysis.ko.utils.ConstraintUtil;
-import org.apache.lucene.analysis.ko.utils.EomiUtil;
-import org.apache.lucene.analysis.ko.utils.IrregularUtil;
-import org.apache.lucene.analysis.ko.utils.MorphUtil;
-import org.apache.lucene.analysis.ko.utils.NounUtil;
-import org.apache.lucene.analysis.ko.utils.SyllableUtil;
-import org.apache.lucene.analysis.ko.utils.VerbUtil;
+import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 
 public class MorphAnalyzer {
 
@@ -232,17 +226,17 @@ public class MorphAnalyzer {
       String eomi = input.substring(i);
 
       char ch = eomi.charAt(0);    
-      if (!isVerbOnly && josaFlag && SyllableUtil.hasFeature(ch, SyllableUtil.JOSA1)) {        
+      if (!isVerbOnly && josaFlag && SyllableFeatures.hasFeature(ch, SyllableFeatures.JOSA1)) {        
         analysisWithJosa(stem, eomi, candidates);
       }
       
       if (eomiFlag) {      
         analysisWithEomi(stem, eomi, candidates);
-        eomiFlag &= SyllableUtil.hasFeature(ch, SyllableUtil.EOMI2);
+        eomiFlag &= SyllableFeatures.hasFeature(ch, SyllableFeatures.EOMI2);
       }      
       
       if (josaFlag) {
-        josaFlag &= SyllableUtil.hasFeature(ch, SyllableUtil.JOSA2);
+        josaFlag &= SyllableFeatures.hasFeature(ch, SyllableFeatures.JOSA2);
       }
       
       if (!josaFlag && !eomiFlag) {
@@ -363,7 +357,7 @@ public class MorphAnalyzer {
       MorphUtil.buildPtnVM(output, candidates);
       
       char ch = stem.charAt(stem.length()-1); // ㄹ불규칙일 경우
-      if ((SyllableUtil.hasFeature(ch, SyllableUtil.YNPLN) == false || morphs[1].charAt(0) != 'ㄴ')
+      if ((SyllableFeatures.hasFeature(ch, SyllableFeatures.YNPLN) == false || morphs[1].charAt(0) != 'ㄴ')
           &&!"는".equals(end))   // "갈(V),는" 분석될 수 있도록
         return;
     }

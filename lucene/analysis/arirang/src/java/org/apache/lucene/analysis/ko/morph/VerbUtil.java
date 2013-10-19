@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,11 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.PatternConstants;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 
-public class VerbUtil {
+class VerbUtil {
   private VerbUtil() {}
 
   public static final Map<String, String> verbSuffix = new HashMap<String, String>();

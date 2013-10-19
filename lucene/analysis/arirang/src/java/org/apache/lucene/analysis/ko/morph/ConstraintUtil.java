@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.ko.utils;
 /**
  * 결합이 가능한 조건을 처리하는 클래스
  */
-public class ConstraintUtil {
+class ConstraintUtil {
   private ConstraintUtil() {}
   
   public static boolean canHaheCompound(String key) {

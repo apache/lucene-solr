@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,8 +18,9 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
+import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 
-public class EomiUtil {
+class EomiUtil {
   private EomiUtil() {}
 
   static final String RESULT_FAIL = "0";
@@ -149,13 +150,13 @@ public class EomiUtil {
   static boolean IsNLMBSyl(char ech, char lch) {
     switch(lch) {
       case 'ㄴ' : 
-        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPNA) || SyllableUtil.hasFeature(ech, SyllableUtil.YNPLN);
+        return SyllableFeatures.hasFeature(ech, SyllableFeatures.YNPNA) || SyllableFeatures.hasFeature(ech, SyllableFeatures.YNPLN);
       case 'ㄹ' : 
-        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPLA);
+        return SyllableFeatures.hasFeature(ech, SyllableFeatures.YNPLA);
       case 'ㅁ' : 
-        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPMA);
+        return SyllableFeatures.hasFeature(ech, SyllableFeatures.YNPMA);
       case 'ㅂ' : 
-        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPBA);
+        return SyllableFeatures.hasFeature(ech, SyllableFeatures.YNPBA);
       default: 
         return false;
     }
@@ -209,7 +210,7 @@ public class EomiUtil {
     } 
     else if(chrs[0]!='ㅇ'&&
         (chrs[1]=='ㅏ'||chrs[1]=='ㅓ'||chrs[1]=='ㅔ'||chrs[1]=='ㅐ')&&
-        (chrs.length==2 || SyllableUtil.hasFeature(estem, SyllableUtil.YNPAH)) &&
+        (chrs.length==2 || SyllableFeatures.hasFeature(estem, SyllableFeatures.YNPAH)) &&
         (DictionaryUtil.combineAndEomiCheck('어', end)!=null)) 
     {        
       strs[0] = stem;

@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,15 +21,14 @@ import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.lucene.analysis.ko.dic.DictionaryResources;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 
-public class SyllableUtil {
-  private SyllableUtil() {}
+public class SyllableFeatures {
+  private SyllableFeatures() {}
 
   /** 조사의 첫음절로 사용되는 음절 49개 */
   public static int JOSA1 = 0;

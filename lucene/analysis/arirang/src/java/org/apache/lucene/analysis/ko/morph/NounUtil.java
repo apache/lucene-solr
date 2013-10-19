@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.utils;
+package org.apache.lucene.analysis.ko.morph;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,12 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
-import org.apache.lucene.analysis.ko.morph.PatternConstants;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
+import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 
-public class NounUtil {
+class NounUtil {
   private NounUtil() {}
 
   private static boolean isDNoun(char ch) {
@@ -250,7 +247,7 @@ public class NounUtil {
 
       if (DictionaryUtil.existJosa(josa)) {
         return true;
-      } else if (!SyllableUtil.hasFeature(josa.charAt(0), SyllableUtil.JOSA2)) {
+      } else if (!SyllableFeatures.hasFeature(josa.charAt(0), SyllableFeatures.JOSA2)) {
         return false;
       }
     }
