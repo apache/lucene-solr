@@ -38,11 +38,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 {
   private static Logger log = LoggerFactory.getLogger(SolrJettyTestBase.class);
 
-  // Try not introduce a dependency on the example schema or config unless you need to.
-  // using configs in the test directory allows more flexibility to change "example"
-  // without breaking configs.
-  public String getSolrHome() { return ExternalPaths.EXAMPLE_HOME; }
-
   private static File TEST_KEYSTORE;
   static {
     TEST_KEYSTORE = (null == ExternalPaths.SOURCE_HOME)
