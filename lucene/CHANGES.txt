@@ -113,6 +113,10 @@ New Features
 
 * LUCENE-5269: Add CodepointCountFilter. (Robert Muir)
 
+* LUCENE-5294: Suggest module: add DocumentExpressionDictionary to
+  compute each suggestion's weight using a javascript expression.
+  (Areek Zillur via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
