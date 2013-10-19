@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.ko.utils;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -37,9 +39,13 @@ public class HanjaUtils {
     InputStream datStream = null, idxStream = null;
     try {
       datStream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_HANJA_DAT);
+      if (datStream == null)
+        throw new FileNotFoundException(DictionaryResources.FILE_HANJA_DAT);
       idxStream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_HANJA_IDX);
-      DataInput dat = new InputStreamDataInput(datStream);
-      DataInput idx = new InputStreamDataInput(idxStream);
+      if (idxStream == null)
+        throw new FileNotFoundException(DictionaryResources.FILE_HANJA_IDX);
+      DataInput dat = new InputStreamDataInput(new BufferedInputStream(datStream));
+      DataInput idx = new InputStreamDataInput(new BufferedInputStream(idxStream));
       CodecUtil.checkHeader(dat, DictionaryResources.FILE_HANJA_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
       CodecUtil.checkHeader(idx, DictionaryResources.FILE_HANJA_IDX, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
       data = new char[dat.readVInt()];
@@ -49,7 +55,7 @@ public class HanjaUtils {
       }
       index = new MonotonicBlockPackedReader(idx, idx.readVInt(), idx.readVInt(), idx.readVInt(), false);
     } catch (IOException ioe) {
-      throw new Error(ioe);
+      throw new Error("Cannot load resource", ioe);
     } finally {
       IOUtils.closeWhileHandlingException(datStream, idxStream);
     }
