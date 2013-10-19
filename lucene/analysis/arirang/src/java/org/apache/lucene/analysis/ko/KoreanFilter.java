@@ -42,7 +42,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-public class KoreanFilter extends TokenFilter {
+public final class KoreanFilter extends TokenFilter {
 
   private final LinkedList<IndexWord> morphQueue = new LinkedList<IndexWord>();;
   private final MorphAnalyzer morph = new MorphAnalyzer();
@@ -100,7 +100,7 @@ public class KoreanFilter extends TokenFilter {
     this.isPositionInc = isPositionInc;
   }
   
-  public final boolean incrementToken() throws IOException {
+  public boolean incrementToken() throws IOException {
     if (!morphQueue.isEmpty()) {
       restoreState(currentState);
       setTermBufferByQueue();
@@ -139,9 +139,9 @@ public class KoreanFilter extends TokenFilter {
     termAtt.setEmpty().append(word);
     offsetAtt.setOffset(iw.getOffset(), iw.getOffset() + word.length());
     
+    // NOCOMMIT: This is bullshit! PositionIncrement=0 if disabled?
     int inc = isPositionInc ?  iw.getIncrement() : 0;
     posIncrAtt.setPositionIncrement(inc);      
-    
   }
   
   /**
