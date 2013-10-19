@@ -105,6 +105,9 @@ Bug Fixes
   
 * SOLR-5216: Document updates to SolrCloud can cause a distributed deadlock.
   (Mark Miller)
+
+* SOLR-5367: Unmarshalling delete by id commands with JavaBin can lead to class cast 
+  exception. (Mark Miller)
   
 Optimizations
 ----------------------  

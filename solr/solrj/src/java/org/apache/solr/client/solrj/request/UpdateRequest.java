@@ -47,6 +47,7 @@ import org.apache.solr.common.util.XML;
  */
 public class UpdateRequest extends AbstractUpdateRequest {
   
+  private static final String VER = "ver";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";
   private Map<SolrInputDocument,Map<String,Object>> documents = null;
@@ -148,7 +149,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       deleteById = new LinkedHashMap<String,Map<String,Object>>();
     }
     Map<String,Object> params = new HashMap<String,Object>(1);
-    params.put("ver", version);
+    params.put(VER, version);
     deleteById.put(id, params);
     return this;
   }
@@ -224,7 +225,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
         Map<String,Object> map = entry.getValue();
         Long version = null;
         if (map != null) {
-          version = (Long) map.get("ver");
+          version = (Long) map.get(VER);
         }
         Slice slice = router.getTargetSlice(deleteId, null, null, col);
         if (slice == null) {
@@ -371,7 +372,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           writer.append("<id");
           Map<String,Object> map = entry.getValue();
           if (map != null) {
-            Long version = (Long) map.get("ver");
+            Long version = (Long) map.get(VER);
             if (version != null) {
               writer.append(" version=\"" + version + "\"");
             }
