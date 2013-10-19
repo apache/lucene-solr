@@ -94,7 +94,7 @@ public class JavaBinUpdateRequestCodec {
     List<List<NamedList>> doclist;
     Map<SolrInputDocument,Map<String,Object>>  docMap;
     List<String> delById;
-    Map<String,Long> delByIdMap;
+    Map<String,Map<String,Object>> delByIdMap;
     List<String> delByQ;
     final NamedList[] namedList = new NamedList[1];
     JavaBinCodec codec = new JavaBinCodec() {
@@ -166,7 +166,7 @@ public class JavaBinUpdateRequestCodec {
       }
     }
     delById = (List<String>) namedList[0].get("delById");
-    delByIdMap = (Map<String,Long>) namedList[0].get("delByIdMap");
+    delByIdMap = (Map<String,Map<String,Object>>) namedList[0].get("delByIdMap");
     delByQ = (List<String>) namedList[0].get("delByQ");
     doclist = (List) namedList[0].get("docs");
     docMap =  (Map<SolrInputDocument,Map<String,Object>>) namedList[0].get("docsMap");
@@ -201,8 +201,15 @@ public class JavaBinUpdateRequestCodec {
       }
     }
     if (delByIdMap != null) {
-      for (Map.Entry<String,Long> entry : delByIdMap.entrySet()) {
-        updateRequest.deleteById(entry.getKey(), entry.getValue());
+      for (Map.Entry<String,Map<String,Object>> entry : delByIdMap.entrySet()) {
+        Map<String,Object> params = entry.getValue();
+        if (params != null) {
+          Long version = (Long) params.get("ver");
+          updateRequest.deleteById(entry.getKey(), version);
+        } else {
+          updateRequest.deleteById(entry.getKey());
+        }
+  
       }
     }
     if (delByQ != null) {
