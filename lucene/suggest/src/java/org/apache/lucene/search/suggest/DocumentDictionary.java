@@ -46,10 +46,13 @@ import org.apache.lucene.util.BytesRefIterator;
  */
 public class DocumentDictionary implements Dictionary {
   
-  private final IndexReader reader;
+  /** {@link IndexReader} to load documents from */
+  protected final IndexReader reader;
+
+  /** Field to read payload from */
+  protected final String payloadField;
   private final String field;
   private final String weightField;
-  private final String payloadField;
   
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
@@ -80,8 +83,9 @@ public class DocumentDictionary implements Dictionary {
   public BytesRefIterator getWordsIterator() throws IOException {
     return new DocumentInputIterator(payloadField!=null);
   }
-    
-  final class DocumentInputIterator implements InputIterator {
+
+  /** Implements {@link InputIterator} from stored fields. */
+  protected class DocumentInputIterator implements InputIterator {
     private final int docCount;
     private final Set<String> relevantFields;
     private final boolean hasPayloads;
@@ -89,6 +93,7 @@ public class DocumentDictionary implements Dictionary {
     private int currentDocId = -1;
     private long currentWeight;
     private BytesRef currentPayload;
+    private Document doc;
     
     /**
      * Creates an iterator over term, weight and payload fields from the lucene
@@ -100,13 +105,7 @@ public class DocumentDictionary implements Dictionary {
       this.hasPayloads = hasPayloads;
       currentPayload = null;
       liveDocs = MultiFields.getLiveDocs(reader);
-      List<String> relevantFieldList;
-      if(hasPayloads) {
-        relevantFieldList = Arrays.asList(field, weightField, payloadField);
-      } else {
-        relevantFieldList = Arrays.asList(field, weightField);
-      }
-      this.relevantFields = new HashSet<String>(relevantFieldList);
+      this.relevantFields = getRelevantFields(new String [] {field, weightField, payloadField});
     }
 
     @Override
@@ -127,7 +126,7 @@ public class DocumentDictionary implements Dictionary {
           continue;
         }
 
-        Document doc = reader.document(currentDocId, relevantFields);
+        doc = reader.document(currentDocId, relevantFields);
         
         if (hasPayloads) {
           IndexableField payload = doc.getField(payloadField);
@@ -139,13 +138,7 @@ public class DocumentDictionary implements Dictionary {
           currentPayload = payload.binaryValue();
         }
         
-        IndexableField weight = doc.getField(weightField);
-        if (weight == null) {
-          throw new IllegalArgumentException(weightField + " does not exist");
-        } else if (weight.numericValue() == null) {
-          throw new IllegalArgumentException(weightField + " does not have numeric value");
-        }
-        currentWeight = weight.numericValue().longValue();
+        currentWeight = getWeight(currentDocId);
         
         IndexableField fieldVal = doc.getField(field);
         if (fieldVal == null) {
@@ -168,6 +161,26 @@ public class DocumentDictionary implements Dictionary {
     public boolean hasPayloads() {
       return hasPayloads;
     }
+
+    /** Return the suggestion weight for this document */
+    protected long getWeight(int docId) {
+      IndexableField weight = doc.getField(weightField);
+      if (weight == null) {
+        throw new IllegalArgumentException(weightField + " does not exist");
+      } else if (weight.numericValue() == null) {
+        throw new IllegalArgumentException(weightField + " does not have numeric value");
+      }
+      return weight.numericValue().longValue();
+    }
     
+    private Set<String> getRelevantFields(String... fields) {
+      Set<String> relevantFields = new HashSet<String>();
+      for (String relevantField : fields) {
+        if (relevantField != null) {
+          relevantFields.add(relevantField);
+        }
+      }
+      return relevantFields;
+    }
   }
 }
