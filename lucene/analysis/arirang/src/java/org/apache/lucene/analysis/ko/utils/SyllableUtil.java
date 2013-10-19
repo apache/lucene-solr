@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.ko.utils;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
@@ -61,7 +63,9 @@ public class SyllableUtil {
     InputStream stream = null;
     try {
       stream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_SYLLABLE_DAT);
-      DataInput dat = new InputStreamDataInput(stream);
+      if (stream == null)
+        throw new FileNotFoundException(DictionaryResources.FILE_SYLLABLE_DAT);
+      DataInput dat = new InputStreamDataInput(new BufferedInputStream(stream));
       CodecUtil.checkHeader(dat, DictionaryResources.FILE_SYLLABLE_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
       long bits[] = new long[dat.readVInt()];
       for (int i = 0; i < bits.length; i++) {
