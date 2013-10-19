@@ -108,6 +108,9 @@ Bug Fixes
 
 * SOLR-5367: Unmarshalling delete by id commands with JavaBin can lead to class cast 
   exception. (Mark Miller)
+
+* SOLR-5359: ZooKeeper client is not closed when it fails to connect to an ensemble.
+  (Mark Miller, Klaus Herrmann)
   
 Optimizations
 ----------------------  

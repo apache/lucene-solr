@@ -18,11 +18,10 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.File;
-import java.util.HashSet;
+import java.net.MalformedURLException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -40,6 +39,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
 
 /**
  * This test would be faster if we simulated the zk state instead.
@@ -200,6 +200,18 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
+  }
+  
+  public void testShutdown() throws MalformedURLException {
+    CloudSolrServer server = new CloudSolrServer("[ff01::114]:33332");
+    server.setZkConnectTimeout(100);
+    try {
+      server.connect();
+      fail("Expected exception");
+    } catch(RuntimeException e) {
+      assertTrue(e.getCause() instanceof TimeoutException);
+    }
+    server.shutdown();
   }
 
 }
