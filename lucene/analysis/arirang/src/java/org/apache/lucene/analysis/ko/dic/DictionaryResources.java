@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 
 import org.apache.lucene.util.IOUtils;
@@ -67,7 +66,7 @@ public class DictionaryResources {
       in = DictionaryResources.class.getResourceAsStream(file);
       if (in == null)
         throw new FileNotFoundException(file);
-      readLines(new InputStreamReader(in, IOUtils.CHARSET_UTF_8), processor);
+      readLines(IOUtils.getDecodingReader(in, IOUtils.CHARSET_UTF_8), processor);
     } finally {
       IOUtils.closeWhileHandlingException(in);
     }
