@@ -606,6 +606,10 @@ public class LBHttpSolrServer extends SolrServer {
     this.requestWriter = requestWriter;
   }
   
+  public RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+  
   @Override
   protected void finalize() throws Throwable {
     try {

@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -122,6 +123,8 @@ public class CloudSolrServer extends SolrServer {
       this.zkHost = zkHost;
       this.myClient = HttpClientUtil.createClient(null);
       this.lbServer = new LBHttpSolrServer(myClient);
+      this.lbServer.setRequestWriter(new BinaryRequestWriter());
+      this.lbServer.setParser(new BinaryResponseParser());
       this.updatesToLeaders = true;
       shutdownLBHttpSolrServer = true;
   }
@@ -131,6 +134,8 @@ public class CloudSolrServer extends SolrServer {
     this.zkHost = zkHost;
     this.myClient = HttpClientUtil.createClient(null);
     this.lbServer = new LBHttpSolrServer(myClient);
+    this.lbServer.setRequestWriter(new BinaryRequestWriter());
+    this.lbServer.setParser(new BinaryResponseParser());
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = true;
   }
@@ -174,6 +179,14 @@ public class CloudSolrServer extends SolrServer {
    */
   public void setParser(ResponseParser processor) {
     lbServer.setParser(processor);
+  }
+  
+  public RequestWriter getRequestWriter() {
+    return lbServer.getRequestWriter();
+  }
+  
+  public void setRequestWriter(RequestWriter requestWriter) {
+    lbServer.setRequestWriter(requestWriter);
   }
 
   public ZkStateReader getZkStateReader() {
