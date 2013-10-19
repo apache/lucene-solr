@@ -114,6 +114,9 @@ Optimizations
 
 * SOLR-5232: SolrCloud should distribute updates via streaming rather than buffering.
   (Mark Miller)
+
+* SOLR-5223: SolrCloud should use the JavaBin binary format for communication by default. 
+  (Mark Miller)
   
 Security
 ----------------------

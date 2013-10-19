@@ -83,7 +83,8 @@ public class StreamingSolrServers {
           errors.add(error);
         }
       };
-
+      server.setParser(new BinaryResponseParser());
+      server.setRequestWriter(new BinaryRequestWriter());
       server.setPollQueueTime(0);
       solrServers.put(url, server);
     }
