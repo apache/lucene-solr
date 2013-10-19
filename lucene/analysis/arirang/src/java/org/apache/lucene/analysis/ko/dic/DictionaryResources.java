@@ -49,8 +49,9 @@ public class DictionaryResources {
   
   public static final String FILE_UNCOMPOUNDS = "uncompounds.dic";
   
-  public static final String FILE_MAP_HANJA_DIC = "mapHanja.dic";
-
+  public static final String FILE_HANJA_IDX = "hanja.idx";
+  public static final String FILE_HANJA_DAT = "hanja.dat";
+  public static final int DATA_VERSION = 0;
 
   private DictionaryResources() {}
 
@@ -86,5 +87,4 @@ public class DictionaryResources {
       processor.processLine(line);
     }
   }
-
 }

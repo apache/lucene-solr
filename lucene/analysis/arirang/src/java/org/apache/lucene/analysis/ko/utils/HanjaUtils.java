@@ -18,44 +18,60 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.InputStream;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
-import org.apache.lucene.analysis.ko.dic.LineProcessor;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
 public class HanjaUtils {
   private HanjaUtils() {}
 
-  private static final Map<Character, char[]> mapHanja;
+  private static final int HANJA_START = 0x3400;
+  private static final MonotonicBlockPackedReader index;
+  private static final char[] data;
   static {
+    InputStream datStream = null, idxStream = null;
     try {
-      final Map<Character, char[]> map = new HashMap<Character, char[]>();    
-      DictionaryResources.readLines(DictionaryResources.FILE_MAP_HANJA_DIC, new LineProcessor() {
-        @Override
-        public void processLine(String s) throws IOException {
-          String[] hanInfos = s.split("[,]+");
-          if(hanInfos.length!=2 || hanInfos[0].length()!=1)
-            throw new IOException("Invalid file format: "+s);
-          
-          map.put(hanInfos[0].charAt(0), hanInfos[1].toCharArray());
-        }
-      });      
-      mapHanja = Collections.unmodifiableMap(map);
+      datStream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_HANJA_DAT);
+      idxStream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_HANJA_IDX);
+      DataInput dat = new InputStreamDataInput(datStream);
+      DataInput idx = new InputStreamDataInput(idxStream);
+      CodecUtil.checkHeader(dat, DictionaryResources.FILE_HANJA_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
+      CodecUtil.checkHeader(idx, DictionaryResources.FILE_HANJA_IDX, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
+      data = new char[dat.readVInt()];
+      for (int i = 0; i < data.length; i++) {
+        data[i] = (char) dat.readShort();
+        assert Character.UnicodeBlock.of(data[i]) == Character.UnicodeBlock.HANGUL_SYLLABLES;
+      }
+      index = new MonotonicBlockPackedReader(idx, idx.readVInt(), idx.readVInt(), idx.readVInt(), false);
     } catch (IOException ioe) {
-      throw new Error("Cannot load: " + DictionaryResources.FILE_MAP_HANJA_DIC, ioe);
+      throw new Error(ioe);
+    } finally {
+      IOUtils.closeWhileHandlingException(datStream, idxStream);
     }
   }
   
-  /**
-   * 한자에 대응하는 한글을 찾아서 반환한다.
-   * 하나의 한자는 여러 음으로 읽일 수 있으므로 가능한 모든 음을 한글로 반환한다.
-   */
+  /** 
+   * Returns array of hangul pronunciations.
+   * TODO: expose this in another way */
   public static char[] convertToHangul(char hanja) {
-//    if(hanja>0x9FFF||hanja<0x3400) return new char[]{hanja};
-    
-    final char[] result = mapHanja.get(hanja);
-    return (result==null) ? new char[]{hanja} : result;
+    if (hanja < HANJA_START) {
+      return new char[] { hanja };
+    } else {
+      int idx = hanja - HANJA_START;
+      int start = (int) index.get(idx);
+      int end = (int) index.get(idx+1);
+      if (end - start == 0) {
+        return new char[] { hanja };
+      } else {
+        char result[] = new char[end - start];
+        System.arraycopy(data, start, result, 0, end - start);
+        return result;
+      }
+    }
   }
 }
