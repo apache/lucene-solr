@@ -28,6 +28,7 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 
 /**
@@ -41,8 +42,11 @@ public final class BlockPackedReader {
   private final long[] minValues;
   private final PackedInts.Reader[] subReaders;
 
-  /** Sole constructor. */
-  public BlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  /** 
+   * Sole constructor. 
+   * @throws ClassCastException if you try to use {@code direct} without an IndexInput
+   */
+  public BlockPackedReader(DataInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
     this.valueCount = valueCount;
     blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
@@ -66,9 +70,10 @@ public final class BlockPackedReader {
       } else {
         final int size = (int) Math.min(blockSize, valueCount - (long) i * blockSize);
         if (direct) {
-          final long pointer = in.getFilePointer();
-          subReaders[i] = PackedInts.getDirectReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
-          in.seek(pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
+          IndexInput ii = (IndexInput)in;
+          final long pointer = ii.getFilePointer();
+          subReaders[i] = PackedInts.getDirectReaderNoHeader(ii, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          ii.seek(pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
         } else {
           subReaders[i] = PackedInts.getReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
         }
