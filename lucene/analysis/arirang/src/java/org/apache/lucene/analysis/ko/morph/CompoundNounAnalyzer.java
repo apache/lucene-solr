@@ -233,7 +233,6 @@ public class CompoundNounAnalyzer {
       return true;
     }
     
-    int score = 0;
     List<CompoundEntry> results = new ArrayList<CompoundEntry>();
         
     String prev = input.substring(0,pos);
@@ -241,9 +240,6 @@ public class CompoundNounAnalyzer {
     
     boolean pSucess = false;
     boolean rSuccess = false;
-    CompoundEntry pEntry = null;
-    CompoundEntry rEntry = null;
-    
     WordEntry prvEntry = DictionaryUtil.getAllNoun(prev);
     if(prvEntry==null) {
       pSucess = analyze(prev, results, false);
@@ -370,9 +366,7 @@ public class CompoundNounAnalyzer {
    */
   private CompoundEntry analyzeSingle(String input) {
             
-    boolean success = false;
     int score = AnalysisOutput.SCORE_ANALYSIS;
-    int ptn = PatternConstants.PTN_N;
     char pos = PatternConstants.POS_NOUN;
     if(input.length()==1) return  new CompoundEntry(input, 0, true,pos);
     
@@ -380,7 +374,6 @@ public class CompoundNounAnalyzer {
     if(entry!=null) {
       score = AnalysisOutput.SCORE_CORRECT;
       if(entry.getFeature(WordEntry.IDX_NOUN)!='1') {
-        ptn = PatternConstants.PTN_AID;
         pos = PatternConstants.POS_AID;
       }
     }

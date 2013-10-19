@@ -6,7 +6,6 @@
 #
 # This stopwords file has the same default set as KoreanAnalyzer
 #
-
 a
 an
 and
@@ -53,5 +52,3 @@ with
 그래서
 또
 또는
-
-##### End of file

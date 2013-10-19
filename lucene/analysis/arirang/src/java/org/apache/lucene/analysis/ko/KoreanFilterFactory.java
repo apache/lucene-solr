@@ -52,25 +52,21 @@ public class KoreanFilterFactory extends TokenFilterFactory {
   
   private static final String IS_POSITION_INC = "incPosition";
 
-  private boolean bigrammable;
+  private final boolean bigrammable;
 
-  private boolean hasOrigin;
+  private final boolean hasOrigin;
 
-  private boolean hasCNoun;
+  private final boolean hasCNoun;
 
-  private boolean exactMatch;
+  private final boolean exactMatch;
   
-  private boolean isPositionInc;
+  private final boolean isPositionInc;
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
   public KoreanFilterFactory(Map<String, String> args) {
     super(args);
-    init(args);
-  }
-
-  public void init(Map<String, String> args) {
     bigrammable = getBoolean(args, BIGRAMMABLE_PARAM, true);
     hasOrigin = getBoolean(args, HAS_ORIGIN_PARAM, true);
     exactMatch = getBoolean(args, EXACT_MATCH_PARAM, false);

@@ -37,62 +37,37 @@ import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
-import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class KoreanFilter extends TokenFilter {
 
-  private LinkedList<IndexWord> morphQueue;
+  private final LinkedList<IndexWord> morphQueue = new LinkedList<IndexWord>();;
+  private final MorphAnalyzer morph = new MorphAnalyzer();
+  private final WordSpaceAnalyzer wsAnal = new WordSpaceAnalyzer();
+  private final CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();
   
-  private MorphAnalyzer morph;
+  private State currentState = null;
   
-  private WordSpaceAnalyzer wsAnal;
-  
-  private boolean bigrammable = true;
-  
-  private boolean hasOrigin = false;
-  
-  private boolean originCNoun = true;
-  
-  private boolean exactMatch = false;
-  
-  private boolean isPositionInc = true;
-  
-  private char[] curTermBuffer;
+  private final boolean bigrammable;
+  private final boolean hasOrigin;
+  private final boolean originCNoun;
+  private final boolean isPositionInc;
     
-  private int curTermLength;
-    
-  private String curType;
-    
-  private String curSource;
-    
-  private int tokStart;
-    
-  private int hanStart = 0; // 한글의 시작 위치, 복합명사일경우
-    
-  private int chStart = 0;
-    
-  private CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();
-  
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-  private static final String APOSTROPHE_TYPE = ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.APOSTROPHE];
-  private static final String ACRONYM_TYPE = ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ACRONYM];
+  private static final String APOSTROPHE_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.APOSTROPHE];
+  private static final String ACRONYM_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.ACRONYM];
+  private static final String KOREAN_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.KOREAN];
+  private static final String CHINESE_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.CHINESE];
     
   public KoreanFilter(TokenStream input) {
-    super(input);
-    morphQueue =  new LinkedList<IndexWord>();
-    morph = new MorphAnalyzer();
-    wsAnal = new WordSpaceAnalyzer();
-    cnAnalyzer.setExactMach(false);
+    this(input, true);
   }
 
   /**
@@ -101,76 +76,70 @@ public class KoreanFilter extends TokenFilter {
    * @param bigram  Whether the bigram index term return or not.
    */
   public KoreanFilter(TokenStream input, boolean bigram) {
-    this(input);  
-    bigrammable = bigram;
+    this(input, bigram, false);
   }
   
   public KoreanFilter(TokenStream input, boolean bigram, boolean has) {
-    this(input, bigram);
-    hasOrigin = has;
+    this(input, bigram, has, false);
   }
   
-  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean match) {
-    this(input, bigram,has);
-    this.exactMatch = match;
-  }
-  
-  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean match, boolean cnoun) {
-    this(input, bigram,has, match);
-    this.originCNoun = cnoun;
+  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch) {
+    this(input, bigram, has, exactMatch, true);
   }
 
-  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean match, boolean cnoun, boolean isPositionInc) {
-    this(input, bigram,has, match, cnoun);
+  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch, boolean cnoun) {
+    this(input, bigram, has, exactMatch, cnoun, true);
+  }
+
+  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch, boolean cnoun, boolean isPositionInc) {
+    super(input);
+    cnAnalyzer.setExactMach(exactMatch);
+    this.bigrammable = bigram;
+    this.hasOrigin = has;
+    this.originCNoun = cnoun;
     this.isPositionInc = isPositionInc;
   }
   
   public final boolean incrementToken() throws IOException {
-
-    if(curTermBuffer!=null&&morphQueue.size()>0) {
-      setTermBufferByQueue(false);
+    if (!morphQueue.isEmpty()) {
+      restoreState(currentState);
+      setTermBufferByQueue();
       return true;
     }
 
-    if(!input.incrementToken()) return false;
-    
-    curTermBuffer = termAtt.buffer().clone();
-    curTermLength = termAtt.length();
-    tokStart = offsetAtt.startOffset();    
-    curType = typeAtt.type();
- 
-    if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.KOREAN].equals(curType)) {            
-      analysisKorean(new String(curTermBuffer,0,termAtt.length()));
-    } else if(KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.CHINESE].equals(curType)) {
-      analysisChinese(new String(curTermBuffer,0,termAtt.length()));
-    } else {
-      analysisETC(new String(curTermBuffer,0,termAtt.length()));
-    }        
-
-    if(morphQueue!=null&&morphQueue.size()>0) {
-      setTermBufferByQueue(true);  
-    } else {
-      return incrementToken();
+    while (input.incrementToken()) {
+      currentState = captureState();
+      
+      final String type = typeAtt.type();
+      if(KOREAN_TYPE.equals(type)) {            
+        analysisKorean(termAtt.toString());
+      } else if(CHINESE_TYPE.equals(type)) {
+        analysisChinese(termAtt.toString());
+      } else {
+        analysisETC(termAtt.toString());
+      }        
+  
+      if (!morphQueue.isEmpty()) {
+        // no need to restore state!
+        setTermBufferByQueue();
+        return true;
+      }
     }
 
-    return true;
-
+    return false;
   }
   
   /**
    * queue에 저장된 값으로 buffer의 값을 복사한다.
    */
-  private void setTermBufferByQueue(boolean isFirst) {
-    
-    clearAttributes();
-        
+  private void setTermBufferByQueue() {
     IndexWord iw = morphQueue.removeFirst();
-
-    termAtt.copyBuffer(iw.getWord().toCharArray(), 0, iw.getWord().length());
-    offsetAtt.setOffset(iw.getOffset(), iw.getOffset() + iw.getWord().length());
+    String word = iw.getWord();
+    
+    termAtt.setEmpty().append(word);
+    offsetAtt.setOffset(iw.getOffset(), iw.getOffset() + word.length());
     
     int inc = isPositionInc ?  iw.getIncrement() : 0;
-    
     posIncrAtt.setPositionIncrement(inc);      
     
   }
@@ -206,7 +175,8 @@ public class KoreanFilter extends TokenFilter {
           results.addAll(outputs);
         }
         extractKeyword(results, offsetAtt.startOffset(), map, 0);
-      }catch(Exception e) {
+      } catch(Exception e) {
+        // nocommit: Fix this stupidness with catch all Exceptions!
         extractKeyword(outputs.subList(0, 1), offsetAtt.startOffset(), map, 0);
       }
       
@@ -221,9 +191,7 @@ public class KoreanFilter extends TokenFilter {
   
   }
   
-  private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,IndexWord> map, int position) 
-      
-  {
+  private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,IndexWord> map, int position) {
 
     int maxDecompounds = 0;
     int maxStem = 0;
@@ -450,20 +418,11 @@ public class KoreanFilter extends TokenFilter {
     return false;
   }
   
-  public void setHasOrigin(boolean has) {
-    hasOrigin = has;
-  }
-
-  public void setExactMatch(boolean match) {
-    this.exactMatch = match;
-  }
-
-  /* nocommit: i think this is needed? @Override
+  @Override
   public void reset() throws IOException {
     super.reset();
     morphQueue.clear();
-    curTermBuffer = null;
-  }*/
-  
+    currentState = null;
+  }
   
 }
