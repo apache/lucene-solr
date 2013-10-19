@@ -29,14 +29,18 @@ import org.apache.lucene.analysis.ko.morph.WordEntry;
 public class NounUtil {
   private NounUtil() {}
 
-  private static final List<String> DNouns = new ArrayList<String>();
-    
-  static {
-    String[] strs = new String[]{"등", "들","상","간","뿐","별","적"};
-    for(String str:strs) {
-      DNouns.add(str);
+  private static boolean isDNoun(char ch) {
+    switch(ch) {
+      case '등':
+      case '들':
+      case '상':
+      case '간':
+      case '뿐':
+      case '별':
+      case '적': return true;
+      default: return false;
     }
-  };
+  }
     
   /**
    * 
@@ -52,7 +56,6 @@ public class NounUtil {
     if(strlen<2) return false;       
 
     char[] chrs = MorphUtil.decompose(o.getStem().charAt(strlen-1));
-    boolean success = false;
 
     if(o.getStem().charAt(strlen-1)!='기'&&!(chrs.length==3&&chrs[2]=='ㅁ')) return false;
 
@@ -223,7 +226,7 @@ public class NounUtil {
 
     int strlen = output.getStem().length();
     String d = output.getStem().substring(strlen-1);      
-    if(!DNouns.contains(d)) return false;
+    if(d.length() != 1 || !isDNoun(d.charAt(0))) return false;
 
     String s = output.getStem().substring(0, strlen-1);
     output.setNsfx(d);

@@ -167,44 +167,11 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static WordEntry getAdverb(String key) {
-    WordEntry entry = getWord(key);
-    if(entry==null) return null;
-
-    if(entry.getFeature(WordEntry.IDX_BUSA)=='1') return entry;
-    return null;
-  }
-  
   public static WordEntry getBusa(String key) {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
 
     if(entry.getFeature(WordEntry.IDX_BUSA)=='1'&&entry.getFeature(WordEntry.IDX_NOUN)=='0') return entry;
-    return null;
-  }
-  
-  public static WordEntry getIrrVerb(String key, char irrType) {
-    WordEntry entry = getWord(key);
-    if(entry==null) return null;
-
-    if(entry.getFeature(WordEntry.IDX_VERB)=='1'&&
-        entry.getFeature(WordEntry.IDX_REGURA)==irrType) return entry;
-    return null;
-  }
-  
-  public static WordEntry getBeVerb(String key) {
-    WordEntry entry = getWord(key);
-    if(entry==null) return null;
-    
-    if(entry.getFeature(WordEntry.IDX_BEV)=='1') return entry;
-    return null;
-  }
-  
-  public static WordEntry getDoVerb(String key) {
-    WordEntry entry = getWord(key);
-    if(entry==null) return null;
-    
-    if(entry.getFeature(WordEntry.IDX_DOV)=='1') return entry;
     return null;
   }
   

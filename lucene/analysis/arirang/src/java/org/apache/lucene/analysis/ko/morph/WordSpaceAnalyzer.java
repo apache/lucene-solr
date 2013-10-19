@@ -574,14 +574,4 @@ public class WordSpaceAnalyzer {
     return false;
     
   }
-  
-  private void printCandidate(WSOutput output) {
-    
-    List<AnalysisOutput> os = output.getPhrases();
-    for(AnalysisOutput o : os) {
-      System.out.print(o.toString()+"("+o.getScore()+")| ");
-    }
-    System.out.println("<==");
-    
-  } 
 }

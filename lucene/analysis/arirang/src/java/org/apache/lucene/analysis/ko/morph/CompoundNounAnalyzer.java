@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 
@@ -29,13 +28,7 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
  */
 public class CompoundNounAnalyzer {
   
-  private static int score = 1;  
-  
   private boolean exactMach  = true;
-  
-  private static Pattern NUM_PATTERN = Pattern.compile("^[0-9\\.,]+$");
-
-  private static Pattern ALPHANUM_PATTERN = Pattern.compile("^[0-9A-Za-z\\.,]+$");
     
   public boolean isExactMach() {
     return exactMach;

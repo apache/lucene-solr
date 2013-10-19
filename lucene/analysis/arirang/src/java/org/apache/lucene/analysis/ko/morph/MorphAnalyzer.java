@@ -305,13 +305,12 @@ public class MorphAnalyzer {
    * @param candidates  candidates
    */
   public void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) {
-  
     if(stem==null||stem.length()==0) return;  
     
     char[] chrs = MorphUtil.decompose(stem.charAt(stem.length()-1));
     if(!DictionaryUtil.existJosa(end)||
-        (chrs.length==3&&ConstraintUtil.isTwoJosa(end))||
-        (chrs.length==2&&(ConstraintUtil.isThreeJosa(end))||"".equals(end))) return; // 연결이 가능한 조사가 아니면...
+        (chrs.length==3 && end.length() == 1 && ConstraintUtil.isTwoJosa(end.charAt(0))) ||
+        (chrs.length==2 && (end.length() == 1 && ConstraintUtil.isThreeJosa(end.charAt(0)))||"".equals(end))) return; // 연결이 가능한 조사가 아니면...
 
     AnalysisOutput output = new AnalysisOutput(stem, end, null, PatternConstants.PTN_NJ);
     output.setPos(PatternConstants.POS_NOUN);

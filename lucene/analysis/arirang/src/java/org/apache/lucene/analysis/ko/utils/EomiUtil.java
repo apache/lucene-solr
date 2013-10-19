@@ -22,11 +22,11 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 public class EomiUtil {
   private EomiUtil() {}
 
-  public static final String RESULT_FAIL = "0";
+  static final String RESULT_FAIL = "0";
   
-  public static final String RESULT_SUCCESS = "1";
+  static final String RESULT_SUCCESS = "1";
   
-  public static final String[] verbSuffix = {
+  static final String[] verbSuffix = {
       "이","하","되","스럽","스러우","시키","있","없","같","당하","만하","드리","받","나","내"
   };
   
@@ -146,7 +146,7 @@ public class EomiUtil {
     results[1] = pomi;
   }  
   
-  public static boolean IsNLMBSyl(char ech, char lch) {
+  static boolean IsNLMBSyl(char ech, char lch) {
     switch(lch) {
       case 'ㄴ' : 
         return SyllableUtil.hasFeature(ech, SyllableUtil.YNPNA) || SyllableUtil.hasFeature(ech, SyllableUtil.YNPLN);

@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.ko.morph;
 
 import java.util.Comparator;
 
-public class WSOuputComparator implements Comparator<AnalysisOutput> {
+class WSOuputComparator implements Comparator<AnalysisOutput> {
 
   public int compare(AnalysisOutput o1, AnalysisOutput o2) {
     
