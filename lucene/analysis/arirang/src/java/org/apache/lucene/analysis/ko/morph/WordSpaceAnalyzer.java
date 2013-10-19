@@ -50,7 +50,7 @@ public class WordSpaceAnalyzer {
     
     for(int i=0;i<input.length();i++) {           
       
-      char[] f = SyllableUtil.getFeature(input.charAt(i));
+      char ch = input.charAt(i);
       
       String prefix = i==input.length()-1 ? "X" : input.substring(wStart,i+2);          
       Iterator<String[]> iter = DictionaryUtil.findWithPrefix(prefix);
@@ -73,12 +73,15 @@ public class WordSpaceAnalyzer {
         candidates.add(buildSingleOutput(entry));
         
       // 현 음절이 조사나 어미가 시작되는 음절일 가능성이 있다면... 
-      } else if(f[SyllableUtil.IDX_EOGAN]=='1'||f[SyllableUtil.IDX_JOSA1]=='1'){        
-        if(f[SyllableUtil.IDX_JOSA1]=='1') 
+      } else if (SyllableUtil.hasFeature(ch, SyllableUtil.EOGAN) || 
+                 SyllableUtil.hasFeature(ch, SyllableUtil.JOSA1)) {        
+        if (SyllableUtil.hasFeature(ch, SyllableUtil.JOSA1)) { 
           candidates.addAll(anlysisWithJosa(input.substring(wStart), i-wStart));
+        }
 
-        if(f[SyllableUtil.IDX_EOGAN]=='1') 
+        if (SyllableUtil.hasFeature(ch, SyllableUtil.EOGAN)) { 
           candidates.addAll(anlysisWithEomi(input.substring(wStart), i-wStart));
+        }
       }
   
       // 후보가 될 가능성이 높은 순으로 정렬한다.
@@ -156,25 +159,20 @@ public class WordSpaceAnalyzer {
     if(jend==-1) return candidates; // 타당한 조사가 아니라면...
   
     String input = snippet.substring(0,jend);
-
-    boolean josaFlag = true;
     
-    for(int i=input.length()-1;i>0;i--) {
-      
+    for (int i = input.length()-1; i > 0; i--) {
       String stem = input.substring(0,i);
-      
       String josa = input.substring(i);
 
-      char[] feature =  SyllableUtil.getFeature(josa.charAt(0));  
+      char ch = josa.charAt(0);  
       
-      if(josaFlag&&feature[SyllableUtil.IDX_JOSA1]=='1') {
-        morphAnal.analysisWithJosa(stem,josa,candidates);       
+      if (SyllableUtil.hasFeature(ch, SyllableUtil.JOSA1)) {
+        morphAnal.analysisWithJosa(stem, josa, candidates);       
       }
-        
-      if(josaFlag&&feature[SyllableUtil.IDX_JOSA2]=='0') josaFlag = false;
       
-      if(!josaFlag) break;
-      
+      if (!SyllableUtil.hasFeature(ch, SyllableUtil.JOSA2)) {
+        break;
+      }      
     }
     
     if(input.length()==1) {
@@ -209,9 +207,10 @@ public class WordSpaceAnalyzer {
     }
     
     // 조사의 2음절로 사용될 수 마지막 음절을 찾는다.
-    for(int i=jstart+1;i<snippet.length();i++) {
-      char[] f = SyllableUtil.getFeature(snippet.charAt(i));
-      if(f[SyllableUtil.IDX_JOSA2]=='0') break;
+    for (int i = jstart+1; i < snippet.length(); i++) {
+      if (!SyllableUtil.hasFeature(snippet.charAt(i), SyllableUtil.JOSA2)) {
+        break;
+      }
       jend = i;       
     }
         
@@ -364,36 +363,27 @@ public class WordSpaceAnalyzer {
     return candidates;
   }
   
-  private void anlysisWithEomiDetail(String input, List<AnalysisOutput> candidates ) 
-  {
-
-    boolean eomiFlag = true;
-    
+  private void anlysisWithEomiDetail(String input, List<AnalysisOutput> candidates) {
     int strlen = input.length();
     
     char ch = input.charAt(strlen-1);
-    char[] feature =  SyllableUtil.getFeature(ch);
     
-    if(feature[SyllableUtil.IDX_YNPNA]=='1'||feature[SyllableUtil.IDX_YNPLA]=='1'||
-        feature[SyllableUtil.IDX_YNPMA]=='1')
+    if (SyllableUtil.hasFeature(ch, SyllableUtil.YNPNA) ||
+        SyllableUtil.hasFeature(ch, SyllableUtil.YNPLA) ||
+        SyllableUtil.hasFeature(ch, SyllableUtil.YNPMA)) {
       morphAnal.analysisWithEomi(input,"",candidates);
+    }
     
-    for(int i=strlen-1;i>0;i--) {
-      
+    for (int i = strlen-1; i > 0; i--) {
       String stem = input.substring(0,i);
       String eomi = input.substring(i);
 
-      feature =  SyllableUtil.getFeature(eomi.charAt(0));   
+      morphAnal.analysisWithEomi(stem,eomi,candidates); 
       
-      if(eomiFlag) {      
-        morphAnal.analysisWithEomi(stem,eomi,candidates);
-      }     
-      
-      if(eomiFlag&&feature[SyllableUtil.IDX_EOMI2]=='0') eomiFlag = false;
-      
-      if(!eomiFlag) break;
+      if (!SyllableUtil.hasFeature(eomi.charAt(0), SyllableUtil.EOMI2)) {
+        break;
+      }
     }
-    
   }
   
   /**
@@ -420,9 +410,10 @@ public class WordSpaceAnalyzer {
 
     // 조사의 2음절로 사용될 수 마지막 음절을 찾는다.
     int start = 0;
-    for(int i=1;i<tail.length();i++) {
-      char[] f = SyllableUtil.getFeature(tail.charAt(i)); 
-      if(f[SyllableUtil.IDX_EOGAN]=='0') break;
+    for (int i = 1; i < tail.length(); i++) {
+      if (!SyllableUtil.hasFeature(tail.charAt(i), SyllableUtil.EOGAN)) {
+        break;
+      }
       start = i;        
     }
           
@@ -469,7 +460,7 @@ public class WordSpaceAnalyzer {
     
     int nEnd = output.getLastEnd()+o.getSource().length();
     
-    char[] f = nEnd<input.length() ? SyllableUtil.getFeature(input.charAt(nEnd)) : null;      
+    boolean hasJOSA1 = nEnd < input.length() ? SyllableUtil.hasFeature(input.charAt(nEnd), SyllableUtil.JOSA1) : false;      
     
     // 밥먹고 같은 경우가 가능하나.. 먹고는 명사가 아니다.
     if(po!=null&&po.getPatn()==PatternConstants.PTN_N&&candidates.size()>0&&  
@@ -485,7 +476,7 @@ public class WordSpaceAnalyzer {
     if(o.getPos()==PatternConstants.POS_NOUN && MorphUtil.hasVerbOnly(o.getStem())) {   
       output.removeLast();    
       return -1;
-    }else if(nEnd<input.length() && f[SyllableUtil.IDX_JOSA1]=='1' 
+    }else if(nEnd<input.length() && hasJOSA1 
       && DictionaryUtil.getNoun(o.getSource())!=null) {
       return -1;
     }else if(nEnd<input.length() && o.getScore()==AnalysisOutput.SCORE_ANALYSIS 
@@ -556,13 +547,13 @@ public class WordSpaceAnalyzer {
    * @return  if founded
    */
   private boolean findNounWithinStr(String str, int ws, int es) {
-
-    if(str.length()<es) return false;
+    if (str.length() < es) {
+      return false;
+    }
         
-    for(int i=es;i<str.length();i++) {
-      char[] f = SyllableUtil.getFeature(str.charAt(i));  
-      if(i==str.length() || (f[SyllableUtil.IDX_JOSA1]=='1')) {       
-        return (DictionaryUtil.getWord(str.substring(ws,i))!=null);
+    for (int i = es; i < str.length(); i++) {
+      if (SyllableUtil.hasFeature(str.charAt(i), SyllableUtil.JOSA1)) {       
+        return DictionaryUtil.getWord(str.substring(ws,i)) != null;
       }
     }
     

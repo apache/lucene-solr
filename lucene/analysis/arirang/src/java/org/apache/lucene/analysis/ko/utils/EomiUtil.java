@@ -147,22 +147,18 @@ public class EomiUtil {
   }  
   
   public static boolean IsNLMBSyl(char ech, char lch) {
-  
-    char[] features = SyllableUtil.getFeature(ech);
-
     switch(lch) {
-
-      case 'ㄴ' :
-        return (features[SyllableUtil.IDX_YNPNA]=='1' || features[SyllableUtil.IDX_YNPLN]=='1');        
-      case 'ㄹ' :
-        return (features[SyllableUtil.IDX_YNPLA]=='1');
-      case 'ㅁ' :
-        return (features[SyllableUtil.IDX_YNPMA]=='1');    
-      case 'ㅂ' :
-        return (features[SyllableUtil.IDX_YNPBA]=='1');          
+      case 'ㄴ' : 
+        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPNA) || SyllableUtil.hasFeature(ech, SyllableUtil.YNPLN);
+      case 'ㄹ' : 
+        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPLA);
+      case 'ㅁ' : 
+        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPMA);
+      case 'ㅂ' : 
+        return SyllableUtil.hasFeature(ech, SyllableUtil.YNPBA);
+      default: 
+        return false;
     }
-  
-    return false;
   }
   
   /**
@@ -213,7 +209,7 @@ public class EomiUtil {
     } 
     else if(chrs[0]!='ㅇ'&&
         (chrs[1]=='ㅏ'||chrs[1]=='ㅓ'||chrs[1]=='ㅔ'||chrs[1]=='ㅐ')&&
-        (chrs.length==2 || SyllableUtil.getFeature(estem)[SyllableUtil.IDX_YNPAH]=='1')&&
+        (chrs.length==2 || SyllableUtil.hasFeature(estem, SyllableUtil.YNPAH)) &&
         (DictionaryUtil.combineAndEomiCheck('어', end)!=null)) 
     {        
       strs[0] = stem;

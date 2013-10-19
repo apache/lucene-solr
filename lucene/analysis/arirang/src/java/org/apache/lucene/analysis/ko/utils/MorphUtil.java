@@ -136,10 +136,11 @@ public class MorphUtil {
   }
 
   public static boolean hasVerbOnly(String input) {
-    
-    for(int i=input.length()-1;i>=0;i--) {
-      char[] feature = SyllableUtil.getFeature(input.charAt(i));
-      if(feature[SyllableUtil.IDX_WDSURF]=='1'&&input.length()>i) return true;
+    for (int i = input.length()-1; i >=0; i--) {
+      if (SyllableUtil.hasFeature(input.charAt(i), SyllableUtil.WDSURF)) {
+        assert input.length() > i;
+        return true;
+      }
     }
     return false;
   }

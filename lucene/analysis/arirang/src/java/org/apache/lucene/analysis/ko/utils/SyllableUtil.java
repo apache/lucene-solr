@@ -18,99 +18,69 @@ package org.apache.lucene.analysis.ko.utils;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import java.io.InputStream;
 import org.apache.lucene.analysis.ko.dic.DictionaryResources;
-import org.apache.lucene.analysis.ko.dic.LineProcessor;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 
 public class SyllableUtil {
   private SyllableUtil() {}
 
-  public static int IDX_JOSA1 = 0; // 조사의 첫음절로 사용되는 음절 49개
-  public static int IDX_JOSA2 = 1; // 조사의 두 번째 이상의 음절로 사용되는 음절 58개
-  public static int IDX_EOMI1 = 2; // 어미의 첫음절로 사용되는 음절 72개
-  public static int IDX_EOMI2 = 3; // 어미의 두 번째 이상의 음절로 사용되는 음절 105개
-  public static int IDX_YONG1 = 4; // 1음절 용언에 사용되는 음절 362개
-  public static int IDX_YONG2 = 5; // 2음절 용언의 마지막 음절로 사용되는 음절 316개
-  public static int IDX_YONG3 = 6; // 3음절 이상 용언의 마지막 음절로 사용되는 음절 195개
-  public static int IDX_CHEON1 = 7; // 1음절 체언에 사용되는 음절 680개
-  public static int IDX_CHEON2 = 8; // 2음절 체언의 마지막 음절로 사용되는 음절 916개
-  public static int IDX_CHEON3 = 9; // 3음절 체언의 마지막 음절로 사용되는 음절 800개
-  public static int IDX_CHEON4 = 10; // 4음절 체언의 마지막 음절로 사용되는 음절 610개
-  public static int IDX_CHEON5 = 11; // 5음절 이상 체언의 마지막 음절로 사용되는 음절 330개
-  public static int IDX_BUSA1 = 12; // 1음절 부사의 마지막 음절로 사용되는 음절 191개
-  public static int IDX_BUSA2 = 13; // 2음절 부사의 마지막 음절로 사용되는 음절 519개
-  public static int IDX_BUSA3 = 14; // 3음절 부사의 마지막 음절로 사용되는 음절 139개
-  public static int IDX_BUSA4 = 15; // 4음절 부사의 마지막 음절로 사용되는 음절 366개
-  public static int IDX_BUSA5 = 16; // 5음절 부사의 마지막 음절로 사용되는 음절 79개
-  public static int IDX_PRONOUN = 17; // 대명사의 마지막 음절로 사용되는 음절 77개
-  public static int IDX_EXCLAM = 18; // 관형사와 감탄사의 마지막 음절로 사용되는 음절 241개
+  /** 조사의 첫음절로 사용되는 음절 49개 */
+  public static int JOSA1 = 0;
+  /** 조사의 두 번째 이상의 음절로 사용되는 음절 58개 */
+  public static int JOSA2 = 1;
+  /** 어미의 두 번째 이상의 음절로 사용되는 음절 105개 */
+  public static int EOMI2 = 2;
+  /** (용언+'-ㄴ')에 의하여 생성되는 음절 129개 */
+  public static int YNPNA = 3;
+  /** (용언+'-ㄹ')에 의해 생성되는 음절 129개 */
+  public static int YNPLA = 4;
+  /** (용언+'-ㅁ')에 의해 생성되는 음절 129개 */
+  public static int YNPMA = 5;
+  /** (용언+'-ㅂ')에 의해 생성되는 음절 129개 */
+  public static int YNPBA = 6;
+  /** 모음으로 끝나는 음절 129개중 'ㅏ/ㅓ/ㅐ/ㅔ/ㅕ'로 끝나는 것이 선어말 어미 '-었-'과 결합할 때 생성되는 음절 */
+  public static int YNPAH = 7;
+  /** 받침 'ㄹ'로 끝나는 용언이 어미 '-ㄴ'과 결합할 때 생성되는 음절 */
+  public static int YNPLN = 8;
+  /** 용언의 표층 형태로만 사용되는 음절 */
+  public static int WDSURF = 9;
+  /** 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI 이거나 IDX_YNPNA 이후에 1이 있는 음절) */
+  public static int EOGAN = 10;
   
-  public static int IDX_YNPNA = 19; // (용언+'-ㄴ')에 의하여 생성되는 음절 129개
-  public static int IDX_YNPLA = 20; // (용언+'-ㄹ')에 의해 생성되는 음절 129개
-  public static int IDX_YNPMA = 21; // (용언+'-ㅁ')에 의해 생성되는 음절 129개
-  public static int IDX_YNPBA = 22; // (용언+'-ㅂ')에 의해 생성되는 음절 129개
-  public static int IDX_YNPAH = 23; // 모음으로 끝나는 음절 129개중 'ㅏ/ㅓ/ㅐ/ㅔ/ㅕ'로 끝나는 것이 선어말 어미 '-었-'과 결합할 때 생성되는 음절
-  public static int IDX_YNPOU = 24; // 모음 'ㅗ/ㅜ'로 끝나는 음절이 '아/어'로 시작되는 어미나 선어말 어미 '-었-'과 결합할 때 생성되는 음절
-  public static int IDX_YNPEI = 25; // 모음 'ㅣ'로 끝나는 용언이 '아/어'로 시작되는 어미나 선어말 어미 '-었-'과 결합할 때 생성되는 음절
-  public static int IDX_YNPOI = 26; // 모음 'ㅚ'로 끝나는 용언이 '아/어'로 시작되는 어미나 선어말 어미 '-었-'과 결합할 때 생성되는 음절
-  public static int IDX_YNPLN = 27; // 받침 'ㄹ'로 끝나는 용언이 어미 '-ㄴ'과 결합할 때 생성되는 음절
-  public static int IDX_IRRLO = 28; // '러' 불규칙(8개)에 의하여 생성되는 음절 : 러, 렀
-  public static int IDX_IRRPLE = 29; // '르' 불규칙(193개)에 의하여 생성되는 음절 
-  public static int IDX_IRROO = 30; // '우' 불규칙에 의하여 생성되는 음절 : 퍼, 펐
-  public static int IDX_IRROU = 31; // '어' 불규칙에 의하여 생성되는 음절 : 해, 했
-  public static int IDX_IRRDA = 32; // 'ㄷ' 불규칙(37개)에 의하여 생성되는 음절
-  public static int IDX_IRRBA = 33; // 'ㅂ' 불규칙(446개)에 의하여 생성되는 음절
-  public static int IDX_IRRSA = 34; // 'ㅅ' 불규칙(39개)에 의하여 생성되는 음절
-  public static int IDX_IRRHA = 35; // 'ㅎ' 불규칙(96개)에 의하여 생성되는 음절 
-  public static int IDX_PEND = 36; // 선어말 어미 : 시 셨 았 었 였 겠
+  private static final int NUM_FEATURES = 11;
+  private static final int HANGUL_START = 0xAC00;
+  private static final int HANGUL_END = 0xD7AF;
   
-  public static int IDX_YNPEOMI = 37; // 용언이 어미와 결합할 때 생성되는 음절의 수 734개
-  
-  /**   용언의 표층 형태로만 사용되는 음절 */
-  public static int IDX_WDSURF = 38; 
-  
-  public static int IDX_EOGAN = 39; // 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI 이거나 IDX_YNPNA 이후에 1이 있는 음절)
-  
-  private static final List<char[]> syllables;  // 음절특성 정보
+  private static final FixedBitSet features;
   static {
-    try{
-      final List<char[]> list = new ArrayList<char[]>();
-      DictionaryResources.readLines(DictionaryResources.FILE_SYLLABLE_FEATURE, new LineProcessor() {
-        @Override
-        public void processLine(String line) throws IOException {
-          list.add(line.toCharArray());
-        }
-      });
-      syllables = Collections.unmodifiableList(list);
-    } catch(IOException ioe) {
+    InputStream stream = null;
+    try {
+      stream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_SYLLABLE_DAT);
+      DataInput dat = new InputStreamDataInput(stream);
+      CodecUtil.checkHeader(dat, DictionaryResources.FILE_SYLLABLE_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
+      long bits[] = new long[dat.readVInt()];
+      for (int i = 0; i < bits.length; i++) {
+        bits[i] = dat.readLong();
+      }
+      features = new FixedBitSet(bits, (1 + HANGUL_END - HANGUL_START) * NUM_FEATURES);
+    } catch (IOException ioe) {
       throw new Error("Cannot load ressource", ioe);
-    } 
+    } finally {
+      IOUtils.closeWhileHandlingException(stream);
+    }
   }
   
-  /**
-   * 인덱스 값에 해당하는 음절의 특성을 반환한다.
-   * 영자 또는 숫자일 경우는 모두 해당이 안되므로 가장 마지막 글자인 '힣' 의 음절특성을 반환한다.
-   * 
-   * @param idx '가'(0xAC00)이 0부터 유니코드에 의해 한글음절을 순차적으로 나열한 값
-   */
-  public static char[] getFeature(int idx)  {
-    if(idx<0||idx>=syllables.size()) 
-      return syllables.get(syllables.size()-1);
-    else 
-      return syllables.get(idx); 
-  }
-  
-  /**
-   * 각 음절의 특성을 반환한다.
-   * @param syl  음절 하나
-   */
-  public static char[] getFeature(char syl) {
-    
-    int idx = syl - 0xAC00;
-    return getFeature(idx);
-    
+  /** Returns true if the syllable has the specified feature */
+  public static boolean hasFeature(char syl, int feature) {
+    if (syl < HANGUL_START || syl > HANGUL_END) {
+      return false; // outside of hangul syllable range
+    } else {
+      return features.get((syl - HANGUL_START) * NUM_FEATURES + feature);
+    }
   }
 }

@@ -242,20 +242,15 @@ public class NounUtil {
   }
       
   public static boolean endsWith2Josa(String input) {
-
-    boolean josaFlag = true;
-    for(int i=input.length()-2;i>0;i--) {
-        
+    for (int i = input.length()-2; i > 0; i--) {
       String josa = input.substring(i);
 
-      char[] feature =  SyllableUtil.getFeature(josa.charAt(0));    
-      if(josaFlag&&DictionaryUtil.existJosa(josa)) return true;
-  
-        
-      if(josaFlag&&feature[SyllableUtil.IDX_JOSA2]=='0') josaFlag = false;        
-      if(!josaFlag) break;
+      if (DictionaryUtil.existJosa(josa)) {
+        return true;
+      } else if (!SyllableUtil.hasFeature(josa.charAt(0), SyllableUtil.JOSA2)) {
+        return false;
+      }
     }
-      
     return false;
   }
       

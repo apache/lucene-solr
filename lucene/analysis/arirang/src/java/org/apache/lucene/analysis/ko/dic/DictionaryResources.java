@@ -31,8 +31,6 @@ import org.apache.lucene.util.IOUtils;
  */
 public class DictionaryResources {
   
-  public static final String FILE_SYLLABLE_FEATURE = "syllable.dic";
-  
   public static final String FILE_DICTIONARY = "dictionary.dic";  
   
   public static final String FILE_JOSA = "josa.dic";
@@ -49,6 +47,7 @@ public class DictionaryResources {
   
   public static final String FILE_UNCOMPOUNDS = "uncompounds.dic";
   
+  public static final String FILE_SYLLABLE_DAT = "syllable.dat";
   public static final String FILE_HANJA_IDX = "hanja.idx";
   public static final String FILE_HANJA_DAT = "hanja.dat";
   public static final int DATA_VERSION = 0;

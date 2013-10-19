@@ -226,24 +226,28 @@ public class MorphAnalyzer {
     boolean isVerbOnly = false;
     analysisWithEomi(input,"",candidates);
     
-    for(int i=strlen-1;i>0;i--) {
+    for (int i = strlen-1; i > 0; i--) {
       
-      String stem = input.substring(0,i);
+      String stem = input.substring(0, i);
       String eomi = input.substring(i);
 
-      char[] feature =  SyllableUtil.getFeature(eomi.charAt(0));    
-      if(!isVerbOnly&&josaFlag&&feature[SyllableUtil.IDX_JOSA1]=='1') {        
-        analysisWithJosa(stem,eomi,candidates);
+      char ch = eomi.charAt(0);    
+      if (!isVerbOnly && josaFlag && SyllableUtil.hasFeature(ch, SyllableUtil.JOSA1)) {        
+        analysisWithJosa(stem, eomi, candidates);
       }
       
-      if(eomiFlag) {      
-        analysisWithEomi(stem,eomi,candidates);
+      if (eomiFlag) {      
+        analysisWithEomi(stem, eomi, candidates);
+        eomiFlag &= SyllableUtil.hasFeature(ch, SyllableUtil.EOMI2);
       }      
       
-      if(josaFlag&&feature[SyllableUtil.IDX_JOSA2]=='0') josaFlag = false;
-      if(eomiFlag&&feature[SyllableUtil.IDX_EOMI2]=='0') eomiFlag = false;
+      if (josaFlag) {
+        josaFlag &= SyllableUtil.hasFeature(ch, SyllableUtil.JOSA2);
+      }
       
-      if(!josaFlag&&!eomiFlag) break;
+      if (!josaFlag && !eomiFlag) {
+        break;
+      }
     }
   }
   
@@ -359,8 +363,8 @@ public class MorphAnalyzer {
       output.setScore(AnalysisOutput.SCORE_CORRECT);
       MorphUtil.buildPtnVM(output, candidates);
       
-      char[] features = SyllableUtil.getFeature(stem.charAt(stem.length()-1)); // ㄹ불규칙일 경우
-      if((features[SyllableUtil.IDX_YNPLN]=='0'||morphs[1].charAt(0)!='ㄴ')
+      char ch = stem.charAt(stem.length()-1); // ㄹ불규칙일 경우
+      if ((SyllableUtil.hasFeature(ch, SyllableUtil.YNPLN) == false || morphs[1].charAt(0) != 'ㄴ')
           &&!"는".equals(end))   // "갈(V),는" 분석될 수 있도록
         return;
     }
