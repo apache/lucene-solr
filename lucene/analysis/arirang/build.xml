@@ -31,4 +31,43 @@
   </path>
   
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core"/>
+
+  <!-- for rebuilding dictionary -->
+  <path id="tools.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}/classes/tools"/>
+  </path>
+
+  <target name="compile-tools" depends="common.compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath>
+        <path refid="tools.classpath"/>
+      </classpath>
+    </compile>
+  </target>
+
+  <property name="dict.src.dir" location="src/data"/>
+  <property name="dict.target.dir" location="${resources.dir}/org/apache/lucene/analysis/ko/dic"/>
+
+  <target name="build-dict" depends="compile-tools">
+    <sequential>
+      <delete verbose="true">
+        <fileset dir="${dict.target.dir}" includes="**/*"/>
+      </delete>
+      <java fork="true" failonerror="true" maxmemory="256M" classname="org.apache.lucene.analysis.ko.DictionaryBuilder">
+        <classpath>
+          <path refid="tools.classpath"/>
+        </classpath>
+        <assertions>
+          <enable package="org.apache.lucene"/>
+        </assertions>
+        <arg value="${dict.src.dir}"/>
+        <arg value="${dict.target.dir}"/>
+      </java>
+    </sequential>
+  </target>
+  <target name="regenerate" depends="build-dict"/>
+
 </project>

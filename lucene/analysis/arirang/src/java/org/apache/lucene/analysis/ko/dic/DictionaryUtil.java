@@ -45,10 +45,6 @@ public class DictionaryUtil {
   
   private static final Map<String,WordEntry> uncompounds = new HashMap<String,WordEntry>();
   
-  private static final Map<String, String> cjwords = new HashMap<String,String>();
-  
-  private static final Map<String, String> abbreviations = new HashMap<String,String>();
-  
   static {  
     try {
       final LineProcessor proc = new LineProcessor() {
@@ -87,17 +83,6 @@ public class DictionaryUtil {
         }       
       }); 
       
-      DictionaryResources.readLines(DictionaryResources.FILE_ABBREV, new LineProcessor() {
-        @Override
-        public void processLine(String abbrev) throws IOException {
-          String[] infos = abbrev.split("[:]+");
-          if(infos.length!=2) {
-            throw new IOException("Invalid file format: "+abbrev);
-          }
-          abbreviations.put(infos[0].trim(), infos[1].trim());          
-        }
-      });
-      
       DictionaryResources.readLines(DictionaryResources.FILE_UNCOMPOUNDS, new LineProcessor() {
         @Override
         public void processLine(String compound) throws IOException {
@@ -107,17 +92,6 @@ public class DictionaryUtil {
           }
           WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
           uncompounds.put(entry.getWord(), entry);
-        }
-      });
-  
-      DictionaryResources.readLines(DictionaryResources.FILE_CJ, new LineProcessor() {
-        @Override
-        public void processLine(String cj) throws IOException {
-          String[] infos = cj.split("[:]+");
-          if(infos.length!=2) {
-            throw new IOException("Invalid file format: "+cj);
-          }
-          cjwords.put(infos[0], infos[1]);
         }
       });
 
@@ -234,16 +208,8 @@ public class DictionaryUtil {
     return null;
   }
   
-  public static String getAbbrevMorph(String key) {
-    return abbreviations.get(key);
-  }
-  
   public static WordEntry getUncompound(String key) {
     return uncompounds.get(key);
-  }
-  
-  public static String getCJWord(String key) {
-    return cjwords.get(key);
   }
   
   public static boolean existJosa(String str) {

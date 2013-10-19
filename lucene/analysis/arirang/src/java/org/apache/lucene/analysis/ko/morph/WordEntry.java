@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ko.morph;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
