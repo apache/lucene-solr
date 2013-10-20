@@ -140,7 +140,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
       HttpSolrServer server = new HttpSolrServer(url);
       server.setDefaultMaxConnectionsPerHost(25);
       server.setConnectionTimeout(30000);
-      server.setSoTimeout(30000);
+      server.setSoTimeout(60000);
       indexingServers.add(server);
     }
     for (int idx = 0; idx < queryThreads; ++idx) {

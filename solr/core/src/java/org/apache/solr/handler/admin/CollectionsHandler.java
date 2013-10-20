@@ -233,7 +233,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     
     HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
     reqSyncShard.setCollection(collection);
     reqSyncShard.setShard(shard);
