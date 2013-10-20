@@ -44,7 +44,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public final class KoreanFilter extends TokenFilter {
 
-  private final LinkedList<IndexWord> morphQueue = new LinkedList<IndexWord>();;
+  private final LinkedList<Token> morphQueue = new LinkedList<Token>();;
   private final MorphAnalyzer morph = new MorphAnalyzer();
   private final WordSpaceAnalyzer wsAnal = new WordSpaceAnalyzer();
   private final CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();
@@ -125,7 +125,7 @@ public final class KoreanFilter extends TokenFilter {
   
 
   private void setAttributesFromQueue(boolean isFirst) {
-    final IndexWord iw = morphQueue.removeFirst();
+    final Token iw = morphQueue.removeFirst();
     final String word = iw.getWord();
     final int ofs = iw.getOffset();
     
@@ -155,8 +155,8 @@ public final class KoreanFilter extends TokenFilter {
     List<AnalysisOutput> outputs = morph.analyze(input);
     if(outputs.size()==0) return;
     
-    Map<String,IndexWord> map = new LinkedHashMap<String,IndexWord>();
-    if(hasOrigin) map.put("0:"+input, new IndexWord(input,0));
+    Map<String,Token> map = new LinkedHashMap<String,Token>();
+    if(hasOrigin) map.put("0:"+input, new Token(input,0));
 
     if(outputs.get(0).getScore()>=AnalysisOutput.SCORE_COMPOUNDS) {
       extractKeyword(outputs,offsetAtt.startOffset(), map, 0);      
@@ -170,7 +170,7 @@ public final class KoreanFilter extends TokenFilter {
         if(list.size()>1 && wsAnal.getOutputScore(list)>AnalysisOutput.SCORE_ANALYSIS) {
           int offset = 0;
           for(AnalysisOutput o : list) {
-            if(hasOrigin) map.put(o.getSource(), new IndexWord(o.getSource(),offsetAtt.startOffset()+offset,1));        
+            if(hasOrigin) map.put(o.getSource(), new Token(o.getSource(),offsetAtt.startOffset()+offset,1));        
             results.addAll(morph.analyze(o.getSource()));
             offset += o.getSource().length();
           }       
@@ -194,7 +194,7 @@ public final class KoreanFilter extends TokenFilter {
   
   }
   
-  private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,IndexWord> map, int position) {
+  private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,Token> map, int position) {
 
     int maxDecompounds = 0;
     int maxStem = 0;
@@ -204,7 +204,7 @@ public final class KoreanFilter extends TokenFilter {
       if(output.getPos()==PatternConstants.POS_VERB) continue; // extract keywords from only noun
       if(!originCNoun&&output.getCNounList().size()>0) continue; // except compound nound
       int inc = map.size()>0 ? 0 : 1;
-      map.put(position+":"+output.getStem(), new IndexWord(output.getStem(),startoffset,inc));
+      map.put(position+":"+output.getStem(), new Token(output.getStem(),startoffset,inc));
         
       if(output.getStem().length()>maxStem) maxStem = output.getStem().length();
       if(output.getCNounList().size()>maxDecompounds) maxDecompounds = output.getCNounList().size();
@@ -226,7 +226,7 @@ public final class KoreanFilter extends TokenFilter {
           int cStartoffset = getStartOffset(output, i) + startoffset;
           int inc = i==0 ? 0 : 1;
           map.put((cPosition)+":"+cEntry.getWord(), 
-              new IndexWord(cEntry.getWord(),cStartoffset,inc));
+              new Token(cEntry.getWord(),cStartoffset,inc));
           
           if(bigrammable&&!cEntry.isExist()) 
             cPosition = addBiagramToMap(cEntry.getWord(), cStartoffset, map, cPosition);
@@ -245,7 +245,7 @@ public final class KoreanFilter extends TokenFilter {
     }    
   }
   
-  private int addBiagramToMap(String input, int startoffset, Map<String, IndexWord> map, int position) {
+  private int addBiagramToMap(String input, int startoffset, Map<String, Token> map, int position) {
     int offset = 0;
     int strlen = input.length();
     if(strlen<2) return position;
@@ -256,12 +256,12 @@ public final class KoreanFilter extends TokenFilter {
       
       if(isAlphaNumChar(input.charAt(offset))) {
         String text = findAlphaNumeric(input.substring(offset));
-        map.put(position+":"+text,  new IndexWord(text,startoffset+offset,inc));
+        map.put(position+":"+text,  new Token(text,startoffset+offset,inc));
         offset += text.length();
       } else {
         String text = input.substring(offset,
             offset+2>strlen?strlen:offset+2);
-        map.put(position+":"+text,  new IndexWord(text,startoffset+offset,inc));
+        map.put(position+":"+text,  new Token(text,startoffset+offset,inc));
         offset++;
       }
       
@@ -303,7 +303,7 @@ public final class KoreanFilter extends TokenFilter {
    */
   private void analysisChinese(String term) {  
     
-    morphQueue.add(new IndexWord(term,0));
+    morphQueue.add(new Token(term,0));
     if(term.length()<2) return; // 1글자 한자는 색인어로 한글을 추출하지 않는다.
     
     List<StringBuilder> candiList = new ArrayList<StringBuilder>();
@@ -350,7 +350,7 @@ public final class KoreanFilter extends TokenFilter {
     if(candiList.size()<maxCandidate) maxCandidate=candiList.size();
     
     for(int i=0;i<maxCandidate;i++) {
-      morphQueue.add(new IndexWord(candiList.get(i).toString(),0));
+      morphQueue.add(new Token(candiList.get(i).toString(),0));
     }
     
     Map<String, String> cnounMap = new HashMap<String, String>();
@@ -368,13 +368,13 @@ public final class KoreanFilter extends TokenFilter {
         // 한글과 매치되는 한자를 짤라서 큐에 저장한다.           
         // nocommit: this is avoiding AIOOBE, original code:
         // morphQueue.add(new IndexWord(term.substring(offset,pos),offset));
-        morphQueue.add(new IndexWord(term.substring(offset,Math.min(pos, term.length())),offset));
+        morphQueue.add(new Token(term.substring(offset,Math.min(pos, term.length())),offset));
         cnounMap.put(entry.getWord(), entry.getWord());
          
         if(entry.getWord().length()<2) continue; //  한글은 2글자 이상만 저장한다.
          
         // 분리된 한글을 큐에 저장한다.  
-        morphQueue.add(new IndexWord(entry.getWord(),offset));
+        morphQueue.add(new Token(entry.getWord(),offset));
          
         offset = pos;
       }       
@@ -402,7 +402,7 @@ public final class KoreanFilter extends TokenFilter {
         buffer[bufferLength-2] == '\'' &&
         (buffer[bufferLength-1] == 's' || buffer[bufferLength-1] == 'S')) {
       // Strip last 2 characters off
-      morphQueue.add(new IndexWord(term.substring(0,bufferLength - 2),0));
+      morphQueue.add(new Token(term.substring(0,bufferLength - 2),0));
     } else if (type == ACRONYM_TYPE) {      // remove dots
       int upto = 0;
       for(int i=0;i<bufferLength;i++) {
@@ -410,9 +410,9 @@ public final class KoreanFilter extends TokenFilter {
         if (c != '.')
           buffer[upto++] = c;
       }
-      morphQueue.add(new IndexWord(term.substring(0,upto),0));
+      morphQueue.add(new Token(term.substring(0,upto),0));
     } else {
-      morphQueue.add(new IndexWord(term,0));
+      morphQueue.add(new Token(term,0));
     }
   }
   

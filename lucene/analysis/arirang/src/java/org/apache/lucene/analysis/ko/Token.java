@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.ko;
 /**
  * Index word extracted from a phrase.
  */
-public class IndexWord {
+public class Token {
 
   // the word to be indexed
   private String word;
@@ -34,21 +34,21 @@ public class IndexWord {
   // the derived korean sound text has the <KOREAN> type
   private String type;
 
-  public IndexWord() {
+  public Token() {
     
   }
   
-  public IndexWord(String word, int pos) {
+  public Token(String word, int pos) {
     this.word = word;
     this.offset = pos;
   }
   
-  public IndexWord(String word, int pos, int inc) {
+  public Token(String word, int pos, int inc) {
     this(word, pos);
     this.increment = inc;
   }
   
-  public IndexWord(String word, int pos, int inc, String t) {
+  public Token(String word, int pos, int inc, String t) {
     this(word, pos, inc);
     this.type = t;
   }
