@@ -167,7 +167,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     ZkController zkController2 = container2.getZkController();
     ClusterState clusterState2 = null;
     Map<String, Slice> slices = null;
-    for (int i = 75; i > 0; i--) {
+    for (int i = 100; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
       slices = clusterState2.getSlicesMap("collection1");
       if (slices != null && slices.containsKey("shard1")
