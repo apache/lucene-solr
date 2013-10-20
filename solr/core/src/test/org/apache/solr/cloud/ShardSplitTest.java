@@ -472,7 +472,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     baseServer.setConnectionTimeout(15000);
-    baseServer.setSoTimeout((int) (CollectionsHandler.DEFAULT_ZK_TIMEOUT * 5));
+    baseServer.setSoTimeout(60000);
     baseServer.request(request);
   }
 

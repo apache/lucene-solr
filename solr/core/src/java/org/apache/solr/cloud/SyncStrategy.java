@@ -286,7 +286,7 @@ public class SyncStrategy {
         
         HttpSolrServer server = new HttpSolrServer(baseUrl, client);
         server.setConnectionTimeout(15000);
-        server.setSoTimeout(30000);
+        server.setSoTimeout(60000);
         try {
           server.request(recoverRequestCmd);
         } catch (Throwable t) {

@@ -716,7 +716,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
     // use generic request to avoid extra processing of queries
@@ -809,7 +809,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // now test that unloading a core gets us a new leader
     HttpSolrServer server = new HttpSolrServer(baseUrl);
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     Unload unloadCmd = new Unload(true);
     unloadCmd.setCoreName(props.getCoreName());
     
@@ -927,7 +927,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         try {
           server = new HttpSolrServer(baseUrl);
           server.setConnectionTimeout(15000);
-          server.setSoTimeout(30000);
+          server.setSoTimeout(60000);
           Create createCmd = new Create();
           createCmd.setRoles("none");
           createCmd.setCoreName(collection + num);
@@ -1056,7 +1056,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           try {
             server = new HttpSolrServer(baseUrl);
             server.setConnectionTimeout(15000);
-            server.setSoTimeout(30000);
+            server.setSoTimeout(60000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
             createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
@@ -1087,7 +1087,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     try {
       // setup the server...
       HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
-      s.setSoTimeout(30000);
+      s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
