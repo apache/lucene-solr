@@ -17,8 +17,10 @@ package org.apache.solr.update.processor;
  * limitations under the License.
  */
 
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -43,7 +45,9 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -75,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
@@ -105,6 +110,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
            DISTRIB_UPDATE_PARAM + ": " + param, e);
       }
     }
+  }
+  
+  private final HttpClient client;
+  {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 15000);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 60000);
+    params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    client = HttpClientUtil.createClient(params);
   }
 
   public static final String COMMIT_END_POINT = "commit_end_point";
@@ -145,7 +161,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
-
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -180,6 +195,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
     }
+
   }
 
 
@@ -517,33 +533,41 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // legit
 
     // TODO: we should do this in the background it would seem
-    for (SolrCmdDistributor.Error error : errors) {
+    for (final SolrCmdDistributor.Error error : errors) {
       if (error.req.node instanceof RetryNode) {
         // we don't try to force a leader to recover
         // when we cannot forward to it
         continue;
       }
       // TODO: we should force their state to recovering ??
-      // TODO: could be sent in parallel
       // TODO: do retries??
       // TODO: what if its is already recovering? Right now recoveries queue up -
       // should they?
-      String recoveryUrl = error.req.node.getBaseUrl();
-      HttpSolrServer server;
-      log.info("try and ask " + recoveryUrl + " to recover");
-      try {
-        server = new HttpSolrServer(recoveryUrl);
-        server.setSoTimeout(60000);
-        server.setConnectionTimeout(15000);
-        
-        RequestRecovery recoverRequestCmd = new RequestRecovery();
-        recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-        recoverRequestCmd.setCoreName(error.req.node.getCoreName());
-        
-        server.request(recoverRequestCmd);
-      } catch (Exception e) {
-        log.info("Could not tell a replica to recover", e);
-      }
+      final String recoveryUrl = error.req.node.getBaseUrl();
+      
+      Thread thread = new Thread() {
+        {
+          setDaemon(true);
+        }
+        @Override
+        public void run() {
+          log.info("try and ask " + recoveryUrl + " to recover");
+          HttpSolrServer server = new HttpSolrServer(recoveryUrl);
+          server.setSoTimeout(60000);
+          server.setConnectionTimeout(15000);
+          
+          RequestRecovery recoverRequestCmd = new RequestRecovery();
+          recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+          recoverRequestCmd.setCoreName(error.req.node.getCoreName());
+          try {
+            server.request(recoverRequestCmd);
+          } catch (Throwable t) {
+            SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover", t);
+          }
+        }
+      };
+      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateExecutor();
+      executor.execute(thread);
       
     }
   }
