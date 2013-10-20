@@ -23,21 +23,21 @@ import java.util.Map;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Version;
 
 public class KoreanTokenizerFactory extends TokenizerFactory {
-
-  private Version version;
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
   public KoreanTokenizerFactory(Map<String, String> args) {
     super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
   public Tokenizer create(AttributeSource.AttributeFactory factory, Reader input) {
-    return new KoreanTokenizer(Version.LUCENE_50, factory, input);
+    return new KoreanTokenizer(factory, input);
   }
 }

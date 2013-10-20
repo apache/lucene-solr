@@ -18,16 +18,15 @@ package org.apache.lucene.analysis.ko;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+
 import org.junit.Ignore;
 
 public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
@@ -40,7 +39,6 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
         new int[]{2, 6, 9, 14, 17, 20, 26},
         new int[]{1, 1, 1, 1, 1, 1, 1}
     );
-
   }
 
   public void testCompoundNoun() throws IOException {
@@ -55,8 +53,6 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
         new int[]{4,1, 4},
         new int[]{1,0, 1}
     );
-
-    AnalysisOutput o = null;
     
   }
   
@@ -94,7 +90,7 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
     String korean = "자바로 전부 제작된 텍스트 검색 엔진 라이브러리";
     Analyzer analyzer = new KoreanAnalyzer(TEST_VERSION_CURRENT);
 
-    TokenStream stream = analyzer.tokenStream("dummy", new StringReader(korean));
+    TokenStream stream = analyzer.tokenStream("dummy", korean);
     stream.reset();
 
     CharTermAttribute termAttr = stream.addAttribute(CharTermAttribute.class);

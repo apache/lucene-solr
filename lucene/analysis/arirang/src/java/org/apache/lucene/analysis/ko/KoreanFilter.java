@@ -54,7 +54,6 @@ public final class KoreanFilter extends TokenFilter {
   private final boolean bigrammable;
   private final boolean hasOrigin;
   private final boolean originCNoun;
-  private final boolean isPositionInc;
     
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -88,22 +87,17 @@ public final class KoreanFilter extends TokenFilter {
   }
 
   public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch, boolean cnoun) {
-    this(input, bigram, has, exactMatch, cnoun, true);
-  }
-
-  public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch, boolean cnoun, boolean isPositionInc) {
     super(input);
     cnAnalyzer.setExactMach(exactMatch);
     this.bigrammable = bigram;
     this.hasOrigin = has;
     this.originCNoun = cnoun;
-    this.isPositionInc = isPositionInc;
   }
   
   public boolean incrementToken() throws IOException {
     if (!morphQueue.isEmpty()) {
       restoreState(currentState);
-      setTermBufferByQueue();
+      setAttributesFromQueue();
       return true;
     }
 
@@ -121,7 +115,7 @@ public final class KoreanFilter extends TokenFilter {
   
       if (!morphQueue.isEmpty()) {
         // no need to restore state!
-        setTermBufferByQueue();
+        setAttributesFromQueue();
         return true;
       }
     }
@@ -129,19 +123,15 @@ public final class KoreanFilter extends TokenFilter {
     return false;
   }
   
-  /**
-   * queue에 저장된 값으로 buffer의 값을 복사한다.
-   */
-  private void setTermBufferByQueue() {
-    IndexWord iw = morphQueue.removeFirst();
-    String word = iw.getWord();
+
+  private void setAttributesFromQueue() {
+    final IndexWord iw = morphQueue.removeFirst();
+    final String word = iw.getWord();
+    final int ofs = iw.getOffset();
     
     termAtt.setEmpty().append(word);
-    offsetAtt.setOffset(iw.getOffset(), iw.getOffset() + word.length());
-    
-    // NOCOMMIT: This is bullshit! PositionIncrement=0 if disabled?
-    int inc = isPositionInc ?  iw.getIncrement() : 0;
-    posIncrAtt.setPositionIncrement(inc);      
+    offsetAtt.setOffset(ofs, ofs + word.length());
+    posIncrAtt.setPositionIncrement(iw.getIncrement());      
   }
   
   /**

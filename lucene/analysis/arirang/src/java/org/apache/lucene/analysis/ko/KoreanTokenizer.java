@@ -26,9 +26,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.Version;
 
-public class KoreanTokenizer extends Tokenizer {
+public final class KoreanTokenizer extends Tokenizer {
   
   /** A private instance of the JFlex-constructed scanner */
   private final KoreanTokenizerImpl scanner;
@@ -61,8 +60,6 @@ public class KoreanTokenizer extends Tokenizer {
       "<CHINESE>"
   };
     
-  private boolean replaceInvalidAcronym;
-      
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
@@ -77,36 +74,25 @@ public class KoreanTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.analysis.standard.StandardTokenizer}.  Attaches
+   * Creates a new instance of the KoreanTokenizer.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
    *
    * @param input The input reader
    *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public KoreanTokenizer(Version matchVersion, Reader input) {
+  public KoreanTokenizer(Reader input) {
     super(input);
     this.scanner = new KoreanTokenizerImpl(input);
-    init(input, matchVersion);
   }
 
   /**
-   * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
+   * Creates a new KoreanTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
-  public KoreanTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
+  public KoreanTokenizer(AttributeFactory factory, Reader input) {
     super(factory, input);
     this.scanner = new KoreanTokenizerImpl(input);
-    init(input, matchVersion);
-  }
-
-  private final void init(Reader input, Version matchVersion) {
-    if (matchVersion.onOrAfter(Version.LUCENE_42)) {
-      replaceInvalidAcronym = true;
-    } else {
-      replaceInvalidAcronym = false;
-    }
-    this.input = input;    
-  }
+   }
 
   // this tokenizer generates three attributes:
   // term offset, positionIncrement and type
@@ -121,7 +107,7 @@ public class KoreanTokenizer extends Tokenizer {
      * @see org.apache.lucene.analysis.TokenStream#next()
      */
   @Override
-  public final boolean incrementToken() throws IOException {
+  public boolean incrementToken() throws IOException {
     clearAttributes();
     int posIncr = 1;
 
@@ -148,7 +134,8 @@ public class KoreanTokenizer extends Tokenizer {
   }
     
   @Override
-  public final void end() {
+  public void end() throws IOException {
+    super.end();
     // set final offset
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
@@ -156,6 +143,8 @@ public class KoreanTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
   }
+  
 }

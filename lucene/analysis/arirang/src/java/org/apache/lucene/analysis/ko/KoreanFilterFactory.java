@@ -50,8 +50,6 @@ public class KoreanFilterFactory extends TokenFilterFactory {
   // Decides whether the original compound noun is returned or not if analyzed morphologically
   private static final String EXACT_MATCH_PARAM = "exactMatch";
   
-  private static final String IS_POSITION_INC = "incPosition";
-
   private final boolean bigrammable;
 
   private final boolean hasOrigin;
@@ -60,8 +58,6 @@ public class KoreanFilterFactory extends TokenFilterFactory {
 
   private final boolean exactMatch;
   
-  private final boolean isPositionInc;
-
   /**
    * Initialize this factory via a set of key-value pairs.
    */
@@ -71,10 +67,12 @@ public class KoreanFilterFactory extends TokenFilterFactory {
     hasOrigin = getBoolean(args, HAS_ORIGIN_PARAM, true);
     exactMatch = getBoolean(args, EXACT_MATCH_PARAM, false);
     hasCNoun = getBoolean(args, HAS_COMPOUND_NOUN_PARAM, true);
-    isPositionInc = getBoolean(args, IS_POSITION_INC, true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   public TokenStream create(TokenStream tokenstream) {
-    return new KoreanFilter(tokenstream, bigrammable, hasOrigin, exactMatch, hasCNoun, isPositionInc);
+    return new KoreanFilter(tokenstream, bigrammable, hasOrigin, exactMatch, hasCNoun);
   }
 }
