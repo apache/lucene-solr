@@ -51,13 +51,14 @@ public class DictionaryUtil {
         @Override
         public void processLine(String line) throws IOException {
           String[] infos = line.split("[,]+");
-          if(infos.length!=2) {
-            throw new IOException("Invalid file format: "+line);
+          if (infos.length != 2) {
+            throw new IOException("Invalid file format: " + line);
           }
-          infos[1] = infos[1].trim();
-          if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
+          if (infos[1].length() != 10) {
+            throw new IOException("Invalid file format: " + line);
+          }
           
-          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].trim().toCharArray());
+          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].toCharArray());
           dictionary.add(entry.getWord(), entry);          
         }
       };
@@ -68,17 +69,15 @@ public class DictionaryUtil {
         @Override
         public void processLine(String compound) throws IOException {
           String[] infos = compound.split("[:]+");
-          if(infos.length!=3 && infos.length!=2) {
-            throw new IOException("Invalid file format: "+compound);
+          if (infos.length != 3) {
+            throw new IOException("Invalid file format: " + compound);
+          }
+          if (infos[2].length() != 4) {
+            throw new IOException("Illegal file format: " + compound);
           }
           
           final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
-          final WordEntry entry;
-          if(infos.length==2) {
-            entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray(), c);
-          } else { 
-            entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray(), c);
-          }
+          final WordEntry entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"00X").toCharArray(), c);
           dictionary.add(entry.getWord(), entry);          
         }       
       }); 
@@ -90,7 +89,7 @@ public class DictionaryUtil {
           if(infos.length!=2) {
             throw new IOException("Invalid file format: "+compound);
           }
-          WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
+          WordEntry entry = new WordEntry(infos[0].trim(),"900000000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
           uncompounds.put(entry.getWord(), entry);
         }
       });

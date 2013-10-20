@@ -54,6 +54,9 @@ public class WordEntry {
   }
   
   public WordEntry(String word, char[] cs, List<CompoundEntry> compounds) {
+    if (cs.length != 10) {
+      throw new IllegalArgumentException("invalid features for word: " + word + ", got:" + new String(cs));
+    } 
     this.word = word;
     this.features = cs;
     this.compounds = Collections.unmodifiableList(compounds);
