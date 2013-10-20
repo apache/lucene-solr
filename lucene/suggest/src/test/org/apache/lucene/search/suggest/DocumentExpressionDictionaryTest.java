@@ -41,9 +41,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
+@SuppressCodecs("Lucene3x")
 public class DocumentExpressionDictionaryTest extends LuceneTestCase {
   
   static final String FIELD_NAME = "f1";
