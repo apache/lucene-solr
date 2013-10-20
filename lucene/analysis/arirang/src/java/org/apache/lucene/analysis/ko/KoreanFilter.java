@@ -126,15 +126,13 @@ public final class KoreanFilter extends TokenFilter {
 
   private void setAttributesFromQueue(boolean isFirst) {
     final Token iw = morphQueue.removeFirst();
-    final String word = iw.getWord();
-    final int ofs = iw.getOffset();
     
-    termAtt.setEmpty().append(word);
-    offsetAtt.setOffset(ofs, ofs + word.length());
+    termAtt.setEmpty().append(iw.word);
+    offsetAtt.setOffset(iw.offset, iw.offset + iw.word.length());
     
     // on the first Token we preserve incoming increment:
     if (!isFirst) {
-      posIncrAtt.setPositionIncrement(iw.getIncrement());
+      posIncrAtt.setPositionIncrement(iw.increment);
     }
     
     // TODO: How to handle PositionLengthAttribute correctly?
@@ -423,13 +421,13 @@ public final class KoreanFilter extends TokenFilter {
   private static final class Token {
 
     // the word to be indexed
-    private final String word;
+    final String word;
     
     // the offset from the start of input text
-    private final int offset;
+    final int offset;
 
     // when the input text is a chinese text, the korean sound text of it is extracted as a index word. 
-    private final int increment;
+    final int increment;
     
     Token(String word, int offset) {
       this(word, offset, 1);
@@ -441,17 +439,5 @@ public final class KoreanFilter extends TokenFilter {
       this.increment = inc;
     }
     
-    String getWord() {
-      return word;
-    }
-
-    int getOffset() {
-      return offset;
-    }
-
-    int getIncrement() {
-      return increment;
-    }
-
   }
 }
