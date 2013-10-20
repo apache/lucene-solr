@@ -131,16 +131,9 @@ public final class KoreanFilter extends TokenFilter {
     
     termAtt.setEmpty().append(word);
     offsetAtt.setOffset(ofs, ofs + word.length());
-    if (isFirst) {
-      // on the first token preserve the position increment as given by the previous filter:
-      int posIncr = iw.getIncrement();
-      // nocommit: assert posIncr > 0 : "the first token in the morphQueue cannot have 0";
-      // this is just a workaround for the assertion failure above:
-      posIncr = Math.min(1, posIncr);
-      // -- end fix
-      posIncr += posIncrAtt.getPositionIncrement() - 1;
-      posIncrAtt.setPositionIncrement(posIncr);
-    } else {
+    
+    // on the first Token we preserve incoming increment:
+    if (!isFirst) {
       posIncrAtt.setPositionIncrement(iw.getIncrement());
     }
     
@@ -162,8 +155,7 @@ public final class KoreanFilter extends TokenFilter {
       extractKeyword(outputs,offsetAtt.startOffset(), map, 0);      
     } else {
       
-      try
-      {
+      try {
         List<AnalysisOutput> list = wsAnal.analyze(input);
         
         List<AnalysisOutput> results = new ArrayList<AnalysisOutput>();    
@@ -428,4 +420,38 @@ public final class KoreanFilter extends TokenFilter {
     currentState = null;
   }
   
+  private static final class Token {
+
+    // the word to be indexed
+    private final String word;
+    
+    // the offset from the start of input text
+    private final int offset;
+
+    // when the input text is a chinese text, the korean sound text of it is extracted as a index word. 
+    private final int increment;
+    
+    Token(String word, int offset) {
+      this(word, offset, 1);
+    }
+    
+    Token(String word, int offset, int inc) {
+      this.word = word;
+      this.offset = offset;
+      this.increment = inc;
+    }
+    
+    String getWord() {
+      return word;
+    }
+
+    int getOffset() {
+      return offset;
+    }
+
+    int getIncrement() {
+      return increment;
+    }
+
+  }
 }
