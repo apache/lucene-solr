@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.ko.utils.Trie;
 public class DictionaryUtil {
   private DictionaryUtil() {}
   
-  private static final Trie<String,WordEntry> dictionary = new Trie<String, WordEntry>(true);
+  private static final Trie<String,WordEntry> dictionary = new Trie<String, WordEntry>(false);
   
   private static final Set<String> josas = new HashSet<String>();
   

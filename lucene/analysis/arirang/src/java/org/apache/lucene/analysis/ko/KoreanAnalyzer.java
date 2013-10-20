@@ -95,8 +95,8 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
     final KoreanTokenizer src = new KoreanTokenizer(reader);
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
-    tok = new LowerCaseFilter(matchVersion, tok);
+    TokenStream tok = new LowerCaseFilter(matchVersion, src);
+    tok = new KoreanFilter(tok, bigrammable, hasOrigin, exactMatch, originCNoun);
     tok = new StopFilter(matchVersion, tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
