@@ -94,13 +94,16 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             "SolrEntityProcessor: parameter 'url' is required");
       }
 
+      // TODO: we should close this client!
       HttpClient client = getHttpClient();
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client, new XMLResponseParser());
         LOG.info("using XMLResponseParser");
       } else {
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client);
         LOG.info("using BinaryResponseParser");
       }

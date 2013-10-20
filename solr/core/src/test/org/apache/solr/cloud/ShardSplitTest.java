@@ -408,12 +408,23 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
     HttpSolrServer shard1_0Server = new HttpSolrServer(shard1_0.getCoreUrl());
-    QueryResponse response = shard1_0Server.query(query);
+    QueryResponse response;
+    try {
+      response = shard1_0Server.query(query);
+    } finally {
+      shard1_0Server.shutdown();
+    }
     long shard10Count = response.getResults().getNumFound();
 
-    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
+    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(
+        AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
     HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1.getCoreUrl());
-    QueryResponse response2 = shard1_1Server.query(query);
+    QueryResponse response2;
+    try {
+      response2 = shard1_1Server.query(query);
+    } finally {
+      shard1_1Server.shutdown();
+    }
     long shard11Count = response2.getResults().getNumFound();
 
     logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
@@ -433,7 +444,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (Replica replica : slice.getReplicas()) {
       String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
       HttpSolrServer server = new HttpSolrServer(coreUrl);
-      QueryResponse response = server.query(query);
+      QueryResponse response;
+      try {
+        response = server.query(query);
+      } finally {
+        server.shutdown();
+      }
       numFound[c++] = response.getResults().getNumFound();
       log.info("Shard: " + shard + " Replica: {} has {} docs", coreUrl, String.valueOf(response.getResults().getNumFound()));
       assertTrue("Shard: " + shard + " Replica: " + coreUrl + " has 0 docs", response.getResults().getNumFound() > 0);

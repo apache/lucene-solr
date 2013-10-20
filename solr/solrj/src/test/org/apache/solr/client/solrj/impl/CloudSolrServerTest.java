@@ -204,14 +204,15 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   
   public void testShutdown() throws MalformedURLException {
     CloudSolrServer server = new CloudSolrServer("[ff01::114]:33332");
-    server.setZkConnectTimeout(100);
     try {
+      server.setZkConnectTimeout(100);
       server.connect();
       fail("Expected exception");
-    } catch(RuntimeException e) {
+    } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof TimeoutException);
+    } finally {
+      server.shutdown();
     }
-    server.shutdown();
   }
 
 }

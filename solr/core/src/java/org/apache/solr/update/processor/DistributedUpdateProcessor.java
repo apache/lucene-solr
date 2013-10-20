@@ -553,16 +553,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         public void run() {
           log.info("try and ask " + recoveryUrl + " to recover");
           HttpSolrServer server = new HttpSolrServer(recoveryUrl);
-          server.setSoTimeout(60000);
-          server.setConnectionTimeout(15000);
-          
-          RequestRecovery recoverRequestCmd = new RequestRecovery();
-          recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-          recoverRequestCmd.setCoreName(error.req.node.getCoreName());
           try {
-            server.request(recoverRequestCmd);
-          } catch (Throwable t) {
-            SolrException.log(log, recoveryUrl + ": Could not tell a replica to recover", t);
+            server.setSoTimeout(60000);
+            server.setConnectionTimeout(15000);
+            
+            RequestRecovery recoverRequestCmd = new RequestRecovery();
+            recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+            recoverRequestCmd.setCoreName(error.req.node.getCoreName());
+            try {
+              server.request(recoverRequestCmd);
+            } catch (Throwable t) {
+              SolrException.log(log, recoveryUrl
+                  + ": Could not tell a replica to recover", t);
+            }
+          } finally {
+            server.shutdown();
           }
         }
       };

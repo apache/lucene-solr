@@ -285,12 +285,14 @@ public class SyncStrategy {
         recoverRequestCmd.setCoreName(coreName);
         
         HttpSolrServer server = new HttpSolrServer(baseUrl, client);
-        server.setConnectionTimeout(15000);
-        server.setSoTimeout(60000);
         try {
+          server.setConnectionTimeout(15000);
+          server.setSoTimeout(60000);
           server.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+        } finally {
+          server.shutdown();
         }
       }
     };

@@ -232,13 +232,17 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
     
     HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
-    server.setConnectionTimeout(15000);
-    server.setSoTimeout(60000);
-    RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
-    reqSyncShard.setCollection(collection);
-    reqSyncShard.setShard(shard);
-    reqSyncShard.setCoreName(nodeProps.getCoreName());
-    server.request(reqSyncShard);
+    try {
+      server.setConnectionTimeout(15000);
+      server.setSoTimeout(60000);
+      RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
+      reqSyncShard.setCollection(collection);
+      reqSyncShard.setShard(shard);
+      reqSyncShard.setCoreName(nodeProps.getCoreName());
+      server.request(reqSyncShard);
+    } finally {
+      server.shutdown();
+    }
   }
   
   private void handleCreateAliasAction(SolrQueryRequest req,
