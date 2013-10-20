@@ -97,7 +97,7 @@ public final class KoreanFilter extends TokenFilter {
   public boolean incrementToken() throws IOException {
     if (!morphQueue.isEmpty()) {
       restoreState(currentState);
-      setAttributesFromQueue();
+      setAttributesFromQueue(false);
       return true;
     }
 
@@ -115,7 +115,7 @@ public final class KoreanFilter extends TokenFilter {
   
       if (!morphQueue.isEmpty()) {
         // no need to restore state!
-        setAttributesFromQueue();
+        setAttributesFromQueue(true);
         return true;
       }
     }
@@ -124,14 +124,27 @@ public final class KoreanFilter extends TokenFilter {
   }
   
 
-  private void setAttributesFromQueue() {
+  private void setAttributesFromQueue(boolean isFirst) {
     final IndexWord iw = morphQueue.removeFirst();
     final String word = iw.getWord();
     final int ofs = iw.getOffset();
     
     termAtt.setEmpty().append(word);
     offsetAtt.setOffset(ofs, ofs + word.length());
-    posIncrAtt.setPositionIncrement(iw.getIncrement());      
+    if (isFirst) {
+      // on the first token preserve the position increment as given by the previous filter:
+      int posIncr = iw.getIncrement();
+      // nocommit: assert posIncr > 0 : "the first token in the morphQueue cannot have 0";
+      // this is just a workaround for the assertion failure above:
+      posIncr = Math.min(1, posIncr);
+      // -- end fix
+      posIncr += posIncrAtt.getPositionIncrement() - 1;
+      posIncrAtt.setPositionIncrement(posIncr);
+    } else {
+      posIncrAtt.setPositionIncrement(iw.getIncrement());
+    }
+    
+    // TODO: How to handle PositionLengthAttribute correctly?
   }
   
   /**
