@@ -45,7 +45,9 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,12 +72,20 @@ public class MoreLikeThisComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     SolrParams params = rb.req.getParams();
+    ReturnFields returnFields = new SolrReturnFields( rb.req );
+
+    int flags = 0;
+    if (returnFields.wantsScore()) {
+      flags |= SolrIndexSearcher.GET_SCORES;
+    }
+
+    rb.setFieldFlags(flags);
+
     if (params.getBool(MoreLikeThisParams.MLT, false)) {
       log.debug("Starting MoreLikeThis.Process.  isShard: "
           + params.getBool(ShardParams.IS_SHARD));
       SolrIndexSearcher searcher = rb.req.getSearcher();
 
-      int mltcount = params.getInt(MoreLikeThisParams.DOC_COUNT, 5);
       if (params.getBool(ShardParams.IS_SHARD, false)) {
         if (params.get(MoreLikeThisComponent.DIST_DOC_ID) == null) {
           if (rb.getResults().docList.size() == 0) {
@@ -86,7 +96,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           
           MoreLikeThisHandler.MoreLikeThisHelper mlt = new MoreLikeThisHandler.MoreLikeThisHelper(
               params, searcher);
-          
+
           NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb
               .getResults().docList);
           
@@ -105,13 +115,13 @@ public class MoreLikeThisComponent extends SearchComponent {
           rb.rsp.add("moreLikeThis", temp);
         } else {
           NamedList<DocList> sim = getMoreLikeThese(rb, rb.req.getSearcher(),
-              rb.getResults().docList, mltcount);
+              rb.getResults().docList, flags);
           rb.rsp.add("moreLikeThis", sim);
         }
       } else {
         // non distrib case
         NamedList<DocList> sim = getMoreLikeThese(rb, rb.req.getSearcher(), rb.getResults().docList,
-            mltcount);
+            flags);
         rb.rsp.add("moreLikeThis", sim);
       }
     }
