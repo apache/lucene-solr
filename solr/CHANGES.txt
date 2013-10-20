@@ -117,6 +117,8 @@ Bug Fixes
   ignoring requests for the results to include the score.
   (Anshum Gupta, Mark Miller, Shawn Heisey)
 
+* SOLR-5371: Solr should consistently call SolrServer#shutdown (Mark Miller)
+
 Optimizations
 ----------------------  
 
@@ -125,6 +127,9 @@ Optimizations
 
 * SOLR-5223: SolrCloud should use the JavaBin binary format for communication by default. 
   (Mark Miller)
+
+* SOLR-5370: Requests to recover when an update fails should be done in 
+  background threads. (Mark Miller)
   
 Security
 ----------------------
