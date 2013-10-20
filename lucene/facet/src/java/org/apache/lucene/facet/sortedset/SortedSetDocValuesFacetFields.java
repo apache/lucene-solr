@@ -31,12 +31,12 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.util.BytesRef;
 
-/** Add instances of this to your Document if you intend to
+/** Use this to index facets if you intend to
  *  use {@link SortedSetDocValuesAccumulator} to count facets
  *  at search time.  Note that this only supports flat
- *  facets (dimension + label).  Add multiple instances of
- *  this to your document, one per dimension + label, and
- *  it's fine if a given dimension is multi-valued. */
+ *  facets (dimension + label).  Instantiate this class
+ *  once, and then call {@link #addFields} to add the
+ *  necessary fields to each {@link Document}. */
 
 public class SortedSetDocValuesFacetFields extends FacetFields {
 
