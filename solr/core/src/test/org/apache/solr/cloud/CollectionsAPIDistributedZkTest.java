@@ -865,9 +865,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         while (shardIt.hasNext()) {
           Entry<String,Replica> shardEntry = shardIt.next();
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(shardEntry.getValue());
-          CoreAdminResponse mcr = CoreAdminRequest.getStatus(
-              coreProps.getCoreName(),
-              new HttpSolrServer(coreProps.getBaseUrl()));
+          HttpSolrServer server = new HttpSolrServer(coreProps.getBaseUrl());
+          CoreAdminResponse mcr;
+          try {
+            mcr = CoreAdminRequest.getStatus(coreProps.getCoreName(), server);
+          } finally {
+            server.shutdown();
+          }
           long before = mcr.getStartTime(coreProps.getCoreName()).getTime();
           urlToTime.put(coreProps.getCoreUrl(), before);
         }

@@ -56,10 +56,12 @@ public class SolrCmdDistributor {
   }
   
   public void finish() {
-    servers.blockUntilFinished();
-    doRetriesIfNeeded();
-  
-    servers.shutdown();
+    try {
+      servers.blockUntilFinished();
+      doRetriesIfNeeded();
+    } finally {
+      servers.shutdown();
+    }
   }
 
   private void doRetriesIfNeeded() {
@@ -189,12 +191,14 @@ public class SolrCmdDistributor {
       
       HttpSolrServer server = new HttpSolrServer(req.node.getUrl(),
           servers.getHttpClient());
-
       try {
         server.request(req.uReq);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
+      } finally {
+        server.shutdown();
       }
+      
       return;
     }
     

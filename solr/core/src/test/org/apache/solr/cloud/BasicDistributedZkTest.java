@@ -923,7 +923,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     Callable call = new Callable() {
       @Override
       public Object call() {
-        HttpSolrServer server;
+        HttpSolrServer server = null;
         try {
           server = new HttpSolrServer(baseUrl);
           server.setConnectionTimeout(15000);
@@ -944,6 +944,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         } catch (Exception e) {
           e.printStackTrace();
           //fail
+        } finally {
+          if (server != null) {
+            server.shutdown();
+          }
         }
         return null;
       }
@@ -1052,7 +1056,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       Callable call = new Callable() {
         @Override
         public Object call() {
-          HttpSolrServer server;
+          HttpSolrServer server = null;
           try {
             server = new HttpSolrServer(baseUrl);
             server.setConnectionTimeout(15000);
@@ -1067,6 +1071,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           } catch (Exception e) {
             e.printStackTrace();
             //fails
+          } finally {
+            if (server != null) {
+              server.shutdown();
+            }
           }
           return null;
         }
