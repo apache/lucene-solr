@@ -111,7 +111,12 @@ Bug Fixes
 
 * SOLR-5359: ZooKeeper client is not closed when it fails to connect to an ensemble.
   (Mark Miller, Klaus Herrmann)
-  
+
+* SOLR-5042: MoreLikeThisComponent was using the rows/count value in place of
+  flags, which caused a number of very strange issues, including NPEs and
+  ignoring requests for the results to include the score.
+  (Anshum Gupta, Mark Miller, Shawn Heisey)
+
 Optimizations
 ----------------------  
 
