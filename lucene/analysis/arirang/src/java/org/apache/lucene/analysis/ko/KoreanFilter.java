@@ -152,7 +152,6 @@ public final class KoreanFilter extends TokenFilter {
     if(outputs.get(0).getScore()>=AnalysisOutput.SCORE_COMPOUNDS) {
       extractKeyword(outputs,offsetAtt.startOffset(), map, 0);      
     } else {
-      
       try {
         List<AnalysisOutput> list = wsAnal.analyze(input);
         
@@ -168,20 +167,13 @@ public final class KoreanFilter extends TokenFilter {
           results.addAll(outputs);
         }
         extractKeyword(results, offsetAtt.startOffset(), map, 0);
-      } catch(Exception e) {
-        // nocommit: Fix this stupidness with catch all Exceptions!
+      } catch (StringIndexOutOfBoundsException e) {
+        // nocommit: Fix this stupidness with catch, instead fix in WSOutput
         extractKeyword(outputs.subList(0, 1), offsetAtt.startOffset(), map, 0);
       }
-      
     }
         
-    Iterator<String> iter = map.keySet().iterator();
-    
-    while(iter.hasNext()) {      
-      String text = iter.next();      
-      morphQueue.add(map.get(text));
-    }
-  
+    morphQueue.addAll(map.values());
   }
   
   private void extractKeyword(List<AnalysisOutput> outputs, int startoffset, Map<String,Token> map, int position) {
