@@ -23,8 +23,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
@@ -32,6 +39,10 @@ import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -57,6 +68,7 @@ public class DictionaryBuilder {
     }
     buildHanjaMap(inputDir, outputDir);
     buildSyllableDict(inputDir, outputDir);
+    buildHangulDict(inputDir, outputDir);
   }
   
   static void copyAsIs(File in, File out) throws Exception {
@@ -212,5 +224,249 @@ public class DictionaryBuilder {
     }
     reader.close();
     stream.close();
+  }
+  
+  
+  static void buildHangulDict(File inputDir, File outputDir) throws Exception {
+    TreeMap<String,Integer> sorted = new TreeMap<String,Integer>();
+    Map<Output,Integer> classes = new LinkedHashMap<>();
+    File input = new File(inputDir, "dictionary.dic");
+    BufferedReader reader = new BufferedReader(IOUtils.getDecodingReader(input, IOUtils.CHARSET_UTF_8));
+    String line = null;
+    while ((line = reader.readLine()) != null) {
+      if (!line.startsWith("!") && !line.startsWith("\uFEFF")) {
+        processLine(line, sorted, classes);
+      }
+    }
+    reader.close();
+    input = new File(inputDir, "extension.dic");
+    reader = new BufferedReader(IOUtils.getDecodingReader(input, IOUtils.CHARSET_UTF_8));
+    while ((line = reader.readLine()) != null) {
+      if (!line.startsWith("!") && !line.startsWith("\uFEFF")) {
+        processLine(line, sorted, classes);
+      }
+    }
+    reader.close();
+    input = new File(inputDir, "compounds.dic");
+    reader = new BufferedReader(IOUtils.getDecodingReader(input, IOUtils.CHARSET_UTF_8));
+    while ((line = reader.readLine()) != null) {
+      if (!line.startsWith("!") && !line.startsWith("\uFEFF")) {
+        processCompound(line, sorted, classes);
+      }
+    }
+    reader.close();
+    System.out.println("#words: " + sorted.size());
+    System.out.println("#classes: " + classes.size());
+    Outputs<Byte> fstOutput = ByteOutputs.getSingleton();
+    //    makes corrupt FST!!!!
+    //     Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, false, PackedInts.DEFAULT, true, 15);
+    Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, PackedInts.DEFAULT, true, 15);
+    IntsRef scratch = new IntsRef();
+    for (Map.Entry<String,Integer> e : sorted.entrySet()) {
+      String token = e.getKey();
+      scratch.grow(token.length());
+      scratch.length = token.length();
+      for (int i = 0; i < token.length(); i++) {
+        scratch.ints[i] = (int) token.charAt(i);
+      }
+      int v = e.getValue();
+      assert v >= 0 && v < 128;
+      builder.add(scratch, (byte)v);
+    }
+    FST<Byte> fst = builder.finish();
+    System.out.println("FST size: " + fst.sizeInBytes());
+    OutputStream stream = new BufferedOutputStream(new FileOutputStream(new File(outputDir, DictionaryResources.FILE_WORDS_DAT)));
+    DataOutput out = new OutputStreamDataOutput(stream);
+    CodecUtil.writeHeader(out, DictionaryResources.FILE_WORDS_DAT, DictionaryResources.DATA_VERSION);
+    out.writeByte((byte)classes.size());
+    for (Output o : classes.keySet()) {
+      o.write(out);
+    }
+    fst.save(out);
+  }
+  
+  static void processLine(String line, TreeMap<String,Integer> sorted, Map<Output,Integer> classes) {
+    String[] infos = line.split("[,]+");
+    assert infos.length == 2;
+    assert infos[1].length() == 10;
+    Output output = new Output();
+    output.flags = (char) parseFlags(infos[1]);
+    output.splits = Collections.emptyList();
+    Integer ord = classes.get(output);
+    if (ord == null) {
+      ord = classes.size();
+      classes.put(output, ord);
+    }
+    sorted.put(infos[0], ord);
+  }
+  
+  static void processCompound(String line, TreeMap<String,Integer> sorted, Map<Output,Integer> classes) {
+    String[] infos = line.split("[:]+");
+    assert infos.length == 3;
+    assert infos[2].length() == 4;
+    Output output = new Output();
+    
+    if (!infos[1].replace(",", "").equals(infos[0])) {
+      output.flags = (char) parseFlags("300"+infos[2]+"00X");
+      output.decomp = infos[1];
+    } else {
+      output.flags = (char) parseFlags("200"+infos[2]+"00X");
+      output.splits = parseSplits(infos[1]);
+    }
+    
+    Integer ord = classes.get(output);
+    if (ord == null) {
+      ord = classes.size();
+      classes.put(output, ord);
+    }
+    sorted.put(infos[0], ord);
+  }
+  
+  static List<Integer> parseSplits(String line) {
+    List<Integer> splits = new ArrayList<>();
+    int current = 0;
+    while (true) {
+      current = line.indexOf(',', current);
+      assert current != 0;
+      assert current != line.length();
+      if (current < 0) {
+        break;
+      }
+      splits.add(current - splits.size());
+      current++;
+    }
+    
+    // validate splits data
+    assert !splits.isEmpty();
+    String comp = line.replaceAll(",", "");
+    StringBuilder sb = new StringBuilder();
+    int last = 0;
+    for (int i : splits) {
+      assert i < comp.length();
+      assert i > last;
+      sb.append(comp.substring(last, i));
+      last = i;
+    }
+    sb.append(comp.substring(last));
+    assert sb.toString().equals(comp);
+    
+    return splits;
+  }
+    
+  
+  static class Output {
+    char flags;
+    List<Integer> splits;
+    String decomp;
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((decomp == null) ? 0 : decomp.hashCode());
+      result = prime * result + flags;
+      result = prime * result + ((splits == null) ? 0 : splits.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      Output other = (Output) obj;
+      if (decomp == null) {
+        if (other.decomp != null) return false;
+      } else if (!decomp.equals(other.decomp)) return false;
+      if (flags != other.flags) return false;
+      if (splits == null) {
+        if (other.splits != null) return false;
+      } else if (!splits.equals(other.splits)) return false;
+      return true;
+    }
+
+    static final int MAX_SPLITS = HangulDictionary.RECORD_SIZE - 3;
+    
+    public void write(DataOutput output) throws IOException {
+      output.writeShort((short)flags);
+      if (decomp != null) {
+        assert decomp.length() <= MAX_SPLITS/2;
+        output.writeByte((byte) decomp.length());
+        for (int i = 0; i < decomp.length(); i++) {
+          output.writeShort((short) decomp.charAt(i));
+        }
+        for (int i = decomp.length(); i < MAX_SPLITS/2; i++) {
+          output.writeShort((short)0);
+        }
+      } else {
+        assert splits.size() <= MAX_SPLITS;
+        output.writeByte((byte) splits.size());
+        for (int i : splits) {
+          output.writeByte((byte)i);
+        }
+        for (int i = splits.size(); i < MAX_SPLITS; i++) {
+          output.writeByte((byte)0);
+        }
+      }
+    }
+  }
+  
+  private static int parseFlags(String buffer) {
+    if (buffer.length() != 10) {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+    int flags = 0;
+    // IDX_NOUN: 1 if noun, 2 if compound, 3 if "strange compound"
+    if (buffer.charAt(0) == '3') {
+      flags |= WordEntry.COMPOUND | WordEntry.COMPOUND_IRREGULAR | WordEntry.NOUN;
+    } else if (buffer.charAt(0) == '2') {
+      flags |= WordEntry.COMPOUND | WordEntry.NOUN;
+    } else if (buffer.charAt(0) == '1') {
+      flags |= WordEntry.NOUN;
+    } else if (buffer.charAt(0) != '0') {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+    // IDX_VERB
+    if (parseBoolean(buffer, 1)) {
+      flags |= WordEntry.VERB;
+    }
+    // IDX_BUSA
+    if (parseBoolean(buffer, 2)) {
+      flags |= WordEntry.BUSA;
+    }
+    // IDX_DOV
+    if (parseBoolean(buffer, 3)) {
+      flags |= WordEntry.DOV;
+    }
+    // IDX_BEV
+    if (parseBoolean(buffer, 4)) {
+      flags |= WordEntry.BEV;
+    }
+    // IDX_NE
+    if (parseBoolean(buffer, 5)) {
+      flags |= WordEntry.NE;
+    }
+    // IDX_REGURA
+    switch(buffer.charAt(9)) {
+      case 'B': return flags | WordEntry.VERB_TYPE_BIUP;
+      case 'H': return flags | WordEntry.VERB_TYPE_HIOOT;
+      case 'U': return flags | WordEntry.VERB_TYPE_LIUL;
+      case 'L': return flags | WordEntry.VERB_TYPE_LOO;
+      case 'S': return flags | WordEntry.VERB_TYPE_SIUT;
+      case 'D': return flags | WordEntry.VERB_TYPE_DI;
+      case 'R': return flags | WordEntry.VERB_TYPE_RU;
+      case 'X': return flags | WordEntry.VERB_TYPE_REGULAR;
+      default: throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+  }
+  
+  private static boolean parseBoolean(String buffer, int position) {
+    if (buffer.charAt(position) == '1') {
+      return true;
+    } else if (buffer.charAt(position) == '0') {
+      return false;
+    } else {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
   }
 }

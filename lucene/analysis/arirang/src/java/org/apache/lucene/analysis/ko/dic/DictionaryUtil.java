@@ -17,7 +17,9 @@ package org.apache.lucene.analysis.ko.dic;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,11 +27,17 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.ko.utils.Trie;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.fst.FST;
 
 public class DictionaryUtil {
   private DictionaryUtil() {}
   
   private static final Trie<String,WordEntry> dictionary = new Trie<String, WordEntry>(false);
+  
+  private static final HangulDictionary newDictionary;
   
   private static final Set<String> josas = new HashSet<String>();
   
@@ -97,6 +105,15 @@ public class DictionaryUtil {
   
       readFileToSet(suffixs,DictionaryResources.FILE_SUFFIX);
       
+      InputStream stream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_WORDS_DAT);
+      DataInput dat = new InputStreamDataInput(new BufferedInputStream(stream));
+      CodecUtil.checkHeader(dat, DictionaryResources.FILE_WORDS_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
+      byte metadata[] = new byte[dat.readByte() * HangulDictionary.RECORD_SIZE];
+      dat.readBytes(metadata, 0, metadata.length);
+      ByteOutputs outputs = ByteOutputs.getSingleton();
+      FST<Byte> fst = new FST<Byte>(dat, outputs);
+      newDictionary = new HangulDictionary(fst, metadata);
+      stream.close();
     } catch (IOException e) {
       throw new Error("Cannot load resource",e);
     }
@@ -107,25 +124,37 @@ public class DictionaryUtil {
     return dictionary.getPrefixedBy(prefix);
   }
 
+  /** only use this if you surely need the whole entry */
   public static WordEntry getWord(String key) {    
-    if(key.length()==0) return null;
-    
-    return (WordEntry)dictionary.get(key);
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    } else {
+      return newDictionary.decodeEntry(key, b);
+    }
   }
   
   public static WordEntry getWordExceptVerb(String key) {
-    WordEntry entry = getWord(key);
-    if (entry != null && (entry.isNoun() || entry.isAdverb())) {
-      return entry;
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    }
+    char flags = newDictionary.getFlags(b);
+    if ((flags & (WordEntry.NOUN | WordEntry.BUSA)) != 0) {
+      return newDictionary.decodeEntry(key, b, flags);
     } else {
       return null;
     }
   }
   
-  public static WordEntry getNoun(String key) {  
-    WordEntry entry = getWord(key);
-    if (entry != null && entry.isNoun() && !entry.isCompoundNoun()) {
-      return entry;
+  public static WordEntry getNoun(String key) {
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    }
+    char flags = newDictionary.getFlags(b);
+    if ((flags & WordEntry.NOUN) != 0 && (flags & WordEntry.COMPOUND) == 0) {
+      return newDictionary.decodeEntry(key, b, flags);
     } else {
       return null;
     }
@@ -138,27 +167,39 @@ public class DictionaryUtil {
    * @return  WordEntry
    */
   public static WordEntry getAllNoun(String key) {  
-    WordEntry entry = getWord(key);
-    if (entry != null && entry.isNoun()) {
-      return entry;
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    }
+    char flags = newDictionary.getFlags(b);
+    if ((flags & WordEntry.NOUN) != 0) {
+      return newDictionary.decodeEntry(key, b, flags);
     } else {
       return null;
     }
   }
   
   public static WordEntry getVerb(String key) {
-    WordEntry entry = getWord(key);  
-    if (entry != null && entry.isVerb()) {
-      return entry;
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    }
+    char flags = newDictionary.getFlags(b);
+    if ((flags & WordEntry.VERB) != 0) {
+      return newDictionary.decodeEntry(key, b, flags);
     } else {
       return null;
     }
   }
   
   public static WordEntry getBusa(String key) {
-    WordEntry entry = getWord(key);
-    if (entry != null && entry.isAdverb() && !entry.isNoun()) {
-      return entry;
+    Byte b = newDictionary.lookup(key);
+    if (b == null) {
+      return null;
+    }
+    char flags = newDictionary.getFlags(b);
+    if ((flags & WordEntry.BUSA) != 0 && (flags & WordEntry.NOUN) == 0) {
+      return newDictionary.decodeEntry(key, b, flags);
     } else {
       return null;
     }

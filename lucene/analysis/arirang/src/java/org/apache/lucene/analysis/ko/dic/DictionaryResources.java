@@ -49,6 +49,7 @@ public class DictionaryResources {
   public static final String FILE_SYLLABLE_DAT = "syllable.dat";
   public static final String FILE_HANJA_IDX = "hanja.idx";
   public static final String FILE_HANJA_DAT = "hanja.dat";
+  public static final String FILE_WORDS_DAT = "words.dat";
   public static final int DATA_VERSION = 0;
 
   private DictionaryResources() {}

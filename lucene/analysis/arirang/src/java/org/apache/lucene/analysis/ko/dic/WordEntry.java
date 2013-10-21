@@ -29,6 +29,7 @@ public class WordEntry {
   static final int BEV =      1 << 7;
   static final int NE  =      1 << 8;
   static final int COMPOUND = 1 << 9;
+  static final int COMPOUND_IRREGULAR = 1 << 10;
   
   /** Regular verb type */
   public static final int VERB_TYPE_REGULAR = 0;
@@ -62,12 +63,12 @@ public class WordEntry {
   /**
    * 단어특성
    */
-  private final char features;
+  final char features;
   
-  private final List<CompoundEntry> compounds;
+  final List<CompoundEntry> compounds;
   
   public WordEntry(String word, int features, List<CompoundEntry> compounds) {
-    if (features < 0 || features >= 1024) {
+    if (features < 0 || features >= 2048) {
       throw new IllegalArgumentException("Invalid features: " + Integer.toHexString(features));
     }
     this.word = word;
