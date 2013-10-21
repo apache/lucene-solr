@@ -58,7 +58,7 @@ public class DictionaryUtil {
             throw new IOException("Invalid file format: " + line);
           }
           
-          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].toCharArray());
+          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].toCharArray(), null);
           dictionary.add(entry.getWord(), entry);          
         }
       };
@@ -118,26 +118,22 @@ public class DictionaryUtil {
     return (WordEntry)dictionary.get(key);
   }
   
-  public static WordEntry getWordExceptVerb(String key) {    
-    WordEntry entry = getWord(key);    
-    if(entry==null) return null;
-    
-    if(entry.getFeature(WordEntry.IDX_NOUN)=='1'||
-        entry.getFeature(WordEntry.IDX_NOUN)=='2'||
-        entry.getFeature(WordEntry.IDX_BUSA)=='1'
-        ) 
+  public static WordEntry getWordExceptVerb(String key) {
+    WordEntry entry = getWord(key);
+    if (entry != null && (entry.isNoun() || entry.isAdverb())) {
       return entry;
-    
-    return null;
+    } else {
+      return null;
+    }
   }
   
   public static WordEntry getNoun(String key) {  
-
     WordEntry entry = getWord(key);
-    if(entry==null) return null;
-    
-    if(entry.getFeature(WordEntry.IDX_NOUN)=='1') return entry;
-    return null;
+    if (entry != null && entry.isNoun() && !entry.isCompoundNoun()) {
+      return entry;
+    } else {
+      return null;
+    }
   }
   
   /**
@@ -147,31 +143,30 @@ public class DictionaryUtil {
    * @return  WordEntry
    */
   public static WordEntry getAllNoun(String key) {  
-
     WordEntry entry = getWord(key);
-    if(entry==null) return null;
-
-    if(entry.getFeature(WordEntry.IDX_NOUN)=='1' || entry.getFeature(WordEntry.IDX_NOUN)=='2') return entry;
-    return null;
+    if (entry != null && entry.isNoun()) {
+      return entry;
+    } else {
+      return null;
+    }
   }
   
   public static WordEntry getVerb(String key) {
-    
     WordEntry entry = getWord(key);  
-    if(entry==null) return null;
-
-    if(entry.getFeature(WordEntry.IDX_VERB)=='1') {
+    if (entry != null && entry.isVerb()) {
       return entry;
+    } else {
+      return null;
     }
-    return null;
   }
   
   public static WordEntry getBusa(String key) {
     WordEntry entry = getWord(key);
-    if(entry==null) return null;
-
-    if(entry.getFeature(WordEntry.IDX_BUSA)=='1'&&entry.getFeature(WordEntry.IDX_NOUN)=='0') return entry;
-    return null;
+    if (entry != null && entry.isAdverb() && !entry.isNoun()) {
+      return entry;
+    } else {
+      return null;
+    }
   }
   
   public static WordEntry getUncompound(String key) {
@@ -225,9 +220,7 @@ public class DictionaryUtil {
   private static List<CompoundEntry> compoundArrayToList(String source, String[] arr) {
     List<CompoundEntry> list = new ArrayList<CompoundEntry>();
     for(String str: arr) {
-      CompoundEntry ce = new CompoundEntry(str);
-      ce.setOffset(source.indexOf(str));
-      list.add(ce);
+      list.add(new CompoundEntry(str, true));
     }
     return list;
   }

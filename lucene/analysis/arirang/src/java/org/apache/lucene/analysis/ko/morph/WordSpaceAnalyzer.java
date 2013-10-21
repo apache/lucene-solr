@@ -345,12 +345,12 @@ public class WordSpaceAnalyzer {
       List<CompoundEntry> cnouns = o.getCNounList();
       if(cnouns.size()==0) {
         boolean is = DictionaryUtil.getWordExceptVerb(pvword)!=null;
-        cnouns.add(new CompoundEntry(pvword,0,is));
+        cnouns.add(new CompoundEntry(pvword, is));
       } 
       
       for(AnalysisOutput candidate : candidates) {
         candidate.getCNounList().addAll(cnouns);
-        candidate.getCNounList().add(new CompoundEntry(candidate.getStem(),0,true));
+        candidate.getCNounList().add(new CompoundEntry(candidate.getStem(), true));
         candidate.setStem(pvword+candidate.getStem()); // 이렇게 해야 WSOutput 에 복합명사 처리할 때 정상처리됨
       }
       
@@ -444,10 +444,7 @@ public class WordSpaceAnalyzer {
     AnalysisOutput o = candidates.remove(0);    
     AnalysisOutput po = output.getPhrases().size()>0 ?  output.getPhrases().get(output.getPhrases().size()-1) : null;
     
-    String ejend = o.getSource().substring(o.getStem().length());
-    
-    char[] chrs = po!=null&&po.getStem().length()>0 ? MorphUtil.decompose(po.getStem().charAt(po.getStem().length()-1)) : null;
-    String pjend = po!=null&&po.getStem().length()>0 ? po.getSource().substring(po.getStem().length()) : null;
+    String ejend = o.getSource().substring(o.getStem().length());    
     
     char ja = 'x'; // 임의의 문자
     if(po!=null&&(po.getPatn()==PatternConstants.PTN_VM||po.getPatn()==PatternConstants.PTN_VMCM||po.getPatn()==PatternConstants.PTN_VMXM)) {   

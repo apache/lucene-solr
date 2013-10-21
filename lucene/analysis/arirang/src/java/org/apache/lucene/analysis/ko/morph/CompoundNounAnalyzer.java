@@ -41,7 +41,7 @@ public class CompoundNounAnalyzer {
   public List<CompoundEntry> analyze(String input) {
     
     WordEntry entry = DictionaryUtil.getAllNoun(input);
-    if(entry!=null && entry.getCompounds().size()>0) 
+    if(entry!=null && entry.isCompoundNoun()) 
       return entry.getCompounds();
     
     return analyze(input,true);
@@ -221,12 +221,12 @@ public class CompoundNounAnalyzer {
     if(pos==input.length()) {     
       if(hasSuffix) {
         outputs.add(
-            new CompoundEntry(input.substring(0,len-1), 0, true,PatternConstants.POS_NOUN));
+            new CompoundEntry(input.substring(0,len-1), true));
         outputs.add(
-            new CompoundEntry(input.substring(len-1), 0, true,PatternConstants.POS_NOUN));
+            new CompoundEntry(input.substring(len-1), true));
       } else {
         outputs.add(
-            new CompoundEntry(input, 0, true,PatternConstants.POS_NOUN));
+            new CompoundEntry(input, true));
 
       } 
       
@@ -243,25 +243,25 @@ public class CompoundNounAnalyzer {
     WordEntry prvEntry = DictionaryUtil.getAllNoun(prev);
     if(prvEntry==null) {
       pSucess = analyze(prev, results, false);
-      if(!pSucess) results.add(new CompoundEntry(prev, 0, false,PatternConstants.POS_NOUN));
+      if(!pSucess) results.add(new CompoundEntry(prev, false));
     } else {
       pSucess = true;
-      if(prvEntry.getFeature(WordEntry.IDX_NOUN)=='2')
+      if(prvEntry.isCompoundNoun())
         results.addAll(prvEntry.getCompounds());
       else
-        results.add(new CompoundEntry(prev, 0, true,PatternConstants.POS_NOUN));
+        results.add(new CompoundEntry(prev, true));
     }
     
     WordEntry rearEntry = DictionaryUtil.getAllNoun(rear);
     if(rearEntry==null) {
       rSuccess = analyze(rear, results, false);
-      if(!rSuccess) results.add(new CompoundEntry(rear, 0, false,PatternConstants.POS_NOUN));
+      if(!rSuccess) results.add(new CompoundEntry(rear, false));
     } else {
       rSuccess = true;
-      if(rearEntry.getFeature(WordEntry.IDX_NOUN)=='2')
+      if(rearEntry.isCompoundNoun())
         results.addAll(rearEntry.getCompounds());
       else
-        results.add(new CompoundEntry(rear, 0, true,PatternConstants.POS_NOUN));
+        results.add(new CompoundEntry(rear, true));
     }
     
     if(!pSucess&&!rSuccess) {
@@ -365,20 +365,11 @@ public class CompoundNounAnalyzer {
    * @return compound entry
    */
   private CompoundEntry analyzeSingle(String input) {
-            
-    int score = AnalysisOutput.SCORE_ANALYSIS;
-    char pos = PatternConstants.POS_NOUN;
-    if(input.length()==1) return  new CompoundEntry(input, 0, true,pos);
+    if(input.length()==1) return  new CompoundEntry(input, true);
     
     WordEntry entry = DictionaryUtil.getWordExceptVerb(input);
-    if(entry!=null) {
-      score = AnalysisOutput.SCORE_CORRECT;
-      if(entry.getFeature(WordEntry.IDX_NOUN)!='1') {
-        pos = PatternConstants.POS_AID;
-      }
-    }
 
-    return new CompoundEntry(input, 0, score==AnalysisOutput.SCORE_CORRECT,pos);
+    return new CompoundEntry(input, entry != null);
   }
   
   private static boolean isAlphaNumeric(String text) {

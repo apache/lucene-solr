@@ -101,7 +101,7 @@ class VerbUtil {
     
     WordEntry entry = null;
     if(success&&(entry=DictionaryUtil.getAllNoun(o.getStem()))!=null) { 
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='2') {
+      if(entry.isCompoundNoun()) {
         o.setCNoun(entry.getCompounds());
       }
       o.setScore(AnalysisOutput.SCORE_CORRECT);
@@ -191,7 +191,7 @@ class VerbUtil {
     if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;        
     
     o.setScore(AnalysisOutput.SCORE_CORRECT);
-    if(entry.getFeature(WordEntry.IDX_NOUN)=='2') {
+    if(entry.isCompoundNoun()) {
       o.setCNoun(entry.getCompounds());
     }
     

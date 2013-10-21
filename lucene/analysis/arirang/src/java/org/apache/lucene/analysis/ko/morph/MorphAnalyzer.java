@@ -318,7 +318,7 @@ public class MorphAnalyzer {
         output.setPos(PatternConstants.POS_ETC);
         output.setPatn(PatternConstants.PTN_ADVJ);
       }
-      if(entry.getCompounds().size()>1) output.addCNoun(entry.getCompounds());
+      if(entry.isCompoundNoun()) output.addCNoun(entry.getCompounds());
     }else {
       if(MorphUtil.hasVerbOnly(stem)) return;
     }
@@ -351,7 +351,7 @@ public class MorphAnalyzer {
     o.setPomi(pomis[1]);
   
     WordEntry entry = DictionaryUtil.getVerb(o.getStem());  
-    if(entry!=null&&!("을".equals(end)&&entry.getFeature(WordEntry.IDX_REGURA)==IrregularUtil.IRR_TYPE_LIUL)) {              
+    if(entry!=null&&!("을".equals(end)&& entry.getVerbType() == WordEntry.VERB_TYPE_LIUL)) {              
       AnalysisOutput output = o.clone();
       output.setScore(AnalysisOutput.SCORE_CORRECT);
       MorphUtil.buildPtnVM(output, candidates);

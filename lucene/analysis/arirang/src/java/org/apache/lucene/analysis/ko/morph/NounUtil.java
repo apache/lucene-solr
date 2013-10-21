@@ -231,10 +231,10 @@ class NounUtil {
           
     WordEntry cnoun = DictionaryUtil.getAllNoun(s);
     if(cnoun != null)  {
-      if(cnoun.getFeature(WordEntry.IDX_NOUN)=='2')
+      if(cnoun.isCompoundNoun())
         output.setCNoun(cnoun.getCompounds());
       else
-        output.setCNoun(new ArrayList<CompoundEntry>());
+        output.setCNoun(new ArrayList<CompoundEntry>()); // TODO: dont make all these lists
       output.setScore(AnalysisOutput.SCORE_CORRECT);
     }
           

@@ -26,33 +26,6 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 class IrregularUtil {
   private IrregularUtil() {}
   
-  // ㅂ 불규칙
-  public static final char IRR_TYPE_BIUP = 'B';
-  
-  // ㅎ 불규칙
-  public static final char IRR_TYPE_HIOOT = 'H';
-  
-  // ㄹ 불규칙
-  public static final char IRR_TYPE_LIUL = 'U';
-  
-  // 르 불규칙
-  public static final char IRR_TYPE_LOO = 'L';
-
-  // ㅅ 불규칙
-  public static final char IRR_TYPE_SIUT = 'S';
-  
-  // ㄷ 불규칙
-  public static final char IRR_TYPE_DI = 'D';
-  
-  // 러 불규칙
-  public static final char IRR_TYPE_RU = 'R';
-  
-  // 으 탈락
-  public static final char IRR_TYPE_UI = 'X';  
-  
-  // 규칙형
-  public static final char IRR_TYPE_REGULAR = 'X';
-  
   public static String[] restoreIrregularVerb(String start, String end) {
 
     if(end==null) end="";
@@ -152,7 +125,7 @@ class IrregularUtil {
         start = Character.toString(ch);    
 
       WordEntry entry = DictionaryUtil.getVerb(start);
-      if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_BIUP)
+      if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_BIUP)
         return new String[]{start,end};      
     }
 
@@ -186,7 +159,7 @@ class IrregularUtil {
       start = Character.toString(ch);
     
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_DI)
+    if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_DI)
       return new String[]{start,end};
     
     return null;
@@ -211,7 +184,7 @@ class IrregularUtil {
       start = Character.toString(ch);
     
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_SIUT)
+    if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_SIUT)
       return new String[]{start,end};
 
     return null;
@@ -243,7 +216,7 @@ class IrregularUtil {
         sb.append(Character.toString(ch1)).append("르");
 
       WordEntry entry = DictionaryUtil.getVerb(sb.toString());
-      if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_LOO)
+      if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_LOO)
         return new String[]{sb.toString(),end};    
     }
     
@@ -271,7 +244,7 @@ class IrregularUtil {
     start = start.substring(0,start.length()-1)+convEnd;
 
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_LIUL)
+    if (entry!=null && entry.getVerbType() == WordEntry.VERB_TYPE_LIUL)
       return new String[]{start,end};  
     
     return null;
@@ -300,7 +273,7 @@ class IrregularUtil {
       start = Character.toString(ch2);
 
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_RU)
+    if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_RU)
       return new String[]{start,end};
     
     return null;
@@ -332,7 +305,7 @@ class IrregularUtil {
       start = Character.toString(ch2);
 
     WordEntry entry = DictionaryUtil.getVerb(start);
-    if(entry!=null&&entry.getFeature(WordEntry.IDX_REGURA)==IRR_TYPE_HIOOT)
+    if (entry != null && entry.getVerbType() == WordEntry.VERB_TYPE_HIOOT)
       return new String[]{start,end};
     
     return null;

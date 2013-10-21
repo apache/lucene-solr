@@ -366,7 +366,7 @@ public final class KoreanFilter extends TokenFilter {
   private List<CompoundEntry> confirmCNoun(String input) {
     
     WordEntry cnoun = DictionaryUtil.getAllNoun(input);
-    if(cnoun!=null && cnoun.getFeature(WordEntry.IDX_NOUN)=='2') {
+    if(cnoun!=null && cnoun.isCompoundNoun()) {
       return cnoun.getCompounds();
     }
        
