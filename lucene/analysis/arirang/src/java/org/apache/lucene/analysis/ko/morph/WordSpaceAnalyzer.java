@@ -132,12 +132,10 @@ public class WordSpaceAnalyzer {
    * @return  calculated score
    */
   public int getOutputScore(List<AnalysisOutput> list) {
-    
     int score = 100;
-    for(AnalysisOutput o : list) {
-      if(o.getScore()<score) score = o.getScore();
+    for (AnalysisOutput o : list) {
+      score = Math.min(score, o.getScore());
     }
-    
     return score;
   }
   
@@ -499,7 +497,7 @@ public class WordSpaceAnalyzer {
     
     int ptn = PatternConstants.PTN_N;
     
-    if(entry.getFeature(WordEntry.IDX_NOUN)=='0') {
+    if(!entry.isNoun()) {
       pos = PatternConstants.POS_AID;
       ptn = PatternConstants.PTN_AID;
     }

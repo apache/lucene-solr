@@ -26,11 +26,11 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 class VerbUtil {
   private VerbUtil() {}
 
-  public static final Map<String, String> verbSuffix = new HashMap<String, String>();
+  private static final Map<String, String> verbSuffix = new HashMap<String, String>();
   
-  public static final Map<String, String> XVerb = new HashMap<String, String>();
+  private static final Map<String, String> XVerb = new HashMap<String, String>();
   
-  public static final Map<String, String> wiAbbrevs = new HashMap<String, String>();
+  private static final Map<String, String> wiAbbrevs = new HashMap<String, String>();
   
   static {
     String[] suffixs = {
@@ -47,7 +47,7 @@ class VerbUtil {
   /**
    * 어간이 용언화접미사로 끝나면 index 를 반환한다.  아니면 -1을 반환한다.
    */
-  public static int endsWithVerbSuffix(String stem) {
+  static int endsWithVerbSuffix(String stem) {
     int len = stem.length();
     if(len<2) return -1;
     int start = 2;
@@ -61,7 +61,7 @@ class VerbUtil {
   /**
    * 어간부에 보조용언 [하,되,오,내,주,지]가 있는지 조사한다.
    */
-  public static int endsWithXVerb(String stem) {
+  static int endsWithXVerb(String stem) {
     int len = stem.length();
     if(len<2) return -1;
     int start = 2;
@@ -72,16 +72,14 @@ class VerbUtil {
     return -1;
   }
    
-  public static boolean verbSuffix(String stem) {
-
+  static boolean verbSuffix(String stem) {
     return verbSuffix.get(stem)!=null;
-     
   }
    
   /**
    * 3. 학교에서이다 : 체언 + '에서/부터/에서부터' + '이' + 어미 (PTN_NJCM) <br>
    */
-  public static boolean ananlysisNJCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean ananlysisNJCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
  
     int strlen = o.getStem().length();
     boolean success = false;
@@ -119,7 +117,7 @@ class VerbUtil {
    * @param o  어미부와 어간부가 분리된 결과
    * @param candidates  candidates
    */
-  public static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     if(o.getStem().endsWith("스러우")) o.setStem(o.getStem().substring(0,o.getStem().length()-3)+"스럽");
 
@@ -132,7 +130,6 @@ class VerbUtil {
       o.setStem(o.getStem().substring(0,idxVbSfix));
       entry = DictionaryUtil.getAllNoun(o.getStem());
     } else { // 이 축약인 경우
-      if(entry==null) return false;
       o.setVsfx("이");
       o.setStem(o.getStem());
     }
@@ -141,10 +138,10 @@ class VerbUtil {
     o.setPos(PatternConstants.POS_NOUN);
         
     if(entry!=null) {
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='0') return false;
-      else if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
-      else if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;
-      else if(o.getVsfx().equals("내")&&entry.getFeature(WordEntry.IDX_NE)!='1') return false;
+      if(!entry.isNoun()) return false;
+      else if(o.getVsfx().equals("하") && !entry.hasDOV()) return false;
+      else if(o.getVsfx().equals("되") && !entry.hasBEV()) return false;
+      else if(o.getVsfx().equals("내") && !entry.hasNE()) return false;
       else if(o.getVsfx().equals("이")&&o.getEomi().equals("어")) return false;
       o.setScore(AnalysisOutput.SCORE_CORRECT); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.      
     }else {
@@ -157,7 +154,7 @@ class VerbUtil {
 
   }
    
-  public static boolean ananlysisNSMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean ananlysisNSMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
    
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
     if(idxXVerb==-1) return false;
@@ -187,8 +184,8 @@ class VerbUtil {
 //    }
     if(entry==null) return false;  
     
-    if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
-    if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;        
+    if(o.getVsfx().equals("하") && !entry.hasDOV()) return false;
+    if(o.getVsfx().equals("되") && !entry.hasBEV()) return false;        
     
     o.setScore(AnalysisOutput.SCORE_CORRECT);
     if(entry.isCompoundNoun()) {
@@ -200,7 +197,7 @@ class VerbUtil {
     return (o.getScore()==AnalysisOutput.SCORE_CORRECT);     
   }
    
-  public static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) {
    
     int strlen = o.getStem().length();
      
@@ -248,7 +245,7 @@ class VerbUtil {
    * 6. 도와주다 : 용언 + '아/어' + 보조용언 + 어미 (PTN_VMXM)
    * 
    */
-  public static boolean analysisVMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean analysisVMXM(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
 

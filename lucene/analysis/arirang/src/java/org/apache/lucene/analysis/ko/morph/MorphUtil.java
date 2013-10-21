@@ -48,7 +48,7 @@ class MorphUtil {
    * 한글 한글자를 초성/중성/종성의 배열로 만들어 반환한다.
    * @param c the character to be decomposed
    */
-  public static char[] decompose(char c) {
+  static char[] decompose(char c) {
     char[] result = null;
 
     if(c>0xD7A3||c<0xAC00) return new char[]{c};
@@ -70,18 +70,17 @@ class MorphUtil {
     return result;
   }  
   
-  public static char compound(int first, int middle, int last) {    
+  static char compound(int first, int middle, int last) {    
     return (char)(0xAC00 + first* JUNG_JONG + middle * JONGSEONG.length + last);
   }
   
-
-  public static char makeChar(char ch, int mdl, int last) {    
+  static char makeChar(char ch, int mdl, int last) {    
     ch -= 0xAC00;    
     int first = ch/JUNG_JONG;     
     return compound(first,mdl,last);
   }
   
-  public static char makeChar(char ch, int last) {
+  static char makeChar(char ch, int last) {
     ch -= 0xAC00;    
     int first = ch/JUNG_JONG;  
     ch = (char)(ch % JUNG_JONG);
@@ -90,30 +89,14 @@ class MorphUtil {
     return compound(first,middle,last);    
   }
   
-  public static char replaceJongsung(char dest, char source) {
+  static char replaceJongsung(char dest, char source) {
     source -= 0xAC00;    
     int last = source % JONGSEONG.length;
       
     return makeChar(dest,last);  
   }
-
-  /**
-   * 형태소 유형 출력을 위한 문자열을 생성한다.
-   * @param word  word to be printed
-   * @param type  the type of the input word
-   */
-  public static String buildTypeString(String word, char type) {
-    StringBuffer sb = new StringBuffer();
-    sb.append(word);
-    sb.append("(");
-    sb.append(type);
-    sb.append(")");
-    
-    return sb.toString();
-  }
   
-  
-  public static void buildPtnVM(AnalysisOutput output, List<AnalysisOutput> candidates) {
+  static void buildPtnVM(AnalysisOutput output, List<AnalysisOutput> candidates) {
     
     String end = output.getEomi();
     if(output.getPomi()!=null) end = output.getPomi();
@@ -134,7 +117,7 @@ class MorphUtil {
     
   }
 
-  public static boolean hasVerbOnly(String input) {
+  static boolean hasVerbOnly(String input) {
     for (int i = input.length()-1; i >=0; i--) {
       if (SyllableFeatures.hasFeature(input.charAt(i), SyllableFeatures.WDSURF)) {
         assert input.length() > i;

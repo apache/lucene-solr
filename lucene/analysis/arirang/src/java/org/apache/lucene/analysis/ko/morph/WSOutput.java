@@ -28,36 +28,28 @@ class WSOutput  implements Cloneable {
   
   private List<AnalysisOutput> phrases = new ArrayList<AnalysisOutput>();
   
-  public WSOutput() {
-    
-  }
-  
-  public WSOutput(AnalysisOutput o) {
-    addPhrase(o);
-  }
-  
-  public int getLastStart() {
+  int getLastStart() {
     return lastStart;
   }
 
-  public void setLastStart(int start) {
+  void setLastStart(int start) {
     this.lastStart = start;
   }
 
-  public int getLastEnd() {
+  int getLastEnd() {
     return lastEnd;
   }
 
-  public void setLastEnd(int end) {
+  void setLastEnd(int end) {
     this.lastStart = end;
   }
   
 
-  public List<AnalysisOutput> getPhrases() {
+  List<AnalysisOutput> getPhrases() {
     return phrases;
   }
 
-  public void removeLast() {
+  void removeLast() {
         
     if(this.phrases.size()==0) return;
     
@@ -81,7 +73,7 @@ class WSOutput  implements Cloneable {
     }
   }
   
-  public void addPhrase(AnalysisOutput o) {
+  void addPhrase(AnalysisOutput o) {
 
     this.lastStart = this.lastEnd;
     this.lastEnd += o.getSource().length();
@@ -92,7 +84,7 @@ class WSOutput  implements Cloneable {
       addCompounds(o);
   }
   
-  private void addCompounds(AnalysisOutput o) {
+  void addCompounds(AnalysisOutput o) {
     
     List<CompoundEntry> cnouns = o.getCNounList();
       
@@ -151,7 +143,7 @@ class WSOutput  implements Cloneable {
 
   }
   
-  public void setPhrases(List<AnalysisOutput> phrases) {
+  void setPhrases(List<AnalysisOutput> phrases) {
     this.phrases = phrases;
   }
   

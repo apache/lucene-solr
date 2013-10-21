@@ -22,13 +22,13 @@ import java.util.List;
 
 public class WordEntry {
 
-  static final int IDX_NOUN = 0;
-  static final int IDX_VERB = 1;
-  static final int IDX_BUSA = 2;
-  public static final int IDX_DOV = 3;
-  public static final int IDX_BEV = 4;
-  public static final int IDX_NE = 5;
-  static final int IDX_REGURA = 9;
+  private static final int IDX_NOUN = 0;
+  private static final int IDX_VERB = 1;
+  private static final int IDX_BUSA = 2;
+  private static final int IDX_DOV = 3;
+  private static final int IDX_BEV = 4;
+  private static final int IDX_NE = 5;
+  private static final int IDX_REGURA = 9;
   
   /** Irregular verb type (ㅂ-final) */
   public static final int VERB_TYPE_BIUP = 'B';
@@ -80,11 +80,7 @@ public class WordEntry {
   }
   
   public String getWord() {
-    return this.word;
-  }
-  
-  public char getFeature(int index) {
-    return features[index];
+    return word;
   }
   
   /** Returns true if the entry is a noun (or compound noun) */
@@ -116,5 +112,20 @@ public class WordEntry {
   /** Returns true if entry is busa (adverb) */
   public boolean isAdverb() {
     return features[IDX_BUSA] == '1';
+  }
+  
+  /** allows noun analysis with -하 verb suffix */
+  public boolean hasDOV() {
+    return features[IDX_DOV] == '1';
+  }
+  
+  /** allows noun analysis with -되 verb suffix */
+  public boolean hasBEV() {
+    return features[IDX_BEV] == '1';
+  }
+  
+  /** allows noun analysis with -내 verb suffix */
+  public boolean hasNE() {
+    return features[IDX_NE] == '1';
   }
 }

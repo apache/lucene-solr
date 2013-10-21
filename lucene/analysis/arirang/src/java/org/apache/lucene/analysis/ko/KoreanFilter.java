@@ -294,7 +294,6 @@ public final class KoreanFilter extends TokenFilter {
     for(int i=0;i<term.length();i++) {
 
       char[] chs = HanjaMapper.convertToHangul(term.charAt(i));      
-      if(chs==null) continue;
     
       List<StringBuilder> removeList = new ArrayList<StringBuilder>(); // 제거될 후보를 저장  
       

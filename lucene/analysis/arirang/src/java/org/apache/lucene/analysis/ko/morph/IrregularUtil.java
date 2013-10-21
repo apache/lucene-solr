@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 class IrregularUtil {
   private IrregularUtil() {}
   
-  public static String[] restoreIrregularVerb(String start, String end) {
+  static String[] restoreIrregularVerb(String start, String end) {
 
     if(end==null) end="";
     char[] jasos = new char[0];    

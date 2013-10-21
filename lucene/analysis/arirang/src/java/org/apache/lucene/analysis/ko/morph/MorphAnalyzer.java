@@ -26,21 +26,6 @@ import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 
 public class MorphAnalyzer {
-
-  /**
-   * starting word of sentence.
-   */
-  public static final int POS_START = 1;
-  
-  /**
-   * middle word of sentence
-   */
-  public static final int POS_MID = 2;
-  
-  /**
-   * ending word of sentence.
-   */
-  public static final int POS_END = 3;    
   
   private CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();  
   
@@ -52,21 +37,12 @@ public class MorphAnalyzer {
     cnAnalyzer.setExactMach(is);
   }
   
-  public List<AnalysisOutput> analyze(String input) {  
-
-    if(input.endsWith("."))  
-      return analyze(input.substring(0,input.length()-1), POS_END);
-    
-    return analyze(input, POS_MID);
-  }
-  
   /**
    * 
    * @param input input
-   * @param pos pos
    * @return candidates
    */
-  public List<AnalysisOutput> analyze(String input, int pos) {    
+  public List<AnalysisOutput> analyze(String input) {    
 
     List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();        
     boolean isVerbOnly = MorphUtil.hasVerbOnly(input);
@@ -267,21 +243,20 @@ public class MorphAnalyzer {
     WordEntry entry;
     if((entry=DictionaryUtil.getWord(word))!=null) {
 
-      if(entry.getFeature(WordEntry.IDX_NOUN)!='1'&&
-          entry.getFeature(WordEntry.IDX_BUSA)=='1') {
+      if (entry.isCompoundNoun()) {
+        candidates.add(0,output);
+      } else if (entry.isNoun()) {
+        output.setScore(AnalysisOutput.SCORE_CORRECT);
+        candidates.add(0,output);
+      } else if (entry.isAdverb()) {
         AnalysisOutput busa = new AnalysisOutput(word, null, null, PatternConstants.PTN_AID);
         busa.setPos(PatternConstants.POS_ETC);
         
         busa.setScore(AnalysisOutput.SCORE_CORRECT);
         candidates.add(0,busa);    
-      }else if(entry.getFeature(WordEntry.IDX_NOUN)=='1') {
-        output.setScore(AnalysisOutput.SCORE_CORRECT);
-        candidates.add(0,output);
-      }else if(entry.getFeature(WordEntry.IDX_NOUN)=='2') {
-        candidates.add(0,output);
       }
       
-      if(entry.getFeature(WordEntry.IDX_VERB)!='1') return;
+      if(!entry.isVerb()) return;
     } else if(candidates.size()==0||!NounUtil.endsWith2Josa(word)) {
       output.setScore(AnalysisOutput.SCORE_ANALYSIS);
       candidates.add(0,output);
@@ -298,7 +273,7 @@ public class MorphAnalyzer {
    * @param end end
    * @param candidates  candidates
    */
-  public void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) {
+  void analysisWithJosa(String stem, String end, List<AnalysisOutput> candidates) {
     if(stem==null||stem.length()==0) return;  
     
     char[] chrs = MorphUtil.decompose(stem.charAt(stem.length()-1));
@@ -314,7 +289,7 @@ public class MorphAnalyzer {
     WordEntry entry = DictionaryUtil.getWordExceptVerb(stem);
     if(entry!=null) {
       output.setScore(AnalysisOutput.SCORE_CORRECT);
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='0'&&entry.getFeature(WordEntry.IDX_BUSA)=='1') {
+      if(!entry.isNoun() && entry.isAdverb()) {
         output.setPos(PatternConstants.POS_ETC);
         output.setPatn(PatternConstants.PTN_ADVJ);
       }
@@ -340,7 +315,7 @@ public class MorphAnalyzer {
    * @param end end
    * @param candidates  candidates
    */
-  public void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) {
+  void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) {
     
     String[] morphs = EomiUtil.splitEomi(stem, end);
     if(morphs[0]==null) return; // 어미가 사전에 등록되어 있지 않다면....
@@ -396,7 +371,7 @@ public class MorphAnalyzer {
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
    * 단위명사는 2글자 이상 단어에서만 찾는다.
    */
-  public boolean confirmCNoun(AnalysisOutput o)  {
+  boolean confirmCNoun(AnalysisOutput o)  {
 
     if(o.getStem().length()<3) return false;
      
@@ -455,7 +430,7 @@ public class MorphAnalyzer {
     }else if(o.getPatn()==PatternConstants.PTN_NSM) {         
       if("내".equals(o.getVsfx())&&cnouns.get(cnouns.size()-1).getWord().length()!=1) {
         WordEntry entry = DictionaryUtil.getWord(cnouns.get(cnouns.size()-1).getWord());
-        if(entry!=null&&entry.getFeature(WordEntry.IDX_NE)=='0') return false;
+        if(entry!=null && !entry.hasNE()) return false;
 //      }else if("하".equals(o.getVsfx())&&cnouns.get(cnouns.size()-1).getWord().length()==1) { 
 //        // 짝사랑하다 와 같은 경우에 뒷글자가 1글자이면 제외
 //        return false;

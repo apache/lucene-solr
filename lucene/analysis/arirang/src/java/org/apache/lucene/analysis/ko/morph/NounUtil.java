@@ -46,7 +46,7 @@ class NounUtil {
    * @param o the analyzed output
    * @param candidates  candidates
    */
-  public static boolean analysisMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  static boolean analysisMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     int strlen = o.getStem().length();
        
@@ -94,7 +94,7 @@ class NounUtil {
    * @param o the analyzed output
    * @param candidates  candidates
    */
-  public static boolean analysisVMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  private static boolean analysisVMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     String[] irrs =  IrregularUtil.restoreIrregularVerb(o.getStem(), o.getElist().get(0));
     if(irrs!=null) {
@@ -118,7 +118,7 @@ class NounUtil {
    * @param o the analyzed output
    * @param candidates  candidates
    */
-  public static boolean analysisVMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  private static boolean analysisVMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
   
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
 
@@ -162,7 +162,7 @@ class NounUtil {
    * @param o the analyzed output
    * @param candidates  candidates
    */
-  public static boolean analysisNSMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  private static boolean analysisNSMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());        
     if(idxVbSfix==-1) return false;
@@ -175,10 +175,10 @@ class NounUtil {
     WordEntry entry = DictionaryUtil.getWordExceptVerb(o.getStem());
 
     if(entry!=null) {
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='0') return false;
-      else if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
-      else if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;
-      else if(o.getVsfx().equals("내")&&entry.getFeature(WordEntry.IDX_NE)!='1') return false;
+      if(!entry.isNoun()) return false;
+      else if(o.getVsfx().equals("하") && !entry.hasDOV()) return false;
+      else if(o.getVsfx().equals("되") && !entry.hasBEV()) return false;
+      else if(o.getVsfx().equals("내") && !entry.hasNE()) return false;
       o.setScore(AnalysisOutput.SCORE_CORRECT); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.      
     }else {
       o.setScore(AnalysisOutput.SCORE_ANALYSIS); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.
@@ -189,7 +189,7 @@ class NounUtil {
     return true;
   }         
      
-  public static boolean analysisNSMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
+  private static boolean analysisNSMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) {
 
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());        
     if(idxVbSfix==-1) return false;
@@ -202,10 +202,10 @@ class NounUtil {
     WordEntry entry = DictionaryUtil.getWordExceptVerb(o.getStem());
 
     if(entry!=null) {
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='0') return false;
-      else if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
-      else if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;
-      else if(o.getVsfx().equals("내")&&entry.getFeature(WordEntry.IDX_NE)!='1') return false;
+      if(!entry.isNoun()) return false;
+      else if(o.getVsfx().equals("하") && !entry.hasDOV()) return false;
+      else if(o.getVsfx().equals("되") && !entry.hasBEV()) return false;
+      else if(o.getVsfx().equals("내") && !entry.hasNE()) return false;
       o.setScore(AnalysisOutput.SCORE_CORRECT); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.      
     }else {
       o.setScore(AnalysisOutput.SCORE_ANALYSIS); // '입니다'인 경우 인명 등 미등록어가 많이 발생되므로 분석성공으로 가정한다.
@@ -219,7 +219,7 @@ class NounUtil {
   /*
      * 마지막 음절이 명사형 접미사(등,상..)인지 조사한다.
      */
-  public static boolean confirmDNoun(AnalysisOutput output) {
+  static boolean confirmDNoun(AnalysisOutput output) {
 
     int strlen = output.getStem().length();
     String d = output.getStem().substring(strlen-1);      
@@ -241,7 +241,7 @@ class NounUtil {
     return true;
   }
       
-  public static boolean endsWith2Josa(String input) {
+  static boolean endsWith2Josa(String input) {
     for (int i = input.length()-2; i > 0; i--) {
       String josa = input.substring(i);
 
@@ -254,10 +254,12 @@ class NounUtil {
     return false;
   }
       
-  public static double countFoundNouns(AnalysisOutput o) {
+  static double countFoundNouns(AnalysisOutput o) {
     int count = 0;
-    for(int i=0;i<o.getCNounList().size();i++) {
-      if(o.getCNounList().get(i).isExist()) count++;
+    for (CompoundEntry entry : o.getCNounList()) {
+      if (entry.isExist()) {
+        count++;
+      }
     }
     return (count*100)/o.getCNounList().size();
   }

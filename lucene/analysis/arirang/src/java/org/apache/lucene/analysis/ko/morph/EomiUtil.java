@@ -34,7 +34,7 @@ class EomiUtil {
   /**
    * 선어말어미를 분석한다.
    */
-  public static String[] splitPomi(String stem)  {
+  static String[] splitPomi(String stem)  {
 
     //   results[0]:성공(1)/실패(0), results[1]: 어근, results[2]: 선어말어미
     String[] results = new String[2];  
@@ -171,7 +171,7 @@ class EomiUtil {
    * 4. 어미 '아/어'가 탈락되는 어절
    * 5. '아/어'의 변이체 분리
    */
-  public static String[] splitEomi(String stem, String end) {
+  static String[] splitEomi(String stem, String end) {
 
     String[] strs = new String[2];
     int strlen = stem.length();

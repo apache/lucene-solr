@@ -23,12 +23,12 @@ package org.apache.lucene.analysis.ko.morph;
 class ConstraintUtil {
   private ConstraintUtil() {}
   
-  public static boolean canHaheCompound(String key) {
+  static boolean canHaheCompound(String key) {
     return key.length() == 2 && ("민족".equals(key) || "동서".equals(key) || "남북".equals(key));
   }
   
   // 종성이 있는 음절과 연결될 수 없는 조사
-  public static boolean isTwoJosa(char josa) {
+  static boolean isTwoJosa(char josa) {
     switch (josa) {
       case '가':
       case '는':
@@ -49,7 +49,7 @@ class ConstraintUtil {
   }
   
   // 종성이 없는 음절과 연결될 수 없는 조사
-  public static boolean isThreeJosa(char josa) {
+  static boolean isThreeJosa(char josa) {
     switch (josa) {
       case '과':
       case '은':
