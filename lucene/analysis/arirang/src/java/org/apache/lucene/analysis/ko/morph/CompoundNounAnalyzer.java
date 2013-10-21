@@ -395,21 +395,15 @@ public class CompoundNounAnalyzer {
     if(after.length()==1&&!isFirst&&!DictionaryUtil.existSuffix(after)) return false;
 
     if(pos!=1&&before.length()==1) {
-      
-      WordEntry entry1 = DictionaryUtil.getUncompound(before+after);  
-      if(entry1!=null){
-        List<CompoundEntry> compounds = entry1.getCompounds();
-        if(before.equals(compounds.get(0).getWord())&&
-            after.equals(compounds.get(1).getWord())) return false;
+      if (DictionaryUtil.isUncompound(before, after)) {
+        return false;
       }
-      
     }
-
-    WordEntry entry2 = after.length()==1 ? null : DictionaryUtil.getUncompound(after);
-    if(entry2!=null){
-      List<CompoundEntry> compounds = entry2.getCompounds();      
-      if("*".equals(compounds.get(0).getWord())&&
-          after.equals(compounds.get(1).getWord())) return false;
+    
+    if (after.length() != 1) {
+      if (DictionaryUtil.isUncompound("*", after)) {
+        return false;
+      }
     }
     
     return true;

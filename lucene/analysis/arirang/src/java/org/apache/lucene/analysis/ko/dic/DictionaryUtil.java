@@ -41,7 +41,7 @@ public class DictionaryUtil {
   
   private static final Set<String> suffixs = new HashSet<String>();;
   
-  private static final Map<String,WordEntry> uncompounds = new HashMap<String,WordEntry>();
+  private static final Set<String> uncompounds = new HashSet<String>();
   
   static {  
     try {
@@ -87,8 +87,7 @@ public class DictionaryUtil {
           if(infos.length!=2) {
             throw new IOException("Invalid file format: "+compound);
           }
-          WordEntry entry = new WordEntry(infos[0].trim(),"900000000X".toCharArray(), compoundArrayToList(infos[1], infos[1].split("[,]+")));
-          uncompounds.put(entry.getWord(), entry);
+          uncompounds.add(infos[1]);
         }
       });
 
@@ -167,8 +166,9 @@ public class DictionaryUtil {
     }
   }
   
-  public static WordEntry getUncompound(String key) {
-    return uncompounds.get(key);
+  // TODO: make this more efficient later
+  public static boolean isUncompound(String before, String after) {
+    return uncompounds.contains(before + "," + after);
   }
   
   public static boolean existJosa(String str) {

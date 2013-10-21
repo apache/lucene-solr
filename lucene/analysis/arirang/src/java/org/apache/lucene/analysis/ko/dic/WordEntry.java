@@ -73,10 +73,9 @@ public class WordEntry {
     this.word = word;
     this.features = cs;
     this.compounds = compounds == null ? null : Collections.unmodifiableList(compounds);
-    // has compound list iff compound feature is set ('2' in main dictionary, '9' in uncompounds)
-    // TODO: implement validCompound check differently: uncompounds shouldnt use wordentry
-    assert (features[IDX_NOUN] >= '2' && compounds != null && compounds.size() > 1) 
-        || (features[IDX_NOUN] <= '2' && compounds == null) : "inconsistent compound data for word: " + word;
+    // has compound list iff compound feature is set
+    assert (features[IDX_NOUN] == '2' && compounds != null && compounds.size() > 1) 
+        || (features[IDX_NOUN] != '2' && compounds == null) : "inconsistent compound data for word: " + word;
   }
   
   public String getWord() {
@@ -90,7 +89,7 @@ public class WordEntry {
   
   /** Returns true if entry is a compound noun */
   public boolean isCompoundNoun() {
-    return features[IDX_NOUN] >= '2';
+    return features[IDX_NOUN] == '2';
   }
   
   /** Returns List of compounds for word */
