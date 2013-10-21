@@ -30,6 +30,12 @@ class HangulDictionary {
   
   static final int RECORD_SIZE = 15;
   
+  static final int SBASE = 0xAC00;
+  static final int HANGUL_B0 = 0xE0 | (SBASE >> 12);
+  static final int VCOUNT = 21;
+  static final int TCOUNT = 28;
+  static final int NCOUNT = VCOUNT * TCOUNT;
+  
   public HangulDictionary(FST<Byte> fst, byte[] metadata) {
     this.fst = fst;
     this.metadata = metadata;
@@ -49,14 +55,42 @@ class HangulDictionary {
     Byte output = fst.outputs.getNoOutput();
     for (int i = 0; i < key.length(); i++) {
       try {
-        if (fst.findTargetArc(key.charAt(i), arc, arc, fstReader) == null) {
+        char ch = key.charAt(i);
+        if (ch < 0xFF) {
+          // latin-1: remap to hangul syllable
+          if (fst.findTargetArc(HANGUL_B0, arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+          if (fst.findTargetArc(0x80 | ((ch >> 6) & 0x3F), arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+          if (fst.findTargetArc(0x80 | (ch & 0x3F), arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+        } else if (ch >= SBASE && ch <= 0xD7AF) {
+          // hangul syllable: decompose to jamo and remap to latin-1
+          ch -= SBASE;
+          if (fst.findTargetArc(ch / NCOUNT, arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+          if (fst.findTargetArc((ch % NCOUNT) / TCOUNT, arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+          if (fst.findTargetArc(ch % TCOUNT, arc, arc, fstReader) == null) {
+            return null;
+          }
+          output = fst.outputs.add(output, arc.output);
+        } else {
           return null;
         }
       } catch (IOException bogus) {
         throw new RuntimeException();
       }
-      // we shouldnt need this accumulation?!
-      output = fst.outputs.add(output, arc.output);
     }
 
     if (arc.isFinal()) {
@@ -119,7 +153,31 @@ class HangulDictionary {
 
     for (int i = 0; i < key.length(); i++) {
       try {
-        if (fst.findTargetArc(key.charAt(i), arc, arc, fstReader) == null) {
+        char ch = key.charAt(i);
+        if (ch < 0xFF) {
+          // latin-1: remap to hangul syllable
+          if (fst.findTargetArc(HANGUL_B0, arc, arc, fstReader) == null) {
+            return false;
+          }
+          if (fst.findTargetArc(0x80 | ((ch >> 6) & 0x3F), arc, arc, fstReader) == null) {
+            return false;
+          }
+          if (fst.findTargetArc(0x80 | (ch & 0x3F), arc, arc, fstReader) == null) {
+            return false;
+          }
+        } else if (ch >= SBASE && ch <= 0xD7AF) {
+          // hangul syllable: decompose to jamo and remap to latin-1
+          ch -= SBASE;
+          if (fst.findTargetArc(ch / NCOUNT, arc, arc, fstReader) == null) {
+            return false;
+          }
+          if (fst.findTargetArc((ch % NCOUNT) / TCOUNT, arc, arc, fstReader) == null) {
+            return false;
+          }
+          if (fst.findTargetArc(ch % TCOUNT, arc, arc, fstReader) == null) {
+            return false;
+          }
+        } else {
           return false;
         }
       } catch (IOException bogus) {

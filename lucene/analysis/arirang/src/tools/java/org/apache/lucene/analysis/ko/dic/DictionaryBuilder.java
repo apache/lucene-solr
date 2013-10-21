@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -225,12 +226,42 @@ public class DictionaryBuilder {
   
   
   /** 
-   * makes FST (currently byte2 syllables) mapping to "word class"
+   * makes FST (byte1) mapping to "word class"
+   * syllables are decomposed to jamo, then swapped with latin1
+   * (this makes the FST both smaller and much faster)
    * each word has features + compound data, but many of them share the
    * same set of features, and have simple compound splits in the same place.
    */
   static void buildHangulDict(File inputDir, File outputDir) throws Exception {
-    TreeMap<String,Integer> sorted = new TreeMap<String,Integer>();
+    TreeMap<String,Integer> sorted = new TreeMap<String,Integer>(new Comparator<String>() {
+
+      @Override
+      public int compare(String a, String b) {
+        final int stop = Math.min(a.length(), b.length());
+        int upto = 0;
+        while(upto < stop) {
+          int aChar = remap(a.charAt(upto));
+          int bChar = remap(b.charAt(upto));
+
+          int diff = aChar - bChar;
+          if (diff != 0) {
+            return diff;
+          }
+          upto++;
+        }
+        // One is a prefix of the other, or, they are equal:
+        return a.length() - b.length();
+      }
+      
+      int remap(char ch) {
+        if (ch < 0xff) {
+          return ch + HangulDictionary.SBASE;
+        } else {
+          assert ch >= HangulDictionary.SBASE && ch <= 0xD7AF : ch;
+          return ch - HangulDictionary.SBASE;
+        }
+      }
+    });
     Map<Output,Integer> classes = new LinkedHashMap<>();
     File input = new File(inputDir, "dictionary.dic");
     BufferedReader reader = new BufferedReader(IOUtils.getDecodingReader(input, IOUtils.CHARSET_UTF_8));
@@ -261,14 +292,27 @@ public class DictionaryBuilder {
     System.out.println("#classes: " + classes.size());
     Outputs<Byte> fstOutput = ByteOutputs.getSingleton();
     // why does packed=false give a smaller fst?!?!
-    Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, false, PackedInts.DEFAULT, true, 15);
+    Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, false, PackedInts.DEFAULT, true, 15);
     IntsRef scratch = new IntsRef();
     for (Map.Entry<String,Integer> e : sorted.entrySet()) {
       String token = e.getKey();
-      scratch.grow(token.length());
-      scratch.length = token.length();
+      scratch.grow(token.length() * 3);
+      scratch.length = token.length() * 3;
       for (int i = 0; i < token.length(); i++) {
-        scratch.ints[i] = (int) token.charAt(i);
+        char ch = token.charAt(i);
+        if (ch < 0xFF) {
+          scratch.ints[3*i] = HangulDictionary.HANGUL_B0;
+          scratch.ints[3*i+1] = (0x80 | ((ch >> 6) & 0x3F));
+          scratch.ints[3*i+2] = (0x80 | (ch & 0x3F));
+        } else if (ch >= HangulDictionary.SBASE && ch <= 0xD7AF) {
+          // hangul syllable: decompose to jamo and remap to latin-1
+          ch -= HangulDictionary.SBASE;
+          scratch.ints[3*i] = (ch / HangulDictionary.NCOUNT);
+          scratch.ints[3*i+1] = ((ch % HangulDictionary.NCOUNT) / HangulDictionary.TCOUNT);
+          scratch.ints[3*i+2] = (ch % HangulDictionary.TCOUNT);
+        } else {
+          assert false : ch;
+        }
       }
       int v = e.getValue();
       assert v >= 0 && v < 128;
