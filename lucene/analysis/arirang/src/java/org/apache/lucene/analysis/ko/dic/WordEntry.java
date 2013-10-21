@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ko.dic;
  * limitations under the License.
  */
 
-import java.util.Collections;
 import java.util.List;
 
 public class WordEntry {
@@ -63,22 +62,19 @@ public class WordEntry {
   /**
    * 단어특성
    */
-  final char features;
+  private final char features;
   
-  final List<CompoundEntry> compounds;
+  private final byte clazz;
   
-  public WordEntry(String word, int features, List<CompoundEntry> compounds) {
+  WordEntry(String word, char features, byte clazz) {
     if (features < 0 || features >= 2048) {
       throw new IllegalArgumentException("Invalid features: " + Integer.toHexString(features));
     }
     this.word = word;
     this.features = (char) features;
-    this.compounds = compounds == null ? null : Collections.unmodifiableList(compounds);
+    this.clazz = clazz;
     // make sure compound nouns are also nouns
     assert !isCompoundNoun() || isNoun();
-    // has compound list iff compound feature is set
-    assert (isCompoundNoun() && compounds.size() > 1) 
-        || (!isCompoundNoun() && compounds == null) : "inconsistent compound data for word: " + word;
   }
   
   public String getWord() {
@@ -98,7 +94,12 @@ public class WordEntry {
   /** Returns List of compounds for word */
   public List<CompoundEntry> getCompounds() {
     assert isCompoundNoun();
-    return compounds;
+    // TODO: should we cache this here? see if someone is calling this repeatedly? i hope not.
+    if ((features & COMPOUND_IRREGULAR) != 0) {
+      return DictionaryUtil.getIrregularCompounds(clazz);
+    } else {
+      return DictionaryUtil.getCompounds(word, clazz);
+    }
   }
   
   /** Returns true if entry is verb */

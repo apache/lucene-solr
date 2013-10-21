@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -82,89 +83,103 @@ public class DictionaryUtil {
     }
   }
   
+  /** true if something with this prefix exists */
   public static boolean hasWordPrefix(CharSequence prefix) {
     return dictionary.hasPrefix(prefix);
   }
 
   /** only use this if you surely need the whole entry */
   public static WordEntry getWord(String key) {    
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     } else {
-      return dictionary.decodeEntry(key, b);
+      return new WordEntry(key, dictionary.getFlags(clazz), clazz);
     }
   }
   
+  /** Looks up noun, compound noun, or adverb */
   public static WordEntry getWordExceptVerb(String key) {
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     }
-    char flags = dictionary.getFlags(b);
+    char flags = dictionary.getFlags(clazz);
     if ((flags & (WordEntry.NOUN | WordEntry.BUSA)) != 0) {
-      return dictionary.decodeEntry(key, b, flags);
+      return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
   }
   
+  /** Looks up a noun (but not compound noun) */
   public static WordEntry getNoun(String key) {
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     }
-    char flags = dictionary.getFlags(b);
+    char flags = dictionary.getFlags(clazz);
     if ((flags & WordEntry.NOUN) != 0 && (flags & WordEntry.COMPOUND) == 0) {
-      return dictionary.decodeEntry(key, b, flags);
+      return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
   }
   
   /**
-   * 
    * return all noun including compound noun
-   * @param key the lookup key text
-   * @return  WordEntry
    */
   public static WordEntry getAllNoun(String key) {  
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     }
-    char flags = dictionary.getFlags(b);
+    char flags = dictionary.getFlags(clazz);
     if ((flags & WordEntry.NOUN) != 0) {
-      return dictionary.decodeEntry(key, b, flags);
+      return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
   }
   
+  /**
+   * returns any verb
+   */
   public static WordEntry getVerb(String key) {
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     }
-    char flags = dictionary.getFlags(b);
+    char flags = dictionary.getFlags(clazz);
     if ((flags & WordEntry.VERB) != 0) {
-      return dictionary.decodeEntry(key, b, flags);
+      return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
   }
   
+  /** Looks up an adverb-only */
   public static WordEntry getBusa(String key) {
-    Byte b = dictionary.lookup(key);
-    if (b == null) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
       return null;
     }
-    char flags = dictionary.getFlags(b);
+    char flags = dictionary.getFlags(clazz);
     if ((flags & WordEntry.BUSA) != 0 && (flags & WordEntry.NOUN) == 0) {
-      return dictionary.decodeEntry(key, b, flags);
+      return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
+  }
+  
+  /** return list of irregular compounds for word class. */
+  static List<CompoundEntry> getIrregularCompounds(byte clazz) {
+    return dictionary.getIrregularCompounds(clazz);
+  }
+  
+  /** return list of compounds for key and word class. */
+  static List<CompoundEntry> getCompounds(String key, byte clazz) {
+    return dictionary.getCompounds(key, clazz);
   }
   
   // TODO: make this more efficient later

@@ -35,6 +35,7 @@ class HangulDictionary {
     this.metadata = metadata;
   }
   
+  /** looks up word class for a word (exact match) */
   Byte lookup(String key) {
     // TODO: why is does this thing lookup empty strings?
     if (key.length() == 0) {
@@ -65,27 +66,16 @@ class HangulDictionary {
     }
   }
   
-  char getFlags(byte b) {
-    int off = b * RECORD_SIZE;
+  /** looks up features for word class */
+  char getFlags(byte clazz) {
+    int off = clazz * RECORD_SIZE;
     return (char)((metadata[off] << 8) | (metadata[off+1] & 0xff));
   }
   
-  WordEntry decodeEntry(String key, byte b) {
-    return decodeEntry(key, b, getFlags(b));
-  }
-  
-  WordEntry decodeEntry(String key, byte b, char flags) {
-    if ((flags & WordEntry.COMPOUND_IRREGULAR) != 0) {
-      return new WordEntry(key, flags, getIrregularCompounds(key, b));
-    } else if ((flags & WordEntry.COMPOUND) != 0) {
-      return new WordEntry(key, flags, getCompounds(key, b));
-    } else {
-      return new WordEntry(key, flags, null);
-    }
-  }
-  
-  List<CompoundEntry> getCompounds(String word, byte b) {
-    int off = b * RECORD_SIZE;
+  /** return list of compounds for key and word class.
+   * this retrieves the splits for the class and applies them to the key */
+  List<CompoundEntry> getCompounds(String word, byte clazz) {
+    int off = clazz * RECORD_SIZE;
     int numSplits = metadata[off+2];
     assert numSplits > 0;
     List<CompoundEntry> compounds = new ArrayList<>(numSplits+1);
@@ -99,8 +89,10 @@ class HangulDictionary {
     return compounds;
   }
   
-  List<CompoundEntry> getIrregularCompounds(String word, byte b) {
-    int off = b * RECORD_SIZE;
+  /** return list of compounds for key and word class.
+   * this retrieves the decompounded data for this irregular class */
+  List<CompoundEntry> getIrregularCompounds(byte clazz) {
+    int off = clazz * RECORD_SIZE;
     int numChars = metadata[off+2];
     // TODO: more efficient
     List<CompoundEntry> compounds = new ArrayList<>();
@@ -119,6 +111,7 @@ class HangulDictionary {
     return compounds;
   }
   
+  /** walks the fst for prefix and returns true if it his no dead end */
   boolean hasPrefix(CharSequence key) {
     final FST.Arc<Byte> arc = fst.getFirstArc(new FST.Arc<Byte>());
 

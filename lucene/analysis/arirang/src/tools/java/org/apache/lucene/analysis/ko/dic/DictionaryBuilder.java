@@ -224,6 +224,11 @@ public class DictionaryBuilder {
   }
   
   
+  /** 
+   * makes FST (currently byte2 syllables) mapping to "word class"
+   * each word has features + compound data, but many of them share the
+   * same set of features, and have simple compound splits in the same place.
+   */
   static void buildHangulDict(File inputDir, File outputDir) throws Exception {
     TreeMap<String,Integer> sorted = new TreeMap<String,Integer>();
     Map<Output,Integer> classes = new LinkedHashMap<>();
@@ -255,9 +260,8 @@ public class DictionaryBuilder {
     System.out.println("#words: " + sorted.size());
     System.out.println("#classes: " + classes.size());
     Outputs<Byte> fstOutput = ByteOutputs.getSingleton();
-    //    makes corrupt FST!!!!
-    //     Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, false, PackedInts.DEFAULT, true, 15);
-    Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, PackedInts.DEFAULT, true, 15);
+    // why does packed=false give a smaller fst?!?!
+    Builder<Byte> builder = new Builder<Byte>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, false, PackedInts.DEFAULT, true, 15);
     IntsRef scratch = new IntsRef();
     for (Map.Entry<String,Integer> e : sorted.entrySet()) {
       String token = e.getKey();
@@ -280,6 +284,7 @@ public class DictionaryBuilder {
       o.write(out);
     }
     fst.save(out);
+    stream.close();
   }
   
   static void processLine(String line, TreeMap<String,Integer> sorted, Map<Output,Integer> classes) {
