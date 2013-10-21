@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
+import org.apache.lucene.util.MergedIterator;
 
 class CoalescedDeletes {
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();

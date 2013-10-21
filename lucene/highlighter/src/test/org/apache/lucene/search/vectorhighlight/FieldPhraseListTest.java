@@ -16,8 +16,14 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.util.LinkedList;
+
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
+import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
+import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util._TestUtil;
 
 public class FieldPhraseListTest extends AbstractTestCase {
   
@@ -188,7 +194,7 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( 1, fpl.phraseList.size() );
     assertEquals( "sppeeeed(1.0)((88,93))", fpl.phraseList.get( 0 ).toString() );
   }
-  
+
   /* This test shows a big speedup from limiting the number of analyzed phrases in 
    * this bad case for FieldPhraseList */
   /* But it is not reliable as a unit test since it is timing-dependent
@@ -218,4 +224,68 @@ public class FieldPhraseListTest extends AbstractTestCase {
       assertEquals( "a(1.0)((0,1))", fpl.phraseList.get( 0 ).toString() );      
   }
   */
+
+  public void testWeightedPhraseInfoComparisonConsistency() {
+    WeightedPhraseInfo a = newInfo( 0, 0, 1 );
+    WeightedPhraseInfo b = newInfo( 1, 2, 1 );
+    WeightedPhraseInfo c = newInfo( 2, 3, 1 );
+    WeightedPhraseInfo d = newInfo( 0, 0, 1 );
+    WeightedPhraseInfo e = newInfo( 0, 0, 2 );
+
+    assertConsistentEquals( a, a );
+    assertConsistentEquals( b, b );
+    assertConsistentEquals( c, c );
+    assertConsistentEquals( d, d );
+    assertConsistentEquals( e, e );
+    assertConsistentEquals( a, d );
+    assertConsistentLessThan( a, b );
+    assertConsistentLessThan( b, c );
+    assertConsistentLessThan( a, c );
+    assertConsistentLessThan( a, e );
+    assertConsistentLessThan( e, b );
+    assertConsistentLessThan( e, c );
+    assertConsistentLessThan( d, b );
+    assertConsistentLessThan( d, c );
+    assertConsistentLessThan( d, e );
+  }
+
+  public void testToffsComparisonConsistency() {
+    Toffs a = new Toffs( 0, 0 );
+    Toffs b = new Toffs( 1, 2 );
+    Toffs c = new Toffs( 2, 3 );
+    Toffs d = new Toffs( 0, 0 );
+
+    assertConsistentEquals( a, a );
+    assertConsistentEquals( b, b );
+    assertConsistentEquals( c, c );
+    assertConsistentEquals( d, d );
+    assertConsistentEquals( a, d );
+    assertConsistentLessThan( a, b );
+    assertConsistentLessThan( b, c );
+    assertConsistentLessThan( a, c );
+    assertConsistentLessThan( d, b );
+    assertConsistentLessThan( d, c );
+  }
+
+  private WeightedPhraseInfo newInfo( int startOffset, int endOffset, float boost ) {
+    LinkedList< TermInfo > infos = new LinkedList< TermInfo >();
+    infos.add( new TermInfo( _TestUtil.randomUnicodeString( random() ), startOffset, endOffset, 0, 0 ) );
+    return new WeightedPhraseInfo( infos, boost );
+  }
+
+  private < T extends Comparable< T > > void assertConsistentEquals( T a, T b ) {
+    assertEquals( a, b );
+    assertEquals( b, a );
+    assertEquals( a.hashCode(), b.hashCode() );
+    assertEquals( 0, a.compareTo( b ) );
+    assertEquals( 0, b.compareTo( a ) );
+  }
+
+  private < T extends Comparable< T > > void assertConsistentLessThan( T a, T b ) {
+    assertFalse( a.equals( b ) );
+    assertFalse( b.equals( a ) );
+    assertFalse( a.hashCode() == b.hashCode() );
+    assertTrue( a.compareTo( b ) < 0 );
+    assertTrue( b.compareTo( a ) > 0 );
+  }
 }
