@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,32 +23,42 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Provides a merged sorted view from several sorted iterators, each
- * iterating over a unique set of elements.
+ * Provides a merged sorted view from several sorted iterators.
  * <p>
- * If an element appears in multiple iterators, it is deduplicated,
- * that is this iterator returns the sorted union of elements.
+ * If built with <code>removeDuplicates</code> set to true and an element
+ * appears in multiple iterators then it is deduplicated, that is this iterator
+ * returns the sorted union of elements.
+ * <p>
+ * If built with <code>removeDuplicates</code> set to false then all elements
+ * in all iterators are returned.
  * <p>
  * Caveats:
  * <ul>
- *   <li>The behavior is undefined if the iterators are not actually 
- *       sorted according to their comparator, or if a single iterator
- *       contains duplicates.
+ *   <li>The behavior is undefined if the iterators are not actually sorted.
  *   <li>Null elements are unsupported.
- *   <li>When an element E is a duplicate across multiple iterators,
- *       only one is returned, but it is undefined which one: not
- *       guaranteed to be a stable sort.
+ *   <li>If removeDuplicates is set to true and if a single iterator contains
+ *       duplicates then they will not be deduplicated.
+ *   <li>When elements are deduplicated it is not defined which one is returned.
+ *   <li>If removeDuplicates is set to false then the order in which duplicates
+ *       are returned isn't defined.
  * </ul>
  * @lucene.internal
  */
-final class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
+public final class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
   private T current;
   private final TermMergeQueue<T> queue; 
   private final SubIterator<T>[] top;
+  private final boolean removeDuplicates;
   private int numTop;
-  
+
   @SuppressWarnings({"unchecked","rawtypes"})
   public MergedIterator(Iterator<T>... iterators) {
+    this(true, iterators);
+  }
+
+  @SuppressWarnings({"unchecked","rawtypes"})
+  public MergedIterator(boolean removeDuplicates, Iterator<T>... iterators) {
+    this.removeDuplicates = removeDuplicates;
     queue = new TermMergeQueue<T>(iterators.length);
     top = new SubIterator[iterators.length];
     int index = 0;
@@ -100,13 +110,13 @@ final class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
   }
   
   private void pullTop() {
-    // extract all subs from the queue that have the same top element
     assert numTop == 0;
-    while (true) {
-      top[numTop++] = queue.pop();
-      if (queue.size() == 0
-          || !(queue.top()).current.equals(top[0].current)) {
-        break;
+    top[numTop++] = queue.pop();
+    if (removeDuplicates) {
+      // extract all subs from the queue that have the same top element
+      while (queue.size() != 0
+             && queue.top().current.equals(top[0].current)) {
+        top[numTop++] = queue.pop();
       }
     }
     current = top[0].current;
