@@ -22,37 +22,37 @@ import java.util.List;
 
 public class WordEntry {
 
-  private static final int IDX_NOUN = 0;
-  private static final int IDX_VERB = 1;
-  private static final int IDX_BUSA = 2;
-  private static final int IDX_DOV = 3;
-  private static final int IDX_BEV = 4;
-  private static final int IDX_NE = 5;
-  private static final int IDX_REGURA = 9;
-  
-  /** Irregular verb type (ㅂ-final) */
-  public static final int VERB_TYPE_BIUP = 'B';
-  
-  /** Irregular verb type (ㅎ-final) */
-  public static final int VERB_TYPE_HIOOT = 'H';
-  
-  /** Irregular verb type (ㄹ-final) */
-  public static final int VERB_TYPE_LIUL = 'U';
-  
-  /** Irregular verb type (르-final) */
-  public static final int VERB_TYPE_LOO = 'L';
-
-  /** Irregular verb type (ㅅ-final) */
-  public static final int VERB_TYPE_SIUT = 'S';
-  
-  /** Irregular verb type (ㄷ-final) */
-  public static final int VERB_TYPE_DI = 'D';
-  
-  /** Irregular verb type (러-final) */
-  public static final int VERB_TYPE_RU = 'R';
+  static final int NOUN =     1 << 3;
+  static final int VERB =     1 << 4;
+  static final int BUSA =     1 << 5;
+  static final int DOV =      1 << 6;
+  static final int BEV =      1 << 7;
+  static final int NE  =      1 << 8;
+  static final int COMPOUND = 1 << 9;
   
   /** Regular verb type */
-  public static final int VERB_TYPE_REGULAR = 'X';
+  public static final int VERB_TYPE_REGULAR = 0;
+  
+  /** Irregular verb type (ㅂ-final) */
+  public static final int VERB_TYPE_BIUP = 1;
+  
+  /** Irregular verb type (ㅎ-final) */
+  public static final int VERB_TYPE_HIOOT = 2;
+  
+  /** Irregular verb type (ㄹ-final) */
+  public static final int VERB_TYPE_LIUL = 3;
+  
+  /** Irregular verb type (르-final) */
+  public static final int VERB_TYPE_LOO = 4;
+
+  /** Irregular verb type (ㅅ-final) */
+  public static final int VERB_TYPE_SIUT = 5;
+  
+  /** Irregular verb type (ㄷ-final) */
+  public static final int VERB_TYPE_DI = 6;
+  
+  /** Irregular verb type (러-final) */
+  public static final int VERB_TYPE_RU = 7;
   
   /**
    * 단어
@@ -62,20 +62,22 @@ public class WordEntry {
   /**
    * 단어특성
    */
-  private final char[] features;
+  private final char features;
   
   private final List<CompoundEntry> compounds;
   
-  public WordEntry(String word, char[] cs, List<CompoundEntry> compounds) {
-    if (cs.length != 10) {
-      throw new IllegalArgumentException("invalid features for word: " + word + ", got:" + new String(cs));
-    } 
+  public WordEntry(String word, int features, List<CompoundEntry> compounds) {
+    if (features < 0 || features >= 1024) {
+      throw new IllegalArgumentException("Invalid features: " + Integer.toHexString(features));
+    }
     this.word = word;
-    this.features = cs;
+    this.features = (char) features;
     this.compounds = compounds == null ? null : Collections.unmodifiableList(compounds);
+    // make sure compound nouns are also nouns
+    assert !isCompoundNoun() || isNoun();
     // has compound list iff compound feature is set
-    assert (features[IDX_NOUN] == '2' && compounds != null && compounds.size() > 1) 
-        || (features[IDX_NOUN] != '2' && compounds == null) : "inconsistent compound data for word: " + word;
+    assert (isCompoundNoun() && compounds.size() > 1) 
+        || (!isCompoundNoun() && compounds == null) : "inconsistent compound data for word: " + word;
   }
   
   public String getWord() {
@@ -84,12 +86,12 @@ public class WordEntry {
   
   /** Returns true if the entry is a noun (or compound noun) */
   public boolean isNoun() {
-    return features[IDX_NOUN] != '0';
+    return (features & NOUN) != 0;
   }
   
   /** Returns true if entry is a compound noun */
   public boolean isCompoundNoun() {
-    return features[IDX_NOUN] == '2';
+    return (features & COMPOUND) != 0;
   }
   
   /** Returns List of compounds for word */
@@ -100,31 +102,31 @@ public class WordEntry {
   
   /** Returns true if entry is verb */
   public boolean isVerb() {
-    return features[IDX_VERB] == '1';
+    return (features & VERB) != 0;
   }
   
-  /** Returns verb type (IRR_TYPE_REGULAR or irregular type) */
+  /** Returns verb type (VERB_TYPE_REGULAR or irregular ending type) */
   public int getVerbType() {
-    return features[IDX_REGURA];
+    return features & 0x7;
   }
   
   /** Returns true if entry is busa (adverb) */
   public boolean isAdverb() {
-    return features[IDX_BUSA] == '1';
+    return (features & BUSA) != 0;
   }
   
   /** allows noun analysis with -하 verb suffix */
   public boolean hasDOV() {
-    return features[IDX_DOV] == '1';
+    return (features & DOV) != 0;
   }
   
   /** allows noun analysis with -되 verb suffix */
   public boolean hasBEV() {
-    return features[IDX_BEV] == '1';
+    return (features & BEV) != 0;
   }
   
   /** allows noun analysis with -내 verb suffix */
   public boolean hasNE() {
-    return features[IDX_NE] == '1';
+    return (features & NE) != 0;
   }
 }

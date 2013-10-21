@@ -19,11 +19,9 @@ package org.apache.lucene.analysis.ko.dic;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.ko.utils.Trie;
@@ -56,7 +54,7 @@ public class DictionaryUtil {
             throw new IOException("Invalid file format: " + line);
           }
           
-          WordEntry entry = new WordEntry(infos[0].trim(),infos[1].toCharArray(), null);
+          WordEntry entry = new WordEntry(infos[0].trim(), parseFlags(infos[1]), null);
           dictionary.add(entry.getWord(), entry);          
         }
       };
@@ -75,7 +73,7 @@ public class DictionaryUtil {
           }
           
           final List<CompoundEntry> c = compoundArrayToList(infos[1], infos[1].split("[,]+"));
-          final WordEntry entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"00X").toCharArray(), c);
+          final WordEntry entry = new WordEntry(infos[0].trim(), parseFlags("200"+infos[2]+"00X"), c);
           dictionary.add(entry.getWord(), entry);          
         }       
       }); 
@@ -221,5 +219,63 @@ public class DictionaryUtil {
       list.add(new CompoundEntry(str, true));
     }
     return list;
+  }
+  
+  // TODO: move all this to build time
+  private static int parseFlags(String buffer) {
+    if (buffer.length() != 10) {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+    int flags = 0;
+    // IDX_NOUN: 1 if noun, 2 if compound
+    if (buffer.charAt(0) == '2') {
+      flags |= WordEntry.COMPOUND | WordEntry.NOUN;
+    } else if (buffer.charAt(0) == '1') {
+      flags |= WordEntry.NOUN;
+    } else if (buffer.charAt(0) != '0') {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+    // IDX_VERB
+    if (parseBoolean(buffer, 1)) {
+      flags |= WordEntry.VERB;
+    }
+    // IDX_BUSA
+    if (parseBoolean(buffer, 2)) {
+      flags |= WordEntry.BUSA;
+    }
+    // IDX_DOV
+    if (parseBoolean(buffer, 3)) {
+      flags |= WordEntry.DOV;
+    }
+    // IDX_BEV
+    if (parseBoolean(buffer, 4)) {
+      flags |= WordEntry.BEV;
+    }
+    // IDX_NE
+    if (parseBoolean(buffer, 5)) {
+      flags |= WordEntry.NE;
+    }
+    // IDX_REGURA
+    switch(buffer.charAt(9)) {
+      case 'B': return flags | WordEntry.VERB_TYPE_BIUP;
+      case 'H': return flags | WordEntry.VERB_TYPE_HIOOT;
+      case 'U': return flags | WordEntry.VERB_TYPE_LIUL;
+      case 'L': return flags | WordEntry.VERB_TYPE_LOO;
+      case 'S': return flags | WordEntry.VERB_TYPE_SIUT;
+      case 'D': return flags | WordEntry.VERB_TYPE_DI;
+      case 'R': return flags | WordEntry.VERB_TYPE_RU;
+      case 'X': return flags | WordEntry.VERB_TYPE_REGULAR;
+      default: throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
+  }
+  
+  private static boolean parseBoolean(String buffer, int position) {
+    if (buffer.charAt(position) == '1') {
+      return true;
+    } else if (buffer.charAt(position) == '0') {
+      return false;
+    } else {
+      throw new IllegalArgumentException("Invalid flags: " + buffer);
+    }
   }
 }
