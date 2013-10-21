@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko.dic;
  */
 
 import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.Set;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.FST;
 
 public class DictionaryUtil {
@@ -57,22 +59,24 @@ public class DictionaryUtil {
       });
 
       readFileToSet(josas,DictionaryResources.FILE_JOSA);
-      
       readFileToSet(eomis,DictionaryResources.FILE_EOMI);
-      
       readFileToSet(prefixs,DictionaryResources.FILE_PREFIX);
-  
       readFileToSet(suffixs,DictionaryResources.FILE_SUFFIX);
       
       InputStream stream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_WORDS_DAT);
-      DataInput dat = new InputStreamDataInput(new BufferedInputStream(stream));
-      CodecUtil.checkHeader(dat, DictionaryResources.FILE_WORDS_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
-      byte metadata[] = new byte[dat.readByte() * HangulDictionary.RECORD_SIZE];
-      dat.readBytes(metadata, 0, metadata.length);
-      ByteOutputs outputs = ByteOutputs.getSingleton();
-      FST<Byte> fst = new FST<Byte>(dat, outputs);
-      dictionary = new HangulDictionary(fst, metadata);
-      stream.close();
+      if (stream == null)
+        throw new FileNotFoundException(DictionaryResources.FILE_WORDS_DAT);
+      try {
+        DataInput dat = new InputStreamDataInput(new BufferedInputStream(stream));
+        CodecUtil.checkHeader(dat, DictionaryResources.FILE_WORDS_DAT, DictionaryResources.DATA_VERSION, DictionaryResources.DATA_VERSION);
+        byte metadata[] = new byte[dat.readByte() * HangulDictionary.RECORD_SIZE];
+        dat.readBytes(metadata, 0, metadata.length);
+        ByteOutputs outputs = ByteOutputs.getSingleton();
+        FST<Byte> fst = new FST<Byte>(dat, outputs);
+        dictionary = new HangulDictionary(fst, metadata);
+      } finally {
+        IOUtils.closeWhileHandlingException(stream);
+      }
     } catch (IOException e) {
       throw new Error("Cannot load resource",e);
     }
