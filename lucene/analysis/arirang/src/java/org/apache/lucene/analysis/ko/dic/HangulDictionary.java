@@ -118,4 +118,21 @@ class HangulDictionary {
     compounds.add(new CompoundEntry(sb.toString(), true));
     return compounds;
   }
+  
+  boolean hasPrefix(CharSequence key) {
+    final FST.Arc<Byte> arc = fst.getFirstArc(new FST.Arc<Byte>());
+
+    final BytesReader fstReader = fst.getBytesReader();
+
+    for (int i = 0; i < key.length(); i++) {
+      try {
+        if (fst.findTargetArc(key.charAt(i), arc, arc, fstReader) == null) {
+          return false;
+        }
+      } catch (IOException bogus) {
+        throw new RuntimeException();
+      }
+    }
+    return true;
+  }
 }

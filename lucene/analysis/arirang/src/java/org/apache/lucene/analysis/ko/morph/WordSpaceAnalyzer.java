@@ -53,7 +53,7 @@ public class WordSpaceAnalyzer {
       char ch = input.charAt(i);
       
       String prefix = i==input.length()-1 ? "X" : input.substring(wStart,i+2);          
-      Iterator<String[]> iter = DictionaryUtil.findWithPrefix(prefix);
+      boolean prefixExists = DictionaryUtil.hasWordPrefix(prefix);
       
       List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();    
       
@@ -65,10 +65,10 @@ public class WordSpaceAnalyzer {
       // 다음 음절이 2음절 이상 단어에 포함되어 있고 마지막 음절이 아니라면   띄워쓰기 위치가 아닐 가능성이 크다.
       // 부사, 관형사, 감탄사 등 단일어일 가능성인 경우 띄워쓰기가 가능하나, 
       // 이 경우는 다음 음절을 조사하여 
-      } else if(i!= input.length()-1 && iter.hasNext()) { 
+      } else if(i!= input.length()-1 && prefixExists) { 
         // 아무짓도 하지 않음.
         sgCount = i;
-      } else if(!iter.hasNext() && 
+      } else if(!prefixExists && 
           (entry=DictionaryUtil.getBusa(input.substring(wStart,i+1)))!=null) {        
         candidates.add(buildSingleOutput(entry));
         
@@ -299,13 +299,15 @@ public class WordSpaceAnalyzer {
     // 동사앞에 명사분리
     int vstart = 0;
     for(int i=estart-1;i>=0;i--) {  
-      Iterator<String[]> iter = DictionaryUtil.findWithPrefix(snipt.substring(i,estart)); 
-      if(iter.hasNext()) vstart=i;
-      else break;
+      if (DictionaryUtil.hasWordPrefix(snipt.substring(i, estart))) {
+        vstart = i;
+      } else {
+        break;
+      }
     }
       
     if(snipt.length()>eend &&
-        DictionaryUtil.findWithPrefix(snipt.substring(vstart,eend+1)).hasNext()) 
+        DictionaryUtil.hasWordPrefix(snipt.substring(vstart,eend+1))) 
       return candidates;  // 다음음절까지 단어의 일부라면.. 분해를 안한다.
     
     String pvword = null;
@@ -475,7 +477,7 @@ public class WordSpaceAnalyzer {
       && DictionaryUtil.getNoun(o.getSource())!=null) {
       return -1;
     }else if(nEnd<input.length() && o.getScore()==AnalysisOutput.SCORE_ANALYSIS 
-      && DictionaryUtil.findWithPrefix(ejend+input.charAt(nEnd)).hasNext()) { // 루씬하ㄴ 글형태소분석기 방지
+      && DictionaryUtil.hasWordPrefix(ejend+input.charAt(nEnd))) { // 루씬하ㄴ 글형태소분석기 방지
       return -1;  
     }else if(po!=null&&po.getPatn()==PatternConstants.PTN_VM&&"ㅁ".equals(po.getEomi())&&
         o.getStem().equals("하")) { // 다짐 합니다 로 분리되는 것 방지

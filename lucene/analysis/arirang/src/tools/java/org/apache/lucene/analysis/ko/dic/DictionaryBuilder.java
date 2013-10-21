@@ -49,10 +49,7 @@ import org.apache.lucene.util.packed.PackedInts;
 public class DictionaryBuilder {
   public static void main(String args[]) throws Exception {
     String FILES_AS_IS[] = { 
-      DictionaryResources.FILE_COMPOUNDS,
-      DictionaryResources.FILE_DICTIONARY,
       DictionaryResources.FILE_EOMI,
-      DictionaryResources.FILE_EXTENSION,
       DictionaryResources.FILE_JOSA,
       DictionaryResources.FILE_PREFIX,
       DictionaryResources.FILE_SUFFIX,
