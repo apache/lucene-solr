@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ko.morph;
  */
 
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
+import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 /**
  * 

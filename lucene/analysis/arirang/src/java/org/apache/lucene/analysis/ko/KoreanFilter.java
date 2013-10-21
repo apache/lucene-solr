@@ -28,14 +28,14 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.HanjaMapper;
+import org.apache.lucene.analysis.ko.dic.WordEntry;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.CompoundNounAnalyzer;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.morph.WordSpaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;

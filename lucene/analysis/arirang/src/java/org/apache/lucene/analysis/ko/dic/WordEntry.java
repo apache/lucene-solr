@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.ko.morph;
+package org.apache.lucene.analysis.ko.dic;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

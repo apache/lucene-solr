@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
+
 class WSOutput  implements Cloneable {
 
   private int lastStart = 0;

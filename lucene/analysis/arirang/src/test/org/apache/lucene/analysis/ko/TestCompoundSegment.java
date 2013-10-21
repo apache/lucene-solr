@@ -3,10 +3,8 @@ package org.apache.lucene.analysis.ko;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.CompoundNounAnalyzer;
-import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
 
 import junit.framework.TestCase;
 

@@ -20,8 +20,10 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
+import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 class NounUtil {
   private NounUtil() {}

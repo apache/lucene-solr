@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
+import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 /**
  * 복합명사를 분해한다.

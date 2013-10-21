@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
-import org.apache.lucene.analysis.ko.morph.WordEntry;
 import org.apache.lucene.analysis.ko.utils.Trie;
 
 public class DictionaryUtil {

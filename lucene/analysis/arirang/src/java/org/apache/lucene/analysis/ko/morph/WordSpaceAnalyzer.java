@@ -24,8 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
+import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 public class WordSpaceAnalyzer {
 

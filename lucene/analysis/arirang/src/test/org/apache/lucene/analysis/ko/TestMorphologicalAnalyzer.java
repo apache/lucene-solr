@@ -5,8 +5,8 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
-import org.apache.lucene.analysis.ko.morph.CompoundEntry;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
 
 /*

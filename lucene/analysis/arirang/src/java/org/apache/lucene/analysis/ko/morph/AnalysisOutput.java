@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.ko.dic.CompoundEntry;
+
 public class AnalysisOutput implements Cloneable {
 
   public static final int SCORE_CORRECT = 100;
