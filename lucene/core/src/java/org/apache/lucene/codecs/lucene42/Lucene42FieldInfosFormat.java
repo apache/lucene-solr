@@ -83,10 +83,11 @@ import org.apache.lucene.store.DataOutput; // javadoc
  * </ul>
  *
  * @lucene.experimental
+ * @deprecated Only for reading old 4.2-4.5 segments
  */
-public final class Lucene42FieldInfosFormat extends FieldInfosFormat {
+@Deprecated
+public class Lucene42FieldInfosFormat extends FieldInfosFormat {
   private final FieldInfosReader reader = new Lucene42FieldInfosReader();
-  private final FieldInfosWriter writer = new Lucene42FieldInfosWriter();
   
   /** Sole constructor. */
   public Lucene42FieldInfosFormat() {
@@ -99,7 +100,7 @@ public final class Lucene42FieldInfosFormat extends FieldInfosFormat {
 
   @Override
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    return writer;
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
   
   /** Extension of field infos */

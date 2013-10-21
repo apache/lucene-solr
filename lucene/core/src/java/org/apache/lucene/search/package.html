@@ -173,7 +173,7 @@ section for more notes on the process.
     {@link org.apache.lucene.index.Term Term}
     and an upper
     {@link org.apache.lucene.index.Term Term}
-    according to {@link org.apache.lucene.index.TermsEnum#getComparator TermsEnum.getComparator()}. It is not intended
+    according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
     for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
 
     For example, one could find all documents

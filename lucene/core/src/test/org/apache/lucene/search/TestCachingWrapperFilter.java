@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -32,11 +33,113 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
+  Directory dir;
+  DirectoryReader ir;
+  IndexSearcher is;
+  RandomIndexWriter iw;
   
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    dir = newDirectory();
+    iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    doc.add(idField);
+    // add 500 docs with id 0..499
+    for (int i = 0; i < 500; i++) {
+      idField.setStringValue(Integer.toString(i));
+      iw.addDocument(doc);
+    }
+    // delete 20 of them
+    for (int i = 0; i < 20; i++) {
+      iw.deleteDocuments(new Term("id", Integer.toString(random().nextInt(iw.maxDoc()))));
+    }
+    ir = iw.getReader();
+    is = newSearcher(ir);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(iw, ir, dir);
+    super.tearDown();
+  }
+  
+  private void assertFilterEquals(Filter f1, Filter f2) throws Exception {
+    Query query = new MatchAllDocsQuery();
+    TopDocs hits1 = is.search(query, f1, ir.maxDoc());
+    TopDocs hits2 = is.search(query, f2, ir.maxDoc());
+    assertEquals(hits1.totalHits, hits2.totalHits);
+    CheckHits.checkEqual(query, hits1.scoreDocs, hits2.scoreDocs);
+    // now do it again to confirm caching works
+    TopDocs hits3 = is.search(query, f1, ir.maxDoc());
+    TopDocs hits4 = is.search(query, f2, ir.maxDoc());
+    assertEquals(hits3.totalHits, hits4.totalHits);
+    CheckHits.checkEqual(query, hits3.scoreDocs, hits4.scoreDocs);
+  }
+  
+  /** test null iterator */
+  public void testEmpty() throws Exception {
+    Query query = new BooleanQuery();
+    Filter expected = new QueryWrapperFilter(query);
+    Filter actual = new CachingWrapperFilter(expected);
+    assertFilterEquals(expected, actual);
+  }
+  
+  /** test iterator returns NO_MORE_DOCS */
+  public void testEmpty2() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST_NOT);
+    Filter expected = new QueryWrapperFilter(query);
+    Filter actual = new CachingWrapperFilter(expected);
+    assertFilterEquals(expected, actual);
+  }
+  
+  /** test null docidset */
+  public void testEmpty3() throws Exception {
+    Filter expected = new PrefixFilter(new Term("bogusField", "bogusVal"));
+    Filter actual = new CachingWrapperFilter(expected);
+    assertFilterEquals(expected, actual);
+  }
+  
+  /** test iterator returns single document */
+  public void testSingle() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      int id = random().nextInt(ir.maxDoc());
+      Query query = new TermQuery(new Term("id", Integer.toString(id)));
+      Filter expected = new QueryWrapperFilter(query);
+      Filter actual = new CachingWrapperFilter(expected);
+      assertFilterEquals(expected, actual);
+    }
+  }
+  
+  /** test sparse filters (match single documents) */
+  public void testSparse() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      int id_start = random().nextInt(ir.maxDoc()-1);
+      int id_end = id_start + 1;
+      Query query = TermRangeQuery.newStringRange("id",
+          Integer.toString(id_start), Integer.toString(id_end), true, true);
+      Filter expected = new QueryWrapperFilter(query);
+      Filter actual = new CachingWrapperFilter(expected);
+      assertFilterEquals(expected, actual);
+    }
+  }
+  
+  /** test dense filters (match entire index) */
+  public void testDense() throws Exception {
+    Query query = new MatchAllDocsQuery();
+    Filter expected = new QueryWrapperFilter(query);
+    Filter actual = new CachingWrapperFilter(expected);
+    assertFilterEquals(expected, actual);
+  }
+
   public void testCachingWorks() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -173,7 +276,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))
     );
-    _TestUtil.keepFullyDeletedSegments(writer.w);
 
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,

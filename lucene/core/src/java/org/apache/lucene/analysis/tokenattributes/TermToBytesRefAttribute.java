@@ -30,7 +30,7 @@ import org.apache.lucene.util.BytesRef;
  *   final TermToBytesRefAttribute termAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
  *   final BytesRef bytes = termAtt.getBytesRef();
  *
- *   while (termAtt.incrementToken() {
+ *   while (tokenStream.incrementToken() {
  *
  *     // you must call termAtt.fillBytesRef() before doing something with the bytes.
  *     // this encodes the term value (internally it might be a char[], etc) into the bytes.

@@ -59,7 +59,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   protected static final String DEFAULT_REFRESH_INTERVAL    = "1440";
   
   protected String ratesFileLocation;
-  protected int refreshInterval;
+  // configured in minutes, but stored in seconds for quicker math
+  protected int refreshIntervalSeconds;
   protected ResourceLoader resourceLoader;
   
   protected OpenExchangeRates rates;
@@ -84,7 +85,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
     }
     
-    if (rates.getTimestamp() + refreshInterval*60*1000 > System.currentTimeMillis()) {
+    if ((rates.getTimestamp() + refreshIntervalSeconds)*1000 < System.currentTimeMillis()) {
       log.debug("Refresh interval has expired. Refreshing exchange rates.");
       reload();
     }
@@ -159,13 +160,14 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       if (null == ratesFileLocation) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Init param must be specified: " + PARAM_RATES_FILE_LOCATION);
       }
-      refreshInterval = Integer.parseInt(getParam(params.get(PARAM_REFRESH_INTERVAL), DEFAULT_REFRESH_INTERVAL));
+      int refreshInterval = Integer.parseInt(getParam(params.get(PARAM_REFRESH_INTERVAL), DEFAULT_REFRESH_INTERVAL));
       // Force a refresh interval of minimum one hour, since the API does not offer better resolution
       if (refreshInterval < 60) {
         refreshInterval = 60;
         log.warn("Specified refreshInterval was too small. Setting to 60 minutes which is the update rate of openexchangerates.org");
       }
       log.info("Initialized with rates="+ratesFileLocation+", refreshInterval="+refreshInterval+".");
+      refreshIntervalSeconds = refreshInterval * 60;
     } catch (SolrException e1) {
       throw e1;
     } catch (Exception e2) {
@@ -191,7 +193,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   /**
    * A simple class encapsulating the JSON data from openexchangerates.org
    */
-  class OpenExchangeRates {
+  static class OpenExchangeRates {
     private Map<String, Double> rates;
     private String baseCurrency;
     private long timestamp;
@@ -260,6 +262,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     
     public long getTimestamp() {
       return timestamp;
+    }
+    /** Package protected method for test purposes
+     * @lucene.internal
+     */
+    void setTimestamp(long timestamp) {
+      this.timestamp = timestamp;
     }
 
     public String getDisclaimer() {

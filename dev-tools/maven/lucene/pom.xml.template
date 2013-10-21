@@ -47,6 +47,7 @@
     <module>benchmark</module>
     <module>classification</module>
     <module>demo</module>
+    <module>expressions</module>
     <module>facet</module>
     <module>grouping</module>
     <module>highlighter</module>

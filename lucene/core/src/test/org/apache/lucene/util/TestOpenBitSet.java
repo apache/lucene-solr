@@ -331,6 +331,38 @@ public class TestOpenBitSet extends BaseDocIdSetTestCase<OpenBitSet> {
     checkPrevSetBitArray(new int[] {0,2});
   }
 
+  public void testEnsureCapacity() {
+    OpenBitSet bits = new OpenBitSet(1);
+    int bit = random().nextInt(100) + 10;
+    bits.ensureCapacity(bit); // make room for more bits
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+    bits.ensureCapacity(bit + 1);
+    bits.fastSet(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.ensureCapacity(3); // should not change numBits nor grow the array
+    bits.fastSet(3);
+    assertTrue(bits.fastGet(3));
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+
+    // test ensureCapacityWords
+    int numWords = random().nextInt(10) + 2; // make sure we grow the array (at least 128 bits)
+    bits.ensureCapacityWords(numWords);
+    bit = _TestUtil.nextInt(random(), 127, (numWords << 6)-1); // pick a bit >= to 128, but still within range
+    bits.fastSet(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.fastClear(bit);
+    assertFalse(bits.fastGet(bit));
+    bits.fastFlip(bit);
+    assertTrue(bits.fastGet(bit));
+    bits.ensureCapacityWords(2); // should not change numBits nor grow the array
+    bits.fastSet(3);
+    assertTrue(bits.fastGet(3));
+    bits.fastSet(bit-1);
+    assertTrue(bits.fastGet(bit-1));
+  }
+  
 }
 
 

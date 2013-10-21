@@ -40,10 +40,10 @@ class SimpleQueryConverter extends SpellingQueryConverter {
 
   @Override
   public Collection<Token> convert(String origQuery) {
-    try {
-      Collection<Token> result = new HashSet<Token>();
-      WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
-      TokenStream ts = analyzer.tokenStream("", origQuery);
+    Collection<Token> result = new HashSet<Token>();
+    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
+    
+    try (TokenStream ts = analyzer.tokenStream("", origQuery)) {
       // TODO: support custom attributes
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -64,9 +64,7 @@ class SimpleQueryConverter extends SpellingQueryConverter {
         tok.setType(typeAtt.type());
         result.add(tok);
       }
-      ts.end();
-      ts.close();
-      
+      ts.end();      
       return result;
     } catch (IOException e) {
       throw new RuntimeException(e);

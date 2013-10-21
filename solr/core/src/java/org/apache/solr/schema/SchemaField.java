@@ -239,13 +239,21 @@ public final class SchemaField extends FieldProperties {
 
     if (on(falseProps,INDEXED)) {
       int pp = (INDEXED 
-              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS
-              | SORT_MISSING_FIRST | SORT_MISSING_LAST);
+              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS);
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed field:" + props);
       }
       p &= ~pp;
     }
+    
+    if (on(falseProps,INDEXED) && on(falseProps,DOC_VALUES)) {
+      int pp = (SORT_MISSING_FIRST | SORT_MISSING_LAST);
+      if (on(pp,trueProps)) {
+        throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed/non-docValues field:" + props);
+      }
+      p &= ~pp;
+    }
+    
     if (on(falseProps,INDEXED)) {
       int pp = (OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS);
       if (on(pp,falseProps)) {

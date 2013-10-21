@@ -80,13 +80,15 @@ public final class KeywordTokenizer extends Tokenizer {
   }
   
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset 
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     this.done = false;
   }
 }

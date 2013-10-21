@@ -59,6 +59,7 @@ public class ZkStateReader {
   public static final String SHARD_ID_PROP = "shard";
   public static final String SHARD_RANGE_PROP = "shard_range";
   public static final String SHARD_STATE_PROP = "shard_state";
+  public static final String SHARD_PARENT_PROP = "shard_parent";
   public static final String NUM_SHARDS_PROP = "numShards";
   public static final String LEADER_PROP = "leader";
   
@@ -218,11 +219,6 @@ public class ZkStateReader {
               Stat stat = new Stat();
               byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
-              List<String> liveNodes = zkClient.getChildren(
-                  LIVE_NODES_ZKNODE, this, true);
-     
-              Set<String> liveNodesSet = new HashSet<String>();
-              liveNodesSet.addAll(liveNodes);
               Set<String> ln = ZkStateReader.this.clusterState.getLiveNodes();
               ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln);
               // update volatile

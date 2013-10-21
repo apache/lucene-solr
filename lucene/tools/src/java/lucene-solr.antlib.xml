@@ -18,4 +18,7 @@
     <taskdef 
         name="licenses" 
         classname="org.apache.lucene.validation.LicenseCheckTask" />
+    <taskdef
+        name="libversions"
+        classname="org.apache.lucene.validation.LibVersionsCheckTask" />
 </antlib> 

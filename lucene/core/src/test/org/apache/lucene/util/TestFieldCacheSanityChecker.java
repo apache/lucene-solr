@@ -120,7 +120,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.purgeAllCaches();
 
     cache.getInts(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-    cache.getTerms(readerX, "theInt");
+    cache.getTerms(readerX, "theInt", false);
 
     // // // 
 
@@ -142,9 +142,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getTerms(readerA, "theInt");
-    cache.getTerms(readerB, "theInt");
-    cache.getTerms(readerX, "theInt");
+    cache.getTerms(readerA, "theInt", false);
+    cache.getTerms(readerB, "theInt", false);
+    cache.getTerms(readerX, "theInt", false);
 
 
     // // // 

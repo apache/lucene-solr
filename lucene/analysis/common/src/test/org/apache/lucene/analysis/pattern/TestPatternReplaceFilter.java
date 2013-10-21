@@ -114,7 +114,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer,  new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", true));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

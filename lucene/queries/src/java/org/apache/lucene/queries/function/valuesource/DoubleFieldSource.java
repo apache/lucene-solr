@@ -31,13 +31,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains double field values from {@link FieldCache#getDoubles} and makes
+ * those values available as other numeric types, casting as needed.
  */
-
 public class DoubleFieldSource extends FieldCacheSource {
 
   protected final FieldCache.DoubleParser parser;
@@ -68,65 +64,7 @@ public class DoubleFieldSource extends FieldCacheSource {
 
       @Override
       public boolean exists(int doc) {
-        return valid.get(doc);
-      }
-
-      @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-        double lower,upper;
-
-        if (lowerVal==null) {
-          lower = Double.NEGATIVE_INFINITY;
-        } else {
-          lower = Double.parseDouble(lowerVal);
-        }
-
-         if (upperVal==null) {
-          upper = Double.POSITIVE_INFINITY;
-        } else {
-          upper = Double.parseDouble(upperVal);
-        }
-
-        final double l = lower;
-        final double u = upper;
-
-
-        if (includeLower && includeUpper) {
-          return new ValueSourceScorer(reader, this) {
-            @Override
-            public boolean matchesValue(int doc) {
-              double docVal = doubleVal(doc);
-              return docVal >= l && docVal <= u;
-            }
-          };
-        }
-        else if (includeLower && !includeUpper) {
-          return new ValueSourceScorer(reader, this) {
-            @Override
-            public boolean matchesValue(int doc) {
-              double docVal = doubleVal(doc);
-              return docVal >= l && docVal < u;
-            }
-          };
-        }
-        else if (!includeLower && includeUpper) {
-          return new ValueSourceScorer(reader, this) {
-            @Override
-            public boolean matchesValue(int doc) {
-              double docVal = doubleVal(doc);
-              return docVal > l && docVal <= u;
-            }
-          };
-        }
-        else {
-          return new ValueSourceScorer(reader, this) {
-            @Override
-            public boolean matchesValue(int doc) {
-              double docVal = doubleVal(doc);
-              return docVal > l && docVal < u;
-            }
-          };
-        }
+        return arr.get(doc) != 0 || valid.get(doc);
       }
 
       @Override
@@ -142,7 +80,7 @@ public class DoubleFieldSource extends FieldCacheSource {
           @Override
           public void fillValue(int doc) {
             mval.value = arr.get(doc);
-            mval.exists = valid.get(doc);
+            mval.exists = mval.value != 0 || valid.get(doc);
           }
         };
       }

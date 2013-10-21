@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -63,11 +66,14 @@ public class JavaBinUpdateRequestCodec {
     if(updateRequest.getDocIterator() != null){
       docIter = updateRequest.getDocIterator();
     }
+    
+    Map<SolrInputDocument,Map<String,Object>> docMap = updateRequest.getDocumentsMap();
 
     nl.add("params", params);// 0: params
-    nl.add("delById", updateRequest.getDeleteById());
+    nl.add("delByIdMap", updateRequest.getDeleteByIdMap());
     nl.add("delByQ", updateRequest.getDeleteQuery());
     nl.add("docs", docIter);
+    nl.add("docsMap", docMap);
     JavaBinCodec codec = new JavaBinCodec();
     codec.marshal(nl, os);
   }
@@ -86,7 +92,9 @@ public class JavaBinUpdateRequestCodec {
   public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
+    Map<SolrInputDocument,Map<String,Object>>  docMap;
     List<String> delById;
+    Map<String,Map<String,Object>> delByIdMap;
     List<String> delByQ;
     final NamedList[] namedList = new NamedList[1];
     JavaBinCodec codec = new JavaBinCodec() {
@@ -158,9 +166,11 @@ public class JavaBinUpdateRequestCodec {
       }
     }
     delById = (List<String>) namedList[0].get("delById");
+    delByIdMap = (Map<String,Map<String,Object>>) namedList[0].get("delByIdMap");
     delByQ = (List<String>) namedList[0].get("delByQ");
     doclist = (List) namedList[0].get("docs");
-
+    docMap =  (Map<SolrInputDocument,Map<String,Object>>) namedList[0].get("docsMap");
+    
     if (doclist != null && !doclist.isEmpty()) {
       List<SolrInputDocument> solrInputDocs = new ArrayList<SolrInputDocument>();
       for (Object o : doclist) {
@@ -172,9 +182,34 @@ public class JavaBinUpdateRequestCodec {
       }
       updateRequest.add(solrInputDocs);
     }
+    if (docMap != null && !docMap.isEmpty()) {
+      Set<Entry<SolrInputDocument,Map<String,Object>>> entries = docMap.entrySet();
+      for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
+        Map<String,Object> map = entry.getValue();
+        Boolean overwrite = null;
+        Integer commitWithin = null;
+        if (map != null) {
+          overwrite = (Boolean) map.get(UpdateRequest.OVERWRITE);
+          commitWithin = (Integer) map.get(UpdateRequest.COMMIT_WITHIN);
+        }
+        updateRequest.add(entry.getKey(), commitWithin, overwrite);
+      }
+    }
     if (delById != null) {
       for (String s : delById) {
         updateRequest.deleteById(s);
+      }
+    }
+    if (delByIdMap != null) {
+      for (Map.Entry<String,Map<String,Object>> entry : delByIdMap.entrySet()) {
+        Map<String,Object> params = entry.getValue();
+        if (params != null) {
+          Long version = (Long) params.get("ver");
+          updateRequest.deleteById(entry.getKey(), version);
+        } else {
+          updateRequest.deleteById(entry.getKey());
+        }
+  
       }
     }
     if (delByQ != null) {

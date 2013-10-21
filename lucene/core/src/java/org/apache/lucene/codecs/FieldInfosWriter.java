@@ -35,5 +35,5 @@ public abstract class FieldInfosWriter {
 
   /** Writes the provided {@link FieldInfos} to the
    *  directory. */
-  public abstract void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException;
+  public abstract void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException;
 }

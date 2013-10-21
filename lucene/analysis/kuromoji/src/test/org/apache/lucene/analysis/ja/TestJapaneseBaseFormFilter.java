@@ -75,6 +75,6 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

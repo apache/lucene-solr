@@ -142,6 +142,6 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ArabicStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

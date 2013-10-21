@@ -32,15 +32,32 @@ import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /** test that we can parse and use the solr syn file */
-  public void testSynonyms() throws Exception {
+
+  /** checks for synonyms of "GB" in synonyms.txt */
+  private void checkSolrSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("GB");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", "synonyms", "synonyms.txt").create(stream);
+    stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
-    assertTokenStreamContents(stream, 
+    assertTokenStreamContents(stream,
         new String[] { "GB", "gib", "gigabyte", "gigabytes" },
         new int[] { 1, 0, 0, 0 });
+  }
+
+  /** checks for synonyms of "second" in synonyms-wordnet.txt */
+  private void checkWordnetSynonyms(TokenFilterFactory factory) throws Exception {
+    Reader reader = new StringReader("second");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
+    assertTrue(stream instanceof SynonymFilter);
+    assertTokenStreamContents(stream,
+        new String[] { "second", "2nd", "two" },
+        new int[] { 1, 0, 0 });
+  }
+
+  /** test that we can parse and use the solr syn file */
+  public void testSynonyms() throws Exception {
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt"));
   }
   
   /** if the synonyms are completely empty, test that we still analyze correctly */
@@ -51,6 +68,14 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
         new StringMockResourceLoader(""), // empty file!
         "synonyms", "synonyms.txt").create(stream);
     assertTokenStreamContents(stream, new String[] { "GB" });
+  }
+
+  public void testFormat() throws Exception {
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt", "format", "solr"));
+    checkWordnetSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms-wordnet.txt", "format", "wordnet"));
+    // explicit class should work the same as the "solr" alias
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt",
+        "format", SolrSynonymParser.class.getName()));
   }
   
   /** Test that bogus arguments result in exception */
@@ -133,6 +158,8 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       // :NOOP:
     }
   }
+
+
 }
 
 

@@ -17,7 +17,11 @@
 
 package org.apache.solr.common.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.SolrException;
 
 public class NamedListTest extends LuceneTestCase {
   public void testRemove() {
@@ -25,9 +29,71 @@ public class NamedListTest extends LuceneTestCase {
     nl.add("key1", "value1");
     nl.add("key2", "value2");
     assertEquals(2, nl.size());
-    String value = nl.remove(0);
+    String value = null;
+    value = nl.remove(0);
     assertEquals("value1", value);
     assertEquals(1, nl.size());
+    value = nl.remove("key2");
+    assertEquals("value2", value);
+    assertEquals(0, nl.size());
+  }
+  
+  public void testRemoveAll() {
+    NamedList<String> nl = new NamedList<String>();
+    nl.add("key1", "value1-1");
+    nl.add("key2", "value2-1");
+    nl.add("key1", "value1-2");
+    nl.add("key2", "value2-2");
+    nl.add("key1", "value1-3");
+    nl.add("key2", "value2-3");
+    nl.add("key1", "value1-4");
+    nl.add("key2", "value2-4");
+    nl.add("key1", "value1-5");
+    nl.add("key2", "value2-5");
+    nl.add("key1", "value1-6");
+    assertEquals(11, nl.size());
+    List<String> values = null;
+    values = nl.removeAll("key1");
+    assertEquals("value1-1", values.get(0));
+    assertEquals("value1-3", values.get(2));
+    assertEquals(6, values.size());
+    assertEquals(5, nl.size());
+    values = nl.removeAll("key2");
+    assertEquals(5, values.size());
+    assertEquals(0, nl.size());
+  }
+  
+  public void testRemoveArgs() {
+    NamedList<Object> nl = new NamedList<Object>();
+    nl.add("key1", "value1-1");
+    nl.add("key2", "value2-1");
+    nl.add("key1", "value1-2");
+    nl.add("key2", "value2-2");
+    nl.add("key1", "value1-3");
+    nl.add("key2", "value2-3");
+    nl.add("key1", "value1-4");
+    nl.add("key2", "value2-4");
+    nl.add("key1", "value1-5");
+    nl.add("key2", "value2-5");
+    nl.add("key1", "value1-6");
+    nl.add("key2", 0);
+    nl.add("key2", "value2-7");
+    assertEquals(13, nl.size());
+    List<String> values = (ArrayList<String>) nl.removeConfigArgs("key1");
+    assertEquals("value1-1", values.get(0));
+    assertEquals("value1-3", values.get(2));
+    assertEquals(6, values.size());
+    assertEquals(7, nl.size());
+    try {
+      values = (ArrayList<String>) nl.removeConfigArgs("key2");
+      fail();
+    }
+    catch(SolrException e) {
+      // Expected exception.
+      assertTrue(true);
+    }
+    // nl should be unmodified when removeArgs throws an exception.
+    assertEquals(7, nl.size());
   }
   
   public void testRecursive() {

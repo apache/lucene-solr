@@ -233,15 +233,18 @@ public final class FST<T> {
       StringBuilder b = new StringBuilder();
       b.append("node=" + node);
       b.append(" target=" + target);
-      b.append(" label=" + label);
-      if (flag(BIT_LAST_ARC)) {
-        b.append(" last");
-      }
+      b.append(" label=0x" + Integer.toHexString(label));
       if (flag(BIT_FINAL_ARC)) {
         b.append(" final");
       }
+      if (flag(BIT_LAST_ARC)) {
+        b.append(" last");
+      }
       if (flag(BIT_TARGET_NEXT)) {
         b.append(" targetNext");
+      }
+      if (flag(BIT_STOP_NODE)) {
+        b.append(" stop");
       }
       if (flag(BIT_ARC_HAS_OUTPUT)) {
         b.append(" output=" + output);
@@ -400,14 +403,14 @@ public final class FST<T> {
     return size;
   }
 
-  void finish(long startNode) throws IOException {
-    if (this.startNode != -1) {
+  void finish(long newStartNode) throws IOException {
+    if (startNode != -1) {
       throw new IllegalStateException("already finished");
     }
-    if (startNode == FINAL_END_NODE && emptyOutput != null) {
-      startNode = 0;
+    if (newStartNode == FINAL_END_NODE && emptyOutput != null) {
+      newStartNode = 0;
     }
-    this.startNode = startNode;
+    startNode = newStartNode;
     bytes.finish();
 
     cacheRootArcs();
@@ -834,6 +837,9 @@ public final class FST<T> {
     if (emptyOutput != null) {
       arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
       arc.nextFinalOutput = emptyOutput;
+      if (emptyOutput != NO_OUTPUT) {
+        arc.flags |= BIT_ARC_HAS_FINAL_OUTPUT;
+      }
     } else {
       arc.flags = BIT_LAST_ARC;
       arc.nextFinalOutput = NO_OUTPUT;
@@ -1140,7 +1146,6 @@ public final class FST<T> {
   /** Finds an arc leaving the incoming arc, replacing the arc in place.
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
-    assert assertRootArcs();
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
@@ -1162,6 +1167,10 @@ public final class FST<T> {
 
     // Short-circuit if this arc is in the root arc cache:
     if (follow.target == startNode && labelToMatch < cachedRootArcs.length) {
+      
+      // LUCENE-5152: detect tricky cases where caller
+      // modified previously returned cached root-arcs:
+      assert assertRootArcs();
       final Arc<T> result = cachedRootArcs[labelToMatch];
       if (result == null) {
         return null;

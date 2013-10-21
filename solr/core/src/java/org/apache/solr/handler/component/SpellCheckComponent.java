@@ -463,29 +463,29 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<Token>();
     assert analyzer != null;
-    TokenStream ts = analyzer.tokenStream("", q);
-    ts.reset();
-    // TODO: support custom attributes
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    
-    while (ts.incrementToken()){
-      Token token = new Token();
-      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-      token.setType(typeAtt.type());
-      token.setFlags(flagsAtt.getFlags());
-      token.setPayload(payloadAtt.getPayload());
-      token.setPositionIncrement(posIncAtt.getPositionIncrement());
-      result.add(token);
+    try (TokenStream ts = analyzer.tokenStream("", q)) {
+      ts.reset();
+      // TODO: support custom attributes
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
+      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
+      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      
+      while (ts.incrementToken()){
+        Token token = new Token();
+        token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
+        token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+        token.setType(typeAtt.type());
+        token.setFlags(flagsAtt.getFlags());
+        token.setPayload(payloadAtt.getPayload());
+        token.setPositionIncrement(posIncAtt.getPositionIncrement());
+        result.add(token);
+      }
+      ts.end();
+      return result;
     }
-    ts.end();
-    ts.close();
-    return result;
   }
 
   protected SolrSpellChecker getSpellChecker(SolrParams params) {

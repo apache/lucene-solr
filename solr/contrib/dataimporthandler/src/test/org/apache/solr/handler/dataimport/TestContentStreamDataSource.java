@@ -41,6 +41,7 @@ import java.util.List;
  */
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {
   private static final String CONF_DIR = "dih/solr/collection1/conf/";
+  private static final String ROOT_DIR = "dih/solr/";
   SolrInstance instance = null;
   JettySolrRunner jetty;
 
@@ -144,6 +145,11 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       return CONF_DIR + "contentstream-solrconfig.xml";
     }
 
+    public String getSolrXmlFile() {
+      return ROOT_DIR + "solr.xml";
+    }
+
+
     public void setUp() throws Exception {
 
       File home = new File(TEMP_DIR,
@@ -158,6 +164,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       dataDir.mkdirs();
       confDir.mkdirs();
 
+      FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
       File f = new File(confDir, "solrconfig.xml");
       FileUtils.copyFile(getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");

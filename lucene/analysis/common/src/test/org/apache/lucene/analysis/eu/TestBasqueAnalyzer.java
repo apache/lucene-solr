@@ -34,8 +34,8 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new BasqueAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "zaldi", "zaldi");
-    checkOneTermReuse(a, "zaldiak", "zaldi");
+    checkOneTerm(a, "zaldi", "zaldi");
+    checkOneTerm(a, "zaldiak", "zaldi");
     // stopword
     assertAnalyzesTo(a, "izan", new String[] { });
   }
@@ -45,8 +45,8 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("zaldiak"), false);
     Analyzer a = new BasqueAnalyzer(TEST_VERSION_CURRENT, 
         BasqueAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "zaldiak", "zaldiak");
-    checkOneTermReuse(a, "mendiari", "mendi");
+    checkOneTerm(a, "zaldiak", "zaldiak");
+    checkOneTerm(a, "mendiari", "mendi");
   }
   
   /** blast some random strings through the analyzer */

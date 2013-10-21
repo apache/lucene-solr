@@ -234,6 +234,6 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new BulgarianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

@@ -624,7 +624,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       "bbb => bbbb1 bbbb2\n";
       
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
       
     Analyzer analyzer = new Analyzer() {

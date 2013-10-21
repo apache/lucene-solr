@@ -83,7 +83,7 @@ public final class KoreanTokenizer extends Tokenizer {
    */
   public KoreanTokenizer(Reader input) {
     super(input);
-    this.scanner = new KoreanTokenizerImpl(input);
+    this.scanner = new KoreanTokenizerImpl(this.input);
   }
 
   /**
@@ -91,7 +91,7 @@ public final class KoreanTokenizer extends Tokenizer {
    */
   public KoreanTokenizer(AttributeFactory factory, Reader input) {
     super(factory, input);
-    this.scanner = new KoreanTokenizerImpl(input);
+    this.scanner = new KoreanTokenizerImpl(this.input);
    }
 
   // this tokenizer generates three attributes:
@@ -144,6 +144,12 @@ public final class KoreanTokenizer extends Tokenizer {
   @Override
   public void reset() throws IOException {
     super.reset();
+    scanner.yyreset(input);
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
     scanner.yyreset(input);
   }
   

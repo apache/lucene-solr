@@ -45,8 +45,7 @@ public final class ICUTokenizer extends Tokenizer {
   /** true length of text in the buffer */
   private int length = 0; 
   /** length in buffer that can be evaluated safely, up to a safe end point */
-  // note: usableLength is -1 here to best-effort AIOOBE consumers that don't call reset()
-  private int usableLength = -1; 
+  private int usableLength = 0; 
   /** accumulated offset of previous buffers for this reader, for offsetAtt */
   private int offset = 0; 
 
@@ -120,7 +119,8 @@ public final class ICUTokenizer extends Tokenizer {
   }
   
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     final int finalOffset = (length < 0) ? offset : offset + length;
     offsetAtt.setOffset(correctOffset(finalOffset), correctOffset(finalOffset));
   }  

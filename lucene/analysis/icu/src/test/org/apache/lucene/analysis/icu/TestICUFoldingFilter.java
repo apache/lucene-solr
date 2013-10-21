@@ -87,6 +87,6 @@ public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ICUFoldingFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

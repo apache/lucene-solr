@@ -30,19 +30,19 @@ public abstract class HashBasedRouter extends DocRouter {
   @Override
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     if (id == null) id = getId(sdoc, params);
-    int hash = sliceHash(id, sdoc, params);
+    int hash = sliceHash(id, sdoc, params,collection);
     return hashToSlice(hash, collection);
   }
 
   @Override
   public boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection) {
     if (id == null) id = getId(sdoc, params);
-    int hash = sliceHash(id, sdoc, params);
+    int hash = sliceHash(id, sdoc, params, collection);
     Range range = collection.getSlice(shardId).getRange();
     return range != null && range.includes(hash);
   }
 
-  public int sliceHash(String id, SolrInputDocument sdoc, SolrParams params) {
+  public int sliceHash(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 

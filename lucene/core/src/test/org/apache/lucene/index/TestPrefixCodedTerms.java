@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util._TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
@@ -65,15 +66,6 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
       assertEquals(expected.next(), t);
     }
     assertFalse(expected.hasNext());
-  }
-  
-  @SuppressWarnings("unchecked")
-  public void testMergeEmpty() {
-    Iterator<Term> merged = new MergedIterator<Term>();
-    assertFalse(merged.hasNext());
-
-    merged = new MergedIterator<Term>(new PrefixCodedTerms.Builder().finish().iterator(), new PrefixCodedTerms.Builder().finish().iterator());
-    assertFalse(merged.hasNext());
   }
 
   @SuppressWarnings("unchecked")

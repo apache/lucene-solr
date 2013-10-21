@@ -332,9 +332,13 @@ public abstract class LuceneTestCase extends Assert {
   // -----------------------------------------------------------------
 
   /**
-   * @lucene.internal 
+   * When {@code true}, Codecs for old Lucene version will support writing
+   * indexes in that format. Defaults to {@code true}, can be disabled by
+   * spdecific tests on demand.
+   * 
+   * @lucene.internal
    */
-  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
 
 
   // -----------------------------------------------------------------
@@ -1368,6 +1372,25 @@ public abstract class LuceneTestCase extends Assert {
     }
     return true;
   }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  public static boolean defaultCodecSupportsDocsWithField() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" field updates. */
+  public static boolean defaultCodecSupportsFieldUpdates() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
+      return false;
+    }
+    return true;
+  }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assertReaderStatisticsEquals(info, leftReader, rightReader);
@@ -1463,7 +1486,6 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -1960,6 +1982,20 @@ public abstract class LuceneTestCase extends Assert {
         } else {
           assertNull(info, leftValues);
           assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
+        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
+        if (leftBits != null && rightBits != null) {
+          assertEquals(info, leftBits.length(), rightBits.length());
+          for (int i = 0; i < leftBits.length(); i++) {
+            assertEquals(info, leftBits.get(i), rightBits.get(i));
+          }
+        } else {
+          assertNull(info, leftBits);
+          assertNull(info, rightBits);
         }
       }
     }

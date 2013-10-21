@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
@@ -33,10 +34,10 @@ import java.util.List;
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
-  private int separator = '!';
+  public static final int separator = '!';
 
   // separator used to optionally specify number of bits to allocate toward first part.
-  private int bitsSeparator = '/';
+  public static final int bitsSeparator = '/';
   private int bits = 16;
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
@@ -59,17 +60,23 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  public int sliceHash(String id, SolrInputDocument doc, SolrParams params) {
+  public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
+    String shardFieldName = getRouteField(collection);
+    if (shardFieldName != null && doc != null) {
+      Object o = doc.getFieldValue(shardFieldName);
+      if (o == null)
+        throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "No value for :"+shardFieldName + ". Unable to identify shard");
+      id = o.toString();
+    }
     int idx = id.indexOf(separator);
     if (idx < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
     }
-
+    String part1 = id.substring(0, idx);
+    int commaIdx = part1.indexOf(bitsSeparator);
     int m1 = mask1;
     int m2 = mask2;
 
-    String part1 = id.substring(0,idx);
-    int commaIdx = part1.indexOf(bitsSeparator);
     if (commaIdx > 0) {
       int firstBits = getBits(part1, commaIdx);
       if (firstBits >= 0) {
@@ -84,6 +91,32 @@ public class CompositeIdRouter extends HashBasedRouter {
     int hash1 = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
     int hash2 = Hash.murmurhash3_x86_32(part2, 0, part2.length(), 0);
     return (hash1 & m1) | (hash2 & m2);
+  }
+
+  public Range keyHashRange(String routeKey) {
+    int idx = routeKey.indexOf(separator);
+    if (idx < 0) {
+      int hash = sliceHash(routeKey, null, null, null);
+      return new Range(hash, hash);
+    }
+    String part1 = routeKey.substring(0, idx);
+    int commaIdx = part1.indexOf(bitsSeparator);
+    int m1 = mask1;
+    int m2 = mask2;
+
+    if (commaIdx > 0) {
+      int firstBits = getBits(part1, commaIdx);
+      if (firstBits >= 0) {
+        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
+        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
+        part1 = part1.substring(0, commaIdx);
+      }
+    }
+
+    int hash = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
+    int min = hash & m1;
+    int max = min | m2;
+    return new Range(min, max);
   }
 
   @Override
@@ -142,6 +175,27 @@ public class CompositeIdRouter extends HashBasedRouter {
     return targetSlices;
   }
 
+  public List<Range> partitionRangeByKey(String key, Range range) {
+    List<Range> result = new ArrayList<Range>(3);
+    Range keyRange = keyHashRange(key);
+    if (!keyRange.overlaps(range)) {
+      throw new IllegalArgumentException("Key range does not overlap given range");
+    }
+    if (keyRange.equals(range)) {
+      return Collections.singletonList(keyRange);
+    } else if (keyRange.isSubsetOf(range)) {
+      result.add(new Range(range.min, keyRange.min - 1));
+      result.add(keyRange);
+      result.add((new Range(keyRange.max + 1, range.max)));
+    } else if (range.includes(keyRange.max))  {
+      result.add(new Range(range.min, keyRange.max));
+      result.add(new Range(keyRange.max + 1, range.max));
+    } else  {
+      result.add(new Range(range.min, keyRange.min - 1));
+      result.add(new Range(keyRange.min, range.max));
+    }
+    return result;
+  }
 
   @Override
   public List<Range> partitionRange(int partitions, Range range) {

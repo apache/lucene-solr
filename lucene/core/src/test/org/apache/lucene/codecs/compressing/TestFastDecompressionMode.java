@@ -28,9 +28,9 @@ public class TestFastDecompressionMode extends AbstractTestLZ4CompressionMode {
   }
 
   @Override
-  public byte[] test(byte[] decompressed) throws IOException {
-    final byte[] compressed = super.test(decompressed);
-    final byte[] compressed2 = compress(CompressionMode.FAST.newCompressor(), decompressed);
+  public byte[] test(byte[] decompressed, int off, int len) throws IOException {
+    final byte[] compressed = super.test(decompressed, off, len);
+    final byte[] compressed2 = compress(CompressionMode.FAST.newCompressor(), decompressed, off, len);
     // because of the way this compression mode works, its output is necessarily
     // smaller than the output of CompressionMode.FAST
     assertTrue(compressed.length <= compressed2.length);

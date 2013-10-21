@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -98,14 +99,14 @@ public class HttpSolrServer extends SolrServer {
    * 
    * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
    */
-  protected ResponseParser parser;
+  protected volatile ResponseParser parser;
   
   /**
    * The RequestWriter used to write all requests to Solr
    * 
    * @see org.apache.solr.client.solrj.request.RequestWriter
    */
-  protected RequestWriter requestWriter = new RequestWriter();
+  protected volatile RequestWriter requestWriter = new RequestWriter();
   
   private final HttpClient httpClient;
   
@@ -265,7 +266,7 @@ public class HttpSolrServer extends SolrServer {
                 for (ContentStream content : streams) {
                   String contentType = content.getContentType();
                   if(contentType==null) {
-                    contentType = "application/octet-stream"; // default
+                    contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
                   }
                   String name = content.getName();
                   if(name==null) {
@@ -359,7 +360,7 @@ public class HttpSolrServer extends SolrServer {
     
     InputStream respBody = null;
     boolean shouldClose = true;
-    
+    boolean success = false;
     try {
       // Execute the method.
       final HttpResponse response = httpClient.execute(method);
@@ -367,6 +368,13 @@ public class HttpSolrServer extends SolrServer {
       
       // Read the contents
       respBody = response.getEntity().getContent();
+      Header ctHeader = response.getLastHeader("content-type");
+      String contentType;
+      if (ctHeader != null) {
+        contentType = ctHeader.getValue();
+      } else {
+        contentType = "";
+      }
       
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
@@ -382,17 +390,44 @@ public class HttpSolrServer extends SolrServer {
           }
           break;
         default:
-          throw new RemoteSolrException(httpStatus, "Server at " + getBaseURL()
-              + " returned non ok status:" + httpStatus + ", message:"
-              + response.getStatusLine().getReasonPhrase(), null);
+          if (processor == null) {
+            throw new RemoteSolrException(httpStatus, "Server at "
+                + getBaseURL() + " returned non ok status:" + httpStatus
+                + ", message:" + response.getStatusLine().getReasonPhrase(),
+                null);
+          }
       }
       if (processor == null) {
+        
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<Object>();
         rsp.add("stream", respBody);
         // Only case where stream should not be closed
         shouldClose = false;
+        success = true;
         return rsp;
+      }
+      
+      String procCt = processor.getContentType();
+      if (procCt != null) {
+        if (!contentType.equals(procCt)) {
+          // unexpected content type
+          String msg = "Expected content type " + procCt + " but got " + contentType + ".";
+          Header encodingHeader = response.getEntity().getContentEncoding();
+          String encoding;
+          if (encodingHeader != null) {
+            encoding = encodingHeader.getValue();
+          } else {
+            encoding = "UTF-8"; // try UTF-8
+          }
+          try {
+            msg = msg + " " + IOUtils.toString(respBody, encoding);
+          } catch (IOException e) {
+            throw new RemoteSolrException(httpStatus, "Could not parse response with encoding " + encoding, e);
+          }
+          RemoteSolrException e = new RemoteSolrException(httpStatus, msg, null);
+          throw e;
+        }
       }
       
 //      if(true) {
@@ -403,8 +438,13 @@ public class HttpSolrServer extends SolrServer {
 //        respBody = new ByteArrayInputStream(copy.toByteArray());
 //      }
       
+      NamedList<Object> rsp = null;
       String charset = EntityUtils.getContentCharSet(response.getEntity());
-      NamedList<Object> rsp = processor.processResponse(respBody, charset);
+      try {
+        rsp = processor.processResponse(respBody, charset);
+      } catch (Exception e) {
+        throw new RemoteSolrException(httpStatus, e.getMessage(), e);
+      }
       if (httpStatus != HttpStatus.SC_OK) {
         String reason = null;
         try {
@@ -423,6 +463,7 @@ public class HttpSolrServer extends SolrServer {
         }
         throw new RemoteSolrException(httpStatus, reason, null);
       }
+      success = true;
       return rsp;
     } catch (ConnectException e) {
       throw new SolrServerException("Server refused connection at: "
@@ -439,6 +480,9 @@ public class HttpSolrServer extends SolrServer {
         try {
           respBody.close();
         } catch (Throwable t) {} // ignore
+        if (!success) {
+          method.abort();
+        }
       }
     }
   }

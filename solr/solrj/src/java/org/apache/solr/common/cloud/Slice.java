@@ -36,6 +36,8 @@ public class Slice extends ZkNodeProps {
   public static String ACTIVE = "active";
   public static String INACTIVE = "inactive";
   public static String CONSTRUCTION = "construction";
+  public static String RECOVERY = "recovery";
+  public static String PARENT = "parent";
 
   private final String name;
   private final DocRouter.Range range;
@@ -43,6 +45,7 @@ public class Slice extends ZkNodeProps {
   private final Map<String,Replica> replicas;
   private final Replica leader;
   private final String state;
+  private final String parent;
 
   /**
    * @param name  The name of the slice
@@ -74,6 +77,11 @@ public class Slice extends ZkNodeProps {
       System.out.println("###### NO RANGE for " + name + " props=" + props);
     }
     **/
+
+    if (propMap.containsKey(PARENT) && propMap.get(PARENT) != null)
+      this.parent = (String) propMap.get(PARENT);
+    else
+      this.parent = null;
 
     replicationFactor = null;  // future
 
@@ -148,6 +156,10 @@ public class Slice extends ZkNodeProps {
 
   public String getState() {
     return state;
+  }
+
+  public String getParent() {
+    return parent;
   }
 
   @Override

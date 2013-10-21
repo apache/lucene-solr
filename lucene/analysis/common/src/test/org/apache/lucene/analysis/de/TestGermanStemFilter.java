@@ -88,6 +88,6 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new GermanStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

@@ -80,9 +80,15 @@ public abstract class CoreAdminParams
   /** The shard range in solr cloud */
   public final static String SHARD_STATE = "shard.state";
 
+  /** The parent shard if applicable */
+  public final static String SHARD_PARENT = "shard.parent";
+
   /** The target core to which a split index should be written to
    * Multiple targetCores can be specified by multiple targetCore parameters */
   public final static String TARGET_CORE = "targetCore";
+
+  /** The hash ranges to be used to split a shard or an index */
+  public final static String RANGES = "ranges";
   
   public static final String ROLES = "roles";
   

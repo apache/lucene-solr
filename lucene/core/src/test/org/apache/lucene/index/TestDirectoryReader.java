@@ -1094,7 +1094,6 @@ public void testFilesOpenClose() throws IOException {
     File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
     tempDir.delete();
     Directory dir = newFSDirectory(tempDir);
-    System.out.println("dir=" + dir);
     assertFalse(DirectoryReader.indexExists(dir));
     dir.close();
   }

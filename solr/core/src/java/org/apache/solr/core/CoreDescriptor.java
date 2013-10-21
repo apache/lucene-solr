@@ -19,9 +19,11 @@ package org.apache.solr.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.PropertiesUtil;
 
@@ -56,6 +58,7 @@ public class CoreDescriptor {
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
+  public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
 
@@ -119,6 +122,9 @@ public class CoreDescriptor {
   /** The properties for this core, as available through getProperty() */
   protected final Properties coreProperties = new Properties();
 
+  /** The properties for this core, substitutable by resource loaders */
+  protected final Properties substitutableProperties = new Properties();
+
   /**
    * Create a new CoreDescriptor.
    * @param container       the CoreDescriptor's container
@@ -128,6 +134,19 @@ public class CoreDescriptor {
    */
   public CoreDescriptor(CoreContainer container, String name, String instanceDir,
                         Properties coreProps) {
+    this(container, name, instanceDir, coreProps, null);
+  }
+  
+  /**
+   * Create a new CoreDescriptor.
+   * @param container       the CoreDescriptor's container
+   * @param name            the CoreDescriptor's name
+   * @param instanceDir     a String containing the instanceDir
+   * @param coreProps       a Properties object of the properties for this core
+   * @param params          additional params
+   */
+  public CoreDescriptor(CoreContainer container, String name, String instanceDir,
+                        Properties coreProps, SolrParams params) {
 
     this.coreContainer = container;
 
@@ -160,10 +179,14 @@ public class CoreDescriptor {
     }
 
     loadExtraProperties();
+    buildSubstitutableProperties();
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (container.isZooKeeperAware()) {
       cloudDesc = new CloudDescriptor(name, coreProperties);
+      if (params != null) {
+        cloudDesc.setParams(params);
+      }
     }
     else {
       cloudDesc = null;
@@ -198,6 +221,20 @@ public class CoreDescriptor {
       } finally {
         IOUtils.closeQuietly(in);
       }
+    }
+  }
+
+  /**
+   * Create the properties object used by resource loaders, etc, for property
+   * substitution.  The default solr properties are prefixed with 'solr.core.', so,
+   * e.g., 'name' becomes 'solr.core.name'
+   */
+  protected void buildSubstitutableProperties() {
+    for (String propName : coreProperties.stringPropertyNames()) {
+      String propValue = coreProperties.getProperty(propName);
+      if (!isUserDefinedProperty(propName))
+        propName = SOLR_CORE_PROP_PREFIX + propName;
+      substitutableProperties.setProperty(propName, propValue);
     }
   }
 
@@ -243,12 +280,14 @@ public class CoreDescriptor {
    */
   public CoreDescriptor(String coreName, CoreDescriptor other) {
     this.coreContainer = other.coreContainer;
+    this.cloudDesc = other.cloudDesc;
     this.originalExtraProperties.putAll(other.originalExtraProperties);
     this.originalCoreProperties.putAll(other.originalCoreProperties);
     this.coreProperties.putAll(other.coreProperties);
+    this.substitutableProperties.putAll(other.substitutableProperties);
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
-    this.cloudDesc = other.cloudDesc;
+    this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
   }
 
   public String getPropertiesName() {
@@ -336,11 +375,11 @@ public class CoreDescriptor {
   }
 
   /**
-   * Returns all properties defined on this CoreDescriptor
-   * @return all properties defined on this CoreDescriptor
+   * Returns all substitutable properties defined on this CoreDescriptor
+   * @return all substitutable properties defined on this CoreDescriptor
    */
-  public Properties getCoreProperties() {
-    return coreProperties;
+  public Properties getSubstitutableProperties() {
+    return substitutableProperties;
   }
 
   @Override

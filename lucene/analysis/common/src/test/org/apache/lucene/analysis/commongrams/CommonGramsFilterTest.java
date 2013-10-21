@@ -48,6 +48,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     assertEquals("the", term.toString());
     assertTrue(cgf.incrementToken());
     assertEquals("the_s", term.toString());
+    cgf.close();
     
     wt.setReader(new StringReader(input));
     cgf.reset();
@@ -67,6 +68,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     assertEquals("How_the", term.toString());
     assertTrue(nsf.incrementToken());
     assertEquals("the_s", term.toString());
+    nsf.close();
     
     wt.setReader(new StringReader(input));
     nsf.reset();

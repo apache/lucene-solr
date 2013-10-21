@@ -177,6 +177,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
     int numIterations = TEST_NIGHTLY ? 7 : 3;
     for(int iter=0;iter<numIterations;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
       Directory dir = newDirectory();
 
       IndexWriter writer = new IndexWriter(
@@ -209,6 +212,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           }
       }
 
+      if (VERBOSE) {
+        System.out.println("\nTEST: now close");
+      }
       writer.close(false);
 
       // Make sure threads that are adding docs are not hung:

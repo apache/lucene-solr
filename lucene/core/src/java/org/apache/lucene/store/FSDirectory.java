@@ -110,7 +110,7 @@ import org.apache.lucene.util.IOUtils;
  *
  * @see Directory
  */
-public abstract class FSDirectory extends Directory {
+public abstract class FSDirectory extends BaseDirectory {
 
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed

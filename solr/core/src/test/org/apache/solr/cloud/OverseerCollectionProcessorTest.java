@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -101,8 +102,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }
     
     @Override
-    protected boolean amILeader() {
-      return true;
+    protected LeaderStatus amILeader() {
+      return LeaderStatus.YES;
     }
     
   }

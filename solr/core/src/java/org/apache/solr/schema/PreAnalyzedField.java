@@ -252,9 +252,11 @@ public class PreAnalyzedField extends FieldType {
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
     private Reader lastReader;
+    private Reader input; // hides original input since we replay saved states (and dont reuse)
     
     public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) {
       super(reader);
+      this.input = reader;
       this.parser = parser;
     }
     

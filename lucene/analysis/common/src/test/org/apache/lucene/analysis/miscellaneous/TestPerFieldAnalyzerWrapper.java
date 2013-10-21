@@ -37,23 +37,29 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
-    TokenStream tokenStream = analyzer.tokenStream("field", text);
-    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try (TokenStream tokenStream = analyzer.tokenStream("field", text)) {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("WhitespaceAnalyzer does not lowercase",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("WhitespaceAnalyzer does not lowercase",
                  "Qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    }
 
-    tokenStream = analyzer.tokenStream("special", text);
-    termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
+    try (TokenStream tokenStream = analyzer.tokenStream("special", text)) {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
 
-    assertTrue(tokenStream.incrementToken());
-    assertEquals("SimpleAnalyzer lowercases",
+      assertTrue(tokenStream.incrementToken());
+      assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
                  termAtt.toString());
+      assertFalse(tokenStream.incrementToken());
+      tokenStream.end();
+    }
   }
   
   public void testCharFilters() throws Exception {

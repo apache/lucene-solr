@@ -27,6 +27,11 @@
   
   <path id="analysis.extras.lucene.libs">
     <pathelement location="${analyzers-icu.jar}"/>
+    <!-- 
+      Although the smartcn, stempel, and morfologik jars are not dependencies of
+      code in the analysis-extras contrib, they must remain here in order to
+      populate the Solr distribution
+     -->
     <pathelement location="${analyzers-smartcn.jar}"/>
     <pathelement location="${analyzers-stempel.jar}"/>
     <pathelement location="${analyzers-morfologik.jar}"/>
@@ -38,14 +43,39 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="module-jars-to-solr"
-          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik">
+
+  <!-- 
+    Although the smartcn, stempel, and morfologik jars are not dependencies of
+    code in the analysis-extras contrib, they must remain here in order to
+    populate the Solr distribution
+   -->
+  <target name="module-jars-to-solr" 
+          depends="-module-jars-to-solr-not-for-package,-module-jars-to-solr-package"/>
+  <target name="-module-jars-to-solr-not-for-package" unless="called.from.create-package">
+    <antcall inheritall="true">
+      <target name="jar-analyzers-icu"/>
+      <target name="jar-analyzers-smartcn"/>
+      <target name="jar-analyzers-stempel"/>
+      <target name="jar-analyzers-morfologik"/>
+    </antcall>
+    <property name="analyzers-icu.uptodate" value="true"/> <!-- compile-time dependency -->
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <path refid="analysis.extras.lucene.libs" />
     </copy>
   </target>
+  <target name="-module-jars-to-solr-package" if="called.from.create-package">
+    <antcall target="-unpack-lucene-tgz" inheritall="true"/>
+    <pathconvert property="relative.analysis.extras.lucene.libs" pathsep=",">
+      <path refid="analysis.extras.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
+    <mkdir dir="${build.dir}/lucene-libs"/>
+    <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.analysis.extras.lucene.libs}"/>
+    </copy>
+  </target>
 
-  <target name="compile-core" depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="jar-analyzers-icu, solr-contrib-build.compile-core"/>
   <target name="dist" depends="module-jars-to-solr, common-solr.dist"/>
 </project>

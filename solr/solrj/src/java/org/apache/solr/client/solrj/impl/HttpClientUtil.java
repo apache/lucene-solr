@@ -100,7 +100,9 @@ public class HttpClientUtil {
    */
   public static HttpClient createClient(final SolrParams params) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
-    logger.info("Creating new http client, config:" + config);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Creating new http client, config:" + config);
+    }
     final DefaultHttpClient httpClient = new SystemDefaultHttpClient();
     configureClient(httpClient, config);
     return httpClient;

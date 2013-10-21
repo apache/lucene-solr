@@ -71,6 +71,9 @@ public final class IndexUpgrader {
    *  command-line. */
   @SuppressWarnings("deprecation")
   public static void main(String[] args) throws IOException {
+    parseArgs(args).upgrade();
+  }
+  static IndexUpgrader parseArgs(String[] args) throws IOException {
     String path = null;
     boolean deletePriorCommits = false;
     PrintStream out = null;
@@ -82,8 +85,6 @@ public final class IndexUpgrader {
         deletePriorCommits = true;
       } else if ("-verbose".equals(arg)) {
         out = System.out;
-      } else if (path == null) {
-        path = arg;
       } else if ("-dir-impl".equals(arg)) {
         if (i == args.length - 1) {
           System.out.println("ERROR: missing value for -dir-impl option");
@@ -91,6 +92,8 @@ public final class IndexUpgrader {
         }
         i++;
         dirImpl = args[i];
+      } else if (path == null) {
+        path = arg;
       }else {
         printUsage();
       }
@@ -106,7 +109,7 @@ public final class IndexUpgrader {
     } else {
       dir = CommandLineUtil.newFSDirectory(dirImpl, new File(path));
     }
-    new IndexUpgrader(dir, Version.LUCENE_CURRENT, out, deletePriorCommits).upgrade();
+    return new IndexUpgrader(dir, Version.LUCENE_CURRENT, out, deletePriorCommits);
   }
   
   private final Directory dir;
@@ -123,7 +126,10 @@ public final class IndexUpgrader {
    * {@code matchVersion}. You have the possibility to upgrade indexes with multiple commit points by removing
    * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
   public IndexUpgrader(Directory dir, Version matchVersion, PrintStream infoStream, boolean deletePriorCommits) {
-    this(dir, new IndexWriterConfig(matchVersion, null).setInfoStream(infoStream), deletePriorCommits);
+    this(dir, new IndexWriterConfig(matchVersion, null), deletePriorCommits);
+    if (null != infoStream) {
+      this.iwc.setInfoStream(infoStream);
+    }
   }
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given

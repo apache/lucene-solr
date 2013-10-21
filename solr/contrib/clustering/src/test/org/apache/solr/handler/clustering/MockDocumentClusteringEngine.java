@@ -26,14 +26,12 @@ import org.apache.solr.search.DocSet;
  **/
 public class MockDocumentClusteringEngine extends DocumentClusteringEngine {
   @Override
-  public NamedList cluster(DocSet docs, SolrParams solrParams) {
-    NamedList result = new NamedList();
-    return result;
+  public NamedList<?> cluster(DocSet docs, SolrParams solrParams) {
+    return new NamedList<Object>();
   }
 
   @Override
-  public NamedList cluster(SolrParams solrParams) {
-    NamedList result = new NamedList();
-    return result;
+  public NamedList<?> cluster(SolrParams solrParams) {
+    return new NamedList<Object>();
   }
 }

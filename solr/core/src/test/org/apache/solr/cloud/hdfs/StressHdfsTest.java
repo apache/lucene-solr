@@ -115,26 +115,30 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrServer client : clients) {
-      HttpSolrServer c = new HttpSolrServer(getBaseUrl(client) + "/delete_data_dir");
-      c.add(getDoc("id", i++));
-      if (random().nextBoolean()) c.add(getDoc("id", i++));
-      if (random().nextBoolean()) c.add(getDoc("id", i++));
-      if (random().nextBoolean()) {
-        c.commit();
-      } else {
-        c.commit(true, true, true);
+      HttpSolrServer c = new HttpSolrServer(getBaseUrl(client)
+          + "/delete_data_dir");
+      try {
+        c.add(getDoc("id", i++));
+        if (random().nextBoolean()) c.add(getDoc("id", i++));
+        if (random().nextBoolean()) c.add(getDoc("id", i++));
+        if (random().nextBoolean()) {
+          c.commit();
+        } else {
+          c.commit(true, true, true);
+        }
+        
+        c.query(new SolrQuery("id:" + i));
+        c.setSoTimeout(60000);
+        c.setConnectionTimeout(30000);
+        NamedList<Object> response = c.query(
+            new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+        NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
+        String dataDir = (String) ((NamedList<Object>) coreInfo
+            .get("directory")).get("data");
+        dataDirs.add(dataDir);
+      } finally {
+        c.shutdown();
       }
-      
-      c.query(new SolrQuery("id:" + i));
-      c.setSoTimeout(30000);
-      c.setConnectionTimeout(30000);
-      NamedList<Object> response = c.query(
-          new SolrQuery().setRequestHandler("/admin/system")).getResponse();
-      NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
-      String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory"))
-          .get("data");
-      dataDirs.add(dataDir);
-      c.shutdown();
     }
     
     if (random().nextBoolean()) {

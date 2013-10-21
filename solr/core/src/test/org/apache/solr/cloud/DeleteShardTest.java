@@ -101,18 +101,18 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
     deleteShard(SHARD1);
 
-    confirmShardDeletion();
+    confirmShardDeletion(SHARD1);
   }
 
-  protected void confirmShardDeletion() throws SolrServerException, KeeperException,
+  protected void confirmShardDeletion(String shard) throws SolrServerException, KeeperException,
       InterruptedException {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    ClusterState clusterState = null;
+    ClusterState clusterState = zkStateReader.getClusterState();
     int counter = 10;
     while (counter-- > 0) {
       zkStateReader.updateClusterState(true);
       clusterState = zkStateReader.getClusterState();
-      if (clusterState.getSlice("collection1", SHARD1) == null) {
+      if (clusterState.getSlice("collection1", shard) == null) {
         break;
       }
       Thread.sleep(1000);
@@ -138,7 +138,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     baseServer.setConnectionTimeout(15000);
-    baseServer.setSoTimeout((int) (CollectionsHandler.DEFAULT_ZK_TIMEOUT));
+    baseServer.setSoTimeout(60000);
     baseServer.request(request);
   }
 

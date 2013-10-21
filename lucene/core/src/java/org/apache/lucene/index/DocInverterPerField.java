@@ -92,13 +92,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.position += analyzed ? docState.analyzer.getPositionIncrementGap(fieldInfo.name) : 0;
         }
 
-        final TokenStream stream = field.tokenStream(docState.analyzer);
-        // reset the TokenStream to the first token
-        stream.reset();
-
-        boolean success2 = false;
-
-        try {
+        try (TokenStream stream = field.tokenStream(docState.analyzer)) {
+          // reset the TokenStream to the first token
+          stream.reset();
           boolean hasMoreTokens = stream.incrementToken();
 
           fieldState.attributeSource = stream;
@@ -175,15 +171,10 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
           // trigger streams to perform end-of-stream operations
           stream.end();
-
+          // TODO: maybe add some safety? then again, its already checked 
+          // when we come back around to the field...
+          fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
-          success2 = true;
-        } finally {
-          if (!success2) {
-            IOUtils.closeWhileHandlingException(stream);
-          } else {
-            stream.close();
-          }
         }
 
         fieldState.offset += analyzed ? docState.analyzer.getOffsetGap(fieldInfo.name) : 0;

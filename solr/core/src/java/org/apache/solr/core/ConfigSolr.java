@@ -55,16 +55,13 @@ public abstract class ConfigSolr {
 
     try {
       if (!configFile.exists()) {
-        log.info("{} does not exist, using default configuration", configFile.getAbsolutePath());
-        inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(Charsets.UTF_8));
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
       }
       else {
         inputStream = new FileInputStream(configFile);
       }
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ByteStreams.copy(inputStream, baos);
-      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
-      return fromInputStream(loader, new ByteArrayInputStream(baos.toByteArray()), configFile, originalXml);
+      return fromInputStream(loader, inputStream);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -76,13 +73,17 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(String xml) {
-    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)), null, xml);
+    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
   }
 
-  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is, File file, String originalXml) {
+  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
     try {
-      Config config = new Config(loader, null, new InputSource(is), null, false);
-      return fromConfig(config, file, originalXml);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ByteStreams.copy(is, baos);
+      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
+      ByteArrayInputStream dup = new ByteArrayInputStream(baos.toByteArray());
+      Config config = new Config(loader, null, new InputSource(dup), null, false);
+      return fromConfig(config, originalXml);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -93,9 +94,9 @@ public abstract class ConfigSolr {
     return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
   }
 
-  public static ConfigSolr fromConfig(Config config, File file, String originalXml) {
+  public static ConfigSolr fromConfig(Config config, String originalXml) {
     boolean oldStyle = (config.getNode("solr/cores", false) != null);
-    return oldStyle ? new ConfigSolrXmlOld(config, file, originalXml)
+    return oldStyle ? new ConfigSolrXmlOld(config, originalXml)
                     : new ConfigSolrXml(config);
   }
   
@@ -188,7 +189,7 @@ public abstract class ConfigSolr {
 
   public LogWatcherConfig getLogWatcherConfig() {
     return new LogWatcherConfig(
-        getBool(CfgProp.SOLR_LOGGING_ENABLED, false),
+        getBool(CfgProp.SOLR_LOGGING_ENABLED, true),
         get(CfgProp.SOLR_LOGGING_CLASS, null),
         get(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null),
         getInt(CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50)

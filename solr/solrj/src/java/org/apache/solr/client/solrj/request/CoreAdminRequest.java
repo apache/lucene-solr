@@ -59,6 +59,7 @@ public class CoreAdminRequest extends SolrRequest
     private String coreNodeName;
     private Boolean loadOnStartup;
     private Boolean isTransient;
+    private String collectionConfigName;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -76,6 +77,7 @@ public class CoreAdminRequest extends SolrRequest
     public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
     public void setIsTransient(Boolean isTransient) { this.isTransient = isTransient; }
     public void setIsLoadOnStartup(Boolean loadOnStartup) { this.loadOnStartup = loadOnStartup;}
+    public void setCollectionConfigName(String name) { this.collectionConfigName = name;}
 
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
@@ -88,7 +90,8 @@ public class CoreAdminRequest extends SolrRequest
     public String getCoreNodeName() { return coreNodeName; }
     public Boolean getIsLoadOnStartup() { return loadOnStartup; }
     public Boolean getIsTransient() { return isTransient; }
-
+    public String getCollectionConfigName() { return collectionConfigName;}
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -137,6 +140,11 @@ public class CoreAdminRequest extends SolrRequest
       if (loadOnStartup != null) {
         params.set(CoreAdminParams.LOAD_ON_STARTUP, loadOnStartup);
       }
+      
+      if (collectionConfigName != null) {
+        params.set("collection.configName", collectionConfigName);
+      }
+      
       return params;
     }
 

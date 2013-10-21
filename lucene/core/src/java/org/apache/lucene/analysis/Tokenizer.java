@@ -30,21 +30,28 @@ import java.io.IOException;
   call {@link AttributeSource#clearAttributes()} before
   setting attributes.
  */
-public abstract class Tokenizer extends TokenStream {
+public abstract class Tokenizer extends TokenStream {  
   /** The text source for this Tokenizer. */
-  protected Reader input;
+  protected Reader input = ILLEGAL_STATE_READER;
+  
+  /** Pending reader: not actually assigned to input until reset() */
+  private Reader inputPending = ILLEGAL_STATE_READER;
 
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
-    assert input != null: "input must not be null";
-    this.input = input;
+    if (input == null) {
+      throw new NullPointerException("input must not be null");
+    }
+    this.inputPending = input;
   }
   
   /** Construct a token stream processing the given input using the given AttributeFactory. */
   protected Tokenizer(AttributeFactory factory, Reader input) {
     super(factory);
-    assert input != null: "input must not be null";
-    this.input = input;
+    if (input == null) {
+      throw new NullPointerException("input must not be null");
+    }
+    this.inputPending = input;
   }
 
   /**
@@ -56,12 +63,10 @@ public abstract class Tokenizer extends TokenStream {
    */
   @Override
   public void close() throws IOException {
-    if (input != null) {
-      input.close();
-      // LUCENE-2387: don't hold onto Reader after close, so
-      // GC can reclaim
-      input = null;
-    }
+    input.close();
+    // LUCENE-2387: don't hold onto Reader after close, so
+    // GC can reclaim
+    inputPending = input = ILLEGAL_STATE_READER;
   }
   
   /** Return the corrected offset. If {@link #input} is a {@link CharFilter} subclass
@@ -71,7 +76,6 @@ public abstract class Tokenizer extends TokenStream {
    * @see CharFilter#correctOffset
    */
   protected final int correctOffset(int currentOff) {
-    assert input != null: "this tokenizer is closed";
     return (input instanceof CharFilter) ? ((CharFilter) input).correctOffset(currentOff) : currentOff;
   }
 
@@ -79,14 +83,37 @@ public abstract class Tokenizer extends TokenStream {
    *  analyzer (in its tokenStream method) will use
    *  this to re-use a previously created tokenizer. */
   public final void setReader(Reader input) throws IOException {
-    assert input != null: "input must not be null";
-    this.input = input;
+    if (input == null) {
+      throw new NullPointerException("input must not be null");
+    } else if (this.input != ILLEGAL_STATE_READER) {
+      throw new IllegalStateException("TokenStream contract violation: close() call missing");
+    }
+    this.inputPending = input;
     assert setReaderTestPoint();
   }
   
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    input = inputPending;
+    inputPending = ILLEGAL_STATE_READER;
+  }
+
   // only used by assert, for testing
   boolean setReaderTestPoint() {
     return true;
   }
+  
+  private static final Reader ILLEGAL_STATE_READER = new Reader() {
+    @Override
+    public int read(char[] cbuf, int off, int len) {
+      throw new IllegalStateException("TokenStream contract violation: reset()/close() call missing, " +
+          "reset() called multiple times, or subclass does not call super.reset(). " +
+          "Please see Javadocs of TokenStream class for more information about the correct consuming workflow.");
+    }
+
+    @Override
+    public void close() {} 
+  };
 }
 

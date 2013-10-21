@@ -48,7 +48,7 @@
     <slf4j.version>1.6.6</slf4j.version>
     <log4j.version>1.2.16</log4j.version>
     <tika.version>1.4</tika.version>
-    <httpcomponents.version>4.2.3</httpcomponents.version>
+    <httpcomponents.version>4.2.6</httpcomponents.version>
     <commons-io.version>2.1</commons-io.version>
     <restlet.version>2.1.1</restlet.version>
     <hadoop.version>2.0.5-alpha</hadoop.version>
@@ -262,6 +262,38 @@
           <exclusion>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr-runtime</artifactId>
+        <version>3.5</version>
+        <!-- these are dependencies to compile antlr-runtime itself -->
+        <exclusions>
+          <exclusion>
+            <groupId>antlr</groupId>
+            <artifactId>antlr</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.antlr</groupId>
+            <artifactId>stringtemplate</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>4.1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -600,23 +632,10 @@
           <version>2.4</version>
           <configuration>
             <archive>
-              <!-- This section should be *exactly* the same under -->
-              <!-- maven-jar-plugin and maven-war-plugin.          -->
-              <!-- If you make changes here, make the same changes -->
-              <!-- in the other location as well.                  -->
-              <manifestEntries>
-                <Extension-Name>${project.groupId}</Extension-Name>
-                <Implementation-Title>${project.groupId}</Implementation-Title>
-                <Specification-Title>${project.name}</Specification-Title>
-                <!-- spec version must match "digit+{.digit+}*" -->
-                <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
-                <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
-                <!-- impl version can be any string -->
-                <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
-                <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
-                <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
-                <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
-              </manifestEntries>
+              <manifest>
+                <addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>false</addDefaultImplementationEntries>
+              </manifest>
             </archive>
           </configuration>
         </plugin>
@@ -681,7 +700,7 @@
           <configuration>
             <archive>
               <!-- This section should be *exactly* the same under -->
-              <!-- maven-jar-plugin and maven-war-plugin.          -->
+              <!-- maven-bundle-plugin and maven-war-plugin.          -->
               <!-- If you make changes here, make the same changes -->
               <!-- in the other location as well.                  -->
               <manifestEntries>
@@ -694,6 +713,7 @@
                 <!-- impl version can be any string -->
                 <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
                 <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+                <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
                 <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
                 <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
               </manifestEntries>
@@ -806,6 +826,23 @@
         <configuration>
           <instructions>
             <Export-Package>*;-split-package:=merge-first</Export-Package>
+            
+            <!-- This section should be *exactly* the same under -->
+            <!-- maven-bundle-plugin and maven-war-plugin.          -->
+            <!-- If you make changes here, make the same changes -->
+            <!-- in the other location as well.                  -->
+            <Extension-Name>${project.groupId}</Extension-Name>
+            <Implementation-Title>${project.groupId}</Implementation-Title>
+            <Specification-Title>${project.name}</Specification-Title>
+            <!-- spec version must match "digit+{.digit+}*" -->
+            <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
+            <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
+            <!-- impl version can be any string -->
+            <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+            <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+            <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
+            <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
+            <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
           </instructions>
         </configuration>
         <executions>

@@ -17,18 +17,23 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util.MergedIterator;
 
 /**
  * FieldPhraseList has a list of WeightedPhraseInfo that is used by FragListBuilder
  * to create a FieldFragList object.
  */
 public class FieldPhraseList {
-
+  /**
+   * List of non-overlapping WeightedPhraseInfo objects.
+   */
   LinkedList<WeightedPhraseInfo> phraseList = new LinkedList<WeightedPhraseInfo>();
   
   /**
@@ -60,46 +65,98 @@ public class FieldPhraseList {
   public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
-    QueryPhraseMap qpm = fieldQuery.getRootMap(field);
-    if (qpm != null) {
-      LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
-      extractPhrases(fieldTermStack.termList, qpm, phraseCandidate, 0);
-      assert phraseCandidate.size() == 0;
+    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
+    QueryPhraseMap currMap = null;
+    QueryPhraseMap nextMap = null;
+    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) )
+    {      
+      phraseCandidate.clear();
+
+      TermInfo ti = fieldTermStack.pop();
+      currMap = fieldQuery.getFieldTermMap( field, ti.getText() );
+
+      // if not found, discard top TermInfo from stack, then try next element
+      if( currMap == null ) continue;
+      
+      // if found, search the longest phrase
+      phraseCandidate.add( ti );
+      while( true ){
+        ti = fieldTermStack.pop();
+        nextMap = null;
+        if( ti != null )
+          nextMap = currMap.getTermMap( ti.getText() );
+        if( ti == null || nextMap == null ){
+          if( ti != null ) 
+            fieldTermStack.push( ti );
+          if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
+            addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
+          }
+          else{
+            while( phraseCandidate.size() > 1 ){
+              fieldTermStack.push( phraseCandidate.removeLast() );
+              currMap = fieldQuery.searchPhrase( field, phraseCandidate );
+              if( currMap != null ){
+                addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
+                break;
+              }
+            }
+          }
+          break;
+        }
+        else{
+          phraseCandidate.add( ti );
+          currMap = nextMap;
+        }
+      }
     }
   }
 
-  void extractPhrases(LinkedList<TermInfo> terms, QueryPhraseMap currMap, LinkedList<TermInfo> phraseCandidate, int longest) {
-    if (terms.isEmpty()) {
-      if (longest > 0) {
-        addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate.subList(0, longest), currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
-      }
+  /**
+   * Merging constructor.
+   *
+   * @param toMerge FieldPhraseLists to merge to build this one
+   */
+  public FieldPhraseList( FieldPhraseList[] toMerge ) {
+    // Merge all overlapping WeightedPhraseInfos
+    // Step 1.  Sort by startOffset, endOffset, and boost, in that order.
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    Iterator< WeightedPhraseInfo >[] allInfos = new Iterator[ toMerge.length ];
+    int index = 0;
+    for ( FieldPhraseList fplToMerge : toMerge ) {
+      allInfos[ index++ ] = fplToMerge.phraseList.iterator();
+    }
+    MergedIterator< WeightedPhraseInfo > itr = new MergedIterator< WeightedPhraseInfo >( false, allInfos );
+    // Step 2.  Walk the sorted list merging infos that overlap
+    phraseList = new LinkedList< WeightedPhraseInfo >();
+    if ( !itr.hasNext() ) {
       return;
     }
-    ArrayList<TermInfo> samePositionTerms = new ArrayList<TermInfo>();
-    do {
-      samePositionTerms.add(terms.pop());
-    } while (!terms.isEmpty() && terms.get(0).getPosition() == samePositionTerms.get(0).getPosition());
-
-    // try all next terms at the same position
-    for (TermInfo nextTerm : samePositionTerms) {
-      QueryPhraseMap nextMap = currMap.getTermMap(nextTerm.getText());
-      if (nextMap != null) {
-        phraseCandidate.add(nextTerm);
-        int l = longest;
-        if(nextMap.isValidTermOrPhrase( phraseCandidate ) ){
-          l = phraseCandidate.size();
+    List< WeightedPhraseInfo > work = new ArrayList< WeightedPhraseInfo >();
+    WeightedPhraseInfo first = itr.next();
+    work.add( first );
+    int workEndOffset = first.getEndOffset();
+    while ( itr.hasNext() ) {
+      WeightedPhraseInfo current = itr.next();
+      if ( current.getStartOffset() <= workEndOffset ) {
+        workEndOffset = Math.max( workEndOffset, current.getEndOffset() );
+        work.add( current );
+      } else {
+        if ( work.size() == 1 ) {
+          phraseList.add( work.get( 0 ) );
+          work.set( 0, current );
+        } else {
+          phraseList.add( new WeightedPhraseInfo( work ) );
+          work.clear();
+          work.add( current );
         }
-        extractPhrases(terms, nextMap, phraseCandidate, l);
-        phraseCandidate.removeLast();
+        workEndOffset = current.getEndOffset();
       }
     }
-
-    // ignore the next term
-    extractPhrases(terms, currMap, phraseCandidate, longest);
-
-    // add terms back
-    for (TermInfo nextTerm : samePositionTerms) {
-      terms.push(nextTerm);
+    if ( work.size() == 1 ) {
+      phraseList.add( work.get( 0 ) );
+    } else {
+      phraseList.add( new WeightedPhraseInfo( work ) );
+      work.clear();
     }
   }
 
@@ -118,9 +175,7 @@ public class FieldPhraseList {
   /**
    * Represents the list of term offsets and boost for some text
    */
-  public static class WeightedPhraseInfo {
-
-    private String text;  // unnecessary member, just exists for debugging purpose
+  public static class WeightedPhraseInfo implements Comparable< WeightedPhraseInfo > {
     private List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                             // but if position-gap > 1 and slop > 0 then size() could be greater than 1
     private float boost;  // query boost
@@ -129,10 +184,15 @@ public class FieldPhraseList {
     private ArrayList<TermInfo> termsInfos;
     
     /**
+     * Text of the match, calculated on the fly.  Use for debugging only.
      * @return the text
      */
     public String getText() {
-      return text;
+      StringBuilder text = new StringBuilder();
+      for ( TermInfo ti: termsInfos ) {
+        text.append( ti.getText() );
+      }
+      return text.toString();
     }
 
     /**
@@ -156,11 +216,11 @@ public class FieldPhraseList {
       return termsInfos;
     }
 
-    public WeightedPhraseInfo( List<TermInfo> terms, float boost ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
     
-    public WeightedPhraseInfo( List<TermInfo> terms, float boost, int seqnum ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
       this.seqnum = seqnum;
       
@@ -171,15 +231,11 @@ public class FieldPhraseList {
       TermInfo ti = terms.get( 0 );
       termsOffsets.add( new Toffs( ti.getStartOffset(), ti.getEndOffset() ) );
       if( terms.size() == 1 ){
-        text = ti.getText();
         return;
       }
-      StringBuilder sb = new StringBuilder();
-      sb.append( ti.getText() );
       int pos = ti.getPosition();
       for( int i = 1; i < terms.size(); i++ ){
         ti = terms.get( i );
-        sb.append( ti.getText() );
         if( ti.getPosition() - pos == 1 ){
           Toffs to = termsOffsets.get( termsOffsets.size() - 1 );
           to.setEndOffset( ti.getEndOffset() );
@@ -189,7 +245,50 @@ public class FieldPhraseList {
         }
         pos = ti.getPosition();
       }
-      text = sb.toString();
+    }
+
+    /**
+     * Merging constructor.  Note that this just grabs seqnum from the first info.
+     */
+    public WeightedPhraseInfo( Collection< WeightedPhraseInfo > toMerge ) {
+      // Pretty much the same idea as merging FieldPhraseLists:
+      // Step 1.  Sort by startOffset, endOffset
+      //          While we are here merge the boosts and termInfos
+      Iterator< WeightedPhraseInfo > toMergeItr = toMerge.iterator();
+      if ( !toMergeItr.hasNext() ) {
+        throw new IllegalArgumentException( "toMerge must contain at least one WeightedPhraseInfo." );
+      }
+      WeightedPhraseInfo first = toMergeItr.next();
+      @SuppressWarnings( { "rawtypes", "unchecked" } )
+      Iterator< Toffs >[] allToffs = new Iterator[ toMerge.size() ];
+      termsInfos = new ArrayList< TermInfo >();
+      seqnum = first.seqnum;
+      boost = first.boost;
+      allToffs[ 0 ] = first.termsOffsets.iterator();
+      int index = 1;
+      while ( toMergeItr.hasNext() ) {
+        WeightedPhraseInfo info = toMergeItr.next();
+        boost += info.boost;
+        termsInfos.addAll( info.termsInfos );
+        allToffs[ index++ ] = info.termsOffsets.iterator();
+      }
+      // Step 2.  Walk the sorted list merging overlaps
+      MergedIterator< Toffs > itr = new MergedIterator< Toffs >( false, allToffs );
+      termsOffsets = new ArrayList< Toffs >();
+      if ( !itr.hasNext() ) {
+        return;
+      }
+      Toffs work = itr.next();
+      while ( itr.hasNext() ) {
+        Toffs current = itr.next();
+        if ( current.startOffset <= work.endOffset ) {
+          work.endOffset = Math.max( work.endOffset, current.endOffset );
+        } else {
+          termsOffsets.add( work );
+          work = current;
+        }
+      }
+      termsOffsets.add( work );
     }
     
     public int getStartOffset(){
@@ -199,7 +298,7 @@ public class FieldPhraseList {
     public int getEndOffset(){
       return termsOffsets.get( termsOffsets.size() - 1 ).endOffset;
     }
-    
+
     public boolean isOffsetOverlap( WeightedPhraseInfo other ){
       int so = getStartOffset();
       int eo = getEndOffset();
@@ -215,7 +314,7 @@ public class FieldPhraseList {
     @Override
     public String toString(){
       StringBuilder sb = new StringBuilder();
-      sb.append( text ).append( '(' ).append( boost ).append( ")(" );
+      sb.append( getText() ).append( '(' ).append( boost ).append( ")(" );
       for( Toffs to : termsOffsets ){
         sb.append( to );
       }
@@ -230,10 +329,58 @@ public class FieldPhraseList {
       return seqnum;
     }
 
+    @Override
+    public int compareTo( WeightedPhraseInfo other ) {
+      int diff = getStartOffset() - other.getStartOffset();
+      if ( diff != 0 ) {
+        return diff;
+      }
+      diff = getEndOffset() - other.getEndOffset();
+      if ( diff != 0 ) {
+        return diff;
+      }
+      return (int) Math.signum( getBoost() - other.getBoost() );
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + getStartOffset();
+      result = prime * result + getEndOffset();
+      long b = Double.doubleToLongBits( getBoost() );
+      result = prime * result + ( int )( b ^ ( b >>> 32 ) );
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      WeightedPhraseInfo other = (WeightedPhraseInfo) obj;
+      if (getStartOffset() != other.getStartOffset()) {
+        return false;
+      }
+      if (getEndOffset() != other.getEndOffset()) {
+        return false;
+      }
+      if (getBoost() != other.getBoost()) {
+        return false;
+      }
+      return true;
+    }
+
     /**
      * Term offsets (start + end)
      */
-    public static class Toffs {
+    public static class Toffs implements Comparable< Toffs > {
       private int startOffset;
       private int endOffset;
       public Toffs( int startOffset, int endOffset ){
@@ -248,6 +395,42 @@ public class FieldPhraseList {
       }
       public int getEndOffset(){
         return endOffset;
+      }
+      @Override
+      public int compareTo( Toffs other ) {
+        int diff = getStartOffset() - other.getStartOffset();
+        if ( diff != 0 ) {
+          return diff;
+        }
+        return getEndOffset() - other.getEndOffset();
+      }
+      @Override
+      public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + getStartOffset();
+        result = prime * result + getEndOffset();
+        return result;
+      }
+      @Override
+      public boolean equals(Object obj) {
+        if (this == obj) {
+          return true;
+        }
+        if (obj == null) {
+          return false;
+        }
+        if (getClass() != obj.getClass()) {
+          return false;
+        }
+        Toffs other = (Toffs) obj;
+        if (getStartOffset() != other.getStartOffset()) {
+          return false;
+        }
+        if (getEndOffset() != other.getEndOffset()) {
+          return false;
+        }
+        return true;
       }
       @Override
       public String toString(){

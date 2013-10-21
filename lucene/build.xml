@@ -169,6 +169,11 @@
     </license-check-macro>
   </target>
 
+  <target name="check-lib-versions" depends="compile-tools,resolve,load-custom-tasks"
+          description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
+    <lib-versions-check-macro dir="${common.dir}/.." centralized.versions.file="${common.dir}/ivy-versions.properties"/>
+  </target>
+
   <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
 
   <!-- TODO: Make the forbidden API checks per module! -->
@@ -283,6 +288,7 @@
     <!-- codecs: problems -->
     <!-- core: problems -->
     <check-missing-javadocs dir="build/docs/demo" level="method"/>
+    <check-missing-javadocs dir="build/docs/expressions" level="method"/>
     <!-- facet: problems -->
     <!-- grouping: problems -->
     <!-- highlighter: problems -->
@@ -595,6 +601,12 @@
   <target name="jar" depends="jar-core,jar-test-framework"
           description="Jars core, codecs, test-framework, and all modules">
     <modules-crawl target="jar-core"/>
+  </target>
+
+  <target name="jar-src" description="create source jars for all modules">
+    <ant dir="${common.dir}/core" target="jar-src" inheritAll="false" />
+    <ant dir="${common.dir}/test-framework" target="jar-src" inheritAll="false" />
+    <modules-crawl target="jar-src"/>
   </target>
 
   <target name="get-jenkins-line-docs" unless="enwiki.exists">

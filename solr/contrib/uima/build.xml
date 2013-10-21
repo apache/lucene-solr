@@ -26,15 +26,34 @@
 
   <import file="../contrib-build.xml"/>
   
-  <path id="classpath">
+  <path id="uima.lucene.libs">
     <pathelement path="${analyzers-uima.jar}"/>
+  </path>
+
+  <path id="classpath">
+    <path refid="uima.lucene.libs"/>
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="module-jars-to-solr" depends="jar-analyzers-uima">
+  <target name="module-jars-to-solr"
+          depends="-module-jars-to-solr-not-for-package,-module-jars-to-solr-package"/>
+  <target name="-module-jars-to-solr-not-for-package" unless="called.from.create-package">
+    <antcall target="jar-analyzers-uima" inheritall="true"/>
+    <property name="analyzers-uima.uptodate" value="true"/>
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${analyzers-uima.jar}"/>
+    </copy>
+  </target>
+  <target name="-module-jars-to-solr-package" if="called.from.create-package">
+    <antcall target="-unpack-lucene-tgz" inheritall="true"/>
+    <pathconvert property="relative.uima.lucene.libs" pathsep=",">
+      <path refid="uima.lucene.libs"/>
+      <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+    </pathconvert>
+    <mkdir dir="${build.dir}/lucene-libs"/>
+    <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.uima.lucene.libs}"/>
     </copy>
   </target>
 

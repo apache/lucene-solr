@@ -21,6 +21,8 @@
 
   <property name="local-maven2-dir" value="${user.home}/.m2/repository/" />
   
+  <properties file="${ivy.settings.dir}/ivy-versions.properties" override="false"/>
+  
   <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-shared.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
@@ -33,7 +35,10 @@
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
 
     <!-- you might need to tweak this from china so it works -->
-    <ibiblio name="working-chinese-mirror" root="http://mirror.netcologne.de/maven2" m2compatible="true" />
+    <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
+    
+    <!-- temporary to try Clover 3.2.0 snapshots, see https://issues.apache.org/jira/browse/LUCENE-5243, https://jira.atlassian.com/browse/CLOV-1368 -->
+    <ibiblio name="atlassian-clover-snapshots" root="https://maven.atlassian.com/content/repositories/atlassian-public-snapshot" m2compatible="true" />
 
     <!--
     <filesystem name="local-maven-2" m2compatible="true" local="true">
@@ -50,6 +55,7 @@
       <resolver ref="main"/>
       <resolver ref="sonatype-releases" />
       <resolver ref="maven.restlet.org" />
+      <resolver ref="atlassian-clover-snapshots" />
       <resolver ref="working-chinese-mirror" />
     </chain>
   </resolvers>

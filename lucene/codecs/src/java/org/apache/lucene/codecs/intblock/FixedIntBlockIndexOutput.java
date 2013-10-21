@@ -24,6 +24,7 @@ package org.apache.lucene.codecs.intblock;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.sep.IntIndexOutput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 
 /** Abstract base class that writes fixed-size blocks of ints
@@ -51,7 +52,7 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
   protected abstract void flushBlock() throws IOException;
 
   @Override
-  public IntIndexOutput.Index index() throws IOException {
+  public IntIndexOutput.Index index() {
     return new Index();
   }
 
@@ -79,7 +80,7 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
     }
 
     @Override
-    public void write(IndexOutput indexOut, boolean absolute) throws IOException {
+    public void write(DataOutput indexOut, boolean absolute) throws IOException {
       if (absolute) {
         indexOut.writeVInt(upto);
         indexOut.writeVLong(fp);

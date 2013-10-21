@@ -66,12 +66,6 @@ final class TermVectorsConsumer extends TermsHashConsumer {
         hasVectors = false;
       }
     }
-
-    for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
-      TermVectorsConsumerPerField perField = (TermVectorsConsumerPerField) field;
-      perField.termsHashPerField.reset();
-      perField.shrinkHash();
-    }
   }
 
   /** Fills in no-term-vectors for all docs we haven't seen

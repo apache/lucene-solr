@@ -479,6 +479,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       server.setDefaultMaxConnectionsPerHost(1);
       fail("Operation should not succeed.");
     } catch (UnsupportedOperationException e) {}
+    server.shutdown();
     client.getConnectionManager().shutdown();
   }
 

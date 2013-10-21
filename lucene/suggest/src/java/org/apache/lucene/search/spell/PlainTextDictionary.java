@@ -17,9 +17,11 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-
-import java.util.Comparator;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
@@ -96,11 +98,5 @@ public class PlainTextDictionary implements Dictionary {
       }
       return result;
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
   }
-
 }

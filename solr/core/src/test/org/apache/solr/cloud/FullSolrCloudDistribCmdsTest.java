@@ -38,6 +38,7 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -240,7 +241,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private long testIndexQueryDeleteHierarchical(long docId) throws Exception {
     //index
     int topDocsNum = atLeast(10);
-    int childsNum = atLeast(10);
+    int childsNum = 5+random().nextInt(5);
     for (int i = 0; i < topDocsNum; ++i) {
       UpdateRequest uReq = new UpdateRequest();
       SolrInputDocument topDocument = new SolrInputDocument();
@@ -309,16 +310,20 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private void testIndexingWithSuss() throws Exception {
     ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
         ((HttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
-    suss.setConnectionTimeout(15000);
-    suss.setSoTimeout(30000);
-    for (int i=100; i<150; i++) {
-      index_specific(suss, id, i);      
+    try {
+      suss.setConnectionTimeout(15000);
+      suss.setSoTimeout(30000);
+      for (int i = 100; i < 150; i++) {
+        index_specific(suss, id, i);
+      }
+      suss.blockUntilFinished();
+      
+      commit();
+      
+      checkShardConsistency();
+    } finally {
+      suss.shutdown();
     }
-    suss.blockUntilFinished();
-    
-    commit();
-    
-    checkShardConsistency();
   }
   
   private void testOptimisticUpdate(QueryResponse results) throws Exception {

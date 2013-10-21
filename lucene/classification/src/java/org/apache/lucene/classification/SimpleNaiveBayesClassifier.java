@@ -27,6 +27,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.WildcardQuery;
@@ -49,6 +50,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   private int docsWithClassSize;
   private Analyzer analyzer;
   private IndexSearcher indexSearcher;
+  private Query query;
 
   /**
    * Creates a new NaiveBayes classifier.
@@ -62,7 +64,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer)
+  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query)
       throws IOException {
     this.atomicReader = atomicReader;
     this.indexSearcher = new IndexSearcher(this.atomicReader);
@@ -70,13 +72,29 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
     this.docsWithClassSize = countDocsWithClass();
+    this.query = query;
+  }
+
+  @Override
+  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
+    train(atomicReader, textFieldName, classFieldName, analyzer, null);
   }
 
   private int countDocsWithClass() throws IOException {
     int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
     if (docCount == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
-      indexSearcher.search(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))),
+      Query q;
+      if (query != null) {
+        BooleanQuery bq = new BooleanQuery();
+        WildcardQuery wq = new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING)));
+        bq.add(wq, BooleanClause.Occur.MUST);
+        bq.add(query, BooleanClause.Occur.MUST);
+        q = bq;
+      } else {
+        q = new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING)));
+      }
+      indexSearcher.search(q,
           totalHitCountCollector);
       docCount = totalHitCountCollector.getTotalHits();
     }
@@ -85,14 +103,14 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<String>();
-    TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc);
-    CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-    tokenStream.reset();
-    while (tokenStream.incrementToken()) {
-      result.add(charTermAttribute.toString());
+    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc)) {
+      CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        result.add(charTermAttribute.toString());
+      }
+      tokenStream.end();
     }
-    tokenStream.end();
-    tokenStream.close();
     return result.toArray(new String[result.size()]);
   }
 
@@ -102,7 +120,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   @Override
   public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
-      throw new IOException("You must first call Classifier#train first");
+      throw new IOException("You must first call Classifier#train");
     }
     double max = 0d;
     BytesRef foundClass = new BytesRef();
@@ -157,6 +175,9 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.MUST));
     booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, c)), BooleanClause.Occur.MUST));
+    if (query != null) {
+      booleanQuery.add(query, BooleanClause.Occur.MUST);
+    }
     TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
     indexSearcher.search(booleanQuery, totalHitCountCollector);
     return totalHitCountCollector.getTotalHits();

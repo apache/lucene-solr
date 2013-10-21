@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -26,6 +27,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,10 +44,24 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
-  
+
+
+  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    copyMinFullSetup(solrHomeDirectory);
     initCore();
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
   }
 
   public void testNodeNameUrlConversion() throws Exception {
@@ -240,7 +256,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getCoreContainer() {
-    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath());
+    CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     cc.load();
     return cc;
   }

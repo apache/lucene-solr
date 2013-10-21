@@ -39,9 +39,9 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
     
     public void testReusableTokenStream() throws Exception {
       Analyzer a = new RussianAnalyzer(TEST_VERSION_CURRENT);
-      assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+      assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
-      assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
+      assertAnalyzesTo(a, "Но знание это хранилось в тайне",
           new String[] { "знан", "эт", "хран", "тайн" });
     }
     
@@ -50,7 +50,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
       CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
       set.add("представление");
       Analyzer a = new RussianAnalyzer(TEST_VERSION_CURRENT, RussianAnalyzer.getDefaultStopSet() , set);
-      assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+      assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
      
     }

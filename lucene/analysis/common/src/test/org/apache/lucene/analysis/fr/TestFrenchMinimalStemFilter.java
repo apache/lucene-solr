@@ -89,6 +89,6 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new FrenchMinimalStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

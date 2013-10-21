@@ -60,6 +60,6 @@ public class TestIndicNormalizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new IndicNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

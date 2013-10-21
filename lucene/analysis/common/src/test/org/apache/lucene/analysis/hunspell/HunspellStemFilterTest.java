@@ -89,6 +89,6 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY, _TestUtil.nextInt(random(), 1, 3)));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

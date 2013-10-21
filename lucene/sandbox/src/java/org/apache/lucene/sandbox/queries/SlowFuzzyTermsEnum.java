@@ -38,7 +38,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * fuzzy terms enum method by calling FuzzyTermsEnum's getAutomatonEnum.
  * </p>
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  * 
  * @deprecated Use {@link FuzzyTermsEnum} instead.

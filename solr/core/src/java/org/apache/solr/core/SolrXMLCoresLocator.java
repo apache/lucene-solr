@@ -19,6 +19,8 @@ package org.apache.solr.core;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +30,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +47,6 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   private static final Logger logger = LoggerFactory.getLogger(SolrXMLCoresLocator.class);
 
-  private final File file;
   private final String solrXmlTemplate;
   private final ConfigSolrXmlOld cfg;
 
@@ -50,13 +55,11 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   /**
    * Create a new SolrXMLCoresLocator
-   * @param file          a File object representing the file to write out to
    * @param originalXML   the original content of the solr.xml file
    * @param cfg           the CoreContainer's config object
    */
-  public SolrXMLCoresLocator(File file, String originalXML, ConfigSolrXmlOld cfg) {
+  public SolrXMLCoresLocator(String originalXML, ConfigSolrXmlOld cfg) {
     this.solrXmlTemplate = buildTemplate(originalXML);
-    this.file = file;
     this.cfg = cfg;
   }
 
@@ -142,19 +145,31 @@ public class SolrXMLCoresLocator implements CoresLocator {
   }
 
   @Override
-  public final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    doPersist(buildSolrXML(cc.getCoreDescriptors()));
+  public synchronized final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+    List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
+    
+    cds.addAll(cc.getCoreDescriptors());
+    cds.addAll(Arrays.asList(coreDescriptors));
+
+    doPersist(buildSolrXML(cds));
   }
 
   protected void doPersist(String xml) {
+    File file = new File(cfg.config.getResourceLoader().getInstanceDir(), ConfigSolr.SOLR_XML_FILE);
+    Writer writer = null;
+    FileOutputStream fos = null;
     try {
-      Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
+      fos = new FileOutputStream(file);
+      writer = new OutputStreamWriter(fos, Charsets.UTF_8);
       writer.write(xml);
       writer.close();
       logger.info("Persisted core descriptions to {}", file.getAbsolutePath());
-    }
-    catch (IOException e) {
-      logger.error("Couldn't persist core descriptions to {} : {}", file.getAbsolutePath(), e);
+    } catch (IOException e) {
+      logger.error("Couldn't persist core descriptions to {} : {}",
+          file.getAbsolutePath(), e);
+    } finally {
+      IOUtils.closeQuietly(writer);
+      IOUtils.closeQuietly(fos);
     }
   }
 
@@ -165,12 +180,14 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   @Override
   public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    this.persist(cc, coreDescriptors);
+    // coreDescriptors is kind of a useless param - we persist the current state off cc
+    this.persist(cc);
   }
 
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
-    this.persist(cc, oldCD, newCD);
+    // we don't need those params, we just write out the current cc state
+    this.persist(cc);
   }
 
   @Override
@@ -204,8 +221,8 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   public static class NonPersistingLocator extends SolrXMLCoresLocator {
 
-    public NonPersistingLocator(File file, String originalXML, ConfigSolrXmlOld cfg) {
-      super(file, originalXML, cfg);
+    public NonPersistingLocator(String originalXML, ConfigSolrXmlOld cfg) {
+      super(originalXML, cfg);
       this.xml = originalXML;
     }
 

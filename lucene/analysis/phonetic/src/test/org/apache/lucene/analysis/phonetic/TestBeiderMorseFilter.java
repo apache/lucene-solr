@@ -106,7 +106,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
   
   public void testCustomAttribute() throws IOException {

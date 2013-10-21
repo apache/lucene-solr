@@ -17,23 +17,27 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.IndexOutput;
-
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Comparator;
 
-class SimpleTextFieldsWriter extends FieldsConsumer {
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+
+class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
   
   private final IndexOutput out;
   private final BytesRef scratch = new BytesRef(10);
+  private final SegmentWriteState writeState;
 
   final static BytesRef END          = new BytesRef("END");
   final static BytesRef FIELD        = new BytesRef("field ");
@@ -45,9 +49,156 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   final static BytesRef END_OFFSET   = new BytesRef("      endOffset ");
   final static BytesRef PAYLOAD      = new BytesRef("        payload ");
 
-  public SimpleTextFieldsWriter(SegmentWriteState state) throws IOException {
-    final String fileName = SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix);
-    out = state.directory.createOutput(fileName, state.context);
+  public SimpleTextFieldsWriter(SegmentWriteState writeState) throws IOException {
+    final String fileName = SimpleTextPostingsFormat.getPostingsFileName(writeState.segmentInfo.name, writeState.segmentSuffix);
+    out = writeState.directory.createOutput(fileName, writeState.context);
+    this.writeState = writeState;
+  }
+
+  @Override
+  public void write(Fields fields) throws IOException {
+    boolean success = false;
+    try {
+      write(writeState.fieldInfos, fields);
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(this);
+      } else {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
+  }
+
+  public void write(FieldInfos fieldInfos, Fields fields) throws IOException {
+
+    // for each field
+    for(String field : fields) {
+      Terms terms = fields.terms(field);
+      if (terms == null) {
+        // Annoyingly, this can happen!
+        continue;
+      }
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+
+      boolean wroteField = false;
+
+      boolean hasPositions = terms.hasPositions();
+      boolean hasFreqs = terms.hasFreqs();
+      boolean hasPayloads = fieldInfo.hasPayloads();
+      boolean hasOffsets = terms.hasOffsets();
+
+      int flags = 0;
+      if (hasPositions) {
+        
+        if (hasPayloads) {
+          flags = flags | DocsAndPositionsEnum.FLAG_PAYLOADS;
+        }
+        if (hasOffsets) {
+          flags = flags | DocsAndPositionsEnum.FLAG_OFFSETS;
+        }
+      } else {
+        if (hasFreqs) {
+          flags = flags | DocsEnum.FLAG_FREQS;
+        }
+      }
+
+      TermsEnum termsEnum = terms.iterator(null);
+      DocsAndPositionsEnum posEnum = null;
+      DocsEnum docsEnum = null;
+
+      // for each term in field
+      while(true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
+        }
+
+        if (hasPositions) {
+          posEnum = termsEnum.docsAndPositions(null, posEnum, flags);
+          docsEnum = posEnum;
+        } else {
+          docsEnum = termsEnum.docs(null, docsEnum, flags);
+        }
+        assert docsEnum != null: "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
+
+        boolean wroteTerm = false;
+
+        // for each doc in field+term
+        while(true) {
+          int doc = docsEnum.nextDoc();
+          if (doc == DocsEnum.NO_MORE_DOCS) {
+            break;
+          }
+
+          if (!wroteTerm) {
+
+            if (!wroteField) {
+              // we lazily do this, in case the field had
+              // no terms              
+              write(FIELD);
+              write(field);
+              newline();
+              wroteField = true;
+            }
+
+            // we lazily do this, in case the term had
+            // zero docs
+            write(TERM);
+            write(term);
+            newline();
+            wroteTerm = true;
+          }
+
+          write(DOC);
+          write(Integer.toString(doc));
+          newline();
+          if (hasFreqs) {
+            int freq = docsEnum.freq();
+            write(FREQ);
+            write(Integer.toString(freq));
+            newline();
+
+            if (hasPositions) {
+              // for assert:
+              int lastStartOffset = 0;
+
+              // for each pos in field+term+doc
+              for(int i=0;i<freq;i++) {
+                int position = posEnum.nextPosition();
+
+                write(POS);
+                write(Integer.toString(position));
+                newline();
+
+                if (hasOffsets) {
+                  int startOffset = posEnum.startOffset();
+                  int endOffset = posEnum.endOffset();
+                  assert endOffset >= startOffset;
+                  assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
+                  lastStartOffset = startOffset;
+                  write(START_OFFSET);
+                  write(Integer.toString(startOffset));
+                  newline();
+                  write(END_OFFSET);
+                  write(Integer.toString(endOffset));
+                  newline();
+                }
+
+                BytesRef payload = posEnum.getPayload();
+
+                if (payload != null && payload.length > 0) {
+                  assert payload.length != 0;
+                  write(PAYLOAD);
+                  write(payload);
+                  newline();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   private void write(String s) throws IOException {
@@ -60,119 +211,6 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
   private void newline() throws IOException {
     SimpleTextUtil.writeNewline(out);
-  }
-
-  @Override
-  public TermsConsumer addField(FieldInfo field) throws IOException {
-    write(FIELD);
-    write(field.name);
-    newline();
-    return new SimpleTextTermsWriter(field);
-  }
-
-  private class SimpleTextTermsWriter extends TermsConsumer {
-    private final SimpleTextPostingsWriter postingsWriter;
-    
-    public SimpleTextTermsWriter(FieldInfo field) {
-      postingsWriter = new SimpleTextPostingsWriter(field);
-    }
-
-    @Override
-    public PostingsConsumer startTerm(BytesRef term) throws IOException {
-      return postingsWriter.reset(term);
-    }
-
-    @Override
-    public void finishTerm(BytesRef term, TermStats stats) throws IOException {
-    }
-
-    @Override
-    public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-  }
-
-  private class SimpleTextPostingsWriter extends PostingsConsumer {
-    private BytesRef term;
-    private boolean wroteTerm;
-    private final IndexOptions indexOptions;
-    private final boolean writePositions;
-    private final boolean writeOffsets;
-
-    // for assert:
-    private int lastStartOffset = 0;
-
-    public SimpleTextPostingsWriter(FieldInfo field) {
-      this.indexOptions = field.getIndexOptions();
-      writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      //System.out.println("writeOffsets=" + writeOffsets);
-      //System.out.println("writePos=" + writePositions);
-    }
-
-    @Override
-    public void startDoc(int docID, int termDocFreq) throws IOException {
-      if (!wroteTerm) {
-        // we lazily do this, in case the term had zero docs
-        write(TERM);
-        write(term);
-        newline();
-        wroteTerm = true;
-      }
-
-      write(DOC);
-      write(Integer.toString(docID));
-      newline();
-      if (indexOptions != IndexOptions.DOCS_ONLY) {
-        write(FREQ);
-        write(Integer.toString(termDocFreq));
-        newline();
-      }
-
-      lastStartOffset = 0;
-    }
-    
-    public PostingsConsumer reset(BytesRef term) {
-      this.term = term;
-      wroteTerm = false;
-      return this;
-    }
-
-    @Override
-    public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
-      if (writePositions) {
-        write(POS);
-        write(Integer.toString(position));
-        newline();
-      }
-
-      if (writeOffsets) {
-        assert endOffset >= startOffset;
-        assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
-        lastStartOffset = startOffset;
-        write(START_OFFSET);
-        write(Integer.toString(startOffset));
-        newline();
-        write(END_OFFSET);
-        write(Integer.toString(endOffset));
-        newline();
-      }
-
-      if (payload != null && payload.length > 0) {
-        assert payload.length != 0;
-        write(PAYLOAD);
-        write(payload);
-        newline();
-      }
-    }
-
-    @Override
-    public void finishDoc() {
-    }
   }
 
   @Override

@@ -74,6 +74,6 @@ public class TestCJKWidthFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new CJKWidthFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

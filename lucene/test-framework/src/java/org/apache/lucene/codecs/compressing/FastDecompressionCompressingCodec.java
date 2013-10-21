@@ -1,8 +1,6 @@
 package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -41,10 +39,5 @@ public class FastDecompressionCompressingCodec extends CompressingCodec {
   @Override
   public NormsFormat normsFormat() {
     return new Lucene42NormsFormat(PackedInts.DEFAULT);
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return new Lucene42DocValuesFormat(PackedInts.DEFAULT);
   }
 }

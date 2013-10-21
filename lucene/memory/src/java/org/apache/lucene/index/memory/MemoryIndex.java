@@ -756,6 +756,11 @@ public class MemoryIndex {
       return null;
     }
 
+    @Override
+    public Bits getDocsWithField(String field) throws IOException {
+      return null;
+    }
+
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {
@@ -799,11 +804,6 @@ public class MemoryIndex {
             }
 
             @Override
-            public Comparator<BytesRef> getComparator() {
-              return BytesRef.getUTF8SortedAsUnicodeComparator();
-            }
-
-            @Override
             public long size() {
               return info.terms.size();
             }
@@ -822,6 +822,11 @@ public class MemoryIndex {
             @Override
             public int getDocCount() {
               return info.terms.size() > 0 ? 1 : 0;
+            }
+
+            @Override
+            public boolean hasFreqs() {
+              return true;
             }
 
             @Override
@@ -958,11 +963,6 @@ public class MemoryIndex {
         }
         final int ord = info.sortedTerms[termUpto];
         return ((MemoryDocsAndPositionsEnum) reuse).reset(liveDocs, info.sliceArray.start[ord], info.sliceArray.end[ord], info.sliceArray.freq[ord]);
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override

@@ -219,7 +219,7 @@ final class LZ4 {
       final PackedInts.Mutable hashTable = ht.hashTable;
 
       main:
-      while (off < limit) {
+      while (off <= limit) {
         // find a match
         int ref;
         while (true) {
@@ -295,22 +295,23 @@ final class LZ4 {
     private int hashPointer(byte[] bytes, int off) {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
-      return base + hashTable[h];
+      return hashTable[h];
     }
 
     private int next(int off) {
-      return base + off - (chainTable[off & MASK] & 0xFFFF);
+      return off - (chainTable[off & MASK] & 0xFFFF);
     }
 
     private void addHash(byte[] bytes, int off) {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
       int delta = off - hashTable[h];
+      assert delta > 0 : delta;
       if (delta >= MAX_DISTANCE) {
         delta = MAX_DISTANCE - 1;
       }
       chainTable[off & MASK] = (short) delta;
-      hashTable[h] = off - base;
+      hashTable[h] = off;
     }
 
     void insert(int off, byte[] bytes) {
@@ -322,12 +323,24 @@ final class LZ4 {
     boolean insertAndFindBestMatch(byte[] buf, int off, int matchLimit, Match match) {
       match.start = off;
       match.len = 0;
+      int delta = 0;
+      int repl = 0;
 
       insert(off, buf);
 
       int ref = hashPointer(buf, off);
+
+      if (ref >= off - 4 && ref <= off && ref >= base) { // potential repetition
+        if (readIntEquals(buf, ref, off)) { // confirmed
+          delta = off - ref;
+          repl = match.len = MIN_MATCH + commonBytes(buf, ref + MIN_MATCH, off + MIN_MATCH, matchLimit);
+          match.ref = ref;
+        }
+        ref = next(ref);
+      }
+
       for (int i = 0; i < MAX_ATTEMPTS; ++i) {
-        if (ref < Math.max(base, off - MAX_DISTANCE + 1)) {
+        if (ref < Math.max(base, off - MAX_DISTANCE + 1) || ref > off) {
           break;
         }
         if (buf[ref + match.len] == buf[off + match.len] && readIntEquals(buf, ref, off)) {
@@ -338,6 +351,21 @@ final class LZ4 {
           }
         }
         ref = next(ref);
+      }
+
+      if (repl != 0) {
+        int ptr = off;
+        final int end = off + repl - (MIN_MATCH - 1);
+        while (ptr < end - delta) {
+          chainTable[ptr & MASK] = (short) delta; // pre load
+          ++ptr;
+        }
+        do {
+          chainTable[ptr & MASK] = (short) delta;
+          hashTable[hashHC(readInt(buf, ptr))] = ptr;
+          ++ptr;
+        } while (ptr < end);
+        nextToUpdate = end;
       }
 
       return match.len != 0;
@@ -351,7 +379,7 @@ final class LZ4 {
       final int delta = off - startLimit;
       int ref = hashPointer(buf, off);
       for (int i = 0; i < MAX_ATTEMPTS; ++i) {
-        if (ref < Math.max(base, off - MAX_DISTANCE + 1)) {
+        if (ref < Math.max(base, off - MAX_DISTANCE + 1) || ref > off) {
           break;
         }
         if (buf[ref - delta + match.len] == buf[startLimit + match.len]
@@ -386,6 +414,7 @@ final class LZ4 {
 
     final int srcEnd = srcOff + srcLen;
     final int matchLimit = srcEnd - LAST_LITERALS;
+    final int mfLimit = matchLimit - MIN_MATCH;
 
     int sOff = srcOff;
     int anchor = sOff++;
@@ -397,7 +426,7 @@ final class LZ4 {
     final Match match3 = new Match();
 
     main:
-    while (sOff < matchLimit) {
+    while (sOff <= mfLimit) {
       if (!ht.insertAndFindBestMatch(src, sOff, matchLimit, match1)) {
         ++sOff;
         continue;
@@ -409,7 +438,7 @@ final class LZ4 {
       search2:
       while (true) {
         assert match1.start >= anchor;
-        if (match1.end() >= matchLimit
+        if (match1.end() >= mfLimit
             || !ht.insertAndFindWiderMatch(src, match1.end() - 2, match1.start + 1, matchLimit, match1.len, match2)) {
           // no better match
           encodeSequence(src, anchor, match1.ref, match1.start, match1.len, out);
@@ -445,24 +474,11 @@ final class LZ4 {
             }
           }
 
-          if (match2.start + match2.len >= matchLimit
+          if (match2.start + match2.len >= mfLimit
               || !ht.insertAndFindWiderMatch(src, match2.end() - 3, match2.start, matchLimit, match2.len, match3)) {
             // no better match -> 2 sequences to encode
             if (match2.start < match1.end()) {
-              if (match2.start - match1.start < OPTIMAL_ML) {
-                if (match1.len > OPTIMAL_ML) {
-                  match1.len = OPTIMAL_ML;
-                }
-                if (match1.end() > match2.end() - MIN_MATCH) {
-                  match1.len = match2.end() - match1.start - MIN_MATCH;
-                }
-                final int correction = match1.len - (match2.start - match1.start);
-                if (correction > 0) {
-                  match2.fix(correction);
-                }
-              } else {
-                match1.len = match2.start - match1.start;
-              }
+              match1.len = match2.start - match1.start;
             }
             // encode seq 1
             encodeSequence(src, anchor, match1.ref, match1.start, match1.len, out);

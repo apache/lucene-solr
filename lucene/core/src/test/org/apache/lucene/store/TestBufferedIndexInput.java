@@ -283,7 +283,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
     }
 
-    private static class MockFSDirectory extends Directory {
+    private static class MockFSDirectory extends BaseDirectory {
 
       List<IndexInput> allIndexInputs = new ArrayList<IndexInput>();
 

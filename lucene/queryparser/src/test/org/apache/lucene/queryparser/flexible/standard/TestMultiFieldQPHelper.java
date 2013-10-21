@@ -347,7 +347,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
 
     public AnalyzerReturningNull() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override

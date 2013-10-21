@@ -151,7 +151,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     prop.put("state", "inactive");
     Slice newSlice = new Slice(slice.getName(), slice.getReplicasMap(), prop);
     slicesMap.put(newSlice.getName(), newSlice);
-    props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+    props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", ImplicitDocRouter.NAME));
 
     DocCollection coll = new DocCollection("collection1", slicesMap, props, DocRouter.DEFAULT);
     collectionStates.put("collection1", coll);
@@ -167,7 +167,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     ZkController zkController2 = container2.getZkController();
     ClusterState clusterState2 = null;
     Map<String, Slice> slices = null;
-    for (int i = 75; i > 0; i--) {
+    for (int i = 100; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
       slices = clusterState2.getSlicesMap("collection1");
       if (slices != null && slices.containsKey("shard1")

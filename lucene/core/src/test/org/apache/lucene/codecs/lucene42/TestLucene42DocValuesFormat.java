@@ -24,10 +24,15 @@ import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
  * Tests Lucene42DocValuesFormat
  */
 public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = new Lucene42Codec();
+  private final Codec codec = new Lucene42RWCodec();
 
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return false;
   }
 }

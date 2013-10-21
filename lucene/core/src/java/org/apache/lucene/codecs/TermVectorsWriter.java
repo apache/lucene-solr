@@ -19,7 +19,6 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReader;
@@ -293,10 +292,6 @@ public abstract class TermVectorsWriter implements Closeable {
     assert fieldCount == numFields;
     finishDocument();
   }
-  
-  /** Return the BytesRef Comparator used to sort terms
-   *  before feeding to this API. */
-  public abstract Comparator<BytesRef> getComparator() throws IOException;
 
   @Override
   public abstract void close() throws IOException;

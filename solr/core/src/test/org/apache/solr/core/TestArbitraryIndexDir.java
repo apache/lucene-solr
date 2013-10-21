@@ -53,12 +53,15 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   static String savedFactory;
   @BeforeClass
   public static void beforeClass() {
+    // this test wants to start solr, and then open a separate indexwriter of its own on the same dir.
+    System.setProperty("solr.tests.nrtMode", "false");
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
   @AfterClass
   public static void afterClass() {
+    System.clearProperty("solr.tests.nrtMode");
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

@@ -69,7 +69,7 @@ public class TestElision extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ElisionFilter(tokenizer, FrenchAnalyzer.DEFAULT_ARTICLES));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 
 }

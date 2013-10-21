@@ -173,7 +173,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
   @Override
   public void init(NamedList args) {
     Collection<String> scripts = 
-      FieldMutatingUpdateProcessorFactory.oneOrMany(args, SCRIPT_ARG);
+      args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                               "StatelessScriptUpdateProcessorFactory must be " +

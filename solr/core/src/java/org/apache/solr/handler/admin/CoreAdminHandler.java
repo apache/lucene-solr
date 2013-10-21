@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -48,6 +49,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -76,6 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
+
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 /**
  *
@@ -229,7 +233,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
     List<DocRouter.Range> ranges = null;
 
     String[] pathsArr = params.getParams("path");
-    String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
+    String rangesStr = params.get(CoreAdminParams.RANGES);    // ranges=a-b,c-d,e-f
+    if (rangesStr != null)  {
+      String[] rangesArr = rangesStr.split(",");
+      if (rangesArr.length == 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least one range specified to split an index");
+      } else  {
+        ranges = new ArrayList<DocRouter.Range>(rangesArr.length);
+        for (String r : rangesArr) {
+          try {
+            ranges.add(DocRouter.DEFAULT.fromString(r));
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Exception parsing hexadecimal hash range: " + r, e);
+          }
+        }
+      }
+    }
+    String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
 
@@ -248,15 +268,22 @@ public class CoreAdminHandler extends RequestHandlerBase {
       int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
 
       DocRouter router = null;
+      String routeFieldName = null;
       if (coreContainer.isZooKeeperAware()) {
         ClusterState clusterState = coreContainer.getZkController().getClusterState();
         String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = clusterState.getSlice(collectionName, sliceName);
-        DocRouter.Range currentRange = slice.getRange();
         router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-        ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
+        if (ranges == null) {
+          DocRouter.Range currentRange = slice.getRange();
+          ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
+        }
+        Map m = (Map) collection.get(DOC_ROUTER);
+        if (m != null)  {
+          routeFieldName = (String) m.get("field");
+        }
       }
 
       if (pathsArr == null) {
@@ -274,7 +301,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName, splitKey);
       core.getUpdateHandler().split(cmd);
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
@@ -399,6 +426,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       .put(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME)
       .put(CoreAdminParams.SHARD_STATE, CloudDescriptor.SHARD_STATE)
       .put(CoreAdminParams.SHARD_RANGE, CloudDescriptor.SHARD_RANGE)
+      .put(CoreAdminParams.SHARD_PARENT, CloudDescriptor.SHARD_PARENT)
       .put(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS)
       .build();
 
@@ -409,8 +437,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String name = checkNotEmpty(params.get(CoreAdminParams.NAME),
         "Missing parameter [" + CoreAdminParams.NAME + "]");
     String instancedir = params.get(CoreAdminParams.INSTANCE_DIR);
-    if (StringUtils.isEmpty(instancedir))
-      instancedir = container.getSolrHome() + File.separator + name;
+    if (StringUtils.isEmpty(instancedir)) {
+      instancedir = name; // will be resolved later against solr.home
+      //instancedir = container.getSolrHome() + "/" + name;
+    }
 
     Properties coreProps = new Properties();
     for (String param : paramToProp.keySet()) {
@@ -429,7 +459,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       coreProps.setProperty(propName, propValue);
     }
 
-    return new CoreDescriptor(container, name, instancedir, coreProps);
+    return new CoreDescriptor(container, name, instancedir, coreProps, params);
   }
 
   private static String checkNotEmpty(String value, String message) {
@@ -459,9 +489,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (coreContainer.getZkController() != null) {
         coreContainer.preRegisterInZk(dcore);
       }
+
+      // make sure we can write out the descriptor first
       coreContainer.getCoresLocator().create(coreContainer, dcore);
+      
       SolrCore core = coreContainer.create(dcore);
+      
       coreContainer.register(dcore.getName(), core, false);
+      
+      if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
+        // hack - in this case we persist once more because a core create race might
+        // have dropped entries.
+        coreContainer.getCoresLocator().create(coreContainer);
+      }
       rsp.add("core", core.getName());
     }
     catch (Exception ex) {
@@ -491,8 +531,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
       
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                              "Error CREATEing SolrCore '" + dcore.getName() + "': " +
-                              ex.getMessage(), ex);
+          "Error CREATEing SolrCore '" + dcore.getName() + "': " +
+          ex.getMessage() + rootMsg, ex);
     }
   }
 

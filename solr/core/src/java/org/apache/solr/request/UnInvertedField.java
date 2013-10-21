@@ -18,7 +18,6 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -102,6 +101,15 @@ public class UnInvertedField extends DocTermOrds {
 
   private SolrIndexSearcher.DocsEnumState deState;
   private final SolrIndexSearcher searcher;
+  private final boolean isPlaceholder;
+
+  private static UnInvertedField uifPlaceholder = new UnInvertedField();
+
+  private UnInvertedField() { // Dummy for synchronization.
+    super("fake", 0, 0); // cheapest initialization I can find.
+    isPlaceholder = true;
+    searcher = null;
+   }
 
   @Override
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
@@ -172,6 +180,7 @@ public class UnInvertedField extends DocTermOrds {
           DEFAULT_INDEX_INTERVAL_BITS);
     //System.out.println("maxTermDocFreq=" + maxTermDocFreq + " maxDoc=" + searcher.maxDoc());
 
+    isPlaceholder = false;
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
@@ -650,21 +659,43 @@ public class UnInvertedField extends DocTermOrds {
   //////////////////////////////////////////////////////////////////
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
+
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
     SolrCache<String,UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
-
-    UnInvertedField uif = cache.get(field);
-    if (uif == null) {
-      synchronized (cache) {
-        uif = cache.get(field);
-        if (uif == null) {
-          uif = new UnInvertedField(field, searcher);
-          cache.put(field, uif);
+    UnInvertedField uif = null;
+    Boolean doWait = false;
+    synchronized (cache) {
+      uif = cache.get(field);
+      if (uif == null) {
+        cache.put(field, uifPlaceholder); // This thread will load this field, don't let other threads try.
+      } else {
+        if (uif.isPlaceholder == false) {
+          return uif;
         }
+        doWait = true; // Someone else has put the place holder in, wait for that to complete.
       }
+    }
+    while (doWait) {
+      try {
+        synchronized (cache) {
+          uif = cache.get(field); // Should at least return the placeholder, NPE if not is OK.
+          if (uif.isPlaceholder == false) { // OK, another thread put this in the cache we should be good.
+            return uif;
+          }
+          cache.wait();
+        }
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted in getUninvertedField.");
+      }
+    }
+
+    uif = new UnInvertedField(field, searcher);
+    synchronized (cache) {
+      cache.put(field, uif); // Note, this cleverly replaces the placeholder.
+      cache.notifyAll();
     }
 
     return uif;

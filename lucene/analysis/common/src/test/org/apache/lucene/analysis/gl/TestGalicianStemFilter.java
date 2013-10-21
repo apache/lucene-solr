@@ -58,6 +58,6 @@ public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new GalicianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

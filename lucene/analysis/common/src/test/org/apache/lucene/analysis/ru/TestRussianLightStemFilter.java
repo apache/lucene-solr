@@ -75,6 +75,6 @@ public class TestRussianLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new RussianLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

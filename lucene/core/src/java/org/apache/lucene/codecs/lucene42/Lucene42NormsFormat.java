@@ -41,7 +41,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ul>
  * @see Lucene42DocValuesFormat
  */
-public final class Lucene42NormsFormat extends NormsFormat {
+public class Lucene42NormsFormat extends NormsFormat {
   final float acceptableOverheadRatio;
 
   /** 
@@ -67,7 +67,7 @@ public final class Lucene42NormsFormat extends NormsFormat {
   
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
+    return new Lucene42NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
   
   @Override

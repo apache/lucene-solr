@@ -39,11 +39,13 @@
     
     <!-- Some typical snapshot/minimalized JAR suffixes. -->
     <replaceregex pattern="-min$" replace="" flags="gi" />
-    <replaceregex pattern="SNAPSHOT$" replace="" flags="gi" />
+    <replaceregex pattern="SNAPSHOT" replace="" flags="gi" />
 
     <!-- Typical version patterns. -->
     <replaceregex pattern="\.rc[0-9]+" replace="" flags="gi" />
-    <replaceregex pattern="\-(r)?([0-9\-\_\.])+((b(eta)?)|((a(lpha)?))([0-9\-\.])*)?(\-tests)?$" replace="" flags="gi" />
+    <replaceregex pattern="\-(r)?([0-9\-\_\.])+(([a-zA-Z]+)([0-9\-\.])*)?" replace="" flags="gi" />
+    
+    <replaceregex pattern="tests$" replace="-tests" flags="gi" />
 
     <!-- git hashcode pattern: its always 40 chars right? -->
     <replaceregex pattern="\-[a-z0-9]{40,40}$" replace="" flags="gi" />
@@ -57,7 +59,7 @@
     <sequential>
       <!-- LICENSE and NOTICE verification macro. -->
       <echo>License check under: @{dir}</echo>
-      <licenses licenseDirectory="@{licensedir}">
+      <licenses licenseDirectory="@{licensedir}" skipChecksum="${skipChecksum}" skipSnapshotsChecksum="${skipSnapshotsChecksum}">
         <fileset dir="@{dir}">
           <include name="**/*.jar" />
           <!-- Speed up scanning a bit. -->
@@ -80,6 +82,31 @@
           </chainedmapper>
         </licenseMapper>
       </licenses>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="lib-versions-check-macro">
+    <attribute name="dir"/>
+    <attribute name="centralized.versions.file"/>
+    <sequential>
+      <!-- 
+        Verify that the '/org/name' keys in ivy-versions.properties are sorted
+        lexically and are neither duplicates nor orphans, and that all
+         dependencies in all ivy.xml files use rev="${/org/name}" format.
+        -->
+      <echo>Lib versions check under: @{dir}</echo>
+      <libversions centralizedVersionsFile="@{centralized.versions.file}">
+        <fileset dir="@{dir}">
+          <include name="**/ivy.xml" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+        </fileset>
+      </libversions>
     </sequential>
   </macrodef>
 </project>

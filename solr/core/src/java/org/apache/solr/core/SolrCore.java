@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
@@ -786,26 +787,22 @@ public final class SolrCore implements SolrInfoMBean {
         iwRef = prev.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
         if (iwRef != null) {
           final IndexWriter iw = iwRef.get();
+          final SolrCore core = this;
           newReaderCreator = new Callable<DirectoryReader>() {
+            // this is used during a core reload
+
             @Override
             public DirectoryReader call() throws Exception {
-              return DirectoryReader.open(iw, true);
+              if(getSolrConfig().nrtMode) {
+                // if in NRT mode, need to open from the previous writer
+                return indexReaderFactory.newReader(iw, core);
+              } else {
+                // if not NRT, need to create a new reader from the directory
+                return indexReaderFactory.newReader(iw.getDirectory(), core);
+              }
             }
           };
         }
-      }
-      
-      // Open the searcher *before* the update handler so we don't end up
-      // opening
-      // one in the middle.
-      // With lockless commits in Lucene now, this probably shouldn't be an
-      // issue anymore
-      
-      try {
-        getSearcher(false, false, null, true);
-      } finally {
-        newReaderCreator = null;
-        if (iwRef != null) iwRef.decref();
       }
       
       String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
@@ -819,6 +816,13 @@ public final class SolrCore implements SolrInfoMBean {
                 : updateHandlerClass, updateHandler);
       }
       infoRegistry.put("updateHandler", this.updateHandler);
+
+      try {
+        getSearcher(false, false, null, true);
+      } finally {
+        newReaderCreator = null;
+        if (iwRef != null) iwRef.decref();
+      }
       
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
@@ -852,7 +856,7 @@ public final class SolrCore implements SolrInfoMBean {
       
       cd.getCloudDescriptor().setShardState(null);
       cd.getCloudDescriptor().setShardRange(null);
-      
+      cd.getCloudDescriptor().setShardParent(null);
     }
     // For debugging   
 //    numOpens.incrementAndGet();
@@ -904,6 +908,7 @@ public final class SolrCore implements SolrInfoMBean {
       def = map.get(null);
     } 
     if (def == null) {
+      log.info("no updateRequestProcessorChain defined as default, creating implicit default");
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
               new LogUpdateProcessorFactory(),
@@ -1360,7 +1365,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     SolrIndexSearcher tmp;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
-    boolean nrt = solrConfig.reopenReaders && updateHandlerReopens;
+    boolean nrt = solrConfig.nrtMode && updateHandlerReopens;
 
     openSearcherLock.lock();
     try {
@@ -1381,8 +1386,7 @@ public final class SolrCore implements SolrInfoMBean {
         }
       }
 
-      if (newestSearcher != null && solrConfig.reopenReaders
-          && (nrt || indexDirFile.equals(newIndexDirFile))) {
+      if (newestSearcher != null && (nrt || indexDirFile.equals(newIndexDirFile))) {
 
         DirectoryReader newReader;
         DirectoryReader currentReader = newestSearcher.get().getIndexReader();
@@ -1392,13 +1396,13 @@ public final class SolrCore implements SolrInfoMBean {
         RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState()
             .getIndexWriter(null);
         try {
-          if (writer != null) {
-            newReader = DirectoryReader.openIfChanged(currentReader,
-                writer.get(), true);
+          if (writer != null && solrConfig.nrtMode) {
+            // if in NRT mode, open from the writer
+            newReader = DirectoryReader.openIfChanged(currentReader, writer.get(), true);
           } else {
             // verbose("start reopen without writer, reader=", currentReader);
+            // if not in NRT mode, just re-open the reader
             newReader = DirectoryReader.openIfChanged(currentReader);
-            
             // verbose("reopen result", newReader);
           }
         } finally {
@@ -1430,6 +1434,16 @@ public final class SolrCore implements SolrInfoMBean {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
+          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        } else if (solrConfig.nrtMode) {
+          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          DirectoryReader newReader = null;
+          try {
+            newReader = indexReaderFactory.newReader(writer.get(), this);
+          } finally {
+            writer.decref();
+          }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {
@@ -2236,6 +2250,7 @@ public final class SolrCore implements SolrInfoMBean {
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
+    lst.add("instanceDir", resourceLoader.getInstanceDir());
     lst.add("indexDir", getIndexDir());
 
     CoreDescriptor cd = getCoreDescriptor();

@@ -47,6 +47,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -511,13 +512,14 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private Scorer scorer;
           private BinaryDocValues terms;
+          private Bits docsWithField;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
             terms.get(doc, spare);
             BytesRef joinValue = spare;
-            if (joinValue.bytes == BinaryDocValues.MISSING) {
+            if (joinValue.length == 0 && !docsWithField.get(doc)) {
               return;
             }
 
@@ -530,7 +532,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField, true);
+            docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -628,7 +631,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField, false);
             docBase = context.docBase;
           }
 

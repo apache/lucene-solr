@@ -19,10 +19,7 @@ package org.apache.solr.search.join;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
-import org.apache.solr.search.SyntaxError;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,13 +46,21 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     int i = 0;
     List<List<String[]>> blocks = createBlocks();
     for (List<String[]> block : blocks) {
+      List<XmlDoc> updBlock = new ArrayList<>();
+      
       for (String[] doc : block) {
         String[] idDoc = Arrays.copyOf(doc,doc.length+2);
         idDoc[doc.length]="id";
         idDoc[doc.length+1]=Integer.toString(i);
-        assertU(add(doc(idDoc)));
+        updBlock.add(doc(idDoc));
         i++;
       }
+      //got xmls for every doc. now nest all into the last one
+      XmlDoc parentDoc = updBlock.get(updBlock.size()-1);
+      parentDoc.xml = parentDoc.xml.replace("</doc>", 
+          updBlock.subList(0, updBlock.size()-1).toString().replaceAll("[\\[\\]]","")+"</doc>");
+      assertU(add(parentDoc));
+      
       if (random().nextBoolean()) {
         assertU(commit());
         // force empty segment (actually, this will no longer create an empty segment, only a new segments_n)
@@ -102,6 +107,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     // add grandchildren after children
     for (ListIterator<String[]> iter = block.listIterator(); iter.hasNext();) {
       String[] child = iter.next();
+      assert child[0]=="child_s" && child[2]=="parentchild_s": Arrays.toString(child);
       String child_s = child[1];
       String parentchild_s = child[3];
       int grandChildPos = 0;

@@ -157,7 +157,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {
-    checkOneTermReuse(a, input, expected);
+    checkOneTerm(a, input, expected);
   }
 
   /** blast some random strings through the analyzer */
@@ -173,6 +173,6 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new BrazilianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

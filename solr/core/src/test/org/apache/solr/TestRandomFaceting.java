@@ -59,8 +59,11 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     types.add(new FldType("small_f",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("small_d",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("foo_i",ZERO_ONE, new IRange(-2,indexSize)));
-    types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
-    types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("rare_s1",new IValsPercent(95,0,5,1), new SVal('a','b',1,5)));
+    types.add(new FldType("str_s1",ZERO_ONE, new SVal('a','z',1,2)));
+    types.add(new FldType("long_s1",ZERO_ONE, new SVal('a','b',1,5)));
+    types.add(new FldType("small_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("small2_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small3_ss",new IRange(0,25), new SVal('A','z',1,1)));
     types.add(new FldType("small_i",ZERO_ONE, new IRange(-2,5+indexSize/3)));
@@ -70,7 +73,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     types.add(new FldType("missing_i",new IRange(0,0), new IRange(0,100)));
     types.add(new FldType("missing_is",new IRange(0,0), new IRange(0,100)));
-    types.add(new FldType("missing_s",new IRange(0,0), new SVal('a','b',1,1)));
+    types.add(new FldType("missing_s1",new IRange(0,0), new SVal('a','b',1,1)));
     types.add(new FldType("missing_ss",new IRange(0,0), new SVal('a','b',1,1)));
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans

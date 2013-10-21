@@ -37,8 +37,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -53,17 +53,19 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /*
   Verify we can read the pre-5.0 file format, do searches
@@ -74,7 +76,7 @@ import org.junit.Ignore;
 // we won't even be running the actual code, only the impostor
 // @SuppressCodecs("Lucene4x")
 // Sep codec cannot yet handle the offsets in our 4.x index!
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41"})
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene version,
@@ -192,7 +194,23 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   static Map<String,Directory> oldIndexDirs;
-  
+
+  /**
+   * Randomizes the use of some of hte constructor variations
+   */
+  private static IndexUpgrader newIndexUpgrader(Directory dir) {
+    final boolean streamType = random().nextBoolean();
+    final int choice = _TestUtil.nextInt(random(), 0, 2);
+    switch (choice) {
+      case 0: return new IndexUpgrader(dir, TEST_VERSION_CURRENT);
+      case 1: return new IndexUpgrader(dir, TEST_VERSION_CURRENT, 
+                                       streamType ? null : System.err, false);
+      case 2: return new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
+      default: fail("case statement didn't get updated when random bounds changed");
+    }
+    return null; // never get here
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
@@ -917,12 +935,57 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
 
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
-        .upgrade();
+      newIndexUpgrader(dir).upgrade();
 
       checkAllSegmentsUpgraded(dir);
       
       dir.close();
+    }
+  }
+
+  public void testCommandLineArgs() throws Exception {
+
+    for (String name : oldIndexDirs.keySet()) {
+      File dir = _TestUtil.getTempDir(name);
+      File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
+      _TestUtil.unzip(dataFile, dir);
+
+      String path = dir.getAbsolutePath();
+      
+      List<String> args = new ArrayList<String>();
+      if (random().nextBoolean()) {
+        args.add("-verbose");
+      }
+      if (random().nextBoolean()) {
+        args.add("-delete-prior-commits");
+      }
+      if (random().nextBoolean()) {
+        // TODO: need to better randomize this, but ...
+        //  - LuceneTestCase.FS_DIRECTORIES is private
+        //  - newFSDirectory returns BaseDirectoryWrapper
+        //  - BaseDirectoryWrapper doesn't expose delegate
+        Class<? extends FSDirectory> dirImpl = random().nextBoolean() ?
+          SimpleFSDirectory.class : NIOFSDirectory.class;
+
+        args.add("-dir-impl");
+        args.add(dirImpl.getName());
+      }
+      args.add(path);
+
+      IndexUpgrader upgrader = null;
+      try {
+        upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
+      } catch (Exception e) {
+        throw new AssertionError("unable to parse args: " + args, e);
+      }
+      upgrader.upgrade();
+      
+      Directory upgradedDir = newFSDirectory(dir);
+      try {
+        checkAllSegmentsUpgraded(upgradedDir);
+      } finally {
+        upgradedDir.close();
+      }
     }
   }
 
@@ -963,8 +1026,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // determine count of segments in modified index
       final int origSegCount = getNumberOfSegments(dir);
       
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
-        .upgrade();
+      newIndexUpgrader(dir).upgrade();
 
       final int segCount = checkAllSegmentsUpgraded(dir);
       assertEquals("Index must still contain the same number of segments, as only one segment was upgraded and nothing else merged",

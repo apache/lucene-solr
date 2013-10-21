@@ -67,7 +67,6 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     } catch (ClassCastException e) {
       // known edge case where QueryResponse's extraction assumes "response" is a SolrDocumentList
       // (AnalysisRequestHandler emits a "response")
-      e.printStackTrace();
       rsp = new SolrResponseBase();
       rsp.setResponse(parsedResponse);
     }
@@ -121,25 +120,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
-
-    File fileResourceLoaderBaseDir = null;
-    try {
-      String template_root = request.getParams().get("v.base_dir");
-      fileResourceLoaderBaseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
-      if (template_root != null) {
-        fileResourceLoaderBaseDir = new File(template_root);
-      }
-    } catch (SolrException e) {
-      // no worries... probably in ZooKeeper mode and getConfigDir() isn't available, so we'll just ignore omit
-      // the file system resource loader
-    }
-
-    if (fileResourceLoaderBaseDir != null) {
-      engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, fileResourceLoaderBaseDir.getAbsolutePath());
-      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
-    } else {
-      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
-    }
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
 
     // TODO: Externalize Velocity properties
     String propFile = request.getParams().get("v.properties");

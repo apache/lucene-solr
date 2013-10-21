@@ -71,8 +71,6 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private String[] fields;
   private String requestHandler;// 'qt' param
   private int timeout = TIMEOUT_SECS;
-  
-  private boolean initDone = false;
 
   /**
    * Factory method that returns a {@link HttpClient} instance used for interfacing with a source Solr service.
@@ -96,13 +94,16 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             "SolrEntityProcessor: parameter 'url' is required");
       }
 
+      // TODO: we should close this client!
       HttpClient client = getHttpClient();
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client, new XMLResponseParser());
         LOG.info("using XMLResponseParser");
       } else {
+        // TODO: it doesn't matter for this impl when passing a client currently, but we should shutdown this!
         solrServer = new HttpSolrServer(url.toExternalForm(), client);
         LOG.info("using BinaryResponseParser");
       }
@@ -122,28 +123,22 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * external synchronization. 
    */
   private void buildIterator() {
-    if (rowIterator == null) {
-      // We could use an AtomicBoolean but there's no need since this method
-      // would require anyway external synchronization
-      if (!initDone) {
-        initDone = true;
-        SolrDocumentList solrDocumentList = doQuery(0);
+    if (rowIterator != null)  {
+      SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
+      if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
+        SolrDocumentList solrDocumentList = doQuery(documentListIterator
+            .getStart() + documentListIterator.getSize());
         if (solrDocumentList != null) {
           rowIterator = new SolrDocumentListIterator(solrDocumentList);
         }
       }
-      return;
-    }
-    
-    SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
-    if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
-      SolrDocumentList solrDocumentList = doQuery(documentListIterator
-          .getStart() + documentListIterator.getSize());
+    } else  {
+      SolrDocumentList solrDocumentList = doQuery(0);
       if (solrDocumentList != null) {
         rowIterator = new SolrDocumentListIterator(solrDocumentList);
       }
+      return;
     }
-    
   }
   
   protected SolrDocumentList doQuery(int start) {

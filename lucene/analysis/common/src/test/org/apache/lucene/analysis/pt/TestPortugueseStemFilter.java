@@ -96,6 +96,6 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new PortugueseStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

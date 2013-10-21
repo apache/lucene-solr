@@ -35,9 +35,11 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -621,7 +623,17 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   }
 
   @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    return new Bits.MatchAllBits(state.segmentInfo.getDocCount());
+  }
+
+  @Override
   public void close() throws IOException {
     dir.close();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(this);
   }
 }

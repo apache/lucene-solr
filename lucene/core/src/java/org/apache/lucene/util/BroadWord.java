@@ -21,8 +21,8 @@ package org.apache.lucene.util;
  * Methods and constants inspired by the article
  * "Broadword Implementation of Rank/Select Queries" by Sebastiano Vigna, January 30, 2012:
  * <ul>
- * <li>algorithm 1: {@link #rank9(long)}, count of set bits in a <code>long</code>
- * <li>algorithm 2: {@link #select9(long, int)}, selection of a set bit in a <code>long</code>,
+ * <li>algorithm 1: {@link #bitCount(long)}, count of set bits in a <code>long</code>
+ * <li>algorithm 2: {@link #select(long, int)}, selection of a set bit in a <code>long</code>,
  * <li>bytewise signed smaller &lt;<sub><small>8</small></sub> operator: {@link #smallerUpTo7_8(long,long)}.
  * <li>shortwise signed smaller &lt;<sub><small>16</small></sub> operator: {@link #smallerUpto15_16(long,long)}.
  * <li>some of the Lk and Hk constants that are used by the above:
@@ -36,11 +36,11 @@ public final class BroadWord {
   private BroadWord() {} // no instance
 
   /** Bit count of a long.
-   * Only here to compare the implementation with {@link #select9(long,int)},
+   * Only here to compare the implementation with {@link #select(long,int)},
    * normally {@link Long#bitCount} is preferable.
    * @return The total number of 1 bits in x.
    */
-  static int rank9(long x) {
+  static int bitCount(long x) {
     // Step 0 leaves in each pair of bits the number of ones originally contained in that pair:
     x = x - ((x & 0xAAAAAAAAAAAAAAAAL) >>> 1);
     // Step 1, idem for each nibble:
@@ -54,7 +54,7 @@ public final class BroadWord {
   /** Select a 1-bit from a long.
    * @return The index of the r-th 1 bit in x, or if no such bit exists, 72.
    */
-  public static int select9(long x, int r) {
+  public static int select(long x, int r) {
     long s = x - ((x & 0xAAAAAAAAAAAAAAAAL) >>> 1); // Step 0, pairwise bitsums
 
     // Correct a small mistake in algorithm 2:
@@ -132,7 +132,8 @@ public final class BroadWord {
   public final static long H16_L = L16_L << 15;
 
   /**
-   * Naive implementation of {@link #select9(long,int)}, using {@link Long#numberOfTrailingZeros} repetitively.
+   * Naive implementation of {@link #select(long,int)}, using {@link Long#numberOfTrailingZeros} repetitively.
+   * Works relatively fast for low ranks.
    * @return The index of the r-th 1 bit in x, or if no such bit exists, 72.
    */
   public static int selectNaive(long x, int r) {
@@ -147,4 +148,5 @@ public final class BroadWord {
     int res = (r > 0) ? 72 : s;
     return res;
   }
+
 }

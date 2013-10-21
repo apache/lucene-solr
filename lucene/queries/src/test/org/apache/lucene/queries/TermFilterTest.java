@@ -59,7 +59,7 @@ public class TermFilterTest extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newStringField(fieldName, "value1", Field.Store.NO));
     w.addDocument(doc);
-    IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
     assertTrue(reader.getContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
     w.close();

@@ -47,7 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
@@ -59,7 +61,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.DocRouter.ROUTE_FIELD;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
@@ -107,6 +109,12 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (cores == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Core container instance missing");
+    }
+
+    // Make sure that the core is ZKAware
+    if(!cores.isZooKeeperAware()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Solr instance is not running in SolrCloud mode.");
     }
 
     // Pick the action
@@ -224,13 +232,17 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
     
     HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
-    server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
-    RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
-    reqSyncShard.setCollection(collection);
-    reqSyncShard.setShard(shard);
-    reqSyncShard.setCoreName(nodeProps.getCoreName());
-    server.request(reqSyncShard);
+    try {
+      server.setConnectionTimeout(15000);
+      server.setSoTimeout(60000);
+      RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
+      reqSyncShard.setCollection(collection);
+      reqSyncShard.setShard(shard);
+      reqSyncShard.setCoreName(nodeProps.getCoreName());
+      server.request(reqSyncShard);
+    } finally {
+      server.shutdown();
+    }
   }
   
   private void handleCreateAliasAction(SolrQueryRequest req,
@@ -254,7 +266,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         OverseerCollectionProcessor.DELETEALIAS, "name", name);
     
-    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+    handleResponse(OverseerCollectionProcessor.DELETEALIAS, m, rsp);
   }
 
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
@@ -294,9 +306,8 @@ public class CollectionsHandler extends RequestHandlerBase {
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
         CREATE_NODE_SET ,
-        ROUTER,
         SHARDS_PROP,
-        ROUTE_FIELD);
+        "router.");
 
 
     ZkNodeProps m = new ZkNodeProps(props);
@@ -307,20 +318,37 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Create shard: " + req.getParamString());
     req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP);
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if(!ImplicitDocRouter.NAME.equals( clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).getStr(ROUTER)))
+    if(!ImplicitDocRouter.NAME.equals( ((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(ROUTER)).get("name") )  )
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
-    Map<String, Object> map = OverseerCollectionProcessor.asMap(QUEUE_OPERATION, CREATESHARD);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR);
+    Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);
   }
 
   private static void copyIfNotNull(SolrParams params, Map<String, Object> props, String... keys) {
+    ArrayList<String> prefixes = new ArrayList<String>(1);
     if(keys !=null){
       for (String key : keys) {
+        if(key.endsWith(".")) {
+          prefixes.add(key);
+          continue;
+        }
         String v = params.get(key);
         if(v != null) props.put(key,v);
+      }
+    }
+    if(prefixes.isEmpty()) return;
+    Iterator<String> it = params.getParameterNamesIterator();
+    String prefix = null;
+    for(;it.hasNext();){
+      String name = it.next();
+      for (int i = 0; i < prefixes.size(); i++) {
+        if(name.startsWith(prefixes.get(i))){
+          String val = params.get(name);
+          if(val !=null) props.put(name,val);
+        }
       }
     }
 
@@ -329,11 +357,11 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleDeleteShardAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Deleting Shard : " + req.getParamString());
-    String name = req.getParams().required().get("collection");
-    String shard = req.getParams().required().get("shard");
+    String name = req.getParams().required().get(ZkStateReader.COLLECTION_PROP);
+    String shard = req.getParams().required().get(ZkStateReader.SHARD_ID_PROP);
     
     Map<String,Object> props = new HashMap<String,Object>();
-    props.put("collection", name);
+    props.put(ZkStateReader.COLLECTION_PROP, name);
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.DELETESHARD);
     props.put(ZkStateReader.SHARD_ID_PROP, shard);
 
@@ -345,13 +373,34 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Splitting shard : " + req.getParamString());
     String name = req.getParams().required().get("collection");
     // TODO : add support for multiple shards
-    String shard = req.getParams().required().get("shard");
-    // TODO : add support for shard range
+    String shard = req.getParams().get("shard");
+    String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
+    String splitKey = req.getParams().get("split.key");
+
+    if (splitKey == null && shard == null) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: shard");
+    }
+    if (splitKey != null && shard != null)  {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Only one of 'shard' or 'split.key' should be specified");
+    }
+    if (splitKey != null && rangesStr != null)  {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Only one of 'ranges' or 'split.key' should be specified");
+    }
 
     Map<String,Object> props = new HashMap<String,Object>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
     props.put("collection", name);
-    props.put(ZkStateReader.SHARD_ID_PROP, shard);
+    if (shard != null)  {
+      props.put(ZkStateReader.SHARD_ID_PROP, shard);
+    }
+    if (splitKey != null) {
+      props.put("split.key", splitKey);
+    }
+    if (rangesStr != null)  {
+      props.put(CoreAdminParams.RANGES, rangesStr);
+    }
 
     ZkNodeProps m = new ZkNodeProps(props);
 

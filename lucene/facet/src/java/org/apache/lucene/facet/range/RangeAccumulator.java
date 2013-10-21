@@ -30,6 +30,7 @@ import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.Bits;
 
 /** Uses a {@link NumericDocValues} and accumulates
  *  counts for provided ranges.  This is dynamic (does not
@@ -86,10 +87,19 @@ public class RangeAccumulator extends FacetsAccumulator {
         if (ndv == null) {
           continue; // no numeric values for this field in this reader
         }
+        Bits docsWithField = hits.context.reader().getDocsWithField(ranges.field);
+
         final int length = hits.bits.length();
         int doc = 0;
         while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
           long v = ndv.get(doc);
+
+          // Skip missing docs:
+          if (v == 0 && docsWithField.get(doc) == false) {
+            doc++;
+            continue;
+          }
+
           // TODO: if all ranges are non-overlapping, we
           // should instead do a bin-search up front
           // (really, a specialized case of the interval

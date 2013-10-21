@@ -40,6 +40,10 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testSevereErrorsForDuplicateDynamicField() throws Exception {
     doTest("bad-schema-dup-dynamicField.xml", "_twice");
   }
+  public void testSevereErrorsForUnsupportedAttributesOnDynamicField() throws Exception {
+    doTest("bad-schema-dynamicfield-default-val.xml", "default");
+    doTest("bad-schema-dynamicfield-required.xml", "required");
+  }
 
   public void testSevereErrorsForDuplicateFieldType() throws Exception {
     doTest("bad-schema-dup-fieldType.xml", "ftAgain");
@@ -91,10 +95,6 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   
   public void testPerFieldtypePostingsFormatButNoSchemaCodecFactory() throws Exception {
     doTest("bad-schema-codec-global-vs-ft-mismatch.xml", "codec does not support");
-  }
-
-  public void testDocValuesNotRequiredNoDefault() throws Exception {
-    doTest("bad-schema-docValues-not-required-no-default.xml", "has no default value and is not required");
   }
 
   public void testDocValuesUnsupported() throws Exception {

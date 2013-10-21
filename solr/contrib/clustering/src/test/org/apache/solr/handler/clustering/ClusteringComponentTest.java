@@ -55,7 +55,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap<Object>());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
-    NamedList values = rsp.getValues();
+    NamedList<?> values = rsp.getValues();
     Object clusters = values.get("clusters");
     //System.out.println("Clusters: " + clusters);
     assertTrue("clusters is null and it shouldn't be", clusters != null);

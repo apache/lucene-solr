@@ -94,6 +94,6 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new JapaneseKatakanaStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

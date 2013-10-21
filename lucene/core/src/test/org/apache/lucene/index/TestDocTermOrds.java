@@ -172,7 +172,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
     verify(slowR, idToOrds, termsArray, null);
 
-    FieldCache.DEFAULT.purge(slowR);
+    FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
 
     r.close();
     dir.close();
@@ -291,7 +291,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       verify(slowR, idToOrdsPrefix, termsArray, prefixRef);
     }
 
-    FieldCache.DEFAULT.purge(slowR);
+    FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
 
     r.close();
     dir.close();

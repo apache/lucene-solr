@@ -45,6 +45,7 @@ import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util._TestUtil;
 
 // TODO
@@ -327,6 +328,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       searchThreads[thread] = new Thread() {
           @Override
           public void run() {
+            if (VERBOSE) {
+              System.out.println(Thread.currentThread().getName() + ": launch search thread");
+            }
             while (System.currentTimeMillis() < stopTimeMS) {
               try {
                 final IndexSearcher s = getCurrentSearcher();
@@ -478,6 +482,17 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       }
       });
 
+    if (VERBOSE) {
+      conf.setInfoStream(new PrintStreamInfoStream(System.out) {
+          @Override
+          public void message(String component, String message) {
+            if ("TP".equals(component)) {
+              return; // ignore test points!
+            }
+            super.message(component, message);
+          }
+        });
+    }
     writer = new IndexWriter(dir, conf);
     _TestUtil.reduceOpenFiles(writer);
 
@@ -498,7 +513,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final Thread[] indexThreads = launchIndexingThreads(docs, NUM_INDEX_THREADS, stopTime, delIDs, delPackIDs, allSubDocs);
 
     if (VERBOSE) {
-      System.out.println("TEST: DONE start indexing threads [" + (System.currentTimeMillis()-t0) + " ms]");
+      System.out.println("TEST: DONE start " + NUM_INDEX_THREADS + " indexing threads [" + (System.currentTimeMillis()-t0) + " ms]");
     }
 
     // Let index build up a bit
@@ -599,7 +614,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       if (!delIDs.contains(stringID)) {
         final TopDocs hits = s.search(new TermQuery(new Term("docid", stringID)), 1);
         if (hits.totalHits != 1) {
-          System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits);
+          System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits + "; delIDs=" + delIDs);
           doFail = true;
         }
       }

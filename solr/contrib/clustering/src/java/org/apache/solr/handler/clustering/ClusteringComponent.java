@@ -1,4 +1,5 @@
 package org.apache.solr.handler.clustering;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +17,15 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -28,43 +38,105 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import com.google.common.collect.Maps;
 
 
 /**
- * Provide a plugin for clustering results.  Can either be for search results (i.e. via Carrot2) or for
- * clustering documents (i.e. via Mahout)
- * <p/>
- * This engine is experimental.  Output from this engine is subject to change in future releases.
- *
- * <pre class="prettyprint" >
- * &lt;searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering"&gt;
- *   &lt;lst name="engine"&gt;
- *     &lt;str name="name"&gt;default&lt;/str&gt;
- *     &lt;str name="carrot.algorithm"&gt;org.carrot2.clustering.lingo.LingoClusteringAlgorithm&lt;/str&gt;
- *   &lt;/lst&gt;
- * &lt;/searchComponent&gt;</pre>
+ * Provides a plugin for performing cluster analysis. This can either be applied to 
+ * search results (e.g., via <a href="http://project.carrot2.org">Carrot<sup>2</sup></a>) or for
+ * clustering documents (e.g., via <a href="http://mahout.apache.org/">Mahout</a>).
+ * <p>
+ * See Solr example for configuration examples.</p>
+ * 
+ * @lucene.experimental
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
   private transient static Logger log = LoggerFactory.getLogger(ClusteringComponent.class);
 
-  private Map<String, SearchClusteringEngine> searchClusteringEngines = new HashMap<String, SearchClusteringEngine>();
-  private Map<String, DocumentClusteringEngine> documentClusteringEngines = new HashMap<String, DocumentClusteringEngine>();
   /**
-   * Base name for all spell checker query parameters. This name is also used to
+   * Base name for all component parameters. This name is also used to
    * register this component with SearchHandler.
    */
   public static final String COMPONENT_NAME = "clustering";
-  private NamedList initParams;
+
+  /**
+   * Declaration-order list of search clustering engines.
+   */
+  private final LinkedHashMap<String, SearchClusteringEngine> searchClusteringEngines = Maps.newLinkedHashMap();
+  
+  /**
+   * Declaration order list of document clustering engines.
+   */
+  private final LinkedHashMap<String, DocumentClusteringEngine> documentClusteringEngines = Maps.newLinkedHashMap();
+
+  /**
+   * An unmodifiable view of {@link #searchClusteringEngines}.
+   */
+  private final Map<String, SearchClusteringEngine> searchClusteringEnginesView = Collections.unmodifiableMap(searchClusteringEngines);
+
+  /**
+   * Initialization parameters temporarily saved here, the component
+   * is initialized in {@link #inform(SolrCore)} because we need to know
+   * the core's {@link SolrResourceLoader}.
+   * 
+   * @see #init(NamedList)
+   */
+  private NamedList<Object> initParams;
+
+  @Override
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public void init(NamedList args) {
+    this.initParams = args;
+    super.init(args);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void inform(SolrCore core) {
+    if (initParams != null) {
+      log.info("Initializing Clustering Engines");
+
+      // Our target list of engines, split into search-results and document clustering.
+      SolrResourceLoader loader = core.getResourceLoader();
+  
+      for (Map.Entry<String,Object> entry : initParams) {
+        if ("engine".equals(entry.getKey())) {
+          NamedList<Object> engineInitParams = (NamedList<Object>) entry.getValue();
+          
+          String engineClassName = StringUtils.defaultIfBlank( 
+              (String) engineInitParams.get("classname"),
+              CarrotClusteringEngine.class.getName()); 
+  
+          // Instantiate the clustering engine and split to appropriate map. 
+          final ClusteringEngine engine = loader.newInstance(engineClassName, ClusteringEngine.class);
+          final String name = StringUtils.defaultIfBlank(engine.init(engineInitParams, core), "");
+          final ClusteringEngine previousEntry;
+          if (engine instanceof SearchClusteringEngine) {
+            previousEntry = searchClusteringEngines.put(name, (SearchClusteringEngine) engine);
+          } else if (engine instanceof DocumentClusteringEngine) {
+            previousEntry = documentClusteringEngines.put(name, (DocumentClusteringEngine) engine);
+          } else {
+            log.warn("Unknown type of a clustering engine for class: " + engineClassName);
+            continue;
+          }
+          if (previousEntry != null) {
+            log.warn("Duplicate clustering engine component named '" + name + "'.");
+          }
+        }
+      }
+
+      // Set up the default engine key for both types of engines.
+      setupDefaultEngine("search results clustering", searchClusteringEngines);
+      setupDefaultEngine("document clustering", documentClusteringEngines);
+
+      log.info("Finished Initializing Clustering Engines");
+    }
+  }
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -86,8 +158,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       SearchClusteringEngine engine = getSearchClusteringEngine(rb);
       if (engine != null) {
         DocListAndSet results = rb.getResults();
-        Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(results.docList.size());
-        SolrDocumentList solrDocList = engine.getSolrDocumentList(results.docList, rb.req, docIds);
+        Map<SolrDocument,Integer> docIds = Maps.newHashMapWithExpectedSize(results.docList.size());
+        SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList(
+            results.docList, rb.req.getSearcher(), engine.getFieldsToLoad(rb.req), docIds);
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
       } else {
@@ -99,9 +172,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       DocumentClusteringEngine engine = documentClusteringEngines.get(name);
       if (engine != null) {
         boolean useDocSet = params.getBool(ClusteringParams.USE_DOC_SET, false);
-        NamedList nl = null;
+        NamedList<?> nl = null;
 
-        //TODO: This likely needs to be made into a background task that runs in an executor
+        // TODO: This likely needs to be made into a background task that runs in an executor
         if (useDocSet == true) {
           nl = engine.cluster(rb.getResults().docSet, params);
         } else {
@@ -113,7 +186,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       }
     }
   }
-  
+
   private SearchClusteringEngine getSearchClusteringEngine(ResponseBuilder rb){
     return searchClusteringEngines.get(getClusteringEngineName(rb));
   }
@@ -180,75 +253,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public void init(NamedList args) {
-    super.init(args);
-    this.initParams = args;
+  /**
+   * @return Expose for tests.
+   */
+  Map<String, SearchClusteringEngine> getSearchClusteringEngines() {
+    return searchClusteringEnginesView;
   }
-
-  @Override
-  public void inform(SolrCore core) {
-    if (initParams != null) {
-      log.info("Initializing Clustering Engines");
-      boolean searchHasDefault = false;
-      boolean documentHasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
-        if (initParams.getName(i).equals("engine")) {
-          NamedList engineNL = (NamedList) initParams.getVal(i);
-          String className = (String) engineNL.get("classname");
-          if (className == null) {
-            className = CarrotClusteringEngine.class.getName();
-          }
-          SolrResourceLoader loader = core.getResourceLoader();
-          ClusteringEngine clusterer = loader.newInstance(className, ClusteringEngine.class);
-          if (clusterer != null) {
-            String name = clusterer.init(engineNL, core);
-            if (name != null) {
-              boolean isDefault = name.equals(ClusteringEngine.DEFAULT_ENGINE_NAME);
-              if (clusterer instanceof SearchClusteringEngine) {
-                if (isDefault == true && searchHasDefault == false) {
-                  searchHasDefault = true;
-                } else if (isDefault == true && searchHasDefault == true) {
-                  throw new RuntimeException("More than one engine is missing name: " + engineNL);
-                }
-                searchClusteringEngines.put(name, (SearchClusteringEngine) clusterer);
-              } else if (clusterer instanceof DocumentClusteringEngine) {
-                if (isDefault == true && documentHasDefault == false) {
-                  searchHasDefault = true;
-                } else if (isDefault == true && documentHasDefault == true) {
-                  throw new RuntimeException("More than one engine is missing name: " + engineNL);
-                }
-                documentClusteringEngines.put(name, (DocumentClusteringEngine) clusterer);
-              }
-            } else {
-              if (clusterer instanceof SearchClusteringEngine && searchHasDefault == false) {
-                searchClusteringEngines.put(ClusteringEngine.DEFAULT_ENGINE_NAME, (SearchClusteringEngine) clusterer);
-                searchHasDefault = true;
-              } else if (clusterer instanceof DocumentClusteringEngine && documentHasDefault == false) {
-                documentClusteringEngines.put(ClusteringEngine.DEFAULT_ENGINE_NAME, (DocumentClusteringEngine) clusterer);
-                documentHasDefault = true;
-              } else {
-                throw new RuntimeException("More than one engine is missing name: " + engineNL);
-              }
-            }
-          }
-        }
-      }
-      log.info("Finished Initializing Clustering Engines");
-    }
-  }
-
-  /*
-  * @return Unmodifiable Map of the engines, key is the name from the config, value is the engine
-  * */
-  public Map<String, SearchClusteringEngine> getSearchClusteringEngines() {
-    return Collections.unmodifiableMap(searchClusteringEngines);
-  }
-
-  // ///////////////////////////////////////////
-  // / SolrInfoMBean
-  // //////////////////////////////////////////
 
   @Override
   public String getDescription() {
@@ -258,5 +268,24 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public String getSource() {
     return "$URL$";
+  }
+
+  /**
+   * Setup the default clustering engine.
+   * @see "https://issues.apache.org/jira/browse/SOLR-5219"
+   */
+  private static <T extends ClusteringEngine> void setupDefaultEngine(String type, LinkedHashMap<String,T> map) {
+    // If there's already a default algorithm, leave it as is.
+    if (map.containsKey(ClusteringEngine.DEFAULT_ENGINE_NAME)) {
+      return;
+    }
+  
+    // If there's no default algorithm, and there are any algorithms available, 
+    // the first definition becomes the default algorithm.
+    if (!map.isEmpty()) {
+      Entry<String,T> first = map.entrySet().iterator().next();
+      map.put(ClusteringEngine.DEFAULT_ENGINE_NAME, first.getValue());
+      log.info("Default engine for " + type + ": " + first.getKey());
+    }
   }
 }

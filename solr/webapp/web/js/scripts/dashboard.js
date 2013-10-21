@@ -112,6 +112,7 @@ sammy.get
                                 
               var data = {
                 'index_num-docs' : response['index']['numDocs'],
+                'index_heap-usage-bytes' : response['index']['indexHeapUsageBytes'],
                 'index_max-doc' : response['index']['maxDoc'],
                 'index_deleted-docs' : response['index']['deletedDocs'],
                 'index_version' : response['index']['version'],

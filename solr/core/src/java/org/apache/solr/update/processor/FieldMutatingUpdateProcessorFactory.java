@@ -17,8 +17,8 @@
 
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,10 +27,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 
@@ -133,18 +132,18 @@ public abstract class FieldMutatingUpdateProcessorFactory
   protected final FieldMutatingUpdateProcessor.FieldNameSelector getSelector() {
     if (null != selector) return selector;
 
-    throw new SolrException(SERVER_ERROR, "selector was never initialized, "+
-                            " inform(SolrCore) never called???");
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "selector was never initialized, inform(SolrCore) never called???");
   }
 
   public static SelectorParams parseSelectorParams(NamedList args) {
     SelectorParams params = new SelectorParams();
     
-    params.fieldName = new HashSet<String>(oneOrMany(args, "fieldName"));
-    params.typeName = new HashSet<String>(oneOrMany(args, "typeName"));
+    params.fieldName = new HashSet<String>(args.removeConfigArgs("fieldName"));
+    params.typeName = new HashSet<String>(args.removeConfigArgs("typeName"));
 
     // we can compile the patterns now
-    Collection<String> patterns = oneOrMany(args, "fieldRegex");
+    Collection<String> patterns = args.removeConfigArgs("fieldRegex");
     if (! patterns.isEmpty()) {
       params.fieldRegex = new ArrayList<Pattern>(patterns.size());
       for (String s : patterns) {
@@ -152,16 +151,17 @@ public abstract class FieldMutatingUpdateProcessorFactory
           params.fieldRegex.add(Pattern.compile(s));
         } catch (PatternSyntaxException e) {
           throw new SolrException
-            (SERVER_ERROR, "Invalid 'fieldRegex' pattern: " + s, e);
+            (SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid 'fieldRegex' pattern: " + s, e);
         }
       }
     }
     
     // resolve this into actual Class objects later
-    params.typeClass = oneOrMany(args, "typeClass");
+    params.typeClass = args.removeConfigArgs("typeClass");
 
-    // getBooleanArg() returns null if the arg is not specified
-    params.fieldNameMatchesSchemaField = getBooleanArg(args, "fieldNameMatchesSchemaField");
+    // Returns null if the arg is not specified
+    params.fieldNameMatchesSchemaField = args.removeBooleanArg("fieldNameMatchesSchemaField");
     
     return params;
   }
@@ -171,17 +171,17 @@ public abstract class FieldMutatingUpdateProcessorFactory
     List<Object> excList = args.getAll("exclude");
     for (Object excObj : excList) {
       if (null == excObj) {
-        throw new SolrException
-            (SERVER_ERROR, "'exclude' init param can not be null");
+        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
+            "'exclude' init param can not be null");
       }
       if (! (excObj instanceof NamedList) ) {
-        throw new SolrException
-            (SERVER_ERROR, "'exclude' init param must be <lst/>");
+        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
+            "'exclude' init param must be <lst/>");
       }
       NamedList exc = (NamedList) excObj;
       exclusions.add(parseSelectorParams(exc));
       if (0 < exc.size()) {
-        throw new SolrException(SERVER_ERROR,
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected 'exclude' init sub-param(s): '" +
                 args.getName(0) + "'");
       }
@@ -207,9 +207,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
     exclusions = parseSelectorExclusionParams(args);
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, 
-                              "Unexpected init param(s): '" + 
-                              args.getName(0) + "'");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected init param(s): '" + args.getName(0) + "'");
     }
 
   }
@@ -242,68 +241,5 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
     return FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
 
-  }
-
-  /**
-   * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key referred to.  Throws an error if the key didn't refer
-   * to one or more strings (or arrays of strings)
-   * @exception SolrException invalid arr/str structure.
-   */
-  public static Collection<String> oneOrMany(final NamedList args, final String key) {
-    List<String> result = new ArrayList<String>(args.size() / 2);
-    final String err = "init arg '" + key + "' must be a string "
-      + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
-    
-    for (Object o = args.remove(key); null != o; o = args.remove(key)) {
-      if (o instanceof String) {
-        result.add((String)o);
-        continue;
-      }
-      
-      if (o instanceof Object[]) {
-        o = Arrays.asList((Object[]) o);
-      }
-      
-      if (o instanceof Collection) {
-        for (Object item : (Collection)o) {
-          if (! (item instanceof String)) {
-            throw new SolrException(SERVER_ERROR, err + item.getClass());
-          }
-          result.add((String)item);
-        }
-        continue;
-      }
-      
-      // who knows what the hell we have
-      throw new SolrException(SERVER_ERROR, err + o.getClass());
-    }
-    
-    return result;
-  }
-
-  /**
-   * Removes the first instance of the key from NamedList, returning the Boolean
-   * that key referred to, or null if the key is not specified.
-   * @exception SolrException invalid type or structure
-   */
-  public static Boolean getBooleanArg(final NamedList args, final String key) {
-    Boolean bool;
-    List values = args.getAll(key);
-    if (0 == values.size()) {
-      return null;
-    }
-    if (values.size() > 1) {
-      throw new SolrException(SERVER_ERROR, "Only one '" + key + "' is allowed");
-    }
-    Object o = args.remove(key);
-    if (o instanceof Boolean) {
-      bool = (Boolean)o;
-    } else if (o instanceof CharSequence) {
-      bool = Boolean.parseBoolean(o.toString());
-    } else {
-      throw new SolrException(SERVER_ERROR, "'" + key + "' must have type 'bool' or 'str'; found " + o.getClass());
-    }
-    return bool;
   }
 }

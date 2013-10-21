@@ -617,16 +617,16 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
-          TokenStream ts = analyzer.tokenStream("ignore", term);
-          CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
-          ts.reset();
-          while(ts.incrementToken()) {
-            String text = termAttr.toString();
-            doc.add(text);
-            sb.append(text).append(' ');
+          try (TokenStream ts = analyzer.tokenStream("ignore", term)) {
+            CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+            ts.reset();
+            while(ts.incrementToken()) {
+              String text = termAttr.toString();
+              doc.add(text);
+              sb.append(text).append(' ');
+            }
+            ts.end();
           }
-          ts.end();
-          ts.close();
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));

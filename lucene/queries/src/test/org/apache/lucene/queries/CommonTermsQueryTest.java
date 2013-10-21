@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -282,6 +283,37 @@ public class CommonTermsQueryTest extends LuceneTestCase {
               r.document(search.scoreDocs[1].doc).get("id"),
               r.document(search.scoreDocs[2].doc).get("id"))));
     }
+    
+    {
+      // only high freq terms around - check that min should match is applied
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "the"));
+      query.setLowFreqMinimumNumberShouldMatch(1.0f);
+      query.setHighFreqMinimumNumberShouldMatch(2.0f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 4);
+    }
+    
+    {
+      // only high freq terms around - check that min should match is applied
+      CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "the"));
+      query.setLowFreqMinimumNumberShouldMatch(1.0f);
+      query.setHighFreqMinimumNumberShouldMatch(2.0f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 2);
+      assertEquals(
+          new HashSet<>(Arrays.asList("0", "2")),
+          new HashSet<>(Arrays.asList(
+              r.document(search.scoreDocs[0].doc).get("id"),
+              r.document(search.scoreDocs[1].doc).get("id"))));
+    }
     r.close();
     w.close();
     dir.close();
@@ -311,7 +343,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     createRandomIndex(atLeast(50), w, random().nextLong());
     DirectoryReader reader = w.getReader();
-    SlowCompositeReaderWrapper wrapper = new SlowCompositeReaderWrapper(reader);
+    AtomicReader wrapper = SlowCompositeReaderWrapper.wrap(reader);
     String field = "body";
     Terms terms = wrapper.terms(field);
     PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(

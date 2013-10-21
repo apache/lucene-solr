@@ -98,7 +98,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String url1 = getBaseUrl(client);
     HttpSolrServer server = new HttpSolrServer(url1);
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     server.request(createCmd);
     
     createCmd = new Create();
@@ -164,7 +164,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String url1 = getBaseUrl(client);
     HttpSolrServer server = new HttpSolrServer(url1);
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     
     Create createCmd = new Create();
     createCmd.setCoreName("unloadcollection1");

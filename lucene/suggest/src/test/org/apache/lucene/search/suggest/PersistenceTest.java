@@ -65,10 +65,10 @@ public class PersistenceTest extends LuceneTestCase {
 
     // Add all input keys.
     Lookup lookup = lookupClass.newInstance();
-    TermFreq[] keys = new TermFreq[this.keys.length];
+    Input[] keys = new Input[this.keys.length];
     for (int i = 0; i < keys.length; i++)
-      keys[i] = new TermFreq(this.keys[i], i);
-    lookup.build(new TermFreqArrayIterator(keys));
+      keys[i] = new Input(this.keys[i], i);
+    lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.
     File storeDir = TEMP_DIR;
@@ -81,7 +81,7 @@ public class PersistenceTest extends LuceneTestCase {
     // Assert validity.
     Random random = random();
     long previous = Long.MIN_VALUE;
-    for (TermFreq k : keys) {
+    for (Input k : keys) {
       List<LookupResult> list = lookup.lookup(_TestUtil.bytesToCharSequence(k.term, random), false, 1);
       assertEquals(1, list.size());
       LookupResult lookupResult = list.get(0);

@@ -31,7 +31,6 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -722,11 +721,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public long size() throws IOException {
       return numTerms;
     }
@@ -744,6 +738,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     @Override
     public int getDocCount() throws IOException {
       return 1;
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return true;
     }
 
     @Override
@@ -816,11 +815,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       in.readBytes(term.bytes, prefixLengths[ord], suffixLengths[ord]);
 
       return term;
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -1039,6 +1033,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       sum += el;
     }
     return sum;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return indexReader.ramBytesUsed();
   }
 
 }

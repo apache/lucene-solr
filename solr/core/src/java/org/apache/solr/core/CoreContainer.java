@@ -18,18 +18,19 @@
 package org.apache.solr.core;
 
 import com.google.common.collect.Maps;
+
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -37,6 +38,7 @@ import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -59,7 +61,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
 
 
 /**
@@ -86,6 +107,9 @@ public class CoreContainer {
 
   protected ZkContainer zkSys = new ZkContainer();
   private ShardHandlerFactory shardHandlerFactory;
+  
+  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
+      new SolrjNamedThreadFactory("updateExecutor"));
 
   protected LogWatcher logging = null;
 
@@ -193,7 +217,7 @@ public class CoreContainer {
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
-    logging = JulWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     shareSchema = cfg.hasSchemaCache();
 
@@ -210,8 +234,10 @@ public class CoreContainer {
     containerProperties = cfg.getSolrProperties("solr");
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor = Executors.newFixedThreadPool(cfg.getCoreLoadThreadCount(),
-        new DefaultSolrThreadFactory("coreLoadExecutor"));
+    // do not limit the size of the executor in zk mode since cores may try and wait for each other.
+    ExecutorService coreLoadExecutor = Executors.newFixedThreadPool(
+        ( zkSys.getZkController() == null ? cfg.getCoreLoadThreadCount() : Integer.MAX_VALUE ),
+        new DefaultSolrThreadFactory("coreLoadExecutor") );
 
     try {
       CompletionService<SolrCore> completionService = new ExecutorCompletionService<SolrCore>(
@@ -377,6 +403,8 @@ public class CoreContainer {
         shardHandlerFactory.close();
       }
       
+      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
+      
       // we want to close zk stuff last
 
       zkSys.close();
@@ -480,12 +508,14 @@ public class CoreContainer {
     SolrResourceLoader solrLoader = null;
 
     SolrConfig config = null;
-    solrLoader = new SolrResourceLoader(instanceDir, loader.getClassLoader(), dcore.getCoreProperties());
+    solrLoader = new SolrResourceLoader(instanceDir, loader.getClassLoader(), dcore.getSubstitutableProperties());
     try {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
       log.error("Failed to load file {}", new File(instanceDir, dcore.getConfigName()).getAbsolutePath());
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load config for " + dcore.getConfigName(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Could not load config file " + new File(instanceDir, dcore.getConfigName()).getAbsolutePath(),
+          e);
     }
 
     IndexSchema schema = null;
@@ -646,7 +676,7 @@ public class CoreContainer {
         SolrResourceLoader solrLoader;
         if(zkSys.getZkController() == null) {
           solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), loader.getClassLoader(),
-                                                cd.getCoreProperties());
+                                                cd.getSubstitutableProperties());
         } else {
           try {
             String collection = cd.getCloudDescriptor().getCollectionName();
@@ -659,7 +689,7 @@ public class CoreContainer {
                                            "Could not find config name for collection:" + collection);
             }
             solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, loader.getClassLoader(),
-                cd.getCoreProperties(), zkSys.getZkController());
+                cd.getSubstitutableProperties(), zkSys.getZkController());
           } catch (KeeperException e) {
             log.error("", e);
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -918,6 +948,10 @@ public class CoreContainer {
   /** The default ShardHandlerFactory used to communicate with other solr instances */
   public ShardHandlerFactory getShardHandlerFactory() {
     return shardHandlerFactory;
+  }
+  
+  public ExecutorService getUpdateExecutor() {
+    return updateExecutor;
   }
   
   // Just to tidy up the code where it did this in-line.

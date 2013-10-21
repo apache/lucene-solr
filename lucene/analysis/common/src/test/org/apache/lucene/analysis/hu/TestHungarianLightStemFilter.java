@@ -70,6 +70,6 @@ public class TestHungarianLightStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HungarianLightStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

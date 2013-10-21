@@ -24,6 +24,8 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+
 public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   public TestFailIfDirectoryNotClosed() {
     super(true);
@@ -39,6 +41,9 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   @Test
   public void testFailIfDirectoryNotClosed() {
     Result r = JUnitCore.runClasses(Nested1.class);
+    RandomizedTest.assumeTrue("Ignoring nested test, very likely zombie threads present.", 
+        r.getIgnoreCount() == 0);
+
     for (Failure f : r.getFailures()) {
       System.out.println("Failure: " + f);
     }

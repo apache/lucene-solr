@@ -62,7 +62,6 @@ public class JavaBinCodec {
           END = 15,
 
           SOLRINPUTDOC = 16,
-          SOLRINPUTDOC_CHILDS = 17,
 
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
@@ -359,35 +358,32 @@ public class JavaBinCodec {
 
   public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    dis.readByte(); // skip childDocuments tag
-    int childsSize = readVInt(dis);
     float docBoost = (Float)readVal(dis);
     SolrInputDocument sdoc = new SolrInputDocument();
     sdoc.setDocumentBoost(docBoost);
     for (int i = 0; i < sz; i++) {
       float boost = 1.0f;
       String fieldName;
-      Object boostOrFieldName = readVal(dis);
-      if (boostOrFieldName instanceof Float) {
-        boost = (Float)boostOrFieldName;
+      Object obj = readVal(dis); // could be a boost, a field name, or a child document
+      if (obj instanceof Float) {
+        boost = (Float)obj;
         fieldName = (String)readVal(dis);
+      } else if (obj instanceof SolrInputDocument) {
+        sdoc.addChildDocument((SolrInputDocument)obj);
+        continue;
       } else {
-        fieldName = (String)boostOrFieldName;
+        fieldName = (String)obj;
       }
       Object fieldVal = readVal(dis);
       sdoc.setField(fieldName, fieldVal, boost);
-    }
-    for (int i = 0; i < childsSize; i++) {
-      dis.readByte(); // skip solrinputdoc tag
-      SolrInputDocument child = readSolrInputDocument(dis);
-      sdoc.addChildDocument(child);
     }
     return sdoc;
   }
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
-    writeTag(SOLRINPUTDOC, sdoc.size());
-    writeTag(SOLRINPUTDOC_CHILDS, sdoc.getChildDocuments().size());    
+    List<SolrInputDocument> children = sdoc.getChildDocuments();
+    int sz = sdoc.size() + (children==null ? 0 : children.size());
+    writeTag(SOLRINPUTDOC, sz);
     writeFloat(sdoc.getDocumentBoost());
     for (SolrInputField inputField : sdoc.values()) {
       if (inputField.getBoost() != 1.0f) {
@@ -396,8 +392,10 @@ public class JavaBinCodec {
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
     }
-    for (SolrInputDocument child : sdoc.getChildDocuments()) {
-      writeSolrInputDocument(child);
+    if (children != null) {
+      for (SolrInputDocument child : sdoc.getChildDocuments()) {
+        writeSolrInputDocument(child);
+      }
     }
   }
 

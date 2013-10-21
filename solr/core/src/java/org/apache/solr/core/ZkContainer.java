@@ -227,7 +227,7 @@ public class ZkContainer {
             "Could not find config name for collection:" + collection);
       }
       solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName,
-          loader.getClassLoader(), dcore.getCoreProperties(), zkController);
+          loader.getClassLoader(), dcore.getSubstitutableProperties(), zkController);
       config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(),
           solrLoader);
       schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(),

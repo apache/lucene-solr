@@ -68,6 +68,7 @@
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
+    <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true"/>
   </target>
   
   <target name="-validate-source-patterns" unless="disable.source-patterns">
@@ -120,6 +121,13 @@
 
   <target name="jar" description="Build Lucene and Solr Jar files">
     <subant target="jar" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml"/>
+      <fileset dir="solr" includes="build.xml"/>
+    </subant>
+  </target>
+
+  <target name="jar-src" description="Build Lucene and Solr Source Jar files">
+    <subant target="jar-src" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml"/>
       <fileset dir="solr" includes="build.xml"/>
     </subant>
@@ -229,12 +237,37 @@
   </target>
 
   <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
+    <!-- Look for property definition for ${idea.jdk} in various *build.properties files -->
+    <property file="lucene/build.properties"/>    <!-- Look in the current project first -->
+    <property file="${user.home}/lucene.build.properties"/>
+    <property file="${user.home}/build.properties"/>
+    <condition property="idea.jdk.is.set">
+      <isset property="idea.jdk"/>
+    </condition>
+    <!-- Define ${idea.jdk} if it's not yet defined - otherwise literal "${idea.jdk}" is substituted -->
+    <property name="idea.jdk" value=""/>
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
+      <filterset begintoken="subst.=&quot;" endtoken="&quot;">
+        <filter token="idea.jdk" value="${idea.jdk}"/>
+      </filterset>
     </copy>
+    <antcall target="-post-idea-instructions"/>
+  </target>
+  
+  <target name="-post-idea-instructions" unless="idea.jdk.is.set">
     <echo>
-      To complete IntelliJ IDEA setup, you must manually configure
-      File | Project Structure | Project | Project SDK.
+To complete IntelliJ IDEA setup, you must manually configure
+File | Project Structure | Project | Project SDK.
+      
+You won't have to do this in the future if you define property
+$${idea.jdk}, e.g. in ~/lucene.build.properties, ~/build.properties
+or lucene/build.properties, with a value consisting of the
+following two XML attributes/values (adjust values according to
+JDKs you have defined locally - see 
+File | Project Structure | Platform Settings | SDKs):
+
+    idea.jdk = project-jdk-name="1.7" project-jdk-type="JavaSDK"
     </echo>
   </target>
 

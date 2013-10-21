@@ -334,8 +334,8 @@ var load_logging_viewer = function()
             var lines = doc.message.split( "\n" );
             if( 1 < lines.length )
             {
-              doc.message = lines[0];
               doc.trace = doc.message;
+              doc.message = lines[0];
               delete lines;
             }
           }
@@ -360,14 +360,7 @@ var load_logging_viewer = function()
           if( has_trace )
           {
             content += '<tr class="trace">' + "\n";
-              
-              // (1) with colspan
               content += '<td colspan="4"><pre>' + doc.trace.esc() + '</pre></td>' + "\n";
-              
-              // (2) without colspan
-              //content += '<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>';
-              //content += '<td>' + doc.trace.esc().replace( /\n/g, '<br>' ) + '</td>' + "\n";
-
             content += '</tr>' + "\n";
           }
 

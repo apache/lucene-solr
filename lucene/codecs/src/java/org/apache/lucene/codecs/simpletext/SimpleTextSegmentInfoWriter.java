@@ -45,9 +45,6 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
   final static BytesRef SI_NUM_DIAG         = new BytesRef("    diagnostics ");
   final static BytesRef SI_DIAG_KEY         = new BytesRef("      key ");
   final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
-  final static BytesRef SI_NUM_ATTS         = new BytesRef("    attributes ");
-  final static BytesRef SI_ATT_KEY          = new BytesRef("      key ");
-  final static BytesRef SI_ATT_VALUE        = new BytesRef("      value ");
   final static BytesRef SI_NUM_FILES        = new BytesRef("    files ");
   final static BytesRef SI_FILE             = new BytesRef("      file ");
   
@@ -93,24 +90,6 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
         }
       }
       
-      Map<String,String> atts = si.attributes();
-      int numAtts = atts == null ? 0 : atts.size();
-      SimpleTextUtil.write(output, SI_NUM_ATTS);
-      SimpleTextUtil.write(output, Integer.toString(numAtts), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      if (numAtts > 0) {
-        for (Map.Entry<String,String> entry : atts.entrySet()) {
-          SimpleTextUtil.write(output, SI_ATT_KEY);
-          SimpleTextUtil.write(output, entry.getKey(), scratch);
-          SimpleTextUtil.writeNewline(output);
-        
-          SimpleTextUtil.write(output, SI_ATT_VALUE);
-          SimpleTextUtil.write(output, entry.getValue(), scratch);
-          SimpleTextUtil.writeNewline(output);
-        }
-      }
-
       Set<String> files = si.files();
       int numFiles = files == null ? 0 : files.size();
       SimpleTextUtil.write(output, SI_NUM_FILES);

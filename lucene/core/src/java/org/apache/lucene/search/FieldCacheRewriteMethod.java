@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -26,7 +25,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
@@ -91,11 +89,6 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
         
         @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
-        }
-        
-        @Override
         public TermsEnum iterator(TermsEnum reuse) {
           return fcsi.termsEnum();
         }
@@ -118,6 +111,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         @Override
         public long size() {
           return -1;
+        }
+
+        @Override
+        public boolean hasFreqs() {
+          return false;
         }
 
         @Override

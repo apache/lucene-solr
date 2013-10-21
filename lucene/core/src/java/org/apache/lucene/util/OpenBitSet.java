@@ -81,32 +81,35 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   // Used only for assert:
   private long numBits;
 
-  /** Constructs an OpenBitSet large enough to hold <code>numBits</code>.
-   */
+  /** Constructs an OpenBitSet large enough to hold {@code numBits}. */
   public OpenBitSet(long numBits) {
     this.numBits = numBits;
     bits = new long[bits2words(numBits)];
     wlen = bits.length;
   }
 
+  /** Constructor: allocates enough space for 64 bits. */
   public OpenBitSet() {
     this(64);
   }
 
-  /** Constructs an OpenBitSet from an existing long[].
-   * <br/>
-   * The first 64 bits are in long[0],
-   * with bit index 0 at the least significant bit, and bit index 63 at the most significant.
-   * Given a bit index,
-   * the word containing it is long[index/64], and it is at bit number index%64 within that word.
+  /**
+   * Constructs an OpenBitSet from an existing long[].
    * <p>
-   * numWords are the number of elements in the array that contain
-   * set bits (non-zero longs).
-   * numWords should be &lt= bits.length, and
-   * any existing words in the array at position &gt= numWords should be zero.
-   *
+   * The first 64 bits are in long[0], with bit index 0 at the least significant
+   * bit, and bit index 63 at the most significant. Given a bit index, the word
+   * containing it is long[index/64], and it is at bit number index%64 within
+   * that word.
+   * <p>
+   * numWords are the number of elements in the array that contain set bits
+   * (non-zero longs). numWords should be &lt= bits.length, and any existing
+   * words in the array at position &gt= numWords should be zero.
+   * 
    */
   public OpenBitSet(long[] bits, int numWords) {
+    if (numWords > bits.length) {
+      throw new IllegalArgumentException("numWords cannot exceed bits.length");
+    }
     this.bits = bits;
     this.wlen = numWords;
     this.numBits = wlen * 64;
@@ -150,16 +153,8 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   /** Expert: returns the long[] storing the bits */
   public long[] getBits() { return bits; }
 
-  /** Expert: sets a new long[] to use as the bit storage */
-  public void setBits(long[] bits) { this.bits = bits; }
-
   /** Expert: gets the number of longs in the array that are in use */
   public int getNumWords() { return wlen; }
-
-  /** Expert: sets the number of longs in the array that are in use */
-  public void setNumWords(int nWords) { this.wlen=nWords; }
-
-
 
   /** Returns true or false for the specified bit index. */
   @Override
@@ -287,7 +282,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
 
     // since endIndex is one past the end, this is index of the last
     // word to be changed.
-    int endWord   = expandingWordNum(endIndex-1);
+    int endWord = expandingWordNum(endIndex-1);
 
     long startmask = -1L << startIndex;
     long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
@@ -302,18 +297,13 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     bits[endWord] |= endmask;
   }
 
-
-
   protected int expandingWordNum(long index) {
     int wordNum = (int)(index >> 6);
-    if (wordNum>=wlen) {
-      ensureCapacity(index+1);
-      wlen = wordNum+1;
+    if (wordNum >= wlen) {
+      ensureCapacity(index + 1);
     }
-    assert (numBits = Math.max(numBits, index+1)) >= 0;
     return wordNum;
   }
-
 
   /** clears a bit.
    * The index should be less than the OpenBitSet size.
@@ -519,7 +509,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
 
     // since endIndex is one past the end, this is index of the last
     // word to be changed.
-    int endWord   = expandingWordNum(endIndex-1);
+    int endWord = expandingWordNum(endIndex-1);
 
     /*** Grrr, java shifting wraps around so -1L>>>64 == -1
      * for that reason, make sure not to use endmask if the bits to flip will
@@ -833,22 +823,22 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     return false;
   }
 
-
-
-  /** Expand the long[] with the size given as a number of words (64 bit longs).
-   * getNumWords() is unchanged by this call.
-   */
+  /** Expand the long[] with the size given as a number of words (64 bit longs). */
   public void ensureCapacityWords(int numWords) {
-    if (bits.length < numWords) {
-      bits = ArrayUtil.grow(bits, numWords);
-    }
+    bits = ArrayUtil.grow(bits, numWords);
+    wlen = numWords;
+    assert (this.numBits = Math.max(this.numBits, numWords << 6)) >= 0;
   }
 
-  /** Ensure that the long[] is big enough to hold numBits, expanding it if necessary.
-   * getNumWords() is unchanged by this call.
+  /**
+   * Ensure that the long[] is big enough to hold numBits, expanding it if
+   * necessary.
    */
   public void ensureCapacity(long numBits) {
     ensureCapacityWords(bits2words(numBits));
+    // ensureCapacityWords sets numBits to a multiple of 64, but we want to set
+    // it to exactly what the app asked.
+    assert (this.numBits = Math.max(this.numBits, numBits)) >= 0;
   }
 
   /** Lowers numWords, the number of words in use,
@@ -862,9 +852,8 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
 
   /** returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(long numBits) {
-   return (int)(((numBits-1)>>>6)+1);
+    return (int)(((numBits-1)>>>6)+1);
   }
-
 
   /** returns true if both sets have the same bits set */
   @Override

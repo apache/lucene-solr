@@ -30,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -322,7 +324,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           int value = 100;
           try {
             latch.await();
-            for (int i = 0; i < 1000; i++) {
+            for (int j = 0; j < 1000; j++) {
               Document doc = new Document();
               doc.add(newTextField("content", "aaa", Field.Store.NO));
               doc.add(newStringField("id", String.valueOf(id++), Field.Store.YES));

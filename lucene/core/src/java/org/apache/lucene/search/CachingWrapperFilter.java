@@ -27,8 +27,8 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.WAH8DocIdSet;
 
 /**
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
@@ -36,9 +36,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * to add caching.
  */
 public class CachingWrapperFilter extends Filter {
-  // TODO: make this filter aware of ReaderContext. a cached filter could 
-  // specify the actual readers key or something similar to indicate on which
-  // level of the readers hierarchy it should be cached.
   private final Filter filter;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
 
@@ -49,11 +46,19 @@ public class CachingWrapperFilter extends Filter {
     this.filter = filter;
   }
 
+  /**
+   * Gets the contained filter.
+   * @return the contained filter.
+   */
+  public Filter getFilter() {
+    return filter;
+  }
+
   /** 
    *  Provide the DocIdSet to be cached, using the DocIdSet provided
    *  by the wrapped Filter. <p>This implementation returns the given {@link DocIdSet},
-   *  if {@link DocIdSet#isCacheable} returns <code>true</code>, else it copies the 
-   *  {@link DocIdSetIterator} into a {@link FixedBitSet}.
+   *  if {@link DocIdSet#isCacheable} returns <code>true</code>, else it calls
+   *  {@link #cacheImpl(DocIdSetIterator,AtomicReader)}
    *  <p>Note: This method returns {@linkplain #EMPTY_DOCIDSET} if the given docIdSet
    *  is <code>null</code> or if {@link DocIdSet#iterator()} return <code>null</code>. The empty
    *  instance is use as a placeholder in the cache instead of the <code>null</code> value.
@@ -72,11 +77,18 @@ public class CachingWrapperFilter extends Filter {
       if (it == null) {
         return EMPTY_DOCIDSET;
       } else {
-        final FixedBitSet bits = new FixedBitSet(reader.maxDoc());
-        bits.or(it);
-        return bits;
+        return cacheImpl(it, reader);
       }
     }
+  }
+  
+  /**
+   * Default cache implementation: uses {@link WAH8DocIdSet}.
+   */
+  protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader) throws IOException {
+    WAH8DocIdSet.Builder builder = new WAH8DocIdSet.Builder();
+    builder.add(iterator);
+    return builder.build();
   }
 
   // for testing
@@ -93,6 +105,7 @@ public class CachingWrapperFilter extends Filter {
     } else {
       missCount++;
       docIdSet = docIdSetToCache(filter.getDocIdSet(context, null), reader);
+      assert docIdSet.isCacheable();
       cache.put(key, docIdSet);
     }
 
@@ -101,19 +114,19 @@ public class CachingWrapperFilter extends Filter {
   
   @Override
   public String toString() {
-    return "CachingWrapperFilter("+filter+")";
+    return getClass().getSimpleName() + "("+filter+")";
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof CachingWrapperFilter)) return false;
+    if (o == null || !getClass().equals(o.getClass())) return false;
     final CachingWrapperFilter other = (CachingWrapperFilter) o;
     return this.filter.equals(other.filter);
   }
 
   @Override
   public int hashCode() {
-    return (filter.hashCode() ^ 0x1117BF25);
+    return (filter.hashCode() ^ getClass().hashCode());
   }
   
   /** An empty {@code DocIdSet} instance */

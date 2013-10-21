@@ -54,7 +54,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
     SolrConfig solrConfig = new SolrConfig("solr" + File.separator
-        + "collection1", "solrconfig-mergepolicy.xml", null);
+        + "collection1", "solrconfig-tieredmergepolicy.xml", null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
         null);
     assertNotNull(solrIndexConfig);

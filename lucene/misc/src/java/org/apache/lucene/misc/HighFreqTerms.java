@@ -17,26 +17,19 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -51,27 +44,24 @@ import java.util.Comparator;
 public class HighFreqTerms {
   
   // The top numTerms will be displayed
-  public static final int DEFAULTnumTerms = 100;
-  public static int numTerms = DEFAULTnumTerms;
+  public static final int DEFAULT_NUMTERMS = 100;
   
   public static void main(String[] args) throws Exception {
-    IndexReader reader = null;
-    FSDirectory dir = null;
     String field = null;
-    boolean IncludeTermFreqs = false; 
+    int numTerms = DEFAULT_NUMTERMS;
    
     if (args.length == 0 || args.length > 4) {
       usage();
       System.exit(1);
     }     
 
-    if (args.length > 0) {
-      dir = FSDirectory.open(new File(args[0]));
-    }
+    Directory dir = FSDirectory.open(new File(args[0]));
+    
+    Comparator<TermStats> comparator = new DocFreqComparator();
    
     for (int i = 1; i < args.length; i++) {
       if (args[i].equals("-t")) {
-        IncludeTermFreqs = true;
+        comparator = new TotalTermFreqComparator();
       }
       else{
         try {
@@ -82,22 +72,12 @@ public class HighFreqTerms {
       }
     }
     
-    reader = DirectoryReader.open(dir);
-    TermStats[] terms = getHighFreqTerms(reader, numTerms, field);
-    if (!IncludeTermFreqs) {
-      //default HighFreqTerms behavior
-      for (int i = 0; i < terms.length; i++) {
-        System.out.printf("%s:%s %,d \n",
-            terms[i].field, terms[i].termtext.utf8ToString(), terms[i].docFreq);
-      }
-    }
-    else{
-      TermStats[] termsWithTF = sortByTotalTermFreq(reader, terms);
-      for (int i = 0; i < termsWithTF.length; i++) {
-        System.out.printf("%s:%s \t totalTF = %,d \t doc freq = %,d \n",
-            termsWithTF[i].field, termsWithTF[i].termtext.utf8ToString(),
-            termsWithTF[i].totalTermFreq, termsWithTF[i].docFreq);
-      }
+    IndexReader reader = DirectoryReader.open(dir);
+    TermStats[] terms = getHighFreqTerms(reader, numTerms, field, comparator);
+
+    for (int i = 0; i < terms.length; i++) {
+      System.out.printf("%s:%s \t totalTF = %,d \t docFreq = %,d \n",
+            terms[i].field, terms[i].termtext.utf8ToString(), terms[i].totalTermFreq, terms[i].docFreq);
     }
     reader.close();
   }
@@ -105,12 +85,13 @@ public class HighFreqTerms {
   private static void usage() {
     System.out
         .println("\n\n"
-            + "java org.apache.lucene.misc.HighFreqTerms <index dir> [-t] [number_terms] [field]\n\t -t: include totalTermFreq\n\n");
+            + "java org.apache.lucene.misc.HighFreqTerms <index dir> [-t] [number_terms] [field]\n\t -t: order by totalTermFreq\n\n");
   }
+  
   /**
-   * Returns TermStats[] ordered by terms with highest docFreq first.
+   * Returns TermStats[] ordered by the specified comparator
    */
-  public static TermStats[] getHighFreqTerms(IndexReader reader, int numTerms, String field) throws Exception {
+  public static TermStats[] getHighFreqTerms(IndexReader reader, int numTerms, String field, Comparator<TermStats> comparator) throws Exception {
     TermStatsQueue tiq = null;
     
     if (field != null) {
@@ -121,7 +102,7 @@ public class HighFreqTerms {
       Terms terms = fields.terms(field);
       if (terms != null) {
         TermsEnum termsEnum = terms.iterator(null);
-        tiq = new TermStatsQueue(numTerms);
+        tiq = new TermStatsQueue(numTerms, comparator);
         tiq.fill(field, termsEnum);
       }
     } else {
@@ -129,7 +110,7 @@ public class HighFreqTerms {
       if (fields == null) {
         throw new RuntimeException("no fields found for this index");
       }
-      tiq = new TermStatsQueue(numTerms);
+      tiq = new TermStatsQueue(numTerms, comparator);
       for (String fieldName : fields) {
         Terms terms = fields.terms(fieldName);
         if (terms != null) {
@@ -150,91 +131,61 @@ public class HighFreqTerms {
   }
   
   /**
-   * Takes array of TermStats. For each term looks up the tf for each doc
-   * containing the term and stores the total in the output array of TermStats.
-   * Output array is sorted by highest total tf.
-   * 
-   * @param terms
-   *          TermStats[]
-   * @return TermStats[]
+   * Compares terms by docTermFreq
    */
+  public static final class DocFreqComparator implements Comparator<TermStats> {
+    
+    @Override
+    public int compare(TermStats a, TermStats b) {
+      int res = Long.compare(a.docFreq, b.docFreq);
+      if (res == 0) {
+        res = a.field.compareTo(b.field);
+        if (res == 0) {
+          res = a.termtext.compareTo(b.termtext);
+        }
+      }
+      return res;
+    }
+  }
+
+  /**
+   * Compares terms by totalTermFreq
+   */
+  public static final class TotalTermFreqComparator implements Comparator<TermStats> {
+    
+    @Override
+    public int compare(TermStats a, TermStats b) {
+      int res = Long.compare(a.totalTermFreq, b.totalTermFreq);
+      if (res == 0) {
+        res = a.field.compareTo(b.field);
+        if (res == 0) {
+          res = a.termtext.compareTo(b.termtext);
+        }
+      }
+      return res;
+    }
+  }
   
-  public static TermStats[] sortByTotalTermFreq(IndexReader reader, TermStats[] terms) throws Exception {
-    TermStats[] ts = new TermStats[terms.length]; // array for sorting
-    long totalTF;
-    for (int i = 0; i < terms.length; i++) {
-      totalTF = getTotalTermFreq(reader, new Term(terms[i].field, terms[i].termtext));
-      ts[i] = new TermStats(terms[i].field, terms[i].termtext, terms[i].docFreq, totalTF);
+  /**
+   * Priority queue for TermStats objects
+   **/
+  static final class TermStatsQueue extends PriorityQueue<TermStats> {
+    final Comparator<TermStats> comparator;
+    
+    TermStatsQueue(int size, Comparator<TermStats> comparator) {
+      super(size);
+      this.comparator = comparator;
     }
     
-    Comparator<TermStats> c = new TotalTermFreqComparatorSortDescending();
-    Arrays.sort(ts, c);
-    
-    return ts;
-  }
-  
-  public static long getTotalTermFreq(IndexReader reader, Term term) throws Exception {   
-    long totalTF = 0L;
-    for (final AtomicReaderContext ctx : reader.leaves()) {
-      AtomicReader r = ctx.reader();
-      if (!r.hasDeletions()) {
-        // TODO: we could do this up front, during the scan
-        // (next()), instead of after-the-fact here w/ seek,
-        // if the codec supports it and there are no del
-        // docs...
-        final long totTF = r.totalTermFreq(term);
-        if (totTF != -1) {
-          totalTF += totTF;
-          continue;
-        } // otherwise we fall-through
-      }
-      // note: what should we do if field omits freqs? currently it counts as 1...
-      DocsEnum de = r.termDocsEnum(term);
-      if (de != null) {
-        while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
-          totalTF += de.freq();
-      }
+    @Override
+    protected boolean lessThan(TermStats termInfoA, TermStats termInfoB) {
+      return comparator.compare(termInfoA, termInfoB) < 0;
     }
     
-    return totalTF;
-  }
- }
-
-/**
- * Comparator
- * 
- * Reverse of normal Comparator. i.e. returns 1 if a.totalTermFreq is less than
- * b.totalTermFreq So we can sort in descending order of totalTermFreq
- */
-
-final class TotalTermFreqComparatorSortDescending implements Comparator<TermStats> {
-  
-  @Override
-  public int compare(TermStats a, TermStats b) {
-    return Long.compare(b.totalTermFreq, a.totalTermFreq);
-  }
-}
-
-/**
- * Priority queue for TermStats objects ordered by docFreq
- **/
-final class TermStatsQueue extends PriorityQueue<TermStats> {
-  TermStatsQueue(int size) {
-    super(size);
-  }
-  
-  @Override
-  protected boolean lessThan(TermStats termInfoA, TermStats termInfoB) {
-    return termInfoA.docFreq < termInfoB.docFreq;
-  }
-  
-  protected void fill(String field, TermsEnum termsEnum) throws IOException {
-    while (true) {
-      BytesRef term = termsEnum.next();
-      if (term != null) {
-        insertWithOverflow(new TermStats(field, term, termsEnum.docFreq()));
-      } else {
-        break;
+    protected void fill(String field, TermsEnum termsEnum) throws IOException {
+      BytesRef term = null;
+      while ((term = termsEnum.next()) != null) {
+        insertWithOverflow(new TermStats(field, term, termsEnum.docFreq(), termsEnum.totalTermFreq()));
       }
     }
   }

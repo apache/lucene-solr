@@ -66,6 +66,10 @@ public class DrillDownQueryTest extends FacetTestCase {
   @AfterClass
   public static void afterClassDrillDownQueryTest() throws Exception {
     IOUtils.close(reader, taxo, dir, taxoDir);
+    reader = null;
+    taxo = null;
+    dir = null;
+    taxoDir = null;
   }
 
   @BeforeClass

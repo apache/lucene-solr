@@ -68,7 +68,7 @@ public class SyncStrategy {
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 15000);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 60000);
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
     client = HttpClientUtil.createClient(params);
   }
@@ -285,12 +285,14 @@ public class SyncStrategy {
         recoverRequestCmd.setCoreName(coreName);
         
         HttpSolrServer server = new HttpSolrServer(baseUrl, client);
-        server.setConnectionTimeout(15000);
-        server.setSoTimeout(30000);
         try {
+          server.setConnectionTimeout(15000);
+          server.setSoTimeout(60000);
           server.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+        } finally {
+          server.shutdown();
         }
       }
     };

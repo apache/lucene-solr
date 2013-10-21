@@ -22,7 +22,7 @@
   <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene41"/>
 
   <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Disk" />
-  <fieldType name="string_memory" class="solr.StrField" docValuesFormat="Lucene42" />
+  <fieldType name="string_memory" class="solr.StrField" docValuesFormat="Lucene45" />
 
   <fieldType name="string" class="solr.StrField" />
 
@@ -41,8 +41,8 @@
    <dynamicField name="*_pulsing" type="string_pulsing"  indexed="true" stored="true"/>
    <dynamicField name="*_standard" type="string_standard"  indexed="true" stored="true"/>
 
-   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true" default="" />
-   <dynamicField name="*_memory" type="string_memory" indexed="false" stored="false" docValues="true" default="" />
+   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true" />
+   <dynamicField name="*_memory" type="string_memory" indexed="false" stored="false" docValues="true" />
  </fields>
   <defaultSearchField>string_f</defaultSearchField>
  <uniqueKey>string_f</uniqueKey>

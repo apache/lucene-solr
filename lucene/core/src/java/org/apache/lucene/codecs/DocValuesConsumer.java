@@ -69,7 +69,8 @@ public abstract class DocValuesConsumer implements Closeable {
   /**
    * Writes numeric docvalues for a field.
    * @param field field information
-   * @param values Iterable of numeric values (one for each document).
+   * @param values Iterable of numeric values (one for each document). {@code null} indicates
+   *               a missing value.
    * @throws IOException if an I/O error occurred.
    */
   public abstract void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException;    
@@ -77,7 +78,8 @@ public abstract class DocValuesConsumer implements Closeable {
   /**
    * Writes binary docvalues for a field.
    * @param field field information
-   * @param values Iterable of binary values (one for each document).
+   * @param values Iterable of binary values (one for each document). {@code null} indicates
+   *               a missing value.
    * @throws IOException if an I/O error occurred.
    */
   public abstract void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException;
@@ -86,7 +88,8 @@ public abstract class DocValuesConsumer implements Closeable {
    * Writes pre-sorted binary docvalues for a field.
    * @param field field information
    * @param values Iterable of binary values in sorted order (deduplicated).
-   * @param docToOrd Iterable of ordinals (one for each document).
+   * @param docToOrd Iterable of ordinals (one for each document). {@code -1} indicates
+   *                 a missing value.
    * @throws IOException if an I/O error occurred.
    */
   public abstract void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException;
@@ -95,7 +98,8 @@ public abstract class DocValuesConsumer implements Closeable {
    * Writes pre-sorted set docvalues for a field
    * @param field field information
    * @param values Iterable of binary values in sorted order (deduplicated).
-   * @param docToOrdCount Iterable of the number of values for each document. 
+   * @param docToOrdCount Iterable of the number of values for each document. A zero ordinal
+   *                      count indicates a missing value.
    * @param ords Iterable of ordinal occurrences (docToOrdCount*maxDoc total).
    * @throws IOException if an I/O error occurred.
    */
@@ -107,7 +111,7 @@ public abstract class DocValuesConsumer implements Closeable {
    * The default implementation calls {@link #addNumericField}, passing
    * an Iterable that merges and filters deleted documents on the fly.
    */
-  public void mergeNumericField(FieldInfo fieldInfo, final MergeState mergeState, final List<NumericDocValues> toMerge) throws IOException {
+  public void mergeNumericField(final FieldInfo fieldInfo, final MergeState mergeState, final List<NumericDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
 
     addNumericField(fieldInfo,
                     new Iterable<Number>() {
@@ -116,10 +120,11 @@ public abstract class DocValuesConsumer implements Closeable {
                         return new Iterator<Number>() {
                           int readerUpto = -1;
                           int docIDUpto;
-                          long nextValue;
+                          Long nextValue;
                           AtomicReader currentReader;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
+                          Bits currentDocsWithField;
                           boolean nextIsSet;
 
                           @Override
@@ -139,7 +144,6 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
                             assert nextIsSet;
                             nextIsSet = false;
-                            // TODO: make a mutable number
                             return nextValue;
                           }
 
@@ -155,6 +159,7 @@ public abstract class DocValuesConsumer implements Closeable {
                                   currentReader = mergeState.readers.get(readerUpto);
                                   currentValues = toMerge.get(readerUpto);
                                   currentLiveDocs = currentReader.getLiveDocs();
+                                  currentDocsWithField = docsWithField.get(readerUpto);
                                 }
                                 docIDUpto = 0;
                                 continue;
@@ -162,7 +167,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                               if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                                 nextIsSet = true;
-                                nextValue = currentValues.get(docIDUpto);
+                                if (currentDocsWithField.get(docIDUpto)) {
+                                  nextValue = currentValues.get(docIDUpto);
+                                } else {
+                                  nextValue = null;
+                                }
                                 docIDUpto++;
                                 return true;
                               }
@@ -181,7 +190,7 @@ public abstract class DocValuesConsumer implements Closeable {
    * The default implementation calls {@link #addBinaryField}, passing
    * an Iterable that merges and filters deleted documents on the fly.
    */
-  public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge) throws IOException {
+  public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
 
     addBinaryField(fieldInfo,
                    new Iterable<BytesRef>() {
@@ -191,9 +200,11 @@ public abstract class DocValuesConsumer implements Closeable {
                          int readerUpto = -1;
                          int docIDUpto;
                          BytesRef nextValue = new BytesRef();
+                         BytesRef nextPointer; // points to null if missing, or nextValue
                          AtomicReader currentReader;
                          BinaryDocValues currentValues;
                          Bits currentLiveDocs;
+                         Bits currentDocsWithField;
                          boolean nextIsSet;
 
                          @Override
@@ -213,8 +224,7 @@ public abstract class DocValuesConsumer implements Closeable {
                            }
                            assert nextIsSet;
                            nextIsSet = false;
-                           // TODO: make a mutable number
-                           return nextValue;
+                           return nextPointer;
                          }
 
                          private boolean setNext() {
@@ -228,6 +238,7 @@ public abstract class DocValuesConsumer implements Closeable {
                                if (readerUpto < toMerge.size()) {
                                  currentReader = mergeState.readers.get(readerUpto);
                                  currentValues = toMerge.get(readerUpto);
+                                 currentDocsWithField = docsWithField.get(readerUpto);
                                  currentLiveDocs = currentReader.getLiveDocs();
                                }
                                docIDUpto = 0;
@@ -236,7 +247,12 @@ public abstract class DocValuesConsumer implements Closeable {
 
                              if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                                nextIsSet = true;
-                               currentValues.get(docIDUpto, nextValue);
+                               if (currentDocsWithField.get(docIDUpto)) {
+                                 currentValues.get(docIDUpto, nextValue);
+                                 nextPointer = nextValue;
+                               } else {
+                                 nextPointer = null;
+                               }
                                docIDUpto++;
                                return true;
                              }
@@ -272,7 +288,10 @@ public abstract class DocValuesConsumer implements Closeable {
         OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
-            bitset.set(dv.getOrd(i));
+            int ord = dv.getOrd(i);
+            if (ord >= 0) {
+              bitset.set(ord);
+            }
           }
         }
         liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
@@ -368,7 +387,7 @@ public abstract class DocValuesConsumer implements Closeable {
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                     nextIsSet = true;
                     int segOrd = dvs[readerUpto].getOrd(docIDUpto);
-                    nextValue = (int) map.getGlobalOrd(readerUpto, segOrd);
+                    nextValue = segOrd == -1 ? -1 : (int) map.getGlobalOrd(readerUpto, segOrd);
                     docIDUpto++;
                     return true;
                   }

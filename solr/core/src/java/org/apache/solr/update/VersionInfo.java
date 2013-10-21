@@ -49,7 +49,7 @@ public class VersionInfo {
    */
   public static SchemaField getAndCheckVersionField(IndexSchema schema) 
     throws SolrException {
-    final String errPrefix = VERSION_FIELD + "field must exist in schema, using indexed=\"true\" stored=\"true\" and multiValued=\"false\"";
+    final String errPrefix = VERSION_FIELD + " field must exist in schema, using indexed=\"true\" stored=\"true\" and multiValued=\"false\"";
     SchemaField sf = schema.getFieldOrNull(VERSION_FIELD);
 
     if (null == sf) {

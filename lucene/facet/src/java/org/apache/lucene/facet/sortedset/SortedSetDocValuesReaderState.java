@@ -96,11 +96,7 @@ public final class SortedSetDocValuesReaderState {
 
     // We need this to create thread-safe MultiSortedSetDV
     // per collector:
-    if (reader instanceof AtomicReader) {
-      topReader = (AtomicReader) reader;
-    } else {
-      topReader = new SlowCompositeReaderWrapper((CompositeReader) reader);
-    }
+    topReader = SlowCompositeReaderWrapper.wrap(reader);
     SortedSetDocValues dv = topReader.getSortedSetDocValues(field);
     if (dv == null) {
       throw new IllegalArgumentException("field \"" + field + "\" was not indexed with SortedSetDocValues");

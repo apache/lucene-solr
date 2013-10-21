@@ -68,12 +68,11 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
         control.setApplyAllDeletes();
       }
     }
-    final DocumentsWriter writer = this.writer.get();
     if ((flushOnRAM() &&
         control.getDeleteBytesUsed() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
       control.setApplyAllDeletes();
-     if (writer.infoStream.isEnabled("FP")) {
-       writer.infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
+     if (infoStream.isEnabled("FP")) {
+       infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
      }
    }
   }
@@ -89,9 +88,8 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
       final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
       final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
       if (totalRam >= limit) {
-        final DocumentsWriter writer = this.writer.get();
-        if (writer.infoStream.isEnabled("FP")) {
-          writer.infoStream.message("FP", "flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
+        if (infoStream.isEnabled("FP")) {
+          infoStream.message("FP", "flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
         }
         markLargestWriterPending(control, state, totalRam);
       }

@@ -75,6 +75,13 @@ public enum Version {
   @Deprecated
   LUCENE_45,
 
+  /**
+   * Match settings and bugs in Lucene's 4.6 release.
+   * @deprecated (5.0) Use latest
+   */
+  @Deprecated
+  LUCENE_46,
+
   /** Match settings and bugs in Lucene's 5.0 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug

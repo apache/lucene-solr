@@ -33,6 +33,7 @@ import javax.xml.stream.XMLStreamReader;
 
 
 
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -130,8 +131,59 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    inputFactory = null;
     exe.shutdownNow();
+    
+    exe = null;
+    inputFactory = null;
+    counter = null;
+  }
+  
+  @Test
+  public void testOverwrite() throws IOException{
+    assertU(add(
+      nest(doc("id","X", parent, "X"), 
+             doc(child,"a", "id", "66"), 
+             doc(child,"b", "id", "66"))));
+    assertU(add(
+      nest(doc("id","Y", parent, "Y"), 
+             doc(child,"a", "id", "66"), 
+             doc(child,"b", "id", "66"))));
+    String overwritten = random().nextBoolean() ? "X": "Y";
+    String dubbed = overwritten=="X" ? "Y":"X";
+    
+    assertU(add(
+        nest(doc("id",overwritten, parent, overwritten), 
+               doc(child,"c","id", "66"), 
+               doc(child,"d","id", "66")), "overwrite", "true"));
+    assertU(add(
+        nest(doc("id",dubbed, parent, dubbed), 
+               doc(child,"c","id", "66"), 
+               doc(child,"d","id", "66")), "overwrite", "false"));
+    
+    assertU(commit());
+    
+    assertQ(req(parent+":"+overwritten, "//*[@numFound='1']"));
+    assertQ(req(parent+":"+dubbed, "//*[@numFound='2']"));
+    
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, one("ab"), dubbed);
+    
+    final TopDocs docs = searcher.search(join(one("cd")), 10);
+    assertEquals(2, docs.totalHits);
+    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent)+
+                        searcher.doc(docs.scoreDocs[1].doc).get(parent);
+    assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length()==2);
+    
+    assertQ(req("id:66", "//*[@numFound='6']"));
+    assertQ(req(child+":(a b)", "//*[@numFound='2']"));
+    assertQ(req(child+":(c d)", "//*[@numFound='4']"));
+  }
+  
+  private static XmlDoc nest(XmlDoc parent, XmlDoc ... children){
+    XmlDoc xmlDoc = new XmlDoc();
+    xmlDoc.xml = parent.xml.replace("</doc>",
+        Arrays.toString(children).replaceAll("[\\[\\]]", "")+"</doc>");
+    return xmlDoc;
   }
   
   @Test
@@ -169,44 +221,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("mno"), "P");
     assertSingleParentOf(searcher, one("qrs"), "T");
     assertSingleParentOf(searcher, one("uvw"), "X");
+   
+    assertQ(req("q",child+":(a b c)", "sort","_docid_ asc"),
+        "//*[@numFound='3']", // assert physical order of children
+      "//doc[1]/arr[@name='child_s']/str[text()='a']",
+      "//doc[2]/arr[@name='child_s']/str[text()='b']",
+      "//doc[3]/arr[@name='child_s']/str[text()='c']");
   }
-
-  /***
-  @Test
-  public void testSmallBlockDirect() throws Exception {
-    final AddBlockUpdateCommand cmd = new AddBlockUpdateCommand(req("*:*"));
-    final List<SolrInputDocument> docs = Arrays.asList(new SolrInputDocument() {
-      {
-        addField("id", id());
-        addField(child, "a");
-      }
-    }, new SolrInputDocument() {
-      {
-        addField("id", id());
-        addField(parent, "B");
-      }
-    });
-    cmd.setDocs(docs);
-    assertEquals(2, h.getCore().getUpdateHandler().addBlock(cmd));
-    assertU(commit());
-    
-    final SolrIndexSearcher searcher = getSearcher();
-    assertQ(req("*:*"), "//*[@numFound='2']");
-    assertSingleParentOf(searcher, one("a"), "B");
-  }
-  
-  @Test
-  public void testEmptyDirect() throws Exception {
-    final AddBlockUpdateCommand cmd = new AddBlockUpdateCommand(req("*:*"));
-    // let's add empty one
-    cmd.setDocs(Collections.<SolrInputDocument> emptyList());
-    assertEquals(0,
-        ((DirectUpdateHandler2) h.getCore().getUpdateHandler()).addBlock(cmd));
-    assertU(commit());
-    
-    assertQ(req("*:*"), "//*[@numFound='0']");
-  }
-   ***/
   
   @Test
   public void testExceptionThrown() throws Exception {
@@ -219,7 +240,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Element doc1 = root.addElement("doc");
     attachField(doc1, "id", id());
     attachField(doc1, parent, "Y");
-    attachField(doc1, "sample_i", "notanumber");
+    attachField(doc1, "sample_i", "notanumber/ignore_exception");
     Element subDoc1 = doc1.addElement("doc");
     attachField(subDoc1, "id", id());
     attachField(subDoc1, child, "x");
@@ -403,7 +424,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertEquals("v2", result.getFieldValue("parent_f2"));
     
     List<SolrInputDocument> resultChilds = result.getChildDocuments();
-    assertEquals(childsNum, resultChilds.size());
+    int resultChildsSize = resultChilds == null ? 0 : resultChilds.size();
+    assertEquals(childsNum, resultChildsSize);
     
     for (int childIndex = 0; childIndex < childsNum; ++childIndex) {
       SolrInputDocument child = resultChilds.get(childIndex);
@@ -412,7 +434,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       }
       
       List<SolrInputDocument> grandChilds = child.getChildDocuments();
-      assertEquals(childIndex * 2, grandChilds.size());
+      int grandChildsSize = grandChilds == null ? 0 : grandChilds.size();
+
+      assertEquals(childIndex * 2, grandChildsSize);
       for (int grandIndex = 0; grandIndex < childIndex * 2; ++grandIndex) {
         SolrInputDocument grandChild = grandChilds.get(grandIndex);
         assertFalse(grandChild.hasChildDocuments());

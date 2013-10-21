@@ -31,15 +31,18 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
 class Facet42DocValuesProducer extends DocValuesProducer {
 
   private final Map<Integer,Facet42BinaryDocValues> fields = new HashMap<Integer,Facet42BinaryDocValues>();
+  private final int maxDoc;
   
   Facet42DocValuesProducer(SegmentReadState state) throws IOException {
     String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Facet42DocValuesFormat.EXTENSION);
     IndexInput in = state.directory.openInput(fileName, state.context);
+    this.maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
     try {
       CodecUtil.checkHeader(in, Facet42DocValuesFormat.CODEC, 
@@ -81,6 +84,20 @@ class Facet42DocValuesProducer extends DocValuesProducer {
   }
 
   @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    return new Bits.MatchAllBits(maxDoc); // TODO: have codec impl this?
+  }
+
+  @Override
   public void close() throws IOException {
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long size = 0;
+    for (Facet42BinaryDocValues entry: fields.values()) {
+      size += entry.ramBytesUsed() + Integer.SIZE;
+    } 
+    return size;
   }
 }

@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
@@ -40,6 +39,10 @@ public abstract class Lookup {
   public static final class LookupResult implements Comparable<LookupResult> {
     /** the key's text */
     public final CharSequence key;
+
+    /** Expert: custom Object to hold the result of a
+     *  highlighted suggestion. */
+    public final Object highlightKey;
 
     /** the key's weight */
     public final long value;
@@ -59,6 +62,17 @@ public abstract class Lookup {
      */
     public LookupResult(CharSequence key, long value, BytesRef payload) {
       this.key = key;
+      this.highlightKey = null;
+      this.value = value;
+      this.payload = payload;
+    }
+
+    /**
+     * Create a new result from a key+highlightKey+weight+payload triple.
+     */
+    public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload) {
+      this.key = key;
+      this.highlightKey = highlightKey;
       this.value = value;
       this.payload = payload;
     }
@@ -139,25 +153,25 @@ public abstract class Lookup {
   
   /** Build lookup from a dictionary. Some implementations may require sorted
    * or unsorted keys from the dictionary's iterator - use
-   * {@link SortedTermFreqIteratorWrapper} or
-   * {@link UnsortedTermFreqIteratorWrapper} in such case.
+   * {@link SortedInputIterator} or
+   * {@link UnsortedInputIterator} in such case.
    */
   public void build(Dictionary dict) throws IOException {
     BytesRefIterator it = dict.getWordsIterator();
-    TermFreqIterator tfit;
-    if (it instanceof TermFreqIterator) {
-      tfit = (TermFreqIterator)it;
+    InputIterator tfit;
+    if (it instanceof InputIterator) {
+      tfit = (InputIterator)it;
     } else {
-      tfit = new TermFreqIterator.TermFreqIteratorWrapper(it);
+      tfit = new InputIterator.InputIteratorWrapper(it);
     }
     build(tfit);
   }
   
   /**
-   * Builds up a new internal {@link Lookup} representation based on the given {@link TermFreqIterator}.
+   * Builds up a new internal {@link Lookup} representation based on the given {@link InputIterator}.
    * The implementation might re-sort the data internally.
    */
-  public abstract void build(TermFreqIterator tfit) throws IOException;
+  public abstract void build(InputIterator tfit) throws IOException;
   
   /**
    * Look up a key and return possible completion for this key.

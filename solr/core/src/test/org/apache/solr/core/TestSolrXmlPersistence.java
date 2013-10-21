@@ -382,7 +382,10 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   @Test
   public void testPersist() throws Exception {
 
-    final CoreContainer cores = init(ConfigSolrXmlOld.DEF_SOLR_XML, "collection1");
+    String defXml = FileUtils.readFileToString(
+        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
+        Charsets.UTF_8.toString());
+    final CoreContainer cores = init(defXml, "collection1");
     SolrXMLCoresLocator.NonPersistingLocator locator
         = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 

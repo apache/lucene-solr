@@ -19,10 +19,10 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="velocity"/>
     <dependencies>
-      <dependency org="commons-beanutils" name="commons-beanutils" rev="1.7.0" transitive="false"/>
-      <dependency org="commons-collections" name="commons-collections" rev="3.2.1" transitive="false"/>
-      <dependency org="org.apache.velocity" name="velocity" rev="1.7" transitive="false"/>
-      <dependency org="org.apache.velocity" name="velocity-tools" rev="2.0" transitive="false"/>
+      <dependency org="commons-beanutils" name="commons-beanutils" rev="${/commons-beanutils/commons-beanutils}" transitive="false"/>
+      <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" transitive="false"/>
+      <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" transitive="false"/>
+      <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>
