@@ -90,13 +90,15 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
         // called from the ctor, after we know copyFrom has initialized children/siblings
         System.arraycopy(copyFrom.children(), 0, children, 0, copyFrom.children().length);
         System.arraycopy(copyFrom.siblings(), 0, siblings, 0, copyFrom.siblings().length);
+        computeChildrenSiblings(copyFrom.parents.length);
+      } else {
+        computeChildrenSiblings(0);
       }
-      computeChildrenSiblings(parents, 0);
       initializedChildren = true;
     }
   }
   
-  private void computeChildrenSiblings(int[] parents, int first) {
+  private void computeChildrenSiblings(int first) {
     // reset the youngest child of all ordinals. while this should be done only
     // for the leaves, we don't know up front which are the leaves, so we reset
     // all of them.
