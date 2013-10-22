@@ -122,7 +122,9 @@ public final class KoreanFilter extends TokenFilter {
     final Token iw = morphQueue.removeFirst();
     if (isFirst && !morphQueue.isEmpty()) {
       // our queue has more elements remaining (e.g. we decompounded)
-      // capture state for those.
+      // capture state for those. We set the term attribute to be empty
+      // so we save lots of array copying later.
+      termAtt.setEmpty();
       currentState = captureState();
     }
     
