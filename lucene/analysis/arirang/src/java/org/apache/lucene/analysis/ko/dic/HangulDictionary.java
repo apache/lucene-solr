@@ -25,20 +25,51 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.BytesReader;
 
 class HangulDictionary {
-  final FST<Byte> fst;
-  final byte[] metadata;
+  private final FST<Byte> fst;
+  private final byte[] metadata;
+  private final FST.Arc<Byte> rootCache[]; // ~140kb
   
   static final int RECORD_SIZE = 15;
-  
-  static final int SBASE = 0xAC00;
-  static final int HANGUL_B0 = 0xE0 | (SBASE >> 12);
-  static final int VCOUNT = 21;
-  static final int TCOUNT = 28;
-  static final int NCOUNT = VCOUNT * TCOUNT;
   
   public HangulDictionary(FST<Byte> fst, byte[] metadata) {
     this.fst = fst;
     this.metadata = metadata;
+    try {
+      rootCache = cacheRootArcs();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
+  }
+  
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private FST.Arc<Byte>[] cacheRootArcs() throws IOException {
+    FST.Arc<Byte> rootCache[] = new FST.Arc[1+(0xD7AF-0xAC00)];
+    FST.Arc<Byte> firstArc = new FST.Arc<Byte>();
+    fst.getFirstArc(firstArc);
+    FST.Arc<Byte> arc = new FST.Arc<Byte>();
+    final FST.BytesReader fstReader = fst.getBytesReader();
+    // TODO: jump to AC00, readNextRealArc to ceiling? (just be careful we don't add bugs)
+    for (int i = 0; i < rootCache.length; i++) {
+      if (fst.findTargetArc(0xAC00 + i, firstArc, arc, fstReader) != null) {
+        rootCache[i] = new FST.Arc<Byte>().copyFrom(arc);
+      }
+    }
+    return rootCache;
+  }
+  
+  private FST.Arc<Byte> findTargetArc(int ch, FST.Arc<Byte> follow, FST.Arc<Byte> arc, boolean useCache, FST.BytesReader fstReader) throws IOException {
+    if (useCache && ch >= 0xAC00 && ch <= 0xD7AF) {
+      assert ch != FST.END_LABEL;
+      final FST.Arc<Byte> result = rootCache[ch - 0xAC00];
+      if (result == null) {
+        return null;
+      } else {
+        arc.copyFrom(result);
+        return arc;
+      }
+    } else {
+      return fst.findTargetArc(ch, follow, arc, fstReader);
+    }
   }
   
   /** looks up word class for a word (exact match) */
@@ -52,49 +83,20 @@ class HangulDictionary {
     final BytesReader fstReader = fst.getBytesReader();
 
     // Accumulate output as we go
-    Byte output = fst.outputs.getNoOutput();
+    byte output = 0;
     for (int i = 0; i < key.length(); i++) {
       try {
-        char ch = key.charAt(i);
-        if (ch < 0xFF) {
-          // latin-1: remap to hangul syllable
-          if (fst.findTargetArc(HANGUL_B0, arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-          if (fst.findTargetArc(0x80 | ((ch >> 6) & 0x3F), arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-          if (fst.findTargetArc(0x80 | (ch & 0x3F), arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-        } else if (ch >= SBASE && ch <= 0xD7AF) {
-          // hangul syllable: decompose to jamo and remap to latin-1
-          ch -= SBASE;
-          if (fst.findTargetArc(ch / NCOUNT, arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-          if (fst.findTargetArc((ch % NCOUNT) / TCOUNT, arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-          if (fst.findTargetArc(ch % TCOUNT, arc, arc, fstReader) == null) {
-            return null;
-          }
-          output = fst.outputs.add(output, arc.output);
-        } else {
+        if (findTargetArc(key.charAt(i), arc, arc, i == 0, fstReader) == null) {
           return null;
         }
       } catch (IOException bogus) {
         throw new RuntimeException();
       }
+      output += arc.output;
     }
 
     if (arc.isFinal()) {
-      return fst.outputs.add(output, arc.nextFinalOutput);
+      return (byte) (output + arc.nextFinalOutput);
     } else {
       return null;
     }
@@ -153,31 +155,7 @@ class HangulDictionary {
 
     for (int i = 0; i < key.length(); i++) {
       try {
-        char ch = key.charAt(i);
-        if (ch < 0xFF) {
-          // latin-1: remap to hangul syllable
-          if (fst.findTargetArc(HANGUL_B0, arc, arc, fstReader) == null) {
-            return false;
-          }
-          if (fst.findTargetArc(0x80 | ((ch >> 6) & 0x3F), arc, arc, fstReader) == null) {
-            return false;
-          }
-          if (fst.findTargetArc(0x80 | (ch & 0x3F), arc, arc, fstReader) == null) {
-            return false;
-          }
-        } else if (ch >= SBASE && ch <= 0xD7AF) {
-          // hangul syllable: decompose to jamo and remap to latin-1
-          ch -= SBASE;
-          if (fst.findTargetArc(ch / NCOUNT, arc, arc, fstReader) == null) {
-            return false;
-          }
-          if (fst.findTargetArc((ch % NCOUNT) / TCOUNT, arc, arc, fstReader) == null) {
-            return false;
-          }
-          if (fst.findTargetArc(ch % TCOUNT, arc, arc, fstReader) == null) {
-            return false;
-          }
-        } else {
+        if (findTargetArc(key.charAt(i), arc, arc, i == 0, fstReader) == null) {
           return false;
         }
       } catch (IOException bogus) {
