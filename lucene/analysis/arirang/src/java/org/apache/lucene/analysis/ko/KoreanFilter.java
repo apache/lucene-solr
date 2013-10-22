@@ -101,17 +101,14 @@ public final class KoreanFilter extends TokenFilter {
     while (input.incrementToken()) {
       final String type = typeAtt.type();
       if (KOREAN_TYPE.equals(type)) {
-        currentState = captureState();
         analysisKorean(termAtt.toString());
       } else if (CHINESE_TYPE.equals(type)) {
-        currentState = captureState();
         analysisChinese(termAtt.toString());
       } else {
         return true; // pass anything else thru
       }        
   
       if (!morphQueue.isEmpty()) {
-        // no need to restore state!
         setAttributesFromQueue(true);
         return true;
       }
@@ -123,6 +120,11 @@ public final class KoreanFilter extends TokenFilter {
 
   private void setAttributesFromQueue(boolean isFirst) {
     final Token iw = morphQueue.removeFirst();
+    if (isFirst && !morphQueue.isEmpty()) {
+      // our queue has more elements remaining (e.g. we decompounded)
+      // capture state for those.
+      currentState = captureState();
+    }
     
     termAtt.setEmpty().append(iw.word);
     offsetAtt.setOffset(iw.offset, iw.offset + iw.word.length());
