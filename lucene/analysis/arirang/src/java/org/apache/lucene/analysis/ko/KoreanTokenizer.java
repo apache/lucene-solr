@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -47,15 +48,15 @@ public final class KoreanTokenizer extends Tokenizer {
 
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
-      "<ALPHANUM>",
-      "<APOSTROPHE>",
-      "<ACRONYM>",
-      "<COMPANY>",
-      "<EMAIL>",
-      "<HOST>",
-      "<NUM>",
-      "<CJ>",
-      "<ACRONYM_DEP>",      
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ALPHANUM],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.APOSTROPHE],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ACRONYM],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.COMPANY],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.EMAIL],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.HOST],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.NUM],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.CJ],
+      ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ACRONYM_DEP],
       "<KOREAN>",
       "<CHINESE>"
   };

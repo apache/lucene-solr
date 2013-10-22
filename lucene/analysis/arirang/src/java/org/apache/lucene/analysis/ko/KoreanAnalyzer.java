@@ -24,6 +24,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
@@ -96,6 +97,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
     final KoreanTokenizer src = new KoreanTokenizer(reader);
     src.setMaxTokenLength(maxTokenLength);
     TokenStream tok = new LowerCaseFilter(matchVersion, src);
+    tok = new ClassicFilter(tok);
     tok = new KoreanFilter(tok, bigrammable, hasOrigin, exactMatch, originCNoun);
     tok = new StopFilter(matchVersion, tok, stopwords);
     return new TokenStreamComponents(src, tok) {

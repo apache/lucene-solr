@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ko;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,8 +59,6 @@ public final class KoreanFilter extends TokenFilter {
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-  private static final String APOSTROPHE_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.APOSTROPHE];
-  private static final String ACRONYM_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.ACRONYM];
   private static final String KOREAN_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.KOREAN];
   private static final String CHINESE_TYPE = KoreanTokenizer.TOKEN_TYPES[KoreanTokenizer.CHINESE];
     
@@ -102,15 +99,15 @@ public final class KoreanFilter extends TokenFilter {
     }
 
     while (input.incrementToken()) {
-      currentState = captureState();
-      
       final String type = typeAtt.type();
-      if(KOREAN_TYPE.equals(type)) {            
+      if (KOREAN_TYPE.equals(type)) {
+        currentState = captureState();
         analysisKorean(termAtt.toString());
-      } else if(CHINESE_TYPE.equals(type)) {
+      } else if (CHINESE_TYPE.equals(type)) {
+        currentState = captureState();
         analysisChinese(termAtt.toString());
       } else {
-        analysisETC(termAtt.toString());
+        return true; // pass anything else thru
       }        
   
       if (!morphQueue.isEmpty()) {
@@ -370,31 +367,6 @@ public final class KoreanFilter extends TokenFilter {
     }
        
     return cnAnalyzer.analyze(input);
-  }
-  
-  private void analysisETC(String term) {
-
-    final char[] buffer = termAtt.buffer();
-    final int bufferLength = termAtt.length();
-    final String type = typeAtt.type();
-
-    if (type == APOSTROPHE_TYPE &&      // remove 's
-        bufferLength >= 2 &&
-        buffer[bufferLength-2] == '\'' &&
-        (buffer[bufferLength-1] == 's' || buffer[bufferLength-1] == 'S')) {
-      // Strip last 2 characters off
-      morphQueue.add(new Token(term.substring(0,bufferLength - 2),0));
-    } else if (type == ACRONYM_TYPE) {      // remove dots
-      int upto = 0;
-      for(int i=0;i<bufferLength;i++) {
-        char c = buffer[i];
-        if (c != '.')
-          buffer[upto++] = c;
-      }
-      morphQueue.add(new Token(term.substring(0,upto),0));
-    } else {
-      morphQueue.add(new Token(term,0));
-    }
   }
   
   private boolean isAlphaNumChar(int c) {

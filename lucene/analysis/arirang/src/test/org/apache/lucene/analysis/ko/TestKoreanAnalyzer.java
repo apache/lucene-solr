@@ -40,6 +40,13 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
         new int[]{1, 1, 1, 1, 1, 1, 1}
     );
   }
+  
+  // don't know why we have this, but it should at least do washington dc, not washington d.
+  public void testAcronym() throws IOException {
+    assertAnalyzesTo(new KoreanAnalyzer(TEST_VERSION_CURRENT), "Washington D.C.",
+        new String[] { "washington", "dc" }
+    );
+  }
 
   public void testCompoundNoun() throws IOException {
     
