@@ -119,6 +119,9 @@ Bug Fixes
 
 * SOLR-5371: Solr should consistently call SolrServer#shutdown (Mark Miller)
 
+* SOLR-5363: Solr doesn't start up properly with Log4J2 (Petar Tahchiev via Alan
+  Woodward)
+
 Optimizations
 ----------------------  
 
