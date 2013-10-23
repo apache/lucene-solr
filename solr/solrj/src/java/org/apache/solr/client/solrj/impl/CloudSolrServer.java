@@ -546,17 +546,7 @@ public class CloudSolrServer extends SolrServer {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Could not find collection: " + collection);
       }
-      collection = collectionsList.iterator().next();
-      
-      StringBuilder collectionString = new StringBuilder();
-      Iterator<String> it = collectionsList.iterator();
-      for (int i = 0; i < collectionsList.size(); i++) {
-        String col = it.next();
-        collectionString.append(col);
-        if (i < collectionsList.size() - 1) {
-          collectionString.append(",");
-        }
-      }
+
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard
       // when getting leaders if we tweaked some things
@@ -592,10 +582,24 @@ public class CloudSolrServer extends SolrServer {
               || !coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) continue;
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || (sendToLeaders && coreNodeProps.isLeader())) {
-              String url = coreNodeProps.getCoreUrl();
+              String url;
+              if (reqParams.get("collection") == null) {
+                url = ZkCoreNodeProps.getCoreUrl(
+                    nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
+                    defaultCollection);
+              } else {
+                url = coreNodeProps.getCoreUrl();
+              }
               urlList2.add(url);
             } else if (sendToLeaders) {
-              String url = coreNodeProps.getCoreUrl();
+              String url;
+              if (reqParams.get("collection") == null) {
+                url = ZkCoreNodeProps.getCoreUrl(
+                    nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
+                    defaultCollection);
+              } else {
+                url = coreNodeProps.getCoreUrl();
+              }
               replicas.add(url);
             }
           }
