@@ -109,6 +109,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
 
+    incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
     splitByRouteFieldTest();
     splitByRouteKeyTest();
@@ -118,6 +119,50 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     waitForRecoveriesToFinish(true);
     //waitForThingsToLevelOut(15);
 
+  }
+
+  private void incompleteOrOverlappingCustomRangeTest() throws Exception  {
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+    Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+    DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
+
+    List<DocRouter.Range> subRanges = new ArrayList<DocRouter.Range>();
+    List<DocRouter.Range> ranges = router.partitionRange(4, shard1Range);
+
+    // test with only one range
+    subRanges.add(ranges.get(0));
+    try {
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      fail("Shard splitting with just one custom hash range should not succeed");
+    } catch (HttpSolrServer.RemoteSolrException e) {
+      log.info("Expected exception:", e);
+    }
+    subRanges.clear();
+
+    // test with ranges with a hole in between them
+    subRanges.add(ranges.get(3)); // order shouldn't matter
+    subRanges.add(ranges.get(0));
+    try {
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      fail("Shard splitting with missing hashes in between given ranges should not succeed");
+    } catch (HttpSolrServer.RemoteSolrException e) {
+      log.info("Expected exception:", e);
+    }
+    subRanges.clear();
+
+    // test with overlapping ranges
+    subRanges.add(ranges.get(0));
+    subRanges.add(ranges.get(1));
+    subRanges.add(ranges.get(2));
+    subRanges.add(new DocRouter.Range(ranges.get(3).min - 15, ranges.get(3).max));
+    try {
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      fail("Shard splitting with overlapping ranges should not succeed");
+    } catch (HttpSolrServer.RemoteSolrException e) {
+      log.info("Expected exception:", e);
+    }
+    subRanges.clear();
   }
 
   private void splitByUniqueKeyTest() throws Exception {

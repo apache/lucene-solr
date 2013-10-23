@@ -552,6 +552,19 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
                 "Specified hash range: " + r + " is not a subset of parent shard's range: " + range.toString());
           }
         }
+        List<DocRouter.Range> temp = new ArrayList<DocRouter.Range>(subRanges); // copy to preserve original order
+        Collections.sort(temp);
+        if (!range.equals(new DocRouter.Range(temp.get(0).min, temp.get(temp.size() - 1).max)))  {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Specified hash ranges: " + rangesStr + " do not cover the entire range of parent shard: " + range);
+        }
+        for (int i = 1; i < temp.size(); i++) {
+          if (temp.get(i - 1).max + 1 != temp.get(i).min) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Specified hash ranges: " + rangesStr + " either overlap with each other or " +
+                    "do not cover the entire range of parent shard: " + range);
+          }
+        }
       }
     } else if (splitKey != null)  {
       if (router instanceof CompositeIdRouter) {

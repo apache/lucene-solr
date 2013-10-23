@@ -95,7 +95,7 @@ public abstract class DocRouter {
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range implements JSONWriter.Writable {
+  public static class Range implements JSONWriter.Writable, Comparable<Range> {
     public int min;  // inclusive
     public int max;  // inclusive
 
@@ -140,6 +140,12 @@ public abstract class DocRouter {
     @Override
     public void write(JSONWriter writer) {
       writer.write(toString());
+    }
+
+    @Override
+    public int compareTo(Range that) {
+      int mincomp = Integer.valueOf(this.min).compareTo(that.min);
+      return mincomp == 0 ? Integer.valueOf(this.max).compareTo(that.max) : mincomp;
     }
   }
 
