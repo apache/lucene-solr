@@ -25,9 +25,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.Diagnostics;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -35,7 +32,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 @Slow
-public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
+public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
@@ -89,7 +86,7 @@ public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    // randomly turn on 5 seconds 'soft' commit
+    // randomly turn on 1 seconds 'soft' commit
     randomlyEnableAutoSoftCommit();
 
     del("*:*");
@@ -164,17 +161,7 @@ public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
   private void randomlyEnableAutoSoftCommit() {
     if (r.nextBoolean()) {
-      log.info("Turning on auto soft commit");
-      for (CloudJettyRunner jetty : shardToJetty.get("shard1")) {
-        SolrCore core = ((SolrDispatchFilter) jetty.jetty.getDispatchFilter()
-            .getFilter()).getCores().getCore("collection1");
-        try {
-          ((DirectUpdateHandler2) core.getUpdateHandler()).getCommitTracker()
-              .setTimeUpperBound(5000);
-        } finally {
-          core.close();
-        }
-      }
+      enableAutoSoftCommit(1000);
     } else {
       log.info("Not turning on auto soft commit");
     }
