@@ -122,6 +122,10 @@ Bug Fixes
 * SOLR-5363: Solr doesn't start up properly with Log4J2 (Petar Tahchiev via Alan
   Woodward)
 
+* SOLR-5380: Using cloudSolrServer.setDefaultCollection(collectionId) does not
+  work as intended for an alias spanning more than 1 collection. 
+  (Thomas Egense, Shawn Heisey, Mark Miller)
+
 Optimizations
 ----------------------  
 

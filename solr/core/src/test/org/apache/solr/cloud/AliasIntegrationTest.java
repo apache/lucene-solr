@@ -157,6 +157,12 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query = new SolrQuery("*:*");
     query.set("collection", "testalias");
     res = cloudSolrServer.query(query);
+    assertEquals(5, res.getResults().getNumFound());
+    
+    // Try with setDefaultCollection
+    query = new SolrQuery("*:*");
+    cloudSolrServer.setDefaultCollection("testalias");
+    res = cloudSolrServer.query(query);
     cloudSolrServer.shutdown();
     assertEquals(5, res.getResults().getNumFound());
     
