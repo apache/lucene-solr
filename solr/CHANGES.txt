@@ -100,6 +100,10 @@ New Features
 * SOLR-5353: Enhance CoreAdmin api to split a route key's documents from an index
   and leave behind all other documents. (shalin)
 
+* SOLR-5027: CollapsingQParserPlugin for high performance field collapsing on high cardinality fields.
+  (Joel Bernstein)
+
+
 Bug Fixes
 ----------------------
   

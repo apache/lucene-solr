@@ -195,6 +195,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryCollapse() throws Exception {
+    SolrQueryRequest req = req("myField","foo_s");
+    try {
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField}");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
     try {
