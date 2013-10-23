@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -12,6 +13,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -94,7 +96,10 @@ public class OrdinalsCache {
     }
   }
 
-  private static final Map<BinaryDocValues,CachedOrds> intsCache = new WeakHashMap<BinaryDocValues,CachedOrds>();
+  // outer map is a WeakHashMap which uses reader.getCoreCacheKey() as the weak
+  // reference. When it's no longer referenced, the entire inner map can be
+  // evicted.
+  private static final Map<Object,Map<String,CachedOrds>> ordsCache = new WeakHashMap<Object,Map<String,CachedOrds>>();
   
   /**
    * Returns the {@link CachedOrds} relevant to the given
@@ -107,12 +112,33 @@ public class OrdinalsCache {
     if (dv == null) {
       return null;
     }
-    CachedOrds ci = intsCache.get(dv);
-    if (ci == null) {
-      ci = new CachedOrds(dv, context.reader().maxDoc(), clp);
-      intsCache.put(dv, ci);
+    Map<String,CachedOrds> fieldCache = ordsCache.get(context.reader().getCoreCacheKey());
+    if (fieldCache == null) {
+      fieldCache = new HashMap<String,OrdinalsCache.CachedOrds>();
+      ordsCache.put(context.reader().getCoreCacheKey(), fieldCache);
     }
-    return ci;
+    CachedOrds co = fieldCache.get(clp.field);
+    if (co == null) {
+      co = new CachedOrds(dv, context.reader().maxDoc(), clp);
+      fieldCache.put(clp.field, co);
+    }
+    return co;
   }
 
+  /** Returns how many bytes the static ords cache is
+   *  consuming. */
+  public synchronized static long ramBytesUsed() {
+    long size = 0;
+    for (Map<String,CachedOrds> e : ordsCache.values()) {
+      for (CachedOrds co : e.values()) {
+        size += RamUsageEstimator.NUM_BYTES_OBJECT_REF              // CachedOrds reference in the map
+            + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER             // CachedOrds object header
+            + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER * 2          // 2 int[] (header)
+            + RamUsageEstimator.NUM_BYTES_OBJECT_REF * 2            // 2 int[] (ref)
+            + RamUsageEstimator.NUM_BYTES_INT * co.offsets.length   // sizeOf(offsets)
+            + RamUsageEstimator.NUM_BYTES_INT * co.ordinals.length; // sizeOf(ordinals)
+      }
+    }
+    return size;
+  }
 }

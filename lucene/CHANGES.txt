@@ -97,6 +97,9 @@ Bug Fixes
   when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
   Mike McCandless)
 
+* LUCENE-5303: OrdinalsCache did not use coreCacheKey, resulting in
+  over caching across multiple threads. (Mike McCandless, Shai Erera)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
