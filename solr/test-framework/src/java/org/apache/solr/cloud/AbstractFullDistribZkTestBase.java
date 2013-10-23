@@ -46,7 +46,11 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -1052,6 +1056,20 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
         System.err.println(" live:" + live);
         
+      }
+    }
+  }
+  
+  protected void enableAutoSoftCommit(int time) {
+    log.info("Turning on auto soft commit: " + time);
+    for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
+      for (CloudJettyRunner jetty : jettyList) {
+        CoreContainer cores = ((SolrDispatchFilter) jetty.jetty
+            .getDispatchFilter().getFilter()).getCores();
+        for (SolrCore core : cores.getCores()) {
+          ((DirectUpdateHandler2) core.getUpdateHandler())
+              .getSoftCommitTracker().setTimeUpperBound(time);
+        }
       }
     }
   }
