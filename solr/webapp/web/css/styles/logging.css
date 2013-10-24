@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #content #logging .loader
 {
   background-position: 0 50%;
@@ -84,8 +103,13 @@
 }
 
 #content #logging #viewer tbody .level-info .level span { background-color: #ebf5eb; }
-#content #logging #viewer tbody .level-warning span { background-color: #d5dd00; }
-#content #logging #viewer tbody .level-severe span  { background-color: #c43c35; color: #fff; }
+#content #logging #viewer tbody .level-warning     span { background-color: #FFD930; }
+#content #logging #viewer tbody .level-severe     span  { background-color: #c43c35; color: #fff; }
+
+#content #logging #viewer tbody .level-debug  span  { background-color: #ebf5eb; }
+#content #logging #viewer tbody .level-warn   span  { background-color: #FFD930; }
+#content #logging #viewer tbody .level-error  span  { background-color: #FF6130; }
+#content #logging #viewer tbody .level-fatal  span  { background-color: #c43c35; }
 
 #content #logging #viewer tbody .has-trace a
 {
@@ -188,6 +212,13 @@
   padding-right: 21px;
 }
 
+#content #logging .jstree a span.name em
+{
+  color: #f00;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
 #content #logging .jstree a.trigger.set
 {
   font-weight: bold;
@@ -219,6 +250,7 @@
 #content #logging .jstree li li li li li .selector-holder { left: 368px; }
 #content #logging .jstree li li li li li li .selector-holder { left: 350px; }
 #content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
+#content #logging .jstree li li li li li li li li .selector-holder { left: 314px; }
 
 #content #logging .jstree .selector
 {

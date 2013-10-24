@@ -51,22 +51,6 @@ public abstract class CharTokenizer extends Tokenizer {
    * 
    * @param matchVersion
    *          Lucene version to match
-   * @param source
-   *          the attribute source to use for this {@link Tokenizer}
-   * @param input
-   *          the input to split up into tokens
-   */
-  public CharTokenizer(Version matchVersion, AttributeSource source,
-      Reader input) {
-    super(source, input);
-    charUtils = CharacterUtils.getInstance(matchVersion);
-  }
-  
-  /**
-   * Creates a new {@link CharTokenizer} instance
-   * 
-   * @param matchVersion
-   *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param input
@@ -78,8 +62,7 @@ public abstract class CharTokenizer extends Tokenizer {
     charUtils = CharacterUtils.getInstance(matchVersion);
   }
   
-  // note: bufferIndex is -1 here to best-effort AIOOBE consumers that don't call reset()
-  private int offset = 0, bufferIndex = -1, dataLen = 0, finalOffset = 0;
+  private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
   
@@ -116,7 +99,8 @@ public abstract class CharTokenizer extends Tokenizer {
     while (true) {
       if (bufferIndex >= dataLen) {
         offset += dataLen;
-        if(!charUtils.fill(ioBuffer, input)) { // read supplementary char aware with CharacterUtils
+        charUtils.fill(ioBuffer, input); // read supplementary char aware with CharacterUtils
+        if (ioBuffer.getLength() == 0) {
           dataLen = 0; // so next offset += dataLen won't decrement offset
           if (length > 0) {
             break;
@@ -129,7 +113,7 @@ public abstract class CharTokenizer extends Tokenizer {
         bufferIndex = 0;
       }
       // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
-      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex);
+      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
       final int charCount = Character.charCount(c);
       bufferIndex += charCount;
 
@@ -157,13 +141,15 @@ public abstract class CharTokenizer extends Tokenizer {
   }
   
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     bufferIndex = 0;
     offset = 0;
     dataLen = 0;

@@ -38,6 +38,8 @@ import org.slf4j.Logger;
  * Smart Chinese tokenizer. If Smart Chinese tokenizer is not available in
  * classpath at runtime, the default Carrot2's tokenizer is used. Should the
  * Lucene APIs need to change, the changes can be made in this class.
+ * 
+ * @lucene.experimental
  */
 public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
   final static Logger logger = org.slf4j.LoggerFactory

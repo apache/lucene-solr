@@ -22,8 +22,8 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.NamedSPILoader;
 
 /** 

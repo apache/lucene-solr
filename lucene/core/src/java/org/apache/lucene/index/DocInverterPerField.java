@@ -92,13 +92,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.position += analyzed ? docState.analyzer.getPositionIncrementGap(fieldInfo.name) : 0;
         }
 
-        final TokenStream stream = field.tokenStream(docState.analyzer);
-        // reset the TokenStream to the first token
-        stream.reset();
-
-        boolean success2 = false;
-
-        try {
+        try (TokenStream stream = field.tokenStream(docState.analyzer)) {
+          // reset the TokenStream to the first token
+          stream.reset();
           boolean hasMoreTokens = stream.incrementToken();
 
           fieldState.attributeSource = stream;
@@ -119,10 +115,10 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
               final int posIncr = posIncrAttribute.getPositionIncrement();
               if (posIncr < 0) {
-                throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ")");
+                throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ") for field '" + field.name() + "'");
               }
               if (fieldState.position == 0 && posIncr == 0) {
-                throw new IllegalArgumentException("first position increment must be > 0 (got 0)");
+                throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
               }
               int position = fieldState.position + posIncr;
               if (position > 0) {
@@ -145,11 +141,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
                 int endOffset = fieldState.offset + offsetAttribute.endOffset();
                 if (startOffset < 0 || endOffset < startOffset) {
                   throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
-                      + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+                      + "startOffset=" + startOffset + ",endOffset=" + endOffset + " for field '" + field.name() + "'");
                 }
                 if (startOffset < lastStartOffset) {
                   throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
-                       + startOffset + " is < lastStartOffset=" + lastStartOffset);
+                       + startOffset + " is < lastStartOffset=" + lastStartOffset + " for field '" + field.name() + "'");
                 }
                 lastStartOffset = startOffset;
               }
@@ -175,15 +171,10 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
           // trigger streams to perform end-of-stream operations
           stream.end();
-
+          // TODO: maybe add some safety? then again, its already checked 
+          // when we come back around to the field...
+          fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
-          success2 = true;
-        } finally {
-          if (!success2) {
-            IOUtils.closeWhileHandlingException(stream);
-          } else {
-            stream.close();
-          }
         }
 
         fieldState.offset += analyzed ? docState.analyzer.getOffsetGap(fieldInfo.name) : 0;

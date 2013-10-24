@@ -39,6 +39,11 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
   
   public NamedSPILoader(Class<S> clazz, ClassLoader classloader) {
     this.clazz = clazz;
+    // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
+    final ClassLoader clazzClassloader = clazz.getClassLoader();
+    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+      reload(clazzClassloader);
+    }
     reload(classloader);
   }
   
@@ -53,7 +58,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
    * <p><em>This method is expensive and should only be called for discovery
    * of new service providers on the given classpath/classloader!</em>
    */
-  public void reload(ClassLoader classloader) {
+  public synchronized void reload(ClassLoader classloader) {
     final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {

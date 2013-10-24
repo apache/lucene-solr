@@ -24,7 +24,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
  * Tests Lucene40PostingsFormat
  */
 public class TestLucene40PostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = new Lucene40Codec();
+  private final Codec codec = new Lucene40RWCodec();
 
   @Override
   protected Codec getCodec() {

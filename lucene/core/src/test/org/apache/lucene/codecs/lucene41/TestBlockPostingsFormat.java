@@ -19,12 +19,13 @@ package org.apache.lucene.codecs.lucene41;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Tests BlockPostingsFormat
  */
 public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = new Lucene41Codec();
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat());
 
   @Override
   protected Codec getCodec() {

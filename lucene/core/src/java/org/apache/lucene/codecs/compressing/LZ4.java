@@ -30,7 +30,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * http://code.google.com/p/lz4/
  * http://fastcompression.blogspot.fr/p/lz4.html
  */
-class LZ4 {
+final class LZ4 {
 
   private LZ4() {}
 
@@ -181,11 +181,29 @@ class LZ4 {
     }
   }
 
+  static final class HashTable {
+    private int hashLog;
+    private PackedInts.Mutable hashTable;
+
+    void reset(int len) {
+      final int bitsPerOffset = PackedInts.bitsRequired(len - LAST_LITERALS);
+      final int bitsPerOffsetLog = 32 - Integer.numberOfLeadingZeros(bitsPerOffset - 1);
+      hashLog = MEMORY_USAGE + 3 - bitsPerOffsetLog;
+      if (hashTable == null || hashTable.size() < 1 << hashLog || hashTable.getBitsPerValue() < bitsPerOffset) {
+        hashTable = PackedInts.getMutable(1 << hashLog, bitsPerOffset, PackedInts.DEFAULT);
+      } else {
+        hashTable.clear();
+      }
+    }
+
+  }
+
   /**
    * Compress <code>bytes[off:off+len]</code> into <code>out</code> using
-   * at most 16KB of memory.
+   * at most 16KB of memory. <code>ht</code> shouldn't be shared across threads
+   * but can safely be reused.
    */
-  public static void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
+  public static void compress(byte[] bytes, int off, int len, DataOutput out, HashTable ht) throws IOException {
 
     final int base = off;
     final int end = off + len;
@@ -196,14 +214,12 @@ class LZ4 {
 
       final int limit = end - LAST_LITERALS;
       final int matchLimit = limit - MIN_MATCH;
-
-      final int bitsPerOffset = PackedInts.bitsRequired(len - LAST_LITERALS);
-      final int bitsPerOffsetLog = 32 - Integer.numberOfLeadingZeros(bitsPerOffset - 1);
-      final int hashLog = MEMORY_USAGE + 3 - bitsPerOffsetLog;
-      final PackedInts.Mutable hashTable = PackedInts.getMutable(1 << hashLog, bitsPerOffset, PackedInts.DEFAULT);
+      ht.reset(len);
+      final int hashLog = ht.hashLog;
+      final PackedInts.Mutable hashTable = ht.hashTable;
 
       main:
-      while (off < limit) {
+      while (off <= limit) {
         // find a match
         int ref;
         while (true) {
@@ -256,41 +272,46 @@ class LZ4 {
     m2.ref = m1.ref;
   }
 
-  private static class HashTable {
+  static final class HCHashTable {
     static final int MAX_ATTEMPTS = 256;
     static final int MASK = MAX_DISTANCE - 1;
     int nextToUpdate;
-    private final int base;
+    private int base;
     private final int[] hashTable;
     private final short[] chainTable;
 
-    HashTable(int base) {
+    HCHashTable() {
+      hashTable = new int[HASH_TABLE_SIZE_HC];
+      chainTable = new short[MAX_DISTANCE];
+    }
+
+    private void reset(int base) {
       this.base = base;
       nextToUpdate = base;
-      hashTable = new int[HASH_TABLE_SIZE_HC];
       Arrays.fill(hashTable, -1);
-      chainTable = new short[MAX_DISTANCE];
+      Arrays.fill(chainTable, (short) 0);
     }
 
     private int hashPointer(byte[] bytes, int off) {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
-      return base + hashTable[h];
+      return hashTable[h];
     }
 
     private int next(int off) {
-      return base + off - (chainTable[off & MASK] & 0xFFFF);
+      return off - (chainTable[off & MASK] & 0xFFFF);
     }
 
     private void addHash(byte[] bytes, int off) {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
       int delta = off - hashTable[h];
+      assert delta > 0 : delta;
       if (delta >= MAX_DISTANCE) {
         delta = MAX_DISTANCE - 1;
       }
       chainTable[off & MASK] = (short) delta;
-      hashTable[h] = off - base;
+      hashTable[h] = off;
     }
 
     void insert(int off, byte[] bytes) {
@@ -302,12 +323,24 @@ class LZ4 {
     boolean insertAndFindBestMatch(byte[] buf, int off, int matchLimit, Match match) {
       match.start = off;
       match.len = 0;
+      int delta = 0;
+      int repl = 0;
 
       insert(off, buf);
 
       int ref = hashPointer(buf, off);
+
+      if (ref >= off - 4 && ref <= off && ref >= base) { // potential repetition
+        if (readIntEquals(buf, ref, off)) { // confirmed
+          delta = off - ref;
+          repl = match.len = MIN_MATCH + commonBytes(buf, ref + MIN_MATCH, off + MIN_MATCH, matchLimit);
+          match.ref = ref;
+        }
+        ref = next(ref);
+      }
+
       for (int i = 0; i < MAX_ATTEMPTS; ++i) {
-        if (ref < Math.max(base, off - MAX_DISTANCE + 1)) {
+        if (ref < Math.max(base, off - MAX_DISTANCE + 1) || ref > off) {
           break;
         }
         if (buf[ref + match.len] == buf[off + match.len] && readIntEquals(buf, ref, off)) {
@@ -318,6 +351,21 @@ class LZ4 {
           }
         }
         ref = next(ref);
+      }
+
+      if (repl != 0) {
+        int ptr = off;
+        final int end = off + repl - (MIN_MATCH - 1);
+        while (ptr < end - delta) {
+          chainTable[ptr & MASK] = (short) delta; // pre load
+          ++ptr;
+        }
+        do {
+          chainTable[ptr & MASK] = (short) delta;
+          hashTable[hashHC(readInt(buf, ptr))] = ptr;
+          ++ptr;
+        } while (ptr < end);
+        nextToUpdate = end;
       }
 
       return match.len != 0;
@@ -331,7 +379,7 @@ class LZ4 {
       final int delta = off - startLimit;
       int ref = hashPointer(buf, off);
       for (int i = 0; i < MAX_ATTEMPTS; ++i) {
-        if (ref < Math.max(base, off - MAX_DISTANCE + 1)) {
+        if (ref < Math.max(base, off - MAX_DISTANCE + 1) || ref > off) {
           break;
         }
         if (buf[ref - delta + match.len] == buf[startLimit + match.len]
@@ -355,27 +403,30 @@ class LZ4 {
 
   /**
    * Compress <code>bytes[off:off+len]</code> into <code>out</code>. Compared to
-   * {@link LZ4#compress(byte[], int, int, DataOutput)}, this method is slower,
-   * uses more memory (~ 256KB), but should provide better compression ratios
-   * (especially on large inputs) because it chooses the best match among up to
-   * 256 candidates and then performs trade-offs to fix overlapping matches.
+   * {@link LZ4#compress(byte[], int, int, DataOutput, HashTable)}, this method
+   * is slower and uses more memory (~ 256KB per thread) but should provide
+   * better compression ratios (especially on large inputs) because it chooses
+   * the best match among up to 256 candidates and then performs trade-offs to
+   * fix overlapping matches. <code>ht</code> shouldn't be shared across threads
+   * but can safely be reused.
    */
-  public static void compressHC(byte[] src, int srcOff, int srcLen, DataOutput out) throws IOException {
+  public static void compressHC(byte[] src, int srcOff, int srcLen, DataOutput out, HCHashTable ht) throws IOException {
 
     final int srcEnd = srcOff + srcLen;
     final int matchLimit = srcEnd - LAST_LITERALS;
+    final int mfLimit = matchLimit - MIN_MATCH;
 
     int sOff = srcOff;
     int anchor = sOff++;
 
-    final HashTable ht = new HashTable(srcOff);
+    ht.reset(srcOff);
     final Match match0 = new Match();
     final Match match1 = new Match();
     final Match match2 = new Match();
     final Match match3 = new Match();
 
     main:
-    while (sOff < matchLimit) {
+    while (sOff <= mfLimit) {
       if (!ht.insertAndFindBestMatch(src, sOff, matchLimit, match1)) {
         ++sOff;
         continue;
@@ -387,7 +438,7 @@ class LZ4 {
       search2:
       while (true) {
         assert match1.start >= anchor;
-        if (match1.end() >= matchLimit
+        if (match1.end() >= mfLimit
             || !ht.insertAndFindWiderMatch(src, match1.end() - 2, match1.start + 1, matchLimit, match1.len, match2)) {
           // no better match
           encodeSequence(src, anchor, match1.ref, match1.start, match1.len, out);
@@ -423,24 +474,11 @@ class LZ4 {
             }
           }
 
-          if (match2.start + match2.len >= matchLimit
+          if (match2.start + match2.len >= mfLimit
               || !ht.insertAndFindWiderMatch(src, match2.end() - 3, match2.start, matchLimit, match2.len, match3)) {
             // no better match -> 2 sequences to encode
             if (match2.start < match1.end()) {
-              if (match2.start - match1.start < OPTIMAL_ML) {
-                if (match1.len > OPTIMAL_ML) {
-                  match1.len = OPTIMAL_ML;
-                }
-                if (match1.end() > match2.end() - MIN_MATCH) {
-                  match1.len = match2.end() - match1.start - MIN_MATCH;
-                }
-                final int correction = match1.len - (match2.start - match1.start);
-                if (correction > 0) {
-                  match2.fix(correction);
-                }
-              } else {
-                match1.len = match2.start - match1.start;
-              }
+              match1.len = match2.start - match1.start;
             }
             // encode seq 1
             encodeSequence(src, anchor, match1.ref, match1.start, match1.len, out);

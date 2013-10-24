@@ -17,22 +17,18 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source$
-     $Name$
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <jmx />
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  </indexConfig>
 
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-
-  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -233,7 +229,7 @@
 
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
   </admin>
 
   <!-- test getting system property -->

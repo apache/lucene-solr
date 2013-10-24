@@ -21,8 +21,8 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
@@ -34,10 +34,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -58,7 +58,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
       throws IOException {
     LogDocMergePolicy logByteSizeMergePolicy = new LogDocMergePolicy();
-    logByteSizeMergePolicy.setUseCompoundFile(false); // make sure we use plain
+    logByteSizeMergePolicy.setNoCFSRatio(0.0); // make sure we use plain
     // files
     conf.setMergePolicy(logByteSizeMergePolicy);
 
@@ -142,11 +142,11 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "aaa"), dir, 10);
-    Lucene41Codec codec = (Lucene41Codec)iwconf.getCodec();
+    Codec codec = iwconf.getCodec();
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
-    //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
+    //((LogMergePolicy) iwconf.getMergePolicy()).setNoCFSRatio(0.0);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
@@ -158,7 +158,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
     addDocs2(writer, 10);
     writer.commit();
-    codec = (Lucene41Codec)iwconf.getCodec();
+    codec = iwconf.getCodec();
     assertEquals(30, writer.maxDoc());
     assertQuery(new Term("content", "bbb"), dir, 10);
     assertQuery(new Term("content", "ccc"), dir, 10);   ////
@@ -192,7 +192,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = DirectoryReader.open(dir, 1);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
@@ -200,7 +200,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   }
 
-  public static class MockCodec extends Lucene41Codec {
+  public static class MockCodec extends Lucene46Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     final PostingsFormat mockSep = new MockSepPostingsFormat();
@@ -217,7 +217,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
   }
 
-  public static class MockCodec2 extends Lucene41Codec {
+  public static class MockCodec2 extends Lucene46Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     
@@ -268,7 +268,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentInstance() throws Exception {
-    Codec codec = new Lucene41Codec() {
+    Codec codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
@@ -284,7 +284,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentParams() throws Exception {
-    Codec codec = new Lucene41Codec() {
+    Codec codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {

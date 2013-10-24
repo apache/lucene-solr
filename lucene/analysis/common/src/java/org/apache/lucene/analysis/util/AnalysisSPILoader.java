@@ -52,6 +52,11 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
     this.clazz = clazz;
     this.suffixes = suffixes;
+    // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
+    final ClassLoader clazzClassloader = clazz.getClassLoader();
+    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+      reload(clazzClassloader);
+    }
     reload(classloader);
   }
   
@@ -66,9 +71,10 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    * <p><em>This method is expensive and should only be called for discovery
    * of new service providers on the given classpath/classloader!</em>
    */
-  public void reload(ClassLoader classloader) {
+  public synchronized void reload(ClassLoader classloader) {
+    final LinkedHashMap<String,Class<? extends S>> services =
+      new LinkedHashMap<String,Class<? extends S>>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
-    final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
       final String clazzName = service.getSimpleName();
@@ -98,10 +104,10 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     this.services = Collections.unmodifiableMap(services);
   }
   
-  public S newInstance(String name) {
+  public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
     try {
-      return service.newInstance();
+      return service.getConstructor(Map.class).newInstance(args);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);

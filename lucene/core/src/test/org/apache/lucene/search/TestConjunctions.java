@@ -29,7 +29,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -59,7 +58,7 @@ public class TestConjunctions extends LuceneTestCase {
     writer.addDocument(doc("nutch", "nutch is an internet search engine with web crawler and is using lucene and hadoop"));
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     searcher.setSimilarity(new TFSimilarity());
   }
   
@@ -90,8 +89,8 @@ public class TestConjunctions extends LuceneTestCase {
   private static class TFSimilarity extends Similarity {
 
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte((byte)1); // we dont care
+    public long computeNorm(FieldInvertState state) {
+      return 1; // we dont care
     }
 
     @Override
@@ -110,18 +109,8 @@ public class TestConjunctions extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      return new ExactSimScorer() {
-        @Override
-        public float score(int doc, int freq) {
-          return freq;
-        }
-      };
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      return new SloppySimScorer() {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      return new SimScorer() {
         @Override
         public float score(int doc, float freq) {
           return freq;

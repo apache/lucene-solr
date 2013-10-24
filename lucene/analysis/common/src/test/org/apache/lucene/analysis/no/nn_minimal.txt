@@ -1,0 +1,76 @@
+#
+# Tests for Norwegian minimal stemmer using Nynorsk as variant
+# It only tries to stem nouns, i.e. being very little aggressive
+#
+# Nouns masculine
+gut	gut
+guten	gut
+gutar	gut
+gutane	gut
+gutens	gut
+gutanes	gut
+søknad	søknad
+søknaden	søknad
+søknadar	søknad
+søknadane	søknad
+søknadens	søknad
+søknadanes	søknad
+# Nouns feminine
+jente	jent
+jenta	jent
+jenter	jent
+jentene	jent
+jentas	jent
+# Nouns neutral
+dyr	dyr
+dyret	dyr
+dyra	dyr
+dyras	dyr
+prospekt	prospekt
+prospektet	prospekt
+prospekta	prospekt
+prospektas	prospekt
+innhald	innhald
+innhaldet	innhald
+innhalda	innhald
+#########################################
+# Words that should not be stemmed
+#
+# Irregular masculine nouns (not supposed to be handled correctly)
+søner	søn
+sønene	søn
+brør	brør
+brørne	brørn
+# Irregular feminine nouns, not handled
+dotter	dott
+døtrer	døtr
+døtrene	døtr
+klo	klo
+klørne	klørn
+mor	mor
+mødrer	mødr
+mødrene	mødr
+# Irregular neutral nouns, not handled
+vedunder	vedund
+# Other words that should not be touched
+abc	abc
+123	123
+Jens	Jens
+# Adjective, should not be stemmed
+farleg	farleg
+farlegare	farlegar
+farlegast	farlegast
+stor	stor
+større	størr
+størst	størst
+gammal	gammal
+eldre	eldr
+eldst	eldst
+# General endings, should not be stemmed
+sanning	sanning
+sanninga	sanning
+# Verbs, should not be stemmed
+syngje	syngj
+syng	syng
+song	song
+sunge	sung

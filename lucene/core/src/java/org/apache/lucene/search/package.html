@@ -173,7 +173,7 @@ section for more notes on the process.
     {@link org.apache.lucene.index.Term Term}
     and an upper
     {@link org.apache.lucene.index.Term Term}
-    according to {@link org.apache.lucene.index.TermsEnum#getComparator TermsEnum.getComparator()}. It is not intended
+    according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
     for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
 
     For example, one could find all documents
@@ -338,7 +338,7 @@ extend by plugging in a different component (e.g. term frequency normalizer).
 Finally, you can extend the low level {@link org.apache.lucene.search.similarities.Similarity Similarity} directly
 to implement a new retrieval model, or to use external scoring factors particular to your application. For example,
 a custom Similarity can access per-document values via {@link org.apache.lucene.search.FieldCache FieldCache} or
-{@link org.apache.lucene.index.DocValues} and integrate them into the score.
+{@link org.apache.lucene.index.NumericDocValues} and integrate them into the score.
 </p>
 <p>
 See the {@link org.apache.lucene.search.similarities} package documentation for information
@@ -442,9 +442,8 @@ on the built-in available scoring models and extending or changing Similarity.
                   explain(AtomicReaderContext context, int doc)} &mdash; Provide a means for explaining why a given document was
                 scored the way it was.
                 Typically a weight such as TermWeight
-                that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementations:
-                {@link org.apache.lucene.search.similarities.Similarity.ExactSimScorer#explain(int, Explanation) ExactSimScorer#explain(int doc, Explanation freq)},
-                and {@link org.apache.lucene.search.similarities.Similarity.SloppySimScorer#explain(int, Explanation) SloppySimScorer#explain(int doc, Explanation freq)}
+                that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementation:
+                {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(int, Explanation) SimScorer#explain(int doc, Explanation freq)}.
                 </li>
              </li>
         </ol>
@@ -469,7 +468,7 @@ on the built-in available scoring models and extending or changing Similarity.
                 {@link org.apache.lucene.search.Scorer#score score()} &mdash; Return the score of the
                 current document. This value can be determined in any appropriate way for an application. For instance, the
                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the configured Similarity:
-                {@link org.apache.lucene.search.similarities.Similarity.ExactSimScorer#score(int, int) ExactSimScorer.score(int doc, int freq)}.
+                {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(int, float) SimScorer.score(int doc, float freq)}.
             </li>
             <li>
                 {@link org.apache.lucene.search.Scorer#freq freq()} &mdash; Returns the number of matches

@@ -27,11 +27,6 @@ Jean-Philippe Barrette-LaPierre. This library is available under an MIT license,
 see http://sites.google.com/site/rrettesite/moman and 
 http://bitbucket.org/jpbarrette/moman/overview/
 
-The class org.apache.lucene.util.SorterTemplate was inspired by CGLIB's class
-with the same name. The implementation part is mainly done using pre-existing
-Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
-which is Apache-licensed.
-
 The class org.apache.lucene.util.WeakIdentityMap was derived from
 the Apache CXF project and is Apache License 2.0.
 
@@ -109,8 +104,8 @@ LGPL and Creative Commons ShareAlike.
 Morfologic includes data from BSD-licensed dictionary of Polish (SGJP)
 (http://sgjp.pl/morfeusz/)
 
-Servlet-api.jar is under the CDDL license, the original source
-code for this can be found at http://www.eclipse.org/jetty/downloads.php
+Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original
+source code for this can be found at http://www.eclipse.org/jetty/downloads.php
 
 ===========================================================================
 Kuromoji Japanese Morphological Analyzer - Apache Lucene Integration

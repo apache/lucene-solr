@@ -15,9 +15,6 @@ package org.apache.lucene.search.highlight.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -57,6 +54,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
@@ -173,7 +173,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     final TokenStream stream;
     if (analyze) {
       stream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true,
-          MockTokenFilter.EMPTY_STOPSET, true).tokenStream(F,
+          MockTokenFilter.EMPTY_STOPSET).tokenStream(F,
           new StringReader(text));
     } else {
       stream = new IntervalTokenStream(text, new ArrayIntervalIterator(

@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.ja;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -34,6 +36,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
 
+  /** Creates a new JapaneseBaseFormFilterFactory */
+  public JapaneseBaseFormFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new JapaneseBaseFormFilter(input);

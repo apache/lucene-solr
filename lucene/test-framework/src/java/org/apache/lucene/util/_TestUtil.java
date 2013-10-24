@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
@@ -43,27 +42,33 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
+import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
+import org.apache.lucene.index.CheckIndex.Status.StoredFieldStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermIndexStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermVectorStatus;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -71,7 +76,8 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -80,9 +86,7 @@ import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -225,13 +229,37 @@ public class _TestUtil {
       return indexStatus;
     }
   }
+  
+  /** This runs the CheckIndex tool on the Reader.  If any
+   *  issues are hit, a RuntimeException is thrown */
+  public static void checkReader(IndexReader reader) throws IOException {
+    for (AtomicReaderContext context : reader.leaves()) {
+      checkReader(context.reader(), true);
+    }
+  }
+  
+  public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    PrintStream infoStream = new PrintStream(bos, false, "UTF-8");
 
-  // NOTE: only works for TMP and LMP!!
-  public static void setUseCompoundFile(MergePolicy mp, boolean v) {
-    if (mp instanceof TieredMergePolicy) {
-      ((TieredMergePolicy) mp).setUseCompoundFile(v);
-    } else if (mp instanceof LogMergePolicy) {
-      ((LogMergePolicy) mp).setUseCompoundFile(v);
+    FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
+    TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
+    StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream);
+    TermVectorStatus termVectorStatus = CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors);
+    DocValuesStatus docValuesStatus = CheckIndex.testDocValues(reader, infoStream);
+    
+    if (fieldNormStatus.error != null || 
+      termIndexStatus.error != null ||
+      storedFieldStatus.error != null ||
+      termVectorStatus.error != null ||
+      docValuesStatus.error != null) {
+      System.out.println("CheckReader failed");
+      System.out.println(bos.toString("UTF-8"));
+      throw new RuntimeException("CheckReader failed");
+    } else {
+      if (LuceneTestCase.INFOSTREAM) {
+        System.out.println(bos.toString("UTF-8"));
+      }
     }
   }
 
@@ -257,7 +285,11 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
-    final int end = nextInt(r, 0, maxLength);
+    return randomSimpleString(r, 0, maxLength);
+  }
+  
+  public static String randomSimpleString(Random r, int minLength, int maxLength) {
+    final int end = nextInt(r, minLength, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -283,7 +315,7 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r) {
-    return randomSimpleString(r, 10);
+    return randomSimpleString(r, 0, 10);
   }
 
   /** Returns random string, including full unicode range. */
@@ -668,9 +700,27 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene41Codec() {
+    return new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
+        return format;
+      }
+    };
+  }
+  
+  /** Return a Codec that can read any of the
+   *  default codecs and formats, but always writes in the specified
+   *  format. */
+  public static Codec alwaysDocValuesFormat(final DocValuesFormat format) {
+    // TODO: we really need for docvalues impls etc to announce themselves
+    // (and maybe their params, too) to infostream on flush and merge.
+    // otherwise in a real debugging situation we won't know whats going on!
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("forcing docvalues format to:" + format);
+    }
+    return new Lucene46Codec() {
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;
       }
     };
@@ -691,6 +741,28 @@ public class _TestUtil {
     }
   }
 
+  public static String getDocValuesFormat(String field) {
+    return getDocValuesFormat(Codec.getDefault(), field);
+  }
+  
+  public static String getDocValuesFormat(Codec codec, String field) {
+    DocValuesFormat f = codec.docValuesFormat();
+    if (f instanceof PerFieldDocValuesFormat) {
+      return ((PerFieldDocValuesFormat) f).getDocValuesFormatForField(field).getName();
+    } else {
+      return f.getName();
+    }
+  }
+
+  // TODO: remove this, push this test to Lucene40/Lucene42 codec tests
+  public static boolean fieldSupportsHugeBinaryDocValues(String field) {
+    String dvFormat = getDocValuesFormat(field);
+    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42") || dvFormat.equals("Memory")) {
+      return false;
+    }
+    return true;
+  }
+
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {
     String[] files = dir.listAll();
     if (files.length > 1 || (files.length == 1 && !files[0].equals("write.lock"))) {
@@ -708,17 +780,17 @@ public class _TestUtil {
     if (mp instanceof LogMergePolicy) {
       LogMergePolicy lmp = (LogMergePolicy) mp;
       lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
-      lmp.setUseCompoundFile(true);
+      lmp.setNoCFSRatio(1.0);
     } else if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
       tmp.setSegmentsPerTier(Math.min(5, tmp.getSegmentsPerTier()));
-      tmp.setUseCompoundFile(true);
+      tmp.setNoCFSRatio(1.0);
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
-      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
-      ((ConcurrentMergeScheduler) ms).setMaxMergeCount(3);
+      // wtf... shouldnt it be even lower since its 1 by default?!?!
+      ((ConcurrentMergeScheduler) ms).setMaxMergesAndThreads(3, 2);
     }
   }
 
@@ -734,19 +806,6 @@ public class _TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
-  }
-
-  public static void keepFullyDeletedSegments(IndexWriter w) {
-    try {
-      // Carefully invoke what is a package-private (test
-      // only, internal) method on IndexWriter:
-      Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
-      m.setAccessible(true);
-      m.invoke(w);
-    } catch (Exception e) {
-      // Should not happen?
-      throw new RuntimeException(e);
-    }
   }
   
   /** 
@@ -824,50 +883,38 @@ public class _TestUtil {
     for(IndexableField f : doc1.getFields()) {
       final Field field1 = (Field) f;
       final Field field2;
-      final DocValues.Type dvType = field1.fieldType().docValueType();
+      final DocValuesType dvType = field1.fieldType().docValueType();
+      final NumericType numType = field1.fieldType().numericType();
       if (dvType != null) {
         switch(dvType) {
-        case VAR_INTS:
-          field2 = new PackedLongDocValuesField(field1.name(), field1.numericValue().longValue());
+          case NUMERIC:
+            field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
+            break;
+          case BINARY:
+            field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
           break;
-        case FIXED_INTS_8:
-          field2 = new ByteDocValuesField(field1.name(), field1.numericValue().byteValue());
-          break;
-        case FIXED_INTS_16:
-          field2 = new ShortDocValuesField(field1.name(), field1.numericValue().shortValue());
-          break;
-        case FIXED_INTS_32:
-          field2 = new IntDocValuesField(field1.name(), field1.numericValue().intValue());
-          break;
-        case FIXED_INTS_64:
-          field2 = new LongDocValuesField(field1.name(), field1.numericValue().longValue());
-          break;
-        case FLOAT_32:
-          field2 = new FloatDocValuesField(field1.name(), field1.numericValue().floatValue());
-          break;
-        case FLOAT_64:
-          field2 = new DoubleDocValuesField(field1.name(), field1.numericValue().doubleValue());
-          break;
-        case BYTES_FIXED_STRAIGHT:
-          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_STRAIGHT:
-          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        case BYTES_FIXED_DEREF:
-          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_DEREF:
-          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        case BYTES_FIXED_SORTED:
-          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_SORTED:
-          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        default:
-          throw new IllegalStateException("unknown Type: " + dvType);
+          case SORTED:
+            field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + dvType);
+        }
+      } else if (numType != null) {
+        switch (numType) {
+          case INT:
+            field2 = new IntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case FLOAT:
+            field2 = new FloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case LONG:
+            field2 = new LongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case DOUBLE:
+            field2 = new DoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + numType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
@@ -887,7 +934,7 @@ public class _TestUtil {
       return null;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(term, random.nextBoolean())) {
+    if (!termsEnum.seekExact(term)) {
       return null;
     }
     return docs(random, termsEnum, liveDocs, reuse, flags);
@@ -945,27 +992,6 @@ public class _TestUtil {
         // Just report it on the syserr.
         System.err.println("Could not properly shutdown executor service.");
         e.printStackTrace(System.err);
-      }
-    }
-  }
-
-  public static FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
-    Directory cfsDir = null;
-    try {
-      if (info.getUseCompoundFile()) {
-        cfsDir = new CompoundFileDirectory(info.dir,
-                                           IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
-                                           IOContext.READONCE,
-                                           false);
-      } else {
-        cfsDir = info.dir;
-      }
-      return info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
-                                                                           info.name,
-                                                                           IOContext.READONCE);
-    } finally {
-      if (info.getUseCompoundFile() && cfsDir != null) {
-        cfsDir.close();
       }
     }
   }

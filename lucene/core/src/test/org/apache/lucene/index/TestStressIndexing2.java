@@ -47,21 +47,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int maxBufferedDocs=3;
   static int seed=0;
 
-  public class MockIndexWriter extends IndexWriter {
-
-    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
+  public final class YieldTestPoint implements RandomIndexWriter.TestPoint {
 
     @Override
-    boolean testPoint(String name) {
+    public void apply(String name) {
       //      if (name.equals("startCommit")) {
       if (random().nextInt(4) == 2)
         Thread.yield();
-      return true;
     }
   }
-  
+//  
   public void testRandomIWReader() throws Throwable {
     Directory dir = newDirectory();
     
@@ -151,12 +146,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
-                                                                                                  0.1).setMaxBufferedDocs(maxBufferedDocs).setMergePolicy(newLogMergePolicy()));
+            0.1).setMaxBufferedDocs(maxBufferedDocs).setMergePolicy(newLogMergePolicy()), new YieldTestPoint());
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(mergeFactor);
     /***
         w.setMaxMergeDocs(Integer.MAX_VALUE);
@@ -202,12 +197,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates,
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE)
              .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates))
-             .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
+             .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()), new YieldTestPoint());
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(mergeFactor);
 
     threads = new IndexingThread[nThreads];
@@ -359,7 +354,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
 
       termDocs1 = _TestUtil.docs(random(), termsEnum, liveDocs1, termDocs1, DocsEnum.FLAG_NONE);
-      if (termsEnum2.seekExact(term, false)) {
+      if (termsEnum2.seekExact(term)) {
         termDocs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, termDocs2, DocsEnum.FLAG_NONE);
       } else {
         termDocs2 = null;

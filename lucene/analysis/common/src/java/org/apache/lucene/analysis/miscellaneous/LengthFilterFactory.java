@@ -17,44 +17,40 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.LengthFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-
 import java.util.Map;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link LengthFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_lngth" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" enablePositionIncrements="false"/&gt;
+ *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" /&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class LengthFilterFactory extends TokenFilterFactory {
-  int min,max;
-  boolean enablePositionIncrements;
+  final int min;
+  final int max;
   public static final String MIN_KEY = "min";
   public static final String MAX_KEY = "max";
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String minKey = args.get(MIN_KEY);
-    String maxKey = args.get(MAX_KEY);
-    if (minKey == null || maxKey == null) {
-      throw new IllegalArgumentException("Both " + MIN_KEY + " and " + MAX_KEY + " are mandatory");
+  /** Creates a new LengthFilterFactory */
+  public LengthFilterFactory(Map<String, String> args) {
+    super(args);
+    min = requireInt(args, MIN_KEY);
+    max = requireInt(args, MAX_KEY);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-    min=Integer.parseInt(minKey);
-    max=Integer.parseInt(maxKey);
-    enablePositionIncrements = getBoolean("enablePositionIncrements",false);
   }
   
   @Override
   public LengthFilter create(TokenStream input) {
-    return new LengthFilter(enablePositionIncrements, input,min,max);
+    final LengthFilter filter = new LengthFilter(luceneMatchVersion, input,min,max);
+    return filter;
   }
 }

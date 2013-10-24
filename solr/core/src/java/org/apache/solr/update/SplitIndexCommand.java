@@ -24,7 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import java.util.List;
 
 /**
- * A merge indexes command encapsulated in an object.
+ * A split index command encapsulated in an object.
  *
  * @since solr 1.4
  *
@@ -34,13 +34,18 @@ public class SplitIndexCommand extends UpdateCommand {
   public List<String> paths;
   public List<SolrCore> cores;  // either paths or cores should be specified
   public List<DocRouter.Range> ranges;
-  // TODO: allow specification of custom hash function
+  public DocRouter router;
+  public String routeFieldName;
+  public String splitKey;
 
-  public SplitIndexCommand(SolrQueryRequest req, List<String> paths,  List<SolrCore> cores, List<DocRouter.Range> ranges) {
+  public SplitIndexCommand(SolrQueryRequest req, List<String> paths, List<SolrCore> cores, List<DocRouter.Range> ranges, DocRouter router, String routeFieldName, String splitKey) {
     super(req);
     this.paths = paths;
     this.cores = cores;
     this.ranges = ranges;
+    this.router = router;
+    this.routeFieldName = routeFieldName;
+    this.splitKey = splitKey;
   }
 
   @Override
@@ -54,6 +59,13 @@ public class SplitIndexCommand extends UpdateCommand {
     sb.append(",paths=" + paths);
     sb.append(",cores=" + cores);
     sb.append(",ranges=" + ranges);
+    sb.append(",router=" + router);
+    if (routeFieldName != null) {
+      sb.append(",routeFieldName=" + routeFieldName);
+    }
+    if (splitKey != null) {
+      sb.append(",split.key=" + splitKey);
+    }
     sb.append('}');
     return sb.toString();
   }

@@ -51,6 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -103,7 +107,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public Field[] createFields(SchemaField field, Object val, float boost) {
+  public List<StorableField> createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
     Shape shape = null;
     if (val instanceof Shape) {
@@ -114,34 +118,22 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
     if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
-      return null;
+      return Collections.emptyList();
     }
 
-    Field[] indexableFields = null;
+    List<StorableField> result = new ArrayList<StorableField>();
     if (field.indexed()) {
       T strategy = getStrategy(field.getName());
-      indexableFields = strategy.createIndexableFields(shape);
+      result.addAll(Arrays.asList(strategy.createIndexableFields(shape)));
     }
 
-    StoredField storedField = null;
     if (field.stored()) {
       if (shapeStr == null)
         shapeStr = shapeToString(shape);
-      storedField = new StoredField(field.getName(), shapeStr);
+      result.add(new StoredField(field.getName(), shapeStr));
     }
 
-    if (indexableFields == null) {
-      if (storedField == null)
-        return null;
-      return new Field[]{storedField};
-    } else {
-      if (storedField == null)
-        return indexableFields;
-      Field[] result = new Field[indexableFields.length+1];
-      System.arraycopy(indexableFields,0,result,0,indexableFields.length);
-      result[result.length-1] = storedField;
-      return result;
-    }
+    return result;
   }
 
   protected Shape parseShape(String shapeStr) {
@@ -248,12 +240,14 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
     //We get the valueSource for the score then the filter and combine them.
     ValueSource valueSource;
-    if ("distance".equals(score))
-      valueSource = strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter());
-    else if ("recipDistance".equals(score))
+    if ("distance".equals(score)) {
+      double multiplier = 1.0;//TODO support units=kilometers
+      valueSource = strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
+    } else if ("recipDistance".equals(score)) {
       valueSource = strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
-    else
+    } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'score' local-param must be one of 'none', 'distance', or 'recipDistance'");
+    }
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
 
     if (localParams != null && !localParams.getBool(FILTER_PARAM, true))

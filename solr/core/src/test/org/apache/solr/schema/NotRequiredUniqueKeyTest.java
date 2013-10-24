@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,6 +32,7 @@ public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("enable.update.log", "false"); // usecase doesn't work with updateLog
     initCore("solrconfig.xml","schema-not-required-unique-key.xml");
   }
 
@@ -40,7 +40,7 @@ public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
   public void testSchemaLoading() 
   {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     SchemaField uniqueKey = schema.getUniqueKeyField();
     
     assertFalse( uniqueKey.isRequired() );

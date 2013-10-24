@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.SystemIdResolver;
@@ -123,7 +124,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     }
     SolrParams params = req.getParams();
     NamedList defaultParams = (NamedList) initArgs.get("defaults");
-    RequestInfo requestParams = new RequestInfo(getParamsMap(params), contentStream);
+    RequestInfo requestParams = new RequestInfo(req, getParamsMap(params), contentStream);
     String command = requestParams.getCommand();
     
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {    
@@ -247,7 +248,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       return super.getStatistics();
 
     DocBuilder.Statistics cumulative = importer.cumulativeStatistics;
-    NamedList result = new NamedList();
+    SimpleOrderedMap result = new SimpleOrderedMap();
 
     result.add("Status", importer.getStatus().toString());
 

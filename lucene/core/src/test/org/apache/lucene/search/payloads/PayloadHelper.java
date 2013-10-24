@@ -59,7 +59,7 @@ public class PayloadHelper {
   public final class PayloadAnalyzer extends Analyzer {
 
     public PayloadAnalyzer() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override

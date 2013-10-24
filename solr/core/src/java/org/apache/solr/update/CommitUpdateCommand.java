@@ -54,6 +54,7 @@ public class CommitUpdateCommand extends UpdateCommand {
             +",waitSearcher="+waitSearcher
             +",expungeDeletes="+expungeDeletes
             +",softCommit="+softCommit
+            +",prepareCommit="+prepareCommit
             +'}';
   }
 }

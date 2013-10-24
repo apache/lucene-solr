@@ -111,7 +111,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   //     arriving to pos Y have the same endOffset)
   //   - offsets only move forwards (startOffset >=
   //     lastStartOffset)
-  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], Integer finalOffset,
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[],
+                                               int posLengths[], Integer finalOffset, Integer finalPosInc, boolean[] keywordAtts,
                                                boolean offsetsAreCorrect) throws IOException {
     assertNotNull(output);
     CheckClearAttributesAttribute checkClearAtt = ts.addAttribute(CheckClearAttributesAttribute.class);
@@ -135,7 +136,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     
     PositionIncrementAttribute posIncrAtt = null;
-    if (posIncrements != null) {
+    if (posIncrements != null || finalPosInc != null) {
       assertTrue("has no PositionIncrementAttribute", ts.hasAttribute(PositionIncrementAttribute.class));
       posIncrAtt = ts.getAttribute(PositionIncrementAttribute.class);
     }
@@ -144,6 +145,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     if (posLengths != null) {
       assertTrue("has no PositionLengthAttribute", ts.hasAttribute(PositionLengthAttribute.class));
       posLengthAtt = ts.getAttribute(PositionLengthAttribute.class);
+    }
+
+    KeywordAttribute keywordAtt = null;
+    if (keywordAtts != null) {
+      assertTrue("has no KeywordAttribute", ts.hasAttribute(KeywordAttribute.class));
+      keywordAtt = ts.getAttribute(KeywordAttribute.class);
     }
     
     // Maps position to the start/end offset:
@@ -161,22 +168,31 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (typeAtt != null) typeAtt.setType("bogusType");
       if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
       if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
+      if (keywordAtt != null) keywordAtt.setKeyword((i&1) == 0);
       
       checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
       assertTrue("token "+i+" does not exist", ts.incrementToken());
       assertTrue("clearAttributes() was not called correctly in TokenStream chain", checkClearAtt.getAndResetClearCalled());
       
       assertEquals("term "+i, output[i], termAtt.toString());
-      if (startOffsets != null)
+      if (startOffsets != null) {
         assertEquals("startOffset "+i, startOffsets[i], offsetAtt.startOffset());
-      if (endOffsets != null)
+      }
+      if (endOffsets != null) {
         assertEquals("endOffset "+i, endOffsets[i], offsetAtt.endOffset());
-      if (types != null)
+      }
+      if (types != null) {
         assertEquals("type "+i, types[i], typeAtt.type());
-      if (posIncrements != null)
+      }
+      if (posIncrements != null) {
         assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
-      if (posLengths != null)
+      }
+      if (posLengths != null) {
         assertEquals("posLength "+i, posLengths[i], posLengthAtt.getPositionLength());
+      }
+      if (keywordAtts != null) {
+        assertEquals("keywordAtt " + i, keywordAtts[i], keywordAtt.isKeyword());
+      }
       
       // we can enforce some basic things about a few attributes even if the caller doesn't check:
       if (offsetAtt != null) {
@@ -239,17 +255,47 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertTrue("posLength must be >= 1", posLengthAtt.getPositionLength() >= 1);
       }
     }
-    assertFalse("TokenStream has more tokens than expected (expected count=" + output.length + ")", ts.incrementToken());
+
+    if (ts.incrementToken()) {
+      fail("TokenStream has more tokens than expected (expected count=" + output.length + "); extra token=" + termAtt.toString());
+    }
+
+    // repeat our extra safety checks for end()
+    ts.clearAttributes();
+    if (termAtt != null) termAtt.setEmpty().append("bogusTerm");
+    if (offsetAtt != null) offsetAtt.setOffset(14584724,24683243);
+    if (typeAtt != null) typeAtt.setType("bogusType");
+    if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
+    if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
+    
+    checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
+
     ts.end();
+    assertTrue("super.end()/clearAttributes() was not called correctly in end()", checkClearAtt.getAndResetClearCalled());
+    
     if (finalOffset != null) {
-      assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
+      assertEquals("finalOffset", finalOffset.intValue(), offsetAtt.endOffset());
     }
     if (offsetAtt != null) {
       assertTrue("finalOffset must be >= 0", offsetAtt.endOffset() >= 0);
     }
+    if (finalPosInc != null) {
+      assertEquals("finalPosInc", finalPosInc.intValue(), posIncrAtt.getPositionIncrement());
+    }
+
     ts.close();
   }
   
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[],
+                                               int posLengths[], Integer finalOffset, boolean[] keywordAtts,
+                                               boolean offsetsAreCorrect) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, posLengths, finalOffset, null, null, offsetsAreCorrect);
+  }
+
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], Integer finalOffset, boolean offsetsAreCorrect) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, posLengths, finalOffset, null, offsetsAreCorrect);
+  }
+
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], Integer finalOffset) throws IOException {
     assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, posLengths, finalOffset, true);
   }
@@ -295,15 +341,18 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
+    checkResetException(a, input);
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[]) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
+    checkResetException(a, input);
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean offsetsAreCorrect) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), offsetsAreCorrect);
+    checkResetException(a, input);
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), offsetsAreCorrect);
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
@@ -329,40 +378,49 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
     assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, posIncrements, null);
   }
-  
 
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, null, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, String[] types) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, types, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int[] posIncrements) throws IOException {
-    assertAnalyzesToReuse(a, input, output, null, null, null, posIncrements);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
-    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, null);
-  }
-  
-  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
-    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, posIncrements);
+  static void checkResetException(Analyzer a, String input) throws IOException {
+    TokenStream ts = a.tokenStream("bogus", input);
+    try {
+      if (ts.incrementToken()) {
+        //System.out.println(ts.reflectAsString(false));
+        fail("didn't get expected exception when reset() not called");
+      }
+    } catch (IllegalStateException expected) {
+      // ok
+    } catch (AssertionError expected) {
+      // ok: MockTokenizer
+      assertTrue(expected.getMessage(), expected.getMessage() != null && expected.getMessage().contains("wrong state"));
+    } catch (Exception unexpected) {
+      unexpected.printStackTrace(System.err);
+      fail("got wrong exception when reset() not called: " + unexpected);
+    } finally {
+      // consume correctly
+      ts.reset();
+      while (ts.incrementToken()) {}
+      ts.end();
+      ts.close();
+    }
+    
+    // check for a missing close()
+    ts = a.tokenStream("bogus", input);
+    ts.reset();
+    while (ts.incrementToken()) {}
+    ts.end();
+    try {
+      ts = a.tokenStream("bogus", input);
+      fail("didn't get expected exception when close() not called");
+    } catch (IllegalStateException expected) {
+      // ok
+    } finally {
+      ts.close();
+    }
   }
 
   // simple utility method for testing stemmers
   
   public static void checkOneTerm(Analyzer a, final String input, final String expected) throws IOException {
     assertAnalyzesTo(a, input, new String[]{expected});
-  }
-  
-  public static void checkOneTermReuse(Analyzer a, final String input, final String expected) throws IOException {
-    assertAnalyzesToReuse(a, input, new String[]{expected});
   }
   
   /** utility method for blasting tokenstreams with data to make sure they don't do anything crazy */
@@ -430,6 +488,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) throws IOException {
+    checkResetException(a, "best effort");
     long seed = random.nextLong();
     boolean useCharFilter = random.nextBoolean();
     Directory dir = null;
@@ -891,7 +950,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
   protected String toDot(Analyzer a, String inputText) throws IOException {
     final StringWriter sw = new StringWriter();
-    final TokenStream ts = a.tokenStream("field", new StringReader(inputText));
+    final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(sw)).toDot();
     return sw.toString();
@@ -899,7 +958,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
   protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
     Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), "UTF-8");
-    final TokenStream ts = a.tokenStream("field", new StringReader(inputText));
+    final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();
     w.close();

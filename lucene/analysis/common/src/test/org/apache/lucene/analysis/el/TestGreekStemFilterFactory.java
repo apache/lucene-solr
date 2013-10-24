@@ -20,22 +20,29 @@ package org.apache.lucene.analysis.el;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Greek stem filter factory is working.
  */
-public class TestGreekStemFilterFactory extends BaseTokenStreamTestCase {
+public class TestGreekStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("άνθρωπος");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    TokenStream normalized = new GreekLowerCaseFilter(TEST_VERSION_CURRENT, tokenizer);
-    GreekStemFilterFactory factory = new GreekStemFilterFactory();
-    TokenStream stream = factory.create(normalized);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("GreekLowerCase").create(stream);
+    stream = tokenFilterFactory("GreekStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "ανθρωπ" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("GreekStem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

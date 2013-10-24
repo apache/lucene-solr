@@ -70,13 +70,9 @@ solrconfig.xml.
 
 * Logging *
 
-By default, Jetty & Solr will log to the console. This can be convenient when 
-first getting started, but eventually you will want to log to a file. To 
-configure logging, you can just pass a system property to Jetty on startup:
-
-  java -Djava.util.logging.config.file=etc/logging.properties -jar start.jar
+By default, Jetty & Solr will log to the console a logs/solr.log. This can be convenient when 
+first getting started, but eventually you will want to log just to a file. To 
+configure logging, edit the log4j.properties file in "resources".
  
-This will use Java Util Logging to log to a file based on the config in
-etc/logging.properties. Logs will be written in the logs directory. It is
-also possible to setup log4j or other popular logging frameworks.
+It is also possible to setup log4j or other popular logging frameworks.
 

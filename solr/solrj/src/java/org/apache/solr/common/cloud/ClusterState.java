@@ -17,21 +17,18 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.noggit.JSONWriter;
+import org.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -117,11 +114,23 @@ public class ClusterState implements JSONWriter.Writable {
     if (coll == null) return null;
     return coll.getSlicesMap();
   }
+  
+  public Map<String, Slice> getActiveSlicesMap(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getActiveSlicesMap();
+  }
 
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
     return coll.getSlices();
+  }
+
+  public Collection<Slice> getActiveSlices(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getActiveSlices();
   }
 
   /**
@@ -156,15 +165,18 @@ public class ClusterState implements JSONWriter.Writable {
     return Collections.unmodifiableSet(liveNodes);
   }
 
-  /**
-   * Get the slice/shardId for a core.
-   * @param coreNodeName in the form of nodeName_coreName (the name of the replica)
-   */
-  public String getShardId(String coreNodeName) {
-     // System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
+  public String getShardId(String baseUrl, String coreName) {
+    // System.out.println("###### getShardId(" + baseUrl + "," + coreName + ") in " + collectionStates);
     for (DocCollection coll : collectionStates.values()) {
       for (Slice slice : coll.getSlices()) {
-        if (slice.getReplicasMap().containsKey(coreNodeName)) return slice.getName();
+        for (Replica replica : slice.getReplicas()) {
+          // TODO: for really large clusters, we could 'index' on this
+          String rbaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          if (baseUrl.equals(rbaseUrl) && coreName.equals(rcore)) {
+            return slice.getName();
+          }
+        }
       }
     }
     return null;
@@ -223,6 +235,15 @@ public class ClusterState implements JSONWriter.Writable {
     // System.out.println("######## ClusterState.load result:" + collections);
     return new ClusterState(version, liveNodes, collections);
   }
+  
+  public static Aliases load(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return new Aliases();
+    }
+    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) ZkStateReader.fromJSON(bytes);
+
+    return new Aliases(aliasMap);
+  }
 
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {
     Map<String,Object> props;
@@ -239,7 +260,18 @@ public class ClusterState implements JSONWriter.Writable {
       objs.remove(DocCollection.SHARDS);
     }
 
-    DocRouter router = DocRouter.getDocRouter(props.get(DocCollection.DOC_ROUTER));
+    Object routerObj = props.get(DocCollection.DOC_ROUTER);
+    DocRouter router;
+    if (routerObj == null) {
+      router = DocRouter.DEFAULT;
+    } else if (routerObj instanceof String) {
+      // back compat with Solr4.4
+      router = DocRouter.getDocRouter((String)routerObj);
+    } else {
+      Map routerProps = (Map)routerObj;
+      router = DocRouter.getDocRouter(routerProps.get("name"));
+    }
+
     return new DocCollection(name, slices, props, router);
   }
 

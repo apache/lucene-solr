@@ -29,9 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util. _TestUtil;
 import org.apache.lucene.util.Constants;
@@ -42,6 +45,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -50,6 +54,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -64,7 +69,10 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   // TODO: this shouldn't be static. get the random when you need it to avoid sharing.
   public static Random r;
-
+  
+  private AtomicInteger nodeCnt = new AtomicInteger(0);
+  protected boolean useExplicitNodeNames;
+  
   @BeforeClass
   public static void initialize() {
     assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
@@ -100,7 +108,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         hostContext.append("_");
       }
       hostContext.append(_TestUtil.randomSimpleString(random(), 3));
-      if ( ! "/".equals(hostContext)) {
+      if ( ! "/".equals(hostContext.toString())) {
         // if our random string is empty, this might add a trailing slash, 
         // but our code should be ok with that
         hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));
@@ -353,13 +361,27 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+    return createJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, useExplicitNodeNames);
+  }
+  
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, boolean explicitCoreNodeName) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride);
+    boolean stopAtShutdown = true;
+    JettySolrRunner jetty = new JettySolrRunner
+        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown, getExtraServlets());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
+    if (explicitCoreNodeName) {
+      jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
+    }
     jetty.start();
 
     return jetty;
+  }
+  
+  /** Override this method to insert extra servlets into the JettySolrRunners that are created using createJetty() */
+  public SortedMap<ServletHolder,String> getExtraServlets() {
+    return null;
   }
   
   protected SolrServer createNewSolrServer(int port) {
@@ -367,7 +389,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // setup the server...
       String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);;
+      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
@@ -403,6 +425,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     indexDoc(doc);
   }
 
+  /**
+   * Indexes the document in both the control client, and a randomly selected client
+   */
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     controlClient.add(doc);
 
@@ -411,6 +436,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     client.add(doc);
   }
   
+  /**
+   * Indexes the document in both the control client and the specified client asserting
+   * that the respones are equivilent
+   */
+  protected UpdateResponse indexDoc(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+    UpdateResponse controlRsp = add(controlClient, params, sdocs);
+    UpdateResponse specificRsp = add(server, params, sdocs);
+    compareSolrResponses(specificRsp, controlRsp);
+    return specificRsp;
+  }
+
   protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
@@ -525,6 +561,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
   
   public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
+    return queryAndCompare(params, Arrays.<SolrServer>asList(servers));
+  }
+  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrServer> servers) throws SolrServerException {
     QueryResponse first = null;
     for (SolrServer server : servers) {
       QueryResponse rsp = server.query(new ModifiableSolrParams(params));
@@ -762,8 +801,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
+  protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
+    String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
+    if (cmp != null) {
+      log.error("Mismatched responses:\n" + a + "\n" + b);
+      Assert.fail(cmp);
+    }
+  }
   protected void compareResponses(QueryResponse a, QueryResponse b) {
-    String cmp;
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
@@ -779,11 +824,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-    cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
-    if (cmp != null) {
-      log.error("Mismatched responses:\n" + a + "\n" + b);
-      Assert.fail(cmp);
-    }
+    compareSolrResponses(a, b);
   }
 
   @Test
@@ -844,6 +885,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       long v = r.nextLong();
       Date d = new Date(v);
       return df.toExternal(d);
+    }
+  }
+  
+  protected String getSolrXml() {
+    return null;
+  }
+  
+  protected void setupJettySolrHome(File jettyHome) throws IOException {
+    FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+    String solrxml = getSolrXml();
+    if (solrxml != null) {
+      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
   }
 }

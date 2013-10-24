@@ -35,8 +35,8 @@
   </description>
   <properties>
     <module-directory>lucene/codecs</module-directory>
-    <top-level>../../../../..</top-level>
-    <module-path>${top-level}/${module-directory}/src/java</module-path>
+    <relative-top-level>../../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}/src/java</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -72,6 +72,16 @@
         <configuration>
           <skip>true</skip> <!-- This skips test compilation - tests are run from lucene-codecs-tests module -->
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>lucene-shared-test-check-forbidden-apis</id>
+            <phase>none</phase>  <!-- Block inherited execution -->
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

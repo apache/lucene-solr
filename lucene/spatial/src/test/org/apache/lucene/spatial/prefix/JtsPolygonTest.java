@@ -18,9 +18,19 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
@@ -68,6 +78,41 @@ public class JtsPolygonTest extends StrategyTestCase {
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, shape);
     args.setDistErrPct(distErrPct);
     return args;
+  }
+
+  /**
+   * A PrefixTree pruning optimization gone bad.
+   * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770>LUCENE-4770</a>.
+   */
+  @Test
+  public void testBadPrefixTreePrune() throws Exception {
+  
+    Shape area = ctx.readShape("POLYGON((-122.83 48.57, -122.77 48.56, -122.79 48.53, -122.83 48.57))");
+    
+    SpatialPrefixTree trie = new QuadPrefixTree(ctx, 12);
+    TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
+    Document doc = new Document();
+    doc.add(new TextField("id", "1", Store.YES));
+
+    Field[] fields = strategy.createIndexableFields(area, 0.025);
+    for (Field field : fields) {
+      doc.add(field);  
+    }
+    addDocument(doc);
+
+    Point upperleft = ctx.makePoint(-122.88, 48.54);
+    Point lowerright = ctx.makePoint(-122.82, 48.62);
+    
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
+    commit();
+    
+    TopDocs search = indexSearcher.search(query, 10);
+    ScoreDoc[] scoreDocs = search.scoreDocs;
+    for (ScoreDoc scoreDoc : scoreDocs) {
+      System.out.println(indexSearcher.doc(scoreDoc.doc));
+    }
+
+    assertEquals(1, search.totalHits);
   }
 
 }

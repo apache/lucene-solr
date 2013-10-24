@@ -54,6 +54,16 @@ public class TestPhraseQuery2 extends IntervalTestBase {
     }
   }
 
+  public void testDuplicatedMultiPhraseQuery() throws Exception {
+    PhraseQuery2 query = new PhraseQuery2(6);
+    query.addMultiTerm(new Term("field", "pot"), new Term("field", "nine"));
+    query.addMultiTerm(new Term("field", "nine"));
+    checkIntervals(query, searcher, new int[][]{
+        { 0, 10, 11, 27, 28 },
+        { 1, 10, 11, 27, 28 }
+    });
+  }
+
   public void testSloppyPhraseQuery() throws IOException {
     PhraseQuery2 query = new PhraseQuery2(1);
     query.add(new Term("field", "pease"));

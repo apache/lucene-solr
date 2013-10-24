@@ -92,20 +92,26 @@ var sammy = $.sammy
         $( 'li.active', menu_wrapper )
           .removeClass( 'active' );
 
-        if( this.params.splat )
+        // global dashboard doesn't have params.splat
+        if( !this.params.splat )
         {
-          var selector = '~' === this.params.splat[0][0]
-                       ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
-                       : '#menu-selector #' + this.params.splat[0].replace( /\./g, '__' );
+          this.params.splat = [ '~index' ];
+        }
 
-          var active_element = $( selector, menu_wrapper );
-                    
-          if( 0 === active_element.size() )
-          {
-            this.app.error( 'There exists no core with name "' + this.params.splat[0] + '"' );
-            return false;
-          }
+        var selector = '~' === this.params.splat[0][0]
+                     ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
+                     : '#core-selector #' + this.params.splat[0].replace( /\./g, '__' );
 
+        var active_element = $( selector, menu_wrapper );
+                  
+        if( 0 === active_element.size() )
+        {
+          this.app.error( 'There exists no core with name "' + this.params.splat[0] + '"' );
+          return false;
+        }
+
+        if( active_element.hasClass( 'global' ) )
+        {
           active_element
             .addClass( 'active' );
 
@@ -115,10 +121,28 @@ var sammy = $.sammy
               .addClass( 'active' );
           }
 
-          if( !active_element.hasClass( 'global' ) )
+          $( '#core-selector option[selected]' )
+            .removeAttr( 'selected' )
+            .trigger( 'liszt:updated' );
+
+          $( '#core-selector .chzn-container > a' )
+            .addClass( 'chzn-default' );
+        }
+        else
+        {
+          active_element
+            .attr( 'selected', 'selected' )
+            .trigger( 'liszt:updated' );
+
+          if( !this.params.splat[1] )
           {
-            this.active_core = active_element;
+            this.params.splat[1] = 'overview';
           }
+
+          $( '#core-menu .' + this.params.splat[1] )
+            .addClass( 'active' );
+
+          this.active_core = active_element;
         }
       }
     );
@@ -134,7 +158,6 @@ var solr_admin = function( app_config )
   is_multicore = null,
   cores_data = null,
   active_core = null,
-  environment_basepath = null,
     
   config = app_config,
   params = null,
@@ -143,12 +166,19 @@ var solr_admin = function( app_config )
 
   plugin_data = null,
     
-  this.menu_element = $( '#menu-selector' );
-  this.config = config;
+  this.menu_element = $( '#core-selector select' );
+  this.core_menu = $( '#core-menu ul' );
 
+  this.config = config;
   this.timeout = null;
 
   this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
+
+  browser = {
+    locale : null,
+    language : null,
+    country : null
+  };
 
   show_global_error = function( error )
   {
@@ -197,6 +227,9 @@ var solr_admin = function( app_config )
     that.menu_element
       .empty();
 
+    var core_list = [];
+    core_list.push( '<option></option>' );
+
     var core_count = 0;
     for( var core_name in that.cores_data )
     {
@@ -204,40 +237,48 @@ var solr_admin = function( app_config )
       var core_path = config.solr_path + '/' + core_name;
       var classes = [];
 
-      if( !environment_basepath )
-      {
-        environment_basepath = core_path;
-      }
-
       if( cores.status[core_name]['isDefaultCore'] )
       {
         classes.push( 'default' );
       }
 
-      var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
+      var core_tpl = '<option '
+                   + '    id="' + core_name.replace( /\./g, '__' ) + '" '
                    + '    class="' + classes.join( ' ' ) + '"'
                    + '    data-basepath="' + core_path + '"'
                    + '    schema="' + cores.status[core_name]['schema'] + '"'
                    + '    config="' + cores.status[core_name]['config'] + '"'
-                   + '>' + "\n"
-                   + '  <p><a href="#/' + core_name + '" title="' + core_name + '">' + core_name + '</a></p>' + "\n"
-                   + '  <ul>' + "\n"
+                   + '    value="#/' + core_name + '"'
+                   + '    title="' + core_name + '"'
+                   + '>' 
+                   + core_name 
+                   + '</option>';
 
-                   + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
-                   + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
-                   + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
-                   + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
-                   + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
-                   + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
-                   + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                   + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
-                   + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
+      core_list.push( core_tpl );
+    }
 
-                   + '    </ul>' + "\n"
-                   + '</li>';
-
+    var has_cores = 0 !== core_count;
+    if( has_cores )
+    {
       that.menu_element
-        .append( core_tpl );
+        .append( core_list.join( "\n" ) )
+        .trigger( 'liszt:updated' );
+    }
+
+    var core_selector = $( '#core-selector' );
+    core_selector.find( '#has-cores' ).toggle( has_cores );
+    core_selector.find( '#has-no-cores' ).toggle( !has_cores );
+
+    if( has_cores )
+    {
+      var cores_element = core_selector.find( '#has-cores' );
+      var selector_width = cores_element.width();
+
+      cores_element.find( '.chzn-container' )
+        .css( 'width', selector_width + 'px' );
+      
+      cores_element.find( '.chzn-drop' )
+        .css( 'width', ( selector_width - 2 ) + 'px' );
     }
 
     if( cores.initFailures )
@@ -262,22 +303,32 @@ var solr_admin = function( app_config )
         $( 'ul', init_failures ).html( failures.join( "\n" ) );
       }
     }
-
-    if( 0 === core_count )
-    {
-      show_global_error
-      ( 
-        '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
-      );
-    } // else: we have at least one core....
   };
 
   this.run = function()
   {
+    var navigator_language = navigator.userLanguage || navigator.language;
+    var language_match = navigator_language.match( /^(\w{2})([-_](\w{2}))?$/ );
+    if( language_match )
+    {
+      if( language_match[1] )
+      {
+        browser.language = language_match[1].toLowerCase();
+      }
+      if( language_match[3] )
+      {
+        browser.country = language_match[3].toUpperCase();
+      }
+      if( language_match[1] && language_match[3] )
+      {
+        browser.locale = browser.language + '_' + browser.country
+      }
+    }
+
     $.ajax
     (
       {
-        url : config.solr_path + config.core_admin_path + '?wt=json',
+        url : config.solr_path + config.core_admin_path + '?wt=json&indexInfo=false',
         dataType : 'json',
         beforeSend : function( arr, form, options )
         {               
@@ -288,16 +339,53 @@ var solr_admin = function( app_config )
         {
           that.set_cores_data( response );
 
-          for( var core_name in response.status )
-          {
-            var core_path = config.solr_path + '/' + core_name;
-            if( !environment_basepath )
-            {
-              environment_basepath = core_path;
-            }
-          }
+          that.menu_element
+            .chosen()
+            .off( 'change' )
+            .on
+            (
+              'change',
+              function( event )
+              {
+                location.href = $( 'option:selected', this ).val();
+                return false;
+              }
+            )
+            .on
+            (
+              'liszt:updated',
+              function( event )
+              {
+                var core_name = $( 'option:selected', this ).text();
 
-          var system_url = environment_basepath + '/admin/system?wt=json';
+                that.core_menu
+                  .html
+                  (
+                    //Keep this in alphabetical order after the overview
+                    '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
+                    '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
+                    '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
+                    '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
+                    '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
+                    '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
+                    '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
+                    '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
+                    '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
+                    '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
+                    '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>'
+                  )
+                  .show();
+
+                if( !core_name )
+                {
+                  that.core_menu
+                    .hide()
+                    .empty();
+                }
+              }
+            );
+
+          var system_url = config.solr_path + '/admin/info/system?wt=json';
           $.ajax
           (
             {
@@ -318,13 +406,12 @@ var solr_admin = function( app_config )
                   var command_line_args = response.jvm.jmx.commandLineArgs.join( ' | ' );
 
                   environment_args = command_line_args.match( /-Dsolr.environment=((dev|test|prod)?[\w\d]*)/i );
-                  cloud_args = command_line_args.match( /-Dzk/i );
                 }
 
-                // title
-
-                $( 'title', document )
-                  .append( ' (' + response.core.host + ')' );
+                if( response.mode )
+                {
+                  cloud_args = response.mode.match( /solrcloud/i );
+                }
 
                 // environment
 
@@ -465,9 +552,100 @@ var solr_admin = function( app_config )
       json_str = JSON.stringify( JSON.parse( json_str ), undefined, 2 );
     }
 
-    return json_str;
+    return json_str.esc();
+  };
+
+  this.format_number = function format_number( number )
+  {
+    var sep = {
+      'de_CH' : '\'',
+      'de' : '.',
+      'en' : ',',
+      'es' : '.',
+      'it' : '.',
+      'ja' : ',',
+      'sv' : ' ',
+      'tr' : '.',
+      '_' : '' // fallback
+    };
+
+    return ( number || 0 ).toString().replace
+    (
+      /\B(?=(\d{3})+(?!\d))/g,
+      sep[ browser.locale ] || sep[ browser.language ] || sep['_']
+    );
   };
 
 };
 
+var connection_check_delay = 1000;
+var connection_working = true;
+
+var connection_check = function connection_check()
+{
+  $.ajax
+  (
+    {
+      url : config.solr_path + config.core_admin_path + '?wt=json&indexInfo=false',
+      dataType : 'json',
+      context : $( '.blockUI #connection_status span' ),
+      beforeSend : function( arr, form, options )
+      {               
+        this
+          .addClass( 'loader' );
+      },
+      success : function( response )
+      {
+        connection_working = true;
+
+        this
+          .html( 'Instance is available - <a href="javascript:location.reload();">Reload the page</a>' );
+
+        this.parents( '#connection_status' )
+          .addClass( 'online' );
+
+        this.parents( '.blockUI' )
+          .css( 'borderColor', '#080' );
+      },
+      error : function()
+      {
+        connection_check_delay += connection_check_delay;
+        window.setTimeout( connection_check, connection_check_delay );
+      },
+      complete : function()
+      {
+        this
+          .removeClass( 'loader' );
+      }
+    }
+  );
+};
+
+var connection_error = function connection_error()
+{
+  connection_working = false;
+
+  $.blockUI
+  (
+    {
+      message: $( '#connection_status' ),
+      css: { width: '450px', borderColor: '#f00' }
+    }
+  );
+
+  window.setTimeout( connection_check, connection_check_delay );
+}
+
+$( document ).ajaxError
+(
+  function( event, xhr, settings, thrownError )
+  {
+    if( connection_working && 0 === xhr.status )
+    {
+      connection_error();
+    }
+  }
+);
+
+$.ajaxSetup( { cache: false } );
 var app = new solr_admin( app_config );

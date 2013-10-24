@@ -75,5 +75,11 @@ public class DelegatingCollector extends Collector {
   public boolean acceptsDocsOutOfOrder() {
     return delegate.acceptsDocsOutOfOrder();
   }
+
+  public void finish() throws IOException {
+    if(delegate instanceof DelegatingCollector) {
+      ((DelegatingCollector) delegate).finish();
+    }
+  }
 }
 

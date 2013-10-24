@@ -179,35 +179,24 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     if (next != null) next.finish();
 
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
-    
 
+    if (log.isInfoEnabled()) {
+      StringBuilder sb = new StringBuilder(rsp.getToLogAsString(req.getCore().getLogId()));
 
-    NamedList<Object> stdLog = rsp.getToLog();
+      rsp.getToLog().clear();   // make it so SolrCore.exec won't log this again
 
-    StringBuilder sb = new StringBuilder(req.getCore().getLogId());
-
-    for (int i=0; i<stdLog.size(); i++) {
-      String name = stdLog.getName(i);
-      Object val = stdLog.getVal(i);
-      if (name != null) {
-        sb.append(name).append('=');
+      // if id lists were truncated, show how many more there were
+      if (adds != null && numAdds > maxNumToLog) {
+        adds.add("... (" + numAdds + " adds)");
       }
-      sb.append(val).append(' ');
-    }
+      if (deletes != null && numDeletes > maxNumToLog) {
+        deletes.add("... (" + numDeletes + " deletes)");
+      }
+      long elapsed = rsp.getEndTime() - req.getStartTime();
 
-    stdLog.clear();   // make it so SolrCore.exec won't log this again
-
-    // if id lists were truncated, show how many more there were
-    if (adds != null && numAdds > maxNumToLog) {
-      adds.add("... (" + numAdds + " adds)");
+      sb.append(toLog).append(" 0 ").append(elapsed);
+      log.info(sb.toString());
     }
-    if (deletes != null && numDeletes > maxNumToLog) {
-      deletes.add("... (" + numDeletes + " deletes)");
-    }
-    long elapsed = rsp.getEndTime() - req.getStartTime();
-
-    sb.append(toLog).append(" 0 ").append(elapsed);
-    log.info(sb.toString());
   }
 }
 

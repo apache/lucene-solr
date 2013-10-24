@@ -20,36 +20,34 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.request.UnInvertedField;
 
 /**
  * Stats component calculates simple statistics on numeric field values
- * 
- *
  * @since solr 1.4
  */
 public class StatsComponent extends SearchComponent {
 
   public static final String COMPONENT_NAME = "stats";
-  
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.req.getParams().getBool(StatsParams.STATS,false)) {
@@ -207,19 +205,17 @@ class SimpleStats {
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
     if (null != statsFs) {
+      final IndexSchema schema = searcher.getSchema();
       for (String f : statsFs) {
         String[] facets = params.getFieldParams(f, StatsParams.STATS_FACET);
         if (facets == null) {
           facets = new String[0]; // make sure it is something...
         }
-        SchemaField sf = searcher.getSchema().getField(f);
+        SchemaField sf = schema.getField(f);
         FieldType ft = sf.getType();
         NamedList<?> stv;
 
-        // Currently, only UnInvertedField can deal with multi-part trie fields
-        String prefix = TrieField.getMainValuePrefix(ft);
-
-        if (sf.multiValued() || ft.multiValuedFieldCache() || prefix!=null) {
+        if (sf.multiValued() || ft.multiValuedFieldCache()) {
           //use UnInvertedField for multivalued fields
           UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
           stv = uif.getStats(searcher, docs, facets).getStatsValues();
@@ -235,57 +231,47 @@ class SimpleStats {
     }
     return res;
   }
-  
-  // why does this use a top-level field cache?
-  public NamedList<?> getFieldCacheStats(String fieldName, String[] facet ) {
-    SchemaField sf = searcher.getSchema().getField(fieldName);
-    
-    FieldCache.DocTermsIndex si;
-    try {
-      si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
-    } 
-    catch (IOException e) {
-      throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
-    }
-    StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
-    final int nTerms = si.numOrd();
-    if ( nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
 
-    // don't worry about faceting if no documents match...
+  public NamedList<?> getFieldCacheStats(String fieldName, String[] facet) throws IOException {
+    IndexSchema schema = searcher.getSchema();
+    final SchemaField sf = schema.getField(fieldName);
+
+    final StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
+
     List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
-    FieldCache.DocTermsIndex facetTermsIndex;
     for( String facetField : facet ) {
-      SchemaField fsf = searcher.getSchema().getField(facetField);
+      SchemaField fsf = schema.getField(facetField);
 
       if ( fsf.multiValued()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Stats can only facet on single-valued fields, not: " + facetField );
       }
 
-      try {
-        facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), facetField);
-      }
-      catch (IOException e) {
-        throw new RuntimeException( "failed to open field cache for: "
-          + facetField, e );
-      }
-      facetStats.add(new FieldFacetStats(facetField, facetTermsIndex, sf, fsf, nTerms));
+      facetStats.add(new FieldFacetStats(searcher, facetField, sf, fsf));
     }
-    
-    final BytesRef tempBR = new BytesRef();
-    DocIterator iter = docs.iterator();
-    while (iter.hasNext()) {
-      int docID = iter.nextDoc();
-      BytesRef raw = si.lookup(si.getOrd(docID), tempBR);
-      if( raw.length > 0 ) {
-        allstats.accumulate(raw);
-      } else {
-        allstats.missing();
+
+    final Iterator<AtomicReaderContext> ctxIt = searcher.getIndexReader().leaves().iterator();
+    AtomicReaderContext ctx = null;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
+        // advance
+        do {
+          ctx = ctxIt.next();
+        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
+        assert doc >= ctx.docBase;
+
+        // propagate the context among accumulators.
+        allstats.setNextReader(ctx);
+        for (FieldFacetStats f : facetStats) {
+          f.setNextReader(ctx);
+        }
       }
 
-      // now update the facets
+      // accumulate
+      allstats.accumulate(doc - ctx.docBase);
       for (FieldFacetStats f : facetStats) {
-        f.facet(docID, raw);
+        f.facet(doc - ctx.docBase);
       }
     }
 
@@ -294,6 +280,5 @@ class SimpleStats {
     }
     return allstats.getStatsValues();
   }
-
 
 }

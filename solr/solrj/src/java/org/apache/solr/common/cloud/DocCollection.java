@@ -17,12 +17,13 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.JSONWriter;
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ public class DocCollection extends ZkNodeProps {
 
   private final String name;
   private final Map<String, Slice> slices;
+  private final Map<String, Slice> activeSlices;
   private final DocRouter router;
 
   /**
@@ -43,9 +45,19 @@ public class DocCollection extends ZkNodeProps {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super( props==null ? Collections.<String,Object>emptyMap() : props);
+    super( props==null ? props = new HashMap<String,Object>() : props);
     this.name = name;
+
     this.slices = slices;
+    this.activeSlices = new HashMap<String, Slice>();
+
+    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+
+    while (iter.hasNext()) {
+      Map.Entry<String, Slice> slice = iter.next();
+      if (slice.getValue().getState().equals(Slice.ACTIVE))
+        this.activeSlices.put(slice.getKey(), slice.getValue());
+    }
     this.router = router;
 
     assert name != null && slices != null;
@@ -64,17 +76,32 @@ public class DocCollection extends ZkNodeProps {
   }
 
   /**
-   * Gets the list of slices for this collection.
+   * Gets the list of all slices for this collection.
    */
   public Collection<Slice> getSlices() {
     return slices.values();
   }
 
+
   /**
-   * Get the map of slices (sliceName->Slice) for this collection.
+   * Return the list of active slices for this collection.
+   */
+  public Collection<Slice> getActiveSlices() {
+    return activeSlices.values();
+  }
+
+  /**
+   * Get the map of all slices (sliceName->Slice) for this collection.
    */
   public Map<String, Slice> getSlicesMap() {
     return slices;
+  }
+
+  /**
+   * Get the map of active slices (sliceName->Slice) for this collection.
+   */
+  public Map<String, Slice> getActiveSlicesMap() {
+    return activeSlices;
   }
 
   public DocRouter getRouter() {
@@ -88,7 +115,7 @@ public class DocCollection extends ZkNodeProps {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String,Object> all = new LinkedHashMap<String,Object>(slices.size()+1);
+    LinkedHashMap<String, Object> all = new LinkedHashMap<String, Object>(slices.size() + 1);
     all.putAll(propMap);
     all.put(SHARDS, slices);
     jsonWriter.write(all);

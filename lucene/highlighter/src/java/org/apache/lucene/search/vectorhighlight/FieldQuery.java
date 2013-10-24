@@ -28,9 +28,12 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -92,8 +95,7 @@ public class FieldQuery {
         if( !clause.isProhibited() )
           flatten( clause.getQuery(), reader, flatQueries );
       }
-    }
-    else if( sourceQuery instanceof DisjunctionMaxQuery ){
+    } else if( sourceQuery instanceof DisjunctionMaxQuery ){
       DisjunctionMaxQuery dmq = (DisjunctionMaxQuery)sourceQuery;
       for( Query query : dmq ){
         flatten( query, reader, flatQueries );
@@ -102,12 +104,6 @@ public class FieldQuery {
     else if( sourceQuery instanceof TermQuery ){
       if( !flatQueries.contains( sourceQuery ) )
         flatQueries.add( sourceQuery );
-    }
-    else if (sourceQuery instanceof MultiTermQuery && reader != null) {
-      MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();
-      copy.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS));
-      BooleanQuery mtqTerms = (BooleanQuery) copy.rewrite(reader);
-      flatten(mtqTerms, reader, flatQueries);
     }
     else if( sourceQuery instanceof PhraseQuery ){
       if( !flatQueries.contains( sourceQuery ) ){
@@ -118,6 +114,31 @@ public class FieldQuery {
           flatQueries.add( new TermQuery( pq.getTerms()[0] ) );
         }
       }
+    } else if (sourceQuery instanceof ConstantScoreQuery) {
+      final Query q = ((ConstantScoreQuery) sourceQuery).getQuery();
+      if (q != null) {
+        flatten(q, reader, flatQueries);
+      }
+    } else if (sourceQuery instanceof FilteredQuery) {
+      final Query q = ((FilteredQuery) sourceQuery).getQuery();
+      if (q != null) {
+        flatten(q, reader, flatQueries);
+      }
+    } else if (reader != null){
+      Query query = sourceQuery;
+      if (sourceQuery instanceof MultiTermQuery) {
+        MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();
+        copy.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS));
+        query = copy;
+      }
+      Query rewritten = query.rewrite(reader);
+      if (rewritten != query) {
+        // only rewrite once and then flatten again - the rewritten query could have a speacial treatment
+        // if this method is overwritten in a subclass.
+        flatten(rewritten, reader, flatQueries);
+        
+      } 
+      // if the query is already rewritten we discard it
     }
     // else discard queries
   }

@@ -20,7 +20,7 @@
   <primitive>true</primitive>
   <annotatorImplementationName>org.apache.lucene.analysis.uima.an.SampleEntityAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>DummyPoSTagger</name>
+    <name>EntityAnnotator</name>
     <description/>
     <version>1.0</version>
     <vendor>ASF</vendor>

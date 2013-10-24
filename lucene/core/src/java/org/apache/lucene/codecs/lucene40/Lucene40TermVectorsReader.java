@@ -17,9 +17,15 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -34,15 +40,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Lucene 4.0 Term Vectors reader.
@@ -361,10 +358,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      // TODO: really indexer hardwires
-      // this...?  I guess codec could buffer and re-sort...
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    public boolean hasFreqs() {
+      return true;
     }
 
     @Override
@@ -422,7 +417,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       this.storePayloads = storePayloads;
       nextTerm = 0;
       tvf.seek(tvfFPStart);
-      tvfFP = 1+tvfFPStart;
+      tvfFP = tvfFPStart;
       positions = null;
       startOffsets = null;
       endOffsets = null;
@@ -433,7 +428,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
 
     // NOTE: slow!  (linear scan)
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache)
+    public SeekStatus seekCeil(BytesRef text)
       throws IOException {
       if (nextTerm != 0) {
         final int cmp = text.compareTo(term);
@@ -569,11 +564,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets, payloadOffsets, payloadData);
       return docsAndPositionsEnum;
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
   }
 
   // NOTE: sort of a silly class, since you can get the
@@ -605,12 +595,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int freq) {
@@ -618,6 +604,11 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       this.freq = freq;
       this.doc = -1;
       didNext = false;
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
 
@@ -659,12 +650,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, int[] payloadLengths, byte[] payloadBytes) {
@@ -728,6 +715,11 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
         return endOffsets[nextPos-1];
       }
     }
+    
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
 
   @Override
@@ -762,6 +754,11 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
     
     return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
   }
 }
 

@@ -17,23 +17,30 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SolrXMLSerializer {
   protected static Logger log = LoggerFactory
@@ -62,6 +69,25 @@ public class SolrXMLSerializer {
     if (containerProperties != null && !containerProperties.isEmpty()) {
       writeProperties(w, containerProperties, "  ");
     }
+
+    // Output logging section if any
+    if (solrXMLDef.loggingAttribs.size() > 0 || solrXMLDef.watcherAttribs.size() > 0) {
+      w.write(INDENT + "<logging");
+      for (Map.Entry<String, String> ent : solrXMLDef.loggingAttribs.entrySet()) {
+        writeAttribute(w, ent.getKey(), ent.getValue());
+      }
+      w.write(">\n");
+
+      if (solrXMLDef.watcherAttribs.size() > 0) {
+        w.write(INDENT + INDENT + "<watcher");
+        for (Map.Entry<String, String> ent : solrXMLDef.watcherAttribs.entrySet()) {
+          writeAttribute(w, ent.getKey(), ent.getValue());
+        }
+        w.write("/>\n");
+      }
+      w.write(INDENT + "</logging>\n");
+    }
+
     w.write(INDENT + "<cores");
     Map<String,String> coresAttribs = solrXMLDef.coresAttribs;
     Set<String> coreAttribKeys = coresAttribs.keySet();
@@ -75,8 +101,27 @@ public class SolrXMLSerializer {
       persist(w, coreDef);
     }
 
+    // Shard handler section
+    if (solrXMLDef.shardHandlerNode != null) {
+      w.write(nodeToXML(solrXMLDef.shardHandlerNode));
+    }
+
     w.write(INDENT + "</cores>\n");
     w.write("</solr>\n");
+  }
+
+  private String nodeToXML(Node node) {
+    try {
+      TransformerFactory tfactory = TransformerFactory.newInstance();
+      Transformer tx = tfactory.newTransformer();
+      StringWriter buffer = new StringWriter();
+      tx.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+      tx.transform(new DOMSource(node), new StreamResult(buffer));
+      return buffer.toString();
+    }
+    catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error transforming XML: " + e.getMessage());
+    }
   }
   
   /** Writes the cores configuration node for a given core. */
@@ -116,7 +161,7 @@ public class SolrXMLSerializer {
   }
   
   void persistFile(File file, SolrXMLDef solrXMLDef) {
-    log.info("Persisting cores config to " + file);
+    log.info("Persisting cores config to " + file.getAbsolutePath());
     
     File tmpFile = null;
     try {
@@ -198,6 +243,9 @@ public class SolrXMLSerializer {
     Properties containerProperties;
     Map<String,String> solrAttribs;
     Map<String,String> coresAttribs;
+    Map<String, String> loggingAttribs;
+    Map<String, String> watcherAttribs;
+    Node shardHandlerNode;
     List<SolrCoreXMLDef> coresDefs;
   }
   

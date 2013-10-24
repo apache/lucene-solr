@@ -104,7 +104,7 @@ public class TestStressIndexing extends LuceneTestCase {
     public void doWork() throws Throwable {
       for (int i=0; i<100; i++) {
         IndexReader ir = DirectoryReader.open(directory);
-        IndexSearcher is = new IndexSearcher(ir);
+        IndexSearcher is = newSearcher(ir);
         ir.close();
       }
       count += 100;

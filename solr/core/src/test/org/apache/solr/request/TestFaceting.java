@@ -17,6 +17,8 @@
 
 package org.apache.solr.request;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
@@ -25,6 +27,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -109,7 +114,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     // test seeking before term
     if (size>0) {
-      assertEquals(size>0, te.seekCeil(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
+      assertEquals(size>0, te.seekCeil(new BytesRef("000")) != TermsEnum.SeekStatus.END);
       assertEquals(0, te.ord());
       assertEquals(t(0), te.term().utf8ToString());
     }
@@ -263,5 +268,684 @@ public class TestFaceting extends SolrTestCaseJ4 {
             );
   }
 
+  @Test
+  public void testTrieFields() {
+    // make sure that terms are correctly filtered even for trie fields that index several
+    // terms for a single value
+    List<String> fields = new ArrayList<String>();
+    fields.add("id");
+    fields.add("7");
+    final String[] suffixes = new String[] {"ti", "tis", "tf", "tfs", "tl", "tls", "td", "tds"};
+    for (String suffix : suffixes) {
+      fields.add("f_" + suffix);
+      fields.add("42");
+    }
+    assertU(adoc(fields.toArray(new String[0])));
+    assertU(commit());
+    for (String suffix : suffixes) {
+      for (String facetMethod : new String[] {FacetParams.FACET_METHOD_enum, FacetParams.FACET_METHOD_fc, FacetParams.FACET_METHOD_fcs}) {
+        for (String facetSort : new String[] {FacetParams.FACET_SORT_COUNT, FacetParams.FACET_SORT_INDEX}) {
+          for (String value : new String[] {"42", "43"}) { // match or not
+            final String field = "f_" + suffix;
+            assertQ("field=" + field + ",method=" + facetMethod + ",sort=" + facetSort,
+                req("q", field + ":" + value, FacetParams.FACET, "true", FacetParams.FACET_FIELD, field, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_SORT, facetSort, FacetParams.FACET_METHOD, facetMethod),
+                "*[count(//lst[@name='" + field + "']/int)=1]"); // exactly 1 facet count
+          }
+        }
+      }
+    }
+  }
 
+  @Test
+  public void testFacetSortWithMinCount() {
+    assertU(adoc("id", "1.0", "f_td", "-420.126"));
+    assertU(adoc("id", "2.0", "f_td", "-285.672"));
+    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assertU(commit());
+
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", "indent","true"),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+  }
+
+
+  @Test
+  public void testDateFacetsWithMultipleConfigurationForSameField() {
+    clearIndex();
+    final String f = "bday_dt";
+
+    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
+    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
+    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
+    assertU(commit());
+    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
+    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
+    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
+    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
+    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
+    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
+    assertU(commit());
+    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
+    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
+    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
+    assertU(commit());
+
+    final String preFoo = "//lst[@name='facet_dates']/lst[@name='foo']";
+    final String preBar = "//lst[@name='facet_dates']/lst[@name='bar']";
+
+    assertQ("check counts for month of facet by day",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", "{!key=foo " +
+                  "facet.date.start=1976-07-01T00:00:00.000Z " +
+                  "facet.date.end=1976-07-01T00:00:00.000Z+1MONTH " +
+                  "facet.date.gap=+1DAY " +
+                  "facet.date.other=all " +
+                "}" + f
+                ,"facet.date", "{!key=bar " +
+                  "facet.date.start=1976-07-01T00:00:00.000Z " +
+                  "facet.date.end=1976-07-01T00:00:00.000Z+7DAY " +
+                  "facet.date.gap=+1DAY " +
+                "}" + f
+              )
+            // 31 days + pre+post+inner = 34
+            ,"*[count("+preFoo+"/int)=34]"
+            ,preFoo+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
+            ,preFoo+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
+            ,preFoo+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,preFoo+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-16T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-17T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-18T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-19T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-21T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-22T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-23T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-24T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-25T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-26T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-27T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-28T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-29T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-30T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-31T00:00:00Z'][.='0']"
+
+            ,preFoo+"/int[@name='before' ][.='2']"
+            ,preFoo+"/int[@name='after'  ][.='1']"
+            ,preFoo+"/int[@name='between'][.='11']"
+
+            ,"*[count("+preBar+"/int)=7]"
+            ,preBar+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
+            ,preBar+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
+            ,preBar+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,preBar+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,preBar+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,preBar+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,preBar+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+              );
+
+      clearIndex();
+      assertU(commit());
+    }
+
+    public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
+      clearIndex();
+      String fname = "trait_ss";
+      assertU(adoc("id", "42",
+          fname, "Tool",
+          fname, "Obnoxious",
+          "name_s", "Zapp Brannigan"));
+
+      assertU(adoc("id", "43" ,
+                   "title_s", "Democratic Order of Planets"));
+      assertU(commit());
+  
+      assertU(adoc("id", "44",
+          fname, "Tool",
+          "name_s", "The Zapper"));
+  
+      assertU(adoc("id", "45",
+          fname, "Chauvinist",
+          "title_s", "25 star General"));
+  
+      assertU(adoc("id", "46",
+          fname, "Obnoxious",
+          "subject_s", "Defeated the pacifists of the Gandhi nebula"));
+  
+      assertU(commit());
+  
+      assertU(adoc("id", "47",
+          fname, "Pig",
+          "text_t", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+      assertU(commit());
+  
+      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req("q", "id:[42 TO 47]"
+                  ,"facet", "true"
+                  ,"facet.zeros", "false"
+                  ,"fq", "id:[42 TO 45]"
+                  ,"facet.field", "{!key=foo " +
+                     "facet.mincount=0 "+
+                     "facet.missing=false "+
+                  "}"+fname
+                  ,"facet.field", "{!key=bar " +
+                     "facet.mincount=2 "+
+                     "facet.missing=true "+
+                  "}"+fname
+                  )
+              ,"*[count(//doc)=4]"
+              ,"*[count(//lst[@name='foo']/int)=4]"
+              ,"*[count(//lst[@name='bar']/int)=2]"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='foo']/int[@name='Obnoxious'][.='1']"
+              ,"//lst[@name='foo']/int[@name='Chauvinist'][.='1']"
+              ,"//lst[@name='foo']/int[@name='Pig'][.='0']"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='bar']/int[not(@name)][.='1']"
+              );
+  
+      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req("q", "id:[42 TO 47]"
+                  ,"facet", "true"
+                  ,"facet.zeros", "false"
+                  ,"fq", "id:[42 TO 45]"
+                  ,"facet.field", "{!key=foo " +
+                      "facet.prefix=Too "+
+                  "}"+fname
+                  ,"facet.field", "{!key=bar " +
+                      "facet.limit=2 "+
+                      "facet.sort=false "+
+                  "}"+fname
+                  )
+              ,"*[count(//doc)=4]"
+              ,"*[count(//lst[@name='foo']/int)=1]"
+              ,"*[count(//lst[@name='bar']/int)=2]"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='bar']/int[@name='Chauvinist'][.='1']"
+              ,"//lst[@name='bar']/int[@name='Obnoxious'][.='1']"
+              );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.sort vs facet.missing",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.sort=index" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar " +
+                              "facet.missing=true" +
+                          "}"+fname
+                          )
+                      // foo is in index order w/o missing
+                      ,"*[count(//lst[@name='foo']/int)=4]"
+                  ,"//lst[@name='foo']/int[1][@name='Chauvinist'][.='1']"
+                  ,"//lst[@name='foo']/int[2][@name='Obnoxious'][.='1']"
+                  ,"//lst[@name='foo']/int[3][@name='Pig'][.='0']"
+                  ,"//lst[@name='foo']/int[4][@name='Tool'][.='2']"
+                  // bar is in count order by default and includes missing
+                  ,"*[count(//lst[@name='bar']/int)=5]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  ,"//lst[@name='bar']/int[5][not(@name)][.='1']"
+                  );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.mincount",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.mincount=2" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar}"+fname
+                          )
+                      // only Tool for foo
+                      ,"*[count(//lst[@name='foo']/int)=1]"
+                  ,"//lst[@name='foo']/int[1][@name='Tool'][.='2']"
+                  // all for bar
+                  ,"*[count(//lst[@name='bar']/int)=4]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.missing",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.missing=true" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar}"+fname
+                          )
+                      // foo includes missing
+                      ,"*[count(//lst[@name='foo']/int)=5]"
+                  ,"//lst[@name='foo']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='foo']/int[4][@name='Pig'][.='0']"
+                  ,"//lst[@name='foo']/int[5][not(@name)][.='1']"
+                  // bar does not
+                  ,"*[count(//lst[@name='bar']/int)=4]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  );
+
+      assertQ("checking facets when local facet.prefix param used after regular/raw field faceting",
+          req("q", "*:*"
+              ,"facet", "true"
+              ,"facet.field", fname
+              ,"facet.field", "{!key=foo " +
+              "facet.prefix=T "+
+              "}"+fname
+          )
+          ,"*[count(//doc)=6]"
+          ,"*[count(//lst[@name='" + fname + "']/int)=4]"
+          ,"*[count(//lst[@name='foo']/int)=1]"
+          ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+      );
+
+      assertQ("checking facets when local facet.prefix param used before regular/raw field faceting",
+          req("q", "*:*"
+              ,"facet", "true"
+              ,"facet.field", "{!key=foo " +
+              "facet.prefix=T "+
+              "}"+fname
+              ,"facet.field", fname
+          )
+          ,"*[count(//doc)=6]"
+          ,"*[count(//lst[@name='" + fname + "']/int)=4]"
+          ,"*[count(//lst[@name='foo']/int)=1]"
+          ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+      );
+
+      final String foo_range_facet = "{!key=foo facet.range.gap=2}val_i";
+      final String val_range_facet = "val_i";
+      for (boolean toggle : new boolean[] { true, false }) {
+          assertQ("local gap param mixed w/raw range faceting: " + toggle,
+                      req("q", "*:*"
+                              ,"facet", "true"
+                              ,"rows", "0"
+                              ,"facet.range.start", "0"
+                              ,"facet.range.end", "10"
+                              ,"facet.range.gap", "1"
+                              ,"facet.range", (toggle ? foo_range_facet : val_range_facet)
+                              ,"facet.range", (toggle ? val_range_facet : foo_range_facet)
+                              )
+                          ,"*[count(//lst[@name='val_i']/lst[@name='counts']/int)=10]"
+                      ,"*[count(//lst[@name='foo']/lst[@name='counts']/int)=5]"
+                      );
+        }
+
+      clearIndex();
+      assertU(commit());
+  }
+
+  private void add50ocs() {
+    // Gimme 50 docs with 10 facet fields each
+    for (int idx = 0; idx < 50; ++idx) {
+      String f0 = (idx % 2 == 0) ? "zero_2" : "zero_1";
+      String f1 = (idx % 3 == 0) ? "one_3" : "one_1";
+      String f2 = (idx % 4 == 0) ? "two_4" : "two_1";
+      String f3 = (idx % 5 == 0) ? "three_5" : "three_1";
+      String f4 = (idx % 6 == 0) ? "four_6" : "four_1";
+      String f5 = (idx % 7 == 0) ? "five_7" : "five_1";
+      String f6 = (idx % 8 == 0) ? "six_8" : "six_1";
+      String f7 = (idx % 9 == 0) ? "seven_9" : "seven_1";
+      String f8 = (idx % 10 == 0) ? "eight_10" : "eight_1";
+      String f9 = (idx % 11 == 0) ? "nine_11" : "nine_1";
+      assertU(adoc("id", Integer.toString(idx),
+          "f0_ws", f0,
+          "f1_ws", f1,
+          "f2_ws", f2,
+          "f3_ws", f3,
+          "f4_ws", f4,
+          "f5_ws", f5,
+          "f6_ws", f6,
+          "f7_ws", f7,
+          "f8_ws", f8,
+          "f9_ws", f9
+      ));
+    }
+
+    assertU(commit());
+
+  }
+
+  @Test
+  public void testThreadWait() throws Exception {
+
+    add50ocs();
+    // All I really care about here is the chance to fire off a bunch of threads to the UnIninvertedField.get method
+    // to insure that we get into/out of the lock. Again, it's not entirely deterministic, but it might catch bad
+    // stuff occasionally...
+    assertQ("check threading, more threads than fields",
+        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+            , "facet", "true"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.field", "f9_ws"
+            , "facet.threads", "1000"
+            , "facet.limit", "-1"
+        )
+        , "*[count(//lst[@name='facet_fields']/lst)=50]"
+        , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+    );
+
+  }
+
+  @Test
+  public void testMultiThreadedFacets() throws Exception {
+    add50ocs();
+    assertQ("check no threading, threads == 0",
+        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+            , "facet", "true"
+            , "facet.field", "f0_ws"
+            , "facet.field", "f1_ws"
+            , "facet.field", "f2_ws"
+            , "facet.field", "f3_ws"
+            , "facet.field", "f4_ws"
+            , "facet.field", "f5_ws"
+            , "facet.field", "f6_ws"
+            , "facet.field", "f7_ws"
+            , "facet.field", "f8_ws"
+            , "facet.field", "f9_ws"
+            , "facet.threads", "0"
+            , "facet.limit", "-1"
+        )
+        , "*[count(//lst[@name='facet_fields']/lst)=10]"
+        , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+        , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+        , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+        , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+        , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+        , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+        , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+        , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+        , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+        , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+        , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+        , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+        , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+        , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+        , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+        , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+        , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+        , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+        , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+        , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+        , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+    );
+
+    RefCounted<SolrIndexSearcher> currentSearcherRef = h.getCore().getSearcher();
+    try {
+      SolrIndexSearcher currentSearcher = currentSearcherRef.get();
+      UnInvertedField ui0 = UnInvertedField.getUnInvertedField("f0_ws", currentSearcher);
+      UnInvertedField ui1 = UnInvertedField.getUnInvertedField("f1_ws", currentSearcher);
+      UnInvertedField ui2 = UnInvertedField.getUnInvertedField("f2_ws", currentSearcher);
+      UnInvertedField ui3 = UnInvertedField.getUnInvertedField("f3_ws", currentSearcher);
+      UnInvertedField ui4 = UnInvertedField.getUnInvertedField("f4_ws", currentSearcher);
+      UnInvertedField ui5 = UnInvertedField.getUnInvertedField("f5_ws", currentSearcher);
+      UnInvertedField ui6 = UnInvertedField.getUnInvertedField("f6_ws", currentSearcher);
+      UnInvertedField ui7 = UnInvertedField.getUnInvertedField("f7_ws", currentSearcher);
+      UnInvertedField ui8 = UnInvertedField.getUnInvertedField("f8_ws", currentSearcher);
+      UnInvertedField ui9 = UnInvertedField.getUnInvertedField("f9_ws", currentSearcher);
+
+      assertQ("check threading, more threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "1000"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=10]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+      );
+      assertQ("check threading, fewer threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "3"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=10]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
+          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
+          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
+          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
+          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
+          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
+          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
+          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
+          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
+          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
+          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
+          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
+          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
+          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
+          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
+          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
+          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
+          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
+          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
+          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
+          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+
+      );
+
+      // After this all, the uninverted fields should be exactly the same as they were the first time, even if we
+      // blast a whole bunch of identical fields at the facet code. Which, BTW, doesn't detect
+      // if you've asked for the same field more than once.
+      // The way fetching the uninverted field is written, all this is really testing is if the cache is working.
+      // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
+      // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
+      assertQ("check threading, more threads than fields",
+          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+              , "facet", "true"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f0_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f1_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f2_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f3_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f4_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f5_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f6_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f7_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f8_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.field", "f9_ws"
+              , "facet.threads", "1000"
+              , "facet.limit", "-1"
+          )
+          , "*[count(//lst[@name='facet_fields']/lst)=50]"
+          , "*[count(//lst[@name='facet_fields']/lst/int)=100]"
+      );
+
+      // Now, are all the UnInvertedFields still the same? Meaning they weren't re-fetched even when a bunch were
+      // requested at the same time?
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui0, UnInvertedField.getUnInvertedField("f0_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui1, UnInvertedField.getUnInvertedField("f1_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui2, UnInvertedField.getUnInvertedField("f2_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui3, UnInvertedField.getUnInvertedField("f3_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui4, UnInvertedField.getUnInvertedField("f4_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui5, UnInvertedField.getUnInvertedField("f5_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui6, UnInvertedField.getUnInvertedField("f6_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui7, UnInvertedField.getUnInvertedField("f7_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui8, UnInvertedField.getUnInvertedField("f8_ws", currentSearcher));
+      assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
+          ui9, UnInvertedField.getUnInvertedField("f9_ws", currentSearcher));
+    } finally {
+      currentSearcherRef.decref();
+    }
+  }
 }
+

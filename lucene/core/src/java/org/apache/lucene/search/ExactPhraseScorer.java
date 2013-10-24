@@ -37,7 +37,8 @@ final class ExactPhraseScorer extends Scorer {
   private final int[] gens = new int[CHUNK];
   
   boolean noDocs;
-  
+  private final long cost;
+
   private final static class ChunkState {
     final TermDocsEnumFactory factory;
     final DocsEnum posEnum;
@@ -62,19 +63,22 @@ final class ExactPhraseScorer extends Scorer {
   private int docID = -1;
   private int freq;
   
-  private final Similarity.ExactSimScorer docScorer;
+  private final Similarity.SimScorer docScorer;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.ExactSimScorer docScorer) throws IOException {
+                    Similarity.SimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     
     chunkStates = new ChunkState[postings.length];
+
+    endMinus1 = postings.length-1;
     
-    endMinus1 = postings.length - 1;
-    
-    for (int i = 0; i < postings.length; i++) {
-      
+    // min(cost)
+    cost = postings[0].postings.cost();
+
+    for(int i=0;i<postings.length;i++) {
+
       // Coarse optimization: advance(target) is fairly
       // costly, so, if the relative freq of the 2nd
       // rarest term is not that much (> 1/5th) rarer than
@@ -325,7 +329,7 @@ final class ExactPhraseScorer extends Scorer {
     
     return freq;
   }
-  
+
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
@@ -335,4 +339,10 @@ final class ExactPhraseScorer extends Scorer {
     }
     return new SloppyPhraseScorer.AdvancingIntervalIterator(this, collectIntervals, enums, new BlockIntervalIterator(this, collectIntervals, posIters));
   }
+
+  @Override
+  public long cost() {
+    return cost;
+  }
+
 }

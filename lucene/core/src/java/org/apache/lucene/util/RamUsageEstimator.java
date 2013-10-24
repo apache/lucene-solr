@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -212,18 +213,17 @@ public final class RamUsageEstimator {
     // regardless of the architecture).
     int objectAlignment = 8;
     try {
-      final Class<?> beanClazz = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
-      final Object hotSpotBean = ManagementFactory.newPlatformMXBeanProxy(
-        ManagementFactory.getPlatformMBeanServer(),
-        "com.sun.management:type=HotSpotDiagnostic",
-        beanClazz
-      );
-      final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
-      final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
-      objectAlignment = Integer.parseInt(
-          vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
-      );
-      supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      final Class<? extends PlatformManagedObject> beanClazz =
+        Class.forName("com.sun.management.HotSpotDiagnosticMXBean").asSubclass(PlatformManagedObject.class);
+      final Object hotSpotBean = ManagementFactory.getPlatformMXBean(beanClazz);
+      if (hotSpotBean != null) {
+        final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
+        final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
+        objectAlignment = Integer.parseInt(
+            vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+        );
+        supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      }
     } catch (Exception e) {
       // Ignore.
     }

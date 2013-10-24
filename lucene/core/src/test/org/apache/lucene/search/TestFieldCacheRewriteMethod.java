@@ -41,4 +41,19 @@ public class TestFieldCacheRewriteMethod extends TestRegexpRandom2 {
 
     CheckHits.checkEqual(fieldCache, fieldCacheDocs.scoreDocs, filterDocs.scoreDocs);
   }
+  
+  public void testEquals() throws Exception {
+    RegexpQuery a1 = new RegexpQuery(new Term(fieldName, "[aA]"), RegExp.NONE);
+    RegexpQuery a2 = new RegexpQuery(new Term(fieldName, "[aA]"), RegExp.NONE);
+    RegexpQuery b = new RegexpQuery(new Term(fieldName, "[bB]"), RegExp.NONE);
+    assertEquals(a1, a2);
+    assertFalse(a1.equals(b));
+    
+    a1.setRewriteMethod(new FieldCacheRewriteMethod());
+    a2.setRewriteMethod(new FieldCacheRewriteMethod());
+    b.setRewriteMethod(new FieldCacheRewriteMethod());
+    assertEquals(a1, a2);
+    assertFalse(a1.equals(b));
+    QueryUtils.check(a1);
+  }
 }

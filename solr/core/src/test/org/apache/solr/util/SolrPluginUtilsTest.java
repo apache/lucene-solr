@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
-import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
@@ -200,7 +199,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertTrue(t+" sanity test isn't TermQuery: " + out.getClass(),
                out instanceof TermQuery);
     assertEquals(t+" sanity test is wrong field",
-                 h.getCore().getSchema().getDefaultSearchFieldName(),
+                 h.getCore().getLatestSchema().getDefaultSearchFieldName(),
                  ((TermQuery)out).getTerm().field());
 
     t = "subject:XXXXXXXX";

@@ -55,11 +55,11 @@ public final class MockTokenFilter extends TokenFilter {
       makeString("with"))));
   
   private final CharacterRunAutomaton filter;
-  private boolean enablePositionIncrements = true;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  
+  private int skippedPositions;
+
   /**
    * Create a new MockTokenFilter.
    * 
@@ -77,12 +77,10 @@ public final class MockTokenFilter extends TokenFilter {
     // initial token with posInc=0 ever
     
     // return the first non-stop word found
-    int skippedPositions = 0;
+    skippedPositions = 0;
     while (input.incrementToken()) {
       if (!filter.run(termAtt.buffer(), 0, termAtt.length())) {
-        if (enablePositionIncrements) {
-          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
-        }
+        posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
         return true;
       }
       skippedPositions += posIncrAtt.getPositionIncrement();
@@ -90,20 +88,16 @@ public final class MockTokenFilter extends TokenFilter {
     // reached EOS -- return false
     return false;
   }
-  
-  /**
-   * @see #setEnablePositionIncrements(boolean)
-   */
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
+
+  @Override
+  public void end() throws IOException {
+    super.end();
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
   }
 
-  /**
-   * If <code>true</code>, this Filter will preserve
-   * positions of the incoming tokens (ie, accumulate and
-   * set position increments of the removed stop tokens).
-   */
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    skippedPositions = 0;
   }
 }

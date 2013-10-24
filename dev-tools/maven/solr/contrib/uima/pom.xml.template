@@ -33,9 +33,8 @@
   <description>Apache Solr - UIMA integration</description>
   <properties>
     <module-directory>solr/contrib/uima</module-directory>
-    <top-level>../../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
-    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
+    <relative-top-level>../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -126,13 +125,21 @@
     </testResources>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
-          </systemPropertyVariables>
-        </configuration>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>test-check-forbidden-servlet-api</id>
+            <configuration>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+              </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>testCheck</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

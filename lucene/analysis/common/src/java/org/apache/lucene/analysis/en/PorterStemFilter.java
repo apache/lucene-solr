@@ -48,6 +48,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
     certain terms from being passed to the stemmer
     {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
     in a previous {@link TokenStream}.
+
+    Note: For including the original term as well as the stemmed version, see
+   {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
     </p>
 */
 public final class PorterStemFilter extends TokenFilter {

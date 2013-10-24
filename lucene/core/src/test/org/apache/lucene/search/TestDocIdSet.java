@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -55,10 +56,14 @@ public class TestDocIdSet extends LuceneTestCase {
             }
 
             @Override
-            public int advance(int target) {
-              while (nextDoc() < target) {}
-              return docid;
+            public int advance(int target) throws IOException {
+              return slowAdvance(target);
             }
+            
+            @Override
+            public long cost() {
+              return 1;
+            } 
           };
         } 
       };

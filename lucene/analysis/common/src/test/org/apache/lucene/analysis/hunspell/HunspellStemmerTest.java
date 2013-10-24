@@ -94,17 +94,21 @@ public class HunspellStemmerTest extends LuceneTestCase {
     assertEquals(1, stems.size());
     assertEquals("foo", stems.get(0).getStemString());
     
-    stems = stemmer.stem("food");
+    stems = stemmer.stem("mood");
     assertEquals(1, stems.size());
-    assertEquals("foo", stems.get(0).getStemString());
+    assertEquals("moo", stems.get(0).getStemString());
     
     stems = stemmer.stem("Foos");
     assertEquals(1, stems.size());
     assertEquals("foo", stems.get(0).getStemString());
-    
+
+    // The "Foo" rule gets overridden by the "foo" rule, and we don't merge
     stems = stemmer.stem("Food");
+    assertEquals(0, stems.size());
+
+    stems = stemmer.stem("Mood");
     assertEquals(1, stems.size());
-    assertEquals("foo", stems.get(0).getStemString());
+    assertEquals("moo", stems.get(0).getStemString());
   }
 
   @Test

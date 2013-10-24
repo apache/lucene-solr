@@ -19,12 +19,14 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NoSuchDirectoryException;
 
 /** DirectoryReader is an implementation of {@link CompositeReader}
  that can read indexes in a {@link Directory}. 
@@ -50,9 +52,6 @@ import org.apache.lucene.store.Directory;
 */
 public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
 
-  /** Default termInfosIndexDivisor. */
-  public static final int DEFAULT_TERMS_INDEX_DIVISOR = 1;
-
   /** The index directory. */
   protected final Directory directory;
   
@@ -62,29 +61,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return StandardDirectoryReader.open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-  
-  /** Expert: Returns a IndexReader reading the index in the given
-   *  Directory with the given termInfosIndexDivisor.
-   * @param directory the index directory
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   *  <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
-   *  implementations, including the default one in this release. It only makes
-   *  sense for terms indexes that can efficiently re-sample terms at load time.
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final Directory directory, int termInfosIndexDivisor) throws IOException {
-    return StandardDirectoryReader.open(directory, null, termInfosIndexDivisor);
+    return StandardDirectoryReader.open(directory, null);
   }
   
   /**
@@ -116,29 +93,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-
-  /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit} and termInfosIndexDivisor.
-   * @param commit the commit point to open
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   *  <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
-   *  implementations, including the default one in this release. It only makes
-   *  sense for terms indexes that can efficiently re-sample terms at load time.
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final IndexCommit commit, int termInfosIndexDivisor) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit, termInfosIndexDivisor);
+    return StandardDirectoryReader.open(commit.getDirectory(), commit);
   }
 
   /**
@@ -290,7 +245,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
           // IOException allowed to throw there, in case
           // segments_N is corrupt
           sis.read(dir, fileName);
-        } catch (FileNotFoundException fnfe) {
+        } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth
           // between machines, it's very likely that the
@@ -313,17 +268,45 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
   }
   
   /**
-   * Returns <code>true</code> if an index exists at the specified directory.
+   * Returns <code>true</code> if an index likely exists at
+   * the specified directory.  Note that if a corrupt index
+   * exists, or if an index in the process of committing 
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
-  public static boolean indexExists(Directory directory) {
+  public static boolean indexExists(Directory directory) throws IOException {
+    // LUCENE-2812, LUCENE-2727, LUCENE-4738: this logic will
+    // return true in cases that should arguably be false,
+    // such as only IW.prepareCommit has been called, or a
+    // corrupt first commit, but it's too deadly to make
+    // this logic "smarter" and risk accidentally returning
+    // false due to various cases like file description
+    // exhaustion, access denied, etc., because in that
+    // case IndexWriter may delete the entire index.  It's
+    // safer to err towards "index exists" than try to be
+    // smart about detecting not-yet-fully-committed or
+    // corrupt indices.  This means that IndexWriter will
+    // throw an exception on such indices and the app must
+    // resolve the situation manually:
+    String[] files;
     try {
-      new SegmentInfos().read(directory);
-      return true;
-    } catch (IOException ioe) {
+      files = directory.listAll();
+    } catch (NoSuchDirectoryException nsde) {
+      // Directory does not exist --> no index exists
       return false;
     }
+
+    // Defensive: maybe a Directory impl returns null
+    // instead of throwing NoSuchDirectoryException:
+    if (files != null) {
+      String prefix = IndexFileNames.SEGMENTS + "_";
+      for(String file : files) {
+        if (file.startsWith(prefix) || file.equals(IndexFileNames.SEGMENTS_GEN)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

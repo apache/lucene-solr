@@ -30,12 +30,13 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -160,7 +161,7 @@ public class MultiPhraseQuery extends Query {
         for (Term term: terms) {
           TermContext termContext = termContexts.get(term);
           if (termContext == null) {
-            termContext = TermContext.build(context, term, true);
+            termContext = TermContext.build(context, term);
             termContexts.put(term, termContext);
           }
           allTermStats.add(searcher.termStatistics(term, termContext));
@@ -253,18 +254,18 @@ public class MultiPhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        ArrayUtil.mergeSort(postingsFreqs);
+        ArrayUtil.timSort(postingsFreqs);
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context));
       }
     }
 
@@ -275,7 +276,7 @@ public class MultiPhraseQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
-          SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+          SimScorer docScorer = similarity.simScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
@@ -497,7 +498,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
 
     final void sort() {
       //Arrays.sort(_array, _index, _lastIndex);
-      sorter.quickSort(_index, _lastIndex - 1);
+      sorter.sort(_index, _lastIndex - 1);
     }
 
     final void clear() {
@@ -516,7 +517,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
       _arraySize *= 2;
     }
 
-    private SorterTemplate sorter = new SorterTemplate() {
+    private IntroSorter sorter = new IntroSorter() {
       private int pivot;
 
       @Override
@@ -554,6 +555,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
   private DocsQueue _queue;
   private PositionQueue _posList;
   private int posPending;
+  private long cost;
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
                                    Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
@@ -576,6 +578,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
       }
+      cost += postings.cost();
       docsEnums.add(postings);
     }
 
@@ -661,5 +664,10 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
   @Override
   public final int docID() {
     return _doc;
+  }
+
+  @Override
+  public long cost() {
+    return cost;
   }
 }

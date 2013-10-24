@@ -30,8 +30,8 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 /**
  * {@link BytesRefHash} is a special purpose hash-map like data-structure
  * optimized for {@link BytesRef} instances. BytesRefHash maintains mappings of
- * byte arrays to ordinal (Map&lt;BytesRef,int&gt;) storing the hashed bytes
- * efficiently in continuous storage. The mapping to the ordinal is
+ * byte arrays to ids (Map&lt;BytesRef,int&gt;) storing the hashed bytes
+ * efficiently in continuous storage. The mapping to the id is
  * encapsulated inside {@link BytesRefHash} and is guaranteed to be increased
  * for each added {@link BytesRef}.
  * 
@@ -58,7 +58,7 @@ public final class BytesRefHash {
   private int hashMask;
   private int count;
   private int lastCount = -1;
-  private int[] ords;
+  private int[] ids;
   private final BytesStartArray bytesStartArray;
   private Counter bytesUsed;
 
@@ -69,7 +69,7 @@ public final class BytesRefHash {
   public BytesRefHash() { 
     this(new ByteBlockPool(new DirectAllocator()));
   }
-
+  
   /**
    * Creates a new {@link BytesRefHash}
    */
@@ -86,8 +86,8 @@ public final class BytesRefHash {
     hashHalfSize = hashSize >> 1;
     hashMask = hashSize - 1;
     this.pool = pool;
-    ords = new int[hashSize];
-    Arrays.fill(ords, -1);
+    ids = new int[hashSize];
+    Arrays.fill(ids, -1);
     this.bytesStartArray = bytesStartArray;
     bytesStart = bytesStartArray.init();
     bytesUsed = bytesStartArray.bytesUsed() == null? Counter.newCounter() : bytesStartArray.bytesUsed();
@@ -104,39 +104,43 @@ public final class BytesRefHash {
   }
 
   /**
-   * Populates and returns a {@link BytesRef} with the bytes for the given ord.
+   * Populates and returns a {@link BytesRef} with the bytes for the given
+   * bytesID.
    * <p>
-   * Note: the given ord must be a positive integer less that the current size (
-   * {@link #size()})
-   * </p>
-   *
-   * @param ord the ord
-   * @param ref the {@link BytesRef} to populate
+   * Note: the given bytesID must be a positive integer less than the current
+   * size ({@link #size()})
    * 
-   * @return the given BytesRef instance populated with the bytes for the given ord
+   * @param bytesID
+   *          the id
+   * @param ref
+   *          the {@link BytesRef} to populate
+   * 
+   * @return the given BytesRef instance populated with the bytes for the given
+   *         bytesID
    */
-  public BytesRef get(int ord, BytesRef ref) {
+  public BytesRef get(int bytesID, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
-    assert ord < bytesStart.length: "ord exceeds byteStart len: " + bytesStart.length;
-    return pool.setBytesRef(ref, bytesStart[ord]);
+    assert bytesID < bytesStart.length: "bytesID exceeds byteStart len: " + bytesStart.length;
+    pool.setBytesRef(ref, bytesStart[bytesID]);
+    return ref;
   }
 
   /**
-   * Returns the ords array in arbitrary order. Valid ords start at offset of 0
+   * Returns the ids array in arbitrary order. Valid ids start at offset of 0
    * and end at a limit of {@link #size()} - 1
    * <p>
    * Note: This is a destructive operation. {@link #clear()} must be called in
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
    */
-  public int[] compact() {
-    assert bytesStart != null : "Bytesstart is null - not initialized";
+  int[] compact() {
+    assert bytesStart != null : "bytesStart is null - not initialized";
     int upto = 0;
     for (int i = 0; i < hashSize; i++) {
-      if (ords[i] != -1) {
+      if (ids[i] != -1) {
         if (upto < i) {
-          ords[upto] = ords[i];
-          ords[i] = -1;
+          ids[upto] = ids[i];
+          ids[i] = -1;
         }
         upto++;
       }
@@ -144,7 +148,7 @@ public final class BytesRefHash {
 
     assert upto == count;
     lastCount = count;
-    return ords;
+    return ids;
   }
 
   /**
@@ -159,7 +163,7 @@ public final class BytesRefHash {
    */
   public int[] sort(final Comparator<BytesRef> comp) {
     final int[] compact = compact();
-    new SorterTemplate() {
+    new IntroSorter() {
       @Override
       protected void swap(int i, int j) {
         final int o = compact[i];
@@ -169,35 +173,37 @@ public final class BytesRefHash {
       
       @Override
       protected int compare(int i, int j) {
-        final int ord1 = compact[i], ord2 = compact[j];
-        assert bytesStart.length > ord1 && bytesStart.length > ord2;
-        return comp.compare(pool.setBytesRef(scratch1, bytesStart[ord1]),
-          pool.setBytesRef(scratch2, bytesStart[ord2]));
+        final int id1 = compact[i], id2 = compact[j];
+        assert bytesStart.length > id1 && bytesStart.length > id2;
+        pool.setBytesRef(scratch1, bytesStart[id1]);
+        pool.setBytesRef(scratch2, bytesStart[id2]);
+        return comp.compare(scratch1, scratch2);
       }
 
       @Override
       protected void setPivot(int i) {
-        final int ord = compact[i];
-        assert bytesStart.length > ord;
-        pool.setBytesRef(pivot, bytesStart[ord]);
+        final int id = compact[i];
+        assert bytesStart.length > id;
+        pool.setBytesRef(pivot, bytesStart[id]);
       }
   
       @Override
       protected int comparePivot(int j) {
-        final int ord = compact[j];
-        assert bytesStart.length > ord;
-        return comp.compare(pivot,
-          pool.setBytesRef(scratch2, bytesStart[ord]));
+        final int id = compact[j];
+        assert bytesStart.length > id;
+        pool.setBytesRef(scratch2, bytesStart[id]);
+        return comp.compare(pivot, scratch2);
       }
       
       private final BytesRef pivot = new BytesRef(),
         scratch1 = new BytesRef(), scratch2 = new BytesRef();
-    }.quickSort(0, count - 1);
+    }.sort(0, count);
     return compact;
   }
 
-  private boolean equals(int ord, BytesRef b) {
-    return pool.setBytesRef(scratch1, bytesStart[ord]).bytesEquals(b);
+  private boolean equals(int id, BytesRef b) {
+    pool.setBytesRef(scratch1, bytesStart[id]);
+    return scratch1.bytesEquals(b);
   }
 
   private boolean shrink(int targetSize) {
@@ -208,11 +214,10 @@ public final class BytesRefHash {
       newSize /= 2;
     }
     if (newSize != hashSize) {
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-          * -(hashSize - newSize));
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -(hashSize - newSize));
       hashSize = newSize;
-      ords = new int[hashSize];
-      Arrays.fill(ords, -1);
+      ids = new int[hashSize];
+      Arrays.fill(ids, -1);
       hashHalfSize = newSize / 2;
       hashMask = newSize - 1;
       return true;
@@ -235,7 +240,7 @@ public final class BytesRefHash {
       // shrink clears the hash entries
       return;
     }
-    Arrays.fill(ords, -1);
+    Arrays.fill(ids, -1);
   }
 
   public void clear() {
@@ -247,9 +252,8 @@ public final class BytesRefHash {
    */
   public void close() {
     clear(true);
-    ords = null;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-        * -hashSize);
+    ids = null;
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -hashSize);
   }
 
   /**
@@ -257,8 +261,8 @@ public final class BytesRefHash {
    * 
    * @param bytes
    *          the bytes to hash
-   * @return the ord the given bytes are hashed if there was no mapping for the
-   *         given bytes, otherwise <code>(-(ord)-1)</code>. This guarantees
+   * @return the id the given bytes are hashed if there was no mapping for the
+   *         given bytes, otherwise <code>(-(id)-1)</code>. This guarantees
    *         that the return value will always be &gt;= 0 if the given bytes
    *         haven't been hashed before.
    * 
@@ -288,8 +292,8 @@ public final class BytesRefHash {
    * }
    * </pre>
    * 
-   * @return the ord the given bytes are hashed if there was no mapping for the
-   *         given bytes, otherwise <code>(-(ord)-1)</code>. This guarantees
+   * @return the id the given bytes are hashed if there was no mapping for the
+   *         given bytes, otherwise <code>(-(id)-1)</code>. This guarantees
    *         that the return value will always be &gt;= 0 if the given bytes
    *         haven't been hashed before.
    * 
@@ -301,19 +305,9 @@ public final class BytesRefHash {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     final int length = bytes.length;
     // final position
-    int hashPos = code & hashMask;
-    int e = ords[hashPos];
-    if (e != -1 && !equals(e, bytes)) {
-      // Conflict: keep searching different locations in
-      // the hash table.
-      final int inc = ((code >> 8) + code) | 1;
-      do {
-        code += inc;
-        hashPos = code & hashMask;
-        e = ords[hashPos];
-      } while (e != -1 && !equals(e, bytes));
-    }
-
+    final int hashPos = findHash(bytes, code);
+    int e = ids[hashPos];
+    
     if (e == -1) {
       // new entry
       final int len2 = 2 + bytes.length;
@@ -354,8 +348,8 @@ public final class BytesRefHash {
         System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 2,
             length);
       }
-      assert ords[hashPos] == -1;
-      ords[hashPos] = e;
+      assert ids[hashPos] == -1;
+      ids[hashPos] = e;
 
       if (count == hashHalfSize) {
         rehash(2 * hashSize, true);
@@ -364,13 +358,62 @@ public final class BytesRefHash {
     }
     return -(e + 1);
   }
+  
+  /**
+   * Returns the id of the given {@link BytesRef}.
+   * 
+   * @see #find(BytesRef, int)
+   */
+  public int find(BytesRef bytes) {
+    return find(bytes, bytes.hashCode());
+  }
 
+  /**
+   * Returns the id of the given {@link BytesRef} with a pre-calculated hash code.
+   * 
+   * @param bytes
+   *          the bytes to look for
+   * @param code
+   *          the bytes hash code
+   * 
+   * @return the id of the given bytes, or {@code -1} if there is no mapping for the
+   *         given bytes.
+   */
+  public int find(BytesRef bytes, int code) {
+    return ids[findHash(bytes, code)];
+  }
+  
+  private int findHash(BytesRef bytes, int code) {
+    assert bytesStart != null : "bytesStart is null - not initialized";
+    // final position
+    int hashPos = code & hashMask;
+    int e = ids[hashPos];
+    if (e != -1 && !equals(e, bytes)) {
+      // Conflict: keep searching different locations in
+      // the hash table.
+      final int inc = ((code >> 8) + code) | 1;
+      do {
+        code += inc;
+        hashPos = code & hashMask;
+        e = ids[hashPos];
+      } while (e != -1 && !equals(e, bytes));
+    }
+    
+    return hashPos;
+  }
+
+  /** Adds a "arbitrary" int offset instead of a BytesRef
+   *  term.  This is used in the indexer to hold the hash for term
+   *  vectors, because they do not redundantly store the byte[] term
+   *  directly and instead reference the byte[] term
+   *  already stored by the postings BytesRefHash.  See
+   *  add(int textStart) in TermsHashPerField. */
   public int addByPoolOffset(int offset) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     // final position
     int code = offset;
     int hashPos = offset & hashMask;
-    int e = ords[hashPos];
+    int e = ids[hashPos];
     if (e != -1 && bytesStart[e] != offset) {
       // Conflict: keep searching different locations in
       // the hash table.
@@ -378,7 +421,7 @@ public final class BytesRefHash {
       do {
         code += inc;
         hashPos = code & hashMask;
-        e = ords[hashPos];
+        e = ids[hashPos];
       } while (e != -1 && bytesStart[e] != offset);
     }
     if (e == -1) {
@@ -390,8 +433,8 @@ public final class BytesRefHash {
       }
       e = count++;
       bytesStart[e] = offset;
-      assert ords[hashPos] == -1;
-      ords[hashPos] = e;
+      assert ids[hashPos] == -1;
+      ids[hashPos] = e;
 
       if (count == hashHalfSize) {
         rehash(2 * hashSize, false);
@@ -411,7 +454,7 @@ public final class BytesRefHash {
     final int[] newHash = new int[newSize];
     Arrays.fill(newHash, -1);
     for (int i = 0; i < hashSize; i++) {
-      final int e0 = ords[i];
+      final int e0 = ids[i];
       if (e0 != -1) {
         int code;
         if (hashOnData) {
@@ -452,8 +495,8 @@ public final class BytesRefHash {
     }
 
     hashMask = newMask;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * (-ords.length));
-    ords = newHash;
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * (-ids.length));
+    ids = newHash;
     hashSize = newSize;
     hashHalfSize = newSize / 2;
   }
@@ -468,25 +511,25 @@ public final class BytesRefHash {
       bytesStart = bytesStartArray.init();
     }
     
-    if (ords == null) {
-      ords = new int[hashSize];
+    if (ids == null) {
+      ids = new int[hashSize];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * hashSize);
     }
   }
 
   /**
    * Returns the bytesStart offset into the internally used
-   * {@link ByteBlockPool} for the given ord
+   * {@link ByteBlockPool} for the given bytesID
    * 
-   * @param ord
-   *          the ord to look up
+   * @param bytesID
+   *          the id to look up
    * @return the bytesStart offset into the internally used
-   *         {@link ByteBlockPool} for the given ord
+   *         {@link ByteBlockPool} for the given id
    */
-  public int byteStart(int ord) {
-    assert bytesStart != null : "Bytesstart is null - not initialized";
-    assert ord >= 0 && ord < count : ord;
-    return bytesStart[ord];
+  public int byteStart(int bytesID) {
+    assert bytesStart != null : "bytesStart is null - not initialized";
+    assert bytesID >= 0 && bytesID < count : bytesID;
+    return bytesStart[bytesID];
   }
 
   /**
@@ -533,53 +576,9 @@ public final class BytesRefHash {
      */
     public abstract Counter bytesUsed();
   }
-  
-  /** A simple {@link BytesStartArray} that tracks all
-   *  memory allocation using a shared {@link Counter}
-   *  instance.  */
-  public static class TrackingDirectBytesStartArray extends BytesStartArray {
-    protected final int initSize;
-    private int[] bytesStart;
-    protected final Counter bytesUsed;
-    
-    public TrackingDirectBytesStartArray(int initSize, Counter bytesUsed) {
-      this.initSize = initSize;
-      this.bytesUsed = bytesUsed;
-    }
-
-    @Override
-    public int[] clear() {
-      if (bytesStart != null) {
-        bytesUsed.addAndGet(-bytesStart.length * RamUsageEstimator.NUM_BYTES_INT);
-      }
-      return bytesStart = null;
-    }
-
-    @Override
-    public int[] grow() {
-      assert bytesStart != null;
-      final int oldSize = bytesStart.length;
-      bytesStart = ArrayUtil.grow(bytesStart, bytesStart.length + 1);
-      bytesUsed.addAndGet((bytesStart.length - oldSize) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public int[] init() {
-      bytesStart = new int[ArrayUtil.oversize(initSize,
-          RamUsageEstimator.NUM_BYTES_INT)];
-      bytesUsed.addAndGet((bytesStart.length) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public Counter bytesUsed() {
-      return bytesUsed;
-    }
-  }
 
   /** A simple {@link BytesStartArray} that tracks
-   *  memory allocation using a private {@link AtomicLong}
+   *  memory allocation using a private {@link Counter}
    *  instance.  */
   public static class DirectBytesStartArray extends BytesStartArray {
     // TODO: can't we just merge this w/
@@ -590,9 +589,13 @@ public final class BytesRefHash {
     private int[] bytesStart;
     private final Counter bytesUsed;
     
+    public DirectBytesStartArray(int initSize, Counter counter) {
+      this.bytesUsed = counter;
+      this.initSize = initSize;      
+    }
+    
     public DirectBytesStartArray(int initSize) {
-      this.bytesUsed = Counter.newCounter();
-      this.initSize = initSize;
+      this(initSize, Counter.newCounter());
     }
 
     @Override

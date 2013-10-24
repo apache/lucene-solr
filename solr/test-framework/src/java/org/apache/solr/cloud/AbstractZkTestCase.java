@@ -102,26 +102,26 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
     // for now, always upload the config and schema to the canonical names
-    putConfig(zkClient, solrhome, config, "solrconfig.xml");
-    putConfig(zkClient, solrhome, schema, "schema.xml");
+    putConfig("conf1", zkClient, solrhome, config, "solrconfig.xml");
+    putConfig("conf1", zkClient, solrhome, schema, "schema.xml");
 
-    putConfig(zkClient, solrhome, "stopwords.txt");
-    putConfig(zkClient, solrhome, "protwords.txt");
-    putConfig(zkClient, solrhome, "currency.xml");
-    putConfig(zkClient, solrhome, "open-exchange-rates.json");
-    putConfig(zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkClient, solrhome, "old_synonyms.txt");
-    putConfig(zkClient, solrhome, "synonyms.txt");
-    
+    putConfig("conf1", zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
+    putConfig("conf1", zkClient, solrhome, "stopwords.txt");
+    putConfig("conf1", zkClient, solrhome, "protwords.txt");
+    putConfig("conf1", zkClient, solrhome, "currency.xml");
+    putConfig("conf1", zkClient, solrhome, "open-exchange-rates.json");
+    putConfig("conf1", zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
+    putConfig("conf1", zkClient, solrhome, "old_synonyms.txt");
+    putConfig("conf1", zkClient, solrhome, "synonyms.txt");
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkClient, File solrhome, final String name)
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    putConfig(zkClient, solrhome, name, name);
+    putConfig(confName, zkClient, solrhome, name, name);
   }
 
-  private static void putConfig(SolrZkClient zkClient, File solrhome, final String srcName, String destName)
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName, String destName)
       throws Exception {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
@@ -130,7 +130,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       return;
     }
 
-    String destPath = "/configs/conf1/" + destName;
+    String destPath = "/configs/" + confName + "/" + destName;
     log.info("put " + file.getAbsolutePath() + " to " + destPath);
     zkClient.makePath(destPath, file, false, true);
   }

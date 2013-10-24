@@ -152,4 +152,6 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
     </sequential>
   </macrodef>
 
+  <target name="regenerate" depends="javacc"/>
+
 </project>

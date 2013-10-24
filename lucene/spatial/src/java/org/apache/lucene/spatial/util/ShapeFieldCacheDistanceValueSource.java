@@ -38,14 +38,17 @@ import java.util.Map;
  */
 public class ShapeFieldCacheDistanceValueSource extends ValueSource {
 
-  private final ShapeFieldCacheProvider<Point> provider;
   private final SpatialContext ctx;
   private final Point from;
+  private final ShapeFieldCacheProvider<Point> provider;
+  private final double multiplier;
 
-  public ShapeFieldCacheDistanceValueSource(SpatialContext ctx, ShapeFieldCacheProvider<Point> provider, Point from) {
+  public ShapeFieldCacheDistanceValueSource(SpatialContext ctx,
+      ShapeFieldCacheProvider<Point> provider, Point from, double multiplier) {
     this.ctx = ctx;
     this.from = from;
     this.provider = provider;
+    this.multiplier = multiplier;
   }
 
   @Override
@@ -60,7 +63,7 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
           provider.getCache(readerContext.reader());
       private final Point from = ShapeFieldCacheDistanceValueSource.this.from;
       private final DistanceCalculator calculator = ctx.getDistCalc();
-      private final double nullValue = (ctx.isGeo() ? 180 : Double.MAX_VALUE);
+      private final double nullValue = (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
 
       @Override
       public float floatVal(int doc) {
@@ -69,13 +72,14 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
 
       @Override
       public double doubleVal(int doc) {
+
         List<Point> vals = cache.getShapes( doc );
         if( vals != null ) {
           double v = calculator.distance(from, vals.get(0));
           for( int i=1; i<vals.size(); i++ ) {
             v = Math.min(v, calculator.distance(from, vals.get(i)));
           }
-          return v;
+          return v * multiplier;
         }
         return nullValue;
       }
@@ -97,6 +101,7 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
     if (!ctx.equals(that.ctx)) return false;
     if (!from.equals(that.from)) return false;
     if (!provider.equals(that.provider)) return false;
+    if (multiplier != that.multiplier) return false;
 
     return true;
   }

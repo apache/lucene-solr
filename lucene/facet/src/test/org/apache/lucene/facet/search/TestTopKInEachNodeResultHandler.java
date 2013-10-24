@@ -9,14 +9,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -30,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -50,7 +47,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
+public class TestTopKInEachNodeResultHandler extends FacetTestCase {
 
   //TODO (Facet): Move to extend BaseTestTopK and separate to several smaller test cases (methods) - see TestTopKResultsHandler
   
@@ -109,48 +106,36 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       // Get all of the documents and run the query, then do different
       // facet counts and compare to control
       Query q = new TermQuery(new Term("content", "alpha"));
-      ScoredDocIdCollector scoredDoc = ScoredDocIdCollector.create(ir.maxDoc(), true);
 
-      // Collector collector = new MultiCollector(scoredDoc);
-      is.search(q, scoredDoc);
-
-      CountFacetRequest cfra23 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra23 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra23.setDepth(3);
       cfra23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra22 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra22 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra22.setDepth(2);
       cfra22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra21 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra21 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra21.setDepth(1);
       cfra21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb22 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb22 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb22.setDepth(2);
       cfrb22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb23 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb23 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb23.setDepth(3);
       cfrb23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb21 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb21 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb21.setDepth(1);
       cfrb21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest doctor = new CountFacetRequest(
-          new CategoryPath("Doctor"), 2);
+      CountFacetRequest doctor = new CountFacetRequest(new CategoryPath("Doctor"), 2);
       doctor.setDepth(1);
       doctor.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb20 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb20 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb20.setDepth(0);
       cfrb20.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
@@ -163,58 +148,48 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       facetRequests.add(cfrb21);
       facetRequests.add(doctor);
       facetRequests.add(cfrb20);
-      FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+      FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
       
-      FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.getFacetIndexingParams(), tr));
-      FacetsAccumulator fctExtrctr = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
-      fctExtrctr.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-      long start = System.currentTimeMillis();
-
-      List<FacetResult> facetResults = fctExtrctr.accumulate(scoredDoc.getScoredDocIDs());
-
-      long end = System.currentTimeMillis();
-      if (VERBOSE) {
-        System.out.println("Time: " + (end - start));
-      }
+      FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.indexingParams, tr));
+      OldFacetsAccumulator sfa = new OldFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
+      sfa.setComplementThreshold(OldFacetsAccumulator.DISABLE_COMPLEMENT);
+      FacetsCollector fc = FacetsCollector.create(sfa);
       
+      is.search(q, fc);
+      List<FacetResult> facetResults = fc.getFacetResults();
+
       FacetResult fr = facetResults.get(0); // a, depth=3, K=2
       boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       FacetResultNode parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
-      // a/b has residue 2 and two children a/b/2 with value 3, and a/b/1 with value 2. 
-      // a/c has residue 0, and one child a/c/1 with value 1.
-      double [] expectedValues0 = { 8.0, 2.0, 3.0, 0.0, 2.0, 0.0, 6.0, 0.0, 1.0, 0.0 };
+      // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
+      // a/c has one child a/c/1 with value 1.
+      double [] expectedValues0 = { 8.0, 3.0, 2.0, 6.0, 1.0 };
       int i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues0[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(expectedValues0[i++], node.getResidue(), Double.MIN_VALUE);
-        for (FacetResultNode node2 : node.getSubResults()) {
-          assertEquals(expectedValues0[i++], node2.getValue(), Double.MIN_VALUE);
-          assertEquals(expectedValues0[i++], node2.getResidue(), Double.MIN_VALUE);
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues0[i++], node.value, Double.MIN_VALUE);
+        for (FacetResultNode node2 : node.subResults) {
+          assertEquals(expectedValues0[i++], node2.value, Double.MIN_VALUE);
         }
       }
 
       // now just change the value of the first child of the root to 5, and then rearrange
-      // expected are: first a/c of value 6 and residue 0, and one child a/c/1 with value 1
-      // then a/b with value 5 and residue 2, and both children: a/b/2 with value 3, and a/b/1 with value 2.
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        node.setValue(5.0);
+      // expected are: first a/c of value 6, and one child a/c/1 with value 1
+      // then a/b with value 5, and both children: a/b/2 with value 3, and a/b/1 with value 2.
+      for (FacetResultNode node : parentRes.subResults) {
+        node.value = 5.0;
         break;
       }
       // now rearrange
-      double [] expectedValues00 = { 6.0, 0.0, 1.0, 0.0, 5.0, 2.0, 3.0, 0.0, 2.0, 0.0 };
-      fr = cfra23.createFacetResultsHandler(tr).rearrangeFacetResult(fr);
+      double [] expectedValues00 = { 6.0, 1.0, 5.0, 3.0, 2.0 };
+      fr = sfa.createFacetResultsHandler(cfra23, sfa.createOrdinalValueResolver(cfra23)).rearrangeFacetResult(fr);
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues00[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(expectedValues00[i++], node.getResidue(), Double.MIN_VALUE);
-        for (FacetResultNode node2 : node.getSubResults()) {
-          assertEquals(expectedValues00[i++], node2.getValue(), Double.MIN_VALUE);
-          assertEquals(expectedValues00[i++], node2.getResidue(), Double.MIN_VALUE);
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues00[i++], node.value, Double.MIN_VALUE);
+        for (FacetResultNode node2 : node.subResults) {
+          assertEquals(expectedValues00[i++], node2.value, Double.MIN_VALUE);
         }
       }
 
@@ -222,19 +197,15 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
-      // a/b has residue 2 and two children a/b/2 with value 3, and a/b/1 with value 2. 
-      // a/c has residue 0, and one child a/c/1 with value 1.
+      // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
+      // a/c has one child a/c/1 with value 1.
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues0[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(expectedValues0[i++], node.getResidue(), Double.MIN_VALUE);
-        for (FacetResultNode node2 : node.getSubResults()) {
-          assertEquals(expectedValues0[i++], node2.getValue(), Double.MIN_VALUE);
-          assertEquals(expectedValues0[i++], node2.getResidue(), Double.MIN_VALUE);
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues0[i++], node.value, Double.MIN_VALUE);
+        for (FacetResultNode node2 : node.subResults) {
+          assertEquals(expectedValues0[i++], node2.value, Double.MIN_VALUE);
         }
       }
 
@@ -242,76 +213,77 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants(), 4);
       parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: 
-      // a/b with value 8 and residue 0 (because no children considered),  
-      //  and a/c with value 6 and residue 0 (because no children considered)
-      double [] expectedValues2 = { 8.0, 0.0, 6.0, 0.0 };
+      // a/b with value 8 and a/c with value 6
+      double [] expectedValues2 = { 8.0, 6.0, 0.0};
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues2[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(expectedValues2[i++], node.getResidue(), Double.MIN_VALUE);
-        assertEquals(node.getNumSubResults(), 0);
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues2[i++], node.value, Double.MIN_VALUE);
+        assertEquals(node.subResults.size(), 0);
       }
       
       fr = facetResults.get(3); // a/b, depth=3, K=2
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
-      assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(2, parentRes.subResults.size());
       double [] expectedValues3 = { 3.0, 2.0 };
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues3[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(0.0, node.getResidue(), Double.MIN_VALUE);
-        assertEquals(0, node.getNumSubResults());
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
+        assertEquals(0, node.subResults.size());
       }
 
       fr = facetResults.get(4); // a/b, depth=2, K=2
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
-      assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(2, parentRes.subResults.size());
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues3[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(0.0, node.getResidue(), Double.MIN_VALUE);
-        assertEquals(0, node.getNumSubResults());
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
+        assertEquals(0, node.subResults.size());
       }
 
       fr = facetResults.get(5); // a/b, depth=1, K=2
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
-      assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(2, parentRes.getNumSubResults());
+      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(2, parentRes.subResults.size());
       i = 0;
-      for (FacetResultNode node : parentRes.getSubResults()) {
-        assertEquals(expectedValues3[i++], node.getValue(), Double.MIN_VALUE);
-        assertEquals(0.0, node.getResidue(), Double.MIN_VALUE);
-        assertEquals(0, node.getNumSubResults());
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
+        assertEquals(0, node.subResults.size());
       }
       
-      fr = facetResults.get(6); // a/b, depth=0, K=2
+      fr = facetResults.get(6); // Doctor, depth=0, K=2
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(0, fr.getNumValidDescendants()); // 0 descendants but rootnode
       parentRes = fr.getFacetResultNode();
-      assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
-      assertEquals(0.0, parentRes.getResidue(), Double.MIN_VALUE);
-      assertEquals(0, parentRes.getNumSubResults());
+      assertEquals(0.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(0, parentRes.subResults.size());
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
 
       // doctor, depth=1, K=2
-      assertFalse("Shouldn't have found anything for a FacetRequest " +
-          "of a facet that doesn't exist in the index.", hasDoctor);
-      assertEquals("Shouldn't have found more than seven request.", 7, facetResults.size());
+      assertTrue("Should have found an empty FacetResult " +
+          "for a facet that doesn't exist in the index.", hasDoctor);
+      assertEquals("Shouldn't have found more than 8 request.", 8, facetResults.size());
+
+      fr = facetResults.get(7); // a/b, depth=0, K=2
+      assertEquals(0, fr.getNumValidDescendants());
+      parentRes = fr.getFacetResultNode();
+      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(0, parentRes.subResults.size());
+      i = 0;
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
+        assertEquals(0, node.subResults.size());
+      }
+
       ir.close();
       tr.close();
       iDir.close();

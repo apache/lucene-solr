@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -274,6 +275,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           String testName = null;
           
           if (0 == x) {
+            dir.setRandomIOExceptionRateOnOpen(random().nextDouble()*0.01);
             thisDiskFree = diskFree;
             if (diskRatio >= 2.0) {
               rate /= 2;
@@ -287,6 +289,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             if (VERBOSE)
               testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes";
           } else {
+            dir.setRandomIOExceptionRateOnOpen(0.0);
             thisDiskFree = 0;
             rate = 0.0;
             if (VERBOSE)
@@ -362,6 +365,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // we succeeded, we see all docs added, and if we
           // failed, we see either all docs or no docs added
           // (transactional semantics):
+          dir.setRandomIOExceptionRateOnOpen(0.0);
           try {
             reader = DirectoryReader.open(dir);
           } catch (IOException e) {
@@ -431,6 +435,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         // Make sure we don't hit disk full during close below:
         dir.setMaxSizeInBytes(0);
         dir.setRandomIOExceptionRate(0.0);
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         
         writer.close();
         
@@ -485,7 +490,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             setReaderPooling(true).
             setMergePolicy(newLogMergePolicy(2))
     );
-    _TestUtil.keepFullyDeletedSegments(w);
+    // we can do this because we add/delete/add (and dont merge to "nothing")
+    w.setKeepFullyDeletedSegments(true);
 
     Document doc = new Document();
 
@@ -557,6 +563,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
+      doc.add(new NumericDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
   
@@ -565,6 +572,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
       doc.add(newTextField("id", "" + index, Field.Store.NO));
+      doc.add(new NumericDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
 }

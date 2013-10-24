@@ -17,16 +17,29 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
  * Testcase for {@link KNearestNeighborClassifier}
  */
-public class KNearestNeighborClassifierTest extends ClassificationTestBase {
+public class KNearestNeighborClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
   public void testBasicUsage() throws Exception {
-     checkCorrectClassification(new KNearestNeighborClassifier(1), new MockAnalyzer(random()));
+    checkCorrectClassification(new KNearestNeighborClassifier(1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
+  }
+
+  @Test
+  public void testBasicUsageWithQuery() throws Exception {
+    checkCorrectClassification(new KNearestNeighborClassifier(1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName, new TermQuery(new Term(textFieldName, "it")));
+  }
+
+  @Test
+  public void testPerformance() throws Exception {
+    checkPerformance(new KNearestNeighborClassifier(100), new MockAnalyzer(random()), categoryFieldName);
   }
 
 }

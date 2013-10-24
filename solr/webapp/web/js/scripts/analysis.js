@@ -42,7 +42,7 @@ sammy.get
 
         var type_or_name = $( '#type_or_name', analysis_form );
         var schema_browser_element = $( '#tor_schema' );
-        var schema_browser_path = $( 'p > a', active_core ).attr( 'href' ) + '/schema-browser'
+        var schema_browser_path = app.core_menu.find( '.schema-browser a' ).attr( 'href' );
         var schema_browser_map = { 'fieldname' : 'field', 'fieldtype' : 'type' };
 
         type_or_name
@@ -125,11 +125,11 @@ sammy.get
               var fields = 0;
               for( var key in context.params )
               {
-                if( 'string' === typeof context.params[key] )
+                if( 'string' === typeof context.params[key] && 0 !== context.params[key].length )
                 {
                   fields++;
                   $( '[name="' + key + '"]', analysis_form )
-                    .val( context.params[key].replace( /\+/g, ' ' ) );
+                    .val( context.params[key] );
                 }
               }
 
@@ -247,9 +247,13 @@ sammy.get
             'submit',
             function( event )
             {
-              var params = compute_analysis_params();
+              var params = $.param( compute_analysis_params() )
+                            .replace( /[\w\.]+=\+*(&)/g, '$1' ) // remove empty parameters
+                            .replace( /(&)+/, '$1' )            // reduce multiple ampersands
+                            .replace( /^&/, '' )                // remove leading ampersand
+                            .replace( /\+/g, '%20' );           // replace plus-signs with encoded whitespaces
 
-              context.redirect( context.path.split( '?' ).shift() + '?' + $.param( params ) );
+              context.redirect( context.path.split( '?' ).shift() + '?' + params );
               return false;
             }
           )
@@ -269,7 +273,7 @@ sammy.get
                   dataType : 'json',
                   beforeSend : function( xhr, settings )
                   {
-                    loader.show( button );
+                    loader.show( $( 'span', button ) );
                     button.attr( 'disabled', true );
                   },
                   success : function( response, status_text, xhr, form )
@@ -325,7 +329,7 @@ sammy.get
                   },
                   complete : function()
                   {
-                    loader.hide( $( 'button', analysis_form ) );
+                    loader.hide( $( 'span', button ) );
                     button.removeAttr( 'disabled' );
                   }
                 }

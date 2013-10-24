@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.LogWatcher;
@@ -44,12 +45,22 @@ import org.slf4j.LoggerFactory;
  */
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   static final org.slf4j.Logger log = LoggerFactory.getLogger(LoggingHandler.class);
+
+  private LogWatcher watcher;
   
-  LogWatcher watcher = null;
+  public LoggingHandler(CoreContainer cc) {
+    this.watcher = cc.getLogging();
+  }
+  
+  public LoggingHandler() {
+    
+  }
   
   @Override
   public void inform(SolrCore core) {
-    watcher = core.getCoreDescriptor().getCoreContainer().getLogging();
+    if (watcher == null) {
+      watcher = core.getCoreDescriptor().getCoreContainer().getLogging();
+    }
   }
 
   @Override

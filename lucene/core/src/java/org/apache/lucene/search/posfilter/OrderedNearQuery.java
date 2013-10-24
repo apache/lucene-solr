@@ -19,6 +19,7 @@ package org.apache.lucene.search.posfilter;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
 
@@ -56,8 +57,8 @@ public class OrderedNearQuery extends PositionFilterQuery {
     }
 
     @Override
-    public Scorer scorer(Scorer filteredScorer) {
-      return new WithinFilteredScorer(new OrderedNearScorer(filteredScorer), slop);
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      return new WithinFilteredScorer(new OrderedNearScorer(filteredScorer, simScorer), slop, simScorer);
     }
 
     @Override
@@ -73,8 +74,8 @@ public class OrderedNearQuery extends PositionFilterQuery {
     private int index = 1;
     private Interval[] intervals;
 
-    public OrderedNearScorer(Scorer filteredScorer) {
-      super(filteredScorer);
+    public OrderedNearScorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      super(filteredScorer, simScorer);
       intervals = new Interval[subScorers.length];
       for (int i = 0; i < subScorers.length; i++) {
         intervals[i] = new Interval();

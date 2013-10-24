@@ -66,7 +66,13 @@ public abstract class CompositeReader extends IndexReader {
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder();
-    buffer.append(getClass().getSimpleName());
+    // walk up through class hierarchy to get a non-empty simple name (anonymous classes have no name):
+    for (Class<?> clazz = getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+      if (!clazz.isAnonymousClass()) {
+        buffer.append(clazz.getSimpleName());
+        break;
+      }
+    }
     buffer.append('(');
     final List<? extends IndexReader> subReaders = getSequentialSubReaders();
     assert subReaders != null;

@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.PostingsWriterBase; // javadocs
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
 import org.apache.lucene.index.FieldInfos; // javadocs
@@ -248,18 +248,17 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
 
     boolean success = false;
     try {
       FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.dir,
+                                                    state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postings,
                                                     state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+                                                    state.segmentSuffix);
       success = true;
       return ret;
     } finally {

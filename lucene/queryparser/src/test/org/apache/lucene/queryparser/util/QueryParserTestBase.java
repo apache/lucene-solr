@@ -41,8 +41,8 @@ import org.apache.lucene.index.Term;
 //import org.apache.lucene.queryparser.classic.ParseException;
 //import org.apache.lucene.queryparser.classic.QueryParser;
 //import org.apache.lucene.queryparser.classic.QueryParserBase;
-//import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+//import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -51,6 +51,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Base Test class for QueryParser subclasses
@@ -59,8 +61,18 @@ import org.apache.lucene.util.automaton.RegExp;
 // to the core QP and subclass/use the parts that are not in the flexible QP
 public abstract class QueryParserTestBase extends LuceneTestCase {
   
-  public static Analyzer qpAnalyzer = new QPTestAnalyzer();
+  public static Analyzer qpAnalyzer;
 
+  @BeforeClass
+  public static void beforeClass() {
+    qpAnalyzer = new QPTestAnalyzer();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    qpAnalyzer = null;
+  }
+  
   public static final class QPTestFilter extends TokenFilter {
     CharTermAttribute termAtt;
     OffsetAttribute offsetAtt;
@@ -102,7 +114,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  
   public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters MockTokenizer with StopFilter. */
@@ -236,7 +247,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   //individual CJK chars as terms, like StandardAnalyzer
-  private class SimpleCJKTokenizer extends Tokenizer {
+  protected static class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public SimpleCJKTokenizer(Reader input) {
@@ -244,7 +255,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public final boolean incrementToken() throws IOException {
       int ch = input.read();
       if (ch < 0)
         return false;
@@ -852,7 +863,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testBoost()
     throws Exception {
     CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
-    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords, true);
+    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
     CommonQueryParserConfiguration qp = getParserConfig(oneStopAnalyzer);
     Query q = getQuery("on^1.0",qp);
     assertNotNull(q);
@@ -865,7 +876,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     q = getQuery("\"on\"^1.0",qp);
     assertNotNull(q);
 
-    Analyzer a2 = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true); 
+    Analyzer a2 = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET); 
     CommonQueryParserConfiguration qp2 = getParserConfig(a2);
     q = getQuery("the^3", qp2);
     // "the" is a stop word so the result is an empty query:
@@ -1007,7 +1018,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
   public void testStopwords() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toAutomaton());
-    CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet, true));
+    CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet));
     Query result = getQuery("field:the OR field:foo",qp);
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -1023,7 +1034,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
+    CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET));
     qp.setEnablePositionIncrements(true);
     String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
     //               0         2                      5           7  8
@@ -1070,7 +1081,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   // "match"
   public void testPositionIncrements() throws Exception {
     Directory dir = newDirectory();
-    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, a));
     Document doc = new Document();
     doc.add(newTextField("field", "the wizard of ozzy", Field.Store.NO));
@@ -1088,7 +1099,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   /**
    * adds synonym of "dog" for "dogs".
    */
-  private class MockSynonymFilter extends TokenFilter {
+  protected static class MockSynonymFilter extends TokenFilter {
     CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     boolean addSynonym = false;
@@ -1185,7 +1196,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   public void testPhraseQueryToString() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     CommonQueryParserConfiguration qp = getParserConfig(analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)getQuery("\"this hi this is a test is\"", qp);
@@ -1235,26 +1246,13 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     CharacterRunAutomaton stopStopList =
     new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
-    CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList, false));
-
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term("field", "1"));
-    phraseQuery.add(new Term("field", "2"));
-
-    assertEquals(phraseQuery, getQuery("\"1 2\"",qp));
-    assertEquals(phraseQuery, getQuery("\"1 stop 2\"",qp));
-
-    qp.setEnablePositionIncrements(true);
-    assertEquals(phraseQuery, getQuery("\"1 stop 2\"",qp));
-
-    qp.setEnablePositionIncrements(false);
-    assertEquals(phraseQuery, getQuery("\"1 stop 2\"",qp));
+    CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
 
     qp = getParserConfig(
-                         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList, true));
+                         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
     qp.setEnablePositionIncrements(true);
 
-    phraseQuery = new PhraseQuery();
+    PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term("field", "1"));
     phraseQuery.add(new Term("field", "2"), 2);
     assertEquals(phraseQuery, getQuery("\"1 stop 2\"",qp));

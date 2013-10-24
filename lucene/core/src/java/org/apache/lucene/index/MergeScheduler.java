@@ -24,10 +24,12 @@ import java.io.IOException;
  *  implementing this interface to execute the merges
  *  selected by a {@link MergePolicy}.  The default
  *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
- *
+ *  <p>Implementers of sub-classes should make sure that {@link #clone()}
+ *  returns an independent instance able to work with any {@link IndexWriter}
+ *  instance.</p>
  * @lucene.experimental
 */
-public abstract class MergeScheduler implements Closeable {
+public abstract class MergeScheduler implements Closeable, Cloneable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -40,4 +42,13 @@ public abstract class MergeScheduler implements Closeable {
   /** Close this MergeScheduler. */
   @Override
   public abstract void close() throws IOException;
+
+  @Override
+  public MergeScheduler clone() {
+    try {
+      return (MergeScheduler) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error(e);
+    }
+  }
 }

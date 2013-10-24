@@ -5,6 +5,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.similarities.Similarity;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,6 +48,10 @@ public class PhraseQuery2 extends PositionFilterQuery {
   }
 
   public void addMultiTerm(Term... terms) {
+    if (terms.length == 1) {
+      add(terms[0]);
+      return;
+    }
     BooleanQuery disj = new BooleanQuery();
     for (Term term : terms) {
       disj.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
@@ -63,11 +68,11 @@ public class PhraseQuery2 extends PositionFilterQuery {
     }
 
     @Override
-    public Scorer scorer(Scorer filteredScorer) {
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
       if (slop == 0)
-        return new BlockPhraseScorer(filteredScorer);
+        return new BlockPhraseScorer(filteredScorer, simScorer);
       else
-        return new PartiallyOrderedNearScorer(filteredScorer, slop);
+        return new PartiallyOrderedNearScorer(filteredScorer, slop, simScorer);
     }
 
     @Override

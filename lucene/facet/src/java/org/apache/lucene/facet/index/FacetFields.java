@@ -5,16 +5,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -48,24 +48,13 @@ import org.apache.lucene.util.IntsRef;
  */
 public class FacetFields {
 
-  // The counting list is written in a payload, but we don't store it
-  // nor need norms.
-  private static final FieldType COUNTING_LIST_PAYLOAD_TYPE = new FieldType();
-  static {
-    COUNTING_LIST_PAYLOAD_TYPE.setIndexed(true);
-    COUNTING_LIST_PAYLOAD_TYPE.setTokenized(true);
-    COUNTING_LIST_PAYLOAD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    COUNTING_LIST_PAYLOAD_TYPE.setStored(false);
-    COUNTING_LIST_PAYLOAD_TYPE.setOmitNorms(true);
-    COUNTING_LIST_PAYLOAD_TYPE.freeze();
-  }
-  
   // The drill-down field is added with a TokenStream, hence why it's based on
   // TextField type. However in practice, it is added just like StringField.
   // Therefore we set its IndexOptions to DOCS_ONLY.
   private static final FieldType DRILL_DOWN_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
   static {
     DRILL_DOWN_TYPE.setIndexOptions(IndexOptions.DOCS_ONLY);
+    DRILL_DOWN_TYPE.setOmitNorms(true);
     DRILL_DOWN_TYPE.freeze();
   }
   
@@ -74,14 +63,14 @@ public class FacetFields {
   protected final FacetIndexingParams indexingParams;
 
   /**
-   * Constructs a new instance with the {@link FacetIndexingParams#ALL_PARENTS
+   * Constructs a new instance with the {@link FacetIndexingParams#DEFAULT
    * default} facet indexing params.
    * 
    * @param taxonomyWriter
    *          used to resolve given categories to ordinals
    */
   public FacetFields(TaxonomyWriter taxonomyWriter) {
-    this(taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
+    this(taxonomyWriter, FacetIndexingParams.DEFAULT);
   }
 
   /**
@@ -154,7 +143,7 @@ public class FacetFields {
    */
   protected void addCountingListData(Document doc, Map<String,BytesRef> categoriesData, String field) {
     for (Entry<String,BytesRef> entry : categoriesData.entrySet()) {
-      doc.add(new StraightBytesDocValuesField(field + entry.getKey(), entry.getValue()));
+      doc.add(new BinaryDocValuesField(field + entry.getKey(), entry.getValue()));
     }
   }
   

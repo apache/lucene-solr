@@ -21,23 +21,27 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
@@ -46,6 +50,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -55,6 +60,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -170,7 +176,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
 
   private void duellReaders(CompositeReader other, AtomicReader memIndexReader)
       throws IOException {
-    AtomicReader competitor = new SlowCompositeReaderWrapper(other);
+    AtomicReader competitor = SlowCompositeReaderWrapper.wrap(other);
     Fields memFields = memIndexReader.fields();
     for (String field : competitor.fields()) {
       Terms memTerms = memFields.terms(field);
@@ -178,12 +184,12 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       if (iwTerms == null) {
         assertNull(memTerms);
       } else {
-        DocValues normValues = competitor.normValues(field);
-        DocValues memNormValues = memIndexReader.normValues(field);
+        NumericDocValues normValues = competitor.getNormValues(field);
+        NumericDocValues memNormValues = memIndexReader.getNormValues(field);
         if (normValues != null) {
           // mem idx always computes norms on the fly
           assertNotNull(memNormValues);
-          assertEquals(normValues.getDirectSource().getInt(0), memNormValues.getDirectSource().getInt(0), 0.01);
+          assertEquals(normValues.get(0), memNormValues.get(0));
         }
           
         assertNotNull(memTerms);
@@ -235,7 +241,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    */
   public void assertAllQueries(MemoryIndex memory, Directory ramdir, Analyzer analyzer) throws Exception {
     IndexReader reader = DirectoryReader.open(ramdir);
-    IndexSearcher ram = new IndexSearcher(reader);
+    IndexSearcher ram = newSearcher(reader);
     IndexSearcher mem = memory.createSearcher();
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);
     for (String query : queries) {
@@ -250,12 +256,40 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * Return a random analyzer (Simple, Stop, Standard) to analyze the terms.
    */
   private Analyzer randomAnalyzer() {
-    switch(random().nextInt(3)) {
+    switch(random().nextInt(4)) {
       case 0: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-      case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
+      case 2: return new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new CrazyTokenFilter(tokenizer));
+        }
+      };
       default: return new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     }
   }
+  
+  // a tokenfilter that makes all terms starting with 't' empty strings
+  static final class CrazyTokenFilter extends TokenFilter {
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    
+    CrazyTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        if (termAtt.length() > 0 && termAtt.buffer()[0] == 't') {
+          termAtt.setLength(0);
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
   
   /**
    * Some terms to be indexed, in addition to random words. 
@@ -288,15 +322,15 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
     int docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.docs(null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     reader.close();
   }
@@ -319,7 +353,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       assertEquals(1, reader.terms("foo").getSumTotalTermFreq());
       DocsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
       int docid = disi.docID();
-      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, docid);
       assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, disi.nextPosition());
       assertEquals(0, disi.startOffset());
@@ -327,10 +361,10 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       
       // now reuse and check again
       TermsEnum te = reader.terms("foo").iterator(null);
-      assertTrue(te.seekExact(new BytesRef("bar"), true));
+      assertTrue(te.seekExact(new BytesRef("bar")));
       disi = te.docsAndPositions(null, disi);
       docid = disi.docID();
-      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, docid);
       assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       reader.close();
       memory.reset();
@@ -343,7 +377,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
         
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
-    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
 
     // This throws an NPE
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);
@@ -355,7 +389,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
 
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
-    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
 
     // This passes though
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);
@@ -381,6 +415,17 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     assertTrue("posGap" + mockAnalyzer.getPositionIncrementGap("field") , mindex.search(query) > 0.0001);
   }
   
+  public void testNonExistingsField() throws IOException {
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    mindex.addField("field", "the quick brown fox", mockAnalyzer);
+    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    assertNull(reader.getNumericDocValues("not-in-index"));
+    assertNull(reader.getNormValues("not-in-index"));
+    assertNull(reader.termDocsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.termPositionsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.terms("not-in-index"));
+  }
   
   public void testDuellMemIndex() throws IOException {
     LineFileDocs lineFileDocs = new LineFileDocs(random());
@@ -414,5 +459,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       dir.close();
     }
     lineFileDocs.close();
+  }
+  
+  // LUCENE-4880
+  public void testEmptyString() throws IOException {
+    MemoryIndex memory = new MemoryIndex();
+    memory.addField("foo", new CannedTokenStream(new Token("", 0, 5)));
+    IndexSearcher searcher = memory.createSearcher();
+    TopDocs docs = searcher.search(new TermQuery(new Term("foo", "")), 10);
+    assertEquals(1, docs.totalHits);
   }
 }

@@ -58,6 +58,11 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long cost() {
+      return scores.length;
+    } 
   }
 
   // The scores must have positive as well as negative values

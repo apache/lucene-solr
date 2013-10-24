@@ -19,36 +19,24 @@ package org.apache.lucene.analysis.standard;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.core.LetterTokenizerFactory;
-import org.apache.lucene.analysis.core.LowerCaseTokenizerFactory;
-import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
-import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the standard lucene factories are working.
  */
-public class TestStandardFactories extends BaseTokenStreamTestCase {
+public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
   /**
    * Test StandardTokenizerFactory
    */
   public void testStandardTokenizer() throws Exception {
     Reader reader = new StringReader("Wha\u0301t's this thing do?");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Standard").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"Wha\u0301t's", "this", "thing", "do" });
+        new String[] { "Wha\u0301t's", "this", "thing", "do" });
   }
   
   public void testStandardTokenizerMaxTokenLength() throws Exception {
@@ -59,14 +47,10 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
     String longWord = builder.toString();
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("maxTokenLength", "1000");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    Tokenizer stream = tokenizerFactory("Standard",
+        "maxTokenLength", "1000").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"one", "two", "three", longWord, "four", "five", "six" });
+        new String[] { "one", "two", "three", longWord, "four", "five", "six" });
   }
   
   /**
@@ -74,13 +58,9 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testClassicTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Classic").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"What's", "this", "thing", "do" });
+        new String[] { "What's", "this", "thing", "do" });
   }
   
   public void testClassicTokenizerMaxTokenLength() throws Exception {
@@ -91,14 +71,10 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
     String longWord = builder.toString();
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("maxTokenLength", "1000");
-    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    Tokenizer stream = tokenizerFactory("Classic",
+        "maxTokenLength", "1000").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"one", "two", "three", longWord, "four", "five", "six" });
+        new String[] { "one", "two", "three", longWord, "four", "five", "six" });
   }
   
   /**
@@ -106,17 +82,10 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testStandardFilter() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    ClassicFilterFactory filterFactory = new ClassicFilterFactory();
-    filterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    filterFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = filterFactory.create(tokenizer);
+    TokenStream stream = tokenizerFactory("Classic").create(reader);
+    stream = tokenFilterFactory("Classic").create(stream);
     assertTokenStreamContents(stream, 
-        new String[] {"What", "this", "thing", "do"});
+        new String[] { "What", "this", "thing", "do" });
   }
   
   /**
@@ -124,13 +93,9 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testKeywordTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    KeywordTokenizerFactory factory = new KeywordTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Keyword").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"What's this thing do?"});
+        new String[] { "What's this thing do?" });
   }
   
   /**
@@ -138,13 +103,9 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testWhitespaceTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    WhitespaceTokenizerFactory factory = new WhitespaceTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Whitespace").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"What's", "this", "thing", "do?"});
+        new String[] { "What's", "this", "thing", "do?" });
   }
   
   /**
@@ -152,13 +113,9 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testLetterTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    LetterTokenizerFactory factory = new LetterTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Letter").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"What", "s", "this", "thing", "do"});
+        new String[] { "What", "s", "this", "thing", "do" });
   }
   
   /**
@@ -166,13 +123,9 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testLowerCaseTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    LowerCaseTokenizerFactory factory = new LowerCaseTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("LowerCase").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] {"what", "s", "this", "thing", "do"});
+        new String[] { "what", "s", "this", "thing", "do" });
   }
   
   /**
@@ -180,12 +133,67 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
    */
   public void testASCIIFolding() throws Exception {
     Reader reader = new StringReader("Česká");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ASCIIFoldingFilterFactory factory = new ASCIIFoldingFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("ASCIIFolding").create(stream);
     assertTokenStreamContents(stream, new String[] { "Ceska" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenizerFactory("Standard", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenizerFactory("Classic", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenizerFactory("Whitespace", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenizerFactory("Letter", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenizerFactory("LowerCase", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("ASCIIFolding", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("Standard", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("Classic", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

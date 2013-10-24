@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /** 
- * Function that returns {@link TFIDFSimilarity#decodeNormValue(byte)}
+ * Function that returns {@link TFIDFSimilarity#decodeNormValue(long)}
  * for every document.
  * <p>
  * Note that the configured Similarity for the field must be
@@ -62,18 +62,16 @@ public class NormValueSource extends ValueSource {
     if (similarity == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
-    DocValues dv = readerContext.reader().normValues(field);
+    final NumericDocValues norms = readerContext.reader().getNormValues(field);
 
-    if (dv == null) {
+    if (norms == null) {
       return new ConstDoubleDocValues(0.0, this);
     }
     
-    final byte[] norms = (byte[]) dv.getSource().getArray();
-
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return similarity.decodeNormValue(norms[doc]);
+        return similarity.decodeNormValue((byte)norms.get(doc));
       }
     };
   }

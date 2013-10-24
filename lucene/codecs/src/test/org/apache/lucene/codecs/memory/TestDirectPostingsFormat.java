@@ -18,23 +18,15 @@ package org.apache.lucene.codecs.memory;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Tests DirectPostingsFormat
  */
 public class TestDirectPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize parameters
-  private final PostingsFormat postings = new DirectPostingsFormat();
-
-  private final Codec codec = new Lucene41Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new DirectPostingsFormat());
 
   @Override
   protected Codec getCodec() {

@@ -93,9 +93,7 @@ public final class Util {
    *
    *  <p>NOTE: this only works with {@code FST<Long>}, only
    *  works when the outputs are ascending in order with
-   *  the inputs and only works when you shared
-   *  the outputs (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}).
+   *  the inputs.
    *  For example, simple ordinals (0, 1,
    *  2, ...), or file offets (when appending to a file)
    *  fit this. */
@@ -109,7 +107,15 @@ public final class Util {
     FST.Arc<Long> scratchArc = new FST.Arc<Long>();
 
     final IntsRef result = new IntsRef();
-
+    
+    return getByOutput(fst, targetOutput, in, arc, scratchArc, result);
+  }
+    
+  /** 
+   * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
+   * BytesReader, initial and scratch Arc, and result.
+   */
+  public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRef result) throws IOException {
     long output = arc.output;
     int upto = 0;
 
@@ -232,11 +238,16 @@ public final class Util {
     }    
   }
 
-  private static class FSTPath<T> {
+  /** Represents a path in TopNSearcher.
+   *
+   *  @lucene.experimental
+   */
+  public static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRef input;
 
+    /** Sole constructor */
     public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
@@ -294,7 +305,7 @@ public final class Util {
     }
 
     // If back plus this arc is competitive then add to queue:
-    private void addIfCompetitive(FSTPath<T> path) {
+    protected void addIfCompetitive(FSTPath<T> path) {
 
       assert queue != null;
 
@@ -393,6 +404,7 @@ public final class Util {
 
         if (queue == null) {
           // Ran out of paths
+          //System.out.println("  break queue=null");
           break;
         }
 
@@ -402,6 +414,7 @@ public final class Util {
 
         if (path == null) {
           // There were less than topN paths available:
+          //System.out.println("  break no more paths");
           break;
         }
 
@@ -472,6 +485,7 @@ public final class Util {
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
+              //System.out.println("    add result: " + path);
               results.add(new MinResult<T>(path.input, finalOutput));
             } else {
               rejectCount++;
@@ -509,11 +523,7 @@ public final class Util {
   }
 
   /** Starting from node, find the top N min cost 
-   *  completions to a final node.
-   *
-   *  <p>NOTE: you must share the outputs when you build the
-   *  FST (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}). */
+   *  completions to a final node. */
   public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
                                                  boolean allowEmptyString) throws IOException {
 
@@ -759,11 +769,12 @@ public final class Util {
    * Ensures an arc's label is indeed printable (dot uses US-ASCII). 
    */
   private static String printableLabel(int label) {
-    if (label >= 0x20 && label <= 0x7d) {
+    // Any ordinary ascii character, except for " or \, are
+    // printed as the character; else, as a hex string:
+    if (label >= 0x20 && label <= 0x7d && label != 0x22 && label != 0x5c) {  // " OR \
       return Character.toString((char) label);
-    } else {
-      return "0x" + Integer.toHexString(label);
     }
+    return "0x" + Integer.toHexString(label);
   }
 
   /** Just maps each UTF16 unit (char) to the ints in an
@@ -806,7 +817,7 @@ public final class Util {
     final int charLimit = offset + length;
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
+      final int utf32 = Character.codePointAt(s, charIdx, charLimit);
       scratch.ints[intIdx] = utf32;
       charIdx += Character.charCount(utf32);
       intIdx++;

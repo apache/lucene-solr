@@ -17,15 +17,20 @@
 
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
@@ -35,10 +40,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
 
 
 class PerSegmentSingleValuedFaceting {
@@ -145,15 +146,15 @@ class PerSegmentSingleValuedFaceting {
 
 
       if (seg.startTermIndex < seg.endTermIndex) {
-        if (seg.startTermIndex==0) {
+        if (seg.startTermIndex==-1) {
           hasMissingCount=true;
           missingCount += seg.counts[0];
-          seg.pos = 1;
+          seg.pos = 0;
         } else {
           seg.pos = seg.startTermIndex;
         }
         if (seg.pos < seg.endTermIndex) {
-          seg.tenum = seg.si.getTermsEnum();          
+          seg.tenum = seg.si.termsEnum();
           seg.tenum.seekExact(seg.pos);
           seg.tempBR = seg.tenum.term();
           queue.add(seg);
@@ -173,10 +174,10 @@ class PerSegmentSingleValuedFaceting {
     while (queue.size() > 0) {
       SegFacet seg = queue.top();
 
-      // make a shallow copy
-      val.bytes = seg.tempBR.bytes;
-      val.offset = seg.tempBR.offset;
-      val.length = seg.tempBR.length;
+      // we will normally end up advancing the term enum for this segment
+      // while still using "val", so we need to make a copy since the BytesRef
+      // may be shared across calls.
+      val.copyBytes(seg.tempBR);
 
       int count = 0;
 
@@ -224,7 +225,7 @@ class PerSegmentSingleValuedFaceting {
       this.context = context;
     }
     
-    FieldCache.DocTermsIndex si;
+    SortedDocValues si;
     int startTermIndex;
     int endTermIndex;
     int[] counts;
@@ -240,16 +241,16 @@ class PerSegmentSingleValuedFaceting {
 
       if (prefix!=null) {
         BytesRef prefixRef = new BytesRef(prefix);
-        startTermIndex = si.binarySearchLookup(prefixRef, tempBR);
+        startTermIndex = si.lookupTerm(prefixRef);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
         prefixRef.append(UnicodeUtil.BIG_TERM);
         // TODO: we could constrain the lower endpoint if we had a binarySearch method that allowed passing start/end
-        endTermIndex = si.binarySearchLookup(prefixRef, tempBR);
+        endTermIndex = si.lookupTerm(prefixRef);
         assert endTermIndex < 0;
         endTermIndex = -endTermIndex-1;
       } else {
-        startTermIndex=0;
-        endTermIndex=si.numOrd();
+        startTermIndex=-1;
+        endTermIndex=si.getValueCount();
       }
 
       final int nTerms=endTermIndex-startTermIndex;
@@ -262,68 +263,19 @@ class PerSegmentSingleValuedFaceting {
 
 
         ////
-        PackedInts.Reader ordReader = si.getDocToOrd();
         int doc;
 
-        final Object arr;
-        if (ordReader.hasArray()) {
-          arr = ordReader.getArray();
-        } else {
-          arr = null;
-        }
-
-        if (arr instanceof int[]) {
-          int[] ords = (int[]) arr;
-          if (prefix==null) {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              counts[ords[doc]]++;
-            }
-          } else {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              int term = ords[doc];
-              int arrIdx = term-startTermIndex;
-              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-            }
-          }
-        } else if (arr instanceof short[]) {
-          short[] ords = (short[]) arr;
-          if (prefix==null) {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              counts[ords[doc] & 0xffff]++;
-            }
-          } else {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              int term = ords[doc] & 0xffff;
-              int arrIdx = term-startTermIndex;
-              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-            }
-          }
-        } else if (arr instanceof byte[]) {
-          byte[] ords = (byte[]) arr;
-          if (prefix==null) {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              counts[ords[doc] & 0xff]++;
-            }
-          } else {
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              int term = ords[doc] & 0xff;
-              int arrIdx = term-startTermIndex;
-              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-            }
+        if (prefix==null) {
+          // specialized version when collecting counts for all terms
+          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+            counts[1+si.getOrd(doc)]++;
           }
         } else {
-          if (prefix==null) {
-            // specialized version when collecting counts for all terms
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              counts[si.getOrd(doc)]++;
-            }
-          } else {
-            // version that adjusts term numbers because we aren't collecting the full range
-            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-              int term = si.getOrd(doc);
-              int arrIdx = term-startTermIndex;
-              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-            }
+          // version that adjusts term numbers because we aren't collecting the full range
+          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+            int term = si.getOrd(doc);
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
           }
         }
       }

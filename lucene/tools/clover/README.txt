@@ -2,6 +2,53 @@
   DOCUMENTATION ABOUT ATLASSIAN CLOVER LICENSE
 ################################################
 
+From: sales@atlassian.com [mailto:sales@atlassian.com] 
+Sent: Wednesday, September 25, 2013 5:09 PM
+To: uschindler@apache.org
+Cc: npellow@atlassian.com
+Subject: RE: Fwd: New Clover License for Apache - {844535}
+
+Hey Uwe,
+
+Thanks for getting back.
+I found the license using the key you provided - thanks for that! I've renewed the license for another year and added you as a technical contact. 
+
+Cheers,
+Amber
+
+Clover 100+ Machines: Open Source License	Apache	 27 Jun 2014
+
+SEN:	 SEN-2304226 
+Technical Contact:	Mike Mccandless (mikemccand@apache.org), Uwe Schindler (uschindler@apache.org)
+Billing Contact:	Mike Mccandless (mikemccand@apache.org) 
+Licensed To:	 Apache
+
+History:	
+27 Jun 2012	 Purchase of Clover 100+ Machines: Open Source License	
+27 Jun 2013	 Maintenance Renewal	
+ 
+---------------------------------------------------------------------------------
+
+From: Nicholas Muldoon <nmuldoon@atlassian.com>
+To: Ted Yu <yuzhihong@gmail.com>
+Cc: Enis Soztutar <enis@hortonworks.com>, Todd Lipcon <todd@cloudera.com>
+Content-Type: multipart/alternative; boundary=047d7b10cff34cee0f04c376df70
+X-Gm-Message-State: ALoCoQmzowRKrtL3txnON+W+U2vn7gwwWSn/U5dvchuTV0Nn3xaMoAojvbPal5TBkC6foBnuHPWU
+
+--047d7b10cff34cee0f04c376df70
+Content-Type: text/plain; charset=ISO-8859-1
+
+Hi Ted,
+
+Please find a renewed license below - Clover 3 compatible. Should you have
+any difficulty please let me know.
+
+[license]
+
+Thanks Ted, have a great day, thanks for your support,
+Nicholas
+
+
 On Fri, Dec 18, 2009 at 1:33 AM, Nicholas Muldoon <nmuldoon@atlassian.com> wrote:
 ---------------------------------------------------------------------------------
 

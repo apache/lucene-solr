@@ -23,8 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -35,6 +40,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public class FieldQueryTest extends AbstractTestCase {
@@ -903,6 +909,42 @@ public class FieldQueryTest extends AbstractTestCase {
     List<TermInfo> phraseCandidate = new ArrayList<TermInfo>();
     phraseCandidate.add( new TermInfo( "defg", 0, 12, 0, 1 ) );
     assertNotNull (fq.searchPhrase(F, phraseCandidate));
+  }
+  
+  public void testStopRewrite() throws Exception {
+    Query q = new Query() {
+
+      @Override
+      public String toString(String field) {
+        return "DummyQuery";
+      }
+      
+    };
+    make1d1fIndex( "a" );
+    assertNotNull(reader);
+    new FieldQuery(q, reader, true, true );
+  }
+  
+  public void testFlattenFilteredQuery() throws Exception {
+    Query query = new FilteredQuery(pqF( "A" ), new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
+          throws IOException {
+        return null;
+      }
+    });
+    FieldQuery fq = new FieldQuery( query, true, true );
+    Set<Query> flatQueries = new HashSet<Query>();
+    fq.flatten( query, reader, flatQueries );
+    assertCollectionQueries( flatQueries, tq( "A" ) );
+  }
+  
+  public void testFlattenConstantScoreQuery() throws Exception {
+    Query query = new ConstantScoreQuery(pqF( "A" ));
+    FieldQuery fq = new FieldQuery( query, true, true );
+    Set<Query> flatQueries = new HashSet<Query>();
+    fq.flatten( query, reader, flatQueries );
+    assertCollectionQueries( flatQueries, tq( "A" ) );
   }
   
 }

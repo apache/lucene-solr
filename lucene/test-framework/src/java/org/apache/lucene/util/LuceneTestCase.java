@@ -17,44 +17,107 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.lang.annotation.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.logging.Logger;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
-import org.apache.lucene.store.*;
-import org.apache.lucene.store.IOContext.Context;
-import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-import org.junit.*;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import com.carrotsearch.randomizedtesting.*;
-import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.search.AssertingIndexSearcher;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
+import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
@@ -143,10 +206,10 @@ public abstract class LuceneTestCase extends Assert {
   public static final String SYSPROP_BADAPPLES = "tests.badapples";
 
   /** @see #ignoreAfterMaxFailures*/
-  private static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
+  public static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
 
   /** @see #ignoreAfterMaxFailures*/
-  private static final String SYSPROP_FAILFAST = "tests.failfast";
+  public static final String SYSPROP_FAILFAST = "tests.failfast";
 
   /**
    * Annotation for tests that should only be run during nightly builds.
@@ -253,6 +316,9 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
+  
+  /** Gets the docValuesFormat to run tests with */
+  public static final String TEST_DOCVALUESFORMAT = System.getProperty("tests.docvaluesformat", "random");
 
   /** Gets the directory to run tests with */
   public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
@@ -322,9 +388,13 @@ public abstract class LuceneTestCase extends Assert {
   // -----------------------------------------------------------------
 
   /**
-   * @lucene.internal 
+   * When {@code true}, Codecs for old Lucene version will support writing
+   * indexes in that format. Defaults to {@code true}, can be disabled by
+   * spdecific tests on demand.
+   * 
+   * @lucene.internal
    */
-  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
 
 
   // -----------------------------------------------------------------
@@ -348,9 +418,17 @@ public abstract class LuceneTestCase extends Assert {
       new TestRuleMarkFailure();
 
   /**
-   * Ignore tests after hitting a designated number of initial failures.
+   * Ignore tests after hitting a designated number of initial failures. This
+   * is truly a "static" global singleton since it needs to span the lifetime of all
+   * test classes running inside this JVM (it cannot be part of a class rule).
+   * 
+   * <p>This poses some problems for the test framework's tests because these sometimes
+   * trigger intentional failures which add up to the global count. This field contains
+   * a (possibly) changing reference to {@link TestRuleIgnoreAfterMaxFailures} and we
+   * dispatch to its current value from the {@link #classRules} chain using {@link TestRuleDelegate}.  
    */
-  final static TestRuleIgnoreAfterMaxFailures ignoreAfterMaxFailures; 
+  private static final AtomicReference<TestRuleIgnoreAfterMaxFailures> ignoreAfterMaxFailuresDelegate;
+  private static final TestRule ignoreAfterMaxFailures;
   static {
     int maxFailures = systemPropertyAsInt(SYSPROP_MAXFAILURES, Integer.MAX_VALUE);
     boolean failFast = systemPropertyAsBoolean(SYSPROP_FAILFAST, false);
@@ -365,7 +443,19 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    ignoreAfterMaxFailures = new TestRuleIgnoreAfterMaxFailures(maxFailures);
+    ignoreAfterMaxFailuresDelegate = 
+        new AtomicReference<TestRuleIgnoreAfterMaxFailures>(
+            new TestRuleIgnoreAfterMaxFailures(maxFailures));
+    ignoreAfterMaxFailures = TestRuleDelegate.of(ignoreAfterMaxFailuresDelegate);
+  }
+
+  /**
+   * Temporarily substitute the global {@link TestRuleIgnoreAfterMaxFailures}. See
+   * {@link #ignoreAfterMaxFailuresDelegate} for some explanation why this method 
+   * is needed.
+   */
+  public static TestRuleIgnoreAfterMaxFailures replaceMaxFailureRule(TestRuleIgnoreAfterMaxFailures newValue) {
+    return ignoreAfterMaxFailuresDelegate.getAndSet(newValue);
   }
 
   /**
@@ -617,7 +707,7 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}.
    */
   public static boolean rarely(Random random) {
-    int p = TEST_NIGHTLY ? 10 : 5;
+    int p = TEST_NIGHTLY ? 10 : 1;
     p += (p * Math.log(RANDOM_MULTIPLIER));
     int min = 100 - Math.min(p, 50); // never more than 50
     return random.nextInt(100) >= min;
@@ -651,6 +741,7 @@ public abstract class LuceneTestCase extends Assert {
    * Return <code>args</code> as a {@link Set} instance. The order of elements is not
    * preserved in iterators.
    */
+  @SafeVarargs @SuppressWarnings("varargs")
   public static <T> Set<T> asSet(T... args) {
     return new HashSet<T>(Arrays.asList(args));
   }
@@ -695,8 +786,24 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     c.setSimilarity(classEnvRule.similarity);
+    if (VERBOSE) {
+      // Even though TestRuleSetupAndRestoreClassEnv calls
+      // InfoStream.setDefault, we do it again here so that
+      // the PrintStreamInfoStream.messageID increments so
+      // that when there are separate instances of
+      // IndexWriter created we see "IW 0", "IW 1", "IW 2",
+      // ... instead of just always "IW 0":
+      c.setInfoStream(new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out));
+    }
+
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
+    } else if (rarely(r)) {
+      int maxThreadCount = _TestUtil.nextInt(random(), 1, 4);
+      int maxMergeCount = _TestUtil.nextInt(random(), maxThreadCount, maxThreadCount+4);
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      c.setMergeScheduler(cms);
     }
     if (r.nextBoolean()) {
       if (rarely(r)) {
@@ -705,15 +812,6 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         // reasonable value
         c.setMaxBufferedDocs(_TestUtil.nextInt(r, 16, 1000));
-      }
-    }
-    if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
       }
     }
     if (r.nextBoolean()) {
@@ -756,18 +854,29 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
+    c.setMergePolicy(newMergePolicy(r));
+
     if (rarely(r)) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextInt(5) == 0) { 
-      c.setMergePolicy(newAlcoholicMergePolicy());
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
+      c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
+    c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static MergePolicy newMergePolicy(Random r) {
+    if (rarely(r)) {
+      return new MockRandomMergePolicy(r);
+    } else if (r.nextBoolean()) {
+      return newTieredMergePolicy(r);
+    } else if (r.nextInt(5) == 0) { 
+      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+    }
+    return newLogMergePolicy(r);
+  }
+
+  public static MergePolicy newMergePolicy() {
+    return newMergePolicy(random());
   }
 
   public static LogMergePolicy newLogMergePolicy() {
@@ -788,19 +897,28 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
-    logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (rarely(r)) {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 9));
     } else {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
     }
-    logmp.setUseCompoundFile(r.nextBoolean());
-    logmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      logmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, logmp);
     return logmp;
+  }
+  
+  private static void configureRandom(Random r, MergePolicy mergePolicy) {
+    if (r.nextBoolean()) {
+      mergePolicy.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    } else {
+      mergePolicy.setNoCFSRatio(r.nextBoolean() ? 1.0 : 0.0);
+    }
+    
+    if (rarely()) {
+      mergePolicy.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
+    } else {
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    }
   }
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
@@ -824,29 +942,25 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 10, 50));
     }
-    tmp.setUseCompoundFile(r.nextBoolean());
-    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      tmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, tmp);
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+  public static MergePolicy newLogMergePolicy(boolean useCFS) {
+    MergePolicy logmp = newLogMergePolicy();
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     logmp.setMergeFactor(mergeFactor);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setMergeFactor(mergeFactor);
     return logmp;
@@ -1082,8 +1196,8 @@ public abstract class LuceneTestCase extends Assert {
     FSDirectory d = null;
     try {
       d = CommandLineUtil.newFSDirectory(clazz, file);
-    } catch (Exception e) {
-      d = FSDirectory.open(file);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      Rethrow.rethrow(e);
     }
     return d;
   }
@@ -1228,7 +1342,7 @@ public abstract class LuceneTestCase extends Assert {
    * Create a new searcher over the reader. This searcher might randomly use
    * threads.
    */
-  public static IndexSearcher newSearcher(IndexReader r) throws IOException {
+  public static IndexSearcher newSearcher(IndexReader r) {
     return newSearcher(r, true);
   }
   
@@ -1237,11 +1351,26 @@ public abstract class LuceneTestCase extends Assert {
    * threads. if <code>maybeWrap</code> is true, this searcher might wrap the
    * reader with one that returns null for getSequentialSubReaders.
    */
-  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
     Random random = random();
     if (usually()) {
       if (maybeWrap) {
-        r = maybeWrapReader(r);
+        try {
+          r = maybeWrapReader(r);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      }
+      // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
+      // ultimately whatever you do will be checkIndex'd at the end anyway. 
+      if (random.nextInt(500) == 0 && r instanceof AtomicReader) {
+        // TODO: not useful to check DirectoryReader (redundant with checkindex)
+        // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
+        try {
+          _TestUtil.checkReader(r);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
       ret.setSimilarity(classEnvRule.similarity);
@@ -1289,5 +1418,689 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
+  }
+  
+  /** Returns true if the default codec supports SORTED_SET docvalues */ 
+  public static boolean defaultCodecSupportsSortedSet() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  public static boolean defaultCodecSupportsDocsWithField() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" field updates. */
+  public static boolean defaultCodecSupportsFieldUpdates() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
+      return false;
+    }
+    return true;
+  }
+
+  public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assertReaderStatisticsEquals(info, leftReader, rightReader);
+    assertFieldsEquals(info, leftReader, MultiFields.getFields(leftReader), MultiFields.getFields(rightReader), true);
+    assertNormsEquals(info, leftReader, rightReader);
+    assertStoredFieldsEquals(info, leftReader, rightReader);
+    assertTermVectorsEquals(info, leftReader, rightReader);
+    assertDocValuesEquals(info, leftReader, rightReader);
+    assertDeletedDocsEquals(info, leftReader, rightReader);
+    assertFieldInfosEquals(info, leftReader, rightReader);
+  }
+
+  /** 
+   * checks that reader-level statistics are the same 
+   */
+  public void assertReaderStatisticsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    // Somewhat redundant: we never delete docs
+    assertEquals(info, leftReader.maxDoc(), rightReader.maxDoc());
+    assertEquals(info, leftReader.numDocs(), rightReader.numDocs());
+    assertEquals(info, leftReader.numDeletedDocs(), rightReader.numDeletedDocs());
+    assertEquals(info, leftReader.hasDeletions(), rightReader.hasDeletions());
+  }
+
+  /** 
+   * Fields api equivalency 
+   */
+  public void assertFieldsEquals(String info, IndexReader leftReader, Fields leftFields, Fields rightFields, boolean deep) throws IOException {
+    // Fields could be null if there are no postings,
+    // but then it must be null for both
+    if (leftFields == null || rightFields == null) {
+      assertNull(info, leftFields);
+      assertNull(info, rightFields);
+      return;
+    }
+    assertFieldStatisticsEquals(info, leftFields, rightFields);
+    
+    Iterator<String> leftEnum = leftFields.iterator();
+    Iterator<String> rightEnum = rightFields.iterator();
+    
+    while (leftEnum.hasNext()) {
+      String field = leftEnum.next();
+      assertEquals(info, field, rightEnum.next());
+      assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), deep);
+    }
+    assertFalse(rightEnum.hasNext());
+  }
+
+  /** 
+   * checks that top-level statistics on Fields are the same 
+   */
+  public void assertFieldStatisticsEquals(String info, Fields leftFields, Fields rightFields) throws IOException {
+    if (leftFields.size() != -1 && rightFields.size() != -1) {
+      assertEquals(info, leftFields.size(), rightFields.size());
+    }
+  }
+
+  /** 
+   * Terms api equivalency 
+   */
+  public void assertTermsEquals(String info, IndexReader leftReader, Terms leftTerms, Terms rightTerms, boolean deep) throws IOException {
+    if (leftTerms == null || rightTerms == null) {
+      assertNull(info, leftTerms);
+      assertNull(info, rightTerms);
+      return;
+    }
+    assertTermsStatisticsEquals(info, leftTerms, rightTerms);
+    assertEquals(leftTerms.hasOffsets(), rightTerms.hasOffsets());
+    assertEquals(leftTerms.hasPositions(), rightTerms.hasPositions());
+    assertEquals(leftTerms.hasPayloads(), rightTerms.hasPayloads());
+
+    TermsEnum leftTermsEnum = leftTerms.iterator(null);
+    TermsEnum rightTermsEnum = rightTerms.iterator(null);
+    assertTermsEnumEquals(info, leftReader, leftTermsEnum, rightTermsEnum, true);
+    
+    assertTermsSeekingEquals(info, leftTerms, rightTerms);
+    
+    if (deep) {
+      int numIntersections = atLeast(3);
+      for (int i = 0; i < numIntersections; i++) {
+        String re = AutomatonTestUtil.randomRegexp(random());
+        CompiledAutomaton automaton = new CompiledAutomaton(new RegExp(re, RegExp.NONE).toAutomaton());
+        if (automaton.type == CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+          // TODO: test start term too
+          TermsEnum leftIntersection = leftTerms.intersect(automaton, null);
+          TermsEnum rightIntersection = rightTerms.intersect(automaton, null);
+          assertTermsEnumEquals(info, leftReader, leftIntersection, rightIntersection, rarely());
+        }
+      }
+    }
+  }
+
+  /** 
+   * checks collection-level statistics on Terms 
+   */
+  public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+    if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
+      assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
+    }
+    if (leftTerms.getSumDocFreq() != -1 && rightTerms.getSumDocFreq() != -1) {
+      assertEquals(info, leftTerms.getSumDocFreq(), rightTerms.getSumDocFreq());
+    }
+    if (leftTerms.getSumTotalTermFreq() != -1 && rightTerms.getSumTotalTermFreq() != -1) {
+      assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
+    }
+    if (leftTerms.size() != -1 && rightTerms.size() != -1) {
+      assertEquals(info, leftTerms.size(), rightTerms.size());
+    }
+  }
+
+  private static class RandomBits implements Bits {
+    FixedBitSet bits;
+    
+    RandomBits(int maxDoc, double pctLive, Random random) {
+      bits = new FixedBitSet(maxDoc);
+      for (int i = 0; i < maxDoc; i++) {
+        if (random.nextDouble() <= pctLive) {        
+          bits.set(i);
+        }
+      }
+    }
+    
+    @Override
+    public boolean get(int index) {
+      return bits.get(index);
+    }
+
+    @Override
+    public int length() {
+      return bits.length();
+    }
+  }
+
+  /** 
+   * checks the terms enum sequentially
+   * if deep is false, it does a 'shallow' test that doesnt go down to the docsenums
+   */
+  public void assertTermsEnumEquals(String info, IndexReader leftReader, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum, boolean deep) throws IOException {
+    BytesRef term;
+    Bits randomBits = new RandomBits(leftReader.maxDoc(), random().nextDouble(), random());
+    DocsEnum leftPositions = null;
+    DocsEnum rightPositions = null;
+    DocsEnum leftDocs = null;
+    DocsEnum rightDocs = null;
+    
+    while ((term = leftTermsEnum.next()) != null) {
+      assertEquals(info, term, rightTermsEnum.next());
+      assertTermStatsEquals(info, leftTermsEnum, rightTermsEnum);
+      if (deep) {
+        assertDocsAndPositionsEnumEquals(info, leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
+                                   rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
+        assertDocsAndPositionsEnumEquals(info, leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
+                                   rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+
+        assertPositionsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+                                leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
+                                rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
+        assertPositionsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+                                leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
+                                rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+
+        // with freqs:
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.docs(null, leftDocs),
+            rightDocs = rightTermsEnum.docs(null, rightDocs),
+            true);
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
+            true);
+
+        // w/o freqs:
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE),
+            false);
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE),
+            false);
+        
+        // with freqs:
+        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(null, leftDocs),
+            rightDocs = rightTermsEnum.docs(null, rightDocs),
+            true);
+        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
+            true);
+
+        // w/o freqs:
+        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE),
+            false);
+        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE),
+            false);
+      }
+    }
+    assertNull(info, rightTermsEnum.next());
+  }
+
+
+  /**
+   * checks docs + freqs + positions + payloads, sequentially
+   */
+  public void assertDocsAndPositionsEnumEquals(String info, DocsEnum leftDocs, DocsEnum rightDocs) throws IOException {
+    if (leftDocs == null || rightDocs == null) {
+      assertNull(leftDocs);
+      assertNull(rightDocs);
+      return;
+    }
+    assertEquals(info, -1, leftDocs.docID());
+    assertEquals(info, -1, rightDocs.docID());
+    int docid;
+    while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      assertEquals(info, docid, rightDocs.nextDoc());
+      int freq = leftDocs.freq();
+      assertEquals(info, freq, rightDocs.freq());
+      for (int i = 0; i < freq; i++) {
+        assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
+        assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
+        assertEquals(info, leftDocs.startOffset(), rightDocs.startOffset());
+        assertEquals(info, leftDocs.endOffset(), rightDocs.endOffset());
+      }
+    }
+    assertEquals(info, DocIdSetIterator.NO_MORE_DOCS, rightDocs.nextDoc());
+  }
+  
+  /**
+   * checks docs + freqs, sequentially
+   */
+  public void assertDocsEnumEquals(String info, DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws IOException {
+    if (leftDocs == null) {
+      assertNull(rightDocs);
+      return;
+    }
+    assertEquals(info, -1, leftDocs.docID());
+    assertEquals(info, -1, rightDocs.docID());
+    int docid;
+    while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      assertEquals(info, docid, rightDocs.nextDoc());
+      if (hasFreqs) {
+        assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      }
+    }
+    assertEquals(info, DocIdSetIterator.NO_MORE_DOCS, rightDocs.nextDoc());
+  }
+  
+  /**
+   * checks advancing docs
+   */
+  public void assertDocsSkippingEquals(String info, IndexReader leftReader, int docFreq, DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws IOException {
+    if (leftDocs == null) {
+      assertNull(rightDocs);
+      return;
+    }
+    int docid = -1;
+    int averageGap = leftReader.maxDoc() / (1+docFreq);
+    int skipInterval = 16;
+
+    while (true) {
+      if (random().nextBoolean()) {
+        // nextDoc()
+        docid = leftDocs.nextDoc();
+        assertEquals(info, docid, rightDocs.nextDoc());
+      } else {
+        // advance()
+        int skip = docid + (int) Math.ceil(Math.abs(skipInterval + random().nextGaussian() * averageGap));
+        docid = leftDocs.advance(skip);
+        assertEquals(info, docid, rightDocs.advance(skip));
+      }
+      
+      if (docid == DocIdSetIterator.NO_MORE_DOCS) {
+        return;
+      }
+      if (hasFreqs) {
+        assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      }
+    }
+  }
+  
+  /**
+   * checks advancing docs + positions
+   */
+  public void assertPositionsSkippingEquals(String info, IndexReader leftReader, int docFreq, DocsEnum leftDocs, DocsEnum rightDocs) throws IOException {
+    if (leftDocs == null || rightDocs == null) {
+      assertNull(leftDocs);
+      assertNull(rightDocs);
+      return;
+    }
+    
+    int docid = -1;
+    int averageGap = leftReader.maxDoc() / (1+docFreq);
+    int skipInterval = 16;
+
+    while (true) {
+      if (random().nextBoolean()) {
+        // nextDoc()
+        docid = leftDocs.nextDoc();
+        assertEquals(info, docid, rightDocs.nextDoc());
+      } else {
+        // advance()
+        int skip = docid + (int) Math.ceil(Math.abs(skipInterval + random().nextGaussian() * averageGap));
+        docid = leftDocs.advance(skip);
+        assertEquals(info, docid, rightDocs.advance(skip));
+      }
+      
+      if (docid == DocIdSetIterator.NO_MORE_DOCS) {
+        return;
+      }
+      int freq = leftDocs.freq();
+      assertEquals(info, freq, rightDocs.freq());
+      for (int i = 0; i < freq; i++) {
+        assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
+        assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
+      }
+    }
+  }
+
+  
+  private void assertTermsSeekingEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+    TermsEnum leftEnum = null;
+    TermsEnum rightEnum = null;
+
+    // just an upper bound
+    int numTests = atLeast(20);
+    Random random = random();
+
+    // collect this number of terms from the left side
+    HashSet<BytesRef> tests = new HashSet<BytesRef>();
+    int numPasses = 0;
+    while (numPasses < 10 && tests.size() < numTests) {
+      leftEnum = leftTerms.iterator(leftEnum);
+      BytesRef term = null;
+      while ((term = leftEnum.next()) != null) {
+        int code = random.nextInt(10);
+        if (code == 0) {
+          // the term
+          tests.add(BytesRef.deepCopyOf(term));
+        } else if (code == 1) {
+          // truncated subsequence of term
+          term = BytesRef.deepCopyOf(term);
+          if (term.length > 0) {
+            // truncate it
+            term.length = random.nextInt(term.length);
+          }
+        } else if (code == 2) {
+          // term, but ensure a non-zero offset
+          byte newbytes[] = new byte[term.length+5];
+          System.arraycopy(term.bytes, term.offset, newbytes, 5, term.length);
+          tests.add(new BytesRef(newbytes, 5, term.length));
+        } else if (code == 3) {
+          switch (random().nextInt(3)) {
+            case 0:
+              tests.add(new BytesRef()); // before the first term
+              break;
+            case 1:
+              tests.add(new BytesRef(new byte[] {(byte) 0xFF, (byte) 0xFF})); // past the last term
+              break;
+            case 2:
+              tests.add(new BytesRef(_TestUtil.randomSimpleString(random()))); // random term
+              break;
+            default:
+              throw new AssertionError();
+          }
+        }
+      }
+      numPasses++;
+    }
+
+    rightEnum = rightTerms.iterator(rightEnum);
+
+    ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
+    Collections.shuffle(shuffledTests, random);
+
+    for (BytesRef b : shuffledTests) {
+      if (rarely()) {
+        // reuse the enums
+        leftEnum = leftTerms.iterator(leftEnum);
+        rightEnum = rightTerms.iterator(rightEnum);
+      }
+
+      final boolean seekExact = random().nextBoolean();
+
+      if (seekExact) {
+        assertEquals(info, leftEnum.seekExact(b), rightEnum.seekExact(b));
+      } else {
+        SeekStatus leftStatus = leftEnum.seekCeil(b);
+        SeekStatus rightStatus = rightEnum.seekCeil(b);
+        assertEquals(info, leftStatus, rightStatus);
+        if (leftStatus != SeekStatus.END) {
+          assertEquals(info, leftEnum.term(), rightEnum.term());
+          assertTermStatsEquals(info, leftEnum, rightEnum);
+        }
+      }
+    }
+  }
+  
+  /**
+   * checks term-level statistics
+   */
+  public void assertTermStatsEquals(String info, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum) throws IOException {
+    assertEquals(info, leftTermsEnum.docFreq(), rightTermsEnum.docFreq());
+    if (leftTermsEnum.totalTermFreq() != -1 && rightTermsEnum.totalTermFreq() != -1) {
+      assertEquals(info, leftTermsEnum.totalTermFreq(), rightTermsEnum.totalTermFreq());
+    }
+  }
+  
+  /** 
+   * checks that norms are the same across all fields 
+   */
+  public void assertNormsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    Fields leftFields = MultiFields.getFields(leftReader);
+    Fields rightFields = MultiFields.getFields(rightReader);
+    // Fields could be null if there are no postings,
+    // but then it must be null for both
+    if (leftFields == null || rightFields == null) {
+      assertNull(info, leftFields);
+      assertNull(info, rightFields);
+      return;
+    }
+    
+    for (String field : leftFields) {
+      NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
+      NumericDocValues rightNorms = MultiDocValues.getNormValues(rightReader, field);
+      if (leftNorms != null && rightNorms != null) {
+        assertDocValuesEquals(info, leftReader.maxDoc(), leftNorms, rightNorms);
+      } else {
+        assertNull(info, leftNorms);
+        assertNull(info, rightNorms);
+      }
+    }
+  }
+  
+  /** 
+   * checks that stored fields of all documents are the same 
+   */
+  public void assertStoredFieldsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assert leftReader.maxDoc() == rightReader.maxDoc();
+    for (int i = 0; i < leftReader.maxDoc(); i++) {
+      StoredDocument leftDoc = leftReader.document(i);
+      StoredDocument rightDoc = rightReader.document(i);
+      
+      // TODO: I think this is bogus because we don't document what the order should be
+      // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff
+      // in whatever way it wants (e.g. maybe it packs related fields together or something)
+      // To fix this, we sort the fields in both documents by name, but
+      // we still assume that all instances with same name are in order:
+      Comparator<StorableField> comp = new Comparator<StorableField>() {
+        @Override
+        public int compare(StorableField arg0, StorableField arg1) {
+          return arg0.name().compareTo(arg1.name());
+        }        
+      };
+      Collections.sort(leftDoc.getFields(), comp);
+      Collections.sort(rightDoc.getFields(), comp);
+
+      Iterator<StorableField> leftIterator = leftDoc.iterator();
+      Iterator<StorableField> rightIterator = rightDoc.iterator();
+      while (leftIterator.hasNext()) {
+        assertTrue(info, rightIterator.hasNext());
+        assertStoredFieldEquals(info, leftIterator.next(), rightIterator.next());
+      }
+      assertFalse(info, rightIterator.hasNext());
+    }
+  }
+  
+  /** 
+   * checks that two stored fields are equivalent 
+   */
+  public void assertStoredFieldEquals(String info, StorableField leftField, StorableField rightField) {
+    assertEquals(info, leftField.name(), rightField.name());
+    assertEquals(info, leftField.binaryValue(), rightField.binaryValue());
+    assertEquals(info, leftField.stringValue(), rightField.stringValue());
+    assertEquals(info, leftField.numericValue(), rightField.numericValue());
+    // TODO: should we check the FT at all?
+  }
+  
+  /** 
+   * checks that term vectors across all fields are equivalent 
+   */
+  public void assertTermVectorsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assert leftReader.maxDoc() == rightReader.maxDoc();
+    for (int i = 0; i < leftReader.maxDoc(); i++) {
+      Fields leftFields = leftReader.getTermVectors(i);
+      Fields rightFields = rightReader.getTermVectors(i);
+      assertFieldsEquals(info, leftReader, leftFields, rightFields, rarely());
+    }
+  }
+
+  private static Set<String> getDVFields(IndexReader reader) {
+    Set<String> fields = new HashSet<String>();
+    for(FieldInfo fi : MultiFields.getMergedFieldInfos(reader)) {
+      if (fi.hasDocValues()) {
+        fields.add(fi.name);
+      }
+    }
+
+    return fields;
+  }
+  
+  /**
+   * checks that docvalues across all fields are equivalent
+   */
+  public void assertDocValuesEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    Set<String> leftFields = getDVFields(leftReader);
+    Set<String> rightFields = getDVFields(rightReader);
+    assertEquals(info, leftFields, rightFields);
+
+    for (String field : leftFields) {
+      // TODO: clean this up... very messy
+      {
+        NumericDocValues leftValues = MultiDocValues.getNumericValues(leftReader, field);
+        NumericDocValues rightValues = MultiDocValues.getNumericValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          assertDocValuesEquals(info, leftReader.maxDoc(), leftValues, rightValues);
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+
+      {
+        BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
+        BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.get(docID, scratchLeft);
+            rightValues.get(docID, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedDocValues leftValues = MultiDocValues.getSortedValues(leftReader, field);
+        SortedDocValues rightValues = MultiDocValues.getSortedValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // bytes
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.get(docID, scratchLeft);
+            rightValues.get(docID, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedSetDocValues leftValues = MultiDocValues.getSortedSetValues(leftReader, field);
+        SortedSetDocValues rightValues = MultiDocValues.getSortedSetValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // ord lists
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.setDocument(docID);
+            rightValues.setDocument(docID);
+            long ord;
+            while ((ord = leftValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              assertEquals(info, ord, rightValues.nextOrd());
+            }
+            assertEquals(info, SortedSetDocValues.NO_MORE_ORDS, rightValues.nextOrd());
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
+        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
+        if (leftBits != null && rightBits != null) {
+          assertEquals(info, leftBits.length(), rightBits.length());
+          for (int i = 0; i < leftBits.length(); i++) {
+            assertEquals(info, leftBits.get(i), rightBits.get(i));
+          }
+        } else {
+          assertNull(info, leftBits);
+          assertNull(info, rightBits);
+        }
+      }
+    }
+  }
+  
+  public void assertDocValuesEquals(String info, int num, NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws IOException {
+    assertNotNull(info, leftDocValues);
+    assertNotNull(info, rightDocValues);
+    for(int docID=0;docID<num;docID++) {
+      assertEquals(leftDocValues.get(docID),
+                   rightDocValues.get(docID));
+    }
+  }
+  
+  // TODO: this is kinda stupid, we don't delete documents in the test.
+  public void assertDeletedDocsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assert leftReader.numDeletedDocs() == rightReader.numDeletedDocs();
+    Bits leftBits = MultiFields.getLiveDocs(leftReader);
+    Bits rightBits = MultiFields.getLiveDocs(rightReader);
+    
+    if (leftBits == null || rightBits == null) {
+      assertNull(info, leftBits);
+      assertNull(info, rightBits);
+      return;
+    }
+    
+    assert leftReader.maxDoc() == rightReader.maxDoc();
+    assertEquals(info, leftBits.length(), rightBits.length());
+    for (int i = 0; i < leftReader.maxDoc(); i++) {
+      assertEquals(info, leftBits.get(i), rightBits.get(i));
+    }
+  }
+  
+  public void assertFieldInfosEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    FieldInfos leftInfos = MultiFields.getMergedFieldInfos(leftReader);
+    FieldInfos rightInfos = MultiFields.getMergedFieldInfos(rightReader);
+    
+    // TODO: would be great to verify more than just the names of the fields!
+    TreeSet<String> left = new TreeSet<String>();
+    TreeSet<String> right = new TreeSet<String>();
+    
+    for (FieldInfo fi : leftInfos) {
+      left.add(fi.name);
+    }
+    
+    for (FieldInfo fi : rightInfos) {
+      right.add(fi.name);
+    }
+    
+    assertEquals(info, left, right);
   }
 }

@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class AEProviderFactory {
 
-  private static AEProviderFactory instance;
+  private static final AEProviderFactory instance = new AEProviderFactory();
 
   private final Map<String, AEProvider> providerCache = new HashMap<String, AEProvider>();
 
@@ -34,15 +34,12 @@ public class AEProviderFactory {
   }
 
   public static AEProviderFactory getInstance() {
-    if (instance == null) {
-      instance = new AEProviderFactory();
-    }
     return instance;
   }
 
   /**
-   * @param keyPrefix a prefix of the key used to cache the AEProvider
-   * @param aePath the AnalysisEngine descriptor path
+   * @param keyPrefix         a prefix of the key used to cache the AEProvider
+   * @param aePath            the AnalysisEngine descriptor path
    * @param runtimeParameters map of runtime parameters to configure inside the AnalysisEngine
    * @return AEProvider
    */
@@ -69,7 +66,7 @@ public class AEProviderFactory {
   }
 
   /**
-   * @param aePath the AnalysisEngine descriptor path
+   * @param aePath            the AnalysisEngine descriptor path
    * @param runtimeParameters map of runtime parameters to configure inside the AnalysisEngine
    * @return AEProvider
    */

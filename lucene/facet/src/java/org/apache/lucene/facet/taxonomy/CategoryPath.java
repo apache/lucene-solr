@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.taxonomy;
 
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +17,11 @@ package org.apache.lucene.facet.taxonomy;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a
  * category.
@@ -25,6 +29,18 @@ package org.apache.lucene.facet.taxonomy;
  * @lucene.experimental
  */
 public class CategoryPath implements Comparable<CategoryPath> {
+
+  /*
+   * copied from DocumentWriterPerThread -- if a CategoryPath is resolved to a
+   * drill-down term which is encoded to a larger term than that length, it is
+   * silently dropped! Therefore we limit the number of characters to MAX/4 to
+   * be on the safe side.
+   */
+  /**
+   * The maximum number of characters a {@link CategoryPath} can have. That is
+   * {@link CategoryPath#toString(char)} length must not exceed that limit.
+   */
+  public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
   /** An empty {@link CategoryPath} */
   public static final CategoryPath EMPTY = new CategoryPath();
@@ -42,29 +58,60 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   // Used by singleton EMPTY
   private CategoryPath() {
-    components = new String[0];
+    components = null;
     length = 0;
   }
 
   // Used by subpath
-  private CategoryPath(CategoryPath copyFrom, int prefixLen) {
+  private CategoryPath(final CategoryPath copyFrom, final int prefixLen) {
+    // while the code which calls this method is safe, at some point a test
+    // tripped on AIOOBE in toString, but we failed to reproduce. adding the
+    // assert as a safety check.
+    assert prefixLen > 0 && prefixLen <= copyFrom.components.length : 
+      "prefixLen cannot be negative nor larger than the given components' length: prefixLen=" + prefixLen
+        + " components.length=" + copyFrom.components.length;
     this.components = copyFrom.components;
     length = prefixLen;
   }
   
   /** Construct from the given path components. */
-  public CategoryPath(String... components) {
+  public CategoryPath(final String... components) {
+    assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
+    long len = 0;
+    for (String comp : components) {
+      if (comp == null || comp.isEmpty()) {
+        throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
+      }
+      len += comp.length();
+    }
+    len += components.length - 1; // add separators
+    if (len > MAX_CATEGORY_PATH_LENGTH) {
+      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
+          + MAX_CATEGORY_PATH_LENGTH + " len=" + len
+          + " path=" + Arrays.toString(components).substring(0, 30) + "...");
+    }
     this.components = components;
     length = components.length;
   }
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
-  public CategoryPath(String pathString, char delimiter) {
-    String[] comps = pathString.split(Character.toString(delimiter));
+  public CategoryPath(final String pathString, final char delimiter) {
+    if (pathString.length() > MAX_CATEGORY_PATH_LENGTH) {
+      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
+              + MAX_CATEGORY_PATH_LENGTH + " len=" + pathString.length()
+              + " path=" + pathString.substring(0, 30) + "...");
+    }
+
+    String[] comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
     if (comps.length == 1 && comps[0].isEmpty()) {
-      components = EMPTY.components;
+      components = null;
       length = 0;
     } else {
+      for (String comp : comps) {
+        if (comp == null || comp.isEmpty()) {
+          throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(comps));
+        }
+      }
       components = comps;
       length = components.length;
     }
@@ -103,6 +150,18 @@ public class CategoryPath implements Comparable<CategoryPath> {
     return length - other.length;
   }
 
+  private void hasDelimiter(String offender, char delimiter) {
+    throw new IllegalArgumentException("delimiter character '" + delimiter + "' (U+" + Integer.toHexString(delimiter) + ") appears in path component \"" + offender + "\"");
+  }
+
+  private void noDelimiter(char[] buf, int offset, int len, char delimiter) {
+    for(int idx=0;idx<len;idx++) {
+      if (buf[offset+idx] == delimiter) {
+        hasDelimiter(new String(buf, offset, len), delimiter);
+      }
+    }
+  }
+
   /**
    * Copies the path components to the given {@code char[]}, starting at index
    * {@code start}. {@code delimiter} is copied between the path components.
@@ -123,10 +182,12 @@ public class CategoryPath implements Comparable<CategoryPath> {
     for (int i = 0; i < upto; i++) {
       int len = components[i].length();
       components[i].getChars(0, len, buf, idx);
+      noDelimiter(buf, idx, len, delimiter);
       idx += len;
       buf[idx++] = delimiter;
     }
     components[upto].getChars(0, components[upto].length(), buf, idx);
+    noDelimiter(buf, idx, components[upto].length(), delimiter);
     
     return idx + components[upto].length() - start;
   }
@@ -179,7 +240,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   /** Returns a sub-path of this path up to {@code length} components. */
-  public CategoryPath subpath(int length) {
+  public CategoryPath subpath(final int length) {
     if (length >= this.length || length < 0) {
       return this;
     } else if (length == 0) {
@@ -209,6 +270,9 @@ public class CategoryPath implements Comparable<CategoryPath> {
     
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < length; i++) {
+      if (components[i].indexOf(delimiter) != -1) {
+        hasDelimiter(components[i], delimiter);
+      }
       sb.append(components[i]).append(delimiter);
     }
     sb.setLength(sb.length() - 1); // remove last delimiter

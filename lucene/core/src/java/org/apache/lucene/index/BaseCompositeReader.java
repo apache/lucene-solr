@@ -51,7 +51,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   private final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
   private final int numDocs;
-  private final boolean hasDeletions;
 
   /** List view solely for {@link #getSequentialSubReaders()},
    * for effectiveness the array is used internally. */
@@ -70,7 +69,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0, numDocs = 0;
-    boolean hasDeletions = false;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       final IndexReader r = subReaders[i];
@@ -79,15 +77,11 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
         throw new IllegalArgumentException("Too many documents, composite IndexReaders cannot exceed " + Integer.MAX_VALUE);
       }
       numDocs += r.numDocs();    // compute numDocs
-      if (r.hasDeletions()) {
-        hasDeletions = true;
-      }
       r.registerParentReader(this);
     }
     starts[subReaders.length] = maxDoc;
     this.maxDoc = maxDoc;
     this.numDocs = numDocs;
-    this.hasDeletions = hasDeletions;
   }
 
   @Override
@@ -117,12 +111,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
 
   @Override
-  public final boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
-    return hasDeletions;
-  }
-
-  @Override
   public final int docFreq(Term term) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in subreaders
@@ -145,7 +133,49 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     }
     return total;
   }
+  
+  @Override
+  public final long getSumDocFreq(String field) throws IOException {
+    ensureOpen();
+    long total = 0; // sum doc freqs in subreaders
+    for (R reader : subReaders) {
+      long sub = reader.getSumDocFreq(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
+  
+  @Override
+  public final int getDocCount(String field) throws IOException {
+    ensureOpen();
+    int total = 0; // sum doc counts in subreaders
+    for (R reader : subReaders) {
+      int sub = reader.getDocCount(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
 
+  @Override
+  public final long getSumTotalTermFreq(String field) throws IOException {
+    ensureOpen();
+    long total = 0; // sum doc total term freqs in subreaders
+    for (R reader : subReaders) {
+      long sub = reader.getSumTotalTermFreq(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
+  
   /** Helper method for subclasses to get the corresponding reader for a doc ID */
   protected final int readerIndex(int docID) {
     if (docID < 0 || docID >= maxDoc) {

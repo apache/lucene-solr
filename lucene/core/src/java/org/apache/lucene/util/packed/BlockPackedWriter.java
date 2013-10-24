@@ -18,7 +18,6 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.store.DataOutput;
 
@@ -30,85 +29,43 @@ import org.apache.lucene.store.DataOutput;
  * using as few bits as possible. Memory usage of this class is proportional to
  * the block size. Each block has an overhead between 1 and 10 bytes to store
  * the minimum value and the number of bits per value of the block.
+ * <p>
+ * Format:
+ * <ul>
+ * <li>&lt;BLock&gt;<sup>BlockCount</sup>
+ * <li>BlockCount: &lceil; ValueCount / BlockSize &rceil;
+ * <li>Block: &lt;Header, (Ints)&gt;
+ * <li>Header: &lt;Token, (MinValue)&gt;
+ * <li>Token: a {@link DataOutput#writeByte(byte) byte}, first 7 bits are the
+ *     number of bits per value (<tt>bitsPerValue</tt>). If the 8th bit is 1,
+ *     then MinValue (see next) is <tt>0</tt>, otherwise MinValue and needs to
+ *     be decoded
+ * <li>MinValue: a
+ *     <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag-encoded</a>
+ *     {@link DataOutput#writeVLong(long) variable-length long} whose value
+ *     should be added to every int from the block to restore the original
+ *     values
+ * <li>Ints: If the number of bits per value is <tt>0</tt>, then there is
+ *     nothing to decode and all ints are equal to MinValue. Otherwise: BlockSize
+ *     {@link PackedInts packed ints} encoded on exactly <tt>bitsPerValue</tt>
+ *     bits per value. They are the subtraction of the original values and
+ *     MinValue
+ * </ul>
+ * @see BlockPackedReaderIterator
  * @see BlockPackedReader
  * @lucene.internal
  */
-public final class BlockPackedWriter {
-
-  static final int MAX_BLOCK_SIZE = 1 << (30 - 3);
-  static final int MIN_VALUE_EQUALS_0 = 1 << 0;
-  static final int BPV_SHIFT = 1;
-
-  static void checkBlockSize(int blockSize) {
-    if (blockSize <= 0 || blockSize > MAX_BLOCK_SIZE) {
-      throw new IllegalArgumentException("blockSize must be > 0 and < " + MAX_BLOCK_SIZE + ", got " + blockSize);
-    }
-    if (blockSize % 64 != 0) {
-      throw new IllegalArgumentException("blockSize must be a multiple of 64, got " + blockSize);
-    }
-  }
-
-  static long zigZagEncode(long n) {
-    return (n >> 63) ^ (n << 1);
-  }
-
-  // same as DataOutput.writeVLong but accepts negative values
-  static void writeVLong(DataOutput out, long i) throws IOException {
-    int k = 0;
-    while ((i & ~0x7FL) != 0L && k++ < 8) {
-      out.writeByte((byte)((i & 0x7FL) | 0x80L));
-      i >>>= 7;
-    }
-    out.writeByte((byte) i);
-  }
-
-  final DataOutput out;
-  final long[] values;
-  byte[] blocks;
-  int off;
-  long ord;
-  boolean finished;
+public final class BlockPackedWriter extends AbstractBlockPackedWriter {
 
   /**
    * Sole constructor.
-   * @param blockSize the number of values of a single block, must be a multiple of <tt>64</tt>
+   * @param blockSize the number of values of a single block, must be a power of 2
    */
   public BlockPackedWriter(DataOutput out, int blockSize) {
-    checkBlockSize(blockSize);
-    this.out = out;
-    values = new long[blockSize];
-    off = 0;
-    ord = 0L;
-    finished = false;
+    super(out, blockSize);
   }
 
-  private void checkNotFinished() {
-    if (finished) {
-      throw new IllegalStateException("Already finished");
-    }
-  }
-
-  /** Append a new long. */
-  public void add(long l) throws IOException {
-    checkNotFinished();
-    if (off == values.length) {
-      flush();
-    }
-    values[off++] = l;
-    ++ord;
-  }
-
-  /** Flush all buffered data to disk. This instance is not usable anymore
-   *  after this method has been called. */
-  public void finish() throws IOException {
-    checkNotFinished();
-    if (off > 0) {
-      flush();
-    }
-    finished = true;
-  }
-
-  private void flush() throws IOException {
+  protected void flush() throws IOException {
     assert off > 0;
     long min = Long.MAX_VALUE, max = Long.MIN_VALUE;
     for (int i = 0; i < off; ++i) {
@@ -139,26 +96,10 @@ public final class BlockPackedWriter {
           values[i] -= min;
         }
       }
-      final PackedInts.Encoder encoder = PackedInts.getEncoder(PackedInts.Format.PACKED, PackedInts.VERSION_CURRENT, bitsRequired);
-      final int iterations = values.length / encoder.valueCount();
-      final int blockSize = encoder.blockCount() * 8 * iterations;
-      if (blocks == null || blocks.length < blockSize) {
-        blocks = new byte[blockSize];
-      }
-      if (off < values.length) {
-        Arrays.fill(values, off, values.length, 0L);
-      }
-      encoder.encode(values, 0, blocks, 0, iterations);
-      final int blockCount = (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsRequired);
-      out.writeBytes(blocks, blockCount);
+      writeValues(bitsRequired);
     }
 
     off = 0;
-  }
-
-  /** Return the number of values which have been added. */
-  public long ord() {
-    return ord;
   }
 
 }

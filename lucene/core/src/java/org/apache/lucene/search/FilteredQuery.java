@@ -104,9 +104,9 @@ public class FilteredQuery extends Query {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
-        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
+        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSetIterator.empty() : docIdSet.iterator();
         if (docIdSetIterator == null) {
-          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
+          docIdSetIterator = DocIdSetIterator.empty();
         }
         if (docIdSetIterator.advance(i) == i) {
           return inner;
@@ -217,6 +217,11 @@ public class FilteredQuery extends Query {
         throws IOException {
       return scorer.intervals(collectIntervals);
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
   
   /**
@@ -242,11 +247,11 @@ public class FilteredQuery extends Query {
     // optimization: we are topScorer and collect directly using short-circuited algo
     @Override
     public final void score(Collector collector) throws IOException {
-      int primDoc = primaryNext();
-      int secDoc = secondary.advance(primDoc);
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:
       collector.setScorer(scorer);
+      int primDoc = primaryNext();
+      int secDoc = secondary.advance(primDoc);
       for (;;) {
         if (primDoc == secDoc) {
           // Check if scorer has exhausted, only before collecting.
@@ -317,6 +322,11 @@ public class FilteredQuery extends Query {
         throws IOException {
       return scorer.intervals(collectIntervals);
     }
+
+    @Override
+    public long cost() {
+      return Math.min(primary.cost(), secondary.cost());
+    }
   }
   
   // TODO once we have way to figure out if we use RA or LeapFrog we can remove this scorer
@@ -357,7 +367,7 @@ public class FilteredQuery extends Query {
     
     if (queryRewritten != query) {
       // rewrite to a new FilteredQuery wrapping the rewritten query
-      final Query rewritten = new FilteredQuery(queryRewritten, filter);
+      final Query rewritten = new FilteredQuery(queryRewritten, filter, strategy);
       rewritten.setBoost(this.getBoost());
       return rewritten;
     } else {
@@ -374,6 +384,11 @@ public class FilteredQuery extends Query {
   /** Returns this FilteredQuery's filter */
   public final Filter getFilter() {
     return filter;
+  }
+  
+  /** Returns this FilteredQuery's {@link FilterStrategy} */
+  public FilterStrategy getFilterStrategy() {
+    return this.strategy;
   }
 
   // inherit javadoc
@@ -525,7 +540,7 @@ public class FilteredQuery extends Query {
       }
       
       final Bits filterAcceptDocs = docIdSet.bits();
-        // force if RA is requested
+      // force if RA is requested
       final boolean useRandomAccess = (filterAcceptDocs != null && (useRandomAccess(filterAcceptDocs, firstFilterDoc)));
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs

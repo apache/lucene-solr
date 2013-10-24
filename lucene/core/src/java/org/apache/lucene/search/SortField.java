@@ -71,17 +71,9 @@ public class SortField {
      * lower values are at the front. */
     DOUBLE,
 
-    /** Sort using term values as encoded Shorts.  Sort values are Short and
-     * lower values are at the front. */
-    SHORT,
-
     /** Sort using a custom Comparator.  Sort values are any Comparable and
      * sorting is done according to natural order. */
     CUSTOM,
-
-    /** Sort using term values as encoded Bytes.  Sort values are Byte and
-     * lower values are at the front. */
-    BYTE,
 
     /** Sort using term values as Strings, but comparing by
      * value (using String.compareTo) for all comparisons.
@@ -164,8 +156,6 @@ public class SortField {
   public SortField(String field, FieldCache.Parser parser, boolean reverse) {
     if (parser instanceof FieldCache.IntParser) initFieldType(field, Type.INT);
     else if (parser instanceof FieldCache.FloatParser) initFieldType(field, Type.FLOAT);
-    else if (parser instanceof FieldCache.ShortParser) initFieldType(field, Type.SHORT);
-    else if (parser instanceof FieldCache.ByteParser) initFieldType(field, Type.BYTE);
     else if (parser instanceof FieldCache.LongParser) initFieldType(field, Type.LONG);
     else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, Type.DOUBLE);
     else {
@@ -177,7 +167,7 @@ public class SortField {
   }
   
   public SortField setMissingValue(Object missingValue) {
-    if (type != Type.BYTE && type != Type.SHORT && type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
+    if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
       throw new IllegalArgumentException( "Missing value only works for numeric types" );
     }
     this.missingValue = missingValue;
@@ -257,7 +247,6 @@ public class SortField {
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
-    String dv = useIndexValues ? " [dv]" : "";
     switch (type) {
       case SCORE:
         buffer.append("<score>");
@@ -268,23 +257,15 @@ public class SortField {
         break;
 
       case STRING:
-        buffer.append("<string" + dv + ": \"").append(field).append("\">");
+        buffer.append("<string" + ": \"").append(field).append("\">");
         break;
 
       case STRING_VAL:
-        buffer.append("<string_val" + dv + ": \"").append(field).append("\">");
-        break;
-
-      case BYTE:
-        buffer.append("<byte: \"").append(field).append("\">");
-        break;
-
-      case SHORT:
-        buffer.append("<short: \"").append(field).append("\">");
+        buffer.append("<string_val" + ": \"").append(field).append("\">");
         break;
 
       case INT:
-        buffer.append("<int" + dv + ": \"").append(field).append("\">");
+        buffer.append("<int" + ": \"").append(field).append("\">");
         break;
 
       case LONG:
@@ -292,11 +273,11 @@ public class SortField {
         break;
 
       case FLOAT:
-        buffer.append("<float" + dv + ": \"").append(field).append("\">");
+        buffer.append("<float" + ": \"").append(field).append("\">");
         break;
 
       case DOUBLE:
-        buffer.append("<double" + dv + ": \"").append(field).append("\">");
+        buffer.append("<double" + ": \"").append(field).append("\">");
         break;
 
       case CUSTOM:
@@ -347,16 +328,6 @@ public class SortField {
     return hash;
   }
 
-  private boolean useIndexValues;
-
-  public void setUseIndexValues(boolean b) {
-    useIndexValues = b;
-  }
-
-  public boolean getUseIndexValues() {
-    return useIndexValues;
-  }
-
   private Comparator<BytesRef> bytesComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
 
   public void setBytesComparator(Comparator<BytesRef> b) {
@@ -389,18 +360,10 @@ public class SortField {
       return new FieldComparator.DocComparator(numHits);
 
     case INT:
-      if (useIndexValues) {
-        return new FieldComparator.IntDocValuesComparator(numHits, field);
-      } else {
-        return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
-      }
+      return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
 
     case FLOAT:
-      if (useIndexValues) {
-        return new FieldComparator.FloatDocValuesComparator(numHits, field);
-      } else {
-        return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
-      }
+      return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
 
     case LONG:
       return new FieldComparator.LongComparator(numHits, field, parser, (Long) missingValue);
@@ -408,29 +371,15 @@ public class SortField {
     case DOUBLE:
       return new FieldComparator.DoubleComparator(numHits, field, parser, (Double) missingValue);
 
-    case BYTE:
-      return new FieldComparator.ByteComparator(numHits, field, parser, (Byte) missingValue);
-
-    case SHORT:
-      return new FieldComparator.ShortComparator(numHits, field, parser, (Short) missingValue);
-
     case CUSTOM:
       assert comparatorSource != null;
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case STRING:
-      if (useIndexValues) {
-        return new FieldComparator.TermOrdValDocValuesComparator(numHits, field);
-      } else {
-        return new FieldComparator.TermOrdValComparator(numHits, field);
-      }
+      return new FieldComparator.TermOrdValComparator(numHits, field);
 
     case STRING_VAL:
-      if (useIndexValues) {
-        return new FieldComparator.TermValDocValuesComparator(numHits, field);
-      } else {
-        return new FieldComparator.TermValComparator(numHits, field);
-      }
+      return new FieldComparator.TermValComparator(numHits, field);
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
@@ -452,5 +401,10 @@ public class SortField {
    */
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
+  }
+  
+  /** Whether the relevance score is needed to sort documents. */
+  public boolean needsScores() {
+    return type == Type.SCORE;
   }
 }

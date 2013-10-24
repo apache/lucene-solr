@@ -22,7 +22,16 @@ import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-public class TestFixedBitSet extends LuceneTestCase {
+public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
+
+  @Override
+  public FixedBitSet copyOf(BitSet bs, int length) throws IOException {
+    final FixedBitSet set = new FixedBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return set;
+  }
 
   void doGet(BitSet a, FixedBitSet b) {
     int max = b.length();
@@ -319,7 +328,50 @@ public class TestFixedBitSet extends LuceneTestCase {
     
     checkNextSetBitArray(new int[0], setBits.length + random().nextInt(10));
   }
+  
+  public void testGrow() {
+    FixedBitSet bits = new FixedBitSet(5);
+    bits.set(1);
+    bits.set(4);
+    
+    FixedBitSet newBits = new FixedBitSet(bits, 8); // grow within the word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+
+    newBits = new FixedBitSet(bits, 72); // grow beyond one word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+  }
+  
+  public void testShrink() {
+    FixedBitSet bits = new FixedBitSet(72);
+    bits.set(1);
+    bits.set(4);
+    bits.set(69);
+    
+    FixedBitSet newBits = new FixedBitSet(bits, 66); // shrink within the word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+    boolean hitError = true;
+    try {
+      newBits.get(69);
+      hitError = false;
+    } catch (AssertionError e) {
+      hitError = true;
+    }
+    assertTrue(hitError);
+
+    newBits = new FixedBitSet(bits, 8); // shrink beyond one word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+    hitError = true;
+    try {
+      newBits.get(69);
+      hitError = false;
+    } catch (AssertionError e) {
+      hitError = true;
+    }
+    assertTrue(hitError);
+  }
+  
 }
-
-
-

@@ -81,5 +81,9 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
     }
     return doc;
   }
-  
+
+  @Override
+  public long cost() {
+    return _innerIter.cost();
+  }
 }

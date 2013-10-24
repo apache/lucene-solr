@@ -42,7 +42,7 @@ public class DOMUtil {
     outer: for (int j=0; j<attrs.getLength(); j++) {
       Node attr = attrs.item(j);
 
-      // automaticly exclude things in the xml namespace, ie: xml:base
+      // automatically exclude things in the xml namespace, ie: xml:base
       if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
 
       String attrName = attr.getNodeName();
@@ -234,7 +234,7 @@ public class DOMUtil {
          according to the DOM Level-3 Core documentation - which
          specifies that the Attr's children should have their
          textContent concated (Attr's can have a single child which
-         is either Text node or an EntityRefrence).  In practice,
+         is either Text node or an EntityReference).  In practice,
          DOM implementations do not seem to use child nodes of
          Attributes, storing the "text" directly as the nodeValue.
          Fortunately, the DOM Spec indicates that when Attr.nodeValue
@@ -289,23 +289,19 @@ public class DOMUtil {
 
       // handle child by node type
       if (child.getNodeType() == Node.TEXT_NODE) {
-        child.setNodeValue(substituteProperty(child.getNodeValue(), properties));
+        child.setNodeValue(PropertiesUtil.substituteProperty(child.getNodeValue(), properties));
       } else if (child.getNodeType() == Node.ELEMENT_NODE) {
         // handle child elements with recursive call
         NamedNodeMap attributes = child.getAttributes();
         for (int i = 0; i < attributes.getLength(); i++) {
           Node attribute = attributes.item(i);
-          attribute.setNodeValue(substituteProperty(attribute.getNodeValue(), properties));
+          attribute.setNodeValue(PropertiesUtil.substituteProperty(attribute.getNodeValue(), properties));
         }
         substituteProperties(child, properties);
       }
     }
   }
-
-  /*
-   * This method borrowed from Ant's PropertyHelper.replaceProperties:
-   *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
-   */
+  
   public static String substituteProperty(String value, Properties coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
@@ -343,7 +339,7 @@ public class DOMUtil {
     }
     return sb.toString();
   }
-
+  
   /*
    * This method borrowed from Ant's PropertyHelper.parsePropertyStringDefault:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
@@ -401,5 +397,7 @@ public class DOMUtil {
           fragments.add(value.substring(prev));
       }
   }
+
+
 
 }

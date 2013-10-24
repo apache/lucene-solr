@@ -17,19 +17,47 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 
 
 /**
  * 
- *
+ * 
  * @since solr 1.3
  */
-public abstract class SolrResponse implements Serializable
-{
+public abstract class SolrResponse implements Serializable {
   public abstract long getElapsedTime();
-  public abstract void setResponse(  NamedList<Object> rsp );
+  
+  public abstract void setResponse(NamedList<Object> rsp);
+  
   public abstract NamedList<Object> getResponse();
+  
+  public static byte[] serializable(SolrResponse response) {
+    try {
+      ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+      ObjectOutputStream outputStream = new ObjectOutputStream(byteStream);
+      outputStream.writeObject(response);
+      return byteStream.toByteArray();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+  }
+  
+  public static SolrResponse deserialize(byte[] bytes) {
+    try {
+      ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
+      ObjectInputStream inputStream = new ObjectInputStream(byteStream);
+      return (SolrResponse) inputStream.readObject();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+  }
 }

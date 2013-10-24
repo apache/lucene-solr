@@ -97,8 +97,8 @@ var system_info = function( element, system_data )
 {
   // -- usage
 
-  var load_average = ( system_data['system']['uptime'] || '' ).match( /load average: (.+)/ );
-  if( load_average && load_average[1] )
+  var load_average = ( system_data['system']['uptime'] || '' ).match( /load averages?: (\d+[.,]\d\d),? (\d+[.,]\d\d),? (\d+[.,]\d\d)/ );
+  if( load_average )
   {
     var hl = $( '#system h2', element );
 
@@ -106,20 +106,20 @@ var system_info = function( element, system_data )
       .remove();
 
     hl
-      .append( ' <small class="bar-desc">' + load_average[1].split( ', ' ).join( '  ' ).esc() + '</small>' );
+      .append( ' <small class="bar-desc">' + load_average.slice( 1 ).join( '  ' ).replace( /,/g, '.' ).esc() + '</small>' );
   }
 
   // -- physical-memory-bar
     
   var bar_holder = $( '#physical-memory-bar', element );
-  if( !system_data['system']['totalPhysicalMemorySize'] )
+  if( system_data['system']['totalPhysicalMemorySize'] === undefined || system_data['system']['freePhysicalMemorySize'] === undefined )
   {
     bar_holder.hide();
   }
   else
   {
     bar_holder.show();
-    
+
     var bar_data = {
       'max' : parse_memory_value( system_data['system']['totalPhysicalMemorySize'] ),
       'total' : parse_memory_value( system_data['system']['totalPhysicalMemorySize'] - system_data['system']['freePhysicalMemorySize'] )
@@ -131,7 +131,7 @@ var system_info = function( element, system_data )
   // -- swap-space-bar
     
   var bar_holder = $( '#swap-space-bar', element );
-  if( !system_data['system']['totalSwapSpaceSize'] )
+  if( system_data['system']['totalSwapSpaceSize'] === undefined || system_data['system']['freeSwapSpaceSize'] === undefined )
   {
     bar_holder.hide();
   }
@@ -147,10 +147,10 @@ var system_info = function( element, system_data )
     generate_bar( bar_holder, bar_data, true );
   }
 
-  // -- swap-space-bar
+  // -- file-descriptor-bar
     
   var bar_holder = $( '#file-descriptor-bar', element );
-  if( !system_data['system']['maxFileDescriptorCount'] )
+  if( system_data['system']['maxFileDescriptorCount'] === undefined || system_data['system']['openFileDescriptorCount'] === undefined )
   {
     bar_holder.hide();
   }
@@ -172,32 +172,42 @@ var system_info = function( element, system_data )
 
   // -- memory-bar
 
-  var jvm_memory = $.extend
-  (
-    {
-      'free' : null,
-      'total' : null,
-      'max' : null,
-      'used' : null,
-      'raw' : {
+  var bar_holder = $( '#jvm-memory-bar', element );
+  if( system_data['jvm']['memory'] === undefined )
+  {
+    bar_holder.hide();
+  }
+  else
+  {
+    bar_holder.show();
+
+    var jvm_memory = $.extend
+    (
+      {
         'free' : null,
         'total' : null,
         'max' : null,
         'used' : null,
-        'used%' : null
-      }
-    },
-    system_data['jvm']['memory']
-  );
-    
-  var bar_holder = $( '#jvm-memory-bar', element );
-  var bar_data = {
-    'max' : parse_memory_value( jvm_memory['raw']['max'] || jvm_memory['max'] ),
-    'total' : parse_memory_value( jvm_memory['raw']['total'] || jvm_memory['total'] ),
-    'used' : parse_memory_value( jvm_memory['raw']['used'] || jvm_memory['used'] )
-  };
+        'raw' : {
+          'free' : null,
+          'total' : null,
+          'max' : null,
+          'used' : null,
+          'used%' : null
+        }
+      },
+      system_data['jvm']['memory']
+    );
 
-  generate_bar( bar_holder, bar_data, true );
+    var bar_data = {
+      'max' : parse_memory_value( jvm_memory['raw']['max'] || jvm_memory['max'] ),
+      'total' : parse_memory_value( jvm_memory['raw']['total'] || jvm_memory['total'] ),
+      'used' : parse_memory_value( jvm_memory['raw']['used'] || jvm_memory['used'] )
+    };
+
+    generate_bar( bar_holder, bar_data, true );
+  }
+
 }
 
 // #/
@@ -207,9 +217,6 @@ sammy.get
   function( context )
   {
     var content_element = $( '#content' );
-
-    $( '#menu-wrapper #index' )
-      .addClass( 'active' );
 
     content_element
       .html( '<div id="index"></div>' );
@@ -231,10 +238,6 @@ sammy.get
     
           var data = {
             'start_time' : app.dashboard_values['jvm']['jmx']['startTime'],
-            'host' : app.dashboard_values['core']['host'] || '-',
-            'dir_instance' : app.dashboard_values['core']['directory']['instance'],
-            'dir_data' : app.dashboard_values['core']['directory']['data'],
-            'dir_index' : app.dashboard_values['core']['directory']['index'],
             'jvm_version' : app.dashboard_values['jvm']['name'] + ' (' + app.dashboard_values['jvm']['version'] + ')',
             'processors' : app.dashboard_values['jvm']['processors'],
             'solr_spec_version' : app.dashboard_values['lucene']['solr-spec-version'] || '-',
@@ -242,11 +245,6 @@ sammy.get
             'lucene_spec_version' : app.dashboard_values['lucene']['lucene-spec-version'] || '-',
             'lucene_impl_version' : app.dashboard_values['lucene']['lucene-impl-version'] || '-'
           };
-
-          if( app.dashboard_values['core']['directory']['cwd'] )
-          {
-            data['dir_cwd'] = app.dashboard_values['core']['directory']['cwd'];
-          }
     
           for( var key in data )
           {                                                        
@@ -305,7 +303,7 @@ sammy.get
                 $.ajax
                 (
                   {
-                    url : environment_basepath + '/admin/system?wt=json',
+                    url : config.solr_path + '/admin/info/system?wt=json',
                     dataType : 'json',
                     context : this,
                     beforeSend : function( arr, form, options )

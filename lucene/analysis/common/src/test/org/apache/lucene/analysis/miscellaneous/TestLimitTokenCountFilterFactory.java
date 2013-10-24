@@ -16,40 +16,46 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
-public class TestLimitTokenCountFilterFactory extends BaseTokenStreamTestCase {
+public class TestLimitTokenCountFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  public void test() throws IOException {
-    LimitTokenCountFilterFactory factory = new LimitTokenCountFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY, "3");
-    factory.init(args);
-    String test = "A1 B2 C3 D4 E5 F6";
-    MockTokenizer tok = new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false);
+  public void test() throws Exception {
+    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
+    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     // LimitTokenCountFilter doesn't consume the entire stream that it wraps
-    tok.setEnableChecks(false); 
-    TokenStream stream = factory.create(tok);
+    tokenizer.setEnableChecks(false);
+    TokenStream stream = tokenizer;
+    stream = tokenFilterFactory("LimitTokenCount",
+        "maxTokenCount", "3").create(stream);
     assertTokenStreamContents(stream, new String[] { "A1", "B2", "C3" });
+  }
 
+  public void testRequired() throws Exception {
     // param is required
-    factory = new LimitTokenCountFilterFactory();
-    args = new HashMap<String, String>();
-    IllegalArgumentException iae = null;
     try {
-      factory.init(args);
+      tokenFilterFactory("LimitTokenCount");
+      fail();
     } catch (IllegalArgumentException e) {
       assertTrue("exception doesn't mention param: " + e.getMessage(),
                  0 < e.getMessage().indexOf(LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY));
-      iae = e;
     }
-    assertNotNull("no exception thrown", iae);
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("LimitTokenCount", 
+          "maxTokenCount", "3", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

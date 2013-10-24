@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -65,7 +64,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private static class PayloadAnalyzer extends Analyzer {
 
     private PayloadAnalyzer() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override
@@ -230,7 +229,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), false);
 
     IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher theSearcher = new IndexSearcher(reader);
+    IndexSearcher theSearcher = newSearcher(reader);
     theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);

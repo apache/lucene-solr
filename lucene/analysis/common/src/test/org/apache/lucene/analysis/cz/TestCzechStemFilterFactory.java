@@ -20,23 +20,31 @@ package org.apache.lucene.analysis.cz;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Czech stem filter factory is working.
  */
-public class TestCzechStemFilterFactory extends BaseTokenStreamTestCase {
+public class TestCzechStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually stems text.
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("angličtí");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    CzechStemFilterFactory factory = new CzechStemFilterFactory();
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("CzechStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "anglick" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("CzechStem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

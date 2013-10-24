@@ -64,6 +64,10 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException(); 
     }
+    @Override
+    public long cost() {
+      return scores.length;
+    }
   }
   
   private static final class ScoreCachingCollector extends Collector {

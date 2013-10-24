@@ -37,4 +37,17 @@ public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
     }
     return sim;
   }
+
+  /** 
+   * Returns the similarity in use for the field, 
+   * after asserting that it implements the specified class 
+   */
+  protected <T extends Similarity> T getSimilarity(String field, 
+                                                   Class<T> clazz) {
+    Similarity sim = getSimilarity(field);
+    assertTrue("Similarity for Field " + field + 
+               " does not match expected class: " + clazz.getName(), 
+               clazz.isInstance(sim));
+    return clazz.cast(sim);
+  }
 }

@@ -65,7 +65,8 @@ public class ToChildBlockJoinQuery extends Query {
    * 
    * @param parentQuery Query that matches parent documents
    * @param parentsFilter Filter (must produce FixedBitSet
-   * per-segment) identifying the parent documents.
+   * per-segment, like {@link FixedBitSetCachingWrapperFilter})
+   * identifying the parent documents.
    * @param doScores true if parent scores should be calculated
    */
   public ToChildBlockJoinQuery(Query parentQuery, Filter parentsFilter, boolean doScores) {
@@ -307,6 +308,11 @@ public class ToChildBlockJoinQuery extends Query {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       return parentScorer.intervals(collectIntervals);
     }
+
+    @Override
+    public long cost() {
+      return parentScorer.cost();
+    }
   }
 
   @Override
@@ -340,7 +346,8 @@ public class ToChildBlockJoinQuery extends Query {
       final ToChildBlockJoinQuery other = (ToChildBlockJoinQuery) _other;
       return origParentQuery.equals(other.origParentQuery) &&
         parentsFilter.equals(other.parentsFilter) &&
-        doScores == other.doScores;
+        doScores == other.doScores &&
+        super.equals(other);
     } else {
       return false;
     }
@@ -349,7 +356,7 @@ public class ToChildBlockJoinQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = 1;
+    int hash = super.hashCode();
     hash = prime * hash + origParentQuery.hashCode();
     hash = prime * hash + new Boolean(doScores).hashCode();
     hash = prime * hash + parentsFilter.hashCode();

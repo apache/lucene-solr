@@ -1,14 +1,19 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.range.RangeAccumulator;
+import org.apache.lucene.facet.range.RangeFacetRequest;
+import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,121 +33,140 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Driver for Accumulating facets of faceted search requests over given
- * documents.
+ * Accumulates the facets defined in the {@link FacetSearchParams}.
  * 
  * @lucene.experimental
  */
 public abstract class FacetsAccumulator {
 
-  /**
-   * Default threshold for using the complements optimization.
-   * If accumulating facets for a document set larger than this ratio of the index size than 
-   * perform the complement optimization.
-   * @see #setComplementThreshold(double) for more info on the complements optimization.  
-   */
-  public static final double DEFAULT_COMPLEMENT_THRESHOLD = 0.6;
+  // TODO this should be final, but currently SamplingAccumulator modifies the params.
+  // need to review the class and if it's resolved, make it final
+  public /*final*/ FacetSearchParams searchParams;
 
-  /**
-   * Passing this to {@link #setComplementThreshold(double)} will disable using complement optimization.
-   */
-  public static final double DISABLE_COMPLEMENT = Double.POSITIVE_INFINITY; // > 1 actually
-
-  /**
-   * Passing this to {@link #setComplementThreshold(double)} will force using complement optimization.
-   */
-  public static final double FORCE_COMPLEMENT = 0; // <=0  
-
-  private double complementThreshold = DEFAULT_COMPLEMENT_THRESHOLD;  
-
-  protected final TaxonomyReader taxonomyReader;
-  protected final IndexReader indexReader;
-  protected FacetSearchParams searchParams;
-
-  private boolean allowLabeling = true;
-
-  public FacetsAccumulator(FacetSearchParams searchParams,
-                            IndexReader indexReader,
-                            TaxonomyReader taxonomyReader) {
-    this.indexReader = indexReader;
-    this.taxonomyReader = taxonomyReader;
-    this.searchParams = searchParams;
+  /** Constructor with the given search params. */
+  protected FacetsAccumulator(FacetSearchParams fsp) {
+    this.searchParams = fsp;
   }
 
   /**
-   * Accumulate facets over given documents, according to facet requests in effect.
-   * @param docids documents (and their scores) for which facets are Accumulated.
-   * @return Accumulated facets.  
-   * @throws IOException on error.
-   */
-  // internal API note: it was considered to move the docids into the constructor as well, 
-  // but this prevents nice extension capabilities, especially in the way that 
-  // Sampling Accumulator works with the (any) delegated accumulator.
-  public abstract List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException;
-
-  /**
-   * Returns the complement threshold.
-   * @see #setComplementThreshold(double)
-   */
-  public double getComplementThreshold() {
-    return complementThreshold;
-  }
-
-  /**
-   * Set the complement threshold.
-   * This threshold will dictate whether the complements optimization is applied.
-   * The optimization is to count for less documents. It is useful when the same 
-   * FacetSearchParams are used for varying sets of documents. The first time 
-   * complements is used the "total counts" are computed - counting for all the 
-   * documents in the collection. Then, only the complementing set of documents
-   * is considered, and used to decrement from the overall counts, thereby 
-   * walking through less documents, which is faster.
+   * Creates a {@link FacetsAccumulator} for the given facet requests. This
+   * method supports {@link RangeAccumulator} and
+   * {@link TaxonomyFacetsAccumulator} by dividing the facet requests into
+   * {@link RangeFacetRequest} and the rest.
    * <p>
-   * For the default settings see {@link #DEFAULT_COMPLEMENT_THRESHOLD}.
-   * <p>
-   * To forcing complements in all cases pass {@link #FORCE_COMPLEMENT}.
-   * This is mostly useful for testing purposes, as forcing complements when only 
-   * tiny fraction of available documents match the query does not make sense and 
-   * would incur performance degradations.
-   * <p>
-   * To disable complements pass {@link #DISABLE_COMPLEMENT}.
-   * @param complementThreshold the complement threshold to set
-   * @see #getComplementThreshold()
+   * If both types of facet requests are used, it returns a
+   * {@link MultiFacetsAccumulator} and the facet results returned from
+   * {@link #accumulate(List)} may not be in the same order as the given facet
+   * requests.
+   * 
+   * @param fsp
+   *          the search params define the facet requests and the
+   *          {@link FacetIndexingParams}
+   * @param indexReader
+   *          the {@link IndexReader} used for search
+   * @param taxoReader
+   *          the {@link TaxonomyReader} used for search
+   * @param arrays
+   *          the {@link FacetArrays} which the accumulator should use to store
+   *          the categories weights in. Can be {@code null}.
    */
-  public void setComplementThreshold(double complementThreshold) {
-    this.complementThreshold = complementThreshold;
-  }
-
-  /**
-   * Check if labeling is allowed for this accumulator.
-   * <p>
-   * By default labeling is allowed.
-   * This allows one accumulator to invoke other accumulators for accumulation
-   * but keep to itself the responsibility of labeling.
-   * This might br handy since labeling is a costly operation. 
-   * @return true of labeling is allowed for this accumulator
-   * @see #setAllowLabeling(boolean)
-   */
-  protected boolean isAllowLabeling() {
-    return allowLabeling;
-  }
-
-  /**
-   * Set whether labeling is allowed for this accumulator.
-   * @param allowLabeling new setting for allow labeling
-   * @see #isAllowLabeling()
-   */
-  protected void setAllowLabeling(boolean allowLabeling) {
-    this.allowLabeling = allowLabeling;
-  }
-
-  /** check if all requests are complementable */
-  protected boolean mayComplement() {
-    for (FacetRequest freq:searchParams.getFacetRequests()) {
-      if (!freq.supportsComplements()) {
-        return false;
+  public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader, 
+      FacetArrays arrays) {
+    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
+      return new OldFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
+    }
+    
+    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
+    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
+    for (FacetRequest fr : fsp.facetRequests) {
+      if (fr instanceof RangeFacetRequest) {
+        rangeRequests.add(fr);
+      } else {
+        nonRangeRequests.add(fr);
       }
     }
-    return true;
+
+    if (rangeRequests.isEmpty()) {
+      return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
+    } else if (nonRangeRequests.isEmpty()) {
+      return new RangeAccumulator(rangeRequests);
+    } else {
+      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
+      FacetsAccumulator accumulator = new TaxonomyFacetsAccumulator(searchParams, indexReader, taxoReader, arrays);
+      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
+      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
+    }
   }
+  
+  /**
+   * Creates a {@link FacetsAccumulator} for the given facet requests. This
+   * method supports {@link RangeAccumulator} and
+   * {@link SortedSetDocValuesAccumulator} by dividing the facet requests into
+   * {@link RangeFacetRequest} and the rest.
+   * <p>
+   * If both types of facet requests are used, it returns a
+   * {@link MultiFacetsAccumulator} and the facet results returned from
+   * {@link #accumulate(List)} may not be in the same order as the given facet
+   * requests.
+   * 
+   * @param fsp
+   *          the search params define the facet requests and the
+   *          {@link FacetIndexingParams}
+   * @param state
+   *          the {@link SortedSetDocValuesReaderState} needed for accumulating
+   *          the categories
+   * @param arrays
+   *          the {@link FacetArrays} which the accumulator should use to
+   *          store the categories weights in. Can be {@code null}.
+   */
+  public static FacetsAccumulator create(FacetSearchParams fsp, SortedSetDocValuesReaderState state, FacetArrays arrays) throws IOException {
+    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("only default partition size is supported by this method: " + fsp.indexingParams.getPartitionSize());
+    }
+    
+    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
+    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
+    for (FacetRequest fr : fsp.facetRequests) {
+      if (fr instanceof RangeFacetRequest) {
+        rangeRequests.add(fr);
+      } else {
+        nonRangeRequests.add(fr);
+      }
+    }
+    
+    if (rangeRequests.isEmpty()) {
+      return new SortedSetDocValuesAccumulator(state, fsp, arrays);
+    } else if (nonRangeRequests.isEmpty()) {
+      return new RangeAccumulator(rangeRequests);
+    } else {
+      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
+      FacetsAccumulator accumulator = new SortedSetDocValuesAccumulator(state, searchParams, arrays);
+      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
+      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
+    }
+  }
+  
+  /** Returns an empty {@link FacetResult}. */
+  protected static FacetResult emptyResult(int ordinal, FacetRequest fr) {
+    FacetResultNode root = new FacetResultNode(ordinal, 0);
+    root.label = fr.categoryPath;
+    return new FacetResult(fr, root, 0);
+  }
+  
+  /**
+   * Used by {@link FacetsCollector} to build the list of {@link FacetResult
+   * facet results} that match the {@link FacetRequest facet requests} that were
+   * given in the constructor.
+   * 
+   * @param matchingDocs
+   *          the documents that matched the query, per-segment.
+   */
+  public abstract List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException;
+
+  /**
+   * Used by {@link FacetsCollector} to determine if document scores need to be
+   * collected in addition to matching documents.
+   */
+  public abstract boolean requiresDocScores();
+  
 }

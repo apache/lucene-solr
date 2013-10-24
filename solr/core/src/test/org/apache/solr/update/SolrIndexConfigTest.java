@@ -19,13 +19,22 @@ package org.apache.solr.update;
 
 import java.io.File;
 
+import org.apache.solr.core.TestMergePolicyConfig;
+
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.Test;
 
 /**
  * Testcase for {@link SolrIndexConfig}
+ *
+ * @see TestMergePolicyConfig
  */
 public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
@@ -34,7 +43,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     try {
       SolrConfig solrConfig = new SolrConfig("bad-mp-solrconfig.xml");
       SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
-      IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", null);
+      IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
       solrIndexConfig.toIndexWriterConfig(indexSchema);
       fail("a mergePolicy should have an empty constructor in order to be instantiated in Solr thus this should fail ");
     } catch (Exception e) {
@@ -45,14 +54,39 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
     SolrConfig solrConfig = new SolrConfig("solr" + File.separator
-        + "collection1", "solrconfig-mergepolicy.xml", null);
+        + "collection1", "solrconfig-tieredmergepolicy.xml", null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
         null);
     assertNotNull(solrIndexConfig);
-    assertEquals("org.apache.lucene.index.TieredMergePolicy",
-        solrIndexConfig.defaultMergePolicyClassName);
-    IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", null);
-    solrIndexConfig.toIndexWriterConfig(indexSchema);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+
+    assertNotNull("null mp", iwc.getMergePolicy());
+    assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
+    TieredMergePolicy mp = (TieredMergePolicy) iwc.getMergePolicy();
+    assertEquals("mp.maxMergeAtOnceExplicit", 19, mp.getMaxMergeAtOnceExplicit());
+    assertEquals("mp.segmentsPerTier",9,(int)mp.getSegmentsPerTier());
+
+    assertNotNull("null ms", iwc.getMergeScheduler());
+    assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
+    ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler)  iwc.getMergeScheduler();
+    assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
+    assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
+
+  }
+  
+  public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
+    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
+        + "collection1", "solrconfig-warmer.xml", null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    assertNotNull(solrIndexConfig);
+    assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
+    assertEquals(SimpleMergedSegmentWarmer.class.getName(),
+        solrIndexConfig.mergedSegmentWarmerInfo.className);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+    assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
   }
 
 }

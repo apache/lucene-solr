@@ -20,9 +20,28 @@
   <primitive>true</primitive>
   <annotatorImplementationName>org.apache.lucene.analysis.uima.an.SampleWSTokenizerAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>DummyPoSTagger</name>
+    <name>WSTokenizer</name>
     <version>1.0</version>
     <vendor>ASF</vendor>
+    <configurationParameters>
+      <configurationParameter>
+        <name>line-end</name>
+        <description>
+          the string used as line end
+        </description>
+        <type>String</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+      </configurationParameter>
+    </configurationParameters>
+    <configurationParameterSettings>
+        <nameValuePair>
+          <name>line-end</name>
+          <value>
+            <string>\n</string>
+          </value>
+        </nameValuePair>
+    </configurationParameterSettings>
     <typeSystemDescription>
       <types>
         <typeDescription>

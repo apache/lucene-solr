@@ -18,6 +18,8 @@
 package org.apache.solr.search;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.util.Map;
  
@@ -90,20 +92,12 @@ public abstract class SolrCacheBase {
    * Returns a "Hit Ratio" (ie: max of 1.00, not a percentage) suitable for 
    * display purposes.
    */
-  protected static String calcHitRatio(long lookups, long hits) {
-    if (lookups==0) return "0.00";
-    if (lookups==hits) return "1.00";
-    int hundredths = (int)(hits*100/lookups);   // rounded down
-    if (hundredths < 10) return "0.0" + hundredths;
-    return "0." + hundredths;
-
-    /*** code to produce a percent, if we want it...
-    int ones = (int)(hits*100 / lookups);
-    int tenths = (int)(hits*1000 / lookups) - ones*10;
-    return Integer.toString(ones) + '.' + tenths;
-    ***/
+  protected static float calcHitRatio(long lookups, long hits) {
+    return (lookups == 0) ? 0.0f :
+        BigDecimal.valueOf((double) hits / (double) lookups)
+            .setScale(2, RoundingMode.HALF_EVEN)
+            .floatValue();
   }
-
 
   public String getVersion() {
     return SolrCore.version;

@@ -18,9 +18,10 @@ package org.apache.lucene.queries.function;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -46,20 +47,20 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
 
     Document doc = new Document();
-    Field field = new StringField("value", "", Field.Store.YES);
+    Field field = new IntField("value", 0, Field.Store.YES);
     doc.add(field);
 
     // Save docs unsorted (decreasing value n, n-1, ...)
     final int NUM_VALS = 5;
     for (int val = NUM_VALS; val > 0; val--) {
-      field.setStringValue(Integer.toString(val));
+      field.setIntValue(val);
       writer.addDocument(doc);
     }
 
     // Open index
     IndexReader reader = writer.getReader();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // Get ValueSource from FieldCache
     IntFieldSource src = new IntFieldSource("value");
@@ -69,7 +70,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
 
     // Get hits sorted by our FunctionValues (ascending values)
     Query q = new MatchAllDocsQuery();
-    TopDocs hits = searcher.search(q, Integer.MAX_VALUE, orderBy);
+    TopDocs hits = searcher.search(q, reader.maxDoc(), orderBy);
     assertEquals(NUM_VALS, hits.scoreDocs.length);
     // Verify that sorting works in general
     int i = 0;
@@ -81,7 +82,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     // Now get hits after hit #2 using IS.searchAfter()
     int afterIdx = 1;
     FieldDoc afterHit = (FieldDoc) hits.scoreDocs[afterIdx];
-    hits = searcher.searchAfter(afterHit, q, Integer.MAX_VALUE, orderBy);
+    hits = searcher.searchAfter(afterHit, q, reader.maxDoc(), orderBy);
 
     // Expected # of hits: NUM_VALS - 2
     assertEquals(NUM_VALS - (afterIdx + 1), hits.scoreDocs.length);

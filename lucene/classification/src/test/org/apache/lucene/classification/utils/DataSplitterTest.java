@@ -131,9 +131,15 @@ public class DataSplitterTest extends LuceneTestCase {
       closeQuietly(testReader);
       closeQuietly(cvReader);
     } finally {
-      trainingIndex.close();
-      testIndex.close();
-      crossValidationIndex.close();
+      if (trainingIndex != null) {
+        trainingIndex.close();
+      }
+      if (testIndex != null) {
+        testIndex.close();
+      }
+      if (crossValidationIndex != null) {
+        crossValidationIndex.close();
+      }
     }
   }
 

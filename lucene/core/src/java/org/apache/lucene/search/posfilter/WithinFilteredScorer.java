@@ -17,6 +17,8 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.similarities.Similarity;
+
 import java.io.IOException;
 
 public class WithinFilteredScorer extends PositionFilteredScorer {
@@ -24,8 +26,8 @@ public class WithinFilteredScorer extends PositionFilteredScorer {
   private final int slop;
   private final PositionFilteredScorer wrappedScorer;
 
-  public WithinFilteredScorer(PositionFilteredScorer wrappedScorer, int slop) {
-    super(wrappedScorer);
+  public WithinFilteredScorer(PositionFilteredScorer wrappedScorer, int slop, Similarity.SimScorer simScorer) {
+    super(wrappedScorer, simScorer);
     this.slop = slop;
     this.wrappedScorer = wrappedScorer;
   }

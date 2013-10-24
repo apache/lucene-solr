@@ -19,28 +19,22 @@ package org.apache.lucene.analysis.id;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Indonesian stem filter factory is working.
  */
-public class TestIndonesianStemFilterFactory extends BaseTokenStreamTestCase {
+public class TestIndonesianStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually stems text.
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("dibukukannya");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    IndonesianStemFilterFactory factory = new IndonesianStemFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    factory.init(args);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("IndonesianStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "buku" });
   }
   
@@ -49,12 +43,18 @@ public class TestIndonesianStemFilterFactory extends BaseTokenStreamTestCase {
    */
   public void testStemmingInflectional() throws Exception {
     Reader reader = new StringReader("dibukukannya");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    IndonesianStemFilterFactory factory = new IndonesianStemFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("stemDerivational", "false");
-    factory.init(args);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("IndonesianStem", "stemDerivational", "false").create(stream);
     assertTokenStreamContents(stream, new String[] { "dibukukan" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("IndonesianStem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>10</version>
+    <version>13</version>
     <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
@@ -38,17 +38,20 @@
     <module>solr</module>
   </modules>
   <properties>
-    <top-level>..</top-level>
     <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
     <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
     <base.specification.version>5.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.6</java.compat.version>
-    <jetty.version>8.1.8.v20121106</jetty.version>
-    <slf4j.version>1.6.4</slf4j.version>
-    <tika.version>1.2</tika.version>
-    <httpcomponents.version>4.1.3</httpcomponents.version>
+    <java.compat.version>1.7</java.compat.version>
+    <jetty.version>8.1.10.v20130312</jetty.version>
+    <slf4j.version>1.6.6</slf4j.version>
+    <log4j.version>1.2.16</log4j.version>
+    <tika.version>1.4</tika.version>
+    <httpcomponents.version>4.2.6</httpcomponents.version>
+    <commons-io.version>2.1</commons-io.version>
+    <restlet.version>2.1.1</restlet.version>
+    <hadoop.version>2.0.5-alpha</hadoop.version>
 
     <!-- RandomizedTesting library system properties -->
     <tests.iters>1</tests.iters>
@@ -147,7 +150,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>13.0.1</version>
+        <version>14.0.1</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
@@ -178,7 +181,12 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.1</version>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>2.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -195,6 +203,21 @@
             <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.noggit</groupId>
+        <artifactId>noggit</artifactId>
+        <version>0.5</version>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+        <artifactId>concurrentlinkedhashmap-lru</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-core</artifactId>
+        <version>1.16</version>
       </dependency>
       <dependency>
         <groupId>commons-lang</groupId>
@@ -243,6 +266,38 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr-runtime</artifactId>
+        <version>3.5</version>
+        <!-- these are dependencies to compile antlr-runtime itself -->
+        <exclusions>
+          <exclusion>
+            <groupId>antlr</groupId>
+            <artifactId>antlr</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.antlr</groupId>
+            <artifactId>stringtemplate</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>4.1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
         <groupId>org.apache.ant</groupId>
         <artifactId>ant</artifactId>
         <version>1.8.2</version>
@@ -274,6 +329,38 @@
         <version>10.9.1.0</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-annotations</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-auth</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop.version}</version>
+        <classifier>tests</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+        <classifier>tests</classifier>
+      </dependency>
+      <dependency>
         <groupId>org.apache.tika</groupId>
         <artifactId>tika-core</artifactId>
         <version>${tika.version}</version>
@@ -283,6 +370,10 @@
         <artifactId>tika-parsers</artifactId>
         <version>${tika.version}</version>
         <exclusions>
+          <exclusion>
+            <groupId>com.adobe.xmp</groupId>
+            <artifactId>xmpcore</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
@@ -296,8 +387,8 @@
             <artifactId>vorbis-java-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>asm</groupId>
-            <artifactId>asm</artifactId>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-debug-all</artifactId>
           </exclusion>
           <exclusion>
             <groupId>org.aspectj</groupId>
@@ -347,13 +438,13 @@
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
-        <artifactId>carrot2-core</artifactId>
-        <version>3.6.2</version>
+        <artifactId>carrot2-mini</artifactId>
+        <version>3.8.0</version>
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
         <artifactId>morfologik-polish</artifactId>
-        <version>1.5.5</version>
+        <version>1.7.1</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
@@ -387,24 +478,49 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty</artifactId>
+        <version>6.1.26</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty-util</artifactId>
+        <version>6.1.26</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet</artifactId>
+        <version>${restlet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.servlet</artifactId>
+        <version>${restlet.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
-      </dependency> 
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-jdk14</artifactId>
+        <artifactId>slf4j-log4j12</artifactId>
         <version>${slf4j.version}</version>
-      </dependency> 
+      </dependency>
       <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
-        <version>${slf4j.version}</version>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>${log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -435,7 +551,7 @@
       <dependency>
         <groupId>com.carrotsearch.randomizedtesting</groupId>
         <artifactId>randomizedtesting-runner</artifactId>
-        <version>2.0.8</version>
+        <version>2.0.10</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -459,6 +575,19 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <version>1.3</version>
+          <configuration>
+            <!--
+              This is the default setting, we don't support too new Java versions.
+              The checker simply passes by default and only prints a warning.
+             -->
+            <failOnUnsupportedJava>false</failOnUnsupportedJava>
+            <targetVersion>${java.compat.version}</targetVersion>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>1.7</version>
@@ -466,12 +595,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>2.4.1</version>
+          <version>2.5</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>3.1</version>
           <configuration>
             <source>${java.compat.version}</source>
             <target>${java.compat.version}</target>
@@ -480,7 +609,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.4</version>
+          <version>2.8</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -490,7 +619,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.0.1</version>
+          <version>1.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -503,40 +632,32 @@
           <version>2.4</version>
           <configuration>
             <archive>
-              <!-- This section should be *exactly* the same under -->
-              <!-- maven-jar-plugin and maven-war-plugin.          -->
-              <!-- If you make changes here, make the same changes -->
-              <!-- in the other location as well.                  -->
-              <manifestEntries>
-                <Extension-Name>${project.groupId}</Extension-Name>
-                <Implementation-Title>${project.groupId}</Implementation-Title>
-                <Specification-Title>${project.name}</Specification-Title>
-                <!-- spec version must match "digit+{.digit+}*" -->
-                <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
-                <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
-                <!-- impl version can be any string -->
-                <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
-                <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
-                <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
-                <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
-              </manifestEntries>
+              <manifest>
+                <addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>false</addDefaultImplementationEntries>
+              </manifest>
             </archive>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.8.1</version>
+          <version>2.9.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.12.4</version>
+          <version>2.15</version>
           <configuration>
             <runOrder>random</runOrder>
             <reportFormat>plain</reportFormat>
@@ -575,11 +696,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>2.2</version>
+          <version>2.3</version>
           <configuration>
             <archive>
               <!-- This section should be *exactly* the same under -->
-              <!-- maven-jar-plugin and maven-war-plugin.          -->
+              <!-- maven-bundle-plugin and maven-war-plugin.          -->
               <!-- If you make changes here, make the same changes -->
               <!-- in the other location as well.                  -->
               <manifestEntries>
@@ -592,6 +713,7 @@
                 <!-- impl version can be any string -->
                 <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
                 <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+                <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
                 <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
                 <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
               </manifestEntries>
@@ -601,12 +723,12 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.7</version>
+          <version>1.8</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.0</version>
+          <version>1.2</version>
         </plugin>
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
@@ -616,7 +738,7 @@
         <plugin>
           <groupId>org.codehaus.gmaven</groupId>
           <artifactId>gmaven-plugin</artifactId>
-          <version>1.4</version>
+          <version>1.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -626,7 +748,7 @@
         <artifactId>gmaven-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-timestamps</id>
+            <id>generate-timestamps-and-get-top-level-basedir</id>
             <phase>validate</phase>
             <goals>
               <goal>execute</goal>
@@ -636,6 +758,7 @@
                 project.properties['now.timestamp'] = "${maven.build.timestamp}"
                 project.properties['now.version'] = ("${maven.build.timestamp}" =~ /[- :]/).replaceAll(".")
                 project.properties['now.year'] = "${maven.build.timestamp}".substring(0, 4)
+                project.properties['top-level'] = (project.basedir.getAbsolutePath() =~ /[\\\\\/]maven-build.*/).replaceAll("")
               </source>
             </configuration>
           </execution>
@@ -680,8 +803,8 @@
                   <message>Maven 2.2.1+ is required.</message>
                   <version>[2.2.1,)</version>
                 </requireMavenVersion>
-                <requirePluginVersions/>           
-              </rules>    
+                <requirePluginVersions/>
+              </rules>
             </configuration>
           </execution>
         </executions>
@@ -699,10 +822,27 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.3.7</version>
+        <version>2.4.0</version>
         <configuration>
           <instructions>
             <Export-Package>*;-split-package:=merge-first</Export-Package>
+            
+            <!-- This section should be *exactly* the same under -->
+            <!-- maven-bundle-plugin and maven-war-plugin.          -->
+            <!-- If you make changes here, make the same changes -->
+            <!-- in the other location as well.                  -->
+            <Extension-Name>${project.groupId}</Extension-Name>
+            <Implementation-Title>${project.groupId}</Implementation-Title>
+            <Specification-Title>${project.name}</Specification-Title>
+            <!-- spec version must match "digit+{.digit+}*" -->
+            <Specification-Version>${base.specification.version}.${now.version}</Specification-Version>
+            <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
+            <!-- impl version can be any string -->
+            <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+            <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+            <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
+            <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
+            <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
           </instructions>
         </configuration>
         <executions>

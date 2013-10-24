@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -59,7 +60,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "unknown field", 12345, 1.0f );
-      DocumentBuilder.toDocument( doc, core.getSchema() );
+      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
       fail( "should throw an error" );
     }
     catch( SolrException ex ) {
@@ -75,7 +76,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     // make sure a null value is not indexed
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "name", null, 1.0f );
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, core.getLatestSchema() );
     assertNull( out.get( "name" ) );
   }
 
@@ -89,7 +90,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField( "id", "123", 1.0f );
     doc.addField( "unknown", "something", 1.0f );
     try {
-      DocumentBuilder.toDocument( doc, core.getSchema() );
+      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
       fail( "added an unknown field" );
     }
     catch( Exception ex ) {
@@ -100,7 +101,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
     doc.addField( "weight", "not a number", 1.0f );
     try {
-      DocumentBuilder.toDocument( doc, core.getSchema() );
+      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
       fail( "invalid 'float' field value" );
     }
     catch( Exception ex ) {
@@ -110,7 +111,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     
     // now make sure it is OK
     doc.setField( "weight", "1.34", 1.0f );
-    DocumentBuilder.toDocument( doc, core.getSchema() );
+    DocumentBuilder.toDocument( doc, core.getLatestSchema() );
   }
 
   @Test
@@ -120,7 +121,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     // make sure a null value is not indexed
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "home", "2.2,3.3", 1.0f );
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, core.getLatestSchema() );
     assertNotNull( out.get( "home" ) );//contains the stored value and term vector, if there is one
     assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + "double" ) );
     assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + "double" ) );
@@ -129,13 +130,13 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   @Test
   public void testCopyFieldWithDocumentBoost() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("title").omitNorms());
     assertTrue(schema.getField("title_stringNoNorms").omitNorms());
     SolrInputDocument doc = new SolrInputDocument();
     doc.setDocumentBoost(3f);
     doc.addField( "title", "mytitle");
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
     assertNotNull( out.get( "title_stringNoNorms" ) );
     assertTrue("title_stringNoNorms has the omitNorms attribute set to true, if the boost is different than 1.0, it will fail",1.0f == out.getField( "title_stringNoNorms" ).boost() );
     assertTrue("It is OK that title has a boost of 3",3.0f == out.getField( "title" ).boost() );
@@ -145,12 +146,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   @Test
   public void testCopyFieldWithFieldBoost() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("title").omitNorms());
     assertTrue(schema.getField("title_stringNoNorms").omitNorms());
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "title", "mytitle", 3.0f );
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
     assertNotNull( out.get( "title_stringNoNorms" ) );
     assertTrue("title_stringNoNorms has the omitNorms attribute set to true, if the boost is different than 1.0, it will fail",1.0f == out.getField( "title_stringNoNorms" ).boost() );
     assertTrue("It is OK that title has a boost of 3",3.0f == out.getField( "title" ).boost() );
@@ -159,7 +160,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   @Test
   public void testWithPolyFieldsAndFieldBoost() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("store").omitNorms());
     assertTrue(schema.getField("store_0_coordinate").omitNorms());
     assertTrue(schema.getField("store_1_coordinate").omitNorms());
@@ -170,7 +171,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "store", "40.7143,-74.006", 3.0f );
     doc.addField( "amount", "10.5", 3.0f );
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
     assertNotNull( out.get( "store" ) );
     assertNotNull( out.get( "amount" ) );
     assertNotNull(out.getField("store_0_coordinate"));
@@ -184,7 +185,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   @Test
   public void testWithPolyFieldsAndDocumentBoost() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("store").omitNorms());
     assertTrue(schema.getField("store_0_coordinate").omitNorms());
     assertTrue(schema.getField("store_1_coordinate").omitNorms());
@@ -196,7 +197,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.setDocumentBoost(3.0f);
     doc.addField( "store", "40.7143,-74.006");
     doc.addField( "amount", "10.5");
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
     assertNotNull( out.get( "store" ) );
     assertNotNull(out.getField("store_0_coordinate"));
     //NOTE: As the subtypes have omitNorm=true, they must have boost=1F, otherwise this is going to fail when adding the doc to Lucene.
@@ -220,7 +221,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   
   public void testMultiValuedFieldAndDocBoosts() throws Exception {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     SolrInputDocument doc = new SolrInputDocument();
     doc.setDocumentBoost(3.0f);
     SolrInputField field = new SolrInputField( "foo_t" );
@@ -229,7 +230,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     field.addValue( "living is easy" , 1.0f );
     doc.put( field.getName(), field );
 
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
     IndexableField[] outF = out.getFields( field.getName() );
     assertEquals("wrong number of field values",
                  3, outF.length);
@@ -246,7 +247,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
   public void testCopyFieldsAndFieldBoostsAndDocBoosts() throws Exception {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     SolrInputDocument doc = new SolrInputDocument();
 
     final float DOC_BOOST = 3.0F;
@@ -268,7 +269,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertEquals(FOO_BOOST, inFoo.getBoost(), 0.0F);
     doc.put( inFoo.getName(), inFoo );
 
-    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    Document out = DocumentBuilder.toDocument( doc, schema );
 
     IndexableField[] outTitle = out.getFields( inTitle.getName() );
     assertEquals("wrong number of title values",
@@ -332,19 +333,19 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
       DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity();
       
-      byte[] titleNorms = (byte[]) reader.normValues("title").getSource().getArray();
-      byte[] fooNorms = (byte[]) reader.normValues("foo_t").getSource().getArray();
-      byte[] textNorms = (byte[]) reader.normValues("text").getSource().getArray();
+      NumericDocValues titleNorms = reader.getNormValues("title");
+      NumericDocValues fooNorms = reader.getNormValues("foo_t");
+      NumericDocValues textNorms =  reader.getNormValues("text");
 
       assertEquals(expectedNorm(sim, 2, TITLE_BOOST * DOC_BOOST),
-                   titleNorms[docid]);
+                   titleNorms.get(docid));
 
       assertEquals(expectedNorm(sim, 8-3, FOO_BOOST * DOC_BOOST),
-                   fooNorms[docid]);
+                   fooNorms.get(docid));
 
       assertEquals(expectedNorm(sim, 2 + 8-3, 
                                 TITLE_BOOST * FOO_BOOST * DOC_BOOST),
-                   textNorms[docid]);
+                   textNorms.get(docid));
 
     } finally {
       req.close();
@@ -356,9 +357,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
    */
   private static byte expectedNorm(final DefaultSimilarity sim,
                                    final int length, final float boost) {
-    
-    return sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
-
+    return (byte) sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
   }
     
 

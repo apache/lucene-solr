@@ -26,8 +26,6 @@ final class BulkOperationPacked20 extends BulkOperationPacked {
 
   public BulkOperationPacked20() {
     super(20);
-    assert blockCount() == 5;
-    assert valueCount() == 16;
   }
 
   @Override
@@ -59,7 +57,7 @@ final class BulkOperationPacked20 extends BulkOperationPacked {
 
   @Override
   public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
-    for (int i = 0; i < 8 * iterations; ++i) {
+    for (int i = 0; i < iterations; ++i) {
       final int byte0 = blocks[blocksOffset++] & 0xFF;
       final int byte1 = blocks[blocksOffset++] & 0xFF;
       final int byte2 = blocks[blocksOffset++] & 0xFF;
@@ -99,7 +97,7 @@ final class BulkOperationPacked20 extends BulkOperationPacked {
 
   @Override
   public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
-    for (int i = 0; i < 8 * iterations; ++i) {
+    for (int i = 0; i < iterations; ++i) {
       final long byte0 = blocks[blocksOffset++] & 0xFF;
       final long byte1 = blocks[blocksOffset++] & 0xFF;
       final long byte2 = blocks[blocksOffset++] & 0xFF;

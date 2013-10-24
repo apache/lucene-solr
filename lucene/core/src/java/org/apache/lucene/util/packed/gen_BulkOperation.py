@@ -57,28 +57,28 @@ FOOTER="""
    * For every number of bits per value, there is a minimum number of
    * blocks (b) / values (v) you need to write in order to reach the next block
    * boundary:
-   *  - 16 bits per value -> b=1, v=4
-   *  - 24 bits per value -> b=3, v=8
-   *  - 50 bits per value -> b=25, v=32
-   *  - 63 bits per value -> b=63, v=64
+   *  - 16 bits per value -> b=2, v=1
+   *  - 24 bits per value -> b=3, v=1
+   *  - 50 bits per value -> b=25, v=4
+   *  - 63 bits per value -> b=63, v=8
    *  - ...
    *
    * A bulk read consists in copying <code>iterations*v</code> values that are
    * contained in <code>iterations*b</code> blocks into a <code>long[]</code>
    * (higher values of <code>iterations</code> are likely to yield a better
-   * throughput) => this requires n * (b + v) longs in memory.
+   * throughput) => this requires n * (b + 8v) bytes of memory.
    *
    * This method computes <code>iterations</code> as
-   * <code>ramBudget / (8 * (b + v))</code> (since a long is 8 bytes).
+   * <code>ramBudget / (b + 8v)</code> (since a long is 8 bytes).
    */
   public final int computeIterations(int valueCount, int ramBudget) {
-    final int iterations = (ramBudget >>> 3) / (blockCount() + valueCount());
+    final int iterations = ramBudget / (byteBlockCount() + 8 * byteValueCount());
     if (iterations == 0) {
       // at least 1
       return 1;
-    } else if ((iterations - 1) * blockCount() >= valueCount) {
+    } else if ((iterations - 1) * byteValueCount() >= valueCount) {
       // don't allocate for more than the size of the reader
-      return (int) Math.ceil((double) valueCount / valueCount());
+      return (int) Math.ceil((double) valueCount / byteValueCount());
     } else {
       return iterations;
     }
@@ -131,14 +131,11 @@ def block_value_count(bpv, bits=64):
   return (blocks, values)
 
 def packed64(bpv, f):
-  blocks, values = block_value_count(bpv)
   mask = (1 << bpv) - 1
 
   f.write("\n")
   f.write("  public BulkOperationPacked%d() {\n" %bpv)
   f.write("    super(%d);\n" %bpv)
-  f.write("    assert blockCount() == %d;\n" %blocks)
-  f.write("    assert valueCount() == %d;\n" %values)
   f.write("  }\n\n")
 
   if bpv == 64:
@@ -215,20 +212,19 @@ def p64_decode(bpv, f, bits):
   if bits < bpv:
     f.write("    throw new UnsupportedOperationException();\n")
   else:
-
     if is_power_of_two(bpv) and bpv < 8:
-      f.write("    for (int j = 0; j < 8 * iterations; ++j) {\n")
+      f.write("    for (int j = 0; j < iterations; ++j) {\n")
       f.write("      final byte block = blocks[blocksOffset++];\n")
       for shift in xrange(8 - bpv, 0, -bpv):
         f.write("      values[valuesOffset++] = (block >>> %d) & %d;\n" %(shift, mask))
       f.write("      values[valuesOffset++] = block & %d;\n" %mask)
       f.write("    }\n")
     elif bpv == 8:
-      f.write("    for (int j = 0; j < 8 * iterations; ++j) {\n")
+      f.write("    for (int j = 0; j < iterations; ++j) {\n")
       f.write("      values[valuesOffset++] = blocks[blocksOffset++] & 0xFF;\n")
       f.write("    }\n")
     elif is_power_of_two(bpv) and bpv > 8:
-      f.write("    for (int j = 0; j < %d * iterations; ++j) {\n" %(64 / bpv))
+      f.write("    for (int j = 0; j < iterations; ++j) {\n")
       m = bits <= 32 and "0xFF" or "0xFFL"
       f.write("      values[valuesOffset++] =")
       for i in xrange(bpv / 8 - 1):
@@ -236,7 +232,7 @@ def p64_decode(bpv, f, bits):
       f.write(" (blocks[blocksOffset++] & %s);\n" %m)
       f.write("    }\n")
     else:
-      f.write("    for (int i = 0; i < 8 * iterations; ++i) {\n")
+      f.write("    for (int i = 0; i < iterations; ++i) {\n")
       for i in xrange(0, byte_values):
         byte_start = i * bpv / 8
         bit_start = (i * bpv) % 8

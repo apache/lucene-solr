@@ -17,11 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -90,12 +89,22 @@ final class JustCompileSearch {
     public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileExtendedFieldCacheLongParser implements FieldCache.LongParser {
 
     @Override
     public long parseLong(BytesRef string) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public TermsEnum termsEnum(Terms terms) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -105,6 +114,11 @@ final class JustCompileSearch {
     
     @Override
     public double parseDouble(BytesRef term) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public TermsEnum termsEnum(Terms terms) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -192,6 +206,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileQuery extends Query {
@@ -243,6 +261,11 @@ final class JustCompileSearch {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileSimilarity extends Similarity {
@@ -253,17 +276,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) {
+    public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
+    public long computeNorm(FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -89,8 +90,8 @@ public class MockCharFilter extends CharFilter {
 
   @Override
   public int correct(int currentOff) {
-    SortedMap<Integer,Integer> subMap = corrections.subMap(0, currentOff+1);
-    int ret = subMap.isEmpty() ? currentOff : currentOff + subMap.get(subMap.lastKey());
+    Map.Entry<Integer,Integer> lastEntry = corrections.lowerEntry(currentOff+1);
+    int ret = lastEntry == null ? currentOff : currentOff + lastEntry.getValue();
     assert ret >= 0 : "currentOff=" + currentOff + ",diff=" + (ret-currentOff);
     return ret;
   }

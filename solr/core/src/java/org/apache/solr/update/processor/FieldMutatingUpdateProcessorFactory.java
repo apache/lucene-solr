@@ -17,9 +17,8 @@
 
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -28,15 +27,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 
@@ -64,6 +57,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <b>at least one of each</b> to be selected.
  * </p>
  * <p>
+ * The following additional selector may be specified as a &lt;bool&gt; - when specified
+ * as false, only fields that <b>do not</b> match a schema field/dynamic field are selected;
+ * when specified as true, only fields that <b>do</b> match a schema field/dynamic field are
+ * selected:
+ * </p>
+ * <ul>
+ *   <li><code>fieldNameMatchesSchemaField</code> - selecting specific fields based on whether or not they match a schema field</li>
+ * </ul>
+ * <p>
  * One or more <code>excludes</code> &lt;lst&gt; params may also be specified, 
  * containing any of the above criteria, identifying fields to be excluded 
  * from seelction even if they match the selection criteria.  As with the main 
@@ -77,7 +79,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * fields will be mutated if the name starts with "foo" <i>or</i> "bar"; 
  * <b>unless</b> the field name contains the substring "SKIP" <i>or</i> 
  * the fieldType is (or subclasses) DateField.  Meaning a field named 
- * "foo_SKIP" is gaurunteed not to be selected, but a field named "bar_smith" 
+ * "foo_SKIP" is guaranteed not to be selected, but a field named "bar_smith" 
  * that uses StrField will be selected.
  * </p>
  * <pre class="prettyprint">
@@ -112,6 +114,13 @@ public abstract class FieldMutatingUpdateProcessorFactory
     public Set<String> typeName = Collections.emptySet();
     public Collection<String> typeClass = Collections.emptyList();
     public Collection<Pattern> fieldRegex = Collections.emptyList();
+    public Boolean fieldNameMatchesSchemaField = null; // null => not specified
+
+    public boolean noSelectorsSpecified() {
+      return typeClass.isEmpty()  && typeName.isEmpty() 
+          && fieldRegex.isEmpty() && fieldName.isEmpty() 
+          && null == fieldNameMatchesSchemaField;
+    }
   }
 
   private SelectorParams inclusions = new SelectorParams();
@@ -123,19 +132,18 @@ public abstract class FieldMutatingUpdateProcessorFactory
   protected final FieldMutatingUpdateProcessor.FieldNameSelector getSelector() {
     if (null != selector) return selector;
 
-    throw new SolrException(SERVER_ERROR, "selector was never initialized, "+
-                            " inform(SolrCore) never called???");
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "selector was never initialized, inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   public static SelectorParams parseSelectorParams(NamedList args) {
     SelectorParams params = new SelectorParams();
     
-    params.fieldName = new HashSet<String>(oneOrMany(args, "fieldName"));
-    params.typeName = new HashSet<String>(oneOrMany(args, "typeName"));
+    params.fieldName = new HashSet<String>(args.removeConfigArgs("fieldName"));
+    params.typeName = new HashSet<String>(args.removeConfigArgs("typeName"));
 
     // we can compile the patterns now
-    Collection<String> patterns = oneOrMany(args, "fieldRegex");
+    Collection<String> patterns = args.removeConfigArgs("fieldRegex");
     if (! patterns.isEmpty()) {
       params.fieldRegex = new ArrayList<Pattern>(patterns.size());
       for (String s : patterns) {
@@ -143,21 +151,50 @@ public abstract class FieldMutatingUpdateProcessorFactory
           params.fieldRegex.add(Pattern.compile(s));
         } catch (PatternSyntaxException e) {
           throw new SolrException
-            (SERVER_ERROR, "Invalid 'fieldRegex' pattern: " + s, e);
+            (SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid 'fieldRegex' pattern: " + s, e);
         }
       }
     }
     
     // resolve this into actual Class objects later
-    params.typeClass = oneOrMany(args, "typeClass");
+    params.typeClass = args.removeConfigArgs("typeClass");
 
+    // Returns null if the arg is not specified
+    params.fieldNameMatchesSchemaField = args.removeBooleanArg("fieldNameMatchesSchemaField");
+    
     return params;
   }
-                                                            
+                               
+  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList args) {
+    Collection<SelectorParams> exclusions = new ArrayList<SelectorParams>();
+    List<Object> excList = args.getAll("exclude");
+    for (Object excObj : excList) {
+      if (null == excObj) {
+        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
+            "'exclude' init param can not be null");
+      }
+      if (! (excObj instanceof NamedList) ) {
+        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
+            "'exclude' init param must be <lst/>");
+      }
+      NamedList exc = (NamedList) excObj;
+      exclusions.add(parseSelectorParams(exc));
+      if (0 < exc.size()) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected 'exclude' init sub-param(s): '" +
+                args.getName(0) + "'");
+      }
+      // call once per instance
+      args.remove("exclude");
+    }
+    return exclusions;
+  }
+  
 
   /**
    * Handles common initialization related to source fields for 
-   * constructoring the FieldNameSelector to be used.
+   * constructing the FieldNameSelector to be used.
    *
    * Will error if any unexpected init args are found, so subclasses should
    * remove any subclass-specific init args before calling this method.
@@ -167,31 +204,11 @@ public abstract class FieldMutatingUpdateProcessorFactory
   public void init(NamedList args) {
 
     inclusions = parseSelectorParams(args);
+    exclusions = parseSelectorExclusionParams(args);
 
-    List<Object> excList = args.getAll("exclude");
-    for (Object excObj : excList) {
-      if (null == excObj) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param can not be null"); 
-      }
-      if (! (excObj instanceof NamedList) ) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param must be <lst/>"); 
-      }
-      NamedList exc = (NamedList) excObj;
-      exclusions.add(parseSelectorParams(exc));
-      if (0 < exc.size()) {
-        throw new SolrException(SERVER_ERROR, 
-                                "Unexpected 'exclude' init sub-param(s): '" + 
-                                args.getName(0) + "'");
-      }
-      // call once per instance
-      args.remove("exclude");
-    }
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, 
-                              "Unexpected init param(s): '" + 
-                              args.getName(0) + "'");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected init param(s): '" + args.getName(0) + "'");
     }
 
   }
@@ -199,29 +216,15 @@ public abstract class FieldMutatingUpdateProcessorFactory
   @Override
   public void inform(final SolrCore core) {
     
-    final IndexSchema schema = core.getSchema();
-
     selector = 
       FieldMutatingUpdateProcessor.createFieldNameSelector
-      (core.getResourceLoader(),
-       core.getSchema(),
-       inclusions.fieldName,
-       inclusions.typeName,
-       inclusions.typeClass,
-       inclusions.fieldRegex,
-       getDefaultSelector(core));
+          (core.getResourceLoader(), core, inclusions, getDefaultSelector(core));
 
     for (SelectorParams exc : exclusions) {
       selector = FieldMutatingUpdateProcessor.wrap
         (selector,
          FieldMutatingUpdateProcessor.createFieldNameSelector
-         (core.getResourceLoader(),
-          core.getSchema(),
-          exc.fieldName,
-          exc.typeName,
-          exc.typeClass,
-          exc.fieldRegex,
-          FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
+             (core.getResourceLoader(), core, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
     }
   }
   
@@ -239,46 +242,4 @@ public abstract class FieldMutatingUpdateProcessorFactory
     return FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
 
   }
-
-  /**
-   * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key referred to.  Throws an error if the key didn't refer
-   * to one or more strings (or arrays of strings)
-   * @exception SolrException invalid arr/str structure.
-   */
-  public static Collection<String> oneOrMany(final NamedList args, final String key) {
-    List<String> result = new ArrayList<String>(args.size() / 2);
-    final String err = "init arg '" + key + "' must be a string "
-      + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
-    
-    for (Object o = args.remove(key); null != o; o = args.remove(key)) {
-      if (o instanceof String) {
-        result.add((String)o);
-        continue;
-      }
-      
-      if (o instanceof Object[]) {
-        o = Arrays.asList((Object[]) o);
-      }
-      
-      if (o instanceof Collection) {
-        for (Object item : (Collection)o) {
-          if (! (item instanceof String)) {
-            throw new SolrException(SERVER_ERROR, err + item.getClass());
-          }
-          result.add((String)item);
-        }
-        continue;
-      }
-      
-      // who knows what the hell we have
-      throw new SolrException(SERVER_ERROR, err + o.getClass());
-    }
-    
-    return result;
-  }
-
 }
-
-
-

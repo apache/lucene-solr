@@ -53,6 +53,10 @@ public class TestCachingCollector extends LuceneTestCase {
       return IntervalIterator.NO_MORE_INTERVALS;
     }
     
+    @Override
+    public long cost() {
+      return 1;
+    } 
   }
   
   private static class NoOpCollector extends Collector {

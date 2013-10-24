@@ -27,7 +27,6 @@ import org.apache.commons.codec.language.bm.PhoneticEngine;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
@@ -48,13 +47,11 @@ public final class BeiderMorseFilter extends TokenFilter {
   private final Matcher matcher = pattern.matcher("");
   // encoded representation
   private String encoded;
-  // offsets for any buffered outputs
-  private int startOffset;
-  private int endOffset;
+  // preserves all attributes for any buffered outputs
+  private State state;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
   
   /**
@@ -83,10 +80,10 @@ public final class BeiderMorseFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (matcher.find()) {
-      clearAttributes();
+      assert state != null && encoded != null;
+      restoreState(state);
       termAtt.setEmpty().append(encoded, matcher.start(1), matcher.end(1));
       posIncAtt.setPositionIncrement(0);
-      offsetAtt.setOffset(startOffset, endOffset);
       return true;
     }
     
@@ -94,8 +91,7 @@ public final class BeiderMorseFilter extends TokenFilter {
       encoded = (languages == null) 
           ? engine.encode(termAtt.toString())
           : engine.encode(termAtt.toString(), languages);
-      startOffset = offsetAtt.startOffset();
-      endOffset = offsetAtt.endOffset();
+      state = captureState();
       matcher.reset(encoded);
       if (matcher.find()) {
         termAtt.setEmpty().append(encoded, matcher.start(1), matcher.end(1));

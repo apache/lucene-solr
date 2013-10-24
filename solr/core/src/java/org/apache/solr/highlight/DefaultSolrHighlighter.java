@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -68,6 +67,30 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   public DefaultSolrHighlighter(SolrCore solrCore) {
     this.solrCore = solrCore;
   }
+
+  // Thread safe registry
+  protected final Map<String,SolrFormatter> formatters =
+    new HashMap<String, SolrFormatter>();
+
+  // Thread safe registry
+  protected final Map<String,SolrEncoder> encoders =
+    new HashMap<String, SolrEncoder>();
+
+  // Thread safe registry
+  protected final Map<String,SolrFragmenter> fragmenters =
+    new HashMap<String, SolrFragmenter>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrFragListBuilder> fragListBuilders =
+    new HashMap<String, SolrFragListBuilder>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
+    new HashMap<String, SolrFragmentsBuilder>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrBoundaryScanner> boundaryScanners =
+    new HashMap<String, SolrBoundaryScanner>() ;
 
   @Override
   public void init(PluginInfo info) {
@@ -90,7 +113,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put("", fmt);
     formatters.put(null, fmt);
 
-    // Load the formatters
+    // Load the encoders
     SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
     if (enc == null) enc = new DefaultEncoder();
     encoders.put("", enc);
@@ -429,21 +452,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     )) return;
     // END: Hack
     
-    SolrParams params = req.getParams(); 
-    StorableField[] docFields = doc.getFields(fieldName);
-    List<String> listFields = new ArrayList<String>();
-    for (StorableField field : docFields) {
-      listFields.add(field.stringValue());
-    }
+    SolrParams params = req.getParams();
 
     // preserve order of values in a multiValued list
     boolean preserveMulti = params.getFieldBool(fieldName, HighlightParams.PRESERVE_MULTI, false);
 
-    String[] docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
-   
-    // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
-    if (docTexts.length == 0) return;
-    
+    List<StorableField> allFields = doc.getFields();
+    if (allFields != null && allFields.size() == 0) return; // No explicit contract that getFields returns != null,
+                                                            // although currently it can't.
+
     TokenStream tstream = null;
     int numFragments = getMaxSnippets(fieldName, params);
     boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
@@ -456,15 +473,25 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (tvStream != null) {
       tots = new TermOffsetsTokenStream(tvStream);
     }
+    int mvToExamine = Integer.parseInt(req.getParams().get(HighlightParams.MAX_MULTIVALUED_TO_EXAMINE,
+        Integer.toString(Integer.MAX_VALUE)));
+    int mvToMatch = Integer.parseInt(req.getParams().get(HighlightParams.MAX_MULTIVALUED_TO_MATCH,
+        Integer.toString(Integer.MAX_VALUE)));
 
-    for (int j = 0; j < docTexts.length; j++) {
+    for (StorableField thisField : allFields) {
+      if (mvToExamine <= 0 || mvToMatch <= 0) break;
+
+      if (! thisField.name().equals(fieldName)) continue; // Is there a better way to do this?
+
+      --mvToExamine;
+      String thisText = thisField.stringValue();
       if( tots != null ) {
         // if we're using TermOffsets optimization, then get the next
         // field value's TokenStream (i.e. get field j's TokenStream) from tots:
-        tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
+        tstream = tots.getMultiValuedTokenStream( thisText.length() );
       } else {
         // fall back to analyzer
-        tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
+        tstream = createAnalyzerTStream(schema, fieldName, thisText);
       }
       
       int maxCharsToAnalyze = params.getFieldInt(fieldName,
@@ -491,21 +518,23 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
       
       if (maxCharsToAnalyze < 0) {
-        highlighter.setMaxDocCharsToAnalyze(docTexts[j].length());
+        highlighter.setMaxDocCharsToAnalyze(thisText.length());
       } else {
         highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
       }
 
       try {
-        TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
+        TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, thisText, mergeContiguousFragments, numFragments);
         for (int k = 0; k < bestTextFragments.length; k++) {
           if (preserveMulti) {
             if (bestTextFragments[k] != null) {
               frags.add(bestTextFragments[k]);
+              --mvToMatch;
             }
           } else {
             if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
               frags.add(bestTextFragments[k]);
+              --mvToMatch;
             }
           }
         }
@@ -606,7 +635,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;
-    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, new StringReader(docText));
+    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, docText);
     ts.reset();
     tstream = new TokenOrderingFilter(ts, 10);
     return tstream;
@@ -661,6 +690,11 @@ final class TokenOrderingFilter extends TokenFilter {
       restoreState(queue.removeFirst().state);
       return true;
     }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    // this looks wrong: but its correct.
   }
 }
 

@@ -20,13 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -41,7 +38,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setCodec(Codec.forName("Lucene41"));
+    conf.setCodec(new Lucene46Codec());
     // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();

@@ -82,8 +82,8 @@ public class PositionFilterQuery extends Query {
   public class ScorerFilterWeight extends Weight {
 
     protected final Weight innerWeight;
-    private final Similarity similarity;
-    private final Similarity.SimWeight stats;
+    protected final Similarity similarity;
+    protected final Similarity.SimWeight stats;
 
     public ScorerFilterWeight(Weight innerWeight, IndexSearcher searcher) throws IOException {
       this.innerWeight = innerWeight;
@@ -99,7 +99,7 @@ public class PositionFilterQuery extends Query {
       int i = 0;
       TermStatistics[] termStats = new TermStatistics[terms.size()];
       for (Term term : terms) {
-        TermContext state = TermContext.build(searcher.getTopReaderContext(), term, true);
+        TermContext state = TermContext.build(searcher.getTopReaderContext(), term);
         termStats[i] = searcher.termStatistics(term, state);
         i++;
       }
@@ -116,7 +116,7 @@ public class PositionFilterQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          Similarity.SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+          Similarity.SimScorer docScorer = similarity.simScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
@@ -149,13 +149,19 @@ public class PositionFilterQuery extends Query {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer,
                          PostingFeatures flags, Bits acceptDocs) throws IOException {
-      return scorerFilterFactory.scorer(innerWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs));
+      PostingFeatures posFlags =
+          (flags == PostingFeatures.DOCS_ONLY || flags == PostingFeatures.DOCS_AND_FREQS) ?
+              PostingFeatures.POSITIONS : flags;
+      System.out.println("Scorer flags: " + flags);
+      Scorer filteredScorer = innerWeight.scorer(context, scoreDocsInOrder, topScorer, posFlags, acceptDocs);
+      return filteredScorer == null ? null
+                : scorerFilterFactory.scorer(filteredScorer, similarity.simScorer(stats, context));
     }
   }
 
   public static interface ScorerFilterFactory {
 
-    public Scorer scorer(Scorer filteredScorer);
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer);
 
     public String getName();
 

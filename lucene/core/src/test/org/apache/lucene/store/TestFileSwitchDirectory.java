@@ -54,7 +54,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(
         fsd,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40"))
+            setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40")).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = DirectoryReader.open(writer, true);

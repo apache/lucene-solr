@@ -19,25 +19,43 @@ doc.body.tokenized=true
 docs.dir=reuters-out
 log.step=1000
 
+-AnalyzerFactory(name:shingle-bigrams-unigrams,
+                 StandardTokenizer,
+                 ShingleFilter(maxShingleSize:2, outputUnigrams:true))
+
+-AnalyzerFactory(name:shingle-bigrams,
+                 StandardTokenizer,
+                 ShingleFilter(maxShingleSize:2, outputUnigrams:false))
+
+-AnalyzerFactory(name:shingle-4grams-unigrams,
+                 StandardTokenizer,
+                 ShingleFilter(maxShingleSize:4, outputUnigrams:true))
+
+-AnalyzerFactory(name:shingle-4grams,
+                 StandardTokenizer,
+                 ShingleFilter(maxShingleSize:4, outputUnigrams:false))
+
+-AnalyzerFactory(name:standard-tokenizer-only, StandardTokenizer)
+
 { "Rounds"
 
-    -NewShingleAnalyzer(maxShingleSize:2,outputUnigrams:true)
+    -NewAnalyzer(shingle-bigrams-unigrams)
     -ResetInputs
     { "BigramsAndUnigrams" { ReadTokens > : 10000 }
 
-    -NewShingleAnalyzer(maxShingleSize:2,outputUnigrams:false)
+    -NewAnalyzer(shingle-bigrams)
     -ResetInputs
     { "BigramsOnly" { ReadTokens > : 10000 }
 
-    -NewShingleAnalyzer(maxShingleSize:4,outputUnigrams:true)
+    -NewAnalyzer(shingle-4grams-unigrams)
     -ResetInputs
     { "FourgramsAndUnigrams" { ReadTokens > : 10000 }
 
-    -NewShingleAnalyzer(maxShingleSize:4,outputUnigrams:false)
+    -NewAnalyzer(shingle-4grams)
     -ResetInputs
     { "FourgramsOnly" { ReadTokens > : 10000 }
 
-    -NewAnalyzer(standard.StandardAnalyzer)
+    -NewAnalyzer(standard-tokenizer-only)
     -ResetInputs
     { "UnigramsOnly" { ReadTokens > : 10000 }
 

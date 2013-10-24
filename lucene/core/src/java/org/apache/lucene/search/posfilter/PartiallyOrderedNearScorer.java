@@ -20,7 +20,8 @@ package org.apache.lucene.search.posfilter;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PositionQueue;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.SorterTemplate;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.IntroSorter;
 
 import java.io.IOException;
 
@@ -34,8 +35,8 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
 
   public static int MAX_SLOP = Integer.MAX_VALUE;
 
-  public PartiallyOrderedNearScorer(Scorer filteredScorer, int allowedSlop) {
-    super(filteredScorer);
+  public PartiallyOrderedNearScorer(Scorer filteredScorer, int allowedSlop, Similarity.SimScorer simScorer) {
+    super(filteredScorer, simScorer);
     this.posQueue = new SloppySpanningPositionQueue(subScorers);
     this.allowedSlop = allowedSlop;
   }
@@ -51,10 +52,13 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
     while (true) {
       do {
         posQueue.updateCurrent(current);
-        currentSlop = posQueue.calculateSlop(allowedSlop);
-        if (current.equals(posQueue.top().interval) && currentSlop <= allowedSlop) {
-          previousEnd = current.end;
-          return current.begin;
+        if (current.begin > previousEnd) {
+          currentSlop = posQueue.calculateSlop(allowedSlop);
+          System.out.println("Calculated slop on " + posQueue.toString() + ": " + currentSlop);
+          if (currentSlop <= allowedSlop) {
+            previousEnd = current.end;
+            return current.begin;
+          }
         }
         posQueue.nextPosition();
       } while (posQueue.isFull() && current.end == posQueue.span.end);
@@ -142,6 +146,7 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
         return DocsEnum.NO_MORE_POSITIONS;
       }
       span.update(top().interval, span);
+      System.out.println("SSPQ: " + span.toString());
       return position;
     }
 
@@ -183,10 +188,12 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
     // number of subsequent subintervals with lower ords.  Gaps between subintervals
     // are also added.  If the running total exceeds a provided max allowed slop,
     // then we shortcut the calculation and return MAX_SLOP.
+    // If duplicates are detected by the subinterval sorter, MAX_SLOP is also returned
     public int calculateSlop(int maxAllowedSlop) {
       boolean swaps = false;
       int slop = 0;
-      sortSubIntervals();
+      if (sortSubIntervals())
+        return MAX_SLOP;
       for (int i = 0; i < sortedIntervals.length; i++) {
         if (swaps || sortedIntervals[i].ord != i) {
           swaps = true;
@@ -203,15 +210,23 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
       return slop;
     }
 
-    private void sortSubIntervals() {
+    private boolean sortSubIntervals() {
 
       for (int i = 0; i < subIntervals.length; i++) {
         sortedIntervals[i].update(subIntervals[i], i);
       }
 
-      new SorterTemplate() {
+      sorter.duplicates = false;
+      sorter.sort(0, sortedIntervals.length - 1);
+      return sorter.duplicates;
+    }
+
+    DuplicateCheckingSorterTemplate sorter = new DuplicateCheckingSorterTemplate();
+
+    class DuplicateCheckingSorterTemplate extends IntroSorter {
 
         int pivot;
+        boolean duplicates;
 
         @Override
         protected void swap(int i, int j) {
@@ -223,6 +238,10 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
 
         @Override
         protected int compare(int i, int j) {
+          //System.out.println("Comparing " + sortedIntervals[i].interval + " with " + sortedIntervals[j].interval);
+          if (sortedIntervals[i].interval.begin == sortedIntervals[j].interval.begin &&
+              sortedIntervals[i].interval.end == sortedIntervals[j].interval.end)
+            duplicates = true;
           return Long.signum(sortedIntervals[i].interval.begin - sortedIntervals[j].interval.begin);
         }
 
@@ -235,7 +254,8 @@ public class PartiallyOrderedNearScorer extends PositionFilteredScorer {
         protected int comparePivot(int j) {
           return Long.signum(pivot - sortedIntervals[j].interval.begin);
         }
-      }.mergeSort(0, sortedIntervals.length - 1);
+
+
     }
   }
 }

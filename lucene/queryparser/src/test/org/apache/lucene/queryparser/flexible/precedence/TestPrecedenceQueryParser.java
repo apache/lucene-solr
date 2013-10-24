@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
@@ -48,6 +48,8 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * <p>
@@ -64,7 +66,17 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 //that it adjusts to fit the precedence requirement, adding its extra tests.
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 
-  public static Analyzer qpAnalyzer = new QPTestAnalyzer();
+  public static Analyzer qpAnalyzer;
+
+  @BeforeClass
+  public static void beforeClass() {
+    qpAnalyzer = new QPTestAnalyzer();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    qpAnalyzer = null;
+  }
 
   public static final class QPTestFilter extends TokenFilter {
     /**
@@ -546,7 +558,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public void testBoost() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
-    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet, true);
+    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
 
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(oneStopAnalyzer);
@@ -561,7 +573,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     q = qp.parse("\"on\"^1.0", "field");
     assertNotNull(q);
 
-    q = getParser(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).parse("the^3",
+    q = getParser(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)).parse("the^3",
         "field");
     assertNotNull(q);
   }

@@ -17,21 +17,21 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Arrays;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * This class is experimental and subject to change.
@@ -56,6 +56,10 @@ public class CoreAdminRequest extends SolrRequest
     private Integer numShards;
     private String shardId;
     private String roles;
+    private String coreNodeName;
+    private Boolean loadOnStartup;
+    private Boolean isTransient;
+    private String collectionConfigName;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -70,7 +74,11 @@ public class CoreAdminRequest extends SolrRequest
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
     public void setRoles(String roles) {this.roles = roles;}
-    
+    public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
+    public void setIsTransient(Boolean isTransient) { this.isTransient = isTransient; }
+    public void setIsLoadOnStartup(Boolean loadOnStartup) { this.loadOnStartup = loadOnStartup;}
+    public void setCollectionConfigName(String name) { this.collectionConfigName = name;}
+
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
@@ -79,6 +87,10 @@ public class CoreAdminRequest extends SolrRequest
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
+    public String getCoreNodeName() { return coreNodeName; }
+    public Boolean getIsLoadOnStartup() { return loadOnStartup; }
+    public Boolean getIsTransient() { return isTransient; }
+    public String getCollectionConfigName() { return collectionConfigName;}
     
     @Override
     public SolrParams getParams() {
@@ -117,6 +129,22 @@ public class CoreAdminRequest extends SolrRequest
       if (roles != null) {
         params.set( CoreAdminParams.ROLES, roles);
       }
+      if (coreNodeName != null) {
+        params.set( CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+      }
+
+      if (isTransient != null) {
+        params.set(CoreAdminParams.TRANSIENT, isTransient);
+      }
+
+      if (loadOnStartup != null) {
+        params.set(CoreAdminParams.LOAD_ON_STARTUP, loadOnStartup);
+      }
+      
+      if (collectionConfigName != null) {
+        params.set("collection.configName", collectionConfigName);
+      }
+      
       return params;
     }
 
@@ -145,11 +173,11 @@ public class CoreAdminRequest extends SolrRequest
     public String getCoreNodeName() {
       return coreNodeName;
     }
-    
+
     public void setCoreNodeName(String coreNodeName) {
       this.coreNodeName = coreNodeName;
     }
-    
+
     public String getState() {
       return state;
     }
@@ -329,12 +357,12 @@ public class CoreAdminRequest extends SolrRequest
       params.set(CoreAdminParams.CORE, core);
       if (indexDirs != null)  {
         for (String indexDir : indexDirs) {
-          params.set(CoreAdminParams.INDEX_DIR, indexDir);
+          params.add(CoreAdminParams.INDEX_DIR, indexDir);
         }
       }
       if (srcCores != null) {
         for (String srcCore : srcCores) {
-          params.set(CoreAdminParams.SRC_CORE, srcCore);
+          params.add(CoreAdminParams.SRC_CORE, srcCore);
         }
       }
       return params;
@@ -343,6 +371,7 @@ public class CoreAdminRequest extends SolrRequest
 
   public static class Unload extends CoreAdminRequest {
     protected boolean deleteIndex;
+    private boolean deleteDataDir;
 
     public Unload(boolean deleteIndex) {
       action = CoreAdminAction.UNLOAD;
@@ -357,12 +386,18 @@ public class CoreAdminRequest extends SolrRequest
       this.deleteIndex = deleteIndex;
     }
 
+    public void setDeleteDataDir(boolean deleteDataDir) {
+     this.deleteDataDir = deleteDataDir; 
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.DELETE_INDEX, deleteIndex);
+      params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
       return params;
     }
+
   }
 
   public CoreAdminRequest()
@@ -507,6 +542,7 @@ public class CoreAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CoreAdminResponse persist(String fileName, SolrServer server) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();

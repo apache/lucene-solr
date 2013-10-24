@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.*;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,8 +38,16 @@ import java.util.*;
 /**
  * LBHttpSolrServer or "LoadBalanced HttpSolrServer" is a load balancing wrapper around
  * {@link org.apache.solr.client.solrj.impl.HttpSolrServer}. This is useful when you
- * have multiple SolrServers and the requests need to be Load Balanced among them. This should <b>NOT</b> be used for
- * indexing. Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
+ * have multiple SolrServers and the requests need to be Load Balanced among them.
+ *
+ * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
+ * correct master; no inter-node routing is done.
+ *
+ * In SolrCloud (leader/replica) scenarios, this class may be used for updates since updates will be forwarded
+ * to the appropriate leader.
+ *
+ * Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
+ *
  * <p/>
  * It offers automatic failover when a server goes down and it detects when the server comes back up.
  * <p/>
@@ -46,7 +55,7 @@ import java.util.*;
  * <p/>
  * If a request to a server fails by an IOException due to a connection timeout or read timeout then the host is taken
  * off the list of live servers and moved to a 'dead server list' and the request is resent to the next live server.
- * This process is continued till it tries all the live servers. If atleast one server is alive, the request succeeds,
+ * This process is continued till it tries all the live servers. If at least one server is alive, the request succeeds,
  * and if not it fails.
  * <blockquote><pre>
  * SolrServer lbHttpSolrServer = new LBHttpSolrServer("http://host1:8080/solr/","http://host2:8080/solr","http://host2:8080/solr");
@@ -72,7 +81,7 @@ public class LBHttpSolrServer extends SolrServer {
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<String, ServerWrapper>();
   // access to aliveServers should be synchronized on itself
   
-  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
+  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -85,13 +94,14 @@ public class LBHttpSolrServer extends SolrServer {
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
-  private final ResponseParser parser;
+  private volatile ResponseParser parser;
+  private volatile RequestWriter requestWriter;
 
   static {
     solrQuery.setRows(0);
   }
 
-  private static class ServerWrapper {
+  protected static class ServerWrapper {
     final HttpSolrServer solrServer;
 
     long lastUsed;     // last time used for a real request
@@ -211,10 +221,12 @@ public class LBHttpSolrServer extends SolrServer {
   }
 
   protected HttpSolrServer makeServer(String server) throws MalformedURLException {
-    return new HttpSolrServer(server, httpClient, parser);
+    HttpSolrServer s = new HttpSolrServer(server, httpClient, parser);
+    if (requestWriter != null) {
+      s.setRequestWriter(requestWriter);
+    }
+    return s;
   }
-
-
 
   /**
    * Tries to query a live server from the list provided in Req. Servers in the dead pool are skipped.
@@ -327,8 +339,7 @@ public class LBHttpSolrServer extends SolrServer {
 
   }
 
-  private Exception addZombie(HttpSolrServer server,
-      Exception e) {
+  protected Exception addZombie(HttpSolrServer server, Exception e) {
 
     ServerWrapper wrapper;
 
@@ -583,6 +594,22 @@ public class LBHttpSolrServer extends SolrServer {
     return httpClient;
   }
 
+  public ResponseParser getParser() {
+    return parser;
+  }
+  
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
+  }
+  
+  public void setRequestWriter(RequestWriter requestWriter) {
+    this.requestWriter = requestWriter;
+  }
+  
+  public RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+  
   @Override
   protected void finalize() throws Throwable {
     try {
@@ -596,4 +623,5 @@ public class LBHttpSolrServer extends SolrServer {
   // defaults
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
+
 }

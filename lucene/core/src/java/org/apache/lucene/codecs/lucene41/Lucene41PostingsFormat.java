@@ -123,11 +123,11 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
  * the postings writer/reader are actually responsible for encoding 
- * and decoding the Postings Metadata and Term Metadata sections described here:</p>
+ * and decoding the PostingsHeader and TermMetadata sections described here:</p>
  *
  * <ul>
- *   <li>Postings Metadata --&gt; Header, PackedBlockSize</li>
- *   <li>Term Metadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
+ *   <li>PostingsHeader --&gt; Header, PackedBlockSize</li>
+ *   <li>TermMetadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
  *                            SkipFPDelta?</li>
  *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>PackedBlockSize, SingletonDocID --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -161,7 +161,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 8 in Lucene41PostingsFormat).</li>
+ *        (i.e. 128 in Lucene41PostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>
@@ -427,20 +427,19 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.dir,
+    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
                                                                 state.fieldInfos,
                                                                 state.segmentInfo,
                                                                 state.context,
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(state.dir,
+      FieldsProducer ret = new BlockTreeTermsReader(state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postingsReader,
                                                     state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+                                                    state.segmentSuffix);
       success = true;
       return ret;
     } finally {

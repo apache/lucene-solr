@@ -150,7 +150,7 @@ public class QueryTreeBuilder implements QueryBuilder {
         builder = getQueryBuilder(clazz);
 
         if (builder == null) {
-          Class<?>[] classes = node.getClass().getInterfaces();
+          Class<?>[] classes = clazz.getInterfaces();
 
           for (Class<?> actualClass : classes) {
             builder = getQueryBuilder(actualClass);

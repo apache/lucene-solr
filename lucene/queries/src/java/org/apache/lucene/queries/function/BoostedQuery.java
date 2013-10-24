@@ -194,6 +194,11 @@ public class BoostedQuery extends Query {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       return scorer.intervals(collectIntervals);
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
 
 

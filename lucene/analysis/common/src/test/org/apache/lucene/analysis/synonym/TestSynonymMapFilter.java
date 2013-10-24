@@ -55,9 +55,13 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     if (VERBOSE) {
       System.out.println("  add input=" + input + " output=" + output + " keepOrig=" + keepOrig);
     }
-    b.add(new CharsRef(input.replaceAll(" +", "\u0000")),
-          new CharsRef(output.replaceAll(" +", "\u0000")),
-          keepOrig);
+    CharsRef inputCharsRef = new CharsRef();
+    SynonymMap.Builder.join(input.split(" +"), inputCharsRef);
+
+    CharsRef outputCharsRef = new CharsRef();
+    SynonymMap.Builder.join(output.split(" +"), outputCharsRef);
+
+    b.add(inputCharsRef, outputCharsRef, keepOrig);
   }
 
   private void assertEquals(CharTermAttribute term, String expected) {
@@ -620,7 +624,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       "bbb => bbbb1 bbbb2\n";
       
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.add(new StringReader(testFile));
+    parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
       
     Analyzer analyzer = new Analyzer() {

@@ -22,9 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * A {@link Filter} that only accepts documents whose single
@@ -43,7 +44,7 @@ import org.apache.lucene.util.BytesRef;
  * <p/>
  * 
  * The first invocation of this filter on a given field will
- * be slower, since a {@link FieldCache.DocTermsIndex} must be
+ * be slower, since a {@link SortedDocValues} must be
  * created.  Subsequent invocations using the same field
  * will re-use this cache.  However, as with all
  * functionality based on {@link FieldCache}, persistent RAM
@@ -118,19 +119,24 @@ public class FieldCacheTermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final FieldCache.DocTermsIndex fcsi = getFieldCache().getTermsIndex(context.reader(), field);
-    final FixedBitSet bits = new FixedBitSet(fcsi.numOrd());
-    final BytesRef spare = new BytesRef();
+    final SortedDocValues fcsi = getFieldCache().getTermsIndex(context.reader(), field);
+    final FixedBitSet bits = new FixedBitSet(fcsi.getValueCount());
     for (int i=0;i<terms.length;i++) {
-      int termNumber = fcsi.binarySearchLookup(terms[i], spare);
-      if (termNumber > 0) {
-        bits.set(termNumber);
+      int ord = fcsi.lookupTerm(terms[i]);
+      if (ord >= 0) {
+        bits.set(ord);
       }
     }
     return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
       @Override
       protected final boolean matchDoc(int doc) {
-        return bits.get(fcsi.getOrd(doc));
+        int ord = fcsi.getOrd(doc);
+        if (ord == -1) {
+          // missing
+          return false;
+        } else {
+          return bits.get(ord);
+        }
       }
     };
   }

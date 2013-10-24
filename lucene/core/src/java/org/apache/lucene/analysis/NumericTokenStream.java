@@ -160,16 +160,10 @@ public final class NumericTokenStream extends TokenStream {
     
     @Override
     public int fillBytesRef() {
-      try {
-        assert valueSize == 64 || valueSize == 32;
-        return (valueSize == 64) ? 
-          NumericUtils.longToPrefixCoded(value, shift, bytes) :
-          NumericUtils.intToPrefixCoded((int) value, shift, bytes);
-      } catch (IllegalArgumentException iae) {
-        // return empty token before first or after last
-        bytes.length = 0;
-        return 0;
-      }
+      assert valueSize == 64 || valueSize == 32;
+      return (valueSize == 64) ? 
+        NumericUtils.longToPrefixCoded(value, shift, bytes) :
+        NumericUtils.intToPrefixCoded((int) value, shift, bytes);
     }
 
     @Override

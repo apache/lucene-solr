@@ -24,13 +24,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -47,15 +47,25 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class TestJoinUtil extends LuceneTestCase {
 
@@ -372,7 +382,7 @@ public class TestJoinUtil extends LuceneTestCase {
     IndexIterationContext context = new IndexIterationContext();
     int numRandomValues = nDocs / 2;
     context.randomUniqueValues = new String[numRandomValues];
-    Set<String> trackSet = new HashSet<String>();
+    Set<String> trackSet = new HashSet<>();
     context.randomFrom = new boolean[numRandomValues];
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
@@ -460,53 +470,31 @@ public class TestJoinUtil extends LuceneTestCase {
         toField = "from";
         queryVals = context.toHitsToJoinScore;
       }
-      final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<BytesRef, JoinScore>();
+      final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<>();
       if (multipleValuesPerDocument) {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private DocTermOrds docTermOrds;
-          private TermsEnum docTermsEnum;
-          private DocTermOrds.TermOrdsIterator reuse;
+          private SortedSetDocValues docTermOrds;
+          final BytesRef joinValue = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            if (docTermOrds.isEmpty()) {
-              return;
+            docTermOrds.setDocument(doc);
+            long ord;
+            while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              docTermOrds.lookupOrd(ord, joinValue);
+              JoinScore joinScore = joinValueToJoinScores.get(joinValue);
+              if (joinScore == null) {
+                joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+              }
+              joinScore.addScore(scorer.score());
             }
-
-            reuse = docTermOrds.lookup(doc, reuse);
-            int[] buffer = new int[5];
-
-            int chunk;
-            do {
-              chunk = reuse.read(buffer);
-              if (chunk == 0) {
-                return;
-              }
-
-              for (int idx = 0; idx < chunk; idx++) {
-                int key = buffer[idx];
-                docTermsEnum.seekExact((long) key);
-                BytesRef joinValue = docTermsEnum.term();
-                if (joinValue == null) {
-                  continue;
-                }
-
-                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
-                if (joinScore == null) {
-                  joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
-                }
-                joinScore.addScore(scorer.score());
-              }
-            } while (chunk >= buffer.length);
           }
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
             docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
-            docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-            reuse = null;
           }
 
           @Override
@@ -523,13 +511,15 @@ public class TestJoinUtil extends LuceneTestCase {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
+          private Bits docsWithField;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            BytesRef joinValue = terms.getTerm(doc, spare);
-            if (joinValue == null) {
+            terms.get(doc, spare);
+            BytesRef joinValue = spare;
+            if (joinValue.length == 0 && !docsWithField.get(doc)) {
               return;
             }
 
@@ -542,7 +532,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField, true);
+            docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -557,7 +548,7 @@ public class TestJoinUtil extends LuceneTestCase {
         });
       }
 
-      final Map<Integer, JoinScore> docToJoinScore = new HashMap<Integer, JoinScore>();
+      final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
         if (scoreDocsInOrder) {
           AtomicReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(toSearcher.getIndexReader());
@@ -565,11 +556,11 @@ public class TestJoinUtil extends LuceneTestCase {
           if (terms != null) {
             DocsEnum docsEnum = null;
             TermsEnum termsEnum = null;
-            SortedSet<BytesRef> joinValues = new TreeSet<BytesRef>(BytesRef.getUTF8SortedAsUnicodeComparator());
+            SortedSet<BytesRef> joinValues = new TreeSet<>(BytesRef.getUTF8SortedAsUnicodeComparator());
             joinValues.addAll(joinValueToJoinScores.keySet());
             for (BytesRef joinValue : joinValues) {
               termsEnum = terms.iterator(termsEnum);
-              if (termsEnum.seekExact(joinValue, true)) {
+              if (termsEnum.seekExact(joinValue)) {
                 docsEnum = termsEnum.docs(slowCompositeReader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
                 JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
@@ -586,50 +577,33 @@ public class TestJoinUtil extends LuceneTestCase {
         } else {
           toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-            private DocTermOrds docTermOrds;
-            private TermsEnum docTermsEnum;
-            private DocTermOrds.TermOrdsIterator reuse;
+            private SortedSetDocValues docTermOrds;
+            private final BytesRef scratch = new BytesRef();
             private int docBase;
 
             @Override
             public void collect(int doc) throws IOException {
-              if (docTermOrds.isEmpty()) {
-                return;
+              docTermOrds.setDocument(doc);
+              long ord;
+              while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                docTermOrds.lookupOrd(ord, scratch);
+                JoinScore joinScore = joinValueToJoinScores.get(scratch);
+                if (joinScore == null) {
+                  continue;
+                }
+                Integer basedDoc = docBase + doc;
+                // First encountered join value determines the score.
+                // Something to keep in mind for many-to-many relations.
+                if (!docToJoinScore.containsKey(basedDoc)) {
+                  docToJoinScore.put(basedDoc, joinScore);
+                }
               }
-
-              reuse = docTermOrds.lookup(doc, reuse);
-              int[] buffer = new int[5];
-
-              int chunk;
-              do {
-                chunk = reuse.read(buffer);
-                if (chunk == 0) {
-                  return;
-                }
-
-                for (int idx = 0; idx < chunk; idx++) {
-                  int key = buffer[idx];
-                  docTermsEnum.seekExact((long) key);
-                  JoinScore joinScore = joinValueToJoinScores.get(docTermsEnum.term());
-                  if (joinScore == null) {
-                    continue;
-                  }
-                  Integer basedDoc = docBase + doc;
-                  // First encountered join value determines the score.
-                  // Something to keep in mind for many-to-many relations.
-                  if (!docToJoinScore.containsKey(basedDoc)) {
-                    docToJoinScore.put(basedDoc, joinScore);
-                  }
-                }
-              } while (chunk >= buffer.length);
             }
 
             @Override
             public void setNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
               docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
-              docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-              reuse = null;
             }
 
             @Override
@@ -641,13 +615,14 @@ public class TestJoinUtil extends LuceneTestCase {
       } else {
         toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) {
-            JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
+            terms.get(doc, spare);
+            JoinScore joinScore = joinValueToJoinScores.get(spare);
             if (joinScore == null) {
               return;
             }
@@ -656,7 +631,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField, false);
             docBase = context.docBase;
           }
 
@@ -686,7 +661,7 @@ public class TestJoinUtil extends LuceneTestCase {
     } else {
       hitsToJoinScores = context.toHitsToJoinScore.get(queryValue);
     }
-    List<Map.Entry<Integer,JoinScore>> hits = new ArrayList<Map.Entry<Integer, JoinScore>>(hitsToJoinScores.entrySet());
+    List<Map.Entry<Integer,JoinScore>> hits = new ArrayList<>(hitsToJoinScores.entrySet());
     Collections.sort(hits, new Comparator<Map.Entry<Integer, JoinScore>>() {
 
       @Override
@@ -749,13 +724,13 @@ public class TestJoinUtil extends LuceneTestCase {
 
     String[] randomUniqueValues;
     boolean[] randomFrom;
-    Map<String, List<RandomDoc>> fromDocuments = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> toDocuments = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> randomValueFromDocs = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> randomValueToDocs = new HashMap<String, List<RandomDoc>>();
+    Map<String, List<RandomDoc>> fromDocuments = new HashMap<>();
+    Map<String, List<RandomDoc>> toDocuments = new HashMap<>();
+    Map<String, List<RandomDoc>> randomValueFromDocs = new HashMap<>();
+    Map<String, List<RandomDoc>> randomValueToDocs = new HashMap<>();
 
-    Map<String, Map<Integer, JoinScore>> fromHitsToJoinScore = new HashMap<String, Map<Integer, JoinScore>>();
-    Map<String, Map<Integer, JoinScore>> toHitsToJoinScore = new HashMap<String, Map<Integer, JoinScore>>();
+    Map<String, Map<Integer, JoinScore>> fromHitsToJoinScore = new HashMap<>();
+    Map<String, Map<Integer, JoinScore>> toHitsToJoinScore = new HashMap<>();
 
   }
 
@@ -769,7 +744,7 @@ public class TestJoinUtil extends LuceneTestCase {
     private RandomDoc(String id, int numberOfLinkValues, String value, boolean from) {
       this.id = id;
       this.from = from;
-      linkValues = new ArrayList<String>(numberOfLinkValues);
+      linkValues = new ArrayList<>(numberOfLinkValues);
       this.value = value;
     }
   }

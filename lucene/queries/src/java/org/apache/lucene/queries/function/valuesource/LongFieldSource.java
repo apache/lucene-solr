@@ -31,13 +31,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
 /**
- * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
- * using <code>getFloats()</code>
- * and makes those values available as other numeric types, casting as needed.
- *
- *
+ * Obtains long field values from {@link FieldCache#getLongs} and makes those
+ * values available as other numeric types, casting as needed.
  */
-
 public class LongFieldSource extends FieldCacheSource {
 
   protected final FieldCache.LongParser parser;
@@ -64,65 +60,44 @@ public class LongFieldSource extends FieldCacheSource {
     return val;
   }
 
+  public String longToString(long val) {
+    return longToObject(val).toString();
+  }
+
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final long[] arr = cache.getLongs(readerContext.reader(), field, parser, true);
+    final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     
     return new LongDocValues(this) {
       @Override
       public long longVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
       public boolean exists(int doc) {
-        return valid.get(doc);
+        return arr.get(doc) != 0 || valid.get(doc);
       }
 
       @Override
       public Object objectVal(int doc) {
-        return valid.get(doc) ? longToObject(arr[doc]) : null;
+        return valid.get(doc) ? longToObject(arr.get(doc)) : null;
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-        long lower,upper;
+      public String strVal(int doc) {
+        return valid.get(doc) ? longToString(arr.get(doc)) : null;
+      }
 
-        // instead of using separate comparison functions, adjust the endpoints.
-
-        if (lowerVal==null) {
-          lower = Long.MIN_VALUE;
-        } else {
-          lower = externalToLong(lowerVal);
-          if (!includeLower && lower < Long.MAX_VALUE) lower++;
-        }
-
-         if (upperVal==null) {
-          upper = Long.MAX_VALUE;
-        } else {
-          upper = externalToLong(upperVal);
-          if (!includeUpper && upper > Long.MIN_VALUE) upper--;
-        }
-
-        final long ll = lower;
-        final long uu = upper;
-
-        return new ValueSourceScorer(reader, this) {
-          @Override
-          public boolean matchesValue(int doc) {
-            long val = arr[doc];
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
-            return val >= ll && val <= uu;
-          }
-        };
+      @Override
+      protected long externalToLong(String extVal) {
+        return LongFieldSource.this.externalToLong(extVal);
       }
 
       @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
-          private final long[] longArr = arr;
           private final MutableValueLong mval = newMutableValueLong();
 
           @Override
@@ -132,8 +107,8 @@ public class LongFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = longArr[doc];
-            mval.exists = valid.get(doc);
+            mval.value = arr.get(doc);
+            mval.exists = mval.value != 0 || valid.get(doc);
           }
         };
       }

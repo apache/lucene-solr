@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 /**
  * <p>Expert: policy for deletion of stale {@link IndexCommit index commits}. 
  * 
@@ -46,9 +48,16 @@ import java.io.IOException;
  * target="top"
  * href="http://issues.apache.org/jira/browse/LUCENE-710">LUCENE-710</a>
  * for details.</p>
+ *
+ * <p>Implementers of sub-classes should make sure that {@link #clone()}
+ * returns an independent instance able to work with any other {@link IndexWriter}
+ * or {@link Directory} instance.</p>
  */
 
-public interface IndexDeletionPolicy {
+public abstract class IndexDeletionPolicy implements Cloneable {
+
+  /** Sole constructor, typically called by sub-classes constructors. */
+  protected IndexDeletionPolicy() {}
 
   /**
    * <p>This is called once when a writer is first
@@ -69,8 +78,10 @@ public interface IndexDeletionPolicy {
    * @param commits List of current 
    * {@link IndexCommit point-in-time commits},
    *  sorted by age (the 0th one is the oldest commit).
+   *  Note that for a new index this method is invoked with
+   *  an empty list.
    */
-  public void onInit(List<? extends IndexCommit> commits) throws IOException;
+  public abstract void onInit(List<? extends IndexCommit> commits) throws IOException;
 
   /**
    * <p>This is called each time the writer completed a commit.
@@ -94,5 +105,15 @@ public interface IndexDeletionPolicy {
    * @param commits List of {@link IndexCommit},
    *  sorted by age (the 0th one is the oldest commit).
    */
-  public void onCommit(List<? extends IndexCommit> commits) throws IOException;
+  public abstract void onCommit(List<? extends IndexCommit> commits) throws IOException;
+
+  @Override
+  public IndexDeletionPolicy clone() {
+    try {
+      return (IndexDeletionPolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error(e);
+    }
+  }
+
 }

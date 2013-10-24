@@ -17,55 +17,63 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.ManagedIndexSchemaFactory;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.search.QParserPlugin;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @since solr 1.3
  */ 
-public class SolrResourceLoader implements ResourceLoader
+public class SolrResourceLoader implements ResourceLoader,Closeable
 {
   public static final Logger log = LoggerFactory.getLogger(SolrResourceLoader.class);
 
@@ -82,6 +90,7 @@ public class SolrResourceLoader implements ResourceLoader
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
+  //TODO: Solr5. Remove this completely when you obsolete putting <core> tags in solr.xml (See Solr-4196)
   private final Properties coreProperties;
 
   private volatile boolean live;
@@ -104,12 +113,12 @@ public class SolrResourceLoader implements ResourceLoader
                this.instanceDir);
     } else{
       this.instanceDir = normalizeDir(instanceDir);
-      log.info("new SolrResourceLoader for directory: '{}'", 
+      log.info("new SolrResourceLoader for directory: '{}'",
                this.instanceDir);
     }
     
     this.classLoader = createClassLoader(null, parent);
-    addToClassLoader("./lib/", null);
+    addToClassLoader("./lib/", null, true);
     reloadLuceneSPI();
     this.coreProperties = coreProperties;
   }
@@ -133,51 +142,47 @@ public class SolrResourceLoader implements ResourceLoader
    * only be called prior to using this ResourceLoader to get any resources, otherwise
    * it's behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
    * before using this ResourceLoader.
+   * 
+   * <p>This method will quietly ignore missing or non-directory <code>baseDir</code>
+   *  folder. 
    *
    * @param baseDir base directory whose children (either jars or directories of
    *                classes) will be in the classpath, will be resolved relative
    *                the instance dir.
    * @param filter The filter files must satisfy, if null all files will be accepted.
+   * @param quiet  Be quiet if baseDir does not point to a directory or if no file is 
+   *               left after applying the filter. 
    */
-  void addToClassLoader(final String baseDir, final FileFilter filter) {
+  void addToClassLoader(final String baseDir, final FileFilter filter, boolean quiet) {
     File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
-    this.classLoader = replaceClassLoader(classLoader, base, filter);
-  }
-  
-  /**
-   * Adds the specific file/dir specified to the ClassLoader used by this
-   * ResourceLoader.  This method <b>MUST</b>
-   * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic. You also have to {link #reloadLuceneSPI()}
-   * before using this ResourceLoader.
-   *
-   * @param path A jar file (or directory of classes) to be added to the classpath,
-   *             will be resolved relative the instance dir.
-   */
-  void addToClassLoader(final String path) {
-    final File file = FileUtils.resolvePath(new File(getInstanceDir()), path);
-    if (file.canRead()) {
-      this.classLoader = replaceClassLoader(classLoader, file.getParentFile(),
-                                            new FileFilter() {
-                                              @Override
-                                              public boolean accept(File pathname) {
-                                                return pathname.equals(file);
-                                              }
-                                            });
+    if (base != null && base.exists() && base.isDirectory()) {
+      File[] files = base.listFiles(filter);
+      if (files == null || files.length == 0) {
+        if (!quiet) {
+          log.warn("No files added to classloader from lib: "
+                   + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+        }
+      } else {
+        this.classLoader = replaceClassLoader(classLoader, base, filter);
+      }
     } else {
-      log.error("Can't find (or read) file to add to classloader: " + file);
+      if (!quiet) {
+        log.warn("Can't find (or read) directory to add to classloader: "
+            + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+      }
     }
   }
   
   /**
    * Reloads all Lucene SPI implementations using the new classloader.
-   * This method must be called after {@link #addToClassLoader(String)}
-   * and {@link #addToClassLoader(String,FileFilter)} before using
+   * This method must be called after {@link #addToClassLoader(String, FileFilter, boolean)}
+   * and {@link #addToClassLoader(String,FileFilter,boolean)} before using
    * this ResourceLoader.
    */
   void reloadLuceneSPI() {
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
+    DocValuesFormat.reloadDocValuesFormats(this.classLoader);
     Codec.reloadCodecs(this.classLoader);
     // Analysis:
     CharFilterFactory.reloadCharFilters(this.classLoader);
@@ -206,7 +211,9 @@ public class SolrResourceLoader implements ResourceLoader
           SolrException.log(log, "Can't add element to classloader: " + files[j], e);
         }
       }
-      return URLClassLoader.newInstance(elements, oldLoader.getParent());
+      ClassLoader oldParent = oldLoader.getParent();
+      IOUtils.closeWhileHandlingException(oldLoader); // best effort
+      return URLClassLoader.newInstance(elements, oldParent);
     }
     // are we still here?
     return oldLoader;
@@ -244,7 +251,7 @@ public class SolrResourceLoader implements ResourceLoader
   }
 
   public String getConfigDir() {
-    return instanceDir + "conf/";
+    return instanceDir + "conf" + File.separator;
   }
   
   public String getDataDir()    {
@@ -293,27 +300,46 @@ public class SolrResourceLoader implements ResourceLoader
   public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
-      File f0 = new File(resource);
-      File f = f0;
+      File f0 = new File(resource), f = f0;
       if (!f.isAbsolute()) {
         // try $CWD/$configDir/$resource
-        f = new File(getConfigDir() + resource);
+        f = new File(getConfigDir() + resource).getAbsoluteFile();
       }
-      if (f.isFile() && f.canRead()) {
+      boolean found = f.isFile() && f.canRead();
+      if (!found) { // no success with $CWD/$configDir/$resource
+        f = f0.getAbsoluteFile();
+        found = f.isFile() && f.canRead();
+      }
+      // check that we don't escape instance dir
+      if (found) {
+        if (!Boolean.parseBoolean(System.getProperty("solr.allow.unsafe.resourceloading", "false"))) {
+          final URI instanceURI = new File(getInstanceDir()).getAbsoluteFile().toURI().normalize();
+          final URI fileURI = f.toURI().normalize();
+          if (instanceURI.relativize(fileURI) == fileURI) {
+            // no URI relativize possible, so they don't share same base folder
+            throw new IOException("For security reasons, SolrResourceLoader cannot load files from outside the instance's directory: " + f +
+                "; if you want to override this safety feature and you are sure about the consequences, you can pass the system property "+
+                "-Dsolr.allow.unsafe.resourceloading=true to your JVM");
+          }
+        }
+        // relativize() returned a relative, new URI, so we are fine!
         return new FileInputStream(f);
-      } else if (f != f0) { // no success with $CWD/$configDir/$resource
-        if (f0.isFile() && f0.canRead())
-          return new FileInputStream(f0);
       }
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource);
-      if (is == null)
-        is = classLoader.getResourceAsStream(getConfigDir() + resource);
+      // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
+      // We need a ClassLoader-compatible (forward-slashes) path here!
+      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      // This is a hack just for tests (it is not done in ZKResourceLoader)!
+      // -> the getConfigDir's path must not be absolute!
+      if (is == null && System.getProperty("jetty.testMode") != null && !new File(getConfigDir()).isAbsolute()) {
+        is = classLoader.getResourceAsStream((getConfigDir() + resource).replace(File.separatorChar, '/'));
+      }
+    } catch (IOException ioe) {
+      throw ioe;
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
     }
     return is;
   }
@@ -369,7 +395,12 @@ public class SolrResourceLoader implements ResourceLoader
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
       Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
-      
+
+  @Override
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+    return findClass(cname, expectedType, empty);
+  }
+  
   /**
    * This method loads a class either with it's FQN or a short-name (solr.class-simplename or class-simplename).
    * It tries to load the class with the name that is given first and if it fails, it tries all the known
@@ -378,7 +409,7 @@ public class SolrResourceLoader implements ResourceLoader
    * is loaded using a shortname.
    *
    * @param cname The name or the short name of the class.
-   * @param subpackages the packages to be tried if the cnams starts with solr.
+   * @param subpackages the packages to be tried if the cname starts with solr.
    * @return the loaded class. An exception is thrown if it fails
    */
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {
@@ -704,11 +735,14 @@ public class SolrResourceLoader implements ResourceLoader
     awareCompatibility = new HashMap<Class, Class[]>();
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
-        SolrRequestHandler.class,
+        CodecFactory.class,
+        ManagedIndexSchemaFactory.class,
         QueryResponseWriter.class,
         SearchComponent.class,
-        UpdateRequestProcessorFactory.class,
-        ShardHandlerFactory.class
+        ShardHandlerFactory.class,
+        SimilarityFactory.class,
+        SolrRequestHandler.class,
+        UpdateRequestProcessorFactory.class
       }
     );
 
@@ -746,5 +780,10 @@ public class SolrResourceLoader implements ResourceLoader
       builder.append( "[" ).append( v.getName() ).append( "] ") ;
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
+  }
+
+  @Override
+  public void close() throws IOException {
+    IOUtils.close(classLoader);
   }
 }

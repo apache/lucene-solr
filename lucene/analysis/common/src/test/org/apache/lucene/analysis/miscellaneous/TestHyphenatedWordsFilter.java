@@ -85,6 +85,6 @@ public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

@@ -60,7 +60,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
         
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
-          if (termsEnum.seekExact(indexedBytes, false)) {
+          if (termsEnum.seekExact(indexedBytes)) {
             docs = termsEnum.docs(null, null);
           } else {
             docs = null;
@@ -89,6 +89,11 @@ public class TermFreqValueSource extends DocFreqValueSource {
             @Override
             public int advance(int target) {
               return DocIdSetIterator.NO_MORE_DOCS;
+            }
+
+            @Override
+            public long cost() {
+              return 0;
             }
           };
         }

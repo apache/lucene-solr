@@ -50,6 +50,7 @@ public abstract class FieldProperties {
   protected final static int OMIT_POSITIONS      = 0x00002000;
 
   protected final static int STORE_OFFSETS       = 0x00004000;
+  protected final static int DOC_VALUES          = 0x00008000;
 
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
@@ -57,13 +58,13 @@ public abstract class FieldProperties {
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
           "sortMissingFirst","sortMissingLast","required", "omitPositions",
-          "storeOffsetsWithPositions"
+          "storeOffsetsWithPositions", "docValues"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();
   static {
     for (String prop : propertyNames) {
-      propertyMap.put(prop, propertyNameToInt(prop));
+      propertyMap.put(prop, propertyNameToInt(prop, true));
     }
   }
 
@@ -73,13 +74,17 @@ public abstract class FieldProperties {
     return propertyNames[ Integer.numberOfTrailingZeros(property) ];
   }
 
-  static int propertyNameToInt(String name) {
+  static int propertyNameToInt(String name, boolean failOnError) {
     for (int i=0; i<propertyNames.length; i++) {
       if (propertyNames[i].equals(name)) {
         return 1 << i;
       }
     }
-    return 0;
+    if (failOnError && !"default".equals(name)) {
+      throw new IllegalArgumentException("Invalid field property: " + name);
+    } else {
+      return 0;
+    }
   }
 
 
@@ -104,16 +109,16 @@ public abstract class FieldProperties {
     return (bitfield & props) == 0;
   }
 
-  static int parseProperties(Map<String,String> properties, boolean which) {
+  static int parseProperties(Map<String,?> properties, boolean which, boolean failOnError) {
     int props = 0;
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      String val = entry.getValue();
+    for (Map.Entry<String,?> entry : properties.entrySet()) {
+      Object val = entry.getValue();
       if(val == null) continue;
-      if (Boolean.parseBoolean(val) == which) {
-        props |= propertyNameToInt(entry.getKey());
+      boolean boolVal = val instanceof Boolean ? (Boolean)val : Boolean.parseBoolean(val.toString());
+      if (boolVal == which) {
+        props |= propertyNameToInt(entry.getKey(), failOnError);
       }
     }
     return props;
   }
-
 }

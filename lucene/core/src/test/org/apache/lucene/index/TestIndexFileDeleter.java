@@ -44,7 +44,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
     }
 
-    LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+    MergePolicy mergePolicy = newLogMergePolicy(true, 10);
     
     // This test expects all of its segments to be in CFS
     mergePolicy.setNoCFSRatio(1.0);
@@ -54,14 +54,15 @@ public class TestIndexFileDeleter extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMaxBufferedDocs(10).
-            setMergePolicy(mergePolicy)
+            setMergePolicy(mergePolicy).setUseCompoundFile(true)
     );
 
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    writer.getConfig().getMergePolicy().setNoCFSRatio(0.0);
+    writer.getConfig().setUseCompoundFile(false);
     for(;i<45;i++) {
       addDoc(writer, i);
     }
@@ -71,7 +72,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setUseCompoundFile(true)
     );
     Term searchTerm = new Term("id", "7");
     writer.deleteDocuments(searchTerm);

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -71,6 +70,11 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     public TermVectorsReader clone() {
       return new AssertingTermVectorsReader(in.clone());
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
 
   enum Status {
@@ -80,7 +84,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
   static class AssertingTermVectorsWriter extends TermVectorsWriter {
     private final TermVectorsWriter in;
     private Status docStatus, fieldStatus, termStatus;
-    private int fieldCount, termCount, positionCount;
+    private int docCount, fieldCount, termCount, positionCount;
     boolean hasPositions;
 
     AssertingTermVectorsWriter(TermVectorsWriter in) {
@@ -98,6 +102,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
       in.startDocument(numVectorFields);
       docStatus = Status.STARTED;
       fieldCount = numVectorFields;
+      docCount++;
     }
 
     @Override
@@ -167,6 +172,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void finish(FieldInfos fis, int numDocs) throws IOException {
+      assert docCount == numDocs;
       assert docStatus == (numDocs > 0 ? Status.FINISHED : Status.UNDEFINED);
       assert fieldStatus != Status.STARTED;
       assert termStatus != Status.STARTED;
@@ -174,16 +180,8 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
-      return in.getComparator();
-    }
-
-    @Override
     public void close() throws IOException {
       in.close();
-      assert docStatus != Status.STARTED;
-      assert fieldStatus != Status.STARTED;
-      assert termStatus != Status.STARTED;
     }
 
   }

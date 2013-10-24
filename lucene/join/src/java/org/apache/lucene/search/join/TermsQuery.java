@@ -21,6 +21,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -37,14 +38,18 @@ import java.util.Comparator;
 class TermsQuery extends MultiTermQuery {
 
   private final BytesRefHash terms;
+  private final int[] ords;
+  private final Query fromQuery; // Used for equals() only
 
   /**
    * @param field The field that should contain terms that are specified in the previous parameter
    * @param terms The terms that matching documents should have. The terms must be sorted by natural order.
    */
-  TermsQuery(String field, BytesRefHash terms) {
+  TermsQuery(String field, Query fromQuery, BytesRefHash terms) {
     super(field);
+    this.fromQuery = fromQuery;
     this.terms = terms;
+    ords = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
   @Override
@@ -53,7 +58,7 @@ class TermsQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
 
-    return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms);
+    return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms, ords);
   }
 
   @Override
@@ -61,6 +66,31 @@ class TermsQuery extends MultiTermQuery {
     return "TermsQuery{" +
         "field=" + field +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    } if (!super.equals(obj)) {
+      return false;
+    } if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    TermsQuery other = (TermsQuery) obj;
+    if (!fromQuery.equals(other.fromQuery)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result += prime * fromQuery.hashCode();
+    return result;
   }
 
   static class SeekingTermSetTermsEnum extends FilteredTermsEnum {
@@ -76,12 +106,12 @@ class TermsQuery extends MultiTermQuery {
     private BytesRef seekTerm;
     private int upto = 0;
 
-    SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms) {
+    SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms, int[] ords) {
       super(tenum);
       this.terms = terms;
-
+      this.ords = ords;
+      comparator = BytesRef.getUTF8SortedAsUnicodeComparator();
       lastElement = terms.size() - 1;
-      ords = terms.sort(comparator = tenum.getComparator());
       lastTerm = terms.get(ords[lastElement], new BytesRef());
       seekTerm = terms.get(ords[upto], spare);
     }

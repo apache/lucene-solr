@@ -64,7 +64,7 @@ import java.util.List;
  * The MultiTrie is a Trie of Tries.
  * <p>
  * It stores words and their associated patch commands. The MultiTrie handles
- * patch commmands broken into their constituent parts, as a MultiTrie does, but
+ * patch commands broken into their constituent parts, as a MultiTrie does, but
  * the commands are delimited by the skip command.
  */
 public class MultiTrie2 extends MultiTrie {

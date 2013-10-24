@@ -18,8 +18,16 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -42,9 +50,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   protected ZkTestServer zkServer;
   
   protected String zkDir;
+  
+  private String solrHome;
 
   private SolrZkClient zkClient;
-  
+
+  protected static final String SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
   
   @BeforeClass
   public static void beforeClass() {
@@ -61,6 +72,18 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
     createTempDir();
+    
+    boolean useNewSolrXml = random().nextBoolean();
+    
+    if (useNewSolrXml) {
+      solrHome = ExternalPaths.EXAMPLE_HOME;
+    } else {
+      File tmpSolrHome = new File(dataDir, "tmp-solr-home");
+      FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
+      FileUtils.copyFile(new File(ExternalPaths.SOURCE_HOME, "core/src/test-files/old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+      solrHome = tmpSolrHome.getAbsolutePath();
+    }
+    
     
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -83,7 +106,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testBootstrap() throws Exception {
     // test bootstrap_conf
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
-        "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
+        "bootstrap", "-solrhome", this.solrHome};
     ZkCLI.main(args);
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/collection1", true));
@@ -102,7 +125,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertFalse(zkClient.exists(chroot, true));
     
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress() + chroot,
-        "-cmd", "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
+        "-cmd", "bootstrap", "-solrhome", this.solrHome};
     
     ZkCLI.main(args);
     
@@ -119,6 +142,61 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
 
     assertTrue(zkClient.exists("/path/mynewpath", true));
+  }
+
+  @Test
+  public void testPut() throws Exception {
+    // test put
+    String data = "my data";
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "put", "/data.txt", data};
+    ZkCLI.main(args);
+
+    zkClient.getData("/data.txt", null, null, true);
+
+    assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes("UTF-8"));
+  }
+
+  @Test
+  public void testPutFile() throws Exception {
+    // test put file
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "putfile", "/solr.xml", SOLR_HOME + File.separator + "solr-stress-new.xml"};
+    ZkCLI.main(args);
+
+    String fromZk = new String(zkClient.getData("/solr.xml", null, null, true), "UTF-8");
+    File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
+    InputStream is = new FileInputStream(locFile);
+    String fromLoc;
+    try {
+      fromLoc = new String(IOUtils.toByteArray(is), "UTF-8");
+    } finally {
+      IOUtils.closeQuietly(is);
+    }
+    assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
+  }
+
+  @Test
+  public void testPutFileNotExists() throws Exception {
+    // test put file
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "putfile", "/solr.xml", SOLR_HOME + File.separator + "not-there.xml"};
+    try {
+      ZkCLI.main(args);
+      fail("Should have had a file not found exception");
+    } catch (FileNotFoundException fne) {
+      String msg = fne.getMessage();
+      assertTrue("Didn't find expected error message containing 'not-there.xml' in " + msg,
+          msg.indexOf("not-there.xml") != -1);
+    }
+  }
+
+  @Test
+  public void testList() throws Exception {
+    zkClient.makePath("/test", true);
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "list"};
+    ZkCLI.main(args);
   }
   
   @Test
@@ -163,6 +241,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
+    File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
+            + File.separator + "conf");
+    // filter out all directories starting with . (e.g. .svn)
+    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
+    for (File sourceFile :sourceFiles){
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1" + File.separator + "conf");
+        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
+        File downloadedFile = new File(confDir,relativePathofFile);
+        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
+        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+    }
+    
+   
     // test reset zk
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "clear", "/"};

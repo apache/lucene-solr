@@ -32,8 +32,8 @@ import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -83,16 +83,15 @@ public final class MockSepPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir, state.fieldInfos, state.segmentInfo,
+    PostingsReaderBase postingsReader = new SepPostingsReader(state.directory, state.fieldInfos, state.segmentInfo,
         state.context, new MockSingleIntFactory(), state.segmentSuffix);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
+      indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        state.segmentSuffix, state.context);
       success = true;
@@ -105,12 +104,11 @@ public final class MockSepPostingsFormat extends PostingsFormat {
     success = false;
     try {
       FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
+                                                state.directory,
                                                 state.fieldInfos,
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

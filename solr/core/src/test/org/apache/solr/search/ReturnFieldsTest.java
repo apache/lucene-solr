@@ -47,11 +47,12 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     String v = "how now brown cow";
-    assertU(adoc("id","1", "text",v,  "text_np", v));
+    assertU(adoc("id","1", "text",v,  "text_np", v, "#foo_s", v));
     v = "now cow";
-    assertU(adoc("id","2", "text",v,  "text_np",v));
+    assertU(adoc("id","2", "text",v,  "text_np", v));
     assertU(commit());
   }
 
@@ -305,6 +306,23 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertTrue(rf.wantsField("id$test"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
+  }
+
+  @Test
+  public void testFunkyFieldNames() {
+    ReturnFields rf = new SolrReturnFields(req("fl", "#foo_s", "fl", "id"));
+    assertFalse(rf.wantsScore());
+    assertTrue(rf.wantsField("id"));
+    assertTrue(rf.wantsField("#foo_s"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+
+    assertQ(req("q","id:1", "fl","#foo_s", "fl","id")
+            ,"//*[@numFound='1'] "
+            ,"//str[@name='id'][.='1']"
+            ,"//arr[@name='#foo_s']/str[.='how now brown cow']"
+            );
+
   }
 
   public void testWhitespace() {

@@ -2,6 +2,7 @@ package org.apache.lucene.search.posfilter;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
 
@@ -42,8 +43,8 @@ public class RangeFilterQuery extends PositionFilterQuery {
     }
 
     @Override
-    public Scorer scorer(Scorer filteredScorer) {
-      return new RangeFilterScorer(start, end, filteredScorer);
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      return new RangeFilterScorer(start, end, filteredScorer, simScorer);
     }
 
     @Override
@@ -57,8 +58,8 @@ public class RangeFilterQuery extends PositionFilterQuery {
     private final int start;
     private final int end;
 
-    public RangeFilterScorer(int start, int end, Scorer filteredScorer) {
-      super(filteredScorer);
+    public RangeFilterScorer(int start, int end, Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      super(filteredScorer, simScorer);
       this.start = start;
       this.end = end;
     }

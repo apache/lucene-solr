@@ -17,7 +17,7 @@
 
 package org.apache.solr.request;
 
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -150,6 +150,15 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedQueryRangeFacets() throws Exception {
+    // for the purposes of our test data, it shouldn't matter 
+    // if we use facet.limit -100, -1, or 100 ...
+    // our set of values is small enough either way
+    testSimpleGroupedQueryRangeFacets("-100");
+    testSimpleGroupedQueryRangeFacets("-1");
+    testSimpleGroupedQueryRangeFacets("100");
+  }
+
+  private void testSimpleGroupedQueryRangeFacets(String facetLimit) {
     assertQ(
         req(
             "q", "*:*",
@@ -158,9 +167,25 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.query", "airport_s1:ams"
         ),
         "//lst[@name='facet_queries']/int[@name='airport_s1:ams'][.='2']"
+    );
+    /* Testing facet.query using tagged filter query and exclusion */
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "id:[2000 TO 2004]",
+            "fq", "{!tag=dus}airport_s1:dus",
+            "group", "true",
+            "group.facet", "true",
+            "group.field", "hotel_s1",
+            "facet", "true",
+            "facet.limit", facetLimit,
+            "facet.query", "{!ex=dus}airport_s1:ams"
+        ),
+        "//lst[@name='facet_queries']/int[@name='{!ex=dus}airport_s1:ams'][.='2']"
     );
     assertQ(
         req(
@@ -170,7 +195,31 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.range", "duration_i1",
+            "facet.range.start", "5",
+            "facet.range.end", "11",
+            "facet.range.gap", "1"
+        ),
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='5'][.='2']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='6'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='7'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='8'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='9'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='10'][.='2']"
+    );
+    /* Testing facet.range using tagged filter query and exclusion */
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "id:[2000 TO 2004]",
+            "fq", "{!tag=dus}airport_s1:dus",
+            "group", "true",
+            "group.facet", "true",
+            "group.field", "hotel_s1",
+            "facet", "true",
+            "facet.limit", facetLimit,
+            "facet.range", "{!ex=dus}duration_i1",
             "facet.range.start", "5",
             "facet.range.end", "11",
             "facet.range.gap", "1"
@@ -186,6 +235,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedFacets() throws Exception {
+    // for the purposes of our test data, it shouldn't matter 
+    // if we use facet.limit -100, -1, or 100 ...
+    // our set of values is small enough either way
+    testSimpleGroupedFacets("100");
+    testSimpleGroupedFacets("-100");
+    testSimpleGroupedFacets("-5");
+    testSimpleGroupedFacets("-1");
+  }
+  
+  private void testSimpleGroupedFacets(String facetLimit) throws Exception {
     assertQ(
         "Return 5 docs with id range 1937 till 1940",
          req("id:[2000 TO 2004]"),
@@ -200,11 +259,29 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
+             "facet.limit", facetLimit, 
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
         "*[count(//lst[@name='airport_s1']/int)=2]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
+        "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
+    );
+    assertQ(
+        "Return one facet count for field airport_a using facet.offset",
+         req(
+             "q", "*:*",
+             "fq", "id:[2000 TO 2004]",
+             "group", "true",
+             "group.facet", "true",
+             "group.field", "hotel_s1",
+             "facet", "true",
+             "facet.offset", "1", 
+             "facet.limit", facetLimit, 
+             "facet.field", "airport_s1"
+         ),
+        "//lst[@name='facet_fields']/lst[@name='airport_s1']",
+        "*[count(//lst[@name='airport_s1']/int)=1]",
         "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
     );
     assertQ(
@@ -217,6 +294,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
+             "facet.limit", facetLimit, 
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -234,6 +312,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.field", "hotel_s1",
              "facet", "true",
              "facet.field", "airport_s1",
+             "facet.limit", facetLimit, 
              "facet.prefix", "a"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -273,7 +352,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
   
   static void doEmptyFacetCounts(String field, String[] prefixes) throws Exception {
-    SchemaField sf = h.getCore().getSchema().getField(field);
+    SchemaField sf = h.getCore().getLatestSchema().getField(field);
 
     String response = JQ(req("q", "*:*"));
     Map rsp = (Map) ObjectBuilder.fromJSON(response);
@@ -542,6 +621,13 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count(//lst[@name='zerolen_s']/int)=1]"
      );
+
+    assertQ("a facet.query that analyzes to no query shoud not NPE",
+        req("q", "*:*",
+            "facet", "true",
+            "facet.query", "{!field key=k f=lengthfilt}a"),//2 char minimum
+        "//lst[@name='facet_queries']/int[@name='k'][.='0']"
+    );
   }
 
   public static void indexDateFacets() {

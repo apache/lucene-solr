@@ -1,22 +1,26 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -36,7 +40,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestDirectoryTaxonomyReader extends LuceneTestCase {
+public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
   @Test
   public void testCloseAfterIncRef() throws Exception {
@@ -256,7 +260,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -299,7 +303,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -460,6 +464,73 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     }
     
     src.close();
+  }
+
+  @Test
+  public void testGetChildren() throws Exception {
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    int numCategories = atLeast(10);
+    int numA = 0, numB = 0;
+    Random random = random();
+    // add the two categories for which we'll also add children (so asserts are simpler)
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new CategoryPath("b"));
+    for (int i = 0; i < numCategories; i++) {
+      if (random.nextBoolean()) {
+        taxoWriter.addCategory(new CategoryPath("a", Integer.toString(i)));
+        ++numA;
+      } else {
+        taxoWriter.addCategory(new CategoryPath("b", Integer.toString(i)));
+        ++numB;
+      }
+    }
+    // add category with no children
+    taxoWriter.addCategory(new CategoryPath("c"));
+    taxoWriter.close();
+    
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+
+    // non existing category
+    ChildrenIterator it = taxoReader.getChildren(taxoReader.getOrdinal(new CategoryPath("invalid")));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
+
+    // a category with no children
+    it = taxoReader.getChildren(taxoReader.getOrdinal(new CategoryPath("c")));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
+
+    // arbitrary negative ordinal
+    it = taxoReader.getChildren(-2);
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
+
+    // root's children
+    Set<String> roots = new HashSet<String>(Arrays.asList("a", "b", "c"));
+    it = taxoReader.getChildren(TaxonomyReader.ROOT_ORDINAL);
+    while (!roots.isEmpty()) {
+      CategoryPath root = taxoReader.getPath(it.next());
+      assertEquals(1, root.length);
+      assertTrue(roots.remove(root.components[0]));
+    }
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
+    
+    for (int i = 0; i < 2; i++) {
+      CategoryPath cp = i == 0 ? new CategoryPath("a") : new CategoryPath("b");
+      int ordinal = taxoReader.getOrdinal(cp);
+      it = taxoReader.getChildren(ordinal);
+      int numChildren = 0;
+      int child;
+      while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
+        CategoryPath path = taxoReader.getPath(child);
+        assertEquals(2, path.length);
+        assertEquals(path.components[0], i == 0 ? "a" : "b");
+        ++numChildren;
+      }
+      int expected = i == 0 ? numA : numB;
+      assertEquals("invalid num children", expected, numChildren);
+    }
+    taxoReader.close();
+    
+    dir.close();
   }
   
 }

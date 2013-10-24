@@ -22,6 +22,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * <p>
@@ -243,7 +244,7 @@ public class FuzzySet {
   /**
    * 
    * @param targetMaxSaturation A number between 0 and 1 describing the % of bits that would ideally be set in the 
-   * result. Lower values have better qccuracy but require more space.
+   * result. Lower values have better accuracy but require more space.
    * @return a smaller FuzzySet or null if the current set is already over-saturated
    */
   public FuzzySet downsize(float targetMaxSaturation)
@@ -301,5 +302,9 @@ public class FuzzySet {
   public float getSaturation() {
     int numBitsSet = filter.cardinality();
     return (float) numBitsSet / (float) bloomSize;
+  }
+
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(filter.getBits());
   }
 }

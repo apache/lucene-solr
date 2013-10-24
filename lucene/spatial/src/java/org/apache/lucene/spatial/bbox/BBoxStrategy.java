@@ -135,9 +135,9 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint) {
+  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     return new BBoxSimilarityValueSource(
-        this, new DistanceSimilarity(this.getSpatialContext(), queryPoint));
+        this, new DistanceSimilarity(this.getSpatialContext(), queryPoint, multiplier));
   }
 
   public ValueSource makeBBoxAreaSimilarityValueSource(Rectangle queryBox) {

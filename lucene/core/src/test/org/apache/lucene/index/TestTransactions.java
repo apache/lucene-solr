@@ -38,6 +38,10 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir) throws IOException {
       if (TestTransactions.doFail && random().nextInt() % 10 <= 3) {
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + " TEST: now fail on purpose");
+          new Throwable().printStackTrace(System.out);
+        }
         throw new IOException("now failing randomly but on purpose");
       }
     }
@@ -181,13 +185,27 @@ public class TestTransactions extends LuceneTestCase {
 
     @Override
     public void doWork() throws Throwable {
-      IndexReader r1, r2;
+      IndexReader r1=null, r2=null;
       synchronized(lock) {
-        r1 = DirectoryReader.open(dir1);
-        r2 = DirectoryReader.open(dir2);
+        try {
+          r1 = DirectoryReader.open(dir1);
+          r2 = DirectoryReader.open(dir2);
+        } catch (IOException e) {
+          if (!e.getMessage().contains("on purpose")) {
+            throw e;
+          }
+          if (r1 != null) {
+            r1.close();
+          }
+          if (r2 != null) {
+            r2.close();
+          }
+          return;
+        }
       }
-      if (r1.numDocs() != r2.numDocs())
+      if (r1.numDocs() != r2.numDocs()) {
         throw new RuntimeException("doc counts differ: r1=" + r1.numDocs() + " r2=" + r2.numDocs());
+      }
       r1.close();
       r2.close();
     }

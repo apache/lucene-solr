@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -25,7 +24,7 @@ import java.util.Map;
 
 /** 
  * Factory for {@link ShingleFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_shingle" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -33,41 +32,37 @@ import java.util.Map;
  *             outputUnigrams="true" outputUnigramsIfNoShingles="false" tokenSeparator=" "/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class ShingleFilterFactory extends TokenFilterFactory {
-  private int minShingleSize;
-  private int maxShingleSize;
-  private boolean outputUnigrams;
-  private boolean outputUnigramsIfNoShingles;
-  private String tokenSeparator;
+  private final int minShingleSize;
+  private final int maxShingleSize;
+  private final boolean outputUnigrams;
+  private final boolean outputUnigramsIfNoShingles;
+  private final String tokenSeparator;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    maxShingleSize = getInt("maxShingleSize", 
-                            ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
+  /** Creates a new ShingleFilterFactory */
+  public ShingleFilterFactory(Map<String, String> args) {
+    super(args);
+    maxShingleSize = getInt(args, "maxShingleSize", ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
     if (maxShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize
-                              + ") - must be at least 2");
+      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize + ") - must be at least 2");
     }
-    minShingleSize = getInt("minShingleSize",
-                            ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
+    minShingleSize = getInt(args, "minShingleSize", ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
     if (minShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
-                              + ") - must be at least 2");
+      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize + ") - must be at least 2");
     }
     if (minShingleSize > maxShingleSize) {
-      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
-                              + ") - must be no greater than maxShingleSize ("
-                              + maxShingleSize + ")");
+      throw new IllegalArgumentException
+          ("Invalid minShingleSize (" + minShingleSize + ") - must be no greater than maxShingleSize (" + maxShingleSize + ")");
     }
-    outputUnigrams = getBoolean("outputUnigrams", true);
-    outputUnigramsIfNoShingles = getBoolean("outputUnigramsIfNoShingles", false);
-    tokenSeparator = args.containsKey("tokenSeparator")
-                     ? args.get("tokenSeparator")
-                     : ShingleFilter.TOKEN_SEPARATOR;
+    outputUnigrams = getBoolean(args, "outputUnigrams", true);
+    outputUnigramsIfNoShingles = getBoolean(args, "outputUnigramsIfNoShingles", false);
+    tokenSeparator = get(args, "tokenSeparator", ShingleFilter.TOKEN_SEPARATOR);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
+
   @Override
   public ShingleFilter create(TokenStream input) {
     ShingleFilter r = new ShingleFilter(input, minShingleSize, maxShingleSize);

@@ -5,19 +5,20 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.facet.collections.LRUHashMap;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.Consts.LoadFullPathOnly;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.collections.LRUHashMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -62,7 +63,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private LRUHashMap<CategoryPath, Integer> ordinalCache;
   private LRUHashMap<Integer, CategoryPath> categoryCache;
 
-  private volatile ParallelTaxonomyArrays taxoArrays;
+  private volatile TaxonomyIndexArrays taxoArrays;
 
   private char delimiter = Consts.DEFAULT_DELIMITER;
 
@@ -73,7 +74,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
    */
   DirectoryTaxonomyReader(DirectoryReader indexReader, DirectoryTaxonomyWriter taxoWriter,
       LRUHashMap<CategoryPath,Integer> ordinalCache, LRUHashMap<Integer,CategoryPath> categoryCache,
-      ParallelTaxonomyArrays taxoArrays) throws IOException {
+      TaxonomyIndexArrays taxoArrays) throws IOException {
     this.indexReader = indexReader;
     this.taxoWriter = taxoWriter;
     this.taxoEpoch = taxoWriter == null ? -1 : taxoWriter.getTaxonomyEpoch();
@@ -82,7 +83,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     this.ordinalCache = ordinalCache == null ? new LRUHashMap<CategoryPath,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
     this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,CategoryPath>(DEFAULT_CACHE_VALUE) : categoryCache;
     
-    this.taxoArrays = taxoArrays != null ? new ParallelTaxonomyArrays(indexReader, taxoArrays) : null;
+    this.taxoArrays = taxoArrays != null ? new TaxonomyIndexArrays(indexReader, taxoArrays) : null;
   }
   
   /**
@@ -130,7 +131,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       // according to Java Concurrency in Practice, this might perform better on
       // some JVMs, because the array initialization doesn't happen on the
       // volatile member.
-      ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(indexReader);
+      TaxonomyIndexArrays tmpArrays = new TaxonomyIndexArrays(indexReader);
       taxoArrays = tmpArrays;
     }
   }
@@ -160,14 +161,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   protected DirectoryTaxonomyReader doOpenIfChanged() throws IOException {
     ensureOpen();
     
-    final DirectoryReader r2;
-    if (taxoWriter == null) {
-      // not NRT
-      r2 = DirectoryReader.openIfChanged(indexReader);
-    } else {
-      // NRT
-      r2 = DirectoryReader.openIfChanged(indexReader, taxoWriter.getInternalIndexWriter(), false);
-    }
+    // This works for both NRT and non-NRT readers (i.e. an NRT reader remains NRT).
+    final DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     if (r2 == null) {
       return null; // no changes, nothing to do
     }
@@ -293,12 +288,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public int getParent(int ordinal) throws IOException {
-    ensureOpen();
-    return getParallelTaxonomyArrays().parents()[ordinal];
-  }
-
-  @Override
   public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
     
@@ -320,9 +309,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       }
     }
     
-    final LoadFullPathOnly loader = new LoadFullPathOnly();
-    indexReader.document(ordinal, loader);
-    CategoryPath ret = new CategoryPath(loader.getFullPath(), delimiter);
+    StoredDocument doc = indexReader.document(ordinal);
+    CategoryPath ret = new CategoryPath(doc.get(Consts.FULL), delimiter);
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }

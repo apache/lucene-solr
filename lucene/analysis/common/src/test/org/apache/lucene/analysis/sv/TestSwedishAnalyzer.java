@@ -34,8 +34,8 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new SwedishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "jaktkarlarne", "jaktkarl");
-    checkOneTermReuse(a, "jaktkarlens", "jaktkarl");
+    checkOneTerm(a, "jaktkarlarne", "jaktkarl");
+    checkOneTerm(a, "jaktkarlens", "jaktkarl");
     // stopword
     assertAnalyzesTo(a, "och", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("jaktkarlarne"), false);
     Analyzer a = new SwedishAnalyzer(TEST_VERSION_CURRENT, 
         SwedishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "jaktkarlarne", "jaktkarlarne");
-    checkOneTermReuse(a, "jaktkarlens", "jaktkarl");
+    checkOneTerm(a, "jaktkarlarne", "jaktkarlarne");
+    checkOneTerm(a, "jaktkarlens", "jaktkarl");
   }
   
   /** blast some random strings through the analyzer */

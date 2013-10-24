@@ -35,20 +35,16 @@ public class SpanScorer extends Scorer {
   protected int doc;
   protected float freq;
   protected int numMatches;
-  protected final Similarity.SloppySimScorer docScorer;
+  protected final Similarity.SimScorer docScorer;
   
-  protected SpanScorer(Spans spans, Weight weight, Similarity.SloppySimScorer docScorer)
+  protected SpanScorer(Spans spans, Weight weight, Similarity.SimScorer docScorer)
   throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.spans = spans;
 
-    if (this.spans.next()) {
-      doc = -1;
-    } else {
-      doc = NO_MORE_DOCS;
-      more = false;
-    }
+    doc = -1;
+    more = spans.next();
   }
 
   @Override
@@ -113,4 +109,10 @@ public class SpanScorer extends Scorer {
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     return null;
   }
+
+  @Override
+  public long cost() {
+    return spans.cost();
+  }
+
 }

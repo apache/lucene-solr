@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -347,18 +346,17 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     FieldInvertState state = new FieldInvertState("a_t");
     state.setBoost(1.0f);
     state.setLength(4);
-    Norm norm = new Norm();
-    similarity.computeNorm(state, norm);
-    float nrm = similarity.decodeNormValue(norm.field().numericValue().byteValue());
+    long norm = similarity.computeNorm(state);
+    float nrm = similarity.decodeNormValue((byte) norm);
     assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
         "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
 
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)
-    assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='6.0'");
-    assertQ(req("fl","*,score","q", "{!func}top(ord(id))", "fq","id:6"), "//float[@name='score']='6.0'");
-    assertQ(req("fl","*,score","q", "{!func}rord(id)", "fq","id:1"),"//float[@name='score']='6.0'");
-    assertQ(req("fl","*,score","q", "{!func}top(rord(id))", "fq","id:1"),"//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='5.0'");
+    assertQ(req("fl","*,score","q", "{!func}top(ord(id))", "fq","id:6"), "//float[@name='score']='5.0'");
+    assertQ(req("fl","*,score","q", "{!func}rord(id)", "fq","id:1"),"//float[@name='score']='5.0'");
+    assertQ(req("fl","*,score","q", "{!func}top(rord(id))", "fq","id:1"),"//float[@name='score']='5.0'");
 
 
     // test that we can subtract dates to millisecond precision
@@ -723,6 +721,34 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  // if exists() is false, no pseudo-field should be added
         , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
+  }
+
+  public void testMissingFieldFunctionBehavior() throws Exception {
+    clearIndex();
+    // add a doc that has no values in any interesting fields
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // it's important that these functions not only use fields that
+    // out doc have no values for, but also that that no other doc ever added
+    // to the index might have ever had a value for, so that the segment
+    // term metadata doesn't exist
+    
+    for (String suffix : new String[] {"s", "b", "dt", "tdt",
+                                       "i", "l", "f", "d", 
+                                       "pi", "pl", "pf", "pd",
+                                       "ti", "tl", "tf", "td"    }) {
+      final String field = "no__vals____" + suffix;
+      assertQ(req("q","id:1",
+                  "fl","noval_if:if("+field+",42,-99)",
+                  "fl","noval_def:def("+field+",-99)",
+                  "fl","noval_not:not("+field+")",
+                  "fl","noval_exists:exists("+field+")"),
+              "//long[@name='noval_if']='-99'",
+              "//long[@name='noval_def']='-99'",
+              "//bool[@name='noval_not']='true'",
+              "//bool[@name='noval_exists']='false'");
+    }
   }
 
 }

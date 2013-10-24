@@ -23,20 +23,45 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.FieldCache.Doubles;
+import org.apache.lucene.search.FieldCache.Floats;
+import org.apache.lucene.search.FieldCache.Ints;
+import org.apache.lucene.search.FieldCache.Longs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,8 +82,6 @@ public class TestFieldCache extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
-    byte theByte = Byte.MAX_VALUE;
-    short theShort = Short.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
     unicodeStrings = new String[NUM_DOCS];
@@ -68,14 +91,12 @@ public class TestFieldCache extends LuceneTestCase {
     }
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(newStringField("theLong", String.valueOf(theLong--), Field.Store.NO));
-      doc.add(newStringField("theDouble", String.valueOf(theDouble--), Field.Store.NO));
-      doc.add(newStringField("theByte", String.valueOf(theByte--), Field.Store.NO));
-      doc.add(newStringField("theShort", String.valueOf(theShort--), Field.Store.NO));
-      doc.add(newStringField("theInt", String.valueOf(theInt--), Field.Store.NO));
-      doc.add(newStringField("theFloat", String.valueOf(theFloat--), Field.Store.NO));
+      doc.add(new LongField("theLong", theLong--, Field.Store.NO));
+      doc.add(new DoubleField("theDouble", theDouble--, Field.Store.NO));
+      doc.add(new IntField("theInt", theInt--, Field.Store.NO));
+      doc.add(new FloatField("theFloat", theFloat--, Field.Store.NO));
       if (i%2 == 0) {
-        doc.add(newStringField("sparse", String.valueOf(i), Field.Store.NO));
+        doc.add(new IntField("sparse", i, Field.Store.NO));
       }
 
       if (i%2 == 0) {
@@ -120,7 +141,16 @@ public class TestFieldCache extends LuceneTestCase {
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       cache.setInfoStream(new PrintStream(bos, false, "UTF-8"));
       cache.getDoubles(reader, "theDouble", false);
-      cache.getFloats(reader, "theDouble", false);
+      cache.getFloats(reader, "theDouble", new FieldCache.FloatParser() {
+        @Override
+        public TermsEnum termsEnum(Terms terms) throws IOException {
+          return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+        }
+        @Override
+        public float parseFloat(BytesRef term) {
+          return NumericUtils.sortableIntToFloat((int) NumericUtils.prefixCodedToLong(term));
+        }
+      }, false);
       assertTrue(bos.toString("UTF-8").indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();
@@ -129,58 +159,32 @@ public class TestFieldCache extends LuceneTestCase {
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
-    double [] doubles = cache.getDoubles(reader, "theDouble", random().nextBoolean());
+    FieldCache.Doubles doubles = cache.getDoubles(reader, "theDouble", random().nextBoolean());
     assertSame("Second request to cache return same array", doubles, cache.getDoubles(reader, "theDouble", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, random().nextBoolean()));
-    assertTrue("doubles Size: " + doubles.length + " is not: " + NUM_DOCS, doubles.length == NUM_DOCS);
-    for (int i = 0; i < doubles.length; i++) {
-      assertTrue(doubles[i] + " does not equal: " + (Double.MAX_VALUE - i), doubles[i] == (Double.MAX_VALUE - i));
-
+    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, random().nextBoolean()));
+    for (int i = 0; i < NUM_DOCS; i++) {
+      assertTrue(doubles.get(i) + " does not equal: " + (Double.MAX_VALUE - i), doubles.get(i) == (Double.MAX_VALUE - i));
     }
     
-    long [] longs = cache.getLongs(reader, "theLong", random().nextBoolean());
+    FieldCache.Longs longs = cache.getLongs(reader, "theLong", random().nextBoolean());
     assertSame("Second request to cache return same array", longs, cache.getLongs(reader, "theLong", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER, random().nextBoolean()));
-    assertTrue("longs Size: " + longs.length + " is not: " + NUM_DOCS, longs.length == NUM_DOCS);
-    for (int i = 0; i < longs.length; i++) {
-      assertTrue(longs[i] + " does not equal: " + (Long.MAX_VALUE - i) + " i=" + i, longs[i] == (Long.MAX_VALUE - i));
-
+    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.NUMERIC_UTILS_LONG_PARSER, random().nextBoolean()));
+    for (int i = 0; i < NUM_DOCS; i++) {
+      assertTrue(longs.get(i) + " does not equal: " + (Long.MAX_VALUE - i) + " i=" + i, longs.get(i) == (Long.MAX_VALUE - i));
     }
-    
-    byte [] bytes = cache.getBytes(reader, "theByte", random().nextBoolean());
-    assertSame("Second request to cache return same array", bytes, cache.getBytes(reader, "theByte", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", bytes, cache.getBytes(reader, "theByte", FieldCache.DEFAULT_BYTE_PARSER, random().nextBoolean()));
-    assertTrue("bytes Size: " + bytes.length + " is not: " + NUM_DOCS, bytes.length == NUM_DOCS);
-    for (int i = 0; i < bytes.length; i++) {
-      assertTrue(bytes[i] + " does not equal: " + (Byte.MAX_VALUE - i), bytes[i] == (byte) (Byte.MAX_VALUE - i));
 
-    }
-    
-    short [] shorts = cache.getShorts(reader, "theShort", random().nextBoolean());
-    assertSame("Second request to cache return same array", shorts, cache.getShorts(reader, "theShort", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", shorts, cache.getShorts(reader, "theShort", FieldCache.DEFAULT_SHORT_PARSER, random().nextBoolean()));
-    assertTrue("shorts Size: " + shorts.length + " is not: " + NUM_DOCS, shorts.length == NUM_DOCS);
-    for (int i = 0; i < shorts.length; i++) {
-      assertTrue(shorts[i] + " does not equal: " + (Short.MAX_VALUE - i), shorts[i] == (short) (Short.MAX_VALUE - i));
-
-    }
-    
-    int [] ints = cache.getInts(reader, "theInt", random().nextBoolean());
+    FieldCache.Ints ints = cache.getInts(reader, "theInt", random().nextBoolean());
     assertSame("Second request to cache return same array", ints, cache.getInts(reader, "theInt", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.DEFAULT_INT_PARSER, random().nextBoolean()));
-    assertTrue("ints Size: " + ints.length + " is not: " + NUM_DOCS, ints.length == NUM_DOCS);
-    for (int i = 0; i < ints.length; i++) {
-      assertTrue(ints[i] + " does not equal: " + (Integer.MAX_VALUE - i), ints[i] == (Integer.MAX_VALUE - i));
-
+    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, random().nextBoolean()));
+    for (int i = 0; i < NUM_DOCS; i++) {
+      assertTrue(ints.get(i) + " does not equal: " + (Integer.MAX_VALUE - i), ints.get(i) == (Integer.MAX_VALUE - i));
     }
     
-    float [] floats = cache.getFloats(reader, "theFloat", random().nextBoolean());
+    FieldCache.Floats floats = cache.getFloats(reader, "theFloat", random().nextBoolean());
     assertSame("Second request to cache return same array", floats, cache.getFloats(reader, "theFloat", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.DEFAULT_FLOAT_PARSER, random().nextBoolean()));
-    assertTrue("floats Size: " + floats.length + " is not: " + NUM_DOCS, floats.length == NUM_DOCS);
-    for (int i = 0; i < floats.length; i++) {
-      assertTrue(floats[i] + " does not equal: " + (Float.MAX_VALUE - i), floats[i] == (Float.MAX_VALUE - i));
-
+    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.NUMERIC_UTILS_FLOAT_PARSER, random().nextBoolean()));
+    for (int i = 0; i < NUM_DOCS; i++) {
+      assertTrue(floats.get(i) + " does not equal: " + (Float.MAX_VALUE - i), floats.get(i) == (Float.MAX_VALUE - i));
     }
 
     Bits docsWithField = cache.getDocsWithField(reader, "theLong");
@@ -200,95 +204,100 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // getTermsIndex
-    FieldCache.DocTermsIndex termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
+    SortedDocValues termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
     assertSame("Second request to cache return same array", termsIndex, cache.getTermsIndex(reader, "theRandomUnicodeString"));
-    assertTrue("doubles Size: " + termsIndex.size() + " is not: " + NUM_DOCS, termsIndex.size() == NUM_DOCS);
     final BytesRef br = new BytesRef();
     for (int i = 0; i < NUM_DOCS; i++) {
-      final BytesRef term = termsIndex.getTerm(i, br);
+      final BytesRef term;
+      final int ord = termsIndex.getOrd(i);
+      if (ord == -1) {
+        term = null;
+      } else {
+        termsIndex.lookupOrd(ord, br);
+        term = br;
+      }
       final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
 
-    int nTerms = termsIndex.numOrd();
-    // System.out.println("nTerms="+nTerms);
+    int nTerms = termsIndex.getValueCount();
 
-    TermsEnum tenum = termsIndex.getTermsEnum();
+    TermsEnum tenum = termsIndex.termsEnum();
     BytesRef val = new BytesRef();
-    for (int i=1; i<nTerms; i++) {
+    for (int i=0; i<nTerms; i++) {
       BytesRef val1 = tenum.next();
-      BytesRef val2 = termsIndex.lookup(i,val);
+      termsIndex.lookupOrd(i, val);
       // System.out.println("i="+i);
-      assertEquals(val2, val1);
+      assertEquals(val, val1);
     }
 
     // seek the enum around (note this isn't a great test here)
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      int k = _TestUtil.nextInt(random(), 1, nTerms-1);
-      BytesRef val1 = termsIndex.lookup(k, val);
-      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val1));
-      assertEquals(val1, tenum.term());
+      int k = random().nextInt(nTerms);
+      termsIndex.lookupOrd(k, val);
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
+      assertEquals(val, tenum.term());
     }
-    
+
+    for(int i=0;i<nTerms;i++) {
+      termsIndex.lookupOrd(i, val);
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
+      assertEquals(val, tenum.term());
+    }
+
     // test bad field
     termsIndex = cache.getTermsIndex(reader, "bogusfield");
 
     // getTerms
-    FieldCache.DocTerms terms = cache.getTerms(reader, "theRandomUnicodeString");
-    assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString"));
-    assertTrue("doubles Size: " + terms.size() + " is not: " + NUM_DOCS, terms.size() == NUM_DOCS);
+    BinaryDocValues terms = cache.getTerms(reader, "theRandomUnicodeString", true);
+    assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString", true));
+    Bits bits = cache.getDocsWithField(reader, "theRandomUnicodeString");
     for (int i = 0; i < NUM_DOCS; i++) {
-      final BytesRef term = terms.getTerm(i, br);
+      terms.get(i, br);
+      final BytesRef term;
+      if (!bits.get(i)) {
+        term = null;
+      } else {
+        term = br;
+      }
       final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
 
     // test bad field
-    terms = cache.getTerms(reader, "bogusfield");
+    terms = cache.getTerms(reader, "bogusfield", false);
 
     // getDocTermOrds
-    DocTermOrds termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
-    TermsEnum termsEnum = termOrds.getOrdTermsEnum(reader);
-    assertSame("Second request to cache return same DocTermOrds", termOrds, cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField"));
-    DocTermOrds.TermOrdsIterator reuse = null;
+    SortedSetDocValues termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    int numEntries = cache.getCacheEntries().length;
+    // ask for it again, and check that we didnt create any additional entries:
+    termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    assertEquals(numEntries, cache.getCacheEntries().length);
+
     for (int i = 0; i < NUM_DOCS; i++) {
-      reuse = termOrds.lookup(i, reuse);
-      final int[] buffer = new int[5];
+      termOrds.setDocument(i);
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
       List<BytesRef> values = new ArrayList<BytesRef>(new LinkedHashSet<BytesRef>(Arrays.asList(multiValued[i])));
-      for (;;) {
-        int chunk = reuse.read(buffer);
-        if (chunk == 0) {
-          for (int ord = 0; ord < values.size(); ord++) {
-            BytesRef term = values.get(ord);
-            assertNull(String.format(Locale.ROOT, "Document[%d] misses field must be null. Has value %s for ord %d", i, term, ord), term);
-          }
+      for (BytesRef v : values) {
+        if (v == null) {
+          // why does this test use null values... instead of an empty list: confusing
           break;
         }
-
-        for(int idx=0; idx < chunk; idx++) {
-          int key = buffer[idx];
-          termsEnum.seekExact((long) key);
-          String actual = termsEnum.term().utf8ToString();
-          String expected = values.get(idx).utf8ToString();
-          if (!expected.equals(actual)) {
-              reuse = termOrds.lookup(i, reuse);
-              reuse.read(buffer);
-          }
-          assertTrue(String.format(Locale.ROOT, "Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
-        }
-
-        if (chunk <= buffer.length) {
-          break;
-        }
+        long ord = termOrds.nextOrd();
+        assert ord != SortedSetDocValues.NO_MORE_ORDS;
+        BytesRef scratch = new BytesRef();
+        termOrds.lookupOrd(ord, scratch);
+        assertEquals(v, scratch);
       }
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, termOrds.nextOrd());
     }
 
     // test bad field
     termOrds = cache.getDocTermOrds(reader, "bogusfield");
+    assertTrue(termOrds.getValueCount() == 0);
 
-    FieldCache.DEFAULT.purge(reader);
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
   }
 
   public void testEmptyIndex() throws Exception {
@@ -297,9 +306,9 @@ public class TestFieldCache extends LuceneTestCase {
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
     AtomicReader reader = SlowCompositeReaderWrapper.wrap(r);
-    FieldCache.DEFAULT.getTerms(reader, "foobar");
+    FieldCache.DEFAULT.getTerms(reader, "foobar", true);
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
-    FieldCache.DEFAULT.purge(reader);
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
     r.close();
     dir.close();
   }
@@ -324,7 +333,7 @@ public class TestFieldCache extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
     assertEquals(0, cache.getCacheEntries().length);
-    double[] doubles = cache.getDoubles(reader, "theDouble", true);
+    cache.getDoubles(reader, "theDouble", true);
 
     // The double[] takes two slots (one w/ null parser, one
     // w/ real parser), and docsWithField should also
@@ -336,25 +345,25 @@ public class TestFieldCache extends LuceneTestCase {
     assertEquals(3, cache.getCacheEntries().length);
     assertTrue(bits instanceof Bits.MatchAllBits);
 
-    int[] ints = cache.getInts(reader, "sparse", true);
+    FieldCache.Ints ints = cache.getInts(reader, "sparse", true);
     assertEquals(6, cache.getCacheEntries().length);
     Bits docsWithField = cache.getDocsWithField(reader, "sparse");
     assertEquals(6, cache.getCacheEntries().length);
     for (int i = 0; i < docsWithField.length(); i++) {
       if (i%2 == 0) {
         assertTrue(docsWithField.get(i));
-        assertEquals(i, ints[i]);
+        assertEquals(i, ints.get(i));
       } else {
         assertFalse(docsWithField.get(i));
       }
     }
 
-    int[] numInts = cache.getInts(reader, "numInt", random().nextBoolean());
+    FieldCache.Ints numInts = cache.getInts(reader, "numInt", random().nextBoolean());
     docsWithField = cache.getDocsWithField(reader, "numInt");
     for (int i = 0; i < docsWithField.length(); i++) {
       if (i%2 == 0) {
         assertTrue(docsWithField.get(i));
-        assertEquals(i, numInts[i]);
+        assertEquals(i, numInts.get(i));
       } else {
         assertFalse(docsWithField.get(i));
       }
@@ -399,12 +408,12 @@ public class TestFieldCache extends LuceneTestCase {
                     assertEquals(i%2 == 0, docsWithField.get(i));
                   }
                 } else {
-                  int[] ints = cache.getInts(reader, "sparse", true);
+                  FieldCache.Ints ints = cache.getInts(reader, "sparse", true);
                   Bits docsWithField = cache.getDocsWithField(reader, "sparse");
                   for (int i = 0; i < docsWithField.length(); i++) {
                     if (i%2 == 0) {
                       assertTrue(docsWithField.get(i));
-                      assertEquals(i, ints[i]);
+                      assertEquals(i, ints.get(i));
                     } else {
                       assertFalse(docsWithField.get(i));
                     }
@@ -426,4 +435,346 @@ public class TestFieldCache extends LuceneTestCase {
     }
     assertFalse(failed.get());
   }
+  
+  public void testDocValuesIntegration() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
+    doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
+    doc.add(new NumericDocValuesField("numeric", 42));
+    if (defaultCodecSupportsSortedSet()) {
+      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
+      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
+    }
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    BytesRef scratch = new BytesRef();
+    
+    // Binary type: can be retrieved via getTerms()
+    try {
+      FieldCache.DEFAULT.getInts(ar, "binary", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    BinaryDocValues binary = FieldCache.DEFAULT.getTerms(ar, "binary", true);
+    binary.get(0, scratch);
+    assertEquals("binary value", scratch.utf8ToString());
+    
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getDocTermOrds(ar, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      new DocTermOrds(ar, null, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary");
+    assertTrue(bits.get(0));
+    
+    // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
+    try {
+      FieldCache.DEFAULT.getInts(ar, "sorted", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      new DocTermOrds(ar, null, "sorted");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    binary = FieldCache.DEFAULT.getTerms(ar, "sorted", true);
+    binary.get(0, scratch);
+    assertEquals("sorted value", scratch.utf8ToString());
+    
+    SortedDocValues sorted = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
+    assertEquals(0, sorted.getOrd(0));
+    assertEquals(1, sorted.getValueCount());
+    sorted.get(0, scratch);
+    assertEquals("sorted value", scratch.utf8ToString());
+    
+    SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted");
+    sortedSet.setDocument(0);
+    assertEquals(0, sortedSet.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    assertEquals(1, sortedSet.getValueCount());
+    
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "sorted");
+    assertTrue(bits.get(0));
+    
+    // Numeric type: can be retrieved via getInts() and so on
+    Ints numeric = FieldCache.DEFAULT.getInts(ar, "numeric", false);
+    assertEquals(42, numeric.get(0));
+    
+    try {
+      FieldCache.DEFAULT.getTerms(ar, "numeric", true);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getDocTermOrds(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      new DocTermOrds(ar, null, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric");
+    assertTrue(bits.get(0));
+    
+    // SortedSet type: can be retrieved via getDocTermOrds() 
+    if (defaultCodecSupportsSortedSet()) {
+      try {
+        FieldCache.DEFAULT.getInts(ar, "sortedset", false);
+        fail();
+      } catch (IllegalStateException expected) {}
+    
+      try {
+        FieldCache.DEFAULT.getTerms(ar, "sortedset", true);
+        fail();
+      } catch (IllegalStateException expected) {}
+    
+      try {
+        FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
+        fail();
+      } catch (IllegalStateException expected) {}
+      
+      try {
+        new DocTermOrds(ar, null, "sortedset");
+        fail();
+      } catch (IllegalStateException expected) {}
+    
+      sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset");
+      sortedSet.setDocument(0);
+      assertEquals(0, sortedSet.nextOrd());
+      assertEquals(1, sortedSet.nextOrd());
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+      assertEquals(2, sortedSet.getValueCount());
+    
+      bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
+      assertTrue(bits.get(0));
+    }
+    
+    ir.close();
+    dir.close();
+  }
+  
+  public void testNonexistantFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    final FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+    assertEquals(0, cache.getCacheEntries().length);
+    
+    Ints ints = cache.getInts(ar, "bogusints", true);
+    assertEquals(0, ints.get(0));
+    
+    Longs longs = cache.getLongs(ar, "boguslongs", true);
+    assertEquals(0, longs.get(0));
+    
+    Floats floats = cache.getFloats(ar, "bogusfloats", true);
+    assertEquals(0, floats.get(0), 0.0f);
+    
+    Doubles doubles = cache.getDoubles(ar, "bogusdoubles", true);
+    assertEquals(0, doubles.get(0), 0.0D);
+    
+    BytesRef scratch = new BytesRef();
+    BinaryDocValues binaries = cache.getTerms(ar, "bogusterms", true);
+    binaries.get(0, scratch);
+    assertEquals(0, scratch.length);
+    
+    SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
+    assertEquals(-1, sorted.getOrd(0));
+    sorted.get(0, scratch);
+    assertEquals(0, scratch.length);
+    
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    sortedSet.setDocument(0);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    
+    Bits bits = cache.getDocsWithField(ar, "bogusbits");
+    assertFalse(bits.get(0));
+    
+    // check that we cached nothing
+    assertEquals(0, cache.getCacheEntries().length);
+    ir.close();
+    dir.close();
+  }
+  
+  public void testNonIndexedFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StoredField("bogusbytes", "bogus"));
+    doc.add(new StoredField("bogusshorts", "bogus"));
+    doc.add(new StoredField("bogusints", "bogus"));
+    doc.add(new StoredField("boguslongs", "bogus"));
+    doc.add(new StoredField("bogusfloats", "bogus"));
+    doc.add(new StoredField("bogusdoubles", "bogus"));
+    doc.add(new StoredField("bogusterms", "bogus"));
+    doc.add(new StoredField("bogustermsindex", "bogus"));
+    doc.add(new StoredField("bogusmultivalued", "bogus"));
+    doc.add(new StoredField("bogusbits", "bogus"));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    final FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+    assertEquals(0, cache.getCacheEntries().length);
+    
+    Ints ints = cache.getInts(ar, "bogusints", true);
+    assertEquals(0, ints.get(0));
+    
+    Longs longs = cache.getLongs(ar, "boguslongs", true);
+    assertEquals(0, longs.get(0));
+    
+    Floats floats = cache.getFloats(ar, "bogusfloats", true);
+    assertEquals(0, floats.get(0), 0.0f);
+    
+    Doubles doubles = cache.getDoubles(ar, "bogusdoubles", true);
+    assertEquals(0, doubles.get(0), 0.0D);
+    
+    BytesRef scratch = new BytesRef();
+    BinaryDocValues binaries = cache.getTerms(ar, "bogusterms", true);
+    binaries.get(0, scratch);
+    assertEquals(0, scratch.length);
+    
+    SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
+    assertEquals(-1, sorted.getOrd(0));
+    sorted.get(0, scratch);
+    assertEquals(0, scratch.length);
+    
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    sortedSet.setDocument(0);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    
+    Bits bits = cache.getDocsWithField(ar, "bogusbits");
+    assertFalse(bits.get(0));
+    
+    // check that we cached nothing
+    assertEquals(0, cache.getCacheEntries().length);
+    ir.close();
+    dir.close();
+  }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full long range
+  public void testLongFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    Document doc = new Document();
+    LongField field = new LongField("f", 0L, Store.YES);
+    doc.add(field);
+    final long[] values = new long[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final long v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Long.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Long.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextLong(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setLongValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Longs longs = FieldCache.DEFAULT.getLongs(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], longs.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full int range
+  public void testIntFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    Document doc = new Document();
+    IntField field = new IntField("f", 0, Store.YES);
+    doc.add(field);
+    final int[] values = new int[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final int v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Integer.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Integer.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextInt(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setIntValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], ints.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
 }

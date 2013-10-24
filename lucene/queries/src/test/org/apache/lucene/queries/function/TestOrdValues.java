@@ -66,7 +66,7 @@ public class TestOrdValues extends FunctionTestSetup {
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -117,7 +117,7 @@ public class TestOrdValues extends FunctionTestSetup {
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -133,7 +133,7 @@ public class TestOrdValues extends FunctionTestSetup {
       String id = s.getIndexReader().document(sd[i].doc).get(ID_FIELD);
       log("-------- " + i + ". Explain doc " + id);
       log(s.explain(q, sd[i].doc));
-      float expectedScore = N_DOCS - i;
+      float expectedScore = N_DOCS - i - 1;
       assertEquals("score of result " + i + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
       String expectedId = inOrder
               ? id2String(N_DOCS - i) // in-order ==> larger  values first

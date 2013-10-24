@@ -41,13 +41,9 @@ Files included in an Apache Solr binary distribution
 
 example/
   A self-contained example Solr instance, complete with a sample
-  configuration, documents to index, and the Jetty Servlet container.
+  configuration and documents to index.
   Please see example/README.txt for information about running this
   example.
-
-dist/solr-XX.war
-  The Apache Solr Application.  Deploy this WAR file to any servlet
-  container to run Apache Solr.
 
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
@@ -62,10 +58,10 @@ docs/index.html
 Instructions for Building Apache Solr from Source
 -------------------------------------------------
 
-1. Download the Java SE 6 JDK (Java Development Kit) or later from http://java.sun.com/
+1. Download the Java SE 7 JDK (Java Development Kit) or later from http://java.sun.com/
    You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin) 
    folder included on your command path. To test this, issue a "java -version" command 
-   from your shell (command prompt) and verify that the Java version is 1.6 or later.
+   from your shell (command prompt) and verify that the Java version is 1.7 or later.
 
 2. Download the Apache Ant binary distribution (1.8.2+) from 
    http://ant.apache.org/  You will need Ant installed and the $ANT_HOME/bin (Windows: 

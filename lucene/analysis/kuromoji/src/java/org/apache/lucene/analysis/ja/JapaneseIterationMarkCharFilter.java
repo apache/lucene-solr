@@ -39,7 +39,7 @@ import java.io.Reader;
  * <p>
  * The implementation buffers input until a full stop punctuation character (U+3002)
  * or EOF is reached in order to not keep a copy of the character stream in memory.
- * Vertical iteration marks, which are even rarer than horizonal iteration marks in
+ * Vertical iteration marks, which are even rarer than horizontal iteration marks in
  * contemporary Japanese, are unsupported.
  * </p>
  */

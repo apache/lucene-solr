@@ -52,6 +52,8 @@
     <sequential>
     <!-- jetty libs in lib/ -->
     <ivy:retrieve conf="jetty" type="jar" log="download-only"/>
+    <ivy:retrieve conf="logging" type="jar,bundle" log="download-only"
+                  pattern="lib/ext/[artifact]-[revision].[ext]"/>
     <!-- start.jar -->
     <ivy:retrieve conf="start" type="jar" log="download-only" 
                   pattern="start.jar"/>

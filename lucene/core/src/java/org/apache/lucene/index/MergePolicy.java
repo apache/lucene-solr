@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.SetOnce;
 
@@ -56,9 +57,33 @@ import org.apache.lucene.util.SetOnce;
  *
  * @lucene.experimental
  */
-
 public abstract class MergePolicy implements java.io.Closeable, Cloneable {
-  
+
+  /** A map of doc IDs. */
+  public static abstract class DocMap {
+    /** Sole constructor, typically invoked from sub-classes constructors. */
+    protected DocMap() {}
+
+    /** Return the new doc ID according to its old value. */
+    public abstract int map(int old);
+
+    /** Useful from an assert. */
+    boolean isConsistent(int maxDoc) {
+      final FixedBitSet targets = new FixedBitSet(maxDoc);
+      for (int i = 0; i < maxDoc; ++i) {
+        final int target = map(i);
+        if (target < 0 || target >= maxDoc) {
+          assert false : "out of range: " + target + " not in [0-" + maxDoc + "[";
+          return false;
+        } else if (targets.get(target)) {
+          assert false : target + " is already taken (" + i + ")";
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
@@ -74,7 +99,11 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     int maxNumSegments = -1;        // used by IndexWriter
 
     /** Estimated size in bytes of the merged segment. */
-    public long estimatedMergeBytes;       // used by IndexWriter
+    public volatile long estimatedMergeBytes;       // used by IndexWriter
+
+    // Sum of sizeInBytes of all SegmentInfos; set by IW.mergeInit
+    volatile long totalMergeBytes;
+
     List<SegmentReader> readers;        // used by IndexWriter
 
     /** Segments to be merged. */
@@ -99,6 +128,47 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
         count += info.info.getDocCount();
       }
       totalDocCount = count;
+    }
+
+    /** Expert: Get the list of readers to merge. Note that this list does not
+     *  necessarily match the list of segments to merge and should only be used
+     *  to feed SegmentMerger to initialize a merge. When a {@link OneMerge}
+     *  reorders doc IDs, it must override {@link #getDocMap} too so that
+     *  deletes that happened during the merge can be applied to the newly
+     *  merged segment. */
+    public List<AtomicReader> getMergeReaders() throws IOException {
+      if (readers == null) {
+        throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
+      }
+      final List<AtomicReader> readers = new ArrayList<AtomicReader>(this.readers.size());
+      for (AtomicReader reader : this.readers) {
+        if (reader.numDocs() > 0) {
+          readers.add(reader);
+        }
+      }
+      return Collections.unmodifiableList(readers);
+    }
+    
+    /**
+     * Expert: Sets the {@link SegmentInfoPerCommit} of this {@link OneMerge}.
+     * Allows sub-classes to e.g. set diagnostics properties.
+     */
+    public void setInfo(SegmentInfoPerCommit info) {
+      this.info = info;
+    }
+
+    /** Expert: If {@link #getMergeReaders()} reorders document IDs, this method
+     *  must be overridden to return a mapping from the <i>natural</i> doc ID
+     *  (the doc ID that would result from a natural merge) to the actual doc
+     *  ID. This mapping is used to apply deletions that happened during the
+     *  merge to the new segment. */
+    public DocMap getDocMap(MergeState mergeState) {
+      return new DocMap() {
+        @Override
+        public int map(int docID) {
+          return docID;
+        }
+      };
     }
 
     /** Record that an exception occurred while executing
@@ -187,14 +257,12 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     
     /**
      * Returns the total size in bytes of this merge. Note that this does not
-     * indicate the size of the merged segment, but the input total size.
-     * */
+     * indicate the size of the merged segment, but the
+     * input total size. This is only set once the merge is
+     * initialized by IndexWriter.
+     */
     public long totalBytesSize() throws IOException {
-      long total = 0;
-      for (SegmentInfoPerCommit info : segments) {
-        total += info.info.sizeInBytes();
-      }
-      return total;
+      return totalMergeBytes;
     }
 
     /**
@@ -292,9 +360,29 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       super(message);
     }
   }
+  
+  /**
+   * Default ratio for compound file system usage. Set to <tt>1.0</tt>, always use 
+   * compound file system.
+   */
+  protected static final double DEFAULT_NO_CFS_RATIO = 1.0;
+
+  /**
+   * Default max segment size in order to use compound file system. Set to {@link Long#MAX_VALUE}.
+   */
+  protected static final long DEFAULT_MAX_CFS_SEGMENT_SIZE = Long.MAX_VALUE;
 
   /** {@link IndexWriter} that contains this instance. */
   protected SetOnce<IndexWriter> writer;
+  
+  /** If the size of the merge segment exceeds this ratio of
+   *  the total index size then it will remain in
+   *  non-compound format */
+  protected double noCFSRatio = DEFAULT_NO_CFS_RATIO;
+  
+  /** If the size of the merged segment exceeds
+   *  this value then it will not use compound file format. */
+  protected long maxCFSSegmentSize = DEFAULT_MAX_CFS_SEGMENT_SIZE;
 
   @Override
   public MergePolicy clone() {
@@ -315,7 +403,18 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    * {@link #setIndexWriter(IndexWriter)}.
    */
   public MergePolicy() {
+    this(DEFAULT_NO_CFS_RATIO, DEFAULT_MAX_CFS_SEGMENT_SIZE);
+  }
+  
+  /**
+   * Creates a new merge policy instance with default settings for noCFSRatio
+   * and maxCFSSegmentSize. This ctor should be used by subclasses using different
+   * defaults than the {@link MergePolicy}
+   */
+  protected MergePolicy(double defaultNoCFSRatio, long defaultMaxCFSSegmentSize) {
     writer = new SetOnce<IndexWriter>();
+    this.noCFSRatio = defaultNoCFSRatio;
+    this.maxCFSSegmentSize = defaultMaxCFSSegmentSize;
   }
 
   /**
@@ -382,12 +481,91 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   @Override
   public abstract void close();
   
-  
   /**
-   * Returns true if a new segment (regardless of its origin) should use the compound file format.
+   * Returns true if a new segment (regardless of its origin) should use the
+   * compound file format. The default implementation returns <code>true</code>
+   * iff the size of the given mergedInfo is less or equal to
+   * {@link #getMaxCFSSegmentSizeMB()} and the size is less or equal to the
+   * TotalIndexSize * {@link #getNoCFSRatio()} otherwise <code>false</code>.
    */
-  public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) throws IOException;
+  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
+    if (getNoCFSRatio() == 0.0) {
+      return false;
+    }
+    long mergedInfoSize = size(mergedInfo);
+    if (mergedInfoSize > maxCFSSegmentSize) {
+      return false;
+    }
+    if (getNoCFSRatio() >= 1.0) {
+      return true;
+    }
+    long totalSize = 0;
+    for (SegmentInfoPerCommit info : infos) {
+      totalSize += size(info);
+    }
+    return mergedInfoSize <= getNoCFSRatio() * totalSize;
+  }
   
+  /** Return the byte size of the provided {@link
+   *  SegmentInfoPerCommit}, pro-rated by percentage of
+   *  non-deleted documents is set. */
+  protected long size(SegmentInfoPerCommit info) throws IOException {
+    long byteSize = info.sizeInBytes();
+    int delCount = writer.get().numDeletedDocs(info);
+    double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)delCount / (float)info.info.getDocCount()));
+    assert delRatio <= 1.0;
+    return (info.info.getDocCount() <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
+  }
+  
+  /** Returns true if this single info is already fully merged (has no
+   *  pending deletes, is in the same dir as the
+   *  writer, and matches the current compound file setting */
+  protected final boolean isMerged(SegmentInfoPerCommit info) {
+    IndexWriter w = writer.get();
+    assert w != null;
+    boolean hasDeletions = w.numDeletedDocs(info) > 0;
+    return !hasDeletions &&
+      info.info.dir == w.getDirectory() &&
+      ((noCFSRatio > 0.0 && noCFSRatio < 1.0) || maxCFSSegmentSize < Long.MAX_VALUE);
+  }
+  
+  /** Returns current {@code noCFSRatio}.
+   *
+   *  @see #setNoCFSRatio */
+  public final double getNoCFSRatio() {
+    return noCFSRatio;
+  }
+
+  /** If a merged segment will be more than this percentage
+   *  of the total size of the index, leave the segment as
+   *  non-compound file even if compound file is enabled.
+   *  Set to 1.0 to always use CFS regardless of merge
+   *  size. */
+  public final void setNoCFSRatio(double noCFSRatio) {
+    if (noCFSRatio < 0.0 || noCFSRatio > 1.0) {
+      throw new IllegalArgumentException("noCFSRatio must be 0.0 to 1.0 inclusive; got " + noCFSRatio);
+    }
+    this.noCFSRatio = noCFSRatio;
+  }
+
+  /** Returns the largest size allowed for a compound file segment */
+  public final double getMaxCFSSegmentSizeMB() {
+    return maxCFSSegmentSize/1024/1024.;
+  }
+
+  /** If a merged segment will be more than this value,
+   *  leave the segment as
+   *  non-compound file even if compound file is enabled.
+   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
+   *  to always use CFS regardless of merge size. */
+  public final void setMaxCFSSegmentSizeMB(double v) {
+    if (v < 0.0) {
+      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
+    }
+    v *= 1024 * 1024;
+    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+  }
+
   /**
    * MergeTrigger is passed to
    * {@link MergePolicy#findMerges(MergeTrigger, SegmentInfos)} to indicate the

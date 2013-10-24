@@ -69,7 +69,7 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "aut.*")));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,

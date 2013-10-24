@@ -97,4 +97,9 @@ public class ValueSourceScorer extends Scorer {
   public int freq() throws IOException {
     return 1;
   }
+
+  @Override
+  public long cost() {
+    return maxDoc;
+  }
 }

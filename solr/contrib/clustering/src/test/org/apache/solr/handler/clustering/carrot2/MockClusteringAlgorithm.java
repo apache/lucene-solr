@@ -52,6 +52,12 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
   @Input
   @Processing
   @Attribute
+  @IntRange(min = 0)
+  private int maxClusters = 0;
+
+  @Input
+  @Processing
+  @Attribute
   private int otherTopicsModulo = 0;
 
   @Override
@@ -59,6 +65,10 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
     clusters = Lists.newArrayList();
     if (documents == null) {
       return;
+    }
+
+    if (maxClusters > 0) {
+      documents = documents.subList(0, maxClusters);
     }
 
     int documentIndex = 1;

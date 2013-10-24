@@ -21,12 +21,12 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.Base64;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class PreAnalyzedFieldTest extends LuceneTestCase {
+public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   
   private static final String[] valid = {
     "1 one two three",                       // simple parsing
@@ -70,6 +70,11 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
   int props = 
     FieldProperties.INDEXED | FieldProperties.STORED;
   
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -82,7 +87,7 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
     // use Simple format
     HashMap<String,String> args = new HashMap<String,String>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
-    paf.init((IndexSchema)null, args);
+    paf.init(h.getCore().getLatestSchema(), args);
     PreAnalyzedParser parser = new SimplePreAnalyzedParser();
     for (int i = 0; i < valid.length; i++) {
       String s = valid[i];
@@ -100,7 +105,7 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
   @Test
   public void testInvalidSimple() {
     PreAnalyzedField paf = new PreAnalyzedField();
-    paf.init((IndexSchema)null, Collections.<String,String>emptyMap());
+    paf.init(h.getCore().getLatestSchema(), Collections.<String,String>emptyMap());
     for (String s : invalid) {
       try {
         paf.fromString(field, s, 1.0f);
@@ -125,7 +130,7 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
     // use Simple format
     HashMap<String,String> args = new HashMap<String,String>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
-    paf.init((IndexSchema)null, args);
+    paf.init(h.getCore().getLatestSchema(), args);
     try {
       Field f = (Field)paf.fromString(field, valid[0], 1.0f);
     } catch (Exception e) {
@@ -133,7 +138,7 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
     }
     // use JSON format
     args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
-    paf.init((IndexSchema)null, args);
+    paf.init(h.getCore().getLatestSchema(), args);
     try {
       Field f = (Field)paf.fromString(field, valid[0], 1.0f);
       fail("Should fail JSON parsing: '" + valid[0]);

@@ -18,54 +18,13 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
-import java.nio.CharBuffer;
-
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Field.ReusableStringReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 // sanity check some basics of fields
 public class TestField extends LuceneTestCase {
-  
-  public void testByteDocValuesField() throws Exception {
-    ByteDocValuesField field = new ByteDocValuesField("foo", (byte) 5);
-
-    trySetBoost(field);
-    field.setByteValue((byte) 6); // ok
-    trySetBytesValue(field);
-    trySetBytesRefValue(field);
-    trySetDoubleValue(field);
-    trySetIntValue(field);
-    trySetFloatValue(field);
-    trySetLongValue(field);
-    trySetReaderValue(field);
-    trySetShortValue(field);
-    trySetStringValue(field);
-    trySetTokenStreamValue(field);
-    
-    assertEquals(6, field.numericValue().byteValue());
-  }
-  
-  public void testDerefBytesDocValuesField() throws Exception {
-    DerefBytesDocValuesField field = new DerefBytesDocValuesField("foo", new BytesRef("bar"));
-
-    trySetBoost(field);
-    trySetByteValue(field);
-    field.setBytesValue("fubar".getBytes("UTF-8"));
-    field.setBytesValue(new BytesRef("baz"));
-    trySetDoubleValue(field);
-    trySetIntValue(field);
-    trySetFloatValue(field);
-    trySetLongValue(field);
-    trySetReaderValue(field);
-    trySetShortValue(field);
-    trySetStringValue(field);
-    trySetTokenStreamValue(field);
-    
-    assertEquals(new BytesRef("baz"), field.binaryValue());
-  }
   
   public void testDoubleField() throws Exception {
     Field fields[] = new Field[] {
@@ -107,7 +66,7 @@ public class TestField extends LuceneTestCase {
     trySetStringValue(field);
     trySetTokenStreamValue(field);
     
-    assertEquals(6d, field.numericValue().doubleValue(), 0.0d);
+    assertEquals(6d, Double.longBitsToDouble(field.numericValue().longValue()), 0.0d);
   }
   
   public void testFloatDocValuesField() throws Exception {
@@ -126,7 +85,7 @@ public class TestField extends LuceneTestCase {
     trySetStringValue(field);
     trySetTokenStreamValue(field);
     
-    assertEquals(6f, field.numericValue().floatValue(), 0.0f);
+    assertEquals(6f, Float.intBitsToFloat(field.numericValue().intValue()), 0.0f);
   }
   
   public void testFloatField() throws Exception {
@@ -153,25 +112,6 @@ public class TestField extends LuceneTestCase {
     }
   }
   
-  public void testIntDocValuesField() throws Exception {
-    IntDocValuesField field = new IntDocValuesField("foo", 5);
-
-    trySetBoost(field);
-    trySetByteValue(field);
-    trySetBytesValue(field);
-    trySetBytesRefValue(field);
-    trySetDoubleValue(field);
-    field.setIntValue(6); // ok
-    trySetFloatValue(field);
-    trySetLongValue(field);
-    trySetReaderValue(field);
-    trySetShortValue(field);
-    trySetStringValue(field);
-    trySetTokenStreamValue(field);
-    
-    assertEquals(6, field.numericValue().intValue());
-  }
-  
   public void testIntField() throws Exception {
     Field fields[] = new Field[] {
         new IntField("foo", 5, Field.Store.NO),
@@ -196,8 +136,8 @@ public class TestField extends LuceneTestCase {
     }
   }
   
-  public void testLongDocValuesField() throws Exception {
-    LongDocValuesField field = new LongDocValuesField("foo", 5L);
+  public void testNumericDocValuesField() throws Exception {
+    NumericDocValuesField field = new NumericDocValuesField("foo", 5L);
 
     trySetBoost(field);
     trySetByteValue(field);
@@ -239,46 +179,8 @@ public class TestField extends LuceneTestCase {
     }
   }
   
-  public void testPackedLongDocValuesField() throws Exception {
-    PackedLongDocValuesField field = new PackedLongDocValuesField("foo", 5L);
-
-    trySetBoost(field);
-    trySetByteValue(field);
-    trySetBytesValue(field);
-    trySetBytesRefValue(field);
-    trySetDoubleValue(field);
-    trySetIntValue(field);
-    trySetFloatValue(field);
-    field.setLongValue(6); // ok
-    trySetReaderValue(field);
-    trySetShortValue(field);
-    trySetStringValue(field);
-    trySetTokenStreamValue(field);
-    
-    assertEquals(6L, field.numericValue().longValue());
-  }
-  
-  public void testShortDocValuesField() throws Exception {
-    ShortDocValuesField field = new ShortDocValuesField("foo", (short)5);
-
-    trySetBoost(field);
-    trySetByteValue(field);
-    trySetBytesValue(field);
-    trySetBytesRefValue(field);
-    trySetDoubleValue(field);
-    trySetIntValue(field);
-    trySetFloatValue(field);
-    trySetLongValue(field);
-    trySetReaderValue(field);
-    field.setShortValue((short) 6); // ok
-    trySetStringValue(field);
-    trySetTokenStreamValue(field);
-    
-    assertEquals((short)6, field.numericValue().shortValue());
-  }
-  
   public void testSortedBytesDocValuesField() throws Exception {
-    SortedBytesDocValuesField field = new SortedBytesDocValuesField("foo", new BytesRef("bar"));
+    SortedDocValuesField field = new SortedDocValuesField("foo", new BytesRef("bar"));
 
     trySetBoost(field);
     trySetByteValue(field);
@@ -296,8 +198,8 @@ public class TestField extends LuceneTestCase {
     assertEquals(new BytesRef("baz"), field.binaryValue());
   }
   
-  public void testStraightBytesDocValuesField() throws Exception {
-    StraightBytesDocValuesField field = new StraightBytesDocValuesField("foo", new BytesRef("bar"));
+  public void testBinaryDocValuesField() throws Exception {
+    BinaryDocValuesField field = new BinaryDocValuesField("foo", new BytesRef("bar"));
 
     trySetBoost(field);
     trySetByteValue(field);
@@ -613,39 +515,4 @@ public class TestField extends LuceneTestCase {
     }
   }
   
-  public void testReusableStringReader() throws Exception {
-    ReusableStringReader reader = new ReusableStringReader();
-    assertEquals(-1, reader.read());
-    assertEquals(-1, reader.read(new char[1]));
-    assertEquals(-1, reader.read(new char[2], 1, 1));
-    assertEquals(-1, reader.read(CharBuffer.wrap(new char[2])));
-    
-    reader.setValue("foobar");
-    char[] buf = new char[4];
-    assertEquals(4, reader.read(buf));
-    assertEquals("foob", new String(buf));
-    assertEquals(2, reader.read(buf));
-    assertEquals("ar", new String(buf, 0, 2));
-    assertEquals(-1, reader.read(buf));
-    reader.close();
-
-    reader.setValue("foobar");
-    assertEquals(0, reader.read(buf, 1, 0));
-    assertEquals(3, reader.read(buf, 1, 3));
-    assertEquals("foo", new String(buf, 1, 3));
-    assertEquals(2, reader.read(CharBuffer.wrap(buf, 2, 2)));
-    assertEquals("ba", new String(buf, 2, 2));
-    assertEquals('r', (char) reader.read());
-    assertEquals(-1, reader.read(buf));
-    reader.close();
-
-    reader.setValue("foobar");
-    StringBuilder sb = new StringBuilder();
-    int ch;
-    while ((ch = reader.read()) != -1) {
-      sb.append((char) ch);
-    }
-    reader.close();
-    assertEquals("foobar", sb.toString());    
-  }
 }

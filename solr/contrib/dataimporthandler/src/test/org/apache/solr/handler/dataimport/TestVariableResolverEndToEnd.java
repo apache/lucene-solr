@@ -62,7 +62,7 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
     String thirdLocaleParam = random().nextBoolean() ? "" : (", '" + Locale.getDefault() + "'");
     StringBuilder sb = new StringBuilder();
     sb.append("<dataConfig> \n");
-    sb.append("<dataSource name=\"hsqldb\" driver=\"org.hsqldb.jdbcDriver\" url=\"jdbc:hsqldb:mem:.\" /> \n");
+    sb.append("<dataSource name=\"hsqldb\" driver=\"${dataimporter.request.dots.in.hsqldb.driver}\" url=\"jdbc:hsqldb:mem:.\" /> \n");
     sb.append("<document name=\"TestEvaluators\"> \n");
     sb.append("<entity name=\"FIRST\" processor=\"SqlEntityProcessor\" dataSource=\"hsqldb\" ");
     sb.append(" query=\"" +

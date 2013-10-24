@@ -235,19 +235,27 @@ class CSVWriter extends TextResponseWriter {
       // encapsulator will already be disabled if it wasn't specified
     }
 
-    Collection<String> fields = returnFields.getLuceneFieldNames();
+    Collection<String> fields = returnFields.getRequestedFieldNames();
     Object responseObj = rsp.getValues().get("response");
     boolean returnOnlyStored = false;
-    if (fields==null) {
+    if (fields==null||returnFields.hasPatternMatching()) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
-        fields = new LinkedHashSet<String>();
+        if(fields==null) {
+          fields = new LinkedHashSet<String>();
+        }
         for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
           fields.addAll(sdoc.getFieldNames());
         }
       } else {
         // get the list of fields from the index
-        fields = req.getSearcher().getFieldNames();
+        Collection<String> all = req.getSearcher().getFieldNames();
+        if(fields==null) {
+          fields = all;
+        }
+        else {
+          fields.addAll(all);
+        }
       }
       if (returnFields.wantsScore()) {
         fields.add("score");

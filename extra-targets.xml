@@ -62,14 +62,24 @@
     </mvn>
   </target>
 
-  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
-    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.6"
-      inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
-    <script language="groovy" taskname="svn">
-      <classpath>
-        <path refid="groovy.classpath"/>
-        <path refid="svnkit.classpath"/>
-      </classpath><![CDATA[
+  <target name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="false"/>
+  </target>
+
+  <!-- should only be called by jenkins, not precommit! -->
+  <target name="-check-after-regeneration" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="true"/>
+  </target>
+
+  <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
+    <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
+    <sequential>
+    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.8"
+      inline="true" conf="default" transitive="true" pathid="svnkit.classpath"/>
+    <local name="svn.checkprops.failed"/>
+    <local name="svn.unversioned.failed"/>
+    <local name="svn.changed.failed"/>
+    <groovy taskname="svn" classpathref="svnkit.classpath"><![CDATA[
       import org.tmatesoft.svn.core.*;
       import org.tmatesoft.svn.core.wc.*;
       
@@ -80,28 +90,32 @@
       File basedir = new File(project.getProperty('basedir')).getAbsoluteFile();
       int baseLen = basedir.toString().length();
       def convertRelative = {
-        file -> file.getAbsolutePath().substring(baseLen + 1).replace(File.separatorChar, (char)'/');
+        file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
       }
       
-      Set missingProps = new TreeSet(), unversioned = new TreeSet();
+      Set missingProps = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
 
-      self.log('Getting all versioned and unversioned files...');
+      task.log('Getting all versioned and unversioned files...');
       statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
         status ->
         SVNStatusType nodeStatus = status.getNodeStatus();
-        if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED) {
+        if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED || nodeStatus == SVNStatusType.STATUS_MISSING) {
           unversioned.add(convertRelative(status.getFile()));
         } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
           missingProps.add(convertRelative(status.getFile()));
         }
+        if (nodeStatus == SVNStatusType.STATUS_MODIFIED || nodeStatus == SVNStatusType.STATUS_REPLACED ||
+            nodeStatus == SVNStatusType.STATUS_DELETED  || nodeStatus == SVNStatusType.STATUS_ADDED) {
+          changed.add(convertRelative(status.getFile()));
+        }
       } as ISVNStatusHandler, null);
 
-      self.log('Filtering files with existing svn:eol-style...');
+      task.log('Filtering files with existing svn:eol-style...');
       wcClient.doGetProperty(basedir, 'svn:eol-style', SVNRevision.WORKING, SVNRevision.WORKING, true, {
         file, prop -> missingProps.remove(convertRelative(file));
       } as ISVNPropertyHandler);
       
-      self.log('Filtering files with binary svn:mime-type...');
+      task.log('Filtering files with binary svn:mime-type...');
       wcClient.doGetProperty(basedir, 'svn:mime-type', SVNRevision.WORKING, SVNRevision.WORKING, true, {
         file, prop ->
         prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
@@ -115,10 +129,20 @@
       };
       project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
       project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
-    ]]></script>
+      project.setProperty('svn.changed.failed', convertSet2String(changed));
+    ]]></groovy>
     <fail if="svn.checkprops.failed"
       message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>
     <fail if="svn.unversioned.failed"
       message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.unversioned.failed}"/>
-  </target>
+    <fail message="Source checkout is modified !!! Offending files:${line.separator}${svn.changed.failed}">
+      <condition>
+        <and>
+           <istrue value="@{failonmodifications}"/>
+           <isset property="svn.changed.failed"/>
+        </and>
+      </condition>
+    </fail>
+    </sequential>
+  </macrodef>
 </project>

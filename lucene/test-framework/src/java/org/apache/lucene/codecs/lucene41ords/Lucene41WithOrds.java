@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec; // javadocs
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -41,13 +41,19 @@ import org.apache.lucene.util.BytesRef;
 // any PostingsBaseFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene41Codec} that uses
+ * Customized version of {@link Lucene41PostingsFormat} that uses
  * {@link FixedGapTermsIndexWriter}.
  */
 public final class Lucene41WithOrds extends PostingsFormat {
-    
+  final int termIndexInterval;
+  
   public Lucene41WithOrds() {
+    this(FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
+  }
+  
+  public Lucene41WithOrds(int termIndexInterval) {
     super("Lucene41WithOrds");
+    this.termIndexInterval = termIndexInterval;
   }
 
   @Override
@@ -61,7 +67,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
     TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state);
+      indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
       success = true;
     } finally {
       if (!success) {
@@ -87,19 +93,16 @@ public final class Lucene41WithOrds extends PostingsFormat {
     }
   }
 
-  public final static int TERMS_CACHE_SIZE = 1024;
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
+      indexReader = new FixedGapTermsIndexReader(state.directory,
                                                  state.fieldInfos,
                                                  state.segmentInfo.name,
-                                                 state.termsIndexDivisor,
                                                  BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                  state.segmentSuffix, state.context);
       success = true;
@@ -112,12 +115,11 @@ public final class Lucene41WithOrds extends PostingsFormat {
     success = false;
     try {
       FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
+                                                state.directory,
                                                 state.fieldInfos,
                                                 state.segmentInfo,
                                                 postings,
                                                 state.context,
-                                                TERMS_CACHE_SIZE,
                                                 state.segmentSuffix);
       success = true;
       return ret;

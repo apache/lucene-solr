@@ -22,6 +22,7 @@ import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -49,26 +50,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createIndex(true);
-  }
-
-  /**
-   * Test that CustomScoreQuery of Type.BYTE returns the expected scores.
-   */
-  @Test
-  public void testCustomScoreByte() throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestCustomScore(BYTE_VALUESOURCE, 1.0);
-    doTestCustomScore(BYTE_VALUESOURCE, 2.0);
-  }
-
-  /**
-   * Test that CustomScoreQuery of Type.SHORT returns the expected scores.
-   */
-  @Test
-  public void testCustomScoreShort() throws Exception {
-    // INT field values are small enough to be parsed as short
-    doTestCustomScore(SHORT_VALUESOURCE, 1.0);
-    doTestCustomScore(SHORT_VALUESOURCE, 3.0);
   }
 
   /**
@@ -183,12 +164,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
+      final FieldCache.Ints values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) {
           assertTrue(doc <= context.reader().maxDoc());
-          return values[doc];
+          return values.get(doc);
         }
       };
     }
@@ -209,7 +190,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q);
 
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
     for(int i=0;i<N_DOCS;i++) {
@@ -223,7 +204,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @Test
   public void testRewrite() throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
 
     Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
     CustomScoreQuery original = new CustomScoreQuery(q);
@@ -248,7 +229,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     float boost = (float) dboost;
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
 
     // regular (boolean) query.
     BooleanQuery q1 = new BooleanQuery();
@@ -258,8 +239,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q1);
 
     // custom query, that should score the same as q1.
-    Query q2CustomNeutral = new CustomScoreQuery(q1);
-    q2CustomNeutral.setBoost(boost);
+    BooleanQuery q2CustomNeutral = new BooleanQuery(true);
+    Query q2CustomNeutralInner = new CustomScoreQuery(q1);
+    q2CustomNeutral.add(q2CustomNeutralInner, BooleanClause.Occur.SHOULD);
+    // a little tricky: we split the boost across an outer BQ and CustomScoreQuery
+    // this ensures boosting is correct across all these functions (see LUCENE-4935)
+    q2CustomNeutral.setBoost((float)Math.sqrt(dboost));
+    q2CustomNeutralInner.setBoost((float)Math.sqrt(dboost));
     log(q2CustomNeutral);
 
     // custom query, that should (by default) multiply the scores of q1 by that of the field
@@ -332,19 +318,19 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       
       float score2 = h2customNeutral.get(doc);
       logResult("score2=", s, q2, doc, score2);
-      assertEquals("same score (just boosted) for neutral", boost * score1, score2, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("same score (just boosted) for neutral", boost * score1, score2, CheckHits.explainToleranceDelta(boost * score1, score2));
 
       float score3 = h3CustomMul.get(doc);
       logResult("score3=", s, q3, doc, score3);
-      assertEquals("new score for custom mul", boost * fieldScore * score1, score3, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("new score for custom mul", boost * fieldScore * score1, score3, CheckHits.explainToleranceDelta(boost * fieldScore * score1, score3));
       
       float score4 = h4CustomAdd.get(doc);
       logResult("score4=", s, q4, doc, score4);
-      assertEquals("new score for custom add", boost * (fieldScore + score1), score4, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("new score for custom add", boost * (fieldScore + score1), score4, CheckHits.explainToleranceDelta(boost * (fieldScore + score1), score4));
       
       float score5 = h5CustomMulAdd.get(doc);
       logResult("score5=", s, q5, doc, score5);
-      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, CheckHits.explainToleranceDelta(boost * fieldScore * (score1 + fieldScore), score5));
     }
   }
 

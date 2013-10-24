@@ -28,6 +28,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * Abstract base implementation of a {@link Tokenizer} which is able to analyze the given input with a
@@ -36,17 +37,18 @@ import java.io.Reader;
 public abstract class BaseUIMATokenizer extends Tokenizer {
 
   protected FSIterator<AnnotationFS> iterator;
-  protected final AnalysisEngine ae;
-  protected final CAS cas;
 
-  protected BaseUIMATokenizer(Reader reader, String descriptorPath) {
-    super(reader);
-    try {
-      ae = AEProviderFactory.getInstance().getAEProvider(descriptorPath).getAE();
-      cas = ae.newCAS();
-    } catch (ResourceInitializationException e) {
-      throw new RuntimeException(e);
-    }
+  private final String descriptorPath;
+  private final Map<String, Object> configurationParameters;
+
+  protected AnalysisEngine ae;
+  protected CAS cas;
+
+  protected BaseUIMATokenizer
+      (AttributeFactory factory, Reader reader, String descriptorPath, Map<String, Object> configurationParameters) {
+    super(factory, reader);
+    this.descriptorPath = descriptorPath;
+    this.configurationParameters = configurationParameters;
   }
 
   /**
@@ -56,8 +58,15 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  protected void analyzeInput() throws AnalysisEngineProcessException, IOException {
-    cas.reset();
+  protected void analyzeInput() throws ResourceInitializationException, AnalysisEngineProcessException, IOException {
+    if (ae == null) {
+      ae = AEProviderFactory.getInstance().getAEProvider(null, descriptorPath, configurationParameters).getAE();
+    }
+    if (cas == null) {
+      cas = ae.newCAS();
+    } else {
+      cas.reset();
+    }
     cas.setDocumentText(toString(input));
     ae.process(cas);
   }
@@ -80,13 +89,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     iterator = null;
   }
-
-  @Override
-  public void end() throws IOException {
-    iterator = null;
-  }
-
-
 }

@@ -13,13 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# All classes should derive from LuceneTestCase
-junit.framework.TestCase
+junit.framework.TestCase @ All classes should derive from LuceneTestCase
 
-# Use RandomizedRunner's random instead
-java.util.Random#<init>()
+java.util.Random#<init>() @ Use RandomizedRunner's random instead
 
-# Don't depend on wall clock times
 # TODO: fix tests that do this!
-#java.lang.System#currentTimeMillis()
-#java.lang.System#nanoTime()
+#java.lang.System#currentTimeMillis() @ Don't depend on wall clock times
+#java.lang.System#nanoTime() @ Don't depend on wall clock times

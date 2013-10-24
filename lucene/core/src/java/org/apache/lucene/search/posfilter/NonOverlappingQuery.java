@@ -24,6 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -100,7 +101,7 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
     }
 
     @Override
-    public Scorer scorer(Scorer filteredScorer) {
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
       throw new UnsupportedOperationException();
     }
 
@@ -130,7 +131,8 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer,
                          PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new BrouwerianScorer(innerWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs),
-                                  subtrahendWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs));
+                                  subtrahendWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs),
+                                  similarity.simScorer(stats, context));
     }
   }
 
@@ -140,8 +142,8 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
     private Interval subtInterval = new Interval();
     private int subtPosition = -1;
 
-    BrouwerianScorer(Scorer minuend, Scorer subtrahend) {
-      super(minuend);
+    BrouwerianScorer(Scorer minuend, Scorer subtrahend, Similarity.SimScorer simScorer) {
+      super(minuend, simScorer);
       this.subtrahend = subtrahend;
     }
 

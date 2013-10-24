@@ -25,6 +25,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -211,24 +212,23 @@ public class TestDoc extends LuceneTestCase {
    private SegmentInfoPerCommit merge(Directory dir, SegmentInfoPerCommit si1, SegmentInfoPerCommit si2, String merged, boolean useCompoundFile)
    throws Exception {
       IOContext context = newIOContext(random());
-      SegmentReader r1 = new SegmentReader(si1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
-      SegmentReader r2 = new SegmentReader(si2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
+      SegmentReader r1 = new SegmentReader(si1, context);
+      SegmentReader r2 = new SegmentReader(si2, context);
 
       final Codec codec = Codec.getDefault();
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-      final SegmentInfo si = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged, -1, false, codec, null, null);
+      final SegmentInfo si = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged, -1, false, codec, null);
 
-      SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                               MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
+      SegmentMerger merger = new SegmentMerger(Arrays.<AtomicReader>asList(r1, r2),
+          si, InfoStream.getDefault(), trackingDir,
+          MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
 
-      merger.add(r1);
-      merger.add(r2);
       MergeState mergeState = merger.merge();
       r1.close();
       r2.close();
       final SegmentInfo info = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged,
                                                si1.info.getDocCount() + si2.info.getDocCount(),
-                                               false, codec, null, null);
+                                               false, codec, null);
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
       
       if (useCompoundFile) {
@@ -239,13 +239,13 @@ public class TestDoc extends LuceneTestCase {
         }
       }
 
-      return new SegmentInfoPerCommit(info, 0, -1L);
+      return new SegmentInfoPerCommit(info, 0, -1L, -1L);
    }
 
 
    private void printSegment(PrintWriter out, SegmentInfoPerCommit si)
    throws Exception {
-      SegmentReader reader = new SegmentReader(si, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(si, newIOContext(random()));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

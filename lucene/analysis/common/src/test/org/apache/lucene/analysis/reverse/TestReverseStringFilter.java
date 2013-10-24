@@ -113,6 +113,6 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

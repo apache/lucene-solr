@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -67,7 +66,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader);
@@ -83,10 +82,10 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setCodec(new Lucene41Codec()); 
+    iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); 
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc.clone());
     Document doc = new Document();
     FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
     // turn this on for a cross-check
@@ -138,7 +137,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     verify(dir);
     _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw2 = new IndexWriter(dir, iwc);
+    IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
     iw2.forceMerge(1);
     iw2.close();
     verify(dir);
@@ -235,21 +234,21 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       leftEnum = leftTerms.iterator(leftEnum);
       rightEnum = rightTerms.iterator(rightEnum);
       
-      assertEquals(leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       
       SeekStatus leftStatus;
       SeekStatus rightStatus;
       
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
       }
       
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
@@ -261,7 +260,6 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -394,8 +392,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, leftDocs.docID());
+    assertEquals(-1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(docid, rightDocs.nextDoc());
@@ -417,8 +415,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, leftDocs.docID());
+    assertEquals(-1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(docid, rightDocs.nextDoc());

@@ -6,10 +6,10 @@ import java.util.Comparator;
 
 import org.apache.lucene.util.PriorityQueue;
 
+import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.Heap;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -41,7 +41,7 @@ public class ResultSortUtils {
    * @throws IllegalArgumentException is provided facet request is not supported 
    */
   public static Heap<FacetResultNode> createSuitableHeap(FacetRequest facetRequest) {
-    int nresults = facetRequest.getNumResults();
+    int nresults = facetRequest.numResults;
     boolean accending = (facetRequest.getSortOrder() == SortOrder.ASCENDING);
 
     if (nresults == Integer.MAX_VALUE) {
@@ -49,21 +49,10 @@ public class ResultSortUtils {
     }
 
     if (accending) {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new MaxValueHeap(nresults);
-        case ORDINAL:
-          return new MaxOrdinalHeap(nresults);
-      }
+      return new MaxValueHeap(nresults);
     } else {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new MinValueHeap(nresults);
-        case ORDINAL:
-          return new MinOrdinalHeap(nresults);
-      }
+      return new MinValueHeap(nresults);
     }
-    throw new IllegalArgumentException("none supported facet request: "+facetRequest);
   }
 
   private static class MinValueHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
@@ -73,12 +62,12 @@ public class ResultSortUtils {
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      double value0 = arg0.getValue();
-      double value1 = arg1.getValue();
+      double value0 = arg0.value;
+      double value1 = arg1.value;
 
       int valueCompare = Double.compare(value0, value1);
       if (valueCompare == 0) { 
-        return arg0.getOrdinal() < arg1.getOrdinal();
+        return arg0.ordinal < arg1.ordinal;
       }
 
       return valueCompare < 0;
@@ -93,42 +82,16 @@ public class ResultSortUtils {
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      double value0 = arg0.getValue();
-      double value1 = arg1.getValue();
+      double value0 = arg0.value;
+      double value1 = arg1.value;
 
       int valueCompare = Double.compare(value0, value1);
       if (valueCompare == 0) { 
-        return arg0.getOrdinal() > arg1.getOrdinal();
+        return arg0.ordinal > arg1.ordinal;
       }
 
       return valueCompare > 0;
     }
-  }
-
-  private static class MinOrdinalHeap extends
-  PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
-    public MinOrdinalHeap(int size) {
-      super(size);
-    }
-
-    @Override
-    protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.getOrdinal() < arg1.getOrdinal();
-    }
-
-  }
-
-  private static class MaxOrdinalHeap extends
-  PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
-    public MaxOrdinalHeap(int size) {
-      super(size);
-    }
-
-    @Override
-    protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.getOrdinal() > arg1.getOrdinal();
-    }
-
   }
 
   /**
@@ -156,10 +119,9 @@ public class ResultSortUtils {
         Collections.sort(resultNodes, new Comparator<FacetResultNode>() {
           @Override
           public int compare(FacetResultNode o1, FacetResultNode o2) {
-            int value = Double.compare(o1.getValue(), o2
-                .getValue());
+            int value = Double.compare(o1.value, o2.value);
             if (value == 0) {
-              value = o1.getOrdinal() - o2.getOrdinal();
+              value = o1.ordinal - o2.ordinal;
             }
             if (accending) {
               value = -value;
@@ -198,4 +160,5 @@ public class ResultSortUtils {
       resultNodes.clear();
     }
   }
+  
 }

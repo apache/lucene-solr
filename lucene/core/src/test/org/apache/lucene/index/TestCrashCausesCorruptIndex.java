@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -146,7 +147,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * This test class provides direct access to "simulating" a crash right after 
    * realDirectory.createOutput(..) has been called on a certain specified name.
    */
-  private static class CrashAfterCreateOutput extends Directory {
+  private static class CrashAfterCreateOutput extends BaseDirectory {
         
     private Directory realDirectory;
     private String crashAfterCreateOutput;

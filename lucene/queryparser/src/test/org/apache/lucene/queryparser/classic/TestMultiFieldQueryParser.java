@@ -28,10 +28,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -294,7 +297,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
     IndexReader ir = DirectoryReader.open(ramDir);
-    IndexSearcher is = new IndexSearcher(ir);
+    IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     ir.close();
@@ -308,7 +311,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
 
     public AnalyzerReturningNull() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override
@@ -327,6 +330,16 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return stdAnalyzer.createComponents(fieldName, reader);
     }
+  }
+  
+  public void testSimpleRegex() throws ParseException {
+    String[] fields = new String[] {"a", "b"};
+    MultiFieldQueryParser mfqp = new MultiFieldQueryParser(TEST_VERSION_CURRENT, fields, new MockAnalyzer(random()));
+
+    BooleanQuery bq = new BooleanQuery(true);
+    bq.add(new RegexpQuery(new Term("a", "[a-z][123]")), Occur.SHOULD);
+    bq.add(new RegexpQuery(new Term("b", "[a-z][123]")), Occur.SHOULD);
+    assertEquals(bq, mfqp.parse("/[a-z][123]/"));
   }
 
 }

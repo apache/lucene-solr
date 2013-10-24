@@ -18,18 +18,27 @@ package org.apache.lucene.analysis.cn.smart;
  */
 
 import java.io.Reader;
+import java.util.Map;
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Factory for the SmartChineseAnalyzer {@link SentenceTokenizer}
  * @lucene.experimental
  */
 public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
+  
+  /** Creates a new SmartChineseSentenceTokenizerFactory */
+  public SmartChineseSentenceTokenizerFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
-  public Tokenizer create(Reader input) {
-    return new SentenceTokenizer(input);
+  public SentenceTokenizer create(AttributeFactory factory, Reader input) {
+    return new SentenceTokenizer(factory, input);
   }
 }

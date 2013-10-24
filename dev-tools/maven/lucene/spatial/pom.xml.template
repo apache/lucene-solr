@@ -35,8 +35,8 @@
   </description>
   <properties>
     <module-directory>lucene/spatial</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <dependencies>
     <dependency> 

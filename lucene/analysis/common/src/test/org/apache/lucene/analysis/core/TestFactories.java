@@ -19,7 +19,10 @@ package org.apache.lucene.analysis.core;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collections;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -27,12 +30,12 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Sanity check some things about all factories,
@@ -58,8 +61,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
   }
   
   private void doTestTokenizer(String tokenizer) throws IOException {
-    TokenizerFactory factory = TokenizerFactory.forName(tokenizer);
-    if (initialize(factory)) {
+    Class<? extends TokenizerFactory> factoryClazz = TokenizerFactory.lookupClass(tokenizer);
+    TokenizerFactory factory = (TokenizerFactory) initialize(factoryClazz);
+    if (factory != null) {
       // we managed to fully create an instance. check a few more things:
       
       // if it implements MultiTermAware, sanity check its impl
@@ -77,8 +81,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
   }
   
   private void doTestTokenFilter(String tokenfilter) throws IOException {
-    TokenFilterFactory factory = TokenFilterFactory.forName(tokenfilter);
-    if (initialize(factory)) {
+    Class<? extends TokenFilterFactory> factoryClazz = TokenFilterFactory.lookupClass(tokenfilter);
+    TokenFilterFactory factory = (TokenFilterFactory) initialize(factoryClazz);
+    if (factory != null) {
       // we managed to fully create an instance. check a few more things:
       
       // if it implements MultiTermAware, sanity check its impl
@@ -96,8 +101,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
   }
   
   private void doTestCharFilter(String charfilter) throws IOException {
-    CharFilterFactory factory = CharFilterFactory.forName(charfilter);
-    if (initialize(factory)) {
+    Class<? extends CharFilterFactory> factoryClazz = CharFilterFactory.lookupClass(charfilter);
+    CharFilterFactory factory = (CharFilterFactory) initialize(factoryClazz);
+    if (factory != null) {
       // we managed to fully create an instance. check a few more things:
       
       // if it implements MultiTermAware, sanity check its impl
@@ -115,39 +121,47 @@ public class TestFactories extends BaseTokenStreamTestCase {
   }
   
   /** tries to initialize a factory with no arguments */
-  private boolean initialize(AbstractAnalysisFactory factory) throws IOException {
-    boolean success = false;
+  private AbstractAnalysisFactory initialize(Class<? extends AbstractAnalysisFactory> factoryClazz) throws IOException {
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+    Constructor<? extends AbstractAnalysisFactory> ctor;
     try {
-      factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-      factory.init(Collections.<String,String>emptyMap());
-      if (factory instanceof ResourceLoaderAware) {
-        ResourceLoaderAware resourceLoaderAware = (ResourceLoaderAware) factory;
-          resourceLoaderAware.inform(new ClasspathResourceLoader(factory.getClass()));
+      ctor = factoryClazz.getConstructor(Map.class);
+    } catch (Exception e) {
+      throw new RuntimeException("factory '" + factoryClazz + "' does not have a proper ctor!");
+    }
+    
+    AbstractAnalysisFactory factory = null;
+    try {
+      factory = ctor.newInstance(args);
+    } catch (InstantiationException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    } catch (InvocationTargetException e) {
+      if (e.getCause() instanceof IllegalArgumentException) {
+        // its ok if we dont provide the right parameters to throw this
+        return null;
       }
-      success = true;
-    } catch (IllegalArgumentException ignored) {
-      // its ok if we dont provide the right parameters to throw this
     }
     
     if (factory instanceof ResourceLoaderAware) {
-      success = false;
       try {
         ((ResourceLoaderAware) factory).inform(new StringMockResourceLoader(""));
-        success = true;
       } catch (IOException ignored) {
         // its ok if the right files arent available or whatever to throw this
       } catch (IllegalArgumentException ignored) {
         // is this ok? I guess so
       }
     }
-    return success;
+    return factory;
   }
   
   // some silly classes just so we can use checkRandomData
-  private TokenizerFactory assertingTokenizer = new TokenizerFactory() {
+  private TokenizerFactory assertingTokenizer = new TokenizerFactory(new HashMap<String,String>()) {
     @Override
-    public Tokenizer create(Reader input) {
-      return new MockTokenizer(input);
+    public MockTokenizer create(AttributeFactory factory, Reader input) {
+      return new MockTokenizer(factory, input);
     }
   };
   

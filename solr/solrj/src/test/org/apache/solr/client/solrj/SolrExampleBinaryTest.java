@@ -41,11 +41,12 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:"+port+context;
+      String url = jetty.getBaseUrl().toString() + "/collection1";
       HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
+      s.setUseMultiPartPost(random().nextBoolean());
 
       // where the magic happens
       s.setParser(new BinaryResponseParser());

@@ -37,7 +37,8 @@ public class TestMultiFields extends LuceneTestCase {
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
-      _TestUtil.keepFullyDeletedSegments(w);
+      // we can do this because we use NoMergePolicy (and dont merge to "nothing")
+      w.setKeepFullyDeletedSegments(true);
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();

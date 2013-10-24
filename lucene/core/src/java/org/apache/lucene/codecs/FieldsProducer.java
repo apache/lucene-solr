@@ -36,4 +36,7 @@ public abstract class FieldsProducer extends Fields implements Closeable {
 
   @Override
   public abstract void close() throws IOException;
+  
+  /** Returns approximate RAM bytes used */
+  public abstract long ramBytesUsed();
 }

@@ -34,8 +34,8 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "ağacı", "ağaç");
-    checkOneTermReuse(a, "ağaç", "ağaç");
+    checkOneTerm(a, "ağacı", "ağaç");
+    checkOneTerm(a, "ağaç", "ağaç");
     // stopword
     assertAnalyzesTo(a, "dolayı", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("ağacı"), false);
     Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT, 
         TurkishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "ağacı", "ağacı");
-    checkOneTermReuse(a, "ağaç", "ağaç");
+    checkOneTerm(a, "ağacı", "ağacı");
+    checkOneTerm(a, "ağaç", "ağaç");
   }
   
   /** blast some random strings through the analyzer */

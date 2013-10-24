@@ -19,12 +19,6 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
@@ -50,20 +44,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     createIndex(true);
   }
 
-  /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */
-  @Test
-  public void testRankByte () throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestRank(BYTE_VALUESOURCE);
-  }
-
-  /** Test that FieldScoreQuery of Type.SHORT returns docs in expected order. */
-  @Test
-  public void testRankShort () throws Exception {
-    // INT field values are small enough to be parsed as short
-    doTestRank(SHORT_VALUESOURCE);
-  }
-
   /** Test that FieldScoreQuery of Type.INT returns docs in expected order. */
   @Test
   public void testRankInt () throws Exception {
@@ -83,7 +63,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   private void doTestRank (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     log("test: "+ functionQuery);
     QueryUtils.check(random(), functionQuery,s);
     ScoreDoc[] h = s.search(functionQuery, null, 1000).scoreDocs;
@@ -97,20 +77,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       prevID = resID;
     }
     r.close();
-  }
-
-  /** Test that FieldScoreQuery of Type.BYTE returns the expected scores. */
-  @Test
-  public void testExactScoreByte () throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestExactScore(BYTE_VALUESOURCE);
-  }
-
-  /** Test that FieldScoreQuery of Type.SHORT returns the expected scores. */
-  @Test
-  public void testExactScoreShort () throws  Exception {
-    // INT field values are small enough to be parsed as short
-    doTestExactScore(SHORT_VALUESOURCE);
   }
 
   /** Test that FieldScoreQuery of Type.INT returns the expected scores. */
@@ -132,7 +98,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   private void doTestExactScore (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs td = s.search(functionQuery,null,1000);
     assertEquals("All docs should be matched!",N_DOCS,td.totalHits);
     ScoreDoc sd[] = td.scoreDocs;

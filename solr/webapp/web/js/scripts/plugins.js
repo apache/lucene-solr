@@ -254,12 +254,8 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
 
           for( var stats_key in details[detail_key] )
           {
-            var stats_value = details[detail_key][stats_key];
-
-            if( 'readerDir' === stats_key )
-            {
-              stats_value = stats_value.replace( /@/g, '@&#8203;' );
-            }
+            var stats_value = new String( details[detail_key][stats_key] );
+            stats_value = stats_value.replace( /([\(@])/g, '$1&#8203;' );
 
             content += '<li><dl class="clearfix">' + "\n";
             content += '<dt>' + stats_key + ':</dt>' + "\n";

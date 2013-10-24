@@ -19,13 +19,14 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.DisjointSpatialFilter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
- * A {@link PrefixTreeStrategy} which uses {@link RecursivePrefixTreeFilter}.
+ * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
  * This strategy has support for searching non-point shapes (note: not tested).
  * Even a query shape with distErrPct=0 (fully precise to the grid) should have
  * good performance for typical data, unless there is a lot of indexed data
@@ -37,8 +38,16 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   private int prefixGridScanLevel;
 
+  /** True if only indexed points shall be supported.  See
+   *  {@link IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
+  protected boolean pointsOnly = false;
+
+  /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  protected boolean multiOverlappingIndexedShapes = true;
+
   public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
-    super(grid, fieldName);
+    super(grid, fieldName,
+        true);//simplify indexed cells
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
   }
 
@@ -62,15 +71,24 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (op != SpatialOperation.Intersects)
-      throw new UnsupportedSpatialOperation(op);
+    if (op == SpatialOperation.IsDisjointTo)
+      return new DisjointSpatialFilter(this, args, getFieldName());
 
     Shape shape = args.getShape();
-
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
-    return new RecursivePrefixTreeFilter(
-        getFieldName(), grid, shape, prefixGridScanLevel, detailLevel);
+    if (pointsOnly || op == SpatialOperation.Intersects) {
+      return new IntersectsPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly);
+    } else if (op == SpatialOperation.IsWithin) {
+      return new WithinPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          -1);//-1 flag is slower but ensures correct results
+    } else if (op == SpatialOperation.Contains) {
+      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel,
+          multiOverlappingIndexedShapes);
+    }
+    throw new UnsupportedSpatialOperation(op);
   }
 }
 

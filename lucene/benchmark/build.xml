@@ -147,6 +147,7 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
+      <pathelement path="${queries.jar}"/>
       <fileset dir="${common.dir}/analysis/icu/lib"/>
       <path refid="base.classpath"/>
       <fileset dir="lib"/>

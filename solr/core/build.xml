@@ -15,15 +15,22 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-<project name="solr-core" default="default">
+<project name="solr-core" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr Core</description>
 
   <!-- html file for testing -->
   <property name="rat.excludes" value="**/htmlStripReaderTest.html,**/*.iml"/>
+  
+  <property name="test.lib.dir" location="test-lib"/>
 
   <import file="../common-build.xml"/>
 
   <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>
+
+  <path id="test.classpath">
+    <path refid="solr.test.base.classpath"/>
+    <fileset dir="${test.lib.dir}" includes="*.jar"/>
+  </path>
 
   <!-- specialized to ONLY depend on solrj -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solrj">
@@ -43,8 +50,13 @@
 
   <target name="dist-maven" depends="dist-maven-src-java"/>
 
-
-
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <sequential>
+      <ivy:retrieve conf="compile,compile.hadoop" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
+      <ivy:retrieve conf="test,test.DfsMiniCluster" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
+    </sequential>
+  </target>
 
   <target name="javacc" depends="javacc-QueryParser"/>
   <target name="javacc-QueryParser" depends="resolve-javacc">
@@ -67,7 +79,7 @@
   <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">
     <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make JavaCC ANT task happy: -->
     <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0"
-      inline="true" conf="default" transitive="false" type="jar" sync="true"
+      inline="true" transitive="false" type="jar" sync="true"
       pattern="${build.dir}/javacc/bin/lib/[artifact].[ext]"/>
   </target>
 

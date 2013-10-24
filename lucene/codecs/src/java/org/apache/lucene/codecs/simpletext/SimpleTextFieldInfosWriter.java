@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -53,14 +53,15 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
   static final BytesRef NORMS           =  new BytesRef("  norms ");
   static final BytesRef NORMS_TYPE      =  new BytesRef("  norms type ");
   static final BytesRef DOCVALUES       =  new BytesRef("  doc values ");
+  static final BytesRef DOCVALUES_GEN   =  new BytesRef("  doc values gen ");
   static final BytesRef INDEXOPTIONS    =  new BytesRef("  index options ");
   static final BytesRef NUM_ATTS        =  new BytesRef("  attributes ");
   final static BytesRef ATT_KEY         =  new BytesRef("    key ");
   final static BytesRef ATT_VALUE       =  new BytesRef("    value ");
   
   @Override
-  public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
+  public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
     IndexOutput out = directory.createOutput(fileName, context);
     BytesRef scratch = new BytesRef();
     boolean success = false;
@@ -108,6 +109,10 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, DOCVALUES);
         SimpleTextUtil.write(out, getDocValuesType(fi.getDocValuesType()), scratch);
         SimpleTextUtil.writeNewline(out);
+        
+        SimpleTextUtil.write(out, DOCVALUES_GEN);
+        SimpleTextUtil.write(out, Long.toString(fi.getDocValuesGen()), scratch);
+        SimpleTextUtil.writeNewline(out);
                
         Map<String,String> atts = fi.attributes();
         int numAtts = atts == null ? 0 : atts.size();
@@ -137,7 +142,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
     }
   }
   
-  private static String getDocValuesType(DocValues.Type type) {
+  private static String getDocValuesType(DocValuesType type) {
     return type == null ? "false" : type.toString();
   }
 }

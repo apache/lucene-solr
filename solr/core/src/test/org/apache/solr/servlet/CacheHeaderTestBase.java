@@ -26,7 +26,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URIUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -49,10 +48,8 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
       qparams.add(new BasicNameValuePair(params[i * 2], params[i * 2 + 1]));
     }
 
-    java.net.URI uri = URIUtils.createURI("http",
-        new URI(httpserver.getBaseURL()).getHost(),
-        new URI(httpserver.getBaseURL()).getPort(), "/solr/select",
-        URLEncodedUtils.format(qparams, "UTF-8"), null);
+    URI uri = URI.create(httpserver.getBaseURL() + "/select?" +
+                         URLEncodedUtils.format(qparams, "UTF-8"));
    
     if ("GET".equals(method)) {
       m = new HttpGet(uri);
@@ -73,10 +70,9 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     for(int i=0;i<params.length/2;i++) {
       qparams.add(new BasicNameValuePair(params[i*2], params[i*2+1]));
     }
-    java.net.URI uri = URIUtils.createURI("http",
-        new URI(httpserver.getBaseURL()).getHost(),
-        new URI(httpserver.getBaseURL()).getPort(), "/solr/update",
-        URLEncodedUtils.format(qparams, "UTF-8"), null);
+
+    URI uri = URI.create(httpserver.getBaseURL() + "/update?" + 
+                         URLEncodedUtils.format(qparams, "UTF-8"));
     
     if ("GET".equals(method)) {
       m=new HttpGet(uri);

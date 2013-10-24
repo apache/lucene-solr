@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a
      more concise example.
 
-     $Id: schema-copyfield-test.xml 721758 2008-11-30 04:46:20Z koji $
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
-     $Name:  $
   -->
 
 <schema name="test" version="1.2">

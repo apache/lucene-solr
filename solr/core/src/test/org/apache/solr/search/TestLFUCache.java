@@ -38,15 +38,6 @@ import java.util.Map;
  */
 public class TestLFUCache extends SolrTestCaseJ4 {
 
-  private class LFURegenerator implements CacheRegenerator {
-    @Override
-    public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                  SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
-      newCache.put(oldKey, oldVal);
-      return true;
-    }
-  }
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-caching.xml", "schema.xml");
@@ -139,7 +130,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       params.put("size", "100");
       params.put("initialSize", "10");
       params.put("autowarmCount", "25");
-      LFURegenerator regenerator = new LFURegenerator();
+      NoOpRegenerator regenerator = new NoOpRegenerator();
       Object initObj = lfuCache.init(params, null, regenerator);
       lfuCache.setState(SolrCache.State.LIVE);
       for (int i = 0; i < 101; i++) {

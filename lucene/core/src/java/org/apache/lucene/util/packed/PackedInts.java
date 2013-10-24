@@ -18,12 +18,14 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -213,6 +215,11 @@ public class PackedInts {
       this.format = format;
       this.bitsPerValue = bitsPerValue;
     }
+
+    @Override
+    public String toString() {
+      return "FormatAndBits(format=" + format + " bitsPerValue=" + bitsPerValue + ")";
+    }
   }
 
   /**
@@ -280,15 +287,28 @@ public class PackedInts {
   public static interface Decoder {
 
     /**
-     * The minimum number of long blocks to decode in a single call.
+     * The minimum number of long blocks to encode in a single iteration, when
+     * using long encoding.
      */
-    int blockCount();
+    int longBlockCount();
 
     /**
-     * The number of values that can be stored in <code>blockCount()</code> long
+     * The number of values that can be stored in {@link #longBlockCount()} long
      * blocks.
      */
-    int valueCount();
+    int longValueCount();
+
+    /**
+     * The minimum number of byte blocks to encode in a single iteration, when
+     * using byte encoding.
+     */
+    int byteBlockCount();
+
+    /**
+     * The number of values that can be stored in {@link #byteBlockCount()} byte
+     * blocks.
+     */
+    int byteValueCount();
 
     /**
      * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
@@ -350,15 +370,28 @@ public class PackedInts {
   public static interface Encoder {
 
     /**
-     * The minimum number of long blocks to encode in a single call.
+     * The minimum number of long blocks to encode in a single iteration, when
+     * using long encoding.
      */
-    int blockCount();
+    int longBlockCount();
 
     /**
-     * The number of values that can be stored in <code>blockCount()</code> long
+     * The number of values that can be stored in {@link #longBlockCount()} long
      * blocks.
      */
-    int valueCount();
+    int longValueCount();
+
+    /**
+     * The minimum number of byte blocks to encode in a single iteration, when
+     * using byte encoding.
+     */
+    int byteBlockCount();
+
+    /**
+     * The number of values that can be stored in {@link #byteBlockCount()} byte
+     * blocks.
+     */
+    int byteValueCount();
 
     /**
      * Read <code>iterations * valueCount()</code> values from <code>values</code>,
@@ -655,6 +688,57 @@ public class PackedInts {
     }
   }
 
+  /** A {@link Reader} which has all its values equal to 0 (bitsPerValue = 0). */
+  public static final class NullReader implements Reader {
+
+    private final int valueCount;
+
+    /** Sole constructor. */
+    public NullReader(int valueCount) {
+      this.valueCount = valueCount;
+    }
+
+    @Override
+    public long get(int index) {
+      return 0;
+    }
+
+    @Override
+    public int get(int index, long[] arr, int off, int len) {
+      assert len > 0 : "len must be > 0 (got " + len + ")";
+      assert index >= 0 && index < valueCount;
+      len = Math.min(len, valueCount - index);
+      Arrays.fill(arr, off, off + len, 0);
+      return len;
+    }
+
+    @Override
+    public int getBitsPerValue() {
+      return 0;
+    }
+
+    @Override
+    public int size() {
+      return valueCount;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT);
+    }
+
+    @Override
+    public Object getArray() {
+      return null;
+    }
+
+    @Override
+    public boolean hasArray() {
+      return false;
+    }
+
+  }
+
   /** A write-once Writer.
    * @lucene.internal
    */
@@ -774,6 +858,22 @@ public class PackedInts {
         throw new AssertionError("Unknown Writer format: " + format);
     }
   }
+  
+  /**
+   * Expert: Restore a {@link Reader} from a stream without reading metadata at
+   * the beginning of the stream. This method is useful to restore data when
+   * metadata has been previously read using {@link #readHeader(DataInput)}.
+   *
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param header       metadata result from <code>readHeader()</code>
+   * @return             a Reader
+   * @throws IOException If there is a low-level I/O error
+   * @see #readHeader(DataInput)
+   * @lucene.internal
+   */
+  public static Reader getReaderNoHeader(DataInput in, Header header) throws IOException {
+    return getReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
+  }
 
   /**
    * Restore a {@link Reader} from a stream.
@@ -886,6 +986,23 @@ public class PackedInts {
         throw new AssertionError("Unknwown format: " + format);
     }
   }
+  
+  /**
+   * Expert: Construct a direct {@link Reader} from an {@link IndexInput} 
+   * without reading metadata at the beginning of the stream. This method is 
+   * useful to restore data when metadata has been previously read using 
+   * {@link #readHeader(DataInput)}.
+   *
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param header       metadata result from <code>readHeader()</code>
+   * @return             a Reader
+   * @throws IOException If there is a low-level I/O error
+   * @see #readHeader(DataInput)
+   * @lucene.internal
+   */
+  public static Reader getDirectReaderNoHeader(IndexInput in, Header header) throws IOException {
+    return getDirectReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
+  }
 
   /**
    * Construct a direct {@link Reader} from an {@link IndexInput}. This method
@@ -930,14 +1047,21 @@ public class PackedInts {
    */
   public static Mutable getMutable(int valueCount,
       int bitsPerValue, float acceptableOverheadRatio) {
-    assert valueCount >= 0;
-
     final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
-    switch (formatAndBits.format) {
+    return getMutable(valueCount, formatAndBits.bitsPerValue, formatAndBits.format);
+  }
+
+  /** Same as {@link #getMutable(int, int, float)} with a pre-computed number
+   *  of bits per value and format.
+   *  @lucene.internal */
+  public static Mutable getMutable(int valueCount,
+      int bitsPerValue, PackedInts.Format format) {
+    assert valueCount >= 0;
+    switch (format) {
       case PACKED_SINGLE_BLOCK:
-        return Packed64SingleBlock.create(valueCount, formatAndBits.bitsPerValue);
+        return Packed64SingleBlock.create(valueCount, bitsPerValue);
       case PACKED:
-        switch (formatAndBits.bitsPerValue) {
+        switch (bitsPerValue) {
           case 8:
             return new Direct8(valueCount);
           case 16:
@@ -957,7 +1081,7 @@ public class PackedInts {
             }
             break;
         }
-        return new Packed64(valueCount, formatAndBits.bitsPerValue);
+        return new Packed64(valueCount, bitsPerValue);
       default:
         throw new AssertionError();
     }
@@ -1092,29 +1216,95 @@ public class PackedInts {
       for (int i = 0; i < len; ++i) {
         dest.set(destPos++, src.get(srcPos++));
       }
-    } else {
+    } else if (len > 0) {
       // use bulk operations
-      long[] buf = new long[Math.min(capacity, len)];
-      int remaining = 0;
-      while (len > 0) {
-        final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
-        assert read > 0;
-        srcPos += read;
-        len -= read;
-        remaining += read;
-        final int written = dest.set(destPos, buf, 0, remaining);
-        assert written > 0;
-        destPos += written;
-        if (written < remaining) {
-          System.arraycopy(buf, written, buf, 0, remaining - written);
-        }
-        remaining -= written;
-      }
-      while (remaining > 0) {
-        final int written = dest.set(destPos, buf, 0, remaining);
-        remaining -= written;
-      }
+      final long[] buf = new long[Math.min(capacity, len)];
+      copy(src, srcPos, dest, destPos, len, buf);
     }
+  }
+
+  /** Same as {@link #copy(Reader, int, Mutable, int, int, int)} but using a pre-allocated buffer. */
+  static void copy(Reader src, int srcPos, Mutable dest, int destPos, int len, long[] buf) {
+    assert buf.length > 0;
+    int remaining = 0;
+    while (len > 0) {
+      final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
+      assert read > 0;
+      srcPos += read;
+      len -= read;
+      remaining += read;
+      final int written = dest.set(destPos, buf, 0, remaining);
+      assert written > 0;
+      destPos += written;
+      if (written < remaining) {
+        System.arraycopy(buf, written, buf, 0, remaining - written);
+      }
+      remaining -= written;
+    }
+    while (remaining > 0) {
+      final int written = dest.set(destPos, buf, 0, remaining);
+      destPos += written;
+      remaining -= written;
+      System.arraycopy(buf, written, buf, 0, remaining);
+    }
+  }
+
+  /**
+   * Expert: reads only the metadata from a stream. This is useful to later
+   * restore a stream or open a direct reader via 
+   * {@link #getReaderNoHeader(DataInput, Header)}
+   * or {@link #getDirectReaderNoHeader(IndexInput, Header)}.
+   * @param    in the stream to read data
+   * @return   packed integer metadata.
+   * @throws   IOException If there is a low-level I/O error
+   * @see #getReaderNoHeader(DataInput, Header)
+   * @see #getDirectReaderNoHeader(IndexInput, Header)
+   */
+  public static Header readHeader(DataInput in) throws IOException {
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int bitsPerValue = in.readVInt();
+    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
+    final int valueCount = in.readVInt();
+    final Format format = Format.byId(in.readVInt());
+    return new Header(format, valueCount, bitsPerValue, version);
+  }
+  
+  /** Header identifying the structure of a packed integer array. */
+  public static class Header {
+
+    private final Format format;
+    private final int valueCount;
+    private final int bitsPerValue;
+    private final int version;
+
+    public Header(Format format, int valueCount, int bitsPerValue, int version) {
+      this.format = format;
+      this.valueCount = valueCount;
+      this.bitsPerValue = bitsPerValue;
+      this.version = version;
+    }    
+  }
+
+  /** Check that the block size is a power of 2, in the right bounds, and return
+   *  its log in base 2. */
+  static int checkBlockSize(int blockSize, int minBlockSize, int maxBlockSize) {
+    if (blockSize < minBlockSize || blockSize > maxBlockSize) {
+      throw new IllegalArgumentException("blockSize must be >= " + minBlockSize + " and <= " + maxBlockSize + ", got " + blockSize);
+    }
+    if ((blockSize & (blockSize - 1)) != 0) {
+      throw new IllegalArgumentException("blockSize must be a power of two, got " + blockSize);
+    }
+    return Integer.numberOfTrailingZeros(blockSize);
+  }
+
+  /** Return the number of blocks required to store <code>size</code> values on
+   *  <code>blockSize</code>. */
+  static int numBlocks(long size, int blockSize) {
+    final int numBlocks = (int) (size / blockSize) + (size % blockSize == 0 ? 0 : 1);
+    if ((long) numBlocks * blockSize < size) {
+      throw new IllegalArgumentException("size is too large for this block size");
+    }
+    return numBlocks;
   }
 
 }

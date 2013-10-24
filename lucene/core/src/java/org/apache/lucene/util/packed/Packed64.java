@@ -140,9 +140,9 @@ class Packed64 extends PackedInts.MutableImpl {
     final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
 
     // go to the next block where the value does not span across two blocks
-    final int offsetInBlocks = index % decoder.valueCount();
+    final int offsetInBlocks = index % decoder.longValueCount();
     if (offsetInBlocks != 0) {
-      for (int i = offsetInBlocks; i < decoder.valueCount() && len > 0; ++i) {
+      for (int i = offsetInBlocks; i < decoder.longValueCount() && len > 0; ++i) {
         arr[off++] = get(index++);
         --len;
       }
@@ -152,12 +152,12 @@ class Packed64 extends PackedInts.MutableImpl {
     }
 
     // bulk get
-    assert index % decoder.valueCount() == 0;
-    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    assert index % decoder.longValueCount() == 0;
+    int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
-    final int iterations = len / decoder.valueCount();
+    final int iterations = len / decoder.longValueCount();
     decoder.decode(blocks, blockIndex, arr, off, iterations);
-    final int gotValues = iterations * decoder.valueCount();
+    final int gotValues = iterations * decoder.longValueCount();
     index += gotValues;
     len -= gotValues;
     assert len >= 0;
@@ -204,9 +204,9 @@ class Packed64 extends PackedInts.MutableImpl {
     final PackedInts.Encoder encoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
 
     // go to the next block where the value does not span across two blocks
-    final int offsetInBlocks = index % encoder.valueCount();
+    final int offsetInBlocks = index % encoder.longValueCount();
     if (offsetInBlocks != 0) {
-      for (int i = offsetInBlocks; i < encoder.valueCount() && len > 0; ++i) {
+      for (int i = offsetInBlocks; i < encoder.longValueCount() && len > 0; ++i) {
         set(index++, arr[off++]);
         --len;
       }
@@ -216,12 +216,12 @@ class Packed64 extends PackedInts.MutableImpl {
     }
 
     // bulk set
-    assert index % encoder.valueCount() == 0;
-    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    assert index % encoder.longValueCount() == 0;
+    int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
-    final int iterations = len / encoder.valueCount();
+    final int iterations = len / encoder.longValueCount();
     encoder.encode(arr, off, blocks, blockIndex, iterations);
-    final int setValues = iterations * encoder.valueCount();
+    final int setValues = iterations * encoder.longValueCount();
     index += setValues;
     len -= setValues;
     assert len >= 0;
@@ -244,7 +244,12 @@ class Packed64 extends PackedInts.MutableImpl {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(blocks);
+    return RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 3 * RamUsageEstimator.NUM_BYTES_INT     // bpvMinusBlockSize,valueCount,bitsPerValue
+        + RamUsageEstimator.NUM_BYTES_LONG        // maskRight
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
+        + RamUsageEstimator.sizeOf(blocks);
   }
 
   @Override

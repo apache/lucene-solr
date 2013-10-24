@@ -1,11 +1,12 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaAware;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,8 +31,10 @@ import org.apache.solr.schema.SchemaField;
  * schema configuration.
  * @lucene.experimental
  */
-public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
+public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   private Codec codec;
+  private volatile SolrCore core;
+  
   // TODO: we need to change how solr does this?
   // rather than a string like "Pulsing" you need to be able to pass parameters
   // and everything to a field in the schema, e.g. we should provide factories for 
@@ -41,11 +44,17 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
   // how it constructs this from the XML... i don't care.
 
   @Override
-  public void inform(final IndexSchema schema) {
-    codec = new Lucene41Codec() {
+  public void inform(SolrCore core) {
+    this.core = core;
+  }
+
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+    codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
-        final SchemaField fieldOrNull = schema.getFieldOrNull(field);
+        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
         if (fieldOrNull == null) {
           throw new IllegalArgumentException("no such field " + field);
         }
@@ -55,12 +64,24 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
         }
         return super.getPostingsFormatForField(field);
       }
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
+        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
+        if (fieldOrNull == null) {
+          throw new IllegalArgumentException("no such field " + field);
+        }
+        String docValuesFormatName = fieldOrNull.getType().getDocValuesFormat();
+        if (docValuesFormatName != null) {
+          return DocValuesFormat.forName(docValuesFormatName);
+        }
+        return super.getDocValuesFormatForField(field);
+      }
     };
   }
 
   @Override
   public Codec getCodec() {
-    assert codec != null : "inform must be called first";
+    assert core != null : "inform must be called first";
     return codec;
   }
 }

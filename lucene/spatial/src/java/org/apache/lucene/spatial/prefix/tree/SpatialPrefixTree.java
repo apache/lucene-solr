@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix.tree;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
@@ -77,137 +78,157 @@ public abstract class SpatialPrefixTree {
    */
   public abstract int getLevelForDistance(double dist);
 
-  //TODO double getDistanceForLevel(int level)
+  /**
+   * Given a cell having the specified level, returns the distance from opposite
+   * corners. Since this might very depending on where the cell is, this method
+   * may over-estimate.
+   *
+   * @param level [1 to maxLevels]
+   * @return > 0
+   */
+  public double getDistanceForLevel(int level) {
+    if (level < 1 || level > getMaxLevels())
+      throw new IllegalArgumentException("Level must be in 1 to maxLevels range");
+    //TODO cache for each level
+    Cell cell = getCell(ctx.getWorldBounds().getCenter(), level);
+    Rectangle bbox = cell.getShape().getBoundingBox();
+    double width = bbox.getWidth();
+    double height = bbox.getHeight();
+    //Use standard cartesian hypotenuse. For geospatial, this answer is larger
+    // than the correct one but it's okay to over-estimate.
+    return Math.sqrt(width * width + height * height);
+  }
 
-  private transient Node worldNode;//cached
+  private transient Cell worldCell;//cached
 
   /**
-   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link #getNode(String)} with "".
+   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link #getCell(String)} with "".
    * This cell is threadsafe, just like a spatial prefix grid is, although cells aren't
    * generally threadsafe.
    * TODO rename to getTopCell or is this fine?
    */
-  public Node getWorldNode() {
-    if (worldNode == null) {
-      worldNode = getNode("");
+  public Cell getWorldCell() {
+    if (worldCell == null) {
+      worldCell = getCell("");
     }
-    return worldNode;
+    return worldCell;
   }
 
   /**
-   * The cell for the specified token. The empty string should be equal to {@link #getWorldNode()}.
+   * The cell for the specified token. The empty string should be equal to {@link #getWorldCell()}.
    * Precondition: Never called when token length > maxLevel.
    */
-  public abstract Node getNode(String token);
+  public abstract Cell getCell(String token);
 
-  public abstract Node getNode(byte[] bytes, int offset, int len);
+  public abstract Cell getCell(byte[] bytes, int offset, int len);
 
-  public final Node getNode(byte[] bytes, int offset, int len, Node target) {
+  public final Cell getCell(byte[] bytes, int offset, int len, Cell target) {
     if (target == null) {
-      return getNode(bytes, offset, len);
+      return getCell(bytes, offset, len);
     }
 
     target.reset(bytes, offset, len);
     return target;
   }
 
-  protected Node getNode(Point p, int level) {
-    return getNodes(p, level, false).get(0);
+  /**
+   * Returns the cell containing point {@code p} at the specified {@code level}.
+   */
+  protected Cell getCell(Point p, int level) {
+    return getCells(p, level, false).get(0);
   }
 
   /**
-   * Gets the intersecting & including cells for the specified shape, without exceeding detail level.
-   * The result is a set of cells (no dups), sorted. Unmodifiable.
+   * Gets the intersecting cells for the specified shape, without exceeding
+   * detail level. If a cell is within the query shape then it's marked as a
+   * leaf and none of its children are added.
    * <p/>
-   * This implementation checks if shape is a Point and if so uses an implementation that
-   * recursively calls {@link Node#getSubCell(com.spatial4j.core.shape.Point)}. Cell subclasses
-   * ideally implement that method with a quick implementation, otherwise, subclasses should
-   * override this method to invoke {@link #getNodesAltPoint(com.spatial4j.core.shape.Point, int, boolean)}.
-   * TODO consider another approach returning an iterator -- won't build up all cells in memory.
+   * This implementation checks if shape is a Point and if so returns {@link
+   * #getCells(com.spatial4j.core.shape.Point, int, boolean)}.
+   *
+   * @param shape       the shape; non-null
+   * @param detailLevel the maximum detail level to get cells for
+   * @param inclParents if true then all parent cells of leaves are returned
+   *                    too. The top world cell is never returned.
+   * @param simplify    for non-point shapes, this will simply/aggregate sets of
+   *                    complete leaves in a cell to its parent, resulting in
+   *                    ~20-25% fewer cells.
+   * @return a set of cells (no dups), sorted, immutable, non-null
    */
-  public List<Node> getNodes(Shape shape, int detailLevel, boolean inclParents) {
+  public List<Cell> getCells(Shape shape, int detailLevel, boolean inclParents,
+                             boolean simplify) {
+    //TODO consider an on-demand iterator -- it won't build up all cells in memory.
     if (detailLevel > maxLevels) {
       throw new IllegalArgumentException("detailLevel > maxLevels");
     }
-
-    List<Node> cells;
     if (shape instanceof Point) {
-      //optimized point algorithm
-      final int initialCapacity = inclParents ? 1 + detailLevel : 1;
-      cells = new ArrayList<Node>(initialCapacity);
-      recursiveGetNodes(getWorldNode(), (Point) shape, detailLevel, true, cells);
-      assert cells.size() == initialCapacity;
-    } else {
-      cells = new ArrayList<Node>(inclParents ? 1024 : 512);
-      recursiveGetNodes(getWorldNode(), shape, detailLevel, inclParents, cells);
+      return getCells((Point) shape, detailLevel, inclParents);
     }
-    if (inclParents) {
-      Node c = cells.remove(0);//remove getWorldNode()
-      assert c.getLevel() == 0;
-    }
+    List<Cell> cells = new ArrayList<Cell>(inclParents ? 4096 : 2048);
+    recursiveGetCells(getWorldCell(), shape, detailLevel, inclParents, simplify, cells);
     return cells;
   }
 
-  private void recursiveGetNodes(Node node, Shape shape, int detailLevel, boolean inclParents,
-                                 Collection<Node> result) {
-    if (node.isLeaf()) {//cell is within shape
-      result.add(node);
-      return;
+  /**
+   * Returns true if cell was added as a leaf. If it wasn't it recursively
+   * descends.
+   */
+  private boolean recursiveGetCells(Cell cell, Shape shape, int detailLevel,
+                                    boolean inclParents, boolean simplify,
+                                    List<Cell> result) {
+    if (cell.getLevel() == detailLevel) {
+      cell.setLeaf();//FYI might already be a leaf
     }
-    final Collection<Node> subCells = node.getSubCells(shape);
-    if (node.getLevel() == detailLevel - 1) {
-      if (subCells.size() < node.getSubCellsSize() || node.getLevel() == 0) {
-        if (inclParents)
-          result.add(node);
-        for (Node subCell : subCells) {
-          subCell.setLeaf();
-        }
-        result.addAll(subCells);
-      } else {//a bottom level (i.e. detail level) optimization where all boxes intersect, so use parent cell.
-        node.setLeaf();//the cell may not be strictly within but its close
-        result.add(node);
-      }
-    } else {
-      if (inclParents) {
-        result.add(node);
-      }
-      for (Node subCell : subCells) {
-        recursiveGetNodes(subCell, shape, detailLevel, inclParents, result);//tail call
-      }
+    if (cell.isLeaf()) {
+      result.add(cell);
+      return true;
     }
-  }
+    if (inclParents && cell.getLevel() != 0)
+      result.add(cell);
 
-  private void recursiveGetNodes(Node node, Point point, int detailLevel, boolean inclParents,
-                                 Collection<Node> result) {
-    if (inclParents) {
-      result.add(node);
+    Collection<Cell> subCells = cell.getSubCells(shape);
+    int leaves = 0;
+    for (Cell subCell : subCells) {
+      if (recursiveGetCells(subCell, shape, detailLevel, inclParents, simplify, result))
+        leaves++;
     }
-    final Node pCell = node.getSubCell(point);
-    if (node.getLevel() == detailLevel - 1) {
-      pCell.setLeaf();
-      result.add(pCell);
-    } else {
-      recursiveGetNodes(pCell, point, detailLevel, inclParents, result);//tail call
+    //can we simplify?
+    if (simplify && leaves == cell.getSubCellsSize() && cell.getLevel() != 0) {
+      //Optimization: substitute the parent as a leaf instead of adding all
+      // children as leaves
+
+      //remove the leaves
+      do {
+        result.remove(result.size() - 1);//remove last
+      } while (--leaves > 0);
+      //add cell as the leaf
+      cell.setLeaf();
+      if (!inclParents) // otherwise it was already added up above
+        result.add(cell);
+      return true;
     }
+    return false;
   }
 
   /**
-   * Subclasses might override {@link #getNodes(com.spatial4j.core.shape.Shape, int, boolean)}
-   * and check if the argument is a shape and if so, delegate
-   * to this implementation, which calls {@link #getNode(com.spatial4j.core.shape.Point, int)} and
-   * then calls {@link #getNode(String)} repeatedly if inclParents is true.
+   * A Point-optimized implementation of
+   * {@link #getCells(com.spatial4j.core.shape.Shape, int, boolean, boolean)}. That
+   * method in facts calls this for points.
+   * <p/>
+   * This implementation depends on {@link #getCell(String)} being fast, as its
+   * called repeatedly when incPlarents is true.
    */
-  protected final List<Node> getNodesAltPoint(Point p, int detailLevel, boolean inclParents) {
-    Node cell = getNode(p, detailLevel);
+  public List<Cell> getCells(Point p, int detailLevel, boolean inclParents) {
+    Cell cell = getCell(p, detailLevel);
     if (!inclParents) {
       return Collections.singletonList(cell);
     }
 
     String endToken = cell.getTokenString();
     assert endToken.length() == detailLevel;
-    List<Node> cells = new ArrayList<Node>(detailLevel);
+    List<Cell> cells = new ArrayList<Cell>(detailLevel);
     for (int i = 1; i < detailLevel; i++) {
-      cells.add(getNode(endToken.substring(0, i)));
+      cells.add(getCell(endToken.substring(0, i)));
     }
     cells.add(cell);
     return cells;
@@ -216,12 +237,12 @@ public abstract class SpatialPrefixTree {
   /**
    * Will add the trailing leaf byte for leaves. This isn't particularly efficient.
    */
-  public static List<String> nodesToTokenStrings(Collection<Node> nodes) {
-    List<String> tokens = new ArrayList<String>((nodes.size()));
-    for (Node node : nodes) {
-      final String token = node.getTokenString();
-      if (node.isLeaf()) {
-        tokens.add(token + (char) Node.LEAF_BYTE);
+  public static List<String> cellsToTokenStrings(Collection<Cell> cells) {
+    List<String> tokens = new ArrayList<String>((cells.size()));
+    for (Cell cell : cells) {
+      final String token = cell.getTokenString();
+      if (cell.isLeaf()) {
+        tokens.add(token + (char) Cell.LEAF_BYTE);
       } else {
         tokens.add(token);
       }

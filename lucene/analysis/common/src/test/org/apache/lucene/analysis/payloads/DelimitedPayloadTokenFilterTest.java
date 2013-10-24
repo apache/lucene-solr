@@ -34,6 +34,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
+    filter.reset();
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
     assertTermEquals("red", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
@@ -45,6 +46,8 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     assertTermEquals("brown", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
     assertTermEquals("dogs", filter, termAtt, payAtt, "NN".getBytes("UTF-8"));
     assertFalse(filter.incrementToken());
+    filter.end();
+    filter.close();
   }
 
   public void testNext() throws Exception {
@@ -53,6 +56,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
       (new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), 
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
+    filter.reset();
     assertTermEquals("The", filter, null);
     assertTermEquals("quick", filter, "JJ".getBytes("UTF-8"));
     assertTermEquals("red", filter, "JJ".getBytes("UTF-8"));
@@ -64,6 +68,8 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     assertTermEquals("brown", filter, "JJ".getBytes("UTF-8"));
     assertTermEquals("dogs", filter, "NN".getBytes("UTF-8"));
     assertFalse(filter.incrementToken());
+    filter.end();
+    filter.close();
   }
 
 
@@ -72,6 +78,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), '|', new FloatEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
+    filter.reset();
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, PayloadHelper.encodeFloat(1.0f));
     assertTermEquals("red", filter, termAtt, payAtt, PayloadHelper.encodeFloat(2.0f));
@@ -83,6 +90,8 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     assertTermEquals("brown", filter, termAtt, payAtt, PayloadHelper.encodeFloat(99.3f));
     assertTermEquals("dogs", filter, termAtt, payAtt, PayloadHelper.encodeFloat(83.7f));
     assertFalse(filter.incrementToken());
+    filter.end();
+    filter.close();
   }
 
   public void testIntEncoding() throws Exception {
@@ -90,6 +99,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), '|', new IntegerEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
+    filter.reset();
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, PayloadHelper.encodeInt(1));
     assertTermEquals("red", filter, termAtt, payAtt, PayloadHelper.encodeInt(2));
@@ -101,12 +111,13 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     assertTermEquals("brown", filter, termAtt, payAtt, PayloadHelper.encodeInt(99));
     assertTermEquals("dogs", filter, termAtt, payAtt, PayloadHelper.encodeInt(83));
     assertFalse(filter.incrementToken());
+    filter.end();
+    filter.close();
   }
 
   void assertTermEquals(String expected, TokenStream stream, byte[] expectPay) throws Exception {
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     PayloadAttribute payloadAtt = stream.getAttribute(PayloadAttribute.class);
-    stream.reset();
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
     BytesRef payload = payloadAtt.getPayload();
@@ -123,7 +134,6 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
 
 
   void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt, PayloadAttribute payAtt, byte[] expectPay) throws Exception {
-    stream.reset();
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
     BytesRef payload = payAtt.getPayload();

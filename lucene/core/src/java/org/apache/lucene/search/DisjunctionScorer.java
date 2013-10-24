@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * Base class for Scorers that score disjunctions.
@@ -27,13 +28,15 @@ import java.util.Collection;
  */
 abstract class DisjunctionScorer extends Scorer {
   protected final Scorer subScorers[];
+  /** The document number of the current match. */
+  protected int doc = -1;
   protected int numScorers;
   protected PositionQueue posQueue;
   
-  protected DisjunctionScorer(Weight weight, Scorer subScorers[], int numScorers) {
+  protected DisjunctionScorer(Weight weight, Scorer subScorers[]) {
     super(weight);
     this.subScorers = subScorers;
-    this.numScorers = numScorers;
+    this.numScorers = subScorers.length;
     this.posQueue = new PositionQueue(subScorers);
     heapify();
   }
@@ -111,7 +114,10 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public int nextPosition() throws IOException {
-    return posQueue.nextPosition();
+    //System.out.println("Advancing " + this.toString());
+    int pos = posQueue.nextPosition();
+    //System.out.println(this);
+    return pos;
   }
 
   @Override
@@ -133,4 +139,80 @@ abstract class DisjunctionScorer extends Scorer {
   public int endOffset() throws IOException {
     return posQueue.endOffset();
   }
+
+  @Override
+  public String toString() {
+    try {
+      return String.format(Locale.ROOT, "DisjScorer[%s] %d(%d)->%d(%d)", weight.toString(),
+                            posQueue.startPosition(),
+                            posQueue.startOffset(), posQueue.endPosition(), posQueue.endOffset());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public long cost() {
+    long sum = 0;
+    for (int i = 0; i < numScorers; i++) {
+      sum += subScorers[i].cost();
+    }
+    return sum;
+  } 
+  
+  @Override
+  public int docID() {
+   return doc;
+  }
+ 
+  @Override
+  public int nextDoc() throws IOException {
+    assert doc != NO_MORE_DOCS;
+    while(true) {
+      if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
+        heapAdjust(0);
+      } else {
+        heapRemoveRoot();
+        if (numScorers == 0) {
+          return doc = NO_MORE_DOCS;
+        }
+      }
+      if (subScorers[0].docID() != doc) {
+        afterNext();
+        return doc;
+      }
+    }
+  }
+  
+  @Override
+  public int advance(int target) throws IOException {
+    assert doc != NO_MORE_DOCS;
+    while(true) {
+      if (subScorers[0].advance(target) != NO_MORE_DOCS) {
+        heapAdjust(0);
+      } else {
+        heapRemoveRoot();
+        if (numScorers == 0) {
+          return doc = NO_MORE_DOCS;
+        }
+      }
+      if (subScorers[0].docID() >= target) {
+        afterNext();
+        return doc;
+      }
+    }
+  }
+  
+  /** 
+   * Called after next() or advance() land on a new document.
+   * <p>
+   * {@code subScorers[0]} will be positioned to the new docid,
+   * which could be {@code NO_MORE_DOCS} (subclass must handle this).
+   * <p>
+   * implementations should assign {@code doc} appropriately, and do any
+   * other work necessary to implement {@code score()} and {@code freq()}
+   */
+  // TODO: make this less horrible
+  protected abstract void afterNext() throws IOException;
+
 }

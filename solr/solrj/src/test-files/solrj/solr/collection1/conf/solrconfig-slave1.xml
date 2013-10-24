@@ -17,17 +17,13 @@
  limitations under the License.
 -->
 
-<!-- $Id$
-     $Source$
-     $Name$
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  </indexConfig>
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-
-  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

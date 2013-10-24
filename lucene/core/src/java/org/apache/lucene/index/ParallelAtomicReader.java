@@ -47,7 +47,7 @@ import org.apache.lucene.util.Bits;
  * same order to the other indexes. <em>Failure to do so will result in
  * undefined behavior</em>.
  */
-public final class ParallelAtomicReader extends AtomicReader {
+public class ParallelAtomicReader extends AtomicReader {
   private final FieldInfos fieldInfos;
   private final ParallelFields fields = new ParallelFields();
   private final AtomicReader[] parallelReaders, storedFieldsReaders;
@@ -214,12 +214,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public boolean hasDeletions() {
-    ensureOpen();
-    return hasDeletions;
-  }
-  
-  @Override
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     for (final AtomicReader reader: storedFieldsReaders) {
@@ -262,18 +256,47 @@ public final class ParallelAtomicReader extends AtomicReader {
     // throw the first exception
     if (ioe != null) throw ioe;
   }
-  
+
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
     AtomicReader reader = fieldToReader.get(field);
-    return reader == null ? null : reader.docValues(field);
+    return reader == null ? null : reader.getNumericDocValues(field);
   }
   
   @Override
-  public DocValues normValues(String field) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
     AtomicReader reader = fieldToReader.get(field);
-    return reader == null ? null : reader.normValues(field);
+    return reader == null ? null : reader.getBinaryDocValues(field);
+  }
+  
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getSortedDocValues(field);
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getSortedSetDocValues(field);
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getDocsWithField(field);
+  }
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    NumericDocValues values = reader == null ? null : reader.getNormValues(field);
+    return values;
   }
 }

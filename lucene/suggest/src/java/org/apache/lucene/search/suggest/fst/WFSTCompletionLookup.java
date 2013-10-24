@@ -25,10 +25,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
-import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
+import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
+import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -40,12 +40,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.MinResult;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Suggester based on a weighted FST: it first traverses the prefix, 
@@ -92,12 +92,15 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
     BytesRef scratch = new BytesRef();
-    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
+    InputIterator iter = new WFSTInputIterator(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
-    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
     while ((scratch = iter.next()) != null) {
       long cost = iter.weight();
@@ -132,7 +135,7 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public boolean load(InputStream input) throws IOException {
     try {
-      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton(true));
+      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton());
     } finally {
       IOUtils.close(input);
     }
@@ -251,14 +254,15 @@ public class WFSTCompletionLookup extends Lookup {
     return Integer.MAX_VALUE - (int)value;
   }
   
-  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqIteratorWrapper {
+  private final class WFSTInputIterator extends SortedInputIterator {
 
-    WFSTTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+    WFSTInputIterator(InputIterator source) throws IOException {
       super(source);
+      assert source.hasPayloads() == false;
     }
 
     @Override
-    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
+    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, long weight) throws IOException {
       if (spare.length + 4 >= buffer.length) {
         buffer = ArrayUtil.grow(buffer, spare.length + 4);
       }

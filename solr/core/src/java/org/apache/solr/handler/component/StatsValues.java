@@ -19,14 +19,19 @@
 package org.apache.solr.handler.component;
 
 
+import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.FieldType;
 
 /**
  * StatsValue defines the interface for the collection of statistical values about fields and facets.
  */
+// TODO: should implement Collector?
 public interface StatsValues {
 
   /**
@@ -36,12 +41,9 @@ public interface StatsValues {
    */
   void accumulate(NamedList stv);
 
-  /**
-   * Accumulate the values based on the given value
-   *
-   * @param value Value to use to accumulate the current values
-   */
-  void accumulate(BytesRef value);
+  /** Accumulate the value associated with <code>docID</code>.
+   *  @see #setNextReader(AtomicReaderContext) */
+  void accumulate(int docID);
 
   /**
    * Accumulate the values based on the given value
@@ -77,4 +79,7 @@ public interface StatsValues {
    * @return NamedList representation of the current values
    */
   NamedList<?> getStatsValues();
+
+  /** Set the context for {@link #accumulate(int)}. */
+  void setNextReader(AtomicReaderContext ctx) throws IOException;
 }

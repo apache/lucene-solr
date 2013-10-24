@@ -19,7 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -28,12 +28,8 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * Factory used to build a new IndexReader instance.
  */
 public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
-  protected int termInfosIndexDivisor = 1;//IndexReader.DEFAULT_TERMS_INDEX_DIVISOR;  Set this once Lucene makes this public.
   /**
-   * Potentially initializes {@link #termInfosIndexDivisor}.  Overriding classes should call super.init() in order
-   * to make sure termInfosIndexDivisor is set.
-   * <p>
-   * <code>init</code> will be called just once, immediately after creation.
+   * init will be called just once, immediately after creation.
    * <p>
    * The args are user-level initialization parameters that may be specified
    * when declaring an indexReaderFactory in solrconfig.xml
@@ -41,18 +37,10 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    */
   @Override
   public void init(NamedList args) {
-    Integer v = (Integer)args.get("setTermIndexDivisor");
-    if (v != null) {
-      termInfosIndexDivisor = v.intValue();
-    }
-  }
-
-  /**
-   *
-   * @return The setting of {@link #termInfosIndexDivisor} 
-   */
-  public int getTermInfosIndexDivisor() {
-    return termInfosIndexDivisor;
+   Object v = args.get("setTermIndexDivisor");
+   if (v != null) {
+     throw new IllegalArgumentException("Illegal parameter 'setTermIndexDivisor'");
+   }
   }
 
   /**
@@ -61,11 +49,28 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * @param indexDir indexDir index location
    * @param core {@link SolrCore} instance where this reader will be used. NOTE:
    * this SolrCore instance may not be fully configured yet, but basic things like
-   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getSchema()} and
+   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getLatestSchema()} and
    * {@link SolrCore#getSolrConfig()} are valid.
    * @return An IndexReader instance
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract DirectoryReader newReader(Directory indexDir, SolrCore core)
+      throws IOException;
+  
+  /**
+   * Creates a new IndexReader instance using the given IndexWriter.
+   * <p>
+   * This is used for opening the initial reader in NRT mode ({@code nrtMode=true}
+   * in solrconfig.xml)
+   * 
+   * @param writer IndexWriter
+   * @param core {@link SolrCore} instance where this reader will be used. NOTE:
+   * this SolrCore instance may not be fully configured yet, but basic things like
+   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getLatestSchema()} and
+   * {@link SolrCore#getSolrConfig()} are valid.
+   * @return An IndexReader instance
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract DirectoryReader newReader(IndexWriter writer, SolrCore core)
       throws IOException;
 }

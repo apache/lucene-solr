@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -32,18 +33,19 @@ import org.apache.lucene.util.SetOnce;
  * {@link IndexWriterConfig#setRAMBufferSizeMB(double)}</li>
  * <li>Number of RAM resident documents - configured via
  * {@link IndexWriterConfig#setMaxBufferedDocs(int)}</li>
- * <li>Number of buffered delete terms/queries - configured via
- * {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)}</li>
  * </ul>
- * 
- * The {@link IndexWriter} consults a provided {@link FlushPolicy} to control the
- * flushing process. The policy is informed for each added or
- * updated document as well as for each delete term. Based on the
- * {@link FlushPolicy}, the information provided via {@link ThreadState} and
+ * The policy also applies pending delete operations (by term and/or query),
+ * given the threshold set in
+ * {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)}.
+ * <p>
+ * {@link IndexWriter} consults the provided {@link FlushPolicy} to control the
+ * flushing process. The policy is informed for each added or updated document
+ * as well as for each delete term. Based on the {@link FlushPolicy}, the
+ * information provided via {@link ThreadState} and
  * {@link DocumentsWriterFlushControl}, the {@link FlushPolicy} decides if a
- * {@link DocumentsWriterPerThread} needs flushing and mark it as
- * flush-pending via
- * {@link DocumentsWriterFlushControl#setFlushPending(DocumentsWriterPerThreadPool.ThreadState)}.
+ * {@link DocumentsWriterPerThread} needs flushing and mark it as flush-pending
+ * via {@link DocumentsWriterFlushControl#setFlushPending}, or if deletes need
+ * to be applied.
  * 
  * @see ThreadState
  * @see DocumentsWriterFlushControl
@@ -51,8 +53,8 @@ import org.apache.lucene.util.SetOnce;
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
 abstract class FlushPolicy implements Cloneable {
-  protected SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
   protected LiveIndexWriterConfig indexWriterConfig;
+  protected InfoStream infoStream;
 
   /**
    * Called for each delete term. If this is a delete triggered due to an update
@@ -92,9 +94,9 @@ abstract class FlushPolicy implements Cloneable {
   /**
    * Called by DocumentsWriter to initialize the FlushPolicy
    */
-  protected synchronized void init(DocumentsWriter docsWriter) {
-    writer.set(docsWriter);
-    indexWriterConfig = docsWriter.indexWriter.getConfig();
+  protected synchronized void init(LiveIndexWriterConfig indexWriterConfig) {
+    this.indexWriterConfig = indexWriterConfig;
+    infoStream = indexWriterConfig.getInfoStream();
   }
 
   /**
@@ -126,8 +128,8 @@ abstract class FlushPolicy implements Cloneable {
   }
   
   private boolean assertMessage(String s) {
-    if (writer.get().infoStream.isEnabled("FP")) {
-      writer.get().infoStream.message("FP", s);
+    if (infoStream.isEnabled("FP")) {
+      infoStream.message("FP", s);
     }
     return true;
   }
@@ -141,8 +143,8 @@ abstract class FlushPolicy implements Cloneable {
       // should not happen
       throw new RuntimeException(e);
     }
-    clone.writer = new SetOnce<DocumentsWriter>();
     clone.indexWriterConfig = null;
+    clone.infoStream = null; 
     return clone;
   }
 }

@@ -23,6 +23,7 @@ import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -39,7 +40,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  *
  * @since solr 1.3
  */
-public class JettyWebappTest extends LuceneTestCase 
+public class JettyWebappTest extends SolrTestCaseJ4 
 {
   int port = 0;
   static final String context = "/test";
@@ -55,7 +56,8 @@ public class JettyWebappTest extends LuceneTestCase
   {
     super.setUp();
     System.setProperty("solr.solr.home", ExternalPaths.EXAMPLE_HOME);
-    
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+
     File dataDir = new File(LuceneTestCase.TEMP_DIR,
         getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
@@ -84,6 +86,7 @@ public class JettyWebappTest extends LuceneTestCase
     try {
       server.stop();
     } catch( Exception ex ) {}
+    System.clearProperty("tests.shardhandler.randomSeed");
     super.tearDown();
   }
   

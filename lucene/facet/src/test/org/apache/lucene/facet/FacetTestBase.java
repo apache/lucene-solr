@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -15,13 +16,15 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.collections.IntToObjectMap;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -42,7 +45,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
@@ -66,7 +68,7 @@ import org.junit.BeforeClass;
  */
 
 @SuppressCodecs({"SimpleText"})
-public abstract class FacetTestBase extends LuceneTestCase {
+public abstract class FacetTestBase extends FacetTestCase {
   
   /** Holds a search and taxonomy Directories pair. */
   private static final class SearchTaxoDirPair {
@@ -74,7 +76,8 @@ public abstract class FacetTestBase extends LuceneTestCase {
     SearchTaxoDirPair() {}
   }
   
-  private static HashMap<Integer, SearchTaxoDirPair> dirsPerPartitionSize;
+  private static IntToObjectMap<SearchTaxoDirPair> dirsPerPartitionSize;
+  private static IntToObjectMap<FacetIndexingParams> fipPerPartitionSize;
   private static File TEST_DIR;
   
   /** Documents text field. */
@@ -92,12 +95,15 @@ public abstract class FacetTestBase extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassFacetTestBase() {
     TEST_DIR = _TestUtil.getTempDir("facets");
-    dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>(); 
+    dirsPerPartitionSize = new IntToObjectMap<FacetTestBase.SearchTaxoDirPair>();
+    fipPerPartitionSize = new IntToObjectMap<FacetIndexingParams>();
   }
   
   @AfterClass
   public static void afterClassFacetTestBase() throws Exception {
-    for (SearchTaxoDirPair pair : dirsPerPartitionSize.values()) {
+    Iterator<SearchTaxoDirPair> iter = dirsPerPartitionSize.iterator();
+    while (iter.hasNext()) {
+      SearchTaxoDirPair pair = iter.next();
       IOUtils.close(pair.searchDir, pair.taxoDir);
     }
   }
@@ -129,20 +135,16 @@ public abstract class FacetTestBase extends LuceneTestCase {
     return DEFAULT_CONTENT[doc];
   }
   
-  /** Prepare index (in RAM) with single partition */
-  protected final void initIndex() throws Exception {
-    initIndex(Integer.MAX_VALUE);
-  }
-  
-  /** Prepare index (in RAM) with some documents and some facets */
-  protected final void initIndex(int partitionSize) throws Exception {
-    initIndex(partitionSize, false);
+  /** Prepare index (in RAM) with some documents and some facets. */
+  protected final void initIndex(FacetIndexingParams fip) throws Exception {
+    initIndex(false, fip);
   }
 
-  /** Prepare index (in RAM/Disk) with some documents and some facets */
-  protected final void initIndex(int partitionSize, boolean forceDisk) throws Exception {
+  /** Prepare index (in RAM/Disk) with some documents and some facets. */
+  protected final void initIndex(boolean forceDisk, FacetIndexingParams fip) throws Exception {
+    int partitionSize = fip.getPartitionSize();
     if (VERBOSE) {
-      System.out.println("Partition Size: " + partitionSize+"  forceDisk: "+forceDisk);
+      System.out.println("Partition Size: " + partitionSize + "  forceDisk: "+forceDisk);
     }
 
     SearchTaxoDirPair pair = dirsPerPartitionSize.get(Integer.valueOf(partitionSize));
@@ -159,7 +161,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       RandomIndexWriter iw = new RandomIndexWriter(random(), pair.searchDir, getIndexWriterConfig(getAnalyzer()));
       TaxonomyWriter taxo = new DirectoryTaxonomyWriter(pair.taxoDir, OpenMode.CREATE);
       
-      populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
+      populateIndex(iw, taxo, fip);
       
       // commit changes (taxonomy prior to search index for consistency)
       taxo.commit();
@@ -181,14 +183,42 @@ public abstract class FacetTestBase extends LuceneTestCase {
     return newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
   }
 
-  /** Returns a default facet indexing params */
+  /** Returns a {@link FacetIndexingParams} per the given partition size. */
   protected FacetIndexingParams getFacetIndexingParams(final int partSize) {
-    return new FacetIndexingParams() {
-      @Override
-      public int getPartitionSize() {
-        return partSize;
-      }
-    };
+    return getFacetIndexingParams(partSize, false);
+  }
+  
+  /**
+   * Returns a {@link FacetIndexingParams} per the given partition size. If
+   * requested, then {@link OrdinalPolicy} will be set to
+   * {@link OrdinalPolicy#ALL_PARENTS}, otherwise it will randomize.
+   */
+  protected FacetIndexingParams getFacetIndexingParams(final int partSize, final boolean forceAllParents) {
+    FacetIndexingParams fip = fipPerPartitionSize.get(partSize);
+    if (fip == null) {
+      // randomize OrdinalPolicy. Since not all Collectors / Accumulators
+      // support NO_PARENTS, don't include it.
+      // TODO: once all code paths support NO_PARENTS, randomize it too.
+      CategoryListParams randomOP = new CategoryListParams() {
+        final OrdinalPolicy op = random().nextBoolean() ? OrdinalPolicy.ALL_BUT_DIMENSION : OrdinalPolicy.ALL_PARENTS;
+        @Override
+        public OrdinalPolicy getOrdinalPolicy(String dimension) {
+          return forceAllParents ? OrdinalPolicy.ALL_PARENTS : op;
+        }
+      };
+      
+      // several of our encoders don't support the value 0, 
+      // which is one of the values encoded when dealing w/ partitions,
+      // therefore don't randomize the encoder.
+      fip = new FacetIndexingParams(randomOP) {
+        @Override
+        public int getPartitionSize() {
+          return partSize;
+        }
+      };
+      fipPerPartitionSize.put(partSize, fip);
+    }
+    return fip;
   }
   
   /**
@@ -196,7 +226,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * test with different faceted search params.
    */
   protected FacetSearchParams getFacetSearchParams(FacetIndexingParams iParams, FacetRequest... facetRequests) {
-    return new FacetSearchParams(Arrays.asList(facetRequests), iParams);
+    return new FacetSearchParams(iParams, facetRequests);
   }
 
   /**
@@ -204,7 +234,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * test with different faceted search params.
    */
   protected FacetSearchParams getFacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams iParams) {
-    return new FacetSearchParams(facetRequests, iParams);
+    return new FacetSearchParams(iParams, facetRequests);
   }
 
   /**
@@ -246,7 +276,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   /** convenience method: convert sub results to an array */  
   protected static FacetResultNode[] resultNodesAsArray(FacetResultNode parentRes) {
     ArrayList<FacetResultNode> a = new ArrayList<FacetResultNode>();
-    for (FacetResultNode frn : parentRes.getSubResults()) {
+    for (FacetResultNode frn : parentRes.subResults) {
       a.add(frn);
     }
     return a.toArray(new FacetResultNode[0]);
@@ -299,48 +329,33 @@ public abstract class FacetTestBase extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(freq.categoryPath.toString()+ "\t\t" + topResNode);
       }
-      assertCountsAndCardinality(facetCountsTruth, topResNode, freq.getNumResults());
+      assertCountsAndCardinality(facetCountsTruth, topResNode, freq.numResults);
     }
   }
     
   /** Validate counts for returned facets, and that there are not too many results */
   private static void assertCountsAndCardinality(Map<CategoryPath,Integer> facetCountsTruth,  FacetResultNode resNode, int reqNumResults) throws Exception {
-    int actualNumResults = resNode.getNumSubResults();
+    int actualNumResults = resNode.subResults.size();
     if (VERBOSE) {
       System.out.println("NumResults: " + actualNumResults);
     }
     assertTrue("Too many results!", actualNumResults <= reqNumResults);
-    for (FacetResultNode subRes : resNode.getSubResults()) {
-      assertEquals("wrong count for: "+subRes, facetCountsTruth.get(subRes.getLabel()).intValue(), (int)subRes.getValue());
+    for (FacetResultNode subRes : resNode.subResults) {
+      assertEquals("wrong count for: "+subRes, facetCountsTruth.get(subRes.label).intValue(), (int)subRes.value);
       assertCountsAndCardinality(facetCountsTruth, subRes, reqNumResults); // recurse into child results
     }
   }
-  
+
   /** Validate results equality */
   protected static void assertSameResults(List<FacetResult> expected, List<FacetResult> actual) {
-    String expectedResults = resStringValueOnly(expected);
-    String actualResults = resStringValueOnly(actual);
-    if (!expectedResults.equals(actualResults)) {
-      System.err.println("Results are not the same!");
-      System.err.println("Expected:\n" + expectedResults);
-      System.err.println("Actual:\n" + actualResults);
-      throw new NotSameResultError();
-    }
-  }
-  
-  /** exclude the residue and numDecendants because it is incorrect in sampling */
-  private static final String resStringValueOnly(List<FacetResult> results) {
-    StringBuilder sb = new StringBuilder();
-    for (FacetResult facetRes : results) {
-      sb.append(facetRes.toString()).append('\n');
-    }
-    return sb.toString().replaceAll("Residue:.*.0", "").replaceAll("Num valid Descendants.*", "");
-  }
-  
-  /** Special Error class for ability to ignore only this error and retry... */ 
-  public static class NotSameResultError extends Error {
-    public NotSameResultError() {
-      super("Results are not the same!");
+    assertEquals("wrong number of facet results", expected.size(), actual.size());
+    int size = expected.size();
+    for (int i = 0; i < size; i++) {
+      FacetResult expectedResult = expected.get(i);
+      FacetResult actualResult = actual.get(i);
+      String expectedStr = FacetTestUtils.toSimpleString(expectedResult);
+      String actualStr = FacetTestUtils.toSimpleString(actualResult);
+      assertEquals("Results not the same!\nExpected:" + expectedStr + "\nActual:\n" + actualStr, expectedStr, actualStr);
     }
   }
   

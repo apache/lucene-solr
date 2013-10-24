@@ -43,7 +43,7 @@ final class  SloppyPhraseScorer extends Scorer {
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-  private final Similarity.SloppySimScorer docScorer;
+  private final Similarity.SimScorer docScorer;
   private final PhraseQuery.PostingsAndFreq[] postings;
   
   private final int slop;
@@ -59,15 +59,18 @@ final class  SloppyPhraseScorer extends Scorer {
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
   private int numMatches;
+  private final long cost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppySimScorer docScorer) {
+      int slop, Similarity.SimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
     this.postings = postings;
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
+    // min(cost)
+    cost = postings[0].postings.cost();
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
     // reflects the phrase offset: pp.pos = tp.pos - offset.
@@ -569,7 +572,7 @@ final class  SloppyPhraseScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
-    return advance(max.doc);
+    return advance(max.doc + 1); // advance to the next doc after #docID()
   }
   
   @Override
@@ -579,27 +582,30 @@ final class  SloppyPhraseScorer extends Scorer {
 
   @Override
   public int advance(int target) throws IOException {
-    sloppyFreq = 0.0f;
-    if (!advanceMin(target)) {
-      return NO_MORE_DOCS;
-    }        
-    boolean restart=false;
-    while (sloppyFreq == 0.0f) {
-      while (min.doc < max.doc || restart) {
-        restart = false;
+    assert target > docID();
+    do {
+      if (!advanceMin(target)) {
+        return NO_MORE_DOCS;
+      }
+      while (min.doc < max.doc) {
         if (!advanceMin(max.doc)) {
           return NO_MORE_DOCS;
-        }        
+        }
       }
       // found a doc with all of the terms
       sloppyFreq = phraseFreq(); // check for phrase
-      restart = true;
-    } 
+      target = min.doc + 1; // next target in case sloppyFreq is still 0
+    } while (sloppyFreq == 0f);
 
     // found a match
     return max.doc;
   }
-  
+
+  @Override
+  public long cost() {
+    return cost;
+  }
+
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
 

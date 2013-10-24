@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
@@ -44,13 +50,10 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class SyncSliceTest extends AbstractFullDistribZkTestBase {
+  private boolean success = false;
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    // TODO: we use an fs based dir because something
-    // like a ram dir will not recovery correctly right now
-    // due to tran log persisting across restarts
-    useFactory(null);
   }
   
   @AfterClass
@@ -64,13 +67,15 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     super.setUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
-    
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
   @Override
   @After
   public void tearDown() throws Exception {
+    if (!success) {
+      printLayoutOnTearDown = true;
+    }
     super.tearDown();
     resetExceptionIgnores();
   }
@@ -88,10 +93,10 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
 
     del("*:*");
-    List<String> skipServers = new ArrayList<String>();
+    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
     int docId = 0;
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
@@ -99,12 +104,12 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "old haven was blue.");
     
-    skipServers.add(shardToJetty.get("shard1").get(1).url + "/");
+    skipServers.add(shardToJetty.get("shard1").get(1));
     
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "but the song was fancy.");
     
-    skipServers.add(shardToJetty.get("shard1").get(2).url + "/");
+    skipServers.add(shardToJetty.get("shard1").get(2));
     
     indexDoc(skipServers, id,docId++, i1, 50, tlong, 50, t1,
         "under the moon and over the lake");
@@ -130,7 +135,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     baseServer.setConnectionTimeout(15000);
-    baseServer.setSoTimeout(30000);
+    baseServer.setSoTimeout(60000);
     baseServer.request(request);
     
     waitForThingsToLevelOut(15);
@@ -180,18 +185,15 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // bring back dead node
     ChaosMonkey.start(deadJetty.jetty); // he is not the leader anymore
     
-    // give a moment to be sure it has started recovering
-    Thread.sleep(2000);
+    waitTillRecovered();
     
-    waitForThingsToLevelOut(15);
-    waitForRecoveriesToFinish(false);
-    
-    skipServers = getRandomOtherJetty(leaderJetty, null);
-    skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
+    skipServers = getRandomOtherJetty(leaderJetty, deadJetty);
+    skipServers.addAll( getRandomOtherJetty(leaderJetty, deadJetty));
     // skip list should be 
     
-    //System.out.println("leader:" + leaderJetty.url);
-    //System.out.println("skip list:" + skipServers);
+//    System.out.println("leader:" + leaderJetty.url);
+//    System.out.println("dead:" + deadJetty.url);
+//    System.out.println("skip list:" + skipServers);
     
     // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
@@ -212,8 +214,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
-        "shard1 should have just been set up to be inconsistent - but it's still consistent",
-        shardFailMessage); 
+        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
+            + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
     
     jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
@@ -234,6 +236,33 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     checkShardConsistency(true, true);
     
+    success = true;
+  }
+
+  private void waitTillRecovered() throws Exception {
+    for (int i = 0; i < 30; i++) { 
+      Thread.sleep(3000);
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.updateClusterState(true);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection collection1 = clusterState.getCollection("collection1");
+      Slice slice = collection1.getSlice("shard1");
+      Collection<Replica> replicas = slice.getReplicas();
+      boolean allActive = true;
+      for (Replica replica : replicas) {
+        if (!clusterState.liveNodesContain(replica.getNodeName())
+            || !replica.get(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.ACTIVE)) {
+          allActive = false;
+          break;
+        }
+      }
+      if (allActive) {
+        return;
+      }
+    }
+    printLayout();
+    fail("timeout waiting to see recovered node");
   }
 
   private String waitTillInconsistent() throws Exception, InterruptedException {
@@ -242,7 +271,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = pollConsistency(shardFailMessage, 0);
     shardFailMessage = pollConsistency(shardFailMessage, 3000);
     shardFailMessage = pollConsistency(shardFailMessage, 5000);
-    shardFailMessage = pollConsistency(shardFailMessage, 8000);
+    shardFailMessage = pollConsistency(shardFailMessage, 15000);
     
     return shardFailMessage;
   }
@@ -261,13 +290,9 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     }
     return shardFailMessage;
   }
-
-  private List<String> getRandomJetty() {
-    return getRandomOtherJetty(null, null);
-  }
   
-  private List<String> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
-    List<String> skipServers = new ArrayList<String>();
+  private List<CloudJettyRunner> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
+    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
     List<CloudJettyRunner> candidates = new ArrayList<CloudJettyRunner>();
     candidates.addAll(shardToJetty.get("shard1"));
 
@@ -280,11 +305,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     }
     
     CloudJettyRunner cjetty = candidates.get(random().nextInt(candidates.size()));
-    skipServers.add(cjetty.url + "/");
+    skipServers.add(cjetty);
     return skipServers;
   }
   
-  protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,
+  protected void indexDoc(List<CloudJettyRunner> skipServers, Object... fields) throws IOException,
       SolrServerException {
     SolrInputDocument doc = new SolrInputDocument();
     
@@ -296,8 +321,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    for (String skip : skipServers) {
-      params.add("test.distrib.skip.servers", skip);
+    for (CloudJettyRunner skip : skipServers) {
+      params.add("test.distrib.skip.servers", skip.url + "/");
     }
     ureq.setParams(params);
     ureq.process(cloudClient);

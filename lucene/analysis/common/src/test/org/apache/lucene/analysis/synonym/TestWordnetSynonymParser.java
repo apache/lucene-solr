@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 
 public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
-  Analyzer analyzer;
 
   String synonymsFile = 
     "s(100000001,1,'woods',n,1,0).\n" +
@@ -42,7 +41,7 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
   
   public void testSynonyms() throws Exception {
     WordnetSynonymParser parser = new WordnetSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.add(new StringReader(synonymsFile));
+    parser.parse(new StringReader(synonymsFile));
     final SynonymMap map = parser.build();
     
     Analyzer analyzer = new Analyzer() {

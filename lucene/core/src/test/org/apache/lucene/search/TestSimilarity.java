@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;

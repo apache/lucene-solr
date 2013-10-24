@@ -19,17 +19,13 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.PerDocProducer;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.PerDocWriteState;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.CompoundFileDirectory; // javadocs
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.CompoundFileDirectory;
 
 /**
  * Lucene 4.0 Norms Format.
@@ -44,82 +40,24 @@ import org.apache.lucene.store.CompoundFileDirectory; // javadocs
  * 
  * @see Lucene40DocValuesFormat
  * @lucene.experimental
+ * @deprecated Only for reading old 4.0 and 4.1 segments
  */
+@Deprecated
 public class Lucene40NormsFormat extends NormsFormat {
-  private final static String NORMS_SEGMENT_SUFFIX = "nrm";
 
   /** Sole constructor. */
-  public Lucene40NormsFormat() {
-  }
+  public Lucene40NormsFormat() {}
   
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new Lucene40NormsDocValuesConsumer(state, NORMS_SEGMENT_SUFFIX);
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
-  public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new Lucene40NormsDocValuesProducer(state, NORMS_SEGMENT_SUFFIX);
-  }
-
-  /**
-   * Lucene 4.0 PerDocProducer implementation that uses compound file.
-   * 
-   * @see Lucene40DocValuesFormat
-   */
-  public static class Lucene40NormsDocValuesProducer extends Lucene40DocValuesProducer {
-
-    /** Sole constructor. */
-    public Lucene40NormsDocValuesProducer(SegmentReadState state,
-        String segmentSuffix) throws IOException {
-      super(state, segmentSuffix);
-    }
-
-    @Override
-    protected boolean canLoad(FieldInfo info) {
-      return info.hasNorms();
-    }
-
-    @Override
-    protected Type getDocValuesType(FieldInfo info) {
-      return info.getNormType();
-    }
-
-    @Override
-    protected boolean anyDocValuesFields(FieldInfos infos) {
-      return infos.hasNorms();
-    }
-    
-  }
-  
-  /**
-   * Lucene 4.0 PerDocConsumer implementation that uses compound file.
-   * 
-   * @see Lucene40DocValuesFormat
-   * @lucene.experimental
-   */
-  public static class Lucene40NormsDocValuesConsumer extends Lucene40DocValuesConsumer {
-
-    /** Sole constructor. */
-    public Lucene40NormsDocValuesConsumer(PerDocWriteState state,
-        String segmentSuffix) {
-      super(state, segmentSuffix);
-    }
-
-    @Override
-    protected DocValues getDocValuesForMerge(AtomicReader reader, FieldInfo info)
-        throws IOException {
-      return reader.normValues(info.name);
-    }
-
-    @Override
-    protected boolean canMerge(FieldInfo info) {
-      return info.hasNorms();
-    }
-
-    @Override
-    protected Type getDocValuesType(FieldInfo info) {
-      return info.getNormType();
-    }
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                     "nrm", 
+                                                     IndexFileNames.COMPOUND_FILE_EXTENSION);
+    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
   }
 }

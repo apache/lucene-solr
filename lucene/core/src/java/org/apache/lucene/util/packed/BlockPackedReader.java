@@ -17,211 +17,80 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.BlockPackedWriter.BPV_SHIFT;
-import static org.apache.lucene.util.packed.BlockPackedWriter.MIN_VALUE_EQUALS_0;
-import static org.apache.lucene.util.packed.BlockPackedWriter.checkBlockSize;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_VALUE_EQUALS_0;
+import static org.apache.lucene.util.packed.BlockPackedReaderIterator.readVLong;
+import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.LongsRef;
 
 /**
- * Reader for sequences of longs written with {@link BlockPackedWriter}.
- * @see BlockPackedWriter
+ * Provides random access to a stream written with {@link BlockPackedWriter}.
  * @lucene.internal
  */
 public final class BlockPackedReader {
 
-  static long zigZagDecode(long n) {
-    return ((n >>> 1) ^ -(n & 1));
-  }
+  private final int blockShift, blockMask;
+  private final long valueCount;
+  private final long[] minValues;
+  private final PackedInts.Reader[] subReaders;
 
-  // same as DataInput.readVLong but supports negative values
-  static long readVLong(DataInput in) throws IOException {
-    byte b = in.readByte();
-    if (b >= 0) return b;
-    long i = b & 0x7FL;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 7;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 14;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 21;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 28;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 35;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 42;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0x7FL) << 49;
-    if (b >= 0) return i;
-    b = in.readByte();
-    i |= (b & 0xFFL) << 56;
-    return i;
-  }
-
-  final DataInput in;
-  final int packedIntsVersion;
-  final long valueCount;
-  final int blockSize;
-  final LongsRef values;
-  byte[] blocks;
-  int off;
-  long ord;
-
-  /** Sole constructor.
-   * @param blockSize the number of values of a block, must be equal to the
-   *                  block size of the {@link BlockPackedWriter} which has
-   *                  been used to write the stream
-   */
-  public BlockPackedReader(DataInput in, int packedIntsVersion, int blockSize, long valueCount) {
-    checkBlockSize(blockSize);
-    this.in = in;
-    this.packedIntsVersion = packedIntsVersion;
-    this.blockSize = blockSize;
-    this.values = new LongsRef(blockSize);
-    assert valueCount >= 0;
+  /** Sole constructor. */
+  public BlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
     this.valueCount = valueCount;
-    off = blockSize;
-    ord = 0;
-  }
-
-  /** Skip exactly <code>count</code> values. */
-  public void skip(long count) throws IOException {
-    assert count >= 0;
-    if (ord + count > valueCount || ord + count < 0) {
-      throw new EOFException();
-    }
-
-    // 1. skip buffered values
-    final int skipBuffer = (int) Math.min(count, blockSize - off);
-    off += skipBuffer;
-    ord += skipBuffer;
-    count -= skipBuffer;
-    if (count == 0L) {
-      return;
-    }
-
-    // 2. skip as many blocks as necessary
-    assert off == blockSize;
-    while (count >= blockSize) {
+    blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
+    blockMask = blockSize - 1;
+    final int numBlocks = numBlocks(valueCount, blockSize);
+    long[] minValues = null;
+    subReaders = new PackedInts.Reader[numBlocks];
+    for (int i = 0; i < numBlocks; ++i) {
       final int token = in.readByte() & 0xFF;
       final int bitsPerValue = token >>> BPV_SHIFT;
       if (bitsPerValue > 64) {
         throw new IOException("Corrupted");
       }
       if ((token & MIN_VALUE_EQUALS_0) == 0) {
-        readVLong(in);
+        if (minValues == null) {
+          minValues = new long[numBlocks];
+        }
+        minValues[i] = zigZagDecode(1L + readVLong(in));
       }
-      final long blockBytes = PackedInts.Format.PACKED.byteCount(packedIntsVersion, blockSize, bitsPerValue);
-      skipBytes(blockBytes);
-      ord += blockSize;
-      count -= blockSize;
-    }
-    if (count == 0L) {
-      return;
-    }
-
-    // 3. skip last values
-    assert count < blockSize;
-    refill();
-    ord += count;
-    off += count;
-  }
-
-  private void skipBytes(long count) throws IOException {
-    if (in instanceof IndexInput) {
-      final IndexInput iin = (IndexInput) in;
-      iin.seek(iin.getFilePointer() + count);
-    } else {
-      if (blocks == null) {
-        blocks = new byte[blockSize];
-      }
-      long skipped = 0;
-      while (skipped < count) {
-        final int toSkip = (int) Math.min(blocks.length, count - skipped);
-        in.readBytes(blocks, 0, toSkip);
-        skipped += toSkip;
-      }
-    }
-  }
-
-  /** Read the next value. */
-  public long next() throws IOException {
-    next(1);
-    assert values.length == 1;
-    return values.longs[values.offset];
-  }
-
-  /** Read between <tt>1</tt> and <code>count</code> values. */
-  public LongsRef next(int count) throws IOException {
-    assert count > 0;
-    if (ord == valueCount) {
-      throw new EOFException();
-    }
-    if (off == blockSize) {
-      refill();
-    }
-
-    count = Math.min(count, blockSize - off);
-    count = (int) Math.min(count, valueCount - ord);
-
-    values.offset = off;
-    values.length = count;
-    off += count;
-    ord += count;
-    return values;
-  }
-
-  private void refill() throws IOException {
-    final int token = in.readByte() & 0xFF;
-    final boolean minEquals0 = (token & MIN_VALUE_EQUALS_0) != 0;
-    final int bitsPerValue = token >>> BPV_SHIFT;
-    if (bitsPerValue > 64) {
-      throw new IOException("Corrupted");
-    }
-    final long minValue = minEquals0 ? 0L : zigZagDecode(1L + readVLong(in));
-    assert minEquals0 || minValue != 0;
-
-    if (bitsPerValue == 0) {
-      Arrays.fill(values.longs, minValue);
-    } else {
-      final PackedInts.Decoder decoder = PackedInts.getDecoder(PackedInts.Format.PACKED, packedIntsVersion, bitsPerValue);
-      final int iterations = blockSize / decoder.valueCount();
-      final int blocksSize = iterations * 8 * decoder.blockCount();
-      if (blocks == null || blocks.length < blocksSize) {
-        blocks = new byte[blocksSize];
-      }
-
-      final int valueCount = (int) Math.min(this.valueCount - ord, blockSize);
-      final int blocksCount = (int) PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, bitsPerValue);
-      in.readBytes(blocks, 0, blocksCount);
-
-      decoder.decode(blocks, 0, values.longs, 0, iterations);
-
-      if (minValue != 0) {
-        for (int i = 0; i < valueCount; ++i) {
-          values.longs[i] += minValue;
+      if (bitsPerValue == 0) {
+        subReaders[i] = new PackedInts.NullReader(blockSize);
+      } else {
+        final int size = (int) Math.min(blockSize, valueCount - (long) i * blockSize);
+        if (direct) {
+          final long pointer = in.getFilePointer();
+          subReaders[i] = PackedInts.getDirectReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          in.seek(pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
+        } else {
+          subReaders[i] = PackedInts.getReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
         }
       }
     }
-    off = 0;
+    this.minValues = minValues;
   }
 
-  /** Return the offset of the next value to read. */
-  public long ord() {
-    return ord;
+  /** Get value at <code>index</code>. */
+  public long get(long index) {
+    assert index >= 0 && index < valueCount;
+    final int block = (int) (index >>> blockShift);
+    final int idx = (int) (index & blockMask);
+    return (minValues == null ? 0 : minValues[block]) + subReaders[block].get(idx);
   }
 
+  /** Returns approximate RAM bytes used */
+  public long ramBytesUsed() {
+    long size = 0;
+    for (PackedInts.Reader reader : subReaders) {
+      size += reader.ramBytesUsed();
+    }
+    return size;
+  }
 }

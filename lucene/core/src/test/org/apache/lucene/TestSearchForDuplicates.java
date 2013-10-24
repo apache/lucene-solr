@@ -72,9 +72,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       final MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFiles);
-      }
+      mp.setNoCFSRatio(useCompoundFiles ? 1.0 : 0.0);
       IndexWriter writer = new IndexWriter(directory, conf);
       if (VERBOSE) {
         System.out.println("TEST: now build index MAX_DOCS=" + MAX_DOCS);
@@ -83,14 +81,14 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
         d.add(newTextField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES));
-        d.add(newTextField(ID_FIELD, Integer.toString(j), Field.Store.YES));
+        d.add(new IntField(ID_FIELD, j, Field.Store.YES));
         writer.addDocument(d);
       }
       writer.close();
 
       // try a search without OR
       IndexReader reader = DirectoryReader.open(directory);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
 
       Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));
       out.println("Query: " + query.toString(PRIORITY_FIELD));
@@ -106,7 +104,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       checkHits(hits, MAX_DOCS, searcher);
 
       // try a new search with OR
-      searcher = new IndexSearcher(reader);
+      searcher = newSearcher(reader);
       hits = null;
 
       BooleanQuery booleanQuery = new BooleanQuery();

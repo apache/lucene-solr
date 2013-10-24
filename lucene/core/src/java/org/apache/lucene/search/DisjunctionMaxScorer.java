@@ -30,7 +30,7 @@ import java.io.IOException;
 class DisjunctionMaxScorer extends DisjunctionScorer {
   /* Multiplier applied to non-maximum-scoring subqueries for a document as they are summed into the result. */
   private final float tieBreakerMultiplier;
-  private int doc = -1;
+  private int freq = -1;
 
   /* Used when scoring currently matching doc. */
   private float scoreSum;
@@ -46,38 +46,12 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
    *          document as they are summed into the result.
    * @param subScorers
    *          The sub scorers this Scorer should iterate on
-   * @param numScorers
-   *          The actual number of scorers to iterate on. Note that the array's
-   *          length may be larger than the actual number of scorers.
    */
   public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
-      Scorer[] subScorers, int numScorers) {
-    super(weight, subScorers, numScorers);
+      Scorer[] subScorers) {
+    super(weight, subScorers);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
         
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    if (numScorers == 0) return doc = NO_MORE_DOCS;
-    while (subScorers[0].docID() == doc) {
-      if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
-        heapAdjust(0);
-      } else {
-        heapRemoveRoot();
-        if (numScorers == 0) {
-          return doc = NO_MORE_DOCS;
-        }
-      }
-    }
-    doc = subScorers[0].docID();
-    posQueue.advanceTo(doc);
-    return doc;
-  }
-
-  @Override
-  public int docID() {
-    return doc;
   }
 
   /** Determine the current document score.  Initially invalid, until {@link #nextDoc()} is called the first time.
@@ -85,59 +59,36 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
    */
   @Override
   public float score() throws IOException {
-    int doc = subScorers[0].docID();
-    scoreSum = scoreMax = subScorers[0].score();
-    int size = numScorers;
-    scoreAll(1, size, doc);
-    scoreAll(2, size, doc);
     return scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier;
+  }
+  
+  @Override
+  protected void afterNext() throws IOException {
+    doc = subScorers[0].docID();
+    posQueue.advanceTo(doc);
+    if (doc != NO_MORE_DOCS) {
+      scoreSum = scoreMax = subScorers[0].score();
+      freq = 1;
+      scoreAll(1);
+      scoreAll(2);
+    }
   }
 
   // Recursively iterate all subScorers that generated last doc computing sum and max
-  private void scoreAll(int root, int size, int doc) throws IOException {
-    if (root < size && subScorers[root].docID() == doc) {
+  private void scoreAll(int root) throws IOException {
+    if (root < numScorers && subScorers[root].docID() == doc) {
       float sub = subScorers[root].score();
+      freq++;
       scoreSum += sub;
       scoreMax = Math.max(scoreMax, sub);
-      scoreAll((root<<1)+1, size, doc);
-      scoreAll((root<<1)+2, size, doc);
+      scoreAll((root<<1)+1);
+      scoreAll((root<<1)+2);
     }
   }
 
   @Override
   public int freq() throws IOException {
-    int doc = subScorers[0].docID();
-    int size = numScorers;
-    return 1 + freq(1, size, doc) + freq(2, size, doc);
-  }
-  
-  // Recursively iterate all subScorers that generated last doc computing sum and max
-  private int freq(int root, int size, int doc) throws IOException {
-    int freq = 0;
-    if (root < size && subScorers[root].docID() == doc) {
-      freq++;
-      freq += freq((root<<1)+1, size, doc);
-      freq += freq((root<<1)+2, size, doc);
-    }
     return freq;
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    if (numScorers == 0) return doc = NO_MORE_DOCS;
-    while (subScorers[0].docID() < target) {
-      if (subScorers[0].advance(target) != NO_MORE_DOCS) {
-        heapAdjust(0);
-      } else {
-        heapRemoveRoot();
-        if (numScorers == 0) {
-          return doc = NO_MORE_DOCS;
-        }
-      }
-    }
-    doc = subScorers[0].docID();
-    posQueue.advanceTo(doc);
-    return doc;
   }
   
   @Override

@@ -103,6 +103,6 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

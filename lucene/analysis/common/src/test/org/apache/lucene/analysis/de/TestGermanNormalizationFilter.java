@@ -75,6 +75,6 @@ public class TestGermanNormalizationFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new GermanNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

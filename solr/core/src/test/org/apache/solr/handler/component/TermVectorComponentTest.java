@@ -201,12 +201,12 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   public void testOptions() throws Exception {
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
        , TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true")
-       ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+       ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':5}, 'df':2, 'tf-idf':0.5}"
     );
     
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
         , TermVectorParams.ALL, "true")
-        ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+        ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':5}, 'df':2, 'tf-idf':0.5}"
      );
     
     // test each combination at random
@@ -214,7 +214,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     list.addAll(Arrays.asList("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"));
     String[][] options = new String[][] { { TermVectorParams.TF, "'tf':1" },
         { TermVectorParams.OFFSETS, "'offsets':{'start':20, 'end':27}" },
-        { TermVectorParams.POSITIONS, "'positions':{'position':1}" },
+        { TermVectorParams.POSITIONS, "'positions':{'position':5}" },
         { TermVectorParams.DF, "'df':2" },
         { TermVectorParams.TF_IDF, "'tf-idf':0.5" } };
     StringBuilder expected = new StringBuilder("/termVectors/0/test_posofftv/anoth=={");
@@ -249,7 +249,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         ,"f.test_basictv." + TermVectorParams.TF_IDF, "false"
         )
     ,"/termVectors/0/test_basictv=={'anoth':{},'titl':{}}"
-    ,"/termVectors/0/test_postv/anoth=={'tf':1, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+    ,"/termVectors/0/test_postv/anoth=={'tf':1, 'positions':{'position':5}, 'df':2, 'tf-idf':0.5}"
     ,"/termVectors/0/test_offtv/anoth=={'tf':1, 'df':2, 'tf-idf':0.5}"
     ,"/termVectors/warnings=={ 'noTermVectors':['test_notv'], 'noPositions':['test_basictv', 'test_offtv'], 'noOffsets':['test_basictv', 'test_postv']}"
     );

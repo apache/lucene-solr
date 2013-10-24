@@ -25,10 +25,10 @@ import java.util.Map;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -47,8 +47,8 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextFieldInfosWriter.*;
 public class SimpleTextFieldInfosReader extends FieldInfosReader {
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
@@ -97,12 +97,16 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NORMS_TYPE);
         String nrmType = readString(NORMS_TYPE.length, scratch);
-        final DocValues.Type normsType = docValuesType(nrmType);
+        final DocValuesType normsType = docValuesType(nrmType);
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
-        final DocValues.Type docValuesType = docValuesType(dvType);
+        final DocValuesType docValuesType = docValuesType(dvType);
+        
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, DOCVALUES_GEN);
+        final long dvGen = Long.parseLong(readString(DOCVALUES_GEN.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
@@ -122,6 +126,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
 
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(atts));
+        infos[i].setDocValuesGen(dvGen);
       }
 
       if (input.getFilePointer() != input.length()) {
@@ -140,11 +145,11 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     }
   }
 
-  public DocValues.Type docValuesType(String dvType) {
+  public DocValuesType docValuesType(String dvType) {
     if ("false".equals(dvType)) {
       return null;
     } else {
-      return DocValues.Type.valueOf(dvType);
+      return DocValuesType.valueOf(dvType);
     }
   }
   

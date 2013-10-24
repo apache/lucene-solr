@@ -32,9 +32,8 @@
   <packaging>jar</packaging>
   <properties>
     <module-directory>solr/solrj</module-directory>
-    <top-level>../../../../..</top-level>
-    <module-path>${top-level}/${module-directory}/src/test</module-path>
-    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
+    <relative-top-level>../../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}/src/test</module-path>
   </properties>
   <dependencies>
     <dependency>
@@ -104,13 +103,52 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
-          </systemPropertyVariables>
-        </configuration>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>solr-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>solr-shared-test-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>test-check-forbidden-servlet-api</id>
+            <configuration>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+              </signaturesFiles>
+              <excludes>
+                <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
+                <exclude>org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class</exclude>
+              </excludes>
+            </configuration>
+            <goals>
+              <goal>testCheck</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-check-forbidden-apis</id>
+            <configuration>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <bundledSignatures>
+                <bundledSignature>jdk-unsafe</bundledSignature>
+                <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
+              </bundledSignatures>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
+              </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>testCheck</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

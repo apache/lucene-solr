@@ -104,7 +104,7 @@ public class TimeLimitingCollector extends Collector {
   
   /**
    * Syntactic sugar for {@link #setBaseline(long)} using {@link Counter#get()}
-   * on the clock passed to the construcutor.
+   * on the clock passed to the constructor.
    */
   public void setBaseline() {
     setBaseline(clock.get());

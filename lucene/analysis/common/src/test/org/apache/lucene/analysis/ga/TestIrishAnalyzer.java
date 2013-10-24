@@ -34,8 +34,8 @@ public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new IrishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "siopadóireacht", "siopadóir");
-    checkOneTermReuse(a, "síceapatacha", "síceapaite");
+    checkOneTerm(a, "siopadóireacht", "siopadóir");
+    checkOneTerm(a, "síceapatacha", "síceapaite");
     // stopword
     assertAnalyzesTo(a, "le", new String[] { });
   }
@@ -52,8 +52,8 @@ public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("feirmeoireacht"), false);
     Analyzer a = new IrishAnalyzer(TEST_VERSION_CURRENT, 
         IrishAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "feirmeoireacht", "feirmeoireacht");
-    checkOneTermReuse(a, "siopadóireacht", "siopadóir");
+    checkOneTerm(a, "feirmeoireacht", "feirmeoireacht");
+    checkOneTerm(a, "siopadóireacht", "siopadóir");
   }
   
   /** test special hyphen handling */
@@ -61,7 +61,7 @@ public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new IrishAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "n-athair",
         new String[] { "athair" },
-        new int[] { 1 });
+        new int[] { 2 });
   }
   
   /** blast some random strings through the analyzer */

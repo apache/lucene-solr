@@ -17,20 +17,22 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -39,7 +41,8 @@ import org.junit.BeforeClass;
  *
  */
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
-  protected static CoreContainer cores;
+
+  protected CoreContainer cores;
   private String saveProp;
   private File dataDir2;
 
@@ -53,13 +56,12 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     if (dataDir == null) {
       createTempDir();
     }
-    cores = new CoreContainer();
   }
-  
-  @AfterClass
-  public static void afterClass() {
-    cores.shutdown();
-    cores = null;
+
+  protected void setupCoreContainer() {
+    cores = new CoreContainer(getSolrHome());
+    cores.load();
+    //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }
   
   @Override
@@ -68,17 +70,18 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
 
-    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
-    cores.setPersistent(false);
-    
     // setup datadirs
-    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() ); 
-    
+    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() );
+
     dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
-    
-    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
+
+    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
+
+    setupCoreContainer();
+    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
+
   }
 
   @Override
@@ -93,6 +96,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+
+    cores.shutdown();
     
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);
@@ -189,5 +194,15 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
         getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
     assertEquals(1,
         getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+  }
+
+  public void testMergeMultipleRequest() throws Exception {
+    CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
+    req.setCoreName("core0");
+    req.setIndexDirs(Arrays.asList("/path/1", "/path/2"));
+    req.setSrcCores(Arrays.asList("core1", "core2"));
+    SolrParams params = req.getParams();
+    assertEquals(2, params.getParams(CoreAdminParams.SRC_CORE).length);
+    assertEquals(2, params.getParams(CoreAdminParams.INDEX_DIR).length);
   }
 }

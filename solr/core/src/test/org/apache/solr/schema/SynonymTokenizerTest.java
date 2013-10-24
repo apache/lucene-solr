@@ -38,7 +38,7 @@ public class SynonymTokenizerTest extends SolrTestCaseJ4 {
   @Test
   public void testSchemaLoading() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertTrue( schema.getFieldTypes().containsKey("text_synonyms") );
   }
 }

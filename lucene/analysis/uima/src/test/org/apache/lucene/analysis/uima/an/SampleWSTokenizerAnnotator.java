@@ -17,11 +17,13 @@ package org.apache.lucene.analysis.uima.an;
  * limitations under the License.
  */
 
+import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_component.JCasAnnotator_ImplBase;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.jcas.JCas;
+import org.apache.uima.resource.ResourceInitializationException;
 
 /**
  * Dummy implementation of a UIMA based whitespace tokenizer
@@ -30,15 +32,21 @@ public class SampleWSTokenizerAnnotator extends JCasAnnotator_ImplBase {
 
   private final static String TOKEN_TYPE = "org.apache.lucene.uima.ts.TokenAnnotation";
   private final static String SENTENCE_TYPE = "org.apache.lucene.uima.ts.SentenceAnnotation";
-  private static final String CR = "\n";
+  private String lineEnd;
   private static final String WHITESPACE = " ";
+
+  @Override
+  public void initialize(UimaContext aContext) throws ResourceInitializationException {
+    super.initialize(aContext);
+    lineEnd = String.valueOf(aContext.getConfigParameterValue("line-end"));
+  }
 
   @Override
   public void process(JCas jCas) throws AnalysisEngineProcessException {
     Type sentenceType = jCas.getCas().getTypeSystem().getType(SENTENCE_TYPE);
     Type tokenType = jCas.getCas().getTypeSystem().getType(TOKEN_TYPE);
     int i = 0;
-    for (String sentenceString : jCas.getDocumentText().split(CR)) {
+    for (String sentenceString : jCas.getDocumentText().split(lineEnd)) {
       // add the sentence
       AnnotationFS sentenceAnnotation = jCas.getCas().createAnnotation(sentenceType, i, sentenceString.length());
       jCas.addFsToIndexes(sentenceAnnotation);

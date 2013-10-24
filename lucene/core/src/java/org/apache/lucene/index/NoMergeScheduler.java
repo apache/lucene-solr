@@ -41,4 +41,10 @@ public final class NoMergeScheduler extends MergeScheduler {
 
   @Override
   public void merge(IndexWriter writer) {}
+
+  @Override
+  public MergeScheduler clone() {
+    return this;
+  }
+
 }

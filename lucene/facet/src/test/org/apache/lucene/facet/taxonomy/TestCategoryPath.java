@@ -1,6 +1,9 @@
 package org.apache.lucene.facet.taxonomy;
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.Arrays;
+
+import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 /*
@@ -20,7 +23,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestCategoryPath extends LuceneTestCase {
+public class TestCategoryPath extends FacetTestCase {
   
   @Test 
   public void testBasic() {
@@ -131,9 +134,6 @@ public class TestCategoryPath extends LuceneTestCase {
     CategoryPath p = new CategoryPath("hello", "world", "yo");
     assertEquals(3, p.length);
     assertEquals("hello/world/yo", p.toString('/'));
-    
-    p = new CategoryPath(new String[0]);
-    assertEquals(0, p.length);
   }
   
   @Test 
@@ -176,9 +176,131 @@ public class TestCategoryPath extends LuceneTestCase {
     pother = new CategoryPath("a/b/c/e", '/');
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
-    pother = new CategoryPath("a/b/c//e", '/');
-    assertTrue(pother.compareTo(p) < 0);
-    assertTrue(p.compareTo(pother) > 0);
   }
 
+  @Test
+  public void testEmptyNullComponents() throws Exception {
+    // LUCENE-4724: CategoryPath should not allow empty or null components
+    String[][] components_tests = new String[][] {
+      new String[] { "", "test" }, // empty in the beginning
+      new String[] { "test", "" }, // empty in the end
+      new String[] { "test", "", "foo" }, // empty in the middle
+      new String[] { null, "test" }, // null at the beginning
+      new String[] { "test", null }, // null in the end
+      new String[] { "test", null, "foo" }, // null in the middle
+    };
+
+    for (String[] components : components_tests) {
+      try {
+        assertNotNull(new CategoryPath(components));
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // ok
+      }
+    }
+    
+    String[] path_tests = new String[] {
+        "/test", // empty in the beginning
+        "test//foo", // empty in the middle
+    };
+    
+    for (String path : path_tests) {
+      try {
+        assertNotNull(new CategoryPath(path, '/'));
+        fail("empty or null components should not be allowed: " + path);
+      } catch (IllegalArgumentException e) {
+        // ok
+      }
+    }
+
+    // a trailing path separator is produces only one component
+    assertNotNull(new CategoryPath("test/", '/'));
+    
+  }
+
+  @Test
+  public void testInvalidDelimChar() throws Exception {
+    // Make sure CategoryPath doesn't silently corrupt:
+    char[] buf = new char[100];
+    CategoryPath cp = new CategoryPath("foo/bar");
+    try {
+      cp.toString();
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, '/');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("abc", "foo/bar");
+    try {
+      cp.toString();
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, '/');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("foo:bar");
+    try {
+      cp.toString(':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, ':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("abc", "foo:bar");
+    try {
+      cp.toString(':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, ':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testLongPath() throws Exception {
+    String bigComp = null;
+    while (true) {
+      int len = CategoryPath.MAX_CATEGORY_PATH_LENGTH;
+      bigComp = _TestUtil.randomSimpleString(random(), len, len);
+      if (bigComp.indexOf('\u001f') != -1) {
+        continue;
+      }
+      break;
+    }
+
+    try {
+      assertNotNull(new CategoryPath("dim", bigComp));
+      fail("long paths should not be allowed; len=" + bigComp.length());
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      assertNotNull(new CategoryPath("dim\u001f" + bigComp, '\u001f'));
+      fail("long paths should not be allowed; len=" + bigComp.length());
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+  
 }

@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;

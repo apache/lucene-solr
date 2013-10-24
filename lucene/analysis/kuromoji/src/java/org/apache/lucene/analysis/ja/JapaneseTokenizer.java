@@ -187,6 +187,8 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   /**
    * Create a new JapaneseTokenizer.
+   * <p>
+   * Uses the default AttributeFactory.
    * 
    * @param input Reader containing text
    * @param userDictionary Optional: if non-null, user dictionary.
@@ -194,7 +196,21 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer(Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    super(input);
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, userDictionary, discardPunctuation, mode);
+  }
+
+  /**
+   * Create a new JapaneseTokenizer.
+   *
+   * @param factory the AttributeFactory to use
+   * @param input Reader containing text
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param mode tokenization mode.
+   */
+  public JapaneseTokenizer
+      (AttributeFactory factory, Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    super(factory, input);
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
     unkDictionary = UnknownDictionary.getInstance();
@@ -227,7 +243,7 @@ public final class JapaneseTokenizer extends Tokenizer {
         outputCompounds = false;
         break;
     }
-    buffer.reset(null); // best effort NPE consumers that don't call reset()
+    buffer.reset(this.input);
 
     resetState();
 
@@ -245,7 +261,14 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    buffer.reset(input);
+  }
+
+  @Override
   public void reset() throws IOException {
+    super.reset();
     buffer.reset(input);
     resetState();
   }
@@ -264,7 +287,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // Set final offset
     int finalOffset = correctOffset(pos);
     offsetAtt.setOffset(finalOffset, finalOffset);

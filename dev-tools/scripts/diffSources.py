@@ -50,7 +50,7 @@ while True:
   elif l.endswith('\n'):
     l = l[:-1]
   if l.startswith('diff ') or l.startswith('Binary files '):
-    keep = l.lower().find('/build/') == -1 and (l.lower().startswith('Only in') or ((l.lower().endswith('.java') or l.lower().endswith('.txt') or l.lower().endswith('.xml') or l.lower().endswith('.iml')) and l.find('/.svn/') == -1))
+    keep = not l.endswith('timehints.txt') and l.lower().find('/build/') == -1 and (l.lower().startswith('Only in') or ((l.lower().endswith('.java') or l.lower().endswith('.txt') or l.lower().endswith('.xml') or l.lower().endswith('.iml') or l.lower().endswith('.html') or l.lower().endswith('.template') or l.lower().endswith('.py') or l.lower().endswith('.g') or l.lower().endswith('.properties')) and l.find('/.svn/') == -1))
     if keep:
       print
       print

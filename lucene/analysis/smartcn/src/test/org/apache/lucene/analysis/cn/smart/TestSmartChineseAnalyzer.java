@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -80,7 +79,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
     for (Analyzer analyzer : analyzers) {
       assertAnalyzesTo(analyzer, sentence, result);
-      assertAnalyzesToReuse(analyzer, sentence, result);
+      assertAnalyzesTo(analyzer, sentence, result);
     }
   }
   
@@ -168,11 +167,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new SmartChineseAnalyzer(Version.LUCENE_CURRENT);
-    assertAnalyzesToReuse(a, "我购买 Tests 了道具和服装", 
+    assertAnalyzesTo(a, "我购买 Tests 了道具和服装", 
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"},
         new int[] { 0, 1, 4, 10, 11, 13, 14 },
         new int[] { 1, 3, 9, 11, 13, 14, 16 });
-    assertAnalyzesToReuse(a, "我购买了道具和服装。",
+    assertAnalyzesTo(a, "我购买了道具和服装。",
         new String[] { "我", "购买", "了", "道具", "和", "服装" },
         new int[] { 0, 1, 3, 4, 6, 7 },
         new int[] { 1, 3, 4, 6, 7, 9 });
@@ -185,9 +184,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装。");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", new StringReader(sb.toString()));
-    stream.reset();
-    while (stream.incrementToken()) {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
     }
   }
   
@@ -198,9 +199,11 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", new StringReader(sb.toString()));
-    stream.reset();
-    while (stream.incrementToken()) {
+    try (TokenStream stream = analyzer.tokenStream("", sb.toString())) {
+      stream.reset();
+      while (stream.incrementToken()) {
+      }
+      stream.end();
     }
   }
   

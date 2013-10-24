@@ -29,7 +29,6 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.Norm; // javadocs
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState; // javadocs
@@ -38,13 +37,8 @@ import org.apache.lucene.index.FieldInvertState; // javadocs
  * Expert: directly create a field for a document.  Most
  * users should use one of the sugar subclasses: {@link
  * IntField}, {@link LongField}, {@link FloatField}, {@link
- * DoubleField}, {@link ByteDocValuesField}, {@link
- * ShortDocValuesField}, {@link IntDocValuesField}, {@link
- * LongDocValuesField}, {@link PackedLongDocValuesField},
- * {@link FloatDocValuesField}, {@link
- * DoubleDocValuesField}, {@link SortedBytesDocValuesField},
- * {@link DerefBytesDocValuesField}, {@link
- * StraightBytesDocValuesField}, {@link
+ * DoubleField}, {@link BinaryDocValuesField}, {@link
+ * NumericDocValuesField}, {@link SortedDocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
  * <p/> A field is a section of a Document. Each field has three
@@ -81,7 +75,6 @@ public class Field implements IndexableField, StorableField {
   protected TokenStream tokenStream;
 
   private transient TokenStream internalTokenStream;
-  private transient ReusableStringReader internalReader;
 
   /**
    * Field's boost
@@ -558,54 +551,10 @@ public class Field implements IndexableField, StorableField {
     } else if (readerValue() != null) {
       return analyzer.tokenStream(name(), readerValue());
     } else if (stringValue() != null) {
-      if (internalReader == null) {
-        internalReader = new ReusableStringReader();
-      }
-      internalReader.setValue(stringValue());
-      return analyzer.tokenStream(name(), internalReader);
+      return analyzer.tokenStream(name(), stringValue());
     }
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
-  }
-  
-  static final class ReusableStringReader extends Reader {
-    private int pos = 0, size = 0;
-    private String s = null;
-    
-    void setValue(String s) {
-      this.s = s;
-      this.size = s.length();
-      this.pos = 0;
-    }
-    
-    @Override
-    public int read() {
-      if (pos < size) {
-        return s.charAt(pos++);
-      } else {
-        s = null;
-        return -1;
-      }
-    }
-    
-    @Override
-    public int read(char[] c, int off, int len) {
-      if (pos < size) {
-        len = Math.min(len, size-pos);
-        s.getChars(pos, pos+len, c, off);
-        pos += len;
-        return len;
-      } else {
-        s = null;
-        return -1;
-      }
-    }
-    
-    @Override
-    public void close() {
-      pos = size; // this prevents NPE when reading after close!
-      s = null;
-    }
   }
   
   static final class StringTokenStream extends TokenStream {

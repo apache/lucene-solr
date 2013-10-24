@@ -37,6 +37,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
 
 import java.io.IOException;
 import java.text.*;
@@ -85,6 +86,13 @@ import java.util.*;
  * ie: "NOW+1YEAR", "NOW/DAY", "1995-12-31T23:59:59.999Z+5MINUTES", etc...
  * -- see {@link DateMathParser} for more examples.
  * </p>
+ * <p>
+ * <b>NOTE:</b> Allthough it is possible to configure a <code>DateField</code> 
+ * instance with a default value of "<code>NOW</code>" to compute a timestamp 
+ * of when the document was indexed, this is not advisable when using SolrCloud 
+ * since each replica of the document may compute a slightly different value. 
+ * {@link TimestampUpdateProcessorFactory} is recomended instead.
+ * </p>
  *
  * <p>
  * Explanation of "UTC"...
@@ -101,9 +109,9 @@ import java.util.*;
  *
  *
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
- *
+ * @deprecated {@link TrieDateField} is recomended for all new schemas
  */
-public class DateField extends PrimitiveFieldType {
+public class DateField extends PrimitiveFieldType implements DateValueFieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
@@ -435,7 +443,7 @@ public class DateField extends PrimitiveFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource(parser);
-    return new DateFieldSource(field.getName(), field.getType());
+    return new DateFieldSource(field.getName(), field);
   }
 
   /** DateField specific range query */
@@ -453,11 +461,13 @@ public class DateField extends PrimitiveFieldType {
 
 class DateFieldSource extends FieldCacheSource {
   // NOTE: this is bad for serialization... but we currently need the fieldType for toInternal()
+  SchemaField sf;
   FieldType ft;
 
-  public DateFieldSource(String name, FieldType ft) {
+  public DateFieldSource(String name, SchemaField sf) {
     super(name);
-    this.ft = ft;
+    this.sf = sf;
+    this.ft = sf.getType();
   }
 
   @Override
@@ -472,6 +482,11 @@ class DateFieldSource extends FieldCacheSource {
       protected String toTerm(String readableValue) {
         // needed for frange queries to work properly
         return ft.toInternal(readableValue);
+      }
+
+      @Override
+      public boolean exists(int doc) {
+        return termsIndex.getOrd(doc) >= 0;
       }
 
       @Override
@@ -498,22 +513,23 @@ class DateFieldSource extends FieldCacheSource {
       @Override
       public String strVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
+        if (ord == -1) {
           return null;
         } else {
-          final BytesRef br = termsIndex.lookup(ord, spare);
-          return ft.indexedToReadable(br, spareChars).toString();
+          termsIndex.lookupOrd(ord, spare);
+          return ft.indexedToReadable(spare, spareChars).toString();
         }
       }
 
       @Override
       public Object objectVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
+        if (ord == -1) {
           return null;
         } else {
-          final BytesRef br = termsIndex.lookup(ord, new BytesRef());
-          return ft.toObject(null, br);
+          final BytesRef br = new BytesRef();
+          termsIndex.lookupOrd(ord, br);
+          return ft.toObject(sf, br);
         }
       }
 

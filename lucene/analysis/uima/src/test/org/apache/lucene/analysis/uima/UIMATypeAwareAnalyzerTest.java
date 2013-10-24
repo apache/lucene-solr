@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.StringReader;
-
 /**
  * Testcase for {@link UIMATypeAwareAnalyzer}
  */
@@ -37,7 +35,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new UIMATypeAwareAnalyzer("/uima/AggregateSentenceAE.xml",
-        "org.apache.uima.TokenAnnotation", "posTag");
+        "org.apache.uima.TokenAnnotation", "posTag", null);
   }
 
   @Override
@@ -51,7 +49,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   public void baseUIMATypeAwareAnalyzerStreamTest() throws Exception {
 
     // create a token stream
-    TokenStream ts = analyzer.tokenStream("text", new StringReader("the big brown fox jumped on the wood"));
+    TokenStream ts = analyzer.tokenStream("text", "the big brown fox jumped on the wood");
 
     // check that 'the big brown fox jumped on the wood' tokens have the expected PoS types
     assertTokenStreamContents(ts,
@@ -63,7 +61,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new UIMATypeAwareAnalyzer("/uima/TestAggregateSentenceAE.xml",
-        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 100 * RANDOM_MULTIPLIER);
+        "org.apache.lucene.uima.ts.TokenAnnotation", "pos", null), 100 * RANDOM_MULTIPLIER);
   }
 
 }

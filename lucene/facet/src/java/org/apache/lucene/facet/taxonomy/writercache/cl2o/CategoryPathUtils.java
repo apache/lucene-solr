@@ -39,14 +39,14 @@ class CategoryPathUtils {
    * {@link #serialize(CategoryPath, CharBlockArray)}.
    */
   public static int hashCodeOfSerialized(CharBlockArray charBlockArray, int offset) {
-    int length = (short) charBlockArray.charAt(offset++);
+    int length = charBlockArray.charAt(offset++);
     if (length == 0) {
       return 0;
     }
     
     int hash = length;
     for (int i = 0; i < length; i++) {
-      int len = (short) charBlockArray.charAt(offset++);
+      int len = charBlockArray.charAt(offset++);
       hash = hash * 31 + charBlockArray.subSequence(offset, offset + len).hashCode();
       offset += len;
     }
@@ -67,7 +67,7 @@ class CategoryPathUtils {
     }
     
     for (int i = 0; i < cp.length; i++) {
-      int len = (short) charBlockArray.charAt(offset++);
+      int len = charBlockArray.charAt(offset++);
       if (len != cp.components[i].length()) {
         return false;
       }

@@ -20,6 +20,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util._TestUtil;
 
 public class FieldTermStackTest extends AbstractTestCase {
   
@@ -173,4 +175,37 @@ public class FieldTermStackTest extends AbstractTestCase {
     assertEquals ("the(195,198,31)", stack.pop().toString());
   }
 
+  public void testTermInfoComparisonConsistency() {
+    TermInfo a = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 0, 1 );
+    TermInfo b = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 1, 1 );
+    TermInfo c = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 2, 1 );
+    TermInfo d = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 0, 1 );
+
+    assertConsistentEquals( a, a );
+    assertConsistentEquals( b, b );
+    assertConsistentEquals( c, c );
+    assertConsistentEquals( d, d );
+    assertConsistentEquals( a, d );
+    assertConsistentLessThan( a, b );
+    assertConsistentLessThan( b, c );
+    assertConsistentLessThan( a, c );
+    assertConsistentLessThan( d, b );
+    assertConsistentLessThan( d, c );
+  }
+
+  private < T extends Comparable< T > > void assertConsistentEquals( T a, T b ) {
+    assertEquals( a, b );
+    assertEquals( b, a );
+    assertEquals( a.hashCode(), b.hashCode() );
+    assertEquals( 0, a.compareTo( b ) );
+    assertEquals( 0, b.compareTo( a ) );
+  }
+
+  private < T extends Comparable< T > > void assertConsistentLessThan( T a, T b ) {
+    assertFalse( a.equals( b ) );
+    assertFalse( b.equals( a ) );
+    assertFalse( a.hashCode() == b.hashCode() );
+    assertTrue( a.compareTo( b ) < 0 );
+    assertTrue( b.compareTo( a ) > 0 );
+  }
 }

@@ -9,11 +9,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 
-import org.junit.Test;
-
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.taxonomy.writercache.cl2o.CharBlockArray;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,7 +31,7 @@ import org.apache.lucene.facet.taxonomy.writercache.cl2o.CharBlockArray;
  * limitations under the License.
  */
 
-public class TestCharBlockArray extends LuceneTestCase {
+public class TestCharBlockArray extends FacetTestCase {
 
   @Test public void testArray() throws Exception {
     CharBlockArray array = new CharBlockArray();
@@ -85,7 +84,8 @@ public class TestCharBlockArray extends LuceneTestCase {
 
     assertEqualsInternal("GrowingCharArray<->StringBuilder mismatch.", builder, array);
 
-    File f = new File("GrowingCharArrayTest.tmp");
+    File tempDir = _TestUtil.getTempDir("growingchararray");
+    File f = new File(tempDir, "GrowingCharArrayTest.tmp");
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f));
     array.flush(out);
     out.flush();

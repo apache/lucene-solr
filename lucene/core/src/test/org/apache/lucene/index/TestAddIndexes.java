@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -596,7 +597,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     Directory dir = newDirectory();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(100);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -625,7 +626,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir2 = newDirectory();
     lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(4);
     writer = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()))
@@ -888,7 +889,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
       if (t instanceof AlreadyClosedException || t instanceof MergePolicy.MergeAbortedException || t instanceof NullPointerException) {
         report = !didClose;
-      } else if (t instanceof FileNotFoundException)  {
+      } else if (t instanceof FileNotFoundException || t instanceof NoSuchFileException)  {
         report = !didClose;
       } else if (t instanceof IOException)  {
         Throwable t2 = t.getCause();
@@ -1058,7 +1059,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  private static final class CustomPerFieldCodec extends Lucene41Codec {
+  private static final class CustomPerFieldCodec extends Lucene46Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
     private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
@@ -1094,7 +1095,7 @@ public class TestAddIndexes extends LuceneTestCase {
     
     Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
-    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
+    MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
@@ -1109,7 +1110,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene41Codec());
+      super("NotRegistered", new Lucene46Codec());
     }
   }
   
@@ -1204,4 +1205,43 @@ public class TestAddIndexes extends LuceneTestCase {
     r3.close();
     d3.close();
   }
+  
+  public void testAddEmpty() throws Exception {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d1);
+    MultiReader empty = new MultiReader();
+    w.addIndexes(empty);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(d1);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    d1.close();
+  }
+
+  // Currently it's impossible to end up with a segment with all documents
+  // deleted, as such segments are dropped. Still, to validate that addIndexes
+  // works with such segments, or readers that end up in such state, we fake an
+  // all deleted segment.
+  public void testFakeAllDeleted() throws Exception {
+    Directory src = newDirectory(), dest = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), src);
+    w.addDocument(new Document());
+    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
+    w.close();
+    
+    w = new RandomIndexWriter(random(), dest);
+    w.addIndexes(allDeletedReader);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(src);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    allDeletedReader.close();
+    src.close();
+    dest.close();
+  }
+
 }

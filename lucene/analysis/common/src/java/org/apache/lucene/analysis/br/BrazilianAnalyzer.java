@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -131,7 +131,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
     result = new StandardFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(excltable != null && !excltable.isEmpty())
-      result = new KeywordMarkerFilter(result, excltable);
+      result = new SetKeywordMarkerFilter(result, excltable);
     return new TokenStreamComponents(source, new BrazilianStemFilter(result));
   }
 }

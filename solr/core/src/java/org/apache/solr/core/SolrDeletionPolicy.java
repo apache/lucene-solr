@@ -41,7 +41,7 @@ import java.util.Locale;
  *
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
-public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitializedPlugin {
+public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedListInitializedPlugin {
   public static Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   private String maxCommitAge = null;
@@ -73,60 +73,84 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     }
   }
 
-  static String str(IndexCommit commit) {
-    StringBuilder sb = new StringBuilder();
-    try {
-      sb.append("commit{");
+  /**
+   * Internal use for Lucene... do not explicitly call.
+   */
+  @Override
+  public void onInit(List<? extends IndexCommit> commits) throws IOException {
+    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
+    if (commits.isEmpty()) {
+      return;
+    }
+    log.info("SolrDeletionPolicy.onInit: commits: {}",
+        new CommitsLoggingInfo(commits));
+    log.debug("SolrDeletionPolicy.onInit: commits: {}",
+        new CommitsLoggingDebug(commits));
+    updateCommits(commits);
+  }
 
-      Directory dir = commit.getDirectory();
+  /**
+   * Internal use for Lucene... do not explicitly call.
+   */
+  @Override
+  public void onCommit(List<? extends IndexCommit> commits) throws IOException {
+    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
+    log.info("SolrDeletionPolicy.onCommit: commits: {}",
+        new CommitsLoggingInfo(commits));
+    log.debug("SolrDeletionPolicy.onCommit: commits: {}",
+        new CommitsLoggingDebug(commits));
+    updateCommits(commits);
+  }
 
+  private static class CommitsLoggingInfo {
+    private List<? extends IndexCommit> commits;
+
+    public CommitsLoggingInfo(List<? extends IndexCommit> commits) {
+      this.commits = commits;
+    }
+
+    public final String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("num=").append(commits.size());
+      for (IndexCommit c : commits) {
+        sb.append("\n\tcommit{");
+        appendDetails(sb, c);
+        sb.append("}");
+      }
+      // add an end brace
+      return sb.toString();
+    }
+
+    protected void appendDetails(StringBuilder sb, IndexCommit c) {
+      Directory dir = c.getDirectory();
       if (dir instanceof FSDirectory) {
         FSDirectory fsd = (FSDirectory) dir;
         sb.append("dir=").append(fsd.getDirectory());
       } else {
         sb.append("dir=").append(dir);
       }
-
-      sb.append(",segFN=").append(commit.getSegmentsFileName());
-      sb.append(",generation=").append(commit.getGeneration());
-      sb.append(",filenames=").append(commit.getFileNames());
-    } catch (Exception e) {
-      sb.append(e);
+      sb.append(",segFN=").append(c.getSegmentsFileName());
+      sb.append(",generation=").append(c.getGeneration());
     }
-    return sb.toString();
   }
 
-  static String str(List commits) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("num=").append(commits.size());
-
-    for (IndexCommit commit : (List<IndexCommit>) commits) {
-      sb.append("\n\t");
-      sb.append(str(commit));
+  private static class CommitsLoggingDebug extends CommitsLoggingInfo {
+    public CommitsLoggingDebug(List<? extends IndexCommit> commits) {
+      super(commits);
     }
-    return sb.toString();
+
+    protected void appendDetails(StringBuilder sb, IndexCommit c) {
+      super.appendDetails(sb, c);
+      try {
+        sb.append(",filenames=");
+        sb.append(c.getFileNames());
+      } catch (IOException e) {
+        sb.append(e);
+      }
+    }
   }
 
-  /**
-   * Internal use for Lucene... do not explicitly call.
-   */
-  @Override
-  public void onInit(List commits) throws IOException {
-    log.info("SolrDeletionPolicy.onInit: commits:" + str(commits));
-    updateCommits((List<IndexCommit>) commits);
-  }
-
-  /**
-   * Internal use for Lucene... do not explicitly call.
-   */
-  @Override
-  public void onCommit(List commits) throws IOException {
-    log.info("SolrDeletionPolicy.onCommit: commits:" + str(commits));
-    updateCommits((List<IndexCommit>) commits);
-  }
-
-
-  private void updateCommits(List<IndexCommit> commits) {
+  private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
     // in this specific call (may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
@@ -135,12 +159,10 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      try {
-        log.info("newest commit = " + newest.getGeneration() + newest.getFileNames().toString());
-      } catch (IOException e1) {
-        throw new RuntimeException();
-      }
-
+      // SOLR-4547: Removed the filenames from this log entry because this
+      // method is only called from methods that have just logged them
+      // at DEBUG.
+      log.info("newest commit generation = " + newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 

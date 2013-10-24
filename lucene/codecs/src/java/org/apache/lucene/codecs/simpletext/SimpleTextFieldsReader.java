@@ -67,7 +67,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
     fieldInfos = state.fieldInfos;
-    in = state.dir.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
+    in = state.directory.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
     boolean success = false;
     try {
       fields = readFields(in.clone());
@@ -108,7 +108,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
 
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekExact(text);
       if (result != null) {
@@ -124,7 +124,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekCeil(text);
@@ -192,13 +192,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
  
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-      SimpleTextDocsEnum docsEnum;
+      SimpleTextDocsAndPositionsEnum docsEnum;
       if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
-        docsEnum = (SimpleTextDocsEnum) reuse;
+        docsEnum = (SimpleTextDocsAndPositionsEnum) reuse;
       } else {
-        docsEnum = new SimpleTextDocsEnum();
+        docsEnum = new SimpleTextDocsAndPositionsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY);
+      return docsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
     }
 
     @Override
@@ -215,12 +215,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
-      return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions);
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
+      return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
     }
   }
 
@@ -233,6 +228,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
+    private int cost;
     
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -243,12 +239,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF) throws IOException {
+    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF, int docFreq) throws IOException {
       this.liveDocs = liveDocs;
       in.seek(fp);
       this.omitTF = omitTF;
       docID = -1;
       tf = 1;
+      cost = docFreq;
       return this;
     }
 
@@ -312,8 +309,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      return cost;
     }
   }
 
@@ -334,6 +335,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private int startOffset;
     private int endOffset;
     private int posPending;
+    private int cost;
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -344,7 +346,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions) {
+    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions, int docFreq) {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
       docID = -1;
@@ -354,6 +356,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         startOffset = -1;
         endOffset = -1;
       }
+      cost = docFreq;
       return this;
     }
 
@@ -415,8 +418,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
     }
 
     @Override
@@ -477,6 +479,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public BytesRef getPayload() {
       return payload;
     }
+    
+    @Override
+    public long cost() {
+      return cost;
+    }
   }
 
   static class TermData {
@@ -507,7 +514,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     private void loadTerms() throws IOException {
-      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
+      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
       final PairOutputs<Long,Long> outputsInner = new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs);
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
@@ -568,6 +575,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       */
       //System.out.println("FST " + fst.sizeInBytes());
     }
+    
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return (fst!=null) ? fst.sizeInBytes() : 0;
+    }
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
@@ -576,11 +588,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         return TermsEnum.EMPTY;
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -604,6 +611,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
@@ -624,7 +636,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
-  private final Map<String,Terms> termsCache = new HashMap<String,Terms>();
+  private final Map<String,SimpleTextTerms> termsCache = new HashMap<String,SimpleTextTerms>();
 
   @Override
   synchronized public Terms terms(String field) throws IOException {
@@ -635,7 +647,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         return null;
       } else {
         terms = new SimpleTextTerms(field, fp);
-        termsCache.put(field, terms);
+        termsCache.put(field, (SimpleTextTerms) terms);
       }
     }
     return terms;
@@ -649,5 +661,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     in.close();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    for(SimpleTextTerms simpleTextTerms : termsCache.values()) {
+      sizeInBytes += (simpleTextTerms!=null) ? simpleTextTerms.ramBytesUsed() : 0;
+    }
+    return sizeInBytes;
   }
 }

@@ -191,14 +191,14 @@ public class TestWithCJKBigramFilter extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws IOException {
-    assertAnalyzesToReuse(analyzer, "あいうえおabcかきくけこ",
+    assertAnalyzesTo(analyzer, "あいうえおabcかきくけこ",
         new String[] { "あい", "いう", "うえ", "えお", "abc", "かき", "きく", "くけ", "けこ" },
         new int[] { 0, 1, 2, 3, 5,  8,  9, 10, 11 },
         new int[] { 2, 3, 4, 5, 8, 10, 11, 12, 13 },
         new String[] { "<DOUBLE>", "<DOUBLE>", "<DOUBLE>", "<DOUBLE>", "<ALPHANUM>", "<DOUBLE>", "<DOUBLE>", "<DOUBLE>", "<DOUBLE>" },
         new int[] { 1, 1, 1, 1, 1,  1,  1,  1,  1});
     
-    assertAnalyzesToReuse(analyzer, "あいうえおabんcかきくけ こ",
+    assertAnalyzesTo(analyzer, "あいうえおabんcかきくけ こ",
         new String[] { "あい", "いう", "うえ", "えお", "ab", "ん", "c", "かき", "きく", "くけ", "こ" },
         new int[] { 0, 1, 2, 3, 5, 7, 8,  9, 10, 11, 14 },
         new int[] { 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 15 },

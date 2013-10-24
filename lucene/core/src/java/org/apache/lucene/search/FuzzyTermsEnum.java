@@ -46,7 +46,7 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * to the specified filter term.
  *
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
 public class FuzzyTermsEnum extends TermsEnum {
@@ -293,23 +293,18 @@ public class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public Comparator<BytesRef> getComparator() {
-    return actualEnum.getComparator();
-  }
-  
-  @Override
   public long ord() throws IOException {
     return actualEnum.ord();
   }
   
   @Override
-  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
-    return actualEnum.seekExact(text, useCache);
+  public boolean seekExact(BytesRef text) throws IOException {
+    return actualEnum.seekExact(text);
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
-    return actualEnum.seekCeil(text, useCache);
+  public SeekStatus seekCeil(BytesRef text) throws IOException {
+    return actualEnum.seekCeil(text);
   }
   
   @Override

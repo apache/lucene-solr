@@ -25,20 +25,21 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -60,7 +61,6 @@ import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -68,7 +68,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -251,8 +250,7 @@ public class MemoryIndex {
   }
   
   /**
-   * Expert: This constructor accepts a byte and int block allocator that is used internally to allocate 
-   * int & byte blocks for term and posting storage.  
+   * Expert: This constructor accepts an upper limit for the number of bytes that should be reused if this instance is {@link #reset()}.
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
    */
@@ -290,7 +288,7 @@ public class MemoryIndex {
     
     TokenStream stream;
     try {
-      stream = analyzer.tokenStream(fieldName, new StringReader(text));
+      stream = analyzer.tokenStream(fieldName, text);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -428,7 +426,6 @@ public class MemoryIndex {
       
       while (stream.incrementToken()) {
         termAtt.fillBytesRef();
-        if (ref.length == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
@@ -464,7 +461,9 @@ public class MemoryIndex {
       throw new RuntimeException(e);
     } finally {
       try {
-        if (stream != null) stream.close();
+        if (stream != null) {
+          stream.close();
+        }
       } catch (IOException e2) {
         throw new RuntimeException(e2);
       }
@@ -570,7 +569,7 @@ public class MemoryIndex {
       entries[i] = iter.next();
     }
     
-    if (size > 1) ArrayUtil.quickSort(entries, termComparator);
+    if (size > 1) ArrayUtil.introSort(entries, termComparator);
     return entries;
   }
   
@@ -735,6 +734,31 @@ public class MemoryIndex {
       return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
+    @Override
+    public NumericDocValues getNumericDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public BinaryDocValues getBinaryDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public SortedDocValues getSortedDocValues(String field) {
+      return null;
+    }
+    
+    @Override
+    public SortedSetDocValues getSortedSetDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public Bits getDocsWithField(String field) throws IOException {
+      return null;
+    }
+
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {
@@ -778,11 +802,6 @@ public class MemoryIndex {
             }
 
             @Override
-            public Comparator<BytesRef> getComparator() {
-              return BytesRef.getUTF8SortedAsUnicodeComparator();
-            }
-
-            @Override
             public long size() {
               return info.terms.size();
             }
@@ -801,6 +820,11 @@ public class MemoryIndex {
             @Override
             public int getDocCount() {
               return info.terms.size() > 0 ? 1 : 0;
+            }
+
+            @Override
+            public boolean hasFreqs() {
+              return true;
             }
 
             @Override
@@ -864,13 +888,13 @@ public class MemoryIndex {
     
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) {
+      public boolean seekExact(BytesRef text) {
         termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
         return termUpto >= 0;
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef text) {
         termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
         if (termUpto < 0) { // not found; choose successor
           termUpto = -termUpto-1;
@@ -940,11 +964,6 @@ public class MemoryIndex {
       }
 
       @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
-      }
-
-      @Override
       public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null;
         this.seekExact(((OrdTermState)state).ord);
@@ -988,13 +1007,18 @@ public class MemoryIndex {
       }
 
       @Override
-      public int advance(int target) {
-        return nextDoc();
+      public int advance(int target) throws IOException {
+        return slowAdvance(target);
       }
 
       @Override
       public int freq() throws IOException {
         return freq;
+      }
+
+      @Override
+      public long cost() {
+        return 1;
       }
     }
     
@@ -1039,8 +1063,8 @@ public class MemoryIndex {
       }
 
       @Override
-      public int advance(int target) {
-        return nextDoc();
+      public int advance(int target) throws IOException {
+        return slowAdvance(target);
       }
 
       @Override
@@ -1078,6 +1102,11 @@ public class MemoryIndex {
       public BytesRef getPayload() {
         return null;
       }
+      
+      @Override
+      public long cost() {
+        return 1;
+      }
     }
     
     @Override
@@ -1101,7 +1130,7 @@ public class MemoryIndex {
     @Override
     public int numDocs() {
       if (DEBUG) System.err.println("MemoryIndexReader.numDocs");
-      return fields.size() > 0 ? 1 : 0;
+      return 1;
     }
   
     @Override
@@ -1115,33 +1144,23 @@ public class MemoryIndex {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       // no-op: there are no stored fields
     }
-    
-    @Override
-    public boolean hasDeletions() {
-      if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
-      return false;
-    }
   
     @Override
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }
-
-    @Override
-    public DocValues docValues(String field) {
-      return null;
-    }
     
     /** performance hack: cache norms to avoid repeated expensive calculations */
-    private DocValues cachedNormValues;
+    private NumericDocValues cachedNormValues;
     private String cachedFieldName;
     private Similarity cachedSimilarity;
     
     @Override
-    public DocValues normValues(String field) {
-      if (fieldInfos.get(field).omitsNorms())
+    public NumericDocValues getNormValues(String field) {
+      FieldInfo fieldInfo = fieldInfos.get(field);
+      if (fieldInfo == null || fieldInfo.omitsNorms())
         return null;
-      DocValues norms = cachedNormValues;
+      NumericDocValues norms = cachedNormValues;
       Similarity sim = getSimilarity();
       if (!field.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(field);
@@ -1149,15 +1168,13 @@ public class MemoryIndex {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
-        Norm norm = new Norm();
-        sim.computeNorm(invertState, norm);
-        SingleValueSource singleByteSource = new SingleValueSource(norm);
-        norms = new MemoryIndexNormDocValues(singleByteSource);
+        long value = sim.computeNorm(invertState);
+        norms = new MemoryIndexNormDocValues(value);
         // cache it for future reuse
         cachedNormValues = norms;
         cachedFieldName = field;
         cachedSimilarity = sim;
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + norm + ":" + numTokens);
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + value + ":" + numTokens);
       }
       return norms;
     }

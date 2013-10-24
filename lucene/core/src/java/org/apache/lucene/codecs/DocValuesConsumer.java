@@ -16,235 +16,630 @@ package org.apache.lucene.codecs;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
 
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
-import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.OpenBitSet;
 
-/**
- * Abstract API that consumes {@link StorableField}s.
- * {@link DocValuesConsumer} are always associated with a specific field and
- * segments. Concrete implementations of this API write the given
- * {@link StorableField} into a implementation specific format depending on
- * the fields meta-data.
- * 
+/** 
+ * Abstract API that consumes numeric, binary and
+ * sorted docvalues.  Concrete implementations of this
+ * actually do "something" with the docvalues (write it into
+ * the index in a specific format).
+ * <p>
+ * The lifecycle is:
+ * <ol>
+ *   <li>DocValuesConsumer is created by 
+ *       {@link DocValuesFormat#fieldsConsumer(SegmentWriteState)} or
+ *       {@link NormsFormat#normsConsumer(SegmentWriteState)}.
+ *   <li>{@link #addNumericField}, {@link #addBinaryField},
+ *       or {@link #addSortedField} are called for each Numeric,
+ *       Binary, or Sorted docvalues field. The API is a "pull" rather
+ *       than "push", and the implementation is free to iterate over the 
+ *       values multiple times ({@link Iterable#iterator()}).
+ *   <li>After all fields are added, the consumer is {@link #close}d.
+ * </ol>
+ *
  * @lucene.experimental
  */
-public abstract class DocValuesConsumer {
-
-  /** Spare {@link BytesRef} that subclasses can reuse. */
-  protected final BytesRef spare = new BytesRef();
-
-  /** Returns the {@link Type} of this consumer. */
-  protected abstract Type getType();
-
+public abstract class DocValuesConsumer implements Closeable {
+  
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
-  protected DocValuesConsumer() {
+  protected DocValuesConsumer() {}
+
+  /**
+   * Writes numeric docvalues for a field.
+   * @param field field information
+   * @param values Iterable of numeric values (one for each document). {@code null} indicates
+   *               a missing value.
+   * @throws IOException if an I/O error occurred.
+   */
+  public abstract void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException;    
+
+  /**
+   * Writes binary docvalues for a field.
+   * @param field field information
+   * @param values Iterable of binary values (one for each document). {@code null} indicates
+   *               a missing value.
+   * @throws IOException if an I/O error occurred.
+   */
+  public abstract void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException;
+
+  /**
+   * Writes pre-sorted binary docvalues for a field.
+   * @param field field information
+   * @param values Iterable of binary values in sorted order (deduplicated).
+   * @param docToOrd Iterable of ordinals (one for each document). {@code -1} indicates
+   *                 a missing value.
+   * @throws IOException if an I/O error occurred.
+   */
+  public abstract void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException;
+
+  /**
+   * Writes pre-sorted set docvalues for a field
+   * @param field field information
+   * @param values Iterable of binary values in sorted order (deduplicated).
+   * @param docToOrdCount Iterable of the number of values for each document. A zero ordinal
+   *                      count indicates a missing value.
+   * @param ords Iterable of ordinal occurrences (docToOrdCount*maxDoc total).
+   * @throws IOException if an I/O error occurred.
+   */
+  public abstract void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException;
+  
+  /**
+   * Merges the numeric docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addNumericField}, passing
+   * an Iterable that merges and filters deleted documents on the fly.
+   */
+  public void mergeNumericField(final FieldInfo fieldInfo, final MergeState mergeState, final List<NumericDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
+
+    addNumericField(fieldInfo,
+                    new Iterable<Number>() {
+                      @Override
+                      public Iterator<Number> iterator() {
+                        return new Iterator<Number>() {
+                          int readerUpto = -1;
+                          int docIDUpto;
+                          Long nextValue;
+                          AtomicReader currentReader;
+                          NumericDocValues currentValues;
+                          Bits currentLiveDocs;
+                          Bits currentDocsWithField;
+                          boolean nextIsSet;
+
+                          @Override
+                          public boolean hasNext() {
+                            return nextIsSet || setNext();
+                          }
+
+                          @Override
+                          public void remove() {
+                            throw new UnsupportedOperationException();
+                          }
+
+                          @Override
+                          public Number next() {
+                            if (!hasNext()) {
+                              throw new NoSuchElementException();
+                            }
+                            assert nextIsSet;
+                            nextIsSet = false;
+                            return nextValue;
+                          }
+
+                          private boolean setNext() {
+                            while (true) {
+                              if (readerUpto == toMerge.size()) {
+                                return false;
+                              }
+
+                              if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                                readerUpto++;
+                                if (readerUpto < toMerge.size()) {
+                                  currentReader = mergeState.readers.get(readerUpto);
+                                  currentValues = toMerge.get(readerUpto);
+                                  currentLiveDocs = currentReader.getLiveDocs();
+                                  currentDocsWithField = docsWithField.get(readerUpto);
+                                }
+                                docIDUpto = 0;
+                                continue;
+                              }
+
+                              if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                                nextIsSet = true;
+                                if (currentDocsWithField.get(docIDUpto)) {
+                                  nextValue = currentValues.get(docIDUpto);
+                                } else {
+                                  nextValue = null;
+                                }
+                                docIDUpto++;
+                                return true;
+                              }
+
+                              docIDUpto++;
+                            }
+                          }
+                        };
+                      }
+                    });
+  }
+  
+  /**
+   * Merges the binary docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addBinaryField}, passing
+   * an Iterable that merges and filters deleted documents on the fly.
+   */
+  public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
+
+    addBinaryField(fieldInfo,
+                   new Iterable<BytesRef>() {
+                     @Override
+                     public Iterator<BytesRef> iterator() {
+                       return new Iterator<BytesRef>() {
+                         int readerUpto = -1;
+                         int docIDUpto;
+                         BytesRef nextValue = new BytesRef();
+                         BytesRef nextPointer; // points to null if missing, or nextValue
+                         AtomicReader currentReader;
+                         BinaryDocValues currentValues;
+                         Bits currentLiveDocs;
+                         Bits currentDocsWithField;
+                         boolean nextIsSet;
+
+                         @Override
+                         public boolean hasNext() {
+                           return nextIsSet || setNext();
+                         }
+
+                         @Override
+                         public void remove() {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
+                         public BytesRef next() {
+                           if (!hasNext()) {
+                             throw new NoSuchElementException();
+                           }
+                           assert nextIsSet;
+                           nextIsSet = false;
+                           return nextPointer;
+                         }
+
+                         private boolean setNext() {
+                           while (true) {
+                             if (readerUpto == toMerge.size()) {
+                               return false;
+                             }
+
+                             if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                               readerUpto++;
+                               if (readerUpto < toMerge.size()) {
+                                 currentReader = mergeState.readers.get(readerUpto);
+                                 currentValues = toMerge.get(readerUpto);
+                                 currentDocsWithField = docsWithField.get(readerUpto);
+                                 currentLiveDocs = currentReader.getLiveDocs();
+                               }
+                               docIDUpto = 0;
+                               continue;
+                             }
+
+                             if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                               nextIsSet = true;
+                               if (currentDocsWithField.get(docIDUpto)) {
+                                 currentValues.get(docIDUpto, nextValue);
+                                 nextPointer = nextValue;
+                               } else {
+                                 nextPointer = null;
+                               }
+                               docIDUpto++;
+                               return true;
+                             }
+
+                             docIDUpto++;
+                           }
+                         }
+                       };
+                     }
+                   });
   }
 
-  /**
-   * Adds the given {@link StorableField} instance to this
-   * {@link DocValuesConsumer}
-   * 
-   * @param docID
-   *          the document ID to add the value for. The docID must always
-   *          increase or be <tt>0</tt> if it is the first call to this method.
-   * @param value
-   *          the value to add
-   * @throws IOException
-   *           if an {@link IOException} occurs
-   */
-  public abstract void add(int docID, StorableField value)
-      throws IOException;
 
   /**
-   * Called when the consumer of this API is done adding values.
-   * 
-   * @param docCount
-   *          the total number of documents in this {@link DocValuesConsumer}.
-   *          Must be greater than or equal the last given docID to
-   *          {@link #add(int, StorableField)}.
-   * @throws IOException If an I/O error occurs
-   */
-  public abstract void finish(int docCount) throws IOException;
-  
-  
-  /**
-   * Returns the value size this consumer accepts or <tt>-1</tt> iff this
-   * consumer is value size agnostic ie. accepts variable length values.
+   * Merges the sorted docvalues from <code>toMerge</code>.
    * <p>
-   * NOTE: the return value is undefined until the consumer has successfully
-   * consumed at least one value.
-   * 
-   * @return the value size this consumer accepts or <tt>-1</tt> iff this
-   *         consumer is value size agnostic ie. accepts variable length values.
+   * The default implementation calls {@link #addSortedField}, passing
+   * an Iterable that merges ordinals and values and filters deleted documents .
    */
-  public abstract int getValueSize();
-  
-  /**
-   * Merges the given {@link org.apache.lucene.index.MergeState} into
-   * this {@link DocValuesConsumer}.
-   * 
-   * @param mergeState
-   *          the state to merge
-   * @param docValues docValues array containing one instance per reader (
-   *          {@link org.apache.lucene.index.MergeState#readers}) or <code>null</code> if the reader has
-   *          no {@link DocValues} instance.
-   * @throws IOException
-   *           if an {@link IOException} occurs
-   */
-  public void merge(MergeState mergeState, DocValues[] docValues) throws IOException {
-    assert mergeState != null;
-    boolean hasMerged = false;
-    for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
-      final AtomicReader reader = mergeState.readers.get(readerIDX);
-      if (docValues[readerIDX] != null) {
-        hasMerged = true;
-        merge(docValues[readerIDX], mergeState.docBase[readerIDX],
-              reader.maxDoc(), reader.getLiveDocs());
-        mergeState.checkAbort.work(reader.maxDoc());
+  public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
+    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final SortedDocValues dvs[] = toMerge.toArray(new SortedDocValues[toMerge.size()]);
+    
+    // step 1: iterate thru each sub and mark terms still in use
+    TermsEnum liveTerms[] = new TermsEnum[dvs.length];
+    for (int sub = 0; sub < liveTerms.length; sub++) {
+      AtomicReader reader = readers[sub];
+      SortedDocValues dv = dvs[sub];
+      Bits liveDocs = reader.getLiveDocs();
+      if (liveDocs == null) {
+        liveTerms[sub] = dv.termsEnum();
+      } else {
+        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
+        for (int i = 0; i < reader.maxDoc(); i++) {
+          if (liveDocs.get(i)) {
+            int ord = dv.getOrd(i);
+            if (ord >= 0) {
+              bitset.set(ord);
+            }
+          }
+        }
+        liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
       }
     }
-    // only finish if no exception is thrown!
-    if (hasMerged) {
-      finish(mergeState.segmentInfo.getDocCount());
-    }
-  }
+    
+    // step 2: create ordinal map (this conceptually does the "merging")
+    final OrdinalMap map = new OrdinalMap(this, liveTerms);
+    
+    // step 3: add field
+    addSortedField(fieldInfo,
+        // ord -> value
+        new Iterable<BytesRef>() {
+          @Override
+          public Iterator<BytesRef> iterator() {
+            return new Iterator<BytesRef>() {
+              final BytesRef scratch = new BytesRef();
+              int currentOrd;
 
+              @Override
+              public boolean hasNext() {
+                return currentOrd < map.getValueCount();
+              }
+
+              @Override
+              public BytesRef next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                int segmentNumber = map.getSegmentNumber(currentOrd);
+                int segmentOrd = (int)map.getSegmentOrd(segmentNumber, currentOrd);
+                dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
+                currentOrd++;
+                return scratch;
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+            };
+          }
+        },
+        // doc -> ord
+        new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            return new Iterator<Number>() {
+              int readerUpto = -1;
+              int docIDUpto;
+              int nextValue;
+              AtomicReader currentReader;
+              Bits currentLiveDocs;
+              boolean nextIsSet;
+
+              @Override
+              public boolean hasNext() {
+                return nextIsSet || setNext();
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Number next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                assert nextIsSet;
+                nextIsSet = false;
+                // TODO make a mutable number
+                return nextValue;
+              }
+
+              private boolean setNext() {
+                while (true) {
+                  if (readerUpto == readers.length) {
+                    return false;
+                  }
+
+                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                    readerUpto++;
+                    if (readerUpto < readers.length) {
+                      currentReader = readers[readerUpto];
+                      currentLiveDocs = currentReader.getLiveDocs();
+                    }
+                    docIDUpto = 0;
+                    continue;
+                  }
+
+                  if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                    nextIsSet = true;
+                    int segOrd = dvs[readerUpto].getOrd(docIDUpto);
+                    nextValue = segOrd == -1 ? -1 : (int) map.getGlobalOrd(readerUpto, segOrd);
+                    docIDUpto++;
+                    return true;
+                  }
+
+                  docIDUpto++;
+                }
+              }
+            };
+          }
+        }
+    );
+  }
+  
   /**
-   * Merges the given {@link DocValues} into this {@link DocValuesConsumer}.
-   * 
-   * @throws IOException
-   *           if an {@link IOException} occurs
+   * Merges the sortedset docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addSortedSetField}, passing
+   * an Iterable that merges ordinals and values and filters deleted documents .
    */
-  protected void merge(DocValues reader, int docBase, int docCount, Bits liveDocs) throws IOException {
-    // This enables bulk copies in subclasses per MergeState, subclasses can
-    // simply override this and decide if they want to merge
-    // segments using this generic implementation or if a bulk merge is possible
-    // / feasible.
-    final Source source = reader.getDirectSource();
-    assert source != null;
-    int docID = docBase;
-    final Type type = getType();
-    final StoredField scratchField;
-    switch(type) {
-    case VAR_INTS:
-      scratchField = new PackedLongDocValuesField("", (long) 0);
-      break;
-    case FIXED_INTS_8:
-      scratchField = new ByteDocValuesField("", (byte) 0);
-      break;
-    case FIXED_INTS_16:
-      scratchField = new ShortDocValuesField("", (short) 0);
-      break;
-    case FIXED_INTS_32:
-      scratchField = new IntDocValuesField("", 0);
-      break;
-    case FIXED_INTS_64:
-      scratchField = new LongDocValuesField("", (long) 0);
-      break;
-    case FLOAT_32:
-      scratchField = new FloatDocValuesField("", 0f);
-      break;
-    case FLOAT_64:
-      scratchField = new DoubleDocValuesField("", 0d);
-      break;
-    case BYTES_FIXED_STRAIGHT:
-      scratchField = new StraightBytesDocValuesField("", new BytesRef(), true);
-      break;
-    case BYTES_VAR_STRAIGHT:
-      scratchField = new StraightBytesDocValuesField("", new BytesRef(), false);
-      break;
-    case BYTES_FIXED_DEREF:
-      scratchField = new DerefBytesDocValuesField("", new BytesRef(), true);
-      break;
-    case BYTES_VAR_DEREF:
-      scratchField = new DerefBytesDocValuesField("", new BytesRef(), false);
-      break;
-    case BYTES_FIXED_SORTED:
-      scratchField = new SortedBytesDocValuesField("", new BytesRef(), true);
-      break;
-    case BYTES_VAR_SORTED:
-      scratchField = new SortedBytesDocValuesField("", new BytesRef(), false);
-      break;
-    default:
-      throw new IllegalStateException("unknown Type: " + type);
-    }
-    for (int i = 0; i < docCount; i++) {
-      if (liveDocs == null || liveDocs.get(i)) {
-        mergeDoc(scratchField, source, docID++, i);
+  public void mergeSortedSetField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedSetDocValues> toMerge) throws IOException {
+    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final SortedSetDocValues dvs[] = toMerge.toArray(new SortedSetDocValues[toMerge.size()]);
+    
+    // step 1: iterate thru each sub and mark terms still in use
+    TermsEnum liveTerms[] = new TermsEnum[dvs.length];
+    for (int sub = 0; sub < liveTerms.length; sub++) {
+      AtomicReader reader = readers[sub];
+      SortedSetDocValues dv = dvs[sub];
+      Bits liveDocs = reader.getLiveDocs();
+      if (liveDocs == null) {
+        liveTerms[sub] = dv.termsEnum();
+      } else {
+        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
+        for (int i = 0; i < reader.maxDoc(); i++) {
+          if (liveDocs.get(i)) {
+            dv.setDocument(i);
+            long ord;
+            while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              bitset.set(ord);
+            }
+          }
+        }
+        liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
       }
     }
-  }
+    
+    // step 2: create ordinal map (this conceptually does the "merging")
+    final OrdinalMap map = new OrdinalMap(this, liveTerms);
+    
+    // step 3: add field
+    addSortedSetField(fieldInfo,
+        // ord -> value
+        new Iterable<BytesRef>() {
+          @Override
+          public Iterator<BytesRef> iterator() {
+            return new Iterator<BytesRef>() {
+              final BytesRef scratch = new BytesRef();
+              long currentOrd;
 
-  /**
-   * Merges a document with the given <code>docID</code>. The methods
-   * implementation obtains the value for the <i>sourceDoc</i> id from the
-   * current {@link Source}.
-   * <p>
-   * This method is used during merging to provide implementation agnostic
-   * default merge implementation.
-   * </p>
-   * <p>
-   * All documents IDs between the given ID and the previously given ID or
-   * <tt>0</tt> if the method is call the first time are filled with default
-   * values depending on the implementation. The given document
-   * ID must always be greater than the previous ID or <tt>0</tt> if called the
-   * first time.
-   */
-  protected void mergeDoc(StoredField scratchField, Source source, int docID, int sourceDoc)
-      throws IOException {
-    switch(getType()) {
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_SORTED:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_DEREF:
-    case BYTES_VAR_SORTED:
-    case BYTES_VAR_STRAIGHT:
-      scratchField.setBytesValue(source.getBytes(sourceDoc, spare));
-      break;
-    case FIXED_INTS_8:
-      scratchField.setByteValue((byte) source.getInt(sourceDoc));
-      break;
-    case FIXED_INTS_16:
-      scratchField.setShortValue((short) source.getInt(sourceDoc));
-      break;
-    case FIXED_INTS_32:
-      scratchField.setIntValue((int) source.getInt(sourceDoc));
-      break;
-    case FIXED_INTS_64:
-      scratchField.setLongValue(source.getInt(sourceDoc));
-      break;
-    case VAR_INTS:
-      scratchField.setLongValue(source.getInt(sourceDoc));
-      break;
-    case FLOAT_32:
-      scratchField.setFloatValue((float) source.getFloat(sourceDoc));
-      break;
-    case FLOAT_64:
-      scratchField.setDoubleValue(source.getFloat(sourceDoc));
-      break;
+              @Override
+              public boolean hasNext() {
+                return currentOrd < map.getValueCount();
+              }
+
+              @Override
+              public BytesRef next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                int segmentNumber = map.getSegmentNumber(currentOrd);
+                long segmentOrd = map.getSegmentOrd(segmentNumber, currentOrd);
+                dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
+                currentOrd++;
+                return scratch;
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+            };
+          }
+        },
+        // doc -> ord count
+        new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            return new Iterator<Number>() {
+              int readerUpto = -1;
+              int docIDUpto;
+              int nextValue;
+              AtomicReader currentReader;
+              Bits currentLiveDocs;
+              boolean nextIsSet;
+
+              @Override
+              public boolean hasNext() {
+                return nextIsSet || setNext();
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Number next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                assert nextIsSet;
+                nextIsSet = false;
+                // TODO make a mutable number
+                return nextValue;
+              }
+
+              private boolean setNext() {
+                while (true) {
+                  if (readerUpto == readers.length) {
+                    return false;
+                  }
+
+                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                    readerUpto++;
+                    if (readerUpto < readers.length) {
+                      currentReader = readers[readerUpto];
+                      currentLiveDocs = currentReader.getLiveDocs();
+                    }
+                    docIDUpto = 0;
+                    continue;
+                  }
+
+                  if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                    nextIsSet = true;
+                    SortedSetDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
+                    nextValue = 0;
+                    while (dv.nextOrd() != SortedSetDocValues.NO_MORE_ORDS) {
+                      nextValue++;
+                    }
+                    docIDUpto++;
+                    return true;
+                  }
+
+                  docIDUpto++;
+                }
+              }
+            };
+          }
+        },
+        // ords
+        new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            return new Iterator<Number>() {
+              int readerUpto = -1;
+              int docIDUpto;
+              long nextValue;
+              AtomicReader currentReader;
+              Bits currentLiveDocs;
+              boolean nextIsSet;
+              long ords[] = new long[8];
+              int ordUpto;
+              int ordLength;
+
+              @Override
+              public boolean hasNext() {
+                return nextIsSet || setNext();
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Number next() {
+                if (!hasNext()) {
+                  throw new NoSuchElementException();
+                }
+                assert nextIsSet;
+                nextIsSet = false;
+                // TODO make a mutable number
+                return nextValue;
+              }
+
+              private boolean setNext() {
+                while (true) {
+                  if (readerUpto == readers.length) {
+                    return false;
+                  }
+                  
+                  if (ordUpto < ordLength) {
+                    nextValue = ords[ordUpto];
+                    ordUpto++;
+                    nextIsSet = true;
+                    return true;
+                  }
+
+                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                    readerUpto++;
+                    if (readerUpto < readers.length) {
+                      currentReader = readers[readerUpto];
+                      currentLiveDocs = currentReader.getLiveDocs();
+                    }
+                    docIDUpto = 0;
+                    continue;
+                  }
+                  
+                  if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                    assert docIDUpto < currentReader.maxDoc();
+                    SortedSetDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
+                    ordUpto = ordLength = 0;
+                    long ord;
+                    while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                      if (ordLength == ords.length) {
+                        ords = ArrayUtil.grow(ords, ordLength+1);
+                      }
+                      ords[ordLength] = map.getGlobalOrd(readerUpto, ord);
+                      ordLength++;
+                    }
+                    docIDUpto++;
+                    continue;
+                  }
+
+                  docIDUpto++;
+                }
+              }
+            };
+          }
+        }
+     );
+  }
+  
+  // TODO: seek-by-ord to nextSetBit
+  static class BitsFilteredTermsEnum extends FilteredTermsEnum {
+    final OpenBitSet liveTerms;
+    
+    BitsFilteredTermsEnum(TermsEnum in, OpenBitSet liveTerms) {
+      super(in, false); // <-- not passing false here wasted about 3 hours of my time!!!!!!!!!!!!!
+      assert liveTerms != null;
+      this.liveTerms = liveTerms;
     }
-    add(docID, scratchField);
+
+    @Override
+    protected AcceptStatus accept(BytesRef term) throws IOException {
+      if (liveTerms.get(ord())) {
+        return AcceptStatus.YES;
+      } else {
+        return AcceptStatus.NO;
+      }
+    }
   }
 }

@@ -17,20 +17,29 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.uima.ae.AEProvider;
+import org.apache.lucene.analysis.uima.ae.AEProviderFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.uima.analysis_engine.AnalysisEngine;
+import org.apache.uima.resource.ResourceInitializationException;
+import org.apache.uima.util.JCasPool;
 
 /**
  * Factory for {@link UIMAUpdateRequestProcessor}
  * 
- *
+ * 
  */
-public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
+public class UIMAUpdateRequestProcessorFactory extends
+    UpdateRequestProcessorFactory {
 
   private NamedList<Object> args;
+  private AnalysisEngine ae;
+  private JCasPool pool;
 
   @SuppressWarnings("unchecked")
   @Override
@@ -39,10 +48,26 @@ public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFac
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp,
-          UpdateRequestProcessor next) {
-    return new UIMAUpdateRequestProcessor(next, req.getCore(),
-            new SolrUIMAConfigurationReader(args).readSolrUIMAConfiguration());
+  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
+      SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    SolrUIMAConfiguration configuration = new SolrUIMAConfigurationReader(args)
+        .readSolrUIMAConfiguration();
+    synchronized (this) {
+      if (ae == null && pool == null) {
+        AEProvider aeProvider = AEProviderFactory.getInstance().getAEProvider(
+            req.getCore().getName(), configuration.getAePath(),
+            configuration.getRuntimeParameters());
+        try {
+          ae = aeProvider.getAE();
+          pool = new JCasPool(10, ae);
+        } catch (ResourceInitializationException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
+    }
+    
+    return new UIMAUpdateRequestProcessor(next, req.getCore().getName(),
+        configuration, ae, pool);
   }
-
+  
 }

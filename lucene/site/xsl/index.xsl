@@ -36,7 +36,15 @@
       </head>
       <body>
         <div><a href="http://lucene.apache.org/core/"><img src="lucene_green_300.gif" title="Apache Lucene Logo" alt="Lucene" border="0"/></a></div>
-        <h1><xsl:text>Apache Lucene </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></h1>
+        <h1>
+          <xsl:text>Apache Lucene</xsl:text>
+          <span style="vertical-align: top; font-size: x-small">
+            <xsl:text>TM</xsl:text>
+          </span>
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="$version"/>
+          <xsl:text> Documentation</xsl:text>
+        </h1>
         <p>Lucene is a Java full-text search engine. Lucene is not a complete application, 
         but rather a code library and API that can easily be used to add search capabilities
         to applications.</p>
@@ -58,7 +66,8 @@
         <li><a href="core/overview-summary.html#overview_description">Introduction to Lucene's APIs</a>:
         High-level summary of the different Lucene packages. </li>
         <li><a href="core/org/apache/lucene/analysis/package-summary.html#package_description">Analysis overview</a>:
-        Introduction to Lucene's analysis API. </li>
+        Introduction to Lucene's analysis API.  See also the
+        <a href="core/org/apache/lucene/analysis/TokenStream.html">TokenStream consumer workflow</a>.</li>
         </ul>
         <h2>Reference Documents</h2>
           <ul>
@@ -66,11 +75,10 @@
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="MIGRATE.html">Migration Guide</a>: What changed in Lucene 4; how to migrate code from Lucene 3.x.</li>
             <li><a href="JRE_VERSION_MIGRATION.html">JRE Version Migration</a>: Information about upgrading between major JRE versions.</li>
-            <li><a href="core/org/apache/lucene/codecs/lucene41/package-summary.html#package_description">File Formats</a>: Guide to the supported index format used by Lucene.  This can be customized by using <a href="core/org/apache/lucene/codecs/package-summary.html#package_description">an alternate codec</a>.</li>
+            <li><a href="core/org/apache/lucene/codecs/lucene45/package-summary.html#package_description">File Formats</a>: Guide to the supported index format used by Lucene.  This can be customized by using <a href="core/org/apache/lucene/codecs/package-summary.html#package_description">an alternate codec</a>.</li>
             <li><a href="core/org/apache/lucene/search/package-summary.html#package_description">Search and Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
             <li><a href="core/org/apache/lucene/search/similarities/TFIDFSimilarity.html">Classic Scoring Formula</a>: Formula of Lucene's classic <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space</a> implementation. (look <a href="core/org/apache/lucene/search/similarities/package-summary.html#package_description">here</a> for other models)</li>
             <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a>: Overview of the Classic QueryParser's syntax and features.</li>
-            <li><a href="facet/org/apache/lucene/facet/doc-files/userguide.html">Facet User Guide</a>: User's Guide to implementing <a href="http://en.wikipedia.org/wiki/Faceted_search">Faceted search</a>.</li>
           </ul>
         <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>

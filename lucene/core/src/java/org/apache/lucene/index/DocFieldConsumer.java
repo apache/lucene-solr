@@ -28,15 +28,9 @@ abstract class DocFieldConsumer {
   /** Called when an aborting exception is hit */
   abstract void abort();
 
-  /** Called when DocumentsWriterPerThread is using too much RAM.
-   *  The consumer should free RAM, if possible, returning
-   *  true if any RAM was in fact freed. */
-  abstract boolean freeRAM();
-
   abstract void startDocument() throws IOException;
 
   abstract DocFieldConsumerPerField addField(FieldInfo fi);
 
   abstract void finishDocument() throws IOException;
-
 }

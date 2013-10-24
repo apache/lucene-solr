@@ -30,13 +30,15 @@ import org.apache.lucene.search.Explanation;
  */
 public class DistanceSimilarity implements BBoxSimilarity {
   private final Point queryPoint;
+  private final double multiplier;
   private final DistanceCalculator distCalc;
   private final double nullValue;
 
-  public DistanceSimilarity(SpatialContext ctx, Point queryPoint) {
+  public DistanceSimilarity(SpatialContext ctx, Point queryPoint, double multiplier) {
     this.queryPoint = queryPoint;
+    this.multiplier = multiplier;
     this.distCalc = ctx.getDistCalc();
-    this.nullValue = (ctx.isGeo() ? 180 : Double.MAX_VALUE);
+    this.nullValue = (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
   }
 
   @Override
@@ -45,14 +47,43 @@ public class DistanceSimilarity implements BBoxSimilarity {
     if (indexRect == null) {
       score = nullValue;
     } else {
-      score = distCalc.distance(queryPoint, indexRect.getCenter());
+      score = distCalc.distance(queryPoint, indexRect.getCenter()) * multiplier;
     }
     if (exp != null) {
       exp.setValue((float)score);
       exp.setDescription(this.getClass().getSimpleName());
-      exp.addDetail(new Explanation(-1f,""+queryPoint));
+      exp.addDetail(new Explanation(-1f, "" + queryPoint));
       exp.addDetail(new Explanation(-1f,""+indexRect));
+      exp.addDetail(new Explanation((float)multiplier,"multiplier"));
     }
     return score;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    DistanceSimilarity that = (DistanceSimilarity) o;
+
+    if (Double.compare(that.multiplier, multiplier) != 0) return false;
+    if (Double.compare(that.nullValue, nullValue) != 0) return false;
+    if (!distCalc.equals(that.distCalc)) return false;
+    if (!queryPoint.equals(that.queryPoint)) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    result = queryPoint.hashCode();
+    temp = Double.doubleToLongBits(multiplier);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    result = 31 * result + distCalc.hashCode();
+    temp = Double.doubleToLongBits(nullValue);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
   }
 }

@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -77,9 +78,10 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * Returns true if a Directory exists for a given path.
+   * @throws IOException If there is a low-level I/O error.
    * 
    */
-  public abstract boolean exists(String path);
+  public abstract boolean exists(String path) throws IOException;
   
   /**
    * Removes the Directory's persistent storage.
@@ -89,6 +91,26 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    */
   public abstract void remove(Directory dir) throws IOException;
+  
+  /**
+   * Removes the Directory's persistent storage.
+   * For example: A file system impl may remove the
+   * on disk directory.
+   * @throws IOException If there is a low-level I/O error.
+   * 
+   */
+  public abstract void remove(Directory dir, boolean afterCoreClose) throws IOException;
+  
+  /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * persistent directory factories.
+   * 
+   * @param path to remove
+   * @param afterCoreClose whether to wait until after the core is closed.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path, boolean afterCoreClose) throws IOException;
   
   /**
    * This remove is special in that it may be called even after
@@ -103,6 +125,10 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   /**
    * Override for more efficient moves.
    * 
+   * Intended for use with replication - use
+   * carefully - some Directory wrappers will
+   * cache files for example.
+   * 
    * @throws IOException If there is a low-level I/O error.
    */
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
@@ -114,26 +140,11 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path.
    * 
-   * Note: sometimes you might pass null for the rawLockType when
-   * you know the Directory exists and the rawLockType is already
-   * in use.
    * 
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException;
-  
-  /**
-   * Returns the Directory for a given path, using the specified rawLockType.
-   * Will return the same Directory instance for the same path unless forceNew,
-   * in which case a new Directory is returned. There is no need to call
-   * {@link #doneWithDirectory(Directory)} in this case - the old Directory
-   * will be closed when it's ref count hits 0.
-   * 
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public abstract Directory get(String path,  DirContext dirContext, String rawLockType,
-      boolean forceNew) throws IOException;
   
   /**
    * Increment the number of references to the given Directory. You must call
@@ -156,7 +167,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public abstract void release(Directory directory) throws IOException;
   
-  
   /**
    * Normalize a given path.
    * 
@@ -166,6 +176,15 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public String normalize(String path) throws IOException {
     return path;
+  }
+  
+  /**
+   * @param path the path to check
+   * @return true if absolute, as in not relative
+   */
+  public boolean isAbsolute(String path) {
+    // back compat
+    return new File(path).isAbsolute();
   }
   
   public static long sizeOfDirectory(Directory directory) throws IOException {
@@ -209,5 +228,21 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     }
     return isSuccess;
   }
-  
+
+  /**
+   * If your implementation can count on delete-on-last-close semantics
+   * or throws an exception when trying to remove a file in use, return
+   * false (eg NFS). Otherwise, return true. Defaults to returning false.
+   * 
+   * @return true if factory impl requires that Searcher's explicitly
+   * reserve commit points.
+   */
+  public boolean searchersReserveCommitPoints() {
+    return false;
+  }
+
+  public String getDataHome(CoreDescriptor cd) throws IOException {
+    // by default, we go off the instance directory
+    return normalize(SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + cd.getDataDir());
+  }
 }

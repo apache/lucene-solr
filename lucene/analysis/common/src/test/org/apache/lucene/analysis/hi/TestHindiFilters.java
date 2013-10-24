@@ -19,33 +19,21 @@ package org.apache.lucene.analysis.hi;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.in.IndicNormalizationFilterFactory;
-import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Hindi filter Factories are working.
  */
-public class TestHindiFilters extends BaseTokenStreamTestCase {
+public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
   /**
    * Test IndicNormalizationFilterFactory
    */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    IndicNormalizationFilterFactory filterFactory = new IndicNormalizationFilterFactory();
-    filterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    filterFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = filterFactory.create(tokenizer);
+    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    stream = tokenFilterFactory("IndicNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
   }
   
@@ -54,17 +42,9 @@ public class TestHindiFilters extends BaseTokenStreamTestCase {
    */
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
-    HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
-    hindiFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    hindiFilterFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = indicFilterFactory.create(tokenizer);
-    stream = hindiFilterFactory.create(stream);
+    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    stream = tokenFilterFactory("IndicNormalization").create(stream);
+    stream = tokenFilterFactory("HindiNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
   }
   
@@ -73,19 +53,34 @@ public class TestHindiFilters extends BaseTokenStreamTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
-    HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
-    HindiStemFilterFactory stemFactory = new HindiStemFilterFactory();
-    stemFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    stemFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = indicFilterFactory.create(tokenizer);
-    stream = hindiFilterFactory.create(stream);
-    stream = stemFactory.create(stream);
+    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    stream = tokenFilterFactory("IndicNormalization").create(stream);
+    stream = tokenFilterFactory("HindiNormalization").create(stream);
+    stream = tokenFilterFactory("HindiStem").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("IndicNormalization", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("HindiNormalization", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("HindiStem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

@@ -536,6 +536,6 @@ public class TestGreekStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new GreekStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

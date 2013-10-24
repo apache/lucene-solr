@@ -3,18 +3,19 @@ package org.apache.lucene.facet.index;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.encoding.IntEncoder;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.encoding.IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -115,12 +116,12 @@ public class CountingListBuilder implements CategoryListBuilder {
   
   private final OrdinalsEncoder ordinalsEncoder;
   private final TaxonomyWriter taxoWriter;
-  private final OrdinalPolicy ordinalPolicy;
+  private final CategoryListParams clp;
   
   public CountingListBuilder(CategoryListParams categoryListParams, FacetIndexingParams indexingParams, 
       TaxonomyWriter taxoWriter) {
     this.taxoWriter = taxoWriter;
-    this.ordinalPolicy = indexingParams.getOrdinalPolicy();
+    this.clp = categoryListParams;
     if (indexingParams.getPartitionSize() == Integer.MAX_VALUE) {
       ordinalsEncoder = new NoPartitionsOrdinalsEncoder(categoryListParams);
     } else {
@@ -141,16 +142,26 @@ public class CountingListBuilder implements CategoryListBuilder {
    */
   @Override
   public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException {
-    int upto = ordinals.length; // since we add ordinals to IntsRef, iterate upto original length
-    
+    int upto = ordinals.length; // since we may add ordinals to IntsRef, iterate upto original length
+
+    Iterator<CategoryPath> iter = categories.iterator();
     for (int i = 0; i < upto; i++) {
       int ordinal = ordinals.ints[i];
-      int parent = taxoWriter.getParent(ordinal);
-      while (parent > 0) {
-        if (ordinalPolicy.shouldAdd(parent)) {
-          ordinals.ints[ordinals.length++] = parent;
+      CategoryPath cp = iter.next();
+      OrdinalPolicy op = clp.getOrdinalPolicy(cp.components[0]);
+      if (op != OrdinalPolicy.NO_PARENTS) {
+        // need to add parents too
+        int parent = taxoWriter.getParent(ordinal);
+        if (parent > 0) {
+          // only do this if the category is not a dimension itself, otherwise, it was just discarded by the 'if' below
+          while (parent > 0) {
+            ordinals.ints[ordinals.length++] = parent;
+            parent = taxoWriter.getParent(parent);
+          }
+          if (op == OrdinalPolicy.ALL_BUT_DIMENSION) { // discard the last added parent, which is the dimension
+            ordinals.length--;
+          }
         }
-        parent = taxoWriter.getParent(parent);
       }
     }
     return ordinalsEncoder.encode(ordinals);

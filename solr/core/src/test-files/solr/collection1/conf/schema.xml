@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a
      more concise example.
 
-     $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
-     $Name:  $
   -->
 
 <schema name="test" version="1.0">
@@ -51,8 +48,6 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
 
 
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -207,7 +202,7 @@
     <fieldtype name="lowerpunctfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
+        <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
@@ -358,7 +353,7 @@
     <fieldtype name="syn" class="solr.TextField">
       <analyzer>
           <tokenizer class="solr.MockTokenizerFactory"/>
-          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
       </analyzer>
     </fieldtype>
 
@@ -401,7 +396,7 @@
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
   <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false" />
-  <fieldType name="openexchangeratesorg_currency" 
+  <fieldType name="oer_currency" 
              class="solr.CurrencyField" 
              multiValued="false"
              providerClass="solr.OpenExchangeRatesOrgProvider"
@@ -446,6 +441,8 @@
 
  <fields>
    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="uuid" type="uuid" stored="true" />
    <field name="name" type="nametext" indexed="true" stored="true"/>
@@ -484,6 +481,7 @@
    <!-- Test currency -->
    <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
    <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
+   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
 
    <!-- test different combinations of indexed and stored -->
    <field name="bind" type="boolean" indexed="true" stored="false"/>
@@ -508,22 +506,22 @@
    <!-- indexed=false should not prevent omit___=true -->
    <field name="pint_i_norm" type="pint" omitNorms="true"
           indexed="false" />
-   <field name="pint_i_tf"   type="pint" omitOmitTermFreqAndPositions="true"
+   <field name="pint_i_tf"   type="pint" omitTermFreqAndPositions="true"
           indexed="false" />
    <field name="pint_i_pos"  type="pint" omitPositions="true"
           indexed="false" />
    <field name="pint_i_all"  type="pint" 
           indexed="false" 
           omitNorms="true"
-          omitOmitTermFreqAndPositions="true"
+          omitTermFreqAndPositions="true"
           omitPositions="true" />
-   <!-- omitOmitTermFreqAndPositions=false and omitPositions=true are ok -->
+   <!-- omitTermFreqAndPositions=false and omitPositions=true are ok -->
    <field name="pint_tf_pos" type="pint" indexed="true" 
-          omitOmitTermFreqAndPositions="false" omitPositions="true" />
+          omitTermFreqAndPositions="false" omitPositions="true" />
 
    <!-- test highlit field settings -->
-   <field name="test_hlt" type="highlittext" indexed="true" compressed="true"/>
-   <field name="test_hlt_off" type="highlittext" indexed="true" compressed="false"/>
+   <field name="test_hlt" type="highlittext" indexed="true"/>
+   <field name="test_hlt_off" type="highlittext" indexed="true"/>
 
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>
@@ -570,7 +568,7 @@
 
    <field name="textgap" type="textgap" indexed="true" stored="true"/>
 
-   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
+   <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
 
@@ -583,6 +581,9 @@
    <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
    
    <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
+
+   <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true" />
+   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
@@ -609,10 +610,6 @@
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_dt1" type="date"    indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
-   <dynamicField name="*_by"  type="byte"  indexed="true" stored="true"/>
-   <dynamicField name="*_by1" type="byte"  indexed="true" stored="true" multiValued="false"/>
-   <dynamicField name="*_sh" type="short"  indexed="true" stored="true"/>
-   <dynamicField name="*_sh1" type="short"  indexed="true" stored="true" multiValued="false"/>
 
 
       <!-- some trie-coded dynamic fields for faster range queries -->

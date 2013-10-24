@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene41;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -46,14 +45,8 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.setUp();
     dir = newFSDirectory(_TestUtil.getTempDir("testDFBlockSize"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setCodec(new Lucene41Codec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        return PostingsFormat.forName("Lucene41");
-      }
-    });
-    iw = new RandomIndexWriter(random(), dir, iwc);
-    iw.setAddDocValuesFields(false);
+    iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    iw = new RandomIndexWriter(random(), dir, iwc.clone());
     iw.setDoRandomForceMerge(false); // we will ourselves
   }
   
@@ -62,7 +55,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iw.close();
     _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw = new IndexWriter(dir, iwc);
+    IndexWriter iw = new IndexWriter(dir, iwc.clone());
     iw.forceMerge(1);
     iw.close();
     dir.close(); // just force a checkindex for now

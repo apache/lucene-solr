@@ -20,16 +20,14 @@ package org.apache.solr.util;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XML;
+import org.apache.solr.common.util.NamedList.NamedListEntry;
+import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.ConfigSolrXmlOld;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.logging.ListenerConfig;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -37,26 +35,14 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-import org.apache.solr.common.util.NamedList.NamedListEntry;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-
 
 /**
  * This class provides a simple harness that may be useful when
@@ -70,11 +56,9 @@ import java.util.Map;
  *
  *
  */
-public class TestHarness {
+public class TestHarness extends BaseTestHarness {
   String coreName;
   protected volatile CoreContainer container;
-  private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
-  private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public UpdateRequestHandler updater;
  
   /**
@@ -95,10 +79,23 @@ public class TestHarness {
   
   /**
    * Creates a SolrConfig object for the 
-   * {@link CoreContainer#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
+   * {@link ConfigSolrXmlOld#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
    */
   public static SolrConfig createConfig(String solrHome, String confFile) {
-    return createConfig(solrHome, CoreContainer.DEFAULT_DEFAULT_CORE_NAME, confFile);
+    return createConfig(solrHome, ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, confFile);
+  }
+
+  /**
+   * @param coreName to initialize
+   * @param dataDirectory path for index data, will not be cleaned up
+   * @param solrConfig solronfig instance
+   * @param schemaFile schema filename
+   */
+     public TestHarness( String coreName,
+                         String dataDirectory,
+                         SolrConfig solrConfig,
+                         String schemaFile) {
+    this( coreName, dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   }
 
    /**
@@ -109,7 +106,7 @@ public class TestHarness {
       public TestHarness( String dataDirectory,
                           SolrConfig solrConfig,
                           String schemaFile) {
-     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+     this( dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up
@@ -119,17 +116,25 @@ public class TestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
-      this(null, new Initializer(null, dataDirectory, solrConfig, indexSchema));
+      this(ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, dataDirectory, solrConfig, indexSchema);
   }
-  
-  public TestHarness(String coreName, CoreContainer.Initializer init) {
+
+  /**
+   * @param coreName to initialize
+   * @param dataDir path for index data, will not be cleaned up
+   * @param solrConfig solrconfig resource name
+   * @param indexSchema schema resource name
+   */
+  public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
     try {
-
-      container = init.initialize();
       if (coreName == null)
-        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-
+        coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
       this.coreName = coreName;
+
+      SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
+      ConfigSolr config = getTestHarnessConfig(coreName, dataDir, solrConfig, indexSchema);
+      container = new CoreContainer(loader, config);
+      container.load();
 
       updater = new UpdateRequestHandler();
       updater.init( null );
@@ -138,80 +143,49 @@ public class TestHarness {
     }
   }
 
-  private DocumentBuilder getXmlDocumentBuilder() {
-    try {
-      DocumentBuilder builder = builderTL.get();
-      if (builder == null) {
-        builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        builderTL.set(builder);
-      }
-      return builder;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  public TestHarness(String coreName, String dataDir, SolrConfig solrConfig, IndexSchema indexSchema) {
+    this(coreName, dataDir, solrConfig.getResourceName(), indexSchema.getResourceName());
   }
 
-  private XPath getXpath() {
-    try {
-      XPath xpath = xpathTL.get();
-      if (xpath == null) {
-        xpath = XPathFactory.newInstance().newXPath();
-        xpathTL.set(xpath);
-      }
-      return xpath;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  /**
+   * Create a TestHarness using a specific solr home directory and solr xml
+   * @param solrHome the solr home directory
+   * @param solrXml a File pointing to a solr.xml configuration
+   */
+  public TestHarness(String solrHome, String solrXml) {
+    this(new SolrResourceLoader(solrHome),
+          ConfigSolr.fromString(solrXml));
   }
 
-  // Creates a container based on infos needed to create one core
-  static class Initializer extends CoreContainer.Initializer {
-    String coreName;
-    String dataDirectory;
-    SolrConfig solrConfig;
-    IndexSchema indexSchema;
-    public Initializer(String coreName,
-                      String dataDirectory,
-                      SolrConfig solrConfig,
-                      IndexSchema indexSchema) {
-      if (coreName == null)
-        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-      this.coreName = coreName;
-      this.dataDirectory = dataDirectory;
-      this.solrConfig = solrConfig;
-      this.indexSchema = indexSchema;
-    }
-    public String getCoreName() {
-      return coreName;
-    }
-    @Override
-    public CoreContainer initialize() {
-      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
-        {
-          hostPort = System.getProperty("hostPort");
-          hostContext = "solr";
-          defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-          initShardHandler(null);
-          initZooKeeper(System.getProperty("zkHost"), 10000);
-        }
-      };
-      LogWatcher<?> logging = new JulWatcher("test");
-      logging.registerListener(new ListenerConfig(), container);
-      container.setLogging(logging);
-      
-      CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
-      dcore.setConfigName(solrConfig.getResourceName());
-      dcore.setSchemaName(indexSchema.getResourceName());
-      SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
-      container.register(coreName, core, false);
+  /**
+   * Create a TestHarness using a specific resource loader and config
+   * @param loader the SolrResourceLoader to use
+   * @param config the ConfigSolr to use
+   */
+  public TestHarness(SolrResourceLoader loader, ConfigSolr config) {
+    container = new CoreContainer(loader, config);
+    container.load();
+    updater = new UpdateRequestHandler();
+    updater.init(null);
+  }
 
-      // TODO: we should be exercising the *same* core container initialization code, not equivalent code!
-      if (container.getZkController() == null && core.getUpdateHandler().getUpdateLog() != null) {
-        // always kick off recovery if we are in standalone mode.
-        core.getUpdateHandler().getUpdateLog().recoverFromLog();
-      }
-      return container;
-    }
+  private static ConfigSolr getTestHarnessConfig(String coreName, String dataDir,
+                                                 String solrConfig, String schema) {
+    String solrxml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+        + "<solr persistent=\"false\">\n"
+        + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
+        + ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME
+        + "\""
+        + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\""
+        + " distribUpdateSoTimeout=\"30000\""
+        + " zkClientTimeout=\"${zkClientTimeout:30000}\" distribUpdateConnTimeout=\"30000\""
+        + ">\n"
+        + "    <core name=\"" + coreName + "\" config=\"" + solrConfig
+        + "\" schema=\"" + schema + "\" dataDir=\"" + dataDir
+        + "\" transient=\"false\" loadOnStartup=\"true\""
+        + " shard=\"${shard:shard1}\" collection=\"${collection:collection1}\" instanceDir=\"" + coreName + "/\" />\n"
+        + "  </cores>\n" + "</solr>";
+    return ConfigSolr.fromString(solrxml);
   }
   
   public CoreContainer getCoreContainer() {
@@ -270,55 +244,6 @@ public class TestHarness {
   }
   
         
-  /**
-   * Validates that an "update" (add, commit or optimize) results in success.
-   *
-   * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
-   * 
-   * @param xml The XML of the update
-   * @return null if successful, otherwise the XML response to the update
-   */
-  public String validateUpdate(String xml) throws SAXException {
-    return checkUpdateStatus(xml, "0");
-  }
-
-  /**
-   * Validates that an "update" (add, commit or optimize) results in success.
-   *
-   * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
-   * 
-   * @param xml The XML of the update
-   * @return null if successful, otherwise the XML response to the update
-   */
-  public String validateErrorUpdate(String xml) throws SAXException {
-    try {
-      return checkUpdateStatus(xml, "1");
-    } catch (SolrException e) {
-      // return ((SolrException)e).getMessage();
-      return null;  // success
-    }
-  }
-
-  /**
-   * Validates that an "update" (add, commit or optimize) results in success.
-   *
-   * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
-   * 
-   * @param xml The XML of the update
-   * @return null if successful, otherwise the XML response to the update
-   */
-  public String checkUpdateStatus(String xml, String code) throws SAXException {
-    try {
-      String res = update(xml);
-      String valid = validateXPath(res, "//int[@name='status']="+code );
-      return (null == valid) ? null : res;
-    } catch (XPathExpressionException e) {
-      throw new RuntimeException
-        ("?!? static xpath has bug?", e);
-    }
-  }
-
-    
   /**
    * Validates a "query" response against an array of XPath test strings
    *
@@ -397,43 +322,6 @@ public class TestHarness {
     }
   }
 
-
-  /**
-   * A helper method which valides a String against an array of XPath test
-   * strings.
-   *
-   * @param xml The xml String to validate
-   * @param tests Array of XPath strings to test (in boolean mode) on the xml
-   * @return null if all good, otherwise the first test that fails.
-   */
-  public String validateXPath(String xml, String... tests)
-    throws XPathExpressionException, SAXException {
-        
-    if (tests==null || tests.length == 0) return null;
-                
-    Document document=null;
-    try {
-      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-                               (xml.getBytes("UTF-8")));
-    } catch (UnsupportedEncodingException e1) {
-      throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException e2) {
-      throw new RuntimeException("Totally weird io exception", e2);
-    }
-                
-    for (String xp : tests) {
-      xp=xp.trim();
-      Boolean bool = (Boolean) getXpath().evaluate(xp, document,
-                                              XPathConstants.BOOLEAN);
-
-      if (!bool) {
-        return xp;
-      }
-    }
-    return null;
-                
-  }
-
   /**
    * Shuts down and frees any resources
    */
@@ -451,114 +339,6 @@ public class TestHarness {
     }
   }
 
-  /**
-   * A helper that creates an xml &lt;doc&gt; containing all of the
-   * fields and values specified
-   *
-   * @param fieldsAndValues 0 and Even numbered args are fields names odds are field values.
-   */
-  public static StringBuffer makeSimpleDoc(String... fieldsAndValues) {
-
-    try {
-      StringWriter w = new StringWriter();
-      w.append("<doc>");
-      for (int i = 0; i < fieldsAndValues.length; i+=2) {
-        XML.writeXML(w, "field", fieldsAndValues[i+1], "name",
-                     fieldsAndValues[i]);
-      }
-      w.append("</doc>");
-      return w.getBuffer();
-    } catch (IOException e) {
-      throw new RuntimeException
-        ("this should never happen with a StringWriter", e);
-    }
-  }
-
-  /**
-   * Generates a delete by query xml string
-   * @param q Query that has not already been xml escaped
-   * @param args The attributes of the delete tag
-   */
-  public static String deleteByQuery(String q, String... args) {
-    try {
-      StringWriter r = new StringWriter();
-      XML.writeXML(r, "query", q);
-      return delete(r.getBuffer().toString(), args);
-    } catch(IOException e) {
-      throw new RuntimeException
-        ("this should never happen with a StringWriter", e);
-    }
-  }
-  
-  /**
-   * Generates a delete by id xml string
-   * @param id ID that has not already been xml escaped
-   * @param args The attributes of the delete tag
-   */
-  public static String deleteById(String id, String... args) {
-    try {
-      StringWriter r = new StringWriter();
-      XML.writeXML(r, "id", id);
-      return delete(r.getBuffer().toString(), args);
-    } catch(IOException e) {
-      throw new RuntimeException
-        ("this should never happen with a StringWriter", e);
-    }
-  }
-        
-  /**
-   * Generates a delete xml string
-   * @param val text that has not already been xml escaped
-   * @param args 0 and Even numbered args are params, Odd numbered args are XML escaped values.
-   */
-  private static String delete(String val, String... args) {
-    try {
-      StringWriter r = new StringWriter();
-      XML.writeUnescapedXML(r, "delete", val, (Object[])args);
-      return r.getBuffer().toString();
-    } catch(IOException e) {
-      throw new RuntimeException
-        ("this should never happen with a StringWriter", e);
-    }
-  }
-    
-  /**
-   * Helper that returns an &lt;optimize&gt; String with
-   * optional key/val pairs.
-   *
-   * @param args 0 and Even numbered args are params, Odd numbered args are values.
-   */
-  public static String optimize(String... args) {
-    return simpleTag("optimize", args);
-  }
-
-  private static String simpleTag(String tag, String... args) {
-    try {
-      StringWriter r = new StringWriter();
-
-      // this is annoying
-      if (null == args || 0 == args.length) {
-        XML.writeXML(r, tag, null);
-      } else {
-        XML.writeXML(r, tag, null, (Object[])args);
-      }
-      return r.getBuffer().toString();
-    } catch (IOException e) {
-      throw new RuntimeException
-        ("this should never happen with a StringWriter", e);
-    }
-  }
-    
-  /**
-   * Helper that returns an &lt;commit&gt; String with
-   * optional key/val pairs.
-   *
-   * @param args 0 and Even numbered args are params, Odd numbered args are values.
-   */
-  public static String commit(String... args) {
-    return simpleTag("commit", args);
-  }
-    
   public LocalRequestFactory getRequestFactory(String qtype,
                                                int start,
                                                int limit) {
@@ -640,4 +420,6 @@ public class TestHarness {
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), new NamedList(entries));
     }
   }
+
+
 }

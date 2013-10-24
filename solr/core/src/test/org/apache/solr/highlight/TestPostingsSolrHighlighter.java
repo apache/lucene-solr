@@ -38,11 +38,16 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
     assertTrue("wrong highlighter: " + highlighter.getClass(), highlighter instanceof PostingsSolrHighlighter);
     
     // 'text' and 'text3' should have offsets, 'text2' should not
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
-    
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
     assertU(adoc("text", "document one", "text2", "document one", "text3", "crappy document", "id", "101"));
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
@@ -69,6 +74,14 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='document <em>one</em>'",
         "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=0");
+  }
+  
+  public void testDefaultSummary() {
+    assertQ("null snippet test", 
+      req("q", "text:one OR *:*", "sort", "id asc", "hl", "true", "hl.defaultSummary", "true"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='document <em>one</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second document'");
   }
   
   public void testDifferentField() {
@@ -99,5 +112,47 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
       // expected
     }
     resetExceptionIgnores();
+  }
+  
+  public void testTags() {
+    assertQ("different pre/post tags", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.tag.pre", "[", "hl.tag.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+  
+  public void testTagsPerField() {
+    assertQ("highlighting text and text3", 
+        req("q", "text:document text3:document", "sort", "id asc", "hl", "true", "hl.fl", "text,text3", "f.text3.hl.tag.pre", "[", "f.text3.hl.tag.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy [document]'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier [document]'");
+  }
+  
+  public void testBreakIterator() {
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WORD"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='<em>document</em>'");
+  }
+  
+  public void testBreakIterator2() {
+    assertU(adoc("text", "Document one has a first sentence. Document two has a second sentence.", "id", "103"));
+    assertU(commit());
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WHOLE"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
+  }
+  
+  public void testEncoder() {
+    assertU(adoc("text", "Document one has a first <i>sentence</i>.", "id", "103"));
+    assertU(commit());
+    assertQ("html escaped", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
 }

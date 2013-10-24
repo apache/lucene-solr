@@ -17,20 +17,17 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat;
 
 
 /**
@@ -498,27 +495,8 @@ import org.apache.lucene.util.SmallFloat;
  *          <td></td>
  *        </tr>
  *      </table>
- *      <br>&nbsp;<br>
- *      However the resulted <i>norm</i> value is {@link #encodeNormValue(float) encoded} as a single byte
- *      before being stored.
- *      At search time, the norm byte value is read from the index
- *      {@link org.apache.lucene.store.Directory directory} and
- *      {@link #decodeNormValue(byte) decoded} back to a float <i>norm</i> value.
- *      This encoding/decoding, while reducing index size, comes with the price of
- *      precision loss - it is not guaranteed that <i>decode(encode(x)) = x</i>.
- *      For instance, <i>decode(encode(0.89)) = 0.75</i>.
- *      <br>&nbsp;<br>
- *      Compression of norm values to a single byte saves memory at search time, 
- *      because once a field is referenced at search time, its norms - for 
- *      all documents - are maintained in memory.
- *      <br>&nbsp;<br>
- *      The rationale supporting such lossy compression of norm values is that
- *      given the difficulty (and inaccuracy) of users to express their true information
- *      need by a query, only big differences matter.
- *      <br>&nbsp;<br>
- *      Last, note that search time is too late to modify this <i>norm</i> part of scoring, e.g. by
- *      using a different {@link Similarity} for search.
- *      <br>&nbsp;<br>
+ *      Note that search time is too late to modify this <i>norm</i> part of scoring, 
+ *      e.g. by using a different {@link Similarity} for search.
  *    </li>
  * </ol>
  *
@@ -564,25 +542,6 @@ public abstract class TFIDFSimilarity extends Similarity {
   @Override
   public abstract float queryNorm(float sumOfSquaredWeights);
   
-  /** Computes a score factor based on a term or phrase's frequency in a
-   * document.  This value is multiplied by the {@link #idf(long, long)}
-   * factor for each term in the query and these products are then summed to
-   * form the initial score for a document.
-   *
-   * <p>Terms and phrases repeated in a document indicate the topic of the
-   * document, so implementations of this method usually return larger values
-   * when <code>freq</code> is large, and smaller values when <code>freq</code>
-   * is small.
-   *
-   * <p>The default implementation calls {@link #tf(float)}.
-   *
-   * @param freq the frequency of a term within a document
-   * @return a score factor based on a term's within-document frequency
-   */
-  public float tf(int freq) {
-    return tf((float)freq);
-  }
-
   /** Computes a score factor based on a term or phrase's frequency in a
    * document.  This value is multiplied by the {@link #idf(long, long)}
    * factor for each term in the query and these products are then summed to
@@ -657,7 +616,7 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   /** Computes a score factor based on a term's document frequency (the number
    * of documents which contain the term).  This value is multiplied by the
-   * {@link #tf(int)} factor for each term in the query and these products are
+   * {@link #tf(float)} factor for each term in the query and these products are
    * then summed to form the initial score for a document.
    *
    * <p>Terms that occur in fewer documents are better indicators of topic, so
@@ -682,42 +641,20 @@ public abstract class TFIDFSimilarity extends Similarity {
   public abstract float lengthNorm(FieldInvertState state);
   
   @Override
-  public final void computeNorm(FieldInvertState state, Norm norm) {
+  public final long computeNorm(FieldInvertState state) {
     float normValue = lengthNorm(state);
-    norm.setByte(encodeNormValue(normValue));
+    return encodeNormValue(normValue);
   }
   
-  /** Cache of decoded bytes. */
-  private static final float[] NORM_TABLE = new float[256];
-
-  static {
-    for (int i = 0; i < 256; i++)
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
-  }
-
-  /** Decodes a normalization factor stored in an index.
+  /**
+   * Decodes a normalization factor stored in an index.
+   * 
    * @see #encodeNormValue(float)
    */
-  public float decodeNormValue(byte b) {
-    return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
-  }
+  public abstract float decodeNormValue(long norm);
 
-  /** Encodes a normalization factor for storage in an index.
-  *
-  * <p>The encoding uses a three-bit mantissa, a five-bit exponent, and
-  * the zero-exponent point at 15, thus
-  * representing values from around 7x10^9 to 2x10^-9 with about one
-  * significant decimal digit of accuracy.  Zero is also represented.
-  * Negative numbers are rounded up to zero.  Values too large to represent
-  * are rounded down to the largest representable value.  Positive values too
-  * small to represent are rounded up to the smallest positive representable
-  * value.
-  * @see org.apache.lucene.document.Field#setBoost(float)
-  * @see org.apache.lucene.util.SmallFloat
-  */
-  public byte encodeNormValue(float f) {
-    return SmallFloat.floatToByte315(f);
-  }
+  /** Encodes a normalization factor for storage in an index. */
+  public abstract long encodeNormValue(float f);
  
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
    * This value is summed for each sloppy phrase match in a document to form
@@ -756,66 +693,27 @@ public abstract class TFIDFSimilarity extends Similarity {
   }
 
   @Override
-  public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new ExactTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
-  }
-
-  @Override
-  public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-    IDFStats idfstats = (IDFStats) stats;
-    return new SloppyTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
+    return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field));
   }
   
-  // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
-
-  private final class ExactTFIDFDocScorer extends ExactSimScorer {
+  private final class TFIDFSimScorer extends SimScorer {
     private final IDFStats stats;
     private final float weightValue;
-    private final byte[] norms;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
+    private final NumericDocValues norms;
     
-    ExactTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
+    TFIDFSimScorer(IDFStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray(); 
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-        scoreCache[i] = tf(i) * weightValue;
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      final float raw =                                // compute tf(f)*weight
-        freq < SCORE_CACHE_SIZE                        // check cache
-        ? scoreCache[freq]                             // cache hit
-        : tf(freq)*weightValue;        // cache miss
-
-      return norms == null ? raw : raw * decodeNormValue(norms[doc]); // normalize for field
-    }
-
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return explainScore(doc, freq, stats, norms);
-    }
-  }
-  
-  private final class SloppyTFIDFDocScorer extends SloppySimScorer {
-    private final IDFStats stats;
-    private final float weightValue;
-    private final byte[] norms;
-    
-    SloppyTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
-      this.stats = stats;
-      this.weightValue = stats.value;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, float freq) {
       final float raw = tf(freq) * weightValue; // compute tf(f)*weight
       
-      return norms == null ? raw : raw * decodeNormValue(norms[doc]);  // normalize for field
+      return norms == null ? raw : raw * decodeNormValue(norms.get(doc));  // normalize for field
     }
     
     @Override
@@ -865,9 +763,9 @@ public abstract class TFIDFSimilarity extends Similarity {
       queryWeight *= this.queryNorm;              // normalize query weight
       value = queryWeight * idf.getValue();         // idf for document
     }
-  }
-  
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, byte[] norms) {
+  }  
+
+  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
 
@@ -902,8 +800,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     fieldExpl.addDetail(stats.idf);
 
     Explanation fieldNormExpl = new Explanation();
-    float fieldNorm =
-      norms!=null ? decodeNormValue(norms[doc]) : 1.0f;
+    float fieldNorm = norms != null ? decodeNormValue(norms.get(doc)) : 1.0f;
     fieldNormExpl.setValue(fieldNorm);
     fieldNormExpl.setDescription("fieldNorm(doc="+doc+")");
     fieldExpl.addDetail(fieldNormExpl);

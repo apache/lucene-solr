@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.noggit.CharArr;
+import org.noggit.CharArr;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -113,7 +113,7 @@ public class JavaBinCodec {
   }
 
 
-  public SimpleOrderedMap<Object> readOrderedMap(FastInputStream dis) throws IOException {
+  public SimpleOrderedMap<Object> readOrderedMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
     for (int i = 0; i < sz; i++) {
@@ -124,7 +124,7 @@ public class JavaBinCodec {
     return nl;
   }
 
-  public NamedList<Object> readNamedList(FastInputStream dis) throws IOException {
+  public NamedList<Object> readNamedList(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     NamedList<Object> nl = new NamedList<Object>();
     for (int i = 0; i < sz; i++) {
@@ -164,7 +164,7 @@ public class JavaBinCodec {
 
   protected byte tagByte;
 
-  public Object readVal(FastInputStream dis) throws IOException {
+  public Object readVal(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
 
     // if ((tagByte & 0xe0) == 0) {
@@ -304,7 +304,7 @@ public class JavaBinCodec {
     daos.write(arr, offset, len);
   }
 
-  public byte[] readByteArray(FastInputStream dis) throws IOException {
+  public byte[] readByteArray(DataInputInputStream dis) throws IOException {
     byte[] arr = new byte[readVInt(dis)];
     dis.readFully(arr);
     return arr;
@@ -321,7 +321,7 @@ public class JavaBinCodec {
     }
   }
 
-  public SolrDocument readSolrDocument(FastInputStream dis) throws IOException {
+  public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
     NamedList nl = (NamedList) readVal(dis);
     SolrDocument doc = new SolrDocument();
     for (int i = 0; i < nl.size(); i++) {
@@ -332,7 +332,7 @@ public class JavaBinCodec {
     return doc;
   }
 
-  public SolrDocumentList readSolrDocumentList(FastInputStream dis) throws IOException {
+  public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
     SolrDocumentList solrDocs = new SolrDocumentList();
     List list = (List) readVal(dis);
     solrDocs.setNumFound((Long) list.get(0));
@@ -356,7 +356,7 @@ public class JavaBinCodec {
     writeArray(docs);
   }
 
-  public SolrInputDocument readSolrInputDocument(FastInputStream dis) throws IOException {
+  public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
     float docBoost = (Float)readVal(dis);
     SolrInputDocument sdoc = new SolrInputDocument();
@@ -364,12 +364,15 @@ public class JavaBinCodec {
     for (int i = 0; i < sz; i++) {
       float boost = 1.0f;
       String fieldName;
-      Object boostOrFieldName = readVal(dis);
-      if (boostOrFieldName instanceof Float) {
-        boost = (Float)boostOrFieldName;
+      Object obj = readVal(dis); // could be a boost, a field name, or a child document
+      if (obj instanceof Float) {
+        boost = (Float)obj;
         fieldName = (String)readVal(dis);
+      } else if (obj instanceof SolrInputDocument) {
+        sdoc.addChildDocument((SolrInputDocument)obj);
+        continue;
       } else {
-        fieldName = (String)boostOrFieldName;
+        fieldName = (String)obj;
       }
       Object fieldVal = readVal(dis);
       sdoc.setField(fieldName, fieldVal, boost);
@@ -378,7 +381,9 @@ public class JavaBinCodec {
   }
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
-    writeTag(SOLRINPUTDOC, sdoc.size());
+    List<SolrInputDocument> children = sdoc.getChildDocuments();
+    int sz = sdoc.size() + (children==null ? 0 : children.size());
+    writeTag(SOLRINPUTDOC, sz);
     writeFloat(sdoc.getDocumentBoost());
     for (SolrInputField inputField : sdoc.values()) {
       if (inputField.getBoost() != 1.0f) {
@@ -387,10 +392,15 @@ public class JavaBinCodec {
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
     }
+    if (children != null) {
+      for (SolrInputDocument child : sdoc.getChildDocuments()) {
+        writeSolrInputDocument(child);
+      }
+    }
   }
 
 
-  public Map<Object,Object> readMap(FastInputStream dis)
+  public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
     Map<Object,Object> m = new LinkedHashMap<Object,Object>();
@@ -411,7 +421,7 @@ public class JavaBinCodec {
     writeVal(END_OBJ);
   }
 
-  public List<Object> readIterator(FastInputStream fis) throws IOException {
+  public List<Object> readIterator(DataInputInputStream fis) throws IOException {
     ArrayList<Object> l = new ArrayList<Object>();
     while (true) {
       Object o = readVal(fis);
@@ -444,7 +454,7 @@ public class JavaBinCodec {
     }
   }
 
-  public List<Object> readArray(FastInputStream dis) throws IOException {
+  public List<Object> readArray(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     ArrayList<Object> l = new ArrayList<Object>(sz);
     for (int i = 0; i < sz; i++) {
@@ -473,7 +483,7 @@ public class JavaBinCodec {
   byte[] bytes;
   CharArr arr = new CharArr();
 
-  public String readStr(FastInputStream dis) throws IOException {
+  public String readStr(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     if (bytes == null || bytes.length < sz) bytes = new byte[sz];
     dis.readFully(bytes, 0, sz);
@@ -501,7 +511,7 @@ public class JavaBinCodec {
     }
   }
 
-  public int readSmallInt(FastInputStream dis) throws IOException {
+  public int readSmallInt(DataInputInputStream dis) throws IOException {
     int v = tagByte & 0x0F;
     if ((tagByte & 0x10) != 0)
       v = (readVInt(dis) << 4) | v;
@@ -525,7 +535,7 @@ public class JavaBinCodec {
     }
   }
 
-  public long readSmallLong(FastInputStream dis) throws IOException {
+  public long readSmallLong(DataInputInputStream dis) throws IOException {
     long v = tagByte & 0x0F;
     if ((tagByte & 0x10) != 0)
       v = (readVLong(dis) << 4) | v;
@@ -607,7 +617,7 @@ public class JavaBinCodec {
   }
 
 
-  public int readSize(FastInputStream in) throws IOException {
+  public int readSize(DataInputInputStream in) throws IOException {
     int sz = tagByte & 0x1f;
     if (sz == 0x1f) sz += readVInt(in);
     return sz;
@@ -634,7 +644,7 @@ public class JavaBinCodec {
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  public static int readVInt(FastInputStream in) throws IOException {
+  public static int readVInt(DataInputInputStream in) throws IOException {
     byte b = in.readByte();
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
@@ -653,7 +663,7 @@ public class JavaBinCodec {
     out.writeByte((byte) i);
   }
 
-  public static long readVLong(FastInputStream in) throws IOException {
+  public static long readVLong(DataInputInputStream in) throws IOException {
     byte b = in.readByte();
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
@@ -683,7 +693,7 @@ public class JavaBinCodec {
 
   }
 
-  public String readExternString(FastInputStream fis) throws IOException {
+  public String readExternString(DataInputInputStream fis) throws IOException {
     int idx = readSize(fis);
     if (idx != 0) {// idx != 0 is the index of the extern string
       return stringsList.get(idx - 1);

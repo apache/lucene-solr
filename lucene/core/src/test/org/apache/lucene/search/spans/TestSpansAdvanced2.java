@@ -49,7 +49,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     // create test index
     final RandomIndexWriter writer = new RandomIndexWriter(random(), mDirectory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(),
-            MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
+            MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET))
             .setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy())
             .setSimilarity(new DefaultSimilarity()));
     addDocument(writer, "A", "Should we, could we, would we?");

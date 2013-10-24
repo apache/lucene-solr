@@ -87,14 +87,21 @@ if __name__ == '__main__':
     return values[index]%s;
   }
 
+  @Override
   public void set(final int index, final long value) {
     values[index] = %s(value);
   }
 
+  @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(values);
+    return RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * RamUsageEstimator.NUM_BYTES_INT     // valueCount,bitsPerValue
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // values ref
+        + RamUsageEstimator.sizeOf(values);
   }
 
+  @Override
   public void clear() {
     Arrays.fill(values, %s0L);
   }
@@ -123,6 +130,7 @@ if __name__ == '__main__':
     return gets;
   }
 
+  @Override
   public int set(int index, long[] arr, int off, int len) {
     assert len > 0 : "len must be > 0 (got " + len + ")";
     assert index >= 0 && index < valueCount;
@@ -153,6 +161,7 @@ if __name__ == '__main__':
     return gets;
   }
 
+  @Override
   public int set(int index, long[] arr, int off, int len) {
     assert len > 0 : "len must be > 0 (got " + len + ")";
     assert index >= 0 && index < valueCount;

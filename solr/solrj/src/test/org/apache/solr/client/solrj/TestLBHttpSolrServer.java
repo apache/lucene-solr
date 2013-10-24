@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -72,6 +73,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
   }
 
   @AfterClass
@@ -81,6 +83,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
     }
+    System.clearProperty("tests.shardhandler.randomSeed");
   }
   
   @Override
@@ -105,9 +108,14 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       docs.add(doc);
     }
     HttpSolrServer solrServer = new HttpSolrServer(solrInstance.getUrl(), httpClient);
-    UpdateResponse resp = solrServer.add(docs);
-    assertEquals(0, resp.getStatus());
-    resp = solrServer.commit();
+    SolrResponseBase resp;
+    try {
+      resp = solrServer.add(docs);
+      assertEquals(0, resp.getStatus());
+      resp = solrServer.commit();
+    } finally {
+      solrServer.shutdown();
+    }
     assertEquals(0, resp.getStatus());
   }
 
@@ -271,6 +279,11 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       return "solrj/solr/collection1/conf/solrconfig-slave1.xml";
     }
 
+    public String getSolrXmlFile() {
+      return "solrj/solr/solr.xml";
+    }
+
+
     public void setUp() throws Exception {
       File home = new File(LuceneTestCase.TEMP_DIR,
               getClass().getName() + "-" + System.currentTimeMillis());
@@ -283,6 +296,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       homeDir.mkdirs();
       dataDir.mkdirs();
       confDir.mkdirs();
+
+      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
 
       File f = new File(confDir, "solrconfig.xml");
       FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);

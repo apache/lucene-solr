@@ -2,7 +2,7 @@ package org.apache.lucene.analysis.cz;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for javadoc
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -29,12 +29,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * A {@link TokenFilter} that applies {@link CzechStemmer} to stem Czech words.
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
+ * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  * <p><b>NOTE</b>: Input is expected to be in lowercase, 
  * but with diacritical marks</p>
- * @see KeywordMarkerFilter
+ * @see SetKeywordMarkerFilter
  */
 public final class CzechStemFilter extends TokenFilter {
   private final CzechStemmer stemmer = new CzechStemmer();

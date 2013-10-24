@@ -54,16 +54,27 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
     return new SPIClassIterator<S>(clazz, loader);
   }
   
+  /** Utility method to check if some class loader is a (grand-)parent of or the same as another one.
+   * This means the child will be able to load all classes from the parent, too. */
+  public static boolean isParentClassLoader(final ClassLoader parent, ClassLoader child) {
+    while (child != null) {
+      if (child == parent) {
+        return true;
+      }
+      child = child.getParent();
+    }
+    return false;
+  }
+  
   private SPIClassIterator(Class<S> clazz, ClassLoader loader) {
-    if (loader == null)
-      throw new IllegalArgumentException("You must provide a ClassLoader.");
     this.clazz = clazz;
-    this.loader = loader;
     try {
-      this.profilesEnum = loader.getResources(META_INF_SERVICES + clazz.getName());
+      final String fullName = META_INF_SERVICES + clazz.getName();
+      this.profilesEnum = (loader == null) ? ClassLoader.getSystemResources(fullName) : loader.getResources(fullName);
     } catch (IOException ioe) {
       throw new ServiceConfigurationError("Error loading SPI profiles for type " + clazz.getName() + " from classpath", ioe);
     }
+    this.loader = (loader == null) ? ClassLoader.getSystemClassLoader() : loader;
     this.linesIterator = Collections.<String>emptySet().iterator();
   }
   

@@ -17,23 +17,45 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.search.QParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Date;
 import java.io.IOException;
 
-public class TrieDateField extends DateField {
+/**
+ * <p>
+ * An extension of {@link DateField} that supports the same values and 
+ * syntax, but indexes the value more efficiently using a numeric 
+ * {@link TrieField} under the covers.  See the description of 
+ * {@link DateField} for more details of the supported usage.
+ * </p>
+ * <p>
+ * <b>NOTE:</b> Allthough it is possible to configure a <code>TrieDateField</code> 
+ * instance with a default value of "<code>NOW</code>" to compute a timestamp 
+ * of when the document was indexed, this is not advisable when using SolrCloud 
+ * since each replica of the document may compute a slightly different value. 
+ * {@link TimestampUpdateProcessorFactory} is recomended instead.
+ * </p>
+ *
+ * @see DateField
+ * @see TrieField
+ */
+public class TrieDateField extends DateField implements DateValueFieldType {
 
   final TrieField wrappedField = new TrieField() {{
     type = TrieTypes.DATE;
@@ -73,6 +95,10 @@ public class TrieDateField extends DateField {
     return wrappedField.getPrecisionStep();
   }
 
+  @Override
+  public NumericType getNumericType() {
+    return wrappedField.getNumericType();
+  }
 
   @Override
   public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
@@ -130,6 +156,11 @@ public class TrieDateField extends DateField {
   }
 
   @Override
+  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
+    return wrappedField.createFields(field, value, boost);
+  }
+
+  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     return wrappedField.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
   }
@@ -141,4 +172,10 @@ public class TrieDateField extends DateField {
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
   }
+
+  @Override
+  public void checkSchemaField(SchemaField field) {
+    wrappedField.checkSchemaField(field);
+  }
+
 }

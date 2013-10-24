@@ -18,8 +18,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.IOException;
+import java.util.List;
 
-import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /**
  * Source items for facets.
@@ -29,12 +30,11 @@ import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 public abstract class FacetSource extends ContentItemsSource {
 
   /**
-   * Returns the next {@link CategoryAssociationsContainer facets content item}.
-   * Implementations must account for multi-threading, as multiple threads can
-   * call this method simultaneously.
+   * Fills the next facets content items in the given list. Implementations must
+   * account for multi-threading, as multiple threads can call this method
+   * simultaneously.
    */
-  public abstract CategoryAssociationsContainer getNextFacets(CategoryAssociationsContainer facets) 
-      throws NoMoreDataException, IOException;
+  public abstract void getNextFacets(List<CategoryPath> facets) throws NoMoreDataException, IOException;
 
   @Override
   public void resetInputs() throws IOException {

@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.core.SolrCore;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.core.attribute.Init;
 import org.carrot2.core.attribute.Processing;
@@ -50,17 +50,18 @@ import com.google.common.collect.Multimap;
  * stop words removal. In other words, if something is a stop word during
  * indexing, then it should also be a stop word during clustering, but not the
  * other way round.
+ * 
+ * @lucene.experimental
  */
 @Bindable
-public class SolrStopwordsCarrot2LexicalDataFactory implements
-    ILexicalDataFactory {
+public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFactory {
   final static Logger logger = org.slf4j.LoggerFactory
       .getLogger(SolrStopwordsCarrot2LexicalDataFactory.class);
 
   @Init
   @Input
-  @Attribute(key = "solrIndexSchema")
-  private IndexSchema schema;
+  @Attribute(key = "solrCore")
+  private SolrCore core;
 
   @Processing
   @Input
@@ -86,7 +87,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements
     // No need to synchronize here, Carrot2 ensures that instances
     // of this class are not used by multiple threads at a time.
     if (!solrStopWords.containsKey(fieldName)) {
-      final Analyzer fieldAnalyzer = schema.getFieldType(fieldName)
+      final Analyzer fieldAnalyzer = core.getLatestSchema().getFieldType(fieldName)
           .getAnalyzer();
       if (fieldAnalyzer instanceof TokenizerChain) {
         final TokenFilterFactory[] filterFactories = ((TokenizerChain) fieldAnalyzer)

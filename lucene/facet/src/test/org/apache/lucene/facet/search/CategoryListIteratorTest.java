@@ -5,20 +5,20 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.encoding.DGapIntEncoder;
+import org.apache.lucene.facet.encoding.IntEncoder;
+import org.apache.lucene.facet.encoding.SortingIntEncoder;
+import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
+import org.apache.lucene.facet.encoding.VInt8IntEncoder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.SortingIntEncoder;
-import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.Test;
 
 /*
@@ -38,7 +38,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class CategoryListIteratorTest extends LuceneTestCase {
+public class CategoryListIteratorTest extends FacetTestCase {
 
   static final IntsRef[] data = new IntsRef[] {
     new IntsRef(new int[] { 1, 2 }, 0, 2), 
@@ -48,16 +48,16 @@ public class CategoryListIteratorTest extends LuceneTestCase {
   };
 
   @Test
-  public void testPayloadCategoryListIteraor() throws Exception {
+  public void test() throws Exception {
     Directory dir = newDirectory();
-    final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    final IntEncoder encoder = randomCategoryListParams().createEncoder();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
     BytesRef buf = new BytesRef();
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
       encoder.encode(IntsRef.deepCopyOf(data[i]), buf);
-      doc.add(new StraightBytesDocValuesField("f", buf));
+      doc.add(new BinaryDocValuesField("f", buf));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -89,7 +89,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
   }
 
   @Test
-  public void testPayloadIteratorWithInvalidDoc() throws Exception {
+  public void testEmptyDocuments() throws Exception {
     Directory dir = newDirectory();
     final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
     // NOTE: test is wired to LogMP... because test relies on certain docids having payloads
@@ -100,9 +100,9 @@ public class CategoryListIteratorTest extends LuceneTestCase {
       if (i == 0) {
         BytesRef buf = new BytesRef();
         encoder.encode(IntsRef.deepCopyOf(data[i]), buf );
-        doc.add(new StraightBytesDocValuesField("f", buf));
+        doc.add(new BinaryDocValuesField("f", buf));
       } else {
-        doc.add(new StraightBytesDocValuesField("f", new BytesRef()));
+        doc.add(new BinaryDocValuesField("f", new BytesRef()));
       }
       writer.addDocument(doc);
       writer.commit();

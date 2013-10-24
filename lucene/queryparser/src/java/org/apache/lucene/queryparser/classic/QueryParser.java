@@ -165,7 +165,6 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   }
 
 // This makes sure that there is no garbage after the query string
-  @Override
   final public Query TopLevelQuery(String field) throws ParseException {
   Query q;
     q = Query(field);
@@ -538,7 +537,6 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   }
 
   /** Reinitialise. */
-  @Override
   public void ReInit(CharStream stream) {
     token_source.ReInit(stream);
     token = new Token();

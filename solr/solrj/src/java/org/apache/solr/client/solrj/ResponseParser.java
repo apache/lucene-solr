@@ -35,6 +35,15 @@ public abstract class ResponseParser
   public abstract NamedList<Object> processResponse(Reader reader);
   
   /**
+   * A well behaved ResponseParser will return it's content-type.
+   * 
+   * @return the content-type this parser expects to parse
+   */
+  public String getContentType() {
+    return null;
+  }
+  
+  /**
    * @return the version param passed to solr
    */
   public String getVersion()

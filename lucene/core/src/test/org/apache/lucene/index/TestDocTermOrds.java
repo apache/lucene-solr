@@ -17,22 +17,24 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -64,25 +66,26 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final DocTermOrds dto = new DocTermOrds(SlowCompositeReaderWrapper.wrap(r), "field");
+    final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
+    SortedSetDocValues iter = dto.iterator(ar);
+    
+    iter.setDocument(0);
+    assertEquals(0, iter.nextOrd());
+    assertEquals(1, iter.nextOrd());
+    assertEquals(2, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
+    
+    iter.setDocument(1);
+    assertEquals(3, iter.nextOrd());
+    assertEquals(4, iter.nextOrd());
+    assertEquals(5, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
 
-    TermOrdsIterator iter = dto.lookup(0, null);
-    final int[] buffer = new int[5];
-    assertEquals(3, iter.read(buffer));
-    assertEquals(0, buffer[0]);
-    assertEquals(1, buffer[1]);
-    assertEquals(2, buffer[2]);
-
-    iter = dto.lookup(1, iter);
-    assertEquals(3, iter.read(buffer));
-    assertEquals(3, buffer[0]);
-    assertEquals(4, buffer[1]);
-    assertEquals(5, buffer[2]);
-
-    iter = dto.lookup(2, iter);
-    assertEquals(2, iter.read(buffer));
-    assertEquals(0, buffer[0]);
-    assertEquals(5, buffer[1]);
+    iter.setDocument(2);
+    assertEquals(0, iter.nextOrd());
+    assertEquals(5, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
 
     r.close();
     dir.close();
@@ -169,7 +172,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
     verify(slowR, idToOrds, termsArray, null);
 
-    FieldCache.DEFAULT.purge(slowR);
+    FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
 
     r.close();
     dir.close();
@@ -288,7 +291,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       verify(slowR, idToOrdsPrefix, termsArray, prefixRef);
     }
 
-    FieldCache.DEFAULT.purge(slowR);
+    FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
 
     r.close();
     dir.close();
@@ -296,14 +299,14 @@ public class TestDocTermOrds extends LuceneTestCase {
 
   private void verify(AtomicReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
-    final DocTermOrds dto = new DocTermOrds(r,
+    final DocTermOrds dto = new DocTermOrds(r, r.getLiveDocs(),
                                             "field",
                                             prefixRef,
                                             Integer.MAX_VALUE,
                                             _TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
+    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
@@ -329,7 +332,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator(null);
-          TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef, false);
+          TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef);
           if (result != TermsEnum.SeekStatus.END) {
             assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), StringHelper.startsWith(termsEnum.term(), prefixRef));
           } else {
@@ -353,31 +356,126 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
     }
 
-    TermOrdsIterator iter = null;
-    final int[] buffer = new int[5];
+    SortedSetDocValues iter = dto.iterator(r);
     for(int docID=0;docID<r.maxDoc();docID++) {
       if (VERBOSE) {
-        System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID[docID] + ")");
+        System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID.get(docID) + ")");
       }
-      iter = dto.lookup(docID, iter);
-      final int[] answers = idToOrds[docIDToID[docID]];
+      iter.setDocument(docID);
+      final int[] answers = idToOrds[docIDToID.get(docID)];
       int upto = 0;
-      while(true) {
-        final int chunk = iter.read(buffer);
-        for(int idx=0;idx<chunk;idx++) {
-          te.seekExact((long) buffer[idx]);
-          final BytesRef expected = termsArray[answers[upto++]];
-          if (VERBOSE) {
-            System.out.println("  exp=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString());
-          }
-          assertEquals("expected=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString() + " ord=" + buffer[idx], expected, te.term());
+      long ord;
+      while ((ord = iter.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        te.seekExact(ord);
+        final BytesRef expected = termsArray[answers[upto++]];
+        if (VERBOSE) {
+          System.out.println("  exp=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString());
         }
-        
-        if (chunk < buffer.length) {
-          assertEquals(answers.length, upto);
-          break;
-        }
+        assertEquals("expected=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString() + " ord=" + ord, expected, te.term());
       }
+      assertEquals(answers.length, upto);
     }
+  }
+  
+  public void testBackToTheFuture() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    
+    Document doc = new Document();
+    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(newStringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    DirectoryReader r1 = DirectoryReader.open(iw, true);
+    
+    iw.deleteDocuments(new Term("foo", "baz"));
+    DirectoryReader r2 = DirectoryReader.open(iw, true);
+    
+    FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo");
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo");
+    assertEquals(2, v.getValueCount());
+    v.setDocument(1);
+    assertEquals(1, v.nextOrd());
+    
+    iw.close();
+    r1.close();
+    r2.close();
+    dir.close();
+  }
+  
+  public void testSortedTermsEnum() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("field", "hello", Field.Store.NO));
+    iwriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StringField("field", "world", Field.Store.NO));
+    iwriter.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new StringField("field", "beer", Field.Store.NO));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    AtomicReader ar = getOnlySegmentReader(ireader);
+    SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field");
+    assertEquals(3, dv.getValueCount());
+    
+    TermsEnum termsEnum = dv.termsEnum();
+    
+    // next()
+    assertEquals("beer", termsEnum.next().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    
+    // seekCeil()
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("ha!")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    
+    // seekExact()
+    assertTrue(termsEnum.seekExact(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("hello")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("world")));
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus")));
+    
+    // seek(ord)
+    termsEnum.seekExact(0);
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    termsEnum.seekExact(1);
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    termsEnum.seekExact(2);
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    ireader.close();
+    directory.close();
   }
 }

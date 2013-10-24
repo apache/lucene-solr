@@ -95,5 +95,11 @@ public class DocIdBitSet extends DocIdSet implements Bits {
       docId = d == -1 ? NO_MORE_DOCS : d;
       return docId;
     }
+    
+    @Override
+    public long cost() {
+      // upper bound
+      return bitSet.length();
+    }
   }
 }

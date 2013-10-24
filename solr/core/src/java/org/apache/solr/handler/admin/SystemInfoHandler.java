@@ -37,6 +37,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -62,8 +63,20 @@ public class SystemInfoHandler extends RequestHandlerBase
   //(ie: not static, so core reload will refresh)
   private String hostname = null;
 
+  private CoreContainer cc;
+
   public SystemInfoHandler() {
     super();
+    init();
+  }
+
+  public SystemInfoHandler(CoreContainer cc) {
+    super();
+    this.cc = cc;
+    init();
+  }
+  
+  private void init() {
     try {
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
@@ -75,20 +88,32 @@ public class SystemInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    rsp.add( "core", getCoreInfo( req.getCore() ) );
+    SolrCore core = req.getCore();
+    if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
+    boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
+    rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );
     rsp.setHttpCaching(false);
   }
+
+  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
+    CoreContainer coreContainer;
+    if (core != null) {
+       coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
+    } else {
+      coreContainer = cc;
+    }
+    return coreContainer;
+  }
   
   /**
    * Get system info
    */
-  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) {
+  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core, IndexSchema schema ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
-    IndexSchema schema = core.getSchema();
     info.add( "schema", schema != null ? schema.getSchemaName():"no schema!" );
     
     // Host
@@ -104,7 +129,12 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<Object>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
     dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
-    dirs.add( "data", new File( core.getDataDir() ).getAbsolutePath() );
+    try {
+      dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized data directory path", e);
+      dirs.add( "data", "N/A" );
+    }
     dirs.add( "dirimpl", core.getDirectoryFactory().getClass().getName());
     try {
       dirs.add( "index", core.getDirectoryFactory().normalize(core.getIndexDir()) );

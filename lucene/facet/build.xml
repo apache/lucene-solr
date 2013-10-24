@@ -23,63 +23,12 @@
     Faceted indexing and search capabilities
   </description>
 
-  <!-- prettify.css/js -->
-  <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
-  
   <import file="../module-build.xml"/>
-
-  <property name="examples.dir" location="src/examples"/>
-
-  <path id="examples.classpath">
-    <path refid="classpath" />
-    <pathelement location="${build.dir}/classes/java" />
-    <pathelement path="${analyzers-common.jar}" />
-  </path>
-
-	<path id="test.classpath">
-    <path refid="test.base.classpath" />
-    <pathelement location="${build.dir}/classes/examples" />
-    <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
-    <pathelement path="${analyzers-common.jar}" />
-  </path>
-
-  <path id="classpath">
-    <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
-    <pathelement path="${analyzers-common.jar}" />
-    <path refid="base.classpath"/>
-  </path>
-
-  <target name="compile-examples" description="Compiles Facets examples">
-    <compile srcdir="${examples.dir}" destdir="${build.dir}/classes/examples">
-      <classpath refid="examples.classpath" />
-    </compile>
-  </target>
-  
-  <target name="jar-examples" depends="compile-examples">
-    <jarify basedir="${build.dir}/classes/examples" 
-            destfile="${build.dir}/${final.name}-examples.jar" 
-            title="Lucene Search Engine: ${ant.project.name}-examples"
-            manifest.file="${build.dir}/EXAMPLES-MANIFEST.MF">
-      <fileset dir="src/examples" />
-    </jarify>
-  </target>
-
-  <target name="compile-core" depends="jar-analyzers-common,common.compile-core,compile-examples" description="Compiles facet classes" />
-
-  <target name="jar-core" depends="common.jar-core,jar-examples" />
-
-  <target name="javadocs" depends="javadocs-analyzers-common,compile-core">
-    <invoke-module-javadoc>
-      <links>
-        <link href="../analyzers-common"/>
-      </links>
-    </invoke-module-javadoc>
-  </target>
 
   <target name="run-encoding-benchmark" depends="compile-test">
     <java classname="org.apache.lucene.util.encoding.EncodingSpeed" fork="true" failonerror="true">
       <classpath refid="test.classpath" />
-    	<classpath path="${build.dir}/classes/test" />
+      <classpath path="${build.dir}/classes/test" />
     </java>
   </target>
 	

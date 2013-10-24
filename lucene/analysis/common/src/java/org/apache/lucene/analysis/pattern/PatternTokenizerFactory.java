@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.pattern;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.pattern.PatternTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Factory for {@link PatternTokenizer}.
@@ -46,13 +44,13 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  *  pattern = \'([^\']+)\'
  *  group = 0
  *  input = aaa 'bbb' 'ccc'
- *</pre>
+ * </pre>
  * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input
  * but using group=1, the output would be: bbb and ccc (no ' marks)
  * </p>
  * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
  *
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_ptn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.PatternTokenizerFactory" pattern="\'([^\']+)\'" group="1"/&gt;
@@ -61,29 +59,21 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * 
  * @see PatternTokenizer
  * @since solr1.2
- *
  */
-public class PatternTokenizerFactory extends TokenizerFactory
-{
+public class PatternTokenizerFactory extends TokenizerFactory {
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
  
-  protected Pattern pattern;
-  protected int group;
+  protected final Pattern pattern;
+  protected final int group;
   
-  /**
-   * Require a configured pattern
-   */
-  @Override
-  public void init(Map<String,String> args) 
-  {
-    super.init(args);
-    pattern = getPattern( PATTERN );
-    
-    group = -1;  // use 'split'
-    String g = args.get( GROUP );
-    if( g != null ) {
-      group = Integer.parseInt( g );
+  /** Creates a new PatternTokenizerFactory */
+  public PatternTokenizerFactory(Map<String,String> args) {
+    super(args);
+    pattern = getPattern(args, PATTERN);
+    group = getInt(args, GROUP, -1);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   
@@ -91,11 +81,7 @@ public class PatternTokenizerFactory extends TokenizerFactory
    * Split the input using configured pattern
    */
   @Override
-  public Tokenizer create(final Reader in) {
-    try {
-      return new PatternTokenizer(in, pattern, group);
-    } catch( IOException ex ) {
-      throw new RuntimeException("IOException thrown creating PatternTokenizer instance", ex);
-    }
+  public PatternTokenizer create(final AttributeFactory factory, final Reader in) {
+    return new PatternTokenizer(factory, in, pattern, group);
   }
 }

@@ -14,7 +14,12 @@
 #  limitations under the License.
 
 org.apache.lucene.codecs.asserting.AssertingCodec
+org.apache.lucene.codecs.cheapbastard.CheapBastardCodec
 org.apache.lucene.codecs.compressing.FastCompressingCodec
 org.apache.lucene.codecs.compressing.FastDecompressionCompressingCodec
 org.apache.lucene.codecs.compressing.HighCompressionCompressingCodec
 org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec
+org.apache.lucene.codecs.lucene40.Lucene40RWCodec
+org.apache.lucene.codecs.lucene41.Lucene41RWCodec
+org.apache.lucene.codecs.lucene42.Lucene42RWCodec
+org.apache.lucene.codecs.lucene45.Lucene45RWCodec

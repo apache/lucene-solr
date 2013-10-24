@@ -18,7 +18,6 @@ package org.apache.lucene.search.posfilter;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -134,7 +133,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     directory = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     //config.setCodec(Codec.forName("SimpleText"));
-    config.setCodec(Codec.forName("Asserting"));
+    //config.setCodec(Codec.forName("Asserting"));
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
     addDocs(writer);
     reader = writer.getReader();
@@ -181,7 +180,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     return new BooleanClause(makeTermQuery(text), occur);
   }
 
-  public static class Match implements Comparable<TestDisjunctionIntervalIterator.Match> {
+  public static class Match implements Comparable<Match> {
 
     public final int docid;
     public final int start;

@@ -18,8 +18,6 @@ package org.apache.lucene.search.grouping;
  */
 
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Collector;
@@ -37,6 +35,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.IOException;
 
 // TODO: this sentence is too long for the class summary.
 /** BlockGroupingCollector performs grouping with a
@@ -133,6 +133,11 @@ public class BlockGroupingCollector extends Collector {
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return 1;
     }
   }
 
@@ -377,7 +382,7 @@ public class BlockGroupingCollector extends Collector {
 
       // TODO: we could aggregate scores across children
       // by Sum/Avg instead of passing NaN:
-      groups[downTo] = new GroupDocs<Object>(Float.NaN,
+      groups[downTo] = new GroupDocs<>(Float.NaN,
                                              topDocs.getMaxScore(),
                                              og.count,
                                              topDocs.scoreDocs,
@@ -394,7 +399,7 @@ public class BlockGroupingCollector extends Collector {
     }
     */
 
-    return new TopGroups<Object>(new TopGroups<Object>(groupSort.getSort(),
+    return new TopGroups<>(new TopGroups<>(groupSort.getSort(),
                                        withinGroupSort == null ? null : withinGroupSort.getSort(),
                                        totalHitCount, totalGroupedHitCount, groups, maxScore),
                          totalGroupCount);

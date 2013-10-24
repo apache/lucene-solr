@@ -1,4 +1,5 @@
-
+# hdfs
+/solr/example/hdfs
 *.jar
 
 # .
@@ -11,12 +12,13 @@
 /velocity.log
 /build.properties
 /.idea
-/*.iml
+*.iml
 /*.ipr
 /*.iws
 /.project
 /.classpath
 /.settings
+/.caches
 /prj.el
 /bin
 /bin.*

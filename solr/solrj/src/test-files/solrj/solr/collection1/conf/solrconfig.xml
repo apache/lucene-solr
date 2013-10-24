@@ -22,6 +22,9 @@
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  </indexConfig>
    <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
@@ -49,7 +52,17 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-      
+
+  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+    <lst name="invariants">
+      <str name="q">*:*</str>
+    </lst>
+    <lst name="defaults">
+       <str name="echoParams">all</str>
+    </lst>
+    <str name="healthcheckFile">server-enabled.txt</str>
+  </requestHandler>
+
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>solr</defaultQuery>

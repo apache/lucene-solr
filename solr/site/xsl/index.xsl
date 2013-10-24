@@ -36,8 +36,23 @@
         <title><xsl:text>Apache Solr </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></title>
       </head>
       <body>
-        <div><a href="http://lucene.apache.org/solr/"><img src="solr.png" title="Apache Solr Logo" alt="Solr" border="0"/></a></div>
-        <h1><xsl:text>Apache Solr </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></h1>
+        <div>
+          <a href="http://lucene.apache.org/solr/">
+            <img src="solr.png" title="Apache Solr Logo" alt="Solr" border="0"/>
+          </a>
+          <div style="z-index:100;position:absolute;top:25px;left:252px">
+            <span style="font-size: x-small">TM</span>
+          </div>
+        </div>
+        <h1>
+          <xsl:text>Apache Solr</xsl:text>
+          <span style="vertical-align: top; font-size: x-small">
+            <xsl:text>TM</xsl:text>
+          </span>
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="$version"/>
+          <xsl:text> Documentation</xsl:text>
+        </h1>
         <p>Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project.
         Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering,
         database integration, rich document (e.g., Word, PDF) handling, and geospatial search. Solr is highly scalable,
@@ -50,11 +65,11 @@
         plugin architecture when more advanced customization is required.</p>
         <p>
           This is the official documentation for <b><xsl:text>Apache Solr </xsl:text>
-          <xsl:value-of select="$version"/></b>. Additional documentation is available in the
-          <a href="http://wiki.apache.org/solr">Wiki</a>.
+          <xsl:value-of select="$version"/></b>.
         </p>
         <h2>Reference Documents</h2>
           <ul>
+            <li><a href="http://wiki.apache.org/solr">Wiki</a>: Additional documentation, especially focused on using Solr.</li>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>

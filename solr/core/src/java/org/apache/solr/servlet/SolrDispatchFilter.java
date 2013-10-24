@@ -17,43 +17,31 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.WeakHashMap;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.Config;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -68,6 +56,35 @@ import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.WeakHashMap;
+
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
  *
@@ -75,7 +92,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrDispatchFilter implements Filter
 {
-  final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
+  final Logger log;
 
   protected volatile CoreContainer cores;
 
@@ -85,17 +102,29 @@ public class SolrDispatchFilter implements Filter
   
   private static final Charset UTF8 = Charset.forName("UTF-8");
 
+  public SolrDispatchFilter() {
+    try {
+      log = LoggerFactory.getLogger(SolrDispatchFilter.class);
+    } catch (NoClassDefFoundError e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "
+          +"the jetty lib/ext directory. For other containers, the corresponding directory should be used. "
+          +"For more information, see: http://wiki.apache.org/solr/SolrLogging",
+          e);
+    }
+  }
+  
   @Override
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init()");
 
-    CoreContainer.Initializer init = createInitializer();
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
 
-      this.cores = init.initialize();
+      this.cores = createCoreContainer();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -106,14 +135,51 @@ public class SolrDispatchFilter implements Filter
 
     log.info("SolrDispatchFilter.init() done");
   }
+
+  private ConfigSolr loadConfigSolr(SolrResourceLoader loader) {
+
+    String solrxmlLocation = System.getProperty("solr.solrxml.location", "solrhome");
+
+    if (solrxmlLocation == null || "solrhome".equalsIgnoreCase(solrxmlLocation))
+      return ConfigSolr.fromSolrHome(loader, loader.getInstanceDir());
+
+    if ("zookeeper".equalsIgnoreCase(solrxmlLocation)) {
+      String zkHost = System.getProperty("zkHost");
+      log.info("Trying to read solr.xml from " + zkHost);
+      if (StringUtils.isEmpty(zkHost))
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Could not load solr.xml from zookeeper: zkHost system property not set");
+      SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
+      try {
+        if (!zkClient.exists("/solr.xml", true))
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper: node not found");
+        byte[] data = zkClient.getData("/solr.xml", null, null, true);
+        return ConfigSolr.fromInputStream(loader, new ByteArrayInputStream(data));
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper", e);
+      } finally {
+        zkClient.close();
+      }
+    }
+
+    throw new SolrException(ErrorCode.SERVER_ERROR,
+        "Bad solr.solrxml.location set: " + solrxmlLocation + " - should be 'solrhome' or 'zookeeper'");
+  }
+
+  /**
+   * Override this to change CoreContainer initialization
+   * @return a CoreContainer to hold this server's cores
+   */
+  protected CoreContainer createCoreContainer() {
+    SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
+    ConfigSolr config = loadConfigSolr(loader);
+    CoreContainer cores = new CoreContainer(loader, config);
+    cores.load();
+    return cores;
+  }
   
   public CoreContainer getCores() {
     return cores;
-  }
-
-  /** Method to override to change how CoreContainer initialization is performed. */
-  protected CoreContainer.Initializer createInitializer() {
-    return new CoreContainer.Initializer();
   }
   
   @Override
@@ -123,27 +189,33 @@ public class SolrDispatchFilter implements Filter
       cores = null;
     }    
   }
-
+  
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    doFilter(request, response, chain, false);
+  }
+  
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if( abortErrorMessage != null ) {
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
       return;
     }
     
     if (this.cores == null) {
-      ((HttpServletResponse)response).sendError( 503, "Server is shutting down" );
+      ((HttpServletResponse)response).sendError( 503, "Server is shutting down or failed to initialize" );
       return;
     }
     CoreContainer cores = this.cores;
     SolrCore core = null;
     SolrQueryRequest solrReq = null;
+    Aliases aliases = null;
     
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;
       SolrRequestHandler handler = null;
       String corename = "";
+      String origCorename = null;
       try {
         // put the core container in request attribute
         req.setAttribute("org.apache.solr.CoreContainer", cores);
@@ -174,9 +246,18 @@ public class SolrDispatchFilter implements Filter
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
+        boolean usingAliases = false;
+        List<String> collectionsList = null;
         // Check for the core admin collections url
         if( path.equals( "/admin/collections" ) ) {
           handler = cores.getCollectionsHandler();
+          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
+          handleAdminRequest(req, response, handler, solrReq);
+          return;
+        }
+        // Check for the core admin info url
+        if( path.startsWith( "/admin/info" ) ) {
+          handler = cores.getInfoHandler();
           solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;
@@ -187,7 +268,24 @@ public class SolrDispatchFilter implements Filter
           if( idx > 1 ) {
             // try to get the corename as a request parameter first
             corename = path.substring( 1, idx );
+            
+            // look at aliases
+            if (cores.isZooKeeperAware()) {
+              origCorename = corename;
+              ZkStateReader reader = cores.getZkController().getZkStateReader();
+              aliases = reader.getAliases();
+              if (aliases != null && aliases.collectionAliasSize() > 0) {
+                usingAliases = true;
+                String alias = aliases.getCollectionAlias(corename);
+                if (alias != null) {
+                  collectionsList = StrUtils.splitSmart(alias, ",", true);
+                  corename = collectionsList.get(0);
+                }
+              }
+            }
+            
             core = cores.getCore(corename);
+
             if (core != null) {
               path = path.substring( idx );
             }
@@ -206,11 +304,32 @@ public class SolrDispatchFilter implements Filter
           if (core != null) {
             // we found a core, update the path
             path = path.substring( idx );
-          } else {
-            // try the default core
+          }
+          
+          // if we couldn't find it locally, look on other nodes
+          if (core == null && idx > 0) {
+            String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
+            if (coreUrl != null) {
+              path = path.substring( idx );
+              remoteQuery(coreUrl + path, req, solrReq, resp);
+              return;
+            } else {
+              if (!retry) {
+                // we couldn't find a core to work with, try reloading aliases
+                // TODO: it would be nice if admin ui elements skipped this...
+                ZkStateReader reader = cores.getZkController()
+                    .getZkStateReader();
+                reader.updateAliases();
+                doFilter(request, response, chain, true);
+                return;
+              }
+            }
+          }
+          
+          // try the default core
+          if (core == null) {
             core = cores.getCore("");
           }
-          // TODO: if we couldn't find it locally, look on other nodes
         }
 
         // With a valid core...
@@ -222,6 +341,20 @@ public class SolrDispatchFilter implements Filter
           if( parser == null ) {
             parser = new SolrRequestParsers(config);
             parsers.put(config, parser );
+          }
+
+          // Handle /schema/* paths via Restlet
+          if( path.startsWith("/schema") ) {
+            solrReq = parser.parse(core, path, req);
+            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+            if( path.equals(req.getServletPath()) ) {
+              // avoid endless loop - pass through to Restlet via webapp
+              chain.doFilter(request, response);
+            } else {
+              // forward rewritten URI (without path prefix and core/collection name) to Restlet
+              req.getRequestDispatcher(path).forward(request, response);
+            }
+            return;
           }
 
           // Determine the handler from the url path if not set
@@ -253,6 +386,10 @@ public class SolrDispatchFilter implements Filter
               solrReq = parser.parse( core, path, req );
             }
 
+            if (usingAliases) {
+              processAliases(solrReq, aliases, collectionsList);
+            }
+            
             final Method reqMethod = Method.getMethod(req.getMethod());
             HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
             // unless we have been explicitly told not to, do cache validation
@@ -292,6 +429,7 @@ public class SolrDispatchFilter implements Filter
       } 
       finally {
         if( solrReq != null ) {
+          log.debug("Closing out SolrRequest: {}", solrReq);
           solrReq.close();
         }
         if (core != null) {
@@ -305,12 +443,169 @@ public class SolrDispatchFilter implements Filter
     chain.doFilter(request, response);
   }
   
+  private void processAliases(SolrQueryRequest solrReq, Aliases aliases,
+      List<String> collectionsList) {
+    String collection = solrReq.getParams().get("collection");
+    if (collection != null) {
+      collectionsList = StrUtils.splitSmart(collection, ",", true);
+    }
+    if (collectionsList != null) {
+      Set<String> newCollectionsList = new HashSet<String>(
+          collectionsList.size());
+      for (String col : collectionsList) {
+        String al = aliases.getCollectionAlias(col);
+        if (al != null) {
+          List<String> aliasList = StrUtils.splitSmart(al, ",", true);
+          newCollectionsList.addAll(aliasList);
+        } else {
+          newCollectionsList.add(col);
+        }
+      }
+      if (newCollectionsList.size() > 0) {
+        StringBuilder collectionString = new StringBuilder();
+        Iterator<String> it = newCollectionsList.iterator();
+        int sz = newCollectionsList.size();
+        for (int i = 0; i < sz; i++) {
+          collectionString.append(it.next());
+          if (i < newCollectionsList.size() - 1) {
+            collectionString.append(",");
+          }
+        }
+        ModifiableSolrParams params = new ModifiableSolrParams(
+            solrReq.getParams());
+        params.set("collection", collectionString.toString());
+        solrReq.setParams(params);
+      }
+    }
+  }
+  
+  private void remoteQuery(String coreUrl, HttpServletRequest req,
+      SolrQueryRequest solrReq, HttpServletResponse resp) throws IOException {
+    try {
+      String urlstr = coreUrl;
+      
+      String queryString = req.getQueryString();
+      
+      urlstr += queryString == null ? "" : "?" + queryString;
+      
+      URL url = new URL(urlstr);
+      HttpURLConnection con = (HttpURLConnection) url.openConnection();
+      con.setRequestMethod(req.getMethod());
+      con.setUseCaches(false);
+      
+      con.setDoOutput(true);
+      con.setDoInput(true);
+      for (Enumeration e = req.getHeaderNames(); e.hasMoreElements();) {
+        String headerName = e.nextElement().toString();
+        con.setRequestProperty(headerName, req.getHeader(headerName));
+      }
+      try {
+        con.connect();
+
+        InputStream is;
+        OutputStream os;
+        if ("POST".equals(req.getMethod())) {
+          is = req.getInputStream();
+          os = con.getOutputStream(); // side effect: method is switched to POST
+          try {
+            IOUtils.copyLarge(is, os);
+            os.flush();
+          } finally {
+            IOUtils.closeQuietly(os);
+            IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
+          }
+        }
+        
+        resp.setStatus(con.getResponseCode());
+        
+        for (Iterator i = con.getHeaderFields().entrySet().iterator(); i
+            .hasNext();) {
+          Map.Entry mapEntry = (Map.Entry) i.next();
+          if (mapEntry.getKey() != null) resp.setHeader(mapEntry.getKey()
+              .toString(), ((List) mapEntry.getValue()).get(0).toString());
+        }
+        
+        resp.setCharacterEncoding(con.getContentEncoding());
+        resp.setContentType(con.getContentType());
+        
+        is = con.getInputStream();
+        os = resp.getOutputStream();
+        try {
+          IOUtils.copyLarge(is, os);
+          os.flush();
+        } finally {
+          IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
+          IOUtils.closeQuietly(is);
+        }
+      } finally {
+        con.disconnect();
+      }
+    } catch (IOException e) {
+      sendError(null, solrReq, req, resp, new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error trying to proxy request for url: " + coreUrl, e));
+    }
+    
+  }
+  
+  private String getRemotCoreUrl(CoreContainer cores, String collectionName, String origCorename) {
+    ClusterState clusterState = cores.getZkController().getClusterState();
+    Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
+    boolean byCoreName = false;
+    if (slices == null) {
+      // look by core name
+      byCoreName = true;
+      Set<String> collections = clusterState.getCollections();
+      for (String collection : collections) {
+        slices = new ArrayList<Slice>();
+        slices.addAll(clusterState.getActiveSlices(collection));
+      }
+    }
+    
+    if (slices == null || slices.size() == 0) {
+      return null;
+    }
+    
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    Iterator<Slice> it = slices.iterator();
+    while (it.hasNext()) {
+      Slice slice = it.next();
+      Map<String,Replica> sliceShards = slice.getReplicasMap();
+      for (ZkNodeProps nodeProps : sliceShards.values()) {
+        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+        if (liveNodes.contains(coreNodeProps.getNodeName())
+            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) {
+          if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
+            // if it's by core name, make sure they match
+            continue;
+          }
+          if (coreNodeProps.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+            // don't count a local core
+            continue;
+          }
+          String coreUrl;
+          if (origCorename != null) {
+            coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
+          } else {
+            coreUrl = coreNodeProps.getCoreUrl();
+            if (coreUrl.endsWith("/")) {
+              coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
+            }
+          }
+
+          return coreUrl;
+        }
+      }
+    }
+    return null;
+  }
+  
   private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
     String collection = corename;
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
+    Map<String,Slice> slices = clusterState.getActiveSlicesMap(collection);
     if (slices == null) {
       return null;
     }
@@ -356,19 +651,11 @@ public class SolrDispatchFilter implements Filter
   private void handleAdminRequest(HttpServletRequest req, ServletResponse response, SolrRequestHandler handler,
                                   SolrQueryRequest solrReq) throws IOException {
     SolrQueryResponse solrResp = new SolrQueryResponse();
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
-    solrResp.add("responseHeader", responseHeader);
-    NamedList toLog = solrResp.getToLog();
-    toLog.add("webapp", req.getContextPath());
-    toLog.add("path", solrReq.getContext().get("path"));
-    toLog.add("params", "{" + solrReq.getParamString() + "}");
+    SolrCore.preDecorateResponse(solrReq, solrResp);
     handler.handleRequest(solrReq, solrResp);
-    SolrCore.setResponseHeaderValues(handler, solrReq, solrResp);
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < toLog.size(); i++) {
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
-      sb.append(name).append("=").append(val).append(" ");
+    SolrCore.postDecorateResponse(handler, solrReq, solrResp);
+    if (log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
+      log.info(solrResp.getToLogAsString("[admin] "));
     }
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
@@ -386,7 +673,7 @@ public class SolrDispatchFilter implements Filter
 
     if (solrRsp.getException() != null) {
       NamedList info = new SimpleOrderedMap();
-      int code = getErrorInfo(solrRsp.getException(),info);
+      int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
       solrRsp.add("error", info);
       ((HttpServletResponse) response).setStatus(code);
     }
@@ -408,38 +695,6 @@ public class SolrDispatchFilter implements Filter
     //else http HEAD request, nothing to write out, waited this long just to get ContentType
   }
   
-  protected int getErrorInfo(Throwable ex, NamedList info) {
-    int code=500;
-    if( ex instanceof SolrException ) {
-      code = ((SolrException)ex).code();
-    }
-
-    String msg = null;
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      msg = th.getMessage();
-      if (msg != null) break;
-    }
-    if(msg != null) {
-      info.add("msg", msg);
-    }
-    
-    // For any regular code, don't include the stack trace
-    if( code == 500 || code < 100 ) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
-      SolrException.log(log, null, ex);
-      info.add("trace", sw.toString());
-
-      // non standard codes have undefined results with various servers
-      if( code < 100 ) {
-        log.warn( "invalid return code: "+code );
-        code = 500;
-      }
-    }
-    info.add("code", new Integer(code));
-    return code;
-  }
-
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
     // a custom filter could add more stuff to the request before passing it on.
     // for example: sreq.getContext().put( "HttpServletRequest", req );
@@ -480,7 +735,7 @@ public class SolrDispatchFilter implements Filter
     }
     catch( Throwable t ) { // This error really does not matter
       SimpleOrderedMap info = new SimpleOrderedMap();
-      int code=getErrorInfo(ex, info);
+      int code = ResponseUtils.getErrorInfo(ex, info, log);
       response.sendError( code, info.toString() );
     }
   }

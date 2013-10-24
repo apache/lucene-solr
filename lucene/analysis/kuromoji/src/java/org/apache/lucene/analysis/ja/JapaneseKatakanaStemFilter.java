@@ -35,7 +35,7 @@ import java.io.IOException;
  * </p>
  * <p>
  * In order to prevent terms from being stemmed, use an instance of
- * {@link org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter}
+ * {@link org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter}
  * or a custom {@link TokenFilter} that sets the {@link KeywordAttribute}
  * before this {@link TokenStream}.
  * </p>

@@ -52,13 +52,7 @@ public final class LowerCaseFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      final char[] buffer = termAtt.buffer();
-      final int length = termAtt.length();
-      for (int i = 0; i < length;) {
-       i += Character.toChars(
-               Character.toLowerCase(
-                   charUtils.codePointAt(buffer, i)), buffer, i);
-      }
+      charUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
       return true;
     } else
       return false;

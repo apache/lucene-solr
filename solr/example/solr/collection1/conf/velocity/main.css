@@ -49,10 +49,32 @@ a {
   position: relative;  
 }
 
+.tabs-bar {
+  padding: 5px;
+  width: 100%;
+  border: 1px solid;
+  border-width: 0px 0px 1px 0px;
+}
+.tab {
+  font-weight: bold;
+  padding: 5px;
+  margin: 0px 5px;
+  border: 1px solid;
+  background-color: #dddddd;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+.tab:hover {
+  background: #FEC293;
+}
+.tab.selected {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
 .navigators h2 {
   background: #FEC293;
-  border: 1px solid #ce9d77;
-  padding: 5px;
+  padding: 2px 5px;
 }
 
 .navigators ul {

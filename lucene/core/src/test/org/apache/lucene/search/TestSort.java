@@ -18,1236 +18,850 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.BitSet;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.DocIdBitSet;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
-import org.junit.BeforeClass;
 
-/**
- * Unit tests for sorting code.
- *
- * <p>Created: Feb 17, 2004 4:55:10 PM
- *
- * @since   lucene 1.4
+/*
+ * Very simple tests of sorting.
+ * 
+ * THE RULES:
+ * 1. keywords like 'abstract' and 'static' should not appear in this file.
+ * 2. each test method should be self-contained and understandable. 
+ * 3. no test methods should share code with other test methods.
+ * 4. no testing of things unrelated to sorting.
+ * 5. no tracers.
+ * 6. keyword 'class' should appear only once in this file, here ----
+ *                                                                  |
+ *        -----------------------------------------------------------
+ *        |
+ *       \./
  */
-
 public class TestSort extends LuceneTestCase {
-  private static int NUM_STRINGS;
-  private IndexSearcher full;
-  private IndexSearcher searchX;
-  private IndexSearcher searchY;
-  private Query queryX;
-  private Query queryY;
-  private Query queryA;
-  private Query queryE;
-  private Query queryF;
-  private Query queryG;
-  private Query queryM;
-  private Sort sort;
 
-  @BeforeClass
-  public static void beforeClass() {
-    NUM_STRINGS = atLeast(500);
-  }
-
-  // document data:
-  // the tracer field is used to determine which document was hit
-  // the contents field is used to search and sort by relevance
-  // the int field to sort by int
-  // the float field to sort by float
-  // the string field to sort by string
-    // the i18n field includes accented characters for testing locale-specific sorting
-  private String[][] data = new String[][] {
-  // tracer  contents         int            float           string   custom   i18n               long            double,          short,     byte, 'custom parser encoding'
-  {   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0",            "3",    "126", "J"},//A, x
-  {   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000",   "40.0",           "24",      "1", "I"},//B, y
-  {   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999","40.00002343",        "125",     "15", "H"},//C, x
-  {   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",   String.valueOf(Long.MAX_VALUE),String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
-  {   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach", String.valueOf(Long.MIN_VALUE),String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
-  {   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",          "343.034435444",  "-3",      "0", "E"},//F,y
-  {   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544",        "5",    "100", "D"},//G,x
-  {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545",       "10",    "-50", "C"},//H,y
-  {   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546",     "-340",     "51", "B"},//I,x
-  {   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343",  "300",      "2", "A"},//J,y
-  {   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null, null},
-  {   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null, null},
-  {   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
-  {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null},
-  
-  // Sort Missing first/last
-  {   "a",   "m",            null,          null,           null,    null,    null,              null,           null, null, null, null},
-  {   "b",   "m",            "4",           "4.0",           "4",    null,    null,              "4",           "4", "4", "4", null},
-  {   "c",   "m",            "5",           "5.0",           "5",    null,    null,              "5",           "5", "5", "5", null},
-  {   "d",   "m",            null,          null,           null,    null,    null,              null,           null, null, null, null}
-  }; 
-
-  // create an index of all the documents, or just the x, or just the y documents
-  private IndexSearcher getIndex (boolean even, boolean odd)
-  throws IOException {
-    Directory indexStore = newDirectory();
-    dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-
-    final DocValues.Type stringDVType;
-    if (dvStringSorted) {
-      // Index sorted
-      stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_SORTED : DocValues.Type.BYTES_FIXED_SORTED;
-    } else {
-      // Index non-sorted
-      if (random().nextBoolean()) {
-        // Fixed
-        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_FIXED_STRAIGHT : DocValues.Type.BYTES_FIXED_DEREF;
-      } else {
-        // Var
-        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_STRAIGHT : DocValues.Type.BYTES_VAR_DEREF;
-      }
-    }
-
-    FieldType ft1 = new FieldType();
-    ft1.setStored(true);
-    FieldType ft2 = new FieldType();
-    ft2.setIndexed(true);
-    for (int i=0; i<data.length; ++i) {
-      if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
-        Document doc = new Document();
-        doc.add (new Field ("tracer", data[i][0], ft1));
-        doc.add (new TextField ("contents", data[i][1], Field.Store.NO));
-        if (data[i][2] != null) {
-          doc.add(new StringField ("int", data[i][2], Field.Store.NO));
-          doc.add(new PackedLongDocValuesField("int", Integer.parseInt(data[i][2])));
-        }
-        if (data[i][3] != null) {
-          doc.add(new StringField ("float", data[i][3], Field.Store.NO));
-          doc.add(new FloatDocValuesField("float", Float.parseFloat(data[i][3])));
-        }
-        if (data[i][4] != null) {
-          doc.add(new StringField ("string", data[i][4], Field.Store.NO));
-          switch(stringDVType) {
-            case BYTES_FIXED_SORTED:
-              doc.add(new SortedBytesDocValuesField("string", new BytesRef(data[i][4]), true));
-              break;
-            case BYTES_VAR_SORTED:
-              doc.add(new SortedBytesDocValuesField("string", new BytesRef(data[i][4]), false));
-              break;
-            case BYTES_FIXED_STRAIGHT:
-              doc.add(new StraightBytesDocValuesField("string", new BytesRef(data[i][4]), true));
-              break;
-            case BYTES_VAR_STRAIGHT:
-              doc.add(new StraightBytesDocValuesField("string", new BytesRef(data[i][4]), false));
-              break;
-            case BYTES_FIXED_DEREF:
-              doc.add(new DerefBytesDocValuesField("string", new BytesRef(data[i][4]), true));
-              break;
-            case BYTES_VAR_DEREF:
-              doc.add(new DerefBytesDocValuesField("string", new BytesRef(data[i][4]), false));
-              break;
-            default:
-              throw new IllegalStateException("unknown type " + stringDVType);
-          }
-        }
-        if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5], Field.Store.NO));
-        if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6], Field.Store.NO));
-        if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7], Field.Store.NO));
-        if (data[i][8] != null) {
-          doc.add(new StringField ("double", data[i][8], Field.Store.NO));
-          doc.add(new DoubleDocValuesField("double", Double.parseDouble(data[i][8])));
-        }
-        if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9], Field.Store.NO));
-        if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10], Field.Store.NO));
-        if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11], Field.Store.NO));
-
-        for(IndexableField f : doc.getFields()) {
-          if (f.fieldType().indexed() && !f.fieldType().omitNorms()) {
-            ((Field) f).setBoost(2.0f);
-          }
-        }
-
-        writer.addDocument (doc);
-      }
-    }
-    IndexReader reader = writer.getReader();
-    writer.close ();
-    IndexSearcher s = newSearcher(reader);
-    return s;
-  }
-
-  private IndexSearcher getFullIndex()
-  throws IOException {
-    return getIndex (true, true);
-  }
-  
-  private IndexSearcher getFullStrings() throws IOException {
-    Directory indexStore = newDirectory();
-    dirs.add(indexStore);
-    IndexWriter writer = new IndexWriter(
-        indexStore,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(97))
-    );
-    FieldType onlyStored = new FieldType();
-    onlyStored.setStored(true);
-    final int fixedLen = getRandomNumber(2, 8);
-    final int fixedLen2 = getRandomNumber(1, 4);
-    for (int i=0; i<NUM_STRINGS; i++) {
-      Document doc = new Document();
-      String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
-      doc.add (new Field ("tracer", num, onlyStored));
-      //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(new StringField("string", num, Field.Store.NO));
-      doc.add(new SortedBytesDocValuesField("string", new BytesRef(num)));
-      String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
-      doc.add(new StringField ("string2", num2, Field.Store.NO));
-      doc.add(new SortedBytesDocValuesField("string2", new BytesRef(num2)));
-      doc.add (new Field ("tracer2", num2, onlyStored));
-      for(IndexableField f2 : doc.getFields()) {
-        if (f2.fieldType().indexed() && !f2.fieldType().omitNorms()) {
-          ((Field) f2).setBoost(2.0f);
-        }
-      }
-
-      String numFixed = getRandomCharString(fixedLen, 48, 52);
-      doc.add (new Field ("fixed_tracer", numFixed, onlyStored));
-      //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(new StringField("string_fixed", numFixed, Field.Store.NO));
-      doc.add(new SortedBytesDocValuesField("string_fixed", new BytesRef(numFixed), true));
-      String num2Fixed = getRandomCharString(fixedLen2, 48, 52);
-      doc.add(new StringField ("string2_fixed", num2Fixed, Field.Store.NO));
-      doc.add(new SortedBytesDocValuesField("string2_fixed", new BytesRef(num2Fixed), true));
-      doc.add (new Field ("tracer2_fixed", num2Fixed, onlyStored));
-
-      for(IndexableField f2 : doc.getFields()) {
-        if (f2.fieldType().indexed() && !f2.fieldType().omitNorms()) {
-          ((Field) f2).setBoost(2.0f);
-        }
-      }
-
-      writer.addDocument (doc);
-    }
-    //writer.forceMerge(1);
-    //System.out.println(writer.getSegmentCount());
+  /** Tests sorting on type string */
+  public void testString() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
     writer.close();
-    IndexReader reader = DirectoryReader.open(indexStore);
-    return newSearcher(reader);
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'bar' comes before 'foo'
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public String getRandomNumberString(int num, int low, int high) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < num; i++) {
-      sb.append(getRandomNumber(low, high));
-    }
-    return sb.toString();
+  /** Tests sorting on type string with a missing value */
+  public void testStringMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public String getRandomCharString(int num) {
-    return getRandomCharString(num, 48, 122);
+  /** Tests reverse sorting on type string */
+  public void testStringReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'foo' comes after 'bar' in reverse order
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public String getRandomCharString(int num, int start, int end) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < num; i++) {
-      sb.append(new Character((char) getRandomNumber(start, end)));
-    }
-    return sb.toString();
+  /** Tests sorting on type string_val */
+  public void testStringVal() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'bar' comes before 'foo'
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public int getRandomNumber(final int low, final int high) {
-  
-    int randInt = (Math.abs(random().nextInt()) % (high - low)) + low;
-
-    return randInt;
-  }
-
-  private IndexSearcher getXIndex()
-  throws IOException {
-    return getIndex (true, false);
-  }
-
-  private IndexSearcher getYIndex()
-  throws IOException {
-    return getIndex (false, true);
-  }
-
-  private IndexSearcher getEmptyIndex()
-  throws IOException {
-    return getIndex (false, false);
-  }
-
-  // Set to true if the DV "string" field is indexed as a
-  // sorted source:
-  private boolean dvStringSorted;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  /** Tests sorting on type string_val with a missing value */
+  public void testStringValMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    dvStringSorted = random().nextBoolean();
-    full = getFullIndex();
-    searchX = getXIndex();
-    searchY = getYIndex();
-    queryX = new TermQuery (new Term ("contents", "x"));
-    queryY = new TermQuery (new Term ("contents", "y"));
-    queryA = new TermQuery (new Term ("contents", "a"));
-    queryE = new TermQuery (new Term ("contents", "e"));
-    queryF = new TermQuery (new Term ("contents", "f"));
-    queryG = new TermQuery (new Term ("contents", "g"));
-    queryM = new TermQuery (new Term ("contents", "m"));
-    sort = new Sort();
-    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  private ArrayList<Directory> dirs = new ArrayList<Directory>();
-  
-  @Override
-  public void tearDown() throws Exception {
-    full.reader.close();
-    searchX.reader.close();
-    searchY.reader.close();
-    for (Directory dir : dirs)
-      dir.close();
-    super.tearDown();
-  }
-
-  // test the sorts by score and document number
-  public void testBuiltInSorts() throws Exception {
-    sort = new Sort();
-    assertMatches (full, queryX, sort, "ACEGI");
-    assertMatches (full, queryY, sort, "BDFHJ");
-
-    sort.setSort(SortField.FIELD_DOC);
-    assertMatches (full, queryX, sort, "ACEGI");
-    assertMatches (full, queryY, sort, "BDFHJ");
-  }
-
-  private static SortField useDocValues(SortField field) {
-    field.setUseIndexValues(true);
-    return field;
-  }
-  // test sorts where the type of field is specified
-  public void testTypedSort() throws Exception {
-    sort.setSort (new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "IGAEC");
-    assertMatches (full, queryY, sort, "DHFJB");
+  /** Tests reverse sorting on type string_val */
+  public void testStringValReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "GCIEA");
-    assertMatches (full, queryY, sort, "DHJFB");
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
 
-    sort.setSort (new SortField ("long", SortField.Type.LONG), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "EACGI");
-    assertMatches (full, queryY, sort, "FBJHD");
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'foo' comes after 'bar' in reverse order
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
 
-    sort.setSort (new SortField ("double", SortField.Type.DOUBLE), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "AGICE");
-    assertMatches (full, queryY, sort, "DJHBF");
-    
-    sort.setSort (new SortField ("byte", SortField.Type.BYTE), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "CIGAE");
-    assertMatches (full, queryY, sort, "DHFBJ");
-
-    sort.setSort (new SortField ("short", SortField.Type.SHORT), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "IAGCE");
-    assertMatches (full, queryY, sort, "DFHBJ");
-
-    sort.setSort (new SortField ("string", SortField.Type.STRING), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "AIGEC");
-    assertMatches (full, queryY, sort, "DJHFB");
-    
-    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "IGAEC");
-    assertMatches (full, queryY, sort, "DHFJB");
-
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "GCIEA");
-    assertMatches (full, queryY, sort, "DHJFB");
-      
-    sort.setSort (useDocValues(new SortField ("double", SortField.Type.DOUBLE)), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "AGICE");
-    assertMatches (full, queryY, sort, "DJHBF");
-
-    sort.setSort (useDocValues(new SortField ("string", getDVStringSortType())), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "AIGEC");
-    assertMatches (full, queryY, sort, "DJHFB");
-  }
-
-  private SortField.Type getDVStringSortType() {
-    if (dvStringSorted) {
-      // If you index as sorted source you can still sort by
-      // value instead:
-      return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
-    } else {
-      return SortField.Type.STRING_VAL;
-    }
+    ir.close();
+    dir.close();
   }
   
-  private static class SortMissingLastTestHelper {
-    final SortField sortField;
-    final Object min;
-    final Object max;
+  /** Tests sorting on internal docid order */
+  public void testFieldDoc() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    SortMissingLastTestHelper(SortField sortField, Object min, Object max) {
-      this.sortField = sortField;
-      this.min = min;
-      this.max = max;
-    }
-  }
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(SortField.FIELD_DOC);
 
-  // test sorts where the type of field is specified
-  public void testSortMissingLast() throws Exception {
-    
-    @SuppressWarnings("boxing")
-    SortMissingLastTestHelper[] ascendTesters = new SortMissingLastTestHelper[] {
-        new SortMissingLastTestHelper( new SortField(   "byte",   SortField.Type.BYTE ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(  "short",  SortField.Type.SHORT ), Short.MIN_VALUE,   Short.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(    "int",    SortField.Type.INT ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(   "long",   SortField.Type.LONG ), Long.MIN_VALUE,    Long.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(  "float",  SortField.Type.FLOAT ), Float.MIN_VALUE,   Float.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField( "double", SortField.Type.DOUBLE ), Double.MIN_VALUE,  Double.MAX_VALUE ),
-    };
-    
-    @SuppressWarnings("boxing")
-    SortMissingLastTestHelper[] descendTesters = new SortMissingLastTestHelper[] {
-      new SortMissingLastTestHelper( new SortField(   "byte",   SortField.Type.BYTE, true ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(  "short",  SortField.Type.SHORT, true ), Short.MIN_VALUE,   Short.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(    "int",    SortField.Type.INT, true ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(   "long",   SortField.Type.LONG, true ), Long.MIN_VALUE,    Long.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(  "float",  SortField.Type.FLOAT, true ), Float.MIN_VALUE,   Float.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField( "double", SortField.Type.DOUBLE, true ), Double.MIN_VALUE,  Double.MAX_VALUE ),
-    };
-    
-    // Default order: ascending
-    for(SortMissingLastTestHelper t : ascendTesters) {
-      sort.setSort(t.sortField, SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc");
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // docid 0, then docid 1
+    assertEquals(0, td.scoreDocs[0].doc);
+    assertEquals(1, td.scoreDocs[1].doc);
 
-      sort.setSort(t.sortField.setMissingValue(t.max), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "bcad");
-
-      sort.setSort(t.sortField.setMissingValue(t.min), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc");
-    }
-    
-    // Reverse order: descending (Note: Order for un-valued documents remains the same due to tie breaker: a,d)
-    for(SortMissingLastTestHelper t : descendTesters) {
-      sort.setSort(t.sortField, SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad");
-      
-      sort.setSort(t.sortField.setMissingValue( t.max ), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adcb");
-      
-      sort.setSort(t.sortField.setMissingValue( t.min ), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad");
-    }
-  }
-
-  /**
-   * Test String sorting: small queue to many matches, multi field sort, reverse sort
-   */
-  public void testStringSort() throws Exception {
-    // Normal string field, var length
-    sort.setSort(
-        new SortField("string", SortField.Type.STRING),
-        new SortField("string2", SortField.Type.STRING, true),
-        SortField.FIELD_DOC);
-    verifyStringSort(sort);
-
-    // Normal string field, fixed length
-    sort.setSort(
-        new SortField("string_fixed", SortField.Type.STRING),
-        new SortField("string2_fixed", SortField.Type.STRING, true),
-        SortField.FIELD_DOC);
-    verifyStringSort(sort);
-
-    // Doc values field, var length
-    sort.setSort(
-                 useDocValues(new SortField("string", getDVStringSortType())),
-                 useDocValues(new SortField("string2", getDVStringSortType(), true)),
-                 SortField.FIELD_DOC);
-    verifyStringSort(sort);
-
-    // Doc values field, fixed length
-    sort.setSort(
-                 useDocValues(new SortField("string_fixed", getDVStringSortType())),
-                 useDocValues(new SortField("string2_fixed", getDVStringSortType(), true)),
-                 SortField.FIELD_DOC);
-    verifyStringSort(sort);
-  }
-
-  private void verifyStringSort(Sort sort) throws Exception {
-    final IndexSearcher searcher = getFullStrings();
-    final ScoreDoc[] result = searcher.search(new MatchAllDocsQuery(), null, _TestUtil.nextInt(random(), 500, searcher.getIndexReader().maxDoc()), sort).scoreDocs;
-    StringBuilder buff = new StringBuilder();
-    int n = result.length;
-    String last = null;
-    String lastSub = null;
-    int lastDocId = 0;
-    boolean fail = false;
-    final String fieldSuffix = sort.getSort()[0].getField().endsWith("_fixed") ? "_fixed" : "";
-    for (int x = 0; x < n; ++x) {
-      StoredDocument doc2 = searcher.doc(result[x].doc);
-      StorableField[] v = doc2.getFields("tracer" + fieldSuffix);
-      StorableField[] v2 = doc2.getFields("tracer2" + fieldSuffix);
-      for (int j = 0; j < v.length; ++j) {
-        buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+")\n");
-        if (last != null) {
-          int cmp = v[j].stringValue().compareTo(last);
-          if (!(cmp >= 0)) { // ensure first field is in order
-            fail = true;
-            System.out.println("fail:" + v[j] + " < " + last);
-            buff.append("  WRONG tracer\n");
-          }
-          if (cmp == 0) { // ensure second field is in reverse order
-            cmp = v2[j].stringValue().compareTo(lastSub);
-            if (cmp > 0) {
-              fail = true;
-              System.out.println("rev field fail:" + v2[j] + " > " + lastSub);
-              buff.append("  WRONG tracer2\n");
-            } else if(cmp == 0) { // ensure docid is in order
-              if (result[x].doc < lastDocId) {
-                fail = true;
-                System.out.println("doc fail:" + result[x].doc + " > " + lastDocId);
-                buff.append("  WRONG docID\n");
-              }
-            }
-          }
-        }
-        last = v[j].stringValue();
-        lastSub = v2[j].stringValue();
-        lastDocId = result[x].doc;
-      }
-    }
-    if (fail) {
-      System.out.println("topn field1(field2)(docID):\n" + buff);
-    }
-    assertFalse("Found sort results out of order", fail);
-    searcher.getIndexReader().close();
+    ir.close();
+    dir.close();
   }
   
-  /** 
-   * test sorts where the type of field is specified and a custom field parser 
-   * is used, that uses a simple char encoding. The sorted string contains a 
-   * character beginning from 'A' that is mapped to a numeric value using some 
-   * "funny" algorithm to be different for each data type.
-   */
-  public void testCustomFieldParserSort() throws Exception {
-    // since tests explicilty uses different parsers on the same fieldname
-    // we explicitly check/purge the FieldCache between each assertMatch
-    FieldCache fc = FieldCache.DEFAULT;
-
-
-    sort.setSort (new SortField ("parser", new FieldCache.IntParser(){
-      @Override
-      public final int parseInt(final BytesRef term) {
-        return (term.bytes[term.offset]-'A') * 123456;
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " IntParser");
-    fc.purgeAllCaches();
-
-    sort.setSort (new SortField ("parser", new FieldCache.FloatParser(){
-      @Override
-      public final float parseFloat(final BytesRef term) {
-        return (float) Math.sqrt( term.bytes[term.offset] );
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " FloatParser");
-    fc.purgeAllCaches();
-
-    sort.setSort (new SortField ("parser", new FieldCache.LongParser(){
-      @Override
-      public final long parseLong(final BytesRef term) {
-        return (term.bytes[term.offset]-'A') * 1234567890L;
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " LongParser");
-    fc.purgeAllCaches();
-
-    sort.setSort (new SortField ("parser", new FieldCache.DoubleParser(){
-      @Override
-      public final double parseDouble(final BytesRef term) {
-        return Math.pow( term.bytes[term.offset], (term.bytes[term.offset]-'A') );
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " DoubleParser");
-    fc.purgeAllCaches();
-
-    sort.setSort (new SortField ("parser", new FieldCache.ByteParser(){
-      @Override
-      public final byte parseByte(final BytesRef term) {
-        return (byte) (term.bytes[term.offset]-'A');
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " ByteParser");
-    fc.purgeAllCaches();
-
-    sort.setSort (new SortField ("parser", new FieldCache.ShortParser(){
-      @Override
-      public final short parseShort(final BytesRef term) {
-        return (short) (term.bytes[term.offset]-'A');
-      }
-    }), SortField.FIELD_DOC );
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getTestName() + " ShortParser");
-    fc.purgeAllCaches();
-  }
-
-  // test sorts when there's nothing in the index
-  public void testEmptyIndex() throws Exception {
-    IndexSearcher empty = getEmptyIndex();
-
-    sort = new Sort();
-    assertMatches (empty, queryX, sort, "");
-
-    sort.setSort(SortField.FIELD_DOC);
-    assertMatches (empty, queryX, sort, "");
-
-    sort.setSort (new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC );
-    assertMatches (empty, queryX, sort, "");
+  /** Tests sorting on reverse internal docid order */
+  public void testFieldDocReverse() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC );
-    assertMatches (empty, queryX, sort, "");
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField(null, SortField.Type.DOC, true));
 
-    sort.setSort (new SortField ("string", SortField.Type.STRING, true), SortField.FIELD_DOC );
-    assertMatches (empty, queryX, sort, "");
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // docid 1, then docid 0
+    assertEquals(1, td.scoreDocs[0].doc);
+    assertEquals(0, td.scoreDocs[1].doc);
 
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT), new SortField ("string", SortField.Type.STRING) );
-    assertMatches (empty, queryX, sort, "");
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests default sort (by score) */
+  public void testFieldScore() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("value", "foo bar bar bar bar", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newTextField("value", "foo foo foo foo foo", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), new SortField ("string", SortField.Type.STRING) );
-    assertMatches (empty, queryX, sort, "");
-
-    sort.setSort (useDocValues(new SortField ("string", getDVStringSortType(), true)), SortField.FIELD_DOC );
-    assertMatches (empty, queryX, sort, "");
-
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)),
-                  useDocValues(new SortField ("string", getDVStringSortType())) );
-    assertMatches (empty, queryX, sort, "");
-    
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), useDocValues(new SortField ("string", getDVStringSortType())) );
-    assertMatches (empty, queryX, sort, "");
-  }
-
-  static class MyFieldComparator extends FieldComparator<Integer> {
-    int[] docValues;
-    int[] slotValues;
-    int bottomValue;
-
-    MyFieldComparator(int numHits) {
-      slotValues = new int[numHits];
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      slotValues[slot] = docValues[doc];
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      // values are small enough that overflow won't happen
-      return slotValues[slot1] - slotValues[slot2];
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      return bottomValue - docValues[doc];
-    }
-
-    @Override
-    public void setBottom(int bottom) {
-      bottomValue = slotValues[bottom];
-    }
-
-    private static final FieldCache.IntParser testIntParser = new FieldCache.IntParser() {
-      @Override
-      public final int parseInt(final BytesRef term) {
-        return (term.bytes[term.offset]-'A') * 123456;
-      }
-    };
-
-    @Override
-    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(context.reader(), "parser", testIntParser, false);
-      return this;
-    }
-
-    @Override
-    public Integer value(int slot) {
-      return Integer.valueOf(slotValues[slot]);
-    }
-
-    @Override
-    public int compareDocToValue(int doc, Integer valueObj) {
-      final int value = valueObj.intValue();
-      final int docValue = docValues[doc];
-
-      // values are small enough that overflow won't happen
-      return docValue - value;
-    }
-  }
-
-  static class MyFieldComparatorSource extends FieldComparatorSource {
-    @Override
-    public FieldComparator<Integer> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
-      return new MyFieldComparator(numHits);
-    }
-  }
-
-  // Test sorting w/ custom FieldComparator
-  public void testNewCustomFieldParserSort() throws Exception {
-    sort.setSort (new SortField ("parser", new MyFieldComparatorSource()));
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-  }
-
-  // test sorts in reverse
-  public void testReverseSort() throws Exception {
-    sort.setSort (new SortField (null, SortField.Type.SCORE, true), SortField.FIELD_DOC );
-    assertMatches (full, queryX, sort, "IEGCA");
-    assertMatches (full, queryY, sort, "JFHDB");
-
-    sort.setSort (new SortField (null, SortField.Type.DOC, true));
-    assertMatches (full, queryX, sort, "IGECA");
-    assertMatches (full, queryY, sort, "JHFDB");
-
-    sort.setSort (new SortField ("int", SortField.Type.INT, true) );
-    assertMatches (full, queryX, sort, "CAEGI");
-    assertMatches (full, queryY, sort, "BJFHD");
-
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT, true) );
-    assertMatches (full, queryX, sort, "AECIG");
-    assertMatches (full, queryY, sort, "BFJHD");
-    
-    sort.setSort (new SortField ("string", SortField.Type.STRING, true) );
-    assertMatches (full, queryX, sort, "CEGIA");
-    assertMatches (full, queryY, sort, "BFHJD");
-    
-    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT, true)) );
-    assertMatches (full, queryX, sort, "CAEGI");
-    assertMatches (full, queryY, sort, "BJFHD");
-    
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT, true)) );
-    assertMatches (full, queryX, sort, "AECIG");
-    assertMatches (full, queryY, sort, "BFJHD");
-
-    sort.setSort (useDocValues(new SortField ("string", getDVStringSortType(), true)) );
-    assertMatches (full, queryX, sort, "CEGIA");
-    assertMatches (full, queryY, sort, "BFHJD");
-  }
-
-  // test sorting when the sort field is empty (undefined) for some of the documents
-  public void testEmptyFieldSort() throws Exception {
-
-    // NOTE: do not test DocValues fields here, since you
-    // can't sort when some documents don't have the field
-    sort.setSort (new SortField ("string", SortField.Type.STRING) );
-    assertMatches (full, queryF, sort, "ZJI");
-
-    sort.setSort (new SortField ("string", SortField.Type.STRING, true) );
-    assertMatches (full, queryF, sort, "IJZ");
-    
-    sort.setSort (new SortField ("int", SortField.Type.INT) );
-    assertMatches (full, queryF, sort, "IZJ");
-
-    sort.setSort (new SortField ("int", SortField.Type.INT, true) );
-    assertMatches (full, queryF, sort, "JZI");
-
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT) );
-    assertMatches (full, queryF, sort, "ZJI");
-
-    // using a nonexisting field as first sort key shouldn't make a difference:
-    sort.setSort (new SortField ("nosuchfield", SortField.Type.STRING),
-        new SortField ("float", SortField.Type.FLOAT) );
-    assertMatches (full, queryF, sort, "ZJI");
-
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT, true) );
-    assertMatches (full, queryF, sort, "IJZ");
-
-    // When a field is null for both documents, the next SortField should be used.
-    sort.setSort (new SortField ("int", SortField.Type.INT),
-                                new SortField ("string", SortField.Type.STRING),
-        new SortField ("float", SortField.Type.FLOAT) );
-    assertMatches (full, queryG, sort, "ZWXY");
-
-    // Reverse the last criterium to make sure the test didn't pass by chance
-    sort.setSort (new SortField ("int", SortField.Type.INT),
-                                new SortField ("string", SortField.Type.STRING),
-                  new SortField ("float", SortField.Type.FLOAT, true) );
-    assertMatches (full, queryG, sort, "ZYXW");
-
-    // Do the same for a ParallelMultiSearcher
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8), new NamedThreadFactory("testEmptyFieldSort"));
-    IndexSearcher parallelSearcher=new IndexSearcher (full.getIndexReader(), exec);
-
-    sort.setSort (new SortField ("int", SortField.Type.INT),
-                  new SortField ("string", SortField.Type.STRING),
-                  new SortField ("float", SortField.Type.FLOAT) );
-    assertMatches (parallelSearcher, queryG, sort, "ZWXY");
-
-    sort.setSort (new SortField ("int", SortField.Type.INT),
-                  new SortField ("string", SortField.Type.STRING),
-                  new SortField ("float", SortField.Type.FLOAT, true) );
-    assertMatches (parallelSearcher, queryG, sort, "ZYXW");
-    exec.shutdown();
-    exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
-  }
-
-  // test sorts using a series of fields
-  public void testSortCombos() throws Exception {
-    sort.setSort (new SortField ("int", SortField.Type.INT), new SortField ("float", SortField.Type.FLOAT) );
-    assertMatches (full, queryX, sort, "IGEAC");
-
-    sort.setSort (new SortField ("int", SortField.Type.INT, true), new SortField (null, SortField.Type.DOC, true) );
-    assertMatches (full, queryX, sort, "CEAGI");
-
-    sort.setSort (new SortField ("float", SortField.Type.FLOAT), new SortField ("string", SortField.Type.STRING) );
-    assertMatches (full, queryX, sort, "GICEA");
-
-    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)),
-                  useDocValues(new SortField ("float", SortField.Type.FLOAT)));
-    assertMatches (full, queryX, sort, "IGEAC");
-
-    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT, true)),
-                  useDocValues(new SortField (null, SortField.Type.DOC, true)));
-    assertMatches (full, queryX, sort, "CEAGI");
-
-    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)),
-                  useDocValues(new SortField ("string", getDVStringSortType())));
-    assertMatches (full, queryX, sort, "GICEA");
-  }
-
-  // test a variety of sorts using a parallel multisearcher
-  public void testParallelMultiSort() throws Exception {
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8), new NamedThreadFactory("testParallelMultiSort"));
-    IndexSearcher searcher = new IndexSearcher(
-                                  new MultiReader(searchX.getIndexReader(),
-                                                  searchY.getIndexReader()), exec);
-    runMultiSorts(searcher, false);
-    exec.shutdown();
-    exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
-  }
-
-  public void testTopDocsScores() throws Exception {
-
-    // There was previously a bug in FieldSortedHitQueue.maxscore when only a single
-    // doc was added.  That is what the following tests for.
+    IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort();
-    int nDocs=10;
 
-    // try to pick a query that will result in an unnormalized
-    // score greater than 1 to test for correct normalization
-    final TopDocs docs1 = full.search(queryE,null,nDocs,sort,true,true);
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
+    assertEquals(2, actual.totalHits);
 
-    // a filter that only allows through the first hit
-    Filter filt = new Filter() {
-      @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
-        assertNull("acceptDocs should be null, as we have no deletions", acceptDocs);
-        BitSet bs = new BitSet(context.reader().maxDoc());
-        bs.set(0, context.reader().maxDoc());
-        bs.set(docs1.scoreDocs[0].doc);
-        return new DocIdBitSet(bs);
-      }
-    };
+    TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
+    // the two topdocs should be the same
+    assertEquals(expected.totalHits, actual.totalHits);
+    for (int i = 0; i < actual.scoreDocs.length; i++) {
+      assertEquals(actual.scoreDocs[i].doc, expected.scoreDocs[i].doc);
+    }
 
-    TopDocs docs2 = full.search(queryE, filt, nDocs, sort,true,true);
-    
-    assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
+    ir.close();
+    dir.close();
   }
   
-  public void testSortWithoutFillFields() throws Exception {
+  /** Tests default sort (by score) in reverse */
+  public void testFieldScoreReverse() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("value", "foo bar bar bar bar", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newTextField("value", "foo foo foo foo foo", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    // There was previously a bug in TopFieldCollector when fillFields was set
-    // to false - the same doc and score was set in ScoreDoc[] array. This test
-    // asserts that if fillFields is false, the documents are set properly. It
-    // does not use Searcher's default search methods (with Sort) since all set
-    // fillFields to true.
-    Sort[] sort = new Sort[] { new Sort(SortField.FIELD_DOC), new Sort() };
-    for (int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
-          false, false, true);
-      
-      full.search(q, tdc);
-      
-      ScoreDoc[] sd = tdc.topDocs().scoreDocs;
-      for (int j = 1; j < sd.length; j++) {
-        assertTrue(sd[j].doc != sd[j - 1].doc);
-      }
-      
-    }
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField(null, SortField.Type.SCORE, true));
+
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
+    assertEquals(2, actual.totalHits);
+
+    TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
+    // the two topdocs should be the reverse of each other
+    assertEquals(expected.totalHits, actual.totalHits);
+    assertEquals(actual.scoreDocs[0].doc, expected.scoreDocs[1].doc);
+    assertEquals(actual.scoreDocs[1].doc, expected.scoreDocs[0].doc);
+
+    ir.close();
+    dir.close();
   }
 
-  public void testSortWithoutScoreTracking() throws Exception {
-
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    for (int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, false,
-          false, true);
-      
-      full.search(q, tdc);
-      
-      TopDocs td = tdc.topDocs();
-      ScoreDoc[] sd = td.scoreDocs;
-      for (int j = 0; j < sd.length; j++) {
-        assertTrue(Float.isNaN(sd[j].score));
-      }
-      assertTrue(Float.isNaN(td.getMaxScore()));
-    }
-  }
-  
-  public void testSortWithScoreNoMaxScoreTracking() throws Exception {
+  /** Tests sorting on type int */
+  public void testInt() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new IntField("value", 300000, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    for (int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false, true);
-      
-      full.search(q, tdc);
-      
-      TopDocs td = tdc.topDocs();
-      ScoreDoc[] sd = td.scoreDocs;
-      for (int j = 0; j < sd.length; j++) {
-        assertTrue(!Float.isNaN(sd[j].score));
-      }
-      assertTrue(Float.isNaN(td.getMaxScore()));
-    }
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  // MultiComparatorScoringNoMaxScoreCollector
-  public void testSortWithScoreNoMaxScoreTrackingMulti() throws Exception {
+  /** Tests sorting on type int with a missing value */
+  public void testIntMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE) };
-    for (int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false, true);
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
-      full.search(q, tdc);
-      
-      TopDocs td = tdc.topDocs();
-      ScoreDoc[] sd = td.scoreDocs;
-      for (int j = 0; j < sd.length; j++) {
-        assertTrue(!Float.isNaN(sd[j].score));
-      }
-      assertTrue(Float.isNaN(td.getMaxScore()));
-    }
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public void testSortWithScoreAndMaxScoreTracking() throws Exception {
+  /** Tests sorting on type int, specifying the missing value should be treated as Integer.MAX_VALUE */
+  public void testIntMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    for (int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          true, true);
-      
-      full.search(q, tdc);
-      
-      TopDocs td = tdc.topDocs();
-      ScoreDoc[] sd = td.scoreDocs;
-      for (int j = 0; j < sd.length; j++) {
-        assertTrue(!Float.isNaN(sd[j].score));
-      }
-      assertTrue(!Float.isNaN(td.getMaxScore()));
-    }
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.INT);
+    sortField.setMissingValue(Integer.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a Integer.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public void testOutOfOrderDocsScoringSort() throws Exception {
-
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    boolean[][] tfcOptions = new boolean[][] {
-        new boolean[] { false, false, false },
-        new boolean[] { false, false, true },
-        new boolean[] { false, true, false },
-        new boolean[] { false, true, true },
-        new boolean[] { true, false, false },
-        new boolean[] { true, false, true },
-        new boolean[] { true, true, false },
-        new boolean[] { true, true, true },
-    };
-    String[] actualTFCClasses = new String[] {
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector" 
-    };
+  /** Tests sorting on type int in reverse */
+  public void testIntReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new IntField("value", 300000, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    BooleanQuery bq = new BooleanQuery();
-    // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-    // which delegates to BS if there are no mandatory clauses.
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-    // the clause instead of BQ.
-    bq.setMinimumNumberShouldMatch(1);
-    for (int i = 0; i < sort.length; i++) {
-      for (int j = 0; j < tfcOptions.length; j++) {
-        TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
-            tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
 
-        assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
-        
-        full.search(bq, tdc);
-        
-        TopDocs td = tdc.topDocs();
-        ScoreDoc[] sd = td.scoreDocs;
-        assertEquals(10, sd.length);
-      }
-    }
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  // OutOfOrderMulti*Collector
-  public void testOutOfOrderDocsScoringSortMulti() throws Exception {
-
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE) };
-    boolean[][] tfcOptions = new boolean[][] {
-        new boolean[] { false, false, false },
-        new boolean[] { false, false, true },
-        new boolean[] { false, true, false },
-        new boolean[] { false, true, true },
-        new boolean[] { true, false, false },
-        new boolean[] { true, false, true },
-        new boolean[] { true, true, false },
-        new boolean[] { true, true, true },
-    };
-    String[] actualTFCClasses = new String[] {
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector" 
-    };
+  /** Tests sorting on type long */
+  public void testLong() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    BooleanQuery bq = new BooleanQuery();
-    // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-    // which delegates to BS if there are no mandatory clauses.
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-    // the clause instead of BQ.
-    bq.setMinimumNumberShouldMatch(1);
-    for (int i = 0; i < sort.length; i++) {
-      for (int j = 0; j < tfcOptions.length; j++) {
-        TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
-            tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
-        assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
-        
-        full.search(bq, tdc);
-        
-        TopDocs td = tdc.topDocs();
-        ScoreDoc[] sd = td.scoreDocs;
-        assertEquals(10, sd.length);
-      }
-    }
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  public void testSortWithScoreAndMaxScoreTrackingNoResults() throws Exception {
+  /** Tests sorting on type long with a missing value */
+  public void testLongMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
-      TopDocs td = tdc.topDocs();
-      assertEquals(0, td.totalHits);
-      assertTrue(Float.isNaN(td.getMaxScore()));
-    }
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
   
-  // runs a variety of sorts useful for multisearchers
-  private void runMultiSorts(IndexSearcher multi, boolean isFull) throws Exception {
-    sort.setSort(SortField.FIELD_DOC);
-    String expected = isFull ? "ABCDEFGHIJ" : "ACEGIBDFHJ";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField ("int", SortField.Type.INT));
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC);
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField("int", SortField.Type.INT));
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
+  /** Tests sorting on type long, specifying the missing value should be treated as Long.MAX_VALUE */
+  public void testLongMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
     
-    sort.setSort(new SortField ("float", SortField.Type.FLOAT), SortField.FIELD_DOC);
-    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.LONG);
+    sortField.setMissingValue(Long.MAX_VALUE);
+    Sort sort = new Sort(sortField);
 
-    sort.setSort(new SortField("float", SortField.Type.FLOAT));
-    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Long.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
 
-    sort.setSort(new SortField("string", SortField.Type.STRING));
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-
-    sort.setSort(new SortField("int", SortField.Type.INT, true));
-    expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField("float", SortField.Type.FLOAT, true));
-    assertMatches(multi, queryA, sort, "BAFECIJHDG");
-
-    sort.setSort(new SortField("string", SortField.Type.STRING, true));
-    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
-
-    sort.setSort(new SortField("int", SortField.Type.INT),new SortField("float", SortField.Type.FLOAT));
-    assertMatches(multi, queryA, sort, "IDHFGJEABC");
-
-    sort.setSort(new SortField("float", SortField.Type.FLOAT),new SortField("string", SortField.Type.STRING));
-    assertMatches(multi, queryA, sort, "GDHJICEFAB");
-
-    sort.setSort(new SortField ("int", SortField.Type.INT));
-    assertMatches(multi, queryF, sort, "IZJ");
-
-    sort.setSort(new SortField ("int", SortField.Type.INT, true));
-    assertMatches(multi, queryF, sort, "JZI");
-
-    sort.setSort(new SortField ("float", SortField.Type.FLOAT));
-    assertMatches(multi, queryF, sort, "ZJI");
-
-    sort.setSort(new SortField ("string", SortField.Type.STRING));
-    assertMatches(multi, queryF, sort, "ZJI");
-
-    sort.setSort(new SortField ("string", SortField.Type.STRING, true));
-    assertMatches(multi, queryF, sort, "IJZ");
-
-    sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)));
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC);
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(useDocValues(new SortField("int", SortField.Type.INT)));
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-    
-    sort.setSort(useDocValues(new SortField ("float", SortField.Type.FLOAT)), SortField.FIELD_DOC);
-    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
-
-    sort.setSort(useDocValues(new SortField("float", SortField.Type.FLOAT)));
-    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
-    
-    sort.setSort(useDocValues(new SortField("int", SortField.Type.INT, true)));
-    expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
-    assertMatches(multi, queryA, sort, expected);
-    
-    sort.setSort(useDocValues(new SortField("int", SortField.Type.INT)), useDocValues(new SortField("float", SortField.Type.FLOAT)));
-    assertMatches(multi, queryA, sort, "IDHFGJEABC");
-    
-    sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)));
-    assertMatches(multi, queryF, sort, "IZJ");
-
-    sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT, true)));
-    assertMatches(multi, queryF, sort, "JZI");
-
-    sort.setSort(useDocValues(new SortField("string", getDVStringSortType())));
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-      
-    sort.setSort(useDocValues(new SortField("string", getDVStringSortType(), true)));
-    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
-      
-    sort.setSort(useDocValues(new SortField("float", SortField.Type.FLOAT)),useDocValues(new SortField("string", getDVStringSortType())));
-    assertMatches(multi, queryA, sort, "GDHJICEFAB");
-
-    sort.setSort(useDocValues(new SortField ("string", getDVStringSortType())));
-    assertMatches(multi, queryF, sort, "ZJI");
-
-    sort.setSort(useDocValues(new SortField ("string", getDVStringSortType(), true)));
-    assertMatches(multi, queryF, sort, "IJZ");
-    
-    // up to this point, all of the searches should have "sane" 
-    // FieldCache behavior, and should have reused hte cache in several cases
-    assertSaneFieldCaches(getTestName() + " various");
-    // next we'll check Locale based (String[]) for 'string', so purge first
-    FieldCache.DEFAULT.purgeAllCaches();
+    ir.close();
+    dir.close();
   }
+  
+  /** Tests sorting on type long in reverse */
+  public void testLongReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
 
-  private void assertMatches(IndexSearcher searcher, Query query, Sort sort, String expectedResult) throws IOException {
-    assertMatches( null, searcher, query, sort, expectedResult );
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
   }
+  
+  /** Tests sorting on type float */
+  public void testFloat() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
 
-  // make sure the documents returned by the search match the expected list
-  private void assertMatches(String msg, IndexSearcher searcher, Query query, Sort sort,
-      String expectedResult) throws IOException {
-
-    //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    TopDocs hits = searcher.search(query, null, Math.max(1, expectedResult.length()), sort, true, true);
-    ScoreDoc[] result = hits.scoreDocs;
-    assertEquals(expectedResult.length(),hits.totalHits);
-    StringBuilder buff = new StringBuilder(10);
-    int n = result.length;
-    for (int i=0; i<n; ++i) {
-      StoredDocument doc = searcher.doc(result[i].doc);
-      StorableField[] v = doc.getFields("tracer");
-      for (int j=0; j<v.length; ++j) {
-        buff.append (v[j].stringValue());
-      }
-    }
-    assertEquals(msg, expectedResult, buff.toString());
+    ir.close();
+    dir.close();
   }
+  
+  /** Tests sorting on type float with a missing value */
+  public void testFloatMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
+  public void testFloatMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.FLOAT);
+    sortField.setMissingValue(Float.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Float.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type float in reverse */
+  public void testFloatReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double */
+  public void testDouble() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double with +/- zero */
+  public void testDoubleSignedZero() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new DoubleField("value", +0d, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", -0d, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // numeric order
+    double v0 = searcher.doc(td.scoreDocs[0].doc).getField("value").numericValue().doubleValue();
+    double v1 = searcher.doc(td.scoreDocs[1].doc).getField("value").numericValue().doubleValue();
+    assertEquals(0, v0, 0d);
+    assertEquals(0, v1, 0d);
+    // check sign bits
+    assertEquals(1, Double.doubleToLongBits(v0) >>> 63);
+    assertEquals(0, Double.doubleToLongBits(v1) >>> 63);
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double with a missing value */
+  public void testDoubleMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as a 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double, specifying the missing value should be treated as Double.MAX_VALUE */
+  public void testDoubleMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.DOUBLE);
+    sortField.setMissingValue(Double.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as Double.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double in reverse */
+  public void testDoubleReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // numeric order
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
@@ -1272,200 +886,31 @@ public class TestSort extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
-  public void testLUCENE2142() throws IOException {
+  
+  /** test that we don't throw exception on multi-valued field (LUCENE-2142) */
+  public void testMultiValuedField() throws IOException {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    for (int i=0; i<5; i++) {
+    for(int i=0; i<5; i++) {
         Document doc = new Document();
-        doc.add (new StringField ("string", "a"+i, Field.Store.NO));
-        doc.add (new StringField ("string", "b"+i, Field.Store.NO));
-        writer.addDocument (doc);
+        doc.add(new StringField("string", "a"+i, Field.Store.NO));
+        doc.add(new StringField("string", "b"+i, Field.Store.NO));
+        writer.addDocument(doc);
     }
     writer.forceMerge(1); // enforce one segment to have a higher unique term count in all cases
     writer.close();
-    sort.setSort(
+    Sort sort = new Sort(
         new SortField("string", SortField.Type.STRING),
-        SortField.FIELD_DOC );
+        SortField.FIELD_DOC);
     // this should not throw AIOOBE or RuntimeEx
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
     reader.close();
     indexStore.close();
   }
-
-  public void testCountingCollector() throws Exception {
-    Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
-    for (int i=0; i<5; i++) {
-      Document doc = new Document();
-      doc.add (new StringField ("string", "a"+i, Field.Store.NO));
-      doc.add (new StringField ("string", "b"+i, Field.Store.NO));
-      writer.addDocument (doc);
-    }
-    IndexReader reader = writer.getReader();
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(reader);
-    TotalHitCountCollector c = new TotalHitCountCollector();
-    searcher.search(new MatchAllDocsQuery(), null, c);
-    assertEquals(5, c.getTotalHits());
-    reader.close();
-    indexStore.close();
-  }
-
-  private static class RandomFilter extends Filter {
-    private final Random random;
-    private float density;
-    private final List<BytesRef> docValues;
-    public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
-
-    // density should be 0.0 ... 1.0
-    public RandomFilter(Random random, float density, List<BytesRef> docValues) {
-      this.random = random;
-      this.density = density;
-      this.docValues = docValues;
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-      final int maxDoc = context.reader().maxDoc();
-      final DocValues.Source idSource = context.reader().docValues("id").getSource();
-      assertNotNull(idSource);
-      final FixedBitSet bits = new FixedBitSet(maxDoc);
-      for(int docID=0;docID<maxDoc;docID++) {
-        if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
-          bits.set(docID);
-          //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-          matchValues.add(docValues.get((int) idSource.getInt(docID)));
-        }
-      }
-
-      return bits;
-    }
-  }
-
-  public void testRandomStringSort() throws Exception {
-    Random random = new Random(random().nextLong());
-
-    final int NUM_DOCS = atLeast(100);
-    final Directory dir = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
-    final boolean allowDups = random.nextBoolean();
-    final Set<String> seen = new HashSet<String>();
-    final int maxLength = _TestUtil.nextInt(random, 5, 100);
-    if (VERBOSE) {
-      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
-    }
-
-    int numDocs = 0;
-    final List<BytesRef> docValues = new ArrayList<BytesRef>();
-    // TODO: deletions
-    while (numDocs < NUM_DOCS) {
-      final String s;
-      if (random.nextBoolean()) {
-        s = _TestUtil.randomSimpleString(random, maxLength);
-      } else {
-        s = _TestUtil.randomUnicodeString(random, maxLength);
-      }
-      final BytesRef br = new BytesRef(s);
-
-      if (!allowDups) {
-        if (seen.contains(s)) {
-          continue;
-        }
-        seen.add(s);
-      }
-
-      if (VERBOSE) {
-        System.out.println("  " + numDocs + ": s=" + s);
-      }
-      
-      final Document doc = new Document();
-      doc.add(new SortedBytesDocValuesField("stringdv", br));
-      doc.add(newStringField("string", s, Field.Store.NO));
-      doc.add(new PackedLongDocValuesField("id", numDocs));
-      docValues.add(br);
-      writer.addDocument(doc);
-      numDocs++;
-
-      if (random.nextInt(40) == 17) {
-        // force flush
-        writer.getReader().close();
-      }
-    }
-
-    final IndexReader r = writer.getReader();
-    writer.close();
-    if (VERBOSE) {
-      System.out.println("  reader=" + r);
-    }
-    
-    final IndexSearcher s = newSearcher(r, false);
-    final int ITERS = atLeast(100);
-    for(int iter=0;iter<ITERS;iter++) {
-      final boolean reverse = random.nextBoolean();
-      final TopFieldDocs hits;
-      final SortField sf;
-      if (random.nextBoolean()) {
-        sf = new SortField("stringdv", SortField.Type.STRING, reverse);
-        sf.setUseIndexValues(true);
-      } else {
-        sf = new SortField("string", SortField.Type.STRING, reverse);
-      }
-      final Sort sort = new Sort(sf);
-      final int hitCount = _TestUtil.nextInt(random, 1, r.maxDoc() + 20);
-      final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
-      if (random.nextBoolean()) {
-        hits = s.search(new ConstantScoreQuery(f),
-                        hitCount,
-                        sort);
-      } else {
-        hits = s.search(new MatchAllDocsQuery(),
-                        f,
-                        hitCount,
-                        sort);
-      }
-
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse);
-      }
-
-      // Compute expected results:
-      Collections.sort(f.matchValues);
-      if (reverse) {
-        Collections.reverse(f.matchValues);
-      }
-      final List<BytesRef> expected = f.matchValues;
-      if (VERBOSE) {
-        System.out.println("  expected:");
-        for(int idx=0;idx<expected.size();idx++) {
-          System.out.println("    " + idx + ": " + expected.get(idx).utf8ToString());
-          if (idx == hitCount-1) {
-            break;
-          }
-        }
-      }
-      
-      if (VERBOSE) {
-        System.out.println("  actual:");
-        for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
-          final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
-          System.out.println("    " + hitIDX + ": " + ((BytesRef) fd.fields[0]).utf8ToString());
-        }
-      }
-      for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
-        final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
-        assertEquals(expected.get(hitIDX), (BytesRef) fd.fields[0]);
-      }
-    }
-
-    r.close();
-    dir.close();
-  }
-
+  
   public void testMaxScore() throws Exception {
     Directory d = newDirectory();
     // Not RIW because we need exactly 2 segs:
@@ -1474,7 +919,7 @@ public class TestSort extends LuceneTestCase {
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
         Document doc = new Document();
-        doc.add(newStringField("id", ""+docIDX, Field.Store.YES));
+        doc.add(new IntField("id", docIDX, Field.Store.YES));
         StringBuilder sb = new StringBuilder();
         for(int i=0;i<id;i++) {
           sb.append(' ');
@@ -1498,5 +943,313 @@ public class TestSort extends LuceneTestCase {
     assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
     r.close();
     d.close();
+  }
+  
+  /** test sorts when there's nothing in the index */
+  public void testEmptyIndex() throws Exception {
+    IndexSearcher empty = newSearcher(new MultiReader());
+    Query query = new TermQuery(new Term("contents", "foo"));
+  
+    Sort sort = new Sort();
+    TopDocs td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+    
+    sort.setSort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+    
+    sort.setSort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+  }
+  
+  /** 
+   * test sorts for a custom int parser that uses a simple char encoding 
+   */
+  public void testCustomIntParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.IntParser() {
+      @Override
+      public int parseInt(BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 123456;
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom long parser that uses a simple char encoding 
+   */
+  public void testCustomLongParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.LongParser() {
+      @Override
+      public long parseLong(BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 1234567890L;
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom float parser that uses a simple char encoding 
+   */
+  public void testCustomFloatParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.FloatParser() {
+      @Override
+      public float parseFloat(BytesRef term) {
+        return (float) Math.sqrt(term.bytes[term.offset]);
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom double parser that uses a simple char encoding 
+   */
+  public void testCustomDoubleParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.DoubleParser() {
+      @Override
+      public double parseDouble(BytesRef term) {
+        return Math.pow(term.bytes[term.offset], (term.bytes[term.offset]-'A'));
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting a single document */
+  public void testSortOneDocument() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(1, td.totalHits);
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting a single document with scores */
+  public void testSortOneDocumentWithScores() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
+    assertEquals(1, expected.totalHits);
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), null, 10, sort, true, true);
+    
+    assertEquals(expected.totalHits, actual.totalHits);
+    assertEquals(expected.scoreDocs[0].score, actual.scoreDocs[0].score, 0F);
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting with two fields */
+  public void testSortTwoFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("tievalue", "tied", Field.Store.NO));
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("tievalue", "tied", Field.Store.NO));
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    // tievalue, then value
+    Sort sort = new Sort(new SortField("tievalue", SortField.Type.STRING),
+                         new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'bar' comes before 'foo'
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testScore() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(SortField.FIELD_SCORE);
+
+    final BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("value", "foo")), Occur.SHOULD);
+    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
+    TopDocs td = searcher.search(bq, 10, sort);
+    assertEquals(2, td.totalHits);
+    assertEquals(1, td.scoreDocs[0].doc);
+    assertEquals(0, td.scoreDocs[1].doc);
+
+    ir.close();
+    dir.close();
   }
 }

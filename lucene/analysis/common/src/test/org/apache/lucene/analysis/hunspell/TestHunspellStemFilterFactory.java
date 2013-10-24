@@ -19,29 +19,33 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Hunspell stemmer loads from factory
  */
-public class TestHunspellStemFilterFactory extends BaseTokenStreamTestCase {
+public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
-    HunspellStemFilterFactory factory = new HunspellStemFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("dictionary", "test.dic");
-    args.put("affix", "test.aff");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(new ClasspathResourceLoader(getClass()));
-    
     Reader reader = new StringReader("abc");
-    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("HunspellStem",
+        "dictionary", "test.dic",
+        "affix", "test.aff").create(stream);
     assertTokenStreamContents(stream, new String[] { "ab" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("HunspellStem",
+          "dictionary", "test.dic",
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

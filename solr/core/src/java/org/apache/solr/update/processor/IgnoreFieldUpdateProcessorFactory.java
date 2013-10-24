@@ -22,7 +22,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -71,11 +70,10 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
   public FieldMutatingUpdateProcessor.FieldNameSelector 
     getDefaultSelector(final SolrCore core) {
 
-    final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
       @Override
       public boolean shouldMutate(final String fieldName) {
-
+        final IndexSchema schema = core.getLatestSchema();
         FieldType type = schema.getFieldTypeNoEx(fieldName);
         return (null == type);
 

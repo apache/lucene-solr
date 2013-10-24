@@ -23,6 +23,7 @@
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/test/codecs-tests.iml" />
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/resources/codecs-resources.iml" />
       <module filepath="$PROJECT_DIR$/lucene/demo/demo.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/expressions/expressions.iml" />
       <module filepath="$PROJECT_DIR$/lucene/facet/facet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
@@ -31,6 +32,7 @@
       <module filepath="$PROJECT_DIR$/lucene/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/lucene/queryparser/queryparser.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/replicator/replicator.iml" />
       <module filepath="$PROJECT_DIR$/lucene/sandbox/sandbox.iml" />
       <module filepath="$PROJECT_DIR$/lucene/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/lucene/suggest/suggest.iml" />

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
@@ -30,17 +30,31 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
  * words.
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
+ * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  */
 public final class NorwegianLightStemFilter extends TokenFilter {
-  private final NorwegianLightStemmer stemmer = new NorwegianLightStemmer();
+  private final NorwegianLightStemmer stemmer;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-
+  
+  /** 
+   * Calls {@link #NorwegianLightStemFilter(TokenStream, int) 
+   * NorwegianLightStemFilter(input, BOKMAAL)}
+   */
   public NorwegianLightStemFilter(TokenStream input) {
+    this(input, NorwegianLightStemmer.BOKMAAL);
+  }
+  
+  /** 
+   * Creates a new NorwegianLightStemFilter
+   * @param flags set to {@link NorwegianLightStemmer#BOKMAAL}, 
+   *                     {@link NorwegianLightStemmer#NYNORSK}, or both.
+   */
+  public NorwegianLightStemFilter(TokenStream input, int flags) {
     super(input);
+    stemmer = new NorwegianLightStemmer(flags);
   }
   
   @Override

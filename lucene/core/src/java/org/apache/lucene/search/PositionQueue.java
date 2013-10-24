@@ -35,6 +35,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
     }
 
     public int nextPosition() throws IOException {
+      assert docsEnum.docID() != -1;
       if (docsEnum.docID() == DocsEnum.NO_MORE_DOCS || docsEnum.docID() != docId
             || docsEnum.nextPosition() == DocsEnum.NO_MORE_POSITIONS)
         interval.setMaximum();
@@ -83,6 +84,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
     updateInternalIntervals();
     updateTop();
     current.update(top().interval);
+    //System.out.println("PQ: " + current.toString());
     return current.begin;
   }
 
@@ -121,4 +123,5 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   public int endOffset() throws IOException {
     return current.offsetEnd;
   }
+
 }

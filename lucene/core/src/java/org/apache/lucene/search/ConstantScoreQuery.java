@@ -207,8 +207,12 @@ public class ConstantScoreQuery extends Query {
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
-    
-    
+
+    @Override
+    public long cost() {
+      return docIdSetIterator.cost();
+    }
+
     private Collector wrapCollector(final Collector collector) {
       return new Collector() {
         @Override

@@ -36,6 +36,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -48,11 +49,12 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static Document testDoc = new Document();
+  private static Document testDoc;
   private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    testDoc = new Document();
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc.getFields()) {
@@ -60,7 +62,7 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
+    conf.getMergePolicy().setNoCFSRatio(0.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
@@ -111,7 +113,7 @@ public class TestFieldsReader extends LuceneTestCase {
   }
 
 
-  public static class FaultyFSDirectory extends Directory {
+  public static class FaultyFSDirectory extends BaseDirectory {
 
     Directory fsDir;
     
@@ -169,12 +171,11 @@ public class TestFieldsReader extends LuceneTestCase {
     @Override
     public void readInternal(byte[] b, int offset, int length) throws IOException {
       simOutage();
+      delegate.seek(getFilePointer());
       delegate.readBytes(b, offset, length);
     }
     @Override
     public void seekInternal(long pos) throws IOException {
-      //simOutage();
-      delegate.seek(pos);
     }
     @Override
     public long length() {
@@ -186,7 +187,14 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     @Override
     public FaultyIndexInput clone() {
-      return new FaultyIndexInput(delegate.clone());
+      FaultyIndexInput i = new FaultyIndexInput(delegate.clone());
+      // seek the clone to our current position
+      try {
+        i.seek(getFilePointer());
+      } catch (IOException e) {
+        throw new RuntimeException();
+      }
+      return i;
     }
   }
 
@@ -196,8 +204,9 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
+      IndexWriterConfig iwc = newIndexWriterConfig( 
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE);
+      IndexWriter writer = new IndexWriter(dir, iwc);
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.forceMerge(1);
@@ -230,93 +239,5 @@ public class TestFieldsReader extends LuceneTestCase {
       _TestUtil.rmDir(indexDir);
     }
 
-  }
-  
-  public void testNumericField() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    final int numDocs = atLeast(500);
-    final Number[] answers = new Number[numDocs];
-    final NumericType[] typeAnswers = new NumericType[numDocs];
-    for(int id=0;id<numDocs;id++) {
-      Document doc = new Document();
-      final Field nf;
-      final Field sf;
-      final Number answer;
-      final NumericType typeAnswer;
-      if (random().nextBoolean()) {
-        // float/double
-        if (random().nextBoolean()) {
-          final float f = random().nextFloat();
-          answer = Float.valueOf(f);
-          nf = new FloatField("nf", f, Field.Store.NO);
-          sf = new StoredField("nf", f);
-          typeAnswer = NumericType.FLOAT;
-        } else {
-          final double d = random().nextDouble();
-          answer = Double.valueOf(d);
-          nf = new DoubleField("nf", d, Field.Store.NO);
-          sf = new StoredField("nf", d);
-          typeAnswer = NumericType.DOUBLE;
-        }
-      } else {
-        // int/long
-        if (random().nextBoolean()) {
-          final int i = random().nextInt();
-          answer = Integer.valueOf(i);
-          nf = new IntField("nf", i, Field.Store.NO);
-          sf = new StoredField("nf", i);
-          typeAnswer = NumericType.INT;
-        } else {
-          final long l = random().nextLong();
-          answer = Long.valueOf(l);
-          nf = new LongField("nf", l, Field.Store.NO);
-          sf = new StoredField("nf", l);
-          typeAnswer = NumericType.LONG;
-        }
-      }
-      doc.add(nf);
-      doc.add(sf);
-      answers[id] = answer;
-      typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(IntField.TYPE_STORED);
-      ft.setNumericPrecisionStep(Integer.MAX_VALUE);
-      doc.add(new IntField("id", id, ft));
-      w.addDocument(doc);
-    }
-    final DirectoryReader r = w.getReader();
-    w.close();
-    
-    assertEquals(numDocs, r.numDocs());
-
-    for(AtomicReaderContext ctx : r.leaves()) {
-      final AtomicReader sub = ctx.reader();
-      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id", false);
-      for(int docID=0;docID<sub.numDocs();docID++) {
-        final StoredDocument doc = sub.document(docID);
-        final Field f = (Field) doc.getField("nf");
-        assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[ids[docID]], f.numericValue());
-      }
-    }
-    r.close();
-    dir.close();
-  }
-
-  public void testIndexedBit() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType onlyStored = new FieldType();
-    onlyStored.setStored(true);
-    doc.add(new Field("field", "value", onlyStored));
-    doc.add(new StringField("field2", "value", Field.Store.YES));
-    w.addDocument(doc);
-    IndexReader r = w.getReader();
-    w.close();
-    assertFalse(r.document(0).getField("field").fieldType().indexed());
-    assertTrue(r.document(0).getField("field2").fieldType().indexed());
-    r.close();
-    dir.close();
   }
 }

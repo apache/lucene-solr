@@ -26,7 +26,7 @@ import java.util.List;
 /**
  *
  */
-public class FakeDeletionPolicy implements IndexDeletionPolicy, NamedListInitializedPlugin {
+public class FakeDeletionPolicy extends IndexDeletionPolicy implements NamedListInitializedPlugin {
 
   private String var1;
   private String var2;

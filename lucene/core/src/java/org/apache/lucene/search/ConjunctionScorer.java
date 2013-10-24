@@ -32,17 +32,19 @@ class ConjunctionScorer extends Scorer {
   private final Scorer[] scorersOrdered;
   private final Scorer[] scorers;
   private int lastDoc = -1;
+  private final float coord;
   final PositionQueue posQueue;
 
   public ConjunctionScorer(Weight weight, Collection<Scorer> scorers) throws IOException {
-    this(weight, scorers.toArray(new Scorer[scorers.size()]));
+    this(weight, scorers.toArray(new Scorer[scorers.size()]), 1f);
   }
   
-  public ConjunctionScorer(Weight weight, Scorer... scorers) throws IOException {
+  public ConjunctionScorer(Weight weight, Scorer[] scorers, float coord) throws IOException {
     super(weight);
     scorersOrdered = new Scorer[scorers.length];
     System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
     this.scorers = scorers;
+    this.coord = coord;
     posQueue = new PositionQueue(scorers);
     
     for (int i = 0; i < scorers.length; i++) {
@@ -61,7 +63,7 @@ class ConjunctionScorer extends Scorer {
     // Note that this comparator is not consistent with equals!
     // Also we use mergeSort here to be stable (so order of Scoreres that
     // match on first document keeps preserved):
-    ArrayUtil.mergeSort(scorers, new Comparator<Scorer>() { // sort the array
+    ArrayUtil.timSort(scorers, new Comparator<Scorer>() { // sort the array
       @Override
       public int compare(Scorer o1, Scorer o2) {
         return o1.docID() - o2.docID();
@@ -144,7 +146,7 @@ class ConjunctionScorer extends Scorer {
     for (int i = 0; i < scorers.length; i++) {
       sum += scorers[i].score();
     }
-    return sum;
+    return sum * coord;
   }
   
   @Override
@@ -185,6 +187,15 @@ class ConjunctionScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return posQueue.endOffset();
+  }
+
+  @Override
+  public long cost() {
+    long sum = 0;
+    for (int i = 0; i < scorers.length; i++) {
+      sum += scorers[i].cost();
+    }
+    return sum; // nocommit is this right?
   }
 
   @Override

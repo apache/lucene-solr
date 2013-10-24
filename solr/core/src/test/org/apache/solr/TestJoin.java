@@ -17,30 +17,27 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
-
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.JsonUpdateRequestHandler;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.servlet.DirectSolrConnection;
-import org.apache.solr.search.QParser;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class TestJoin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml","schema12.xml");
   }
 
@@ -198,7 +195,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         List sortedDocs = new ArrayList();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
-          sortedDocs.add(doc.toObject(h.getCore().getSchema()));
+          sortedDocs.add(doc.toObject(h.getCore().getLatestSchema()));
         }
 
         Map<String,Object> resultSet = new LinkedHashMap<String,Object>();

@@ -26,6 +26,7 @@
     <fieldtype name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldtype>
     
@@ -33,6 +34,7 @@
     <fieldtype name="text_offsets" class="solr.TextField" storeOffsetsWithPositions="true">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldtype>
    </types>

@@ -18,7 +18,7 @@ package org.apache.lucene.search.posfilter;
  */
 
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.posfilter.Interval;
+import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
 
@@ -27,12 +27,14 @@ public abstract class PositionFilteredScorer extends Scorer {
   protected final Scorer[] subScorers;
   protected final Scorer child;
   protected final Interval current = new Interval();
+  protected final Similarity.SimScorer simScorer;
   protected int matchDistance;
 
   private boolean buffered;
 
-  public PositionFilteredScorer(Scorer filteredScorer) {
+  public PositionFilteredScorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
     super(filteredScorer.getWeight());
+    this.simScorer = simScorer;
     child = filteredScorer;
     subScorers = new Scorer[filteredScorer.getChildren().size()];
     int i = 0;
@@ -43,7 +45,7 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    return child.score(); // nocommit
+    return this.simScorer.score(docID(), freq());
   }
 
   @Override
@@ -53,7 +55,11 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public int freq() throws IOException {
-    return 1; //nocommit
+    int freq = 0;
+    while (nextPosition() != NO_MORE_POSITIONS) {
+      freq++;
+    }
+    return freq;
   }
 
   @Override
@@ -85,9 +91,11 @@ public abstract class PositionFilteredScorer extends Scorer {
   @Override
   public int nextPosition() throws IOException {
     if (buffered) {
+      //System.out.println(this.hashCode() + ": returning buffered nextPos");
       buffered = false;
       return current.begin;
     }
+    //System.out.println(this.hashCode() + ": returning unbuffered nextPos");
     return doNextPosition();
   }
 
@@ -121,5 +129,9 @@ public abstract class PositionFilteredScorer extends Scorer {
     return current.offsetEnd;
   }
 
-  // nocommit Payloads - need to add these to Interval?
+  @Override
+  public long cost() {
+    return child.cost();
+  }
+// nocommit Payloads - need to add these to Interval?
 }

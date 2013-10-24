@@ -32,8 +32,8 @@
   <packaging>jar</packaging>
   <properties>
     <module-directory>lucene/core</module-directory>
-    <top-level>../../../../..</top-level>
-    <module-path>${top-level}/${module-directory}/src/test</module-path>
+    <relative-top-level>../../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}/src/test</module-path>
   </properties>
   <dependencies>
     <dependency>
@@ -87,6 +87,16 @@
             <lucene.version>${project.version}</lucene.version>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>lucene-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
@@ -166,7 +167,7 @@ final class BitVector implements Cloneable, MutableBits {
       int c = 0;
       int end = bits.length;
       for (int i = 0; i < end; i++) {
-        c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
+        c += BitUtil.bitCount(bits[i]);  // sum bits per byte
       }
       count = c;
     }
@@ -179,29 +180,12 @@ final class BitVector implements Cloneable, MutableBits {
     int c = 0;
     int end = bits.length;
     for (int i = 0; i < end; i++) {
-      c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
+      c += BitUtil.bitCount(bits[i]);  // sum bits per byte
     }
     return c;
   }
 
-  private static final byte[] BYTE_COUNTS = {  // table of bits/byte
-    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-  };
+
 
   private static String CODEC = "BitVector";
 
@@ -294,7 +278,7 @@ final class BitVector implements Cloneable, MutableBits {
         output.writeVInt(i-last);
         output.writeByte(bits[i]);
         last = i;
-        numCleared -= (8-BYTE_COUNTS[bits[i] & 0xFF]);
+        numCleared -= (8-BitUtil.bitCount(bits[i]));
         assert numCleared >= 0 || (i == (bits.length-1) && numCleared == -(8-(size&7)));
       }
     }
@@ -399,7 +383,7 @@ final class BitVector implements Cloneable, MutableBits {
     while (n>0) {
       last += input.readVInt();
       bits[last] = input.readByte();
-      n -= BYTE_COUNTS[bits[last] & 0xFF];
+      n -= BitUtil.bitCount(bits[last]);
       assert n >= 0;
     }          
   }
@@ -416,7 +400,7 @@ final class BitVector implements Cloneable, MutableBits {
     while (numCleared>0) {
       last += input.readVInt();
       bits[last] = input.readByte();
-      numCleared -= 8-BYTE_COUNTS[bits[last] & 0xFF];
+      numCleared -= 8-BitUtil.bitCount(bits[last]);
       assert numCleared >= 0 || (last == (bits.length-1) && numCleared == -(8-(size&7)));
     }
   }

@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;        // for javadocs
 
 import java.text.ParseException;
@@ -35,7 +37,7 @@ import java.util.TimeZone;
  * 
  * <P>This class also helps you to limit the resolution of your dates. Do not
  * save dates with a finer resolution than you really need, as then
- * RangeQuery and PrefixQuery will require more memory and become slower.
+ * {@link TermRangeQuery} and {@link PrefixQuery} will require more memory and become slower.
  * 
  * <P>
  * Another approach is {@link NumericUtils}, which provides

@@ -181,6 +181,11 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
+    public long cost() {
+      return spans.cost();
+    }
+
+    @Override
     public String toString() {
         return "spans(" + SpanPositionCheckQuery.this.toString() + ")";
       }

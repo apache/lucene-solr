@@ -161,7 +161,8 @@ public class FieldTermStack {
   }
   
   /**
-   * Single term with its position/offsets in the document and IDF weight
+   * Single term with its position/offsets in the document and IDF weight.
+   * It is Comparable but considers only position.
    */
   public static class TermInfo implements Comparable<TermInfo>{
 
@@ -197,6 +198,31 @@ public class FieldTermStack {
     @Override
     public int compareTo( TermInfo o ){
       return ( this.position - o.position );
+    }
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + position;
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      TermInfo other = (TermInfo) obj;
+      if (position != other.position) {
+        return false;
+      }
+      return true;
     }
   }
 }

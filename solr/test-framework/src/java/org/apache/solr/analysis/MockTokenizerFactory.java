@@ -18,45 +18,42 @@ package org.apache.solr.analysis;
  */
 
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Factory for {@link MockTokenizer} for testing purposes.
  */
 public class MockTokenizerFactory extends TokenizerFactory {
-  CharacterRunAutomaton pattern;
-  boolean enableChecks;
+  final CharacterRunAutomaton pattern;
+  final boolean enableChecks;
   
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String patternArg = args.get("pattern");
-    if (patternArg == null) {
-      patternArg = "whitespace";
-    }
-    
-    if ("whitespace".equalsIgnoreCase(patternArg)) {
-      pattern = MockTokenizer.WHITESPACE;
-    } else if ("keyword".equalsIgnoreCase(patternArg)) {
+  /** Creates a new MockTokenizerFactory */
+  public MockTokenizerFactory(Map<String,String> args) {
+    super(args);
+    String patternArg = get(args, "pattern", Arrays.asList("keyword", "simple", "whitespace"));
+    if ("keyword".equalsIgnoreCase(patternArg)) {
       pattern = MockTokenizer.KEYWORD;
     } else if ("simple".equalsIgnoreCase(patternArg)) {
       pattern = MockTokenizer.SIMPLE;
     } else {
-      throw new RuntimeException("invalid pattern!");
+      pattern = MockTokenizer.WHITESPACE;
     }
     
-    enableChecks = getBoolean("enableChecks", true);
+    enableChecks = getBoolean(args, "enableChecks", true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
-
   @Override
-  public Tokenizer create(Reader input) {
-    MockTokenizer t = new MockTokenizer(input, pattern, false);
+  public MockTokenizer create(AttributeFactory factory, Reader input) {
+    MockTokenizer t = new MockTokenizer(factory, input, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;
   }

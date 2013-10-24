@@ -17,17 +17,16 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
-import org.apache.lucene.document.DerefBytesDocValuesField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.grouping.dv.DVAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.dv.DVAllGroupsCollector;
-import org.apache.lucene.search.grouping.dv.DVFirstPassGroupingCollector;
-import org.apache.lucene.search.grouping.dv.DVSecondPassGroupingCollector;
+import org.apache.lucene.search.CachingCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
@@ -40,6 +39,13 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Convenience class to perform grouping in a non distributed environment.
  *
@@ -51,8 +57,6 @@ public class GroupingSearch {
   private final ValueSource groupFunction;
   private final Map<?, ?> valueSourceContext;
   private final Filter groupEndDocs;
-  private final DocValues.Type docValuesType;
-  private final boolean diskResidentDocValues;
 
   private Sort groupSort = Sort.RELEVANCE;
   private Sort sortWithinGroup;
@@ -80,20 +84,7 @@ public class GroupingSearch {
    * @param groupField The name of the field to group by.
    */
   public GroupingSearch(String groupField) {
-    this(groupField, null, null, null, null, false);
-  }
-
-  /**
-   * Constructs a <code>GroupingSearch</code> instance that groups documents by doc values.
-   * This constructor can only be used when the groupField
-   * is a <code>*DocValuesField</code> (eg, {@link DerefBytesDocValuesField}.
-   *
-   * @param groupField            The name of the field to group by that contains doc values
-   * @param docValuesType         The doc values type of the specified groupField
-   * @param diskResidentDocValues Whether the values to group by should be disk resident
-   */
-  public GroupingSearch(String groupField, DocValues.Type docValuesType, boolean diskResidentDocValues) {
-    this(groupField, null, null, null, docValuesType, diskResidentDocValues);
+    this(groupField, null, null, null);
   }
 
   /**
@@ -104,7 +95,7 @@ public class GroupingSearch {
    * @param valueSourceContext The context of the specified groupFunction
    */
   public GroupingSearch(ValueSource groupFunction, Map<?, ?> valueSourceContext) {
-    this(null, groupFunction, valueSourceContext, null, null, false);
+    this(null, groupFunction, valueSourceContext, null);
   }
 
   /**
@@ -114,16 +105,14 @@ public class GroupingSearch {
    * @param groupEndDocs The filter that marks the last document in all doc blocks
    */
   public GroupingSearch(Filter groupEndDocs) {
-    this(null, null, null, groupEndDocs, null, false);
+    this(null, null, null, groupEndDocs);
   }
 
-  private GroupingSearch(String groupField, ValueSource groupFunction, Map<?, ?> valueSourceContext, Filter groupEndDocs, DocValues.Type docValuesType, boolean diskResidentDocValues) {
+  private GroupingSearch(String groupField, ValueSource groupFunction, Map<?, ?> valueSourceContext, Filter groupEndDocs) {
     this.groupField = groupField;
     this.groupFunction = groupFunction;
     this.valueSourceContext = valueSourceContext;
     this.groupEndDocs = groupEndDocs;
-    this.docValuesType = docValuesType;
-    this.diskResidentDocValues = diskResidentDocValues;
   }
 
   /**
@@ -180,18 +169,6 @@ public class GroupingSearch {
       } else {
         allGroupHeadsCollector = null;
       }
-    } else if (docValuesType != null) {
-      firstPassCollector = DVFirstPassGroupingCollector.create(groupSort, topN, groupField, docValuesType, diskResidentDocValues);
-      if (allGroups) {
-        allGroupsCollector = DVAllGroupsCollector.create(groupField, docValuesType, diskResidentDocValues, initialSize);
-      } else {
-        allGroupsCollector = null;
-      }
-      if (allGroupHeads) {
-        allGroupHeadsCollector = DVAllGroupHeadsCollector.create(groupField, sortWithinGroup, docValuesType, diskResidentDocValues);
-      } else {
-        allGroupHeadsCollector = null;
-      }
     } else {
       firstPassCollector = new TermFirstPassGroupingCollector(groupField, groupSort, topN);
       if (allGroups) {
@@ -208,7 +185,7 @@ public class GroupingSearch {
 
     final Collector firstRound;
     if (allGroupHeads || allGroups) {
-      List<Collector> collectors = new ArrayList<Collector>();
+      List<Collector> collectors = new ArrayList<>();
       collectors.add(firstPassCollector);
       if (allGroups) {
         collectors.add(allGroupsCollector);
@@ -253,8 +230,6 @@ public class GroupingSearch {
     AbstractSecondPassGroupingCollector secondPassCollector;
     if (groupFunction != null) {
       secondPassCollector = new FunctionSecondPassGroupingCollector((Collection) topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup, includeScores, includeMaxScore, fillSortFields, groupFunction, valueSourceContext);
-    } else if (docValuesType != null) {
-      secondPassCollector = DVSecondPassGroupingCollector.create(groupField, diskResidentDocValues, docValuesType, (Collection) topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup, includeScores, includeMaxScore, fillSortFields);
     } else {
       secondPassCollector = new TermSecondPassGroupingCollector(groupField, (Collection) topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup, includeScores, includeMaxScore, fillSortFields);
     }

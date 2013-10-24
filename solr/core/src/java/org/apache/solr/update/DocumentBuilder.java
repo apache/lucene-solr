@@ -17,189 +17,33 @@
 
 package org.apache.solr.update;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.CopyField;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+
 
 /**
  *
  */
-
-
-// Not thread safe - by design.  Create a new builder for each thread.
 public class DocumentBuilder {
-  private final IndexSchema schema;
-  private Document doc;
-  private HashMap<String,String> map;
-
-  public DocumentBuilder(IndexSchema schema) {
-    this.schema = schema;
-  }
-
-  public void startDoc() {
-    doc = new Document();
-    map = new HashMap<String,String>();
-  }
-
-  protected void addSingleField(SchemaField sfield, String val, float boost) {
-    //System.out.println("###################ADDING FIELD "+sfield+"="+val);
-
-    // we don't check for a null val ourselves because a solr.FieldType
-    // might actually want to map it to something.  If createField()
-    // returns null, then we don't store the field.
-    if (sfield.isPolyField()) {
-      StorableField[] fields = sfield.createFields(val, boost);
-      if (fields.length > 0) {
-        if (!sfield.multiValued()) {
-          String oldValue = map.put(sfield.getName(), val);
-          if (oldValue != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ERROR: multiple values encountered for non multiValued field " + sfield.getName()
-                    + ": first='" + oldValue + "' second='" + val + "'");
-          }
-        }
-        // Add each field
-        for (StorableField field : fields) {
-          doc.add((Field) field);
-        }
-      }
-    } else {
-      StorableField field = sfield.createField(val, boost);
-      if (field != null) {
-        if (!sfield.multiValued()) {
-          String oldValue = map.put(sfield.getName(), val);
-          if (oldValue != null) {
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
-                    + ": first='" + oldValue + "' second='" + val + "'");
-          }
-        }
-      }
-      doc.add((Field) field);
-    }
-
-  }
-
-  /**
-   * Add the specified {@link org.apache.solr.schema.SchemaField} to the document.  Does not invoke the copyField mechanism.
-   * @param sfield The {@link org.apache.solr.schema.SchemaField} to add
-   * @param val The value to add
-   * @param boost The boost factor
-   *
-   * @see #addField(String, String)
-   * @see #addField(String, String, float)
-   * @see #addSingleField(org.apache.solr.schema.SchemaField, String, float)
-   */
-  public void addField(SchemaField sfield, String val, float boost) {
-    addSingleField(sfield,val,boost);
-  }
-
-  /**
-   * Add the Field and value to the document, invoking the copyField mechanism
-   * @param name The name of the field
-   * @param val The value to add
-   *
-   * @see #addField(String, String, float)
-   * @see #addField(org.apache.solr.schema.SchemaField, String, float)
-   * @see #addSingleField(org.apache.solr.schema.SchemaField, String, float)
-   */
-  public void addField(String name, String val) {
-    addField(name, val, 1.0f);
-  }
-
-  /**
-   * Add the Field and value to the document with the specified boost, invoking the copyField mechanism
-   * @param name The name of the field.
-   * @param val The value to add
-   * @param boost The boost
-   *
-   * @see #addField(String, String)
-   * @see #addField(org.apache.solr.schema.SchemaField, String, float)
-   * @see #addSingleField(org.apache.solr.schema.SchemaField, String, float)
-   *
-   */
-  public void addField(String name, String val, float boost) {
-    SchemaField sfield = schema.getFieldOrNull(name);
-    if (sfield != null) {
-      addField(sfield,val,boost);
-    }
-
-    // Check if we should copy this field to any other fields.
-    // This could happen whether it is explicit or not.
-    final List<CopyField> copyFields = schema.getCopyFieldsList(name);
-    if (copyFields != null) {
-      for(CopyField cf : copyFields) {
-        addSingleField(cf.getDestination(), cf.getLimitedValue( val ), boost);
-      }
-    }
-
-    // error if this field name doesn't match anything
-    if (sfield==null && (copyFields==null || copyFields.size()==0)) {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
-    }
-  }
-
-  public void endDoc() {
-  }
-
-  // specific to this type of document builder
-  public Document getDoc() throws IllegalArgumentException {
-    
-    // Check for all required fields -- Note, all fields with a
-    // default value are defacto 'required' fields.  
-    List<String> missingFields = null;
-    for (SchemaField field : schema.getRequiredFields()) {
-      if (doc.getField(field.getName() ) == null) {
-        if (field.getDefaultValue() != null) {
-          addField(doc, field, field.getDefaultValue(), 1.0f);
-        } else {
-          if (missingFields==null) {
-            missingFields = new ArrayList<String>(1);
-          }
-          missingFields.add(field.getName());
-        }
-      }
-    }
-  
-    if (missingFields != null) {
-      StringBuilder builder = new StringBuilder();
-      // add the uniqueKey if possible
-      if( schema.getUniqueKeyField() != null ) {
-        String n = schema.getUniqueKeyField().getName();
-        String v = doc.getField( n ).stringValue();
-        builder.append( "Document ["+n+"="+v+"] " );
-      }
-      builder.append("missing required fields: " );
-      for (String field : missingFields) {
-        builder.append(field);
-        builder.append(" ");
-      }
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, builder.toString());
-    }
-    
-    Document ret = doc; doc=null;
-    return ret;
-  }
-
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
-    if (field.isPolyField()) {
-      StorableField[] farr = field.getType().createFields(field, val, boost);
-      for (StorableField f : farr) {
-        if (f != null) doc.add((Field) f); // null fields are not added
-      }
-    } else {
-      StorableField f = field.createField(val, boost);
-      if (f != null) doc.add((Field) f);  // null fields are not added
+    if (val instanceof StorableField) {
+      // set boost to the calculated compound boost
+      ((Field)val).setBoost(boost);
+      doc.add((Field)val);
+      return;
+    }
+    for (StorableField f : field.getType().createFields(field, val, boost)) {
+      if (f != null) doc.add((Field) f); // null fields are not added
     }
   }
   
@@ -298,7 +142,7 @@ public class DocumentBuilder {
 
             // we can't copy any boost unless the dest field is 
             // indexed & !omitNorms, but which boost we copy depends
-            // on wether the dest field already contains values (we 
+            // on whether the dest field already contains values (we
             // don't want to apply the compounded docBoost more then once)
             final float destBoost = 
               (destinationField.indexed() && !destinationField.omitNorms()) ?

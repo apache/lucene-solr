@@ -22,16 +22,19 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.charfilter.MappingCharFilter;
-import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link MappingCharFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_map" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;charFilter class="solr.MappingCharFilterFactory" mapping="mapping.txt"/&gt;
@@ -39,21 +42,26 @@ import org.apache.lucene.analysis.util.*;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- *
  * @since Solr 1.4
- *
  */
 public class MappingCharFilterFactory extends CharFilterFactory implements
     ResourceLoaderAware, MultiTermAwareComponent {
 
   protected NormalizeCharMap normMap;
-  private String mapping;
+  private final String mapping;
+
+  /** Creates a new MappingCharFilterFactory */
+  public MappingCharFilterFactory(Map<String,String> args) {
+    super(args);
+    mapping = get(args, "mapping");
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   // TODO: this should use inputstreams from the loader, not File!
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    mapping = args.get("mapping");
-
     if (mapping != null) {
       List<String> wlist = null;
       File mappingFile = new File(mapping);

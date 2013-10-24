@@ -113,7 +113,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, random().nextBoolean()));
         }
       };
-      checkOneTermReuse(a, "", "");
+      checkOneTerm(a, "", "");
     }
   }
 }

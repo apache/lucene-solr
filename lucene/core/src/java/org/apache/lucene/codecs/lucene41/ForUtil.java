@@ -63,7 +63,7 @@ final class ForUtil {
           }
           final PackedInts.Decoder decoder = PackedInts.getDecoder(format, version, bpv);
           final int iterations = computeIterations(decoder);
-          maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
+          maxDataSize = Math.max(maxDataSize, iterations * decoder.byteValueCount());
         }
       }
     }
@@ -75,7 +75,7 @@ final class ForUtil {
    * values with the provided {@link Decoder}.
    */
   private static int computeIterations(PackedInts.Decoder decoder) {
-    return (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
+    return (int) Math.ceil((float) BLOCK_SIZE / decoder.byteValueCount());
   }
 
   /**
@@ -165,9 +165,9 @@ final class ForUtil {
     assert numBits > 0 && numBits <= 32 : numBits;
     final PackedInts.Encoder encoder = encoders[numBits];
     final int iters = iterations[numBits];
-    assert iters * encoder.valueCount() >= BLOCK_SIZE;
+    assert iters * encoder.byteValueCount() >= BLOCK_SIZE;
     final int encodedSize = encodedSizes[numBits];
-    assert (iters * encoder.blockCount()) << 3 >= encodedSize;
+    assert iters * encoder.byteBlockCount() >= encodedSize;
 
     out.writeByte((byte) numBits);
 
@@ -198,7 +198,7 @@ final class ForUtil {
 
     final PackedInts.Decoder decoder = decoders[numBits];
     final int iters = iterations[numBits];
-    assert iters * decoder.valueCount() >= BLOCK_SIZE;
+    assert iters * decoder.byteValueCount() >= BLOCK_SIZE;
 
     decoder.decode(encoded, 0, decoded, 0, iters);
   }

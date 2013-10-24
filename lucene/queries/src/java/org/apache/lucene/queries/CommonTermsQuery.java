@@ -38,16 +38,16 @@ import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
- * slow queries due to "common" terms like stopwords. This query basically
- * builds 2 queries off the {@link #add(Term) added} terms where low-frequency
+ * slow queries due to "common" terms like stopwords. This query
+ * builds 2 queries off the {@link #add(Term) added} terms: low-frequency
  * terms are added to a required boolean clause and high-frequency terms are
  * added to an optional boolean clause. The optional clause is only executed if
- * the required "low-frequency' clause matches. Scores produced by this query
- * will be slightly different to plain {@link BooleanQuery} scorer mainly due to
- * differences in the {@link Similarity#coord(int,int) number of leave queries}
- * in the required boolean clause. In the most cases high-frequency terms are
+ * the required "low-frequency" clause matches. Scores produced by this query
+ * will be slightly different than plain {@link BooleanQuery} scorer mainly due to
+ * differences in the {@link Similarity#coord(int,int) number of leaf queries}
+ * in the required boolean clause. In most cases, high-frequency terms are
  * unlikely to significantly contribute to the document score unless at least
- * one of the low-frequency terms are matched such that this query can improve
+ * one of the low-frequency terms are matched.  This query can improve
  * query execution times significantly if applicable.
  * <p>
  * {@link CommonTermsQuery} has several advantages over stopword filtering at
@@ -74,7 +74,8 @@ public class CommonTermsQuery extends Query {
   protected final Occur highFreqOccur;
   protected float lowFreqBoost = 1.0f;
   protected float highFreqBoost = 1.0f;
-  protected int minNrShouldMatch = 0;
+  protected float lowFreqMinNrShouldMatch = 0;
+  protected float highFreqMinNrShouldMatch = 0;
   
   /**
    * Creates a new {@link CommonTermsQuery}
@@ -84,7 +85,7 @@ public class CommonTermsQuery extends Query {
    * @param lowFreqOccur
    *          {@link Occur} used for low frequency terms
    * @param maxTermFrequency
-   *          a value in [0..1] (or absolute number >=1) representing the
+   *          a value in [0..1) (or absolute number >=1) representing the
    *          maximum threshold of a terms document frequency to be considered a
    *          low frequency term.
    * @throws IllegalArgumentException
@@ -104,7 +105,7 @@ public class CommonTermsQuery extends Query {
    * @param lowFreqOccur
    *          {@link Occur} used for low frequency terms
    * @param maxTermFrequency
-   *          a value in [0..1] (or absolute number >=1) representing the
+   *          a value in [0..1) (or absolute number >=1) representing the
    *          maximum threshold of a terms document frequency to be considered a
    *          low frequency term.
    * @param disableCoord
@@ -160,15 +161,27 @@ public class CommonTermsQuery extends Query {
     return buildQuery(maxDoc, contextArray, queryTerms);
   }
   
+  protected int calcLowFreqMinimumNumberShouldMatch(int numOptional) {
+    return minNrShouldMatch(lowFreqMinNrShouldMatch, numOptional);
+  }
+  
+  protected int calcHighFreqMinimumNumberShouldMatch(int numOptional) {
+    return minNrShouldMatch(highFreqMinNrShouldMatch, numOptional);
+  }
+  
+  private final int minNrShouldMatch(float minNrShouldMatch, int numOptional) {
+    if (minNrShouldMatch >= 1.0f || minNrShouldMatch == 0.0f) {
+      return (int) minNrShouldMatch;
+    }
+    return Math.round(minNrShouldMatch * numOptional);
+  }
+  
   protected Query buildQuery(final int maxDoc,
       final TermContext[] contextArray, final Term[] queryTerms) {
     BooleanQuery lowFreq = new BooleanQuery(disableCoord);
     BooleanQuery highFreq = new BooleanQuery(disableCoord);
     highFreq.setBoost(highFreqBoost);
     lowFreq.setBoost(lowFreqBoost);
-    if (lowFreqOccur == Occur.SHOULD) {
-      lowFreq.setMinimumNumberShouldMatch(minNrShouldMatch);
-    }
     BooleanQuery query = new BooleanQuery(true);
     for (int i = 0; i < queryTerms.length; i++) {
       TermContext termContext = contextArray[i];
@@ -186,23 +199,28 @@ public class CommonTermsQuery extends Query {
       }
       
     }
+    final int numLowFreqClauses = lowFreq.clauses().size();
+    final int numHighFreqClauses = highFreq.clauses().size();
+    if (lowFreqOccur == Occur.SHOULD && numLowFreqClauses > 0) {
+      int minMustMatch = calcLowFreqMinimumNumberShouldMatch(numLowFreqClauses);
+      lowFreq.setMinimumNumberShouldMatch(minMustMatch);
+    }
+    if (highFreqOccur == Occur.SHOULD && numHighFreqClauses > 0) {
+      int minMustMatch = calcHighFreqMinimumNumberShouldMatch(numHighFreqClauses);
+      highFreq.setMinimumNumberShouldMatch(minMustMatch);
+    }
     if (lowFreq.clauses().isEmpty()) {
       /*
        * if lowFreq is empty we rewrite the high freq terms in a conjunction to
        * prevent slow queries.
        */
-      if (highFreqOccur == Occur.MUST) {
-        highFreq.setBoost(getBoost());
-        return highFreq;
-      } else {
-        BooleanQuery highFreqConjunction = new BooleanQuery();
+      if (highFreq.getMinimumNumberShouldMatch() == 0 && highFreqOccur != Occur.MUST) {
         for (BooleanClause booleanClause : highFreq) {
-          highFreqConjunction.add(booleanClause.getQuery(), Occur.MUST);
+            booleanClause.setOccur(Occur.MUST);
         }
-        highFreqConjunction.setBoost(getBoost());
-        return highFreqConjunction;
-        
       }
+      highFreq.setBoost(getBoost());
+      return highFreq;
     } else if (highFreq.clauses().isEmpty()) {
       // only do low freq terms - we don't have high freq terms
       lowFreq.setBoost(getBoost());
@@ -237,7 +255,7 @@ public class CommonTermsQuery extends Query {
         assert termsEnum != null;
         
         if (termsEnum == TermsEnum.EMPTY) continue;
-        if (termsEnum.seekExact(term.bytes(), false)) {
+        if (termsEnum.seekExact(term.bytes())) {
           if (termContext == null) {
             contextArray[i] = new TermContext(reader.getContext(),
                 termsEnum.termState(), context.ord, termsEnum.docFreq(),
@@ -263,9 +281,11 @@ public class CommonTermsQuery extends Query {
   }
   
   /**
-   * Specifies a minimum number of the optional BooleanClauses which must be
+   * Specifies a minimum number of the low frequent optional BooleanClauses which must be
    * satisfied in order to produce a match on the low frequency terms query
-   * part.
+   * part. This method accepts a float value in the range [0..1) as a fraction
+   * of the actual query terms in the low frequent clause or a number
+   * <tt>&gt;=1</tt> as an absolut number of clauses that need to match.
    * 
    * <p>
    * By default no optional clauses are necessary for a match (unless there are
@@ -276,16 +296,44 @@ public class CommonTermsQuery extends Query {
    * @param min
    *          the number of optional clauses that must match
    */
-  public void setMinimumNumberShouldMatch(int min) {
-    this.minNrShouldMatch = min;
+  public void setLowFreqMinimumNumberShouldMatch(float min) {
+    this.lowFreqMinNrShouldMatch = min;
   }
   
   /**
-   * Gets the minimum number of the optional BooleanClauses which must be
+   * Gets the minimum number of the optional low frequent BooleanClauses which must be
    * satisfied.
    */
-  public int getMinimumNumberShouldMatch() {
-    return minNrShouldMatch;
+  public float getLowFreqMinimumNumberShouldMatch() {
+    return lowFreqMinNrShouldMatch;
+  }
+  
+  /**
+   * Specifies a minimum number of the high frequent optional BooleanClauses which must be
+   * satisfied in order to produce a match on the low frequency terms query
+   * part. This method accepts a float value in the range [0..1) as a fraction
+   * of the actual query terms in the low frequent clause or a number
+   * <tt>&gt;=1</tt> as an absolut number of clauses that need to match.
+   * 
+   * <p>
+   * By default no optional clauses are necessary for a match (unless there are
+   * no required clauses). If this method is used, then the specified number of
+   * clauses is required.
+   * </p>
+   * 
+   * @param min
+   *          the number of optional clauses that must match
+   */
+  public void setHighFreqMinimumNumberShouldMatch(float min) {
+    this.highFreqMinNrShouldMatch = min;
+  }
+  
+  /**
+   * Gets the minimum number of the optional high frequent BooleanClauses which must be
+   * satisfied.
+   */
+  public float getHighFreqMinimumNumberShouldMatch() {
+    return highFreqMinNrShouldMatch;
   }
   
   @Override
@@ -297,7 +345,7 @@ public class CommonTermsQuery extends Query {
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     boolean needParens = (getBoost() != 1.0)
-        || (getMinimumNumberShouldMatch() > 0);
+        || (getLowFreqMinimumNumberShouldMatch() > 0);
     if (needParens) {
       buffer.append("(");
     }
@@ -310,9 +358,12 @@ public class CommonTermsQuery extends Query {
     if (needParens) {
       buffer.append(")");
     }
-    if (getMinimumNumberShouldMatch() > 0) {
+    if (getLowFreqMinimumNumberShouldMatch() > 0 || getHighFreqMinimumNumberShouldMatch() > 0) {
       buffer.append('~');
-      buffer.append(getMinimumNumberShouldMatch());
+      buffer.append("(");
+      buffer.append(getLowFreqMinimumNumberShouldMatch());
+      buffer.append(getHighFreqMinimumNumberShouldMatch());
+      buffer.append(")");
     }
     if (getBoost() != 1.0f) {
       buffer.append(ToStringUtils.boost(getBoost()));
@@ -332,7 +383,8 @@ public class CommonTermsQuery extends Query {
     result = prime * result
         + ((lowFreqOccur == null) ? 0 : lowFreqOccur.hashCode());
     result = prime * result + Float.floatToIntBits(maxTermFrequency);
-    result = prime * result + minNrShouldMatch;
+    result = prime * result + Float.floatToIntBits(lowFreqMinNrShouldMatch);
+    result = prime * result + Float.floatToIntBits(highFreqMinNrShouldMatch);
     result = prime * result + ((terms == null) ? 0 : terms.hashCode());
     return result;
   }
@@ -352,7 +404,8 @@ public class CommonTermsQuery extends Query {
     if (lowFreqOccur != other.lowFreqOccur) return false;
     if (Float.floatToIntBits(maxTermFrequency) != Float
         .floatToIntBits(other.maxTermFrequency)) return false;
-    if (minNrShouldMatch != other.minNrShouldMatch) return false;
+    if (lowFreqMinNrShouldMatch != other.lowFreqMinNrShouldMatch) return false;
+    if (highFreqMinNrShouldMatch != other.highFreqMinNrShouldMatch) return false;
     if (terms == null) {
       if (other.terms != null) return false;
     } else if (!terms.equals(other.terms)) return false;

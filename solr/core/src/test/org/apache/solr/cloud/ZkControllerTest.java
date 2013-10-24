@@ -17,11 +17,7 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -31,8 +27,14 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slow
 public class ZkControllerTest extends SolrTestCaseJ4 {
@@ -42,10 +44,24 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
-  
+
+
+  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    copyMinFullSetup(solrHomeDirectory);
     initCore();
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
   }
 
   public void testNodeNameUrlConversion() throws Exception {
@@ -163,7 +179,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
-          "127.0.0.1", "8983", "solr", "0", 10000, 10000, new CurrentCoreDescriptorProvider() {
+          "127.0.0.1", "8983", "solr", 0, true, 10000, 10000, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -203,7 +219,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       zkController = new ZkController(cc, server.getZkAddress(),
-          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", "0", 10000, 10000, new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", 0, true, 10000, 10000, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -240,12 +256,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getCoreContainer() {
-    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath()) {
-      {
-        initShardHandler(null);
-      }
-    };
-    
+    CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    cc.load();
     return cc;
   }
 

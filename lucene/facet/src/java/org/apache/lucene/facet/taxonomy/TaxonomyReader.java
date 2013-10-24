@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.store.AlreadyClosedException;
 
 /*
@@ -65,6 +64,31 @@ import org.apache.lucene.store.AlreadyClosedException;
  * @lucene.experimental
  */
 public abstract class TaxonomyReader implements Closeable {
+  
+  /** An iterator over a category's children. */
+  public static class ChildrenIterator {
+    
+    private final int[] siblings;
+    private int child;
+    
+    ChildrenIterator(int child, int[] siblings) {
+      this.siblings = siblings;
+      this.child = child;
+    }
+
+    /**
+     * Return the next child ordinal, or {@link TaxonomyReader#INVALID_ORDINAL}
+     * if no more children.
+     */
+    public int next() {
+      int res = child;
+      if (child != TaxonomyReader.INVALID_ORDINAL) {
+        child = siblings[child];
+      }
+      return res;
+    }
+    
+  }
   
   /**
    * The root category (the category with the empty path) always has the ordinal
@@ -168,6 +192,13 @@ public abstract class TaxonomyReader implements Closeable {
    */
   public abstract ParallelTaxonomyArrays getParallelTaxonomyArrays() throws IOException;
   
+  /** Returns an iterator over the children of the given ordinal. */
+  public ChildrenIterator getChildren(final int ordinal) throws IOException {
+    ParallelTaxonomyArrays arrays = getParallelTaxonomyArrays();
+    int child = ordinal >= 0 ? arrays.children()[ordinal] : INVALID_ORDINAL;
+    return new ChildrenIterator(child, arrays.siblings());
+  }
+  
   /**
    * Retrieve user committed data.
    * 
@@ -186,25 +217,6 @@ public abstract class TaxonomyReader implements Closeable {
    */
   public abstract int getOrdinal(CategoryPath categoryPath) throws IOException;
   
-  /**
-   * Returns the ordinal of the parent category of the category with the given
-   * ordinal, according to the following rules:
-   * 
-   * <ul>
-   * <li>If the given ordinal is the {@link #ROOT_ORDINAL}, an
-   * {@link #INVALID_ORDINAL} is returned.
-   * <li>If the given ordinal is a top-level category, the {@link #ROOT_ORDINAL}
-   * is returned.
-   * <li>If the given ordinal is an existing category, returns the ordinal of
-   * its parent
-   * </ul>
-   * 
-   * @throws ArrayIndexOutOfBoundsException
-   *           if an invalid ordinal is given (negative or beyond the last
-   *           available ordinal)
-   */
-  public abstract int getParent(int ordinal) throws IOException;
- 
   /** Returns the path name of the category with the given ordinal. */
   public abstract CategoryPath getPath(int ordinal) throws IOException;
   
@@ -234,4 +246,16 @@ public abstract class TaxonomyReader implements Closeable {
     refCount.incrementAndGet();
   }
 
+  /** Expert: increments the refCount of this TaxonomyReader
+   *  instance only if it has not been closed yet.  Returns
+   *  true on success. */
+  public final boolean tryIncRef() {
+    int count;
+    while ((count = refCount.get()) > 0) {
+      if (refCount.compareAndSet(count, count+1)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

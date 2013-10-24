@@ -27,10 +27,12 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,10 +46,18 @@ import java.net.URLEncoder;
  */
 public class TestRemoteStreaming extends SolrJettyTestBase {
 
+  private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     //this one has handleSelect=true which a test here needs
-    createJetty("solr/", null, null);
+    setupJettyTestHome(solrHomeDirectory, "collection1");
+    createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
+  }
+
+  @AfterClass
+  public static void afterTest() throws Exception {
+    cleanUpJettyHome(solrHomeDirectory);
   }
 
   @Before

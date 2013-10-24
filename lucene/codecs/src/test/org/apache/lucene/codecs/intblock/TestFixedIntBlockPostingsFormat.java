@@ -18,23 +18,16 @@ package org.apache.lucene.codecs.intblock;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Basic tests for FixedIntBlock
  */
 public class TestFixedIntBlockPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize blocksize
-  private final PostingsFormat postings = new MockFixedIntBlockPostingsFormat();
-  private final Codec codec = new Lucene41Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new MockFixedIntBlockPostingsFormat());
 
   @Override
   protected Codec getCodec() {

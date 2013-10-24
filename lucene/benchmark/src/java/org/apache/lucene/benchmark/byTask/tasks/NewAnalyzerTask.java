@@ -16,10 +16,16 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.io.StreamTokenizer;
+import java.io.StringReader;
 import java.util.*;
 import java.lang.reflect.Constructor;
 
@@ -28,12 +34,12 @@ import java.lang.reflect.Constructor;
  *
  */
 public class NewAnalyzerTask extends PerfTask {
-  private List<String> analyzerClassNames;
+  private List<String> analyzerNames;
   private int current;
 
   public NewAnalyzerTask(PerfRunData runData) {
     super(runData);
-    analyzerClassNames = new ArrayList<String>();
+    analyzerNames = new ArrayList<String>();
   }
   
   public static final Analyzer createAnalyzer(String className) throws Exception{
@@ -50,55 +56,98 @@ public class NewAnalyzerTask extends PerfTask {
 
   @Override
   public int doLogic() throws IOException {
-    String className = null;
+    String analyzerName = null;
     try {
-      if (current >= analyzerClassNames.size()) {
+      if (current >= analyzerNames.size()) {
         current = 0;
       }
-      className = analyzerClassNames.get(current++);
+      analyzerName = analyzerNames.get(current++);
       Analyzer analyzer = null;
-      if (null == className || 0 == className.length()) {
-        className = "org.apache.lucene.analysis.standard.StandardAnalyzer";
+      if (null == analyzerName || 0 == analyzerName.length()) {
+        analyzerName = "org.apache.lucene.analysis.standard.StandardAnalyzer";
       }
-      if (-1 == className.indexOf(".")) {
-        try {
-          // If no package, first attempt to instantiate a core analyzer
-          String coreClassName = "org.apache.lucene.analysis.core." + className;
-          analyzer = createAnalyzer(coreClassName);
-          className = coreClassName;
-        } catch (ClassNotFoundException e) {
-          // If not a core analyzer, try the base analysis package 
-          className = "org.apache.lucene.analysis." + className;
-          analyzer = createAnalyzer(className);
-        }
+      // First, lookup analyzerName as a named analyzer factory
+      AnalyzerFactory factory = getRunData().getAnalyzerFactories().get(analyzerName);
+      if (null != factory) {
+        analyzer = factory.create();
       } else {
-        if (className.startsWith("standard.")) {
-          className = "org.apache.lucene.analysis." + className;
+        if (analyzerName.contains(".")) {
+          if (analyzerName.startsWith("standard.")) {
+            analyzerName = "org.apache.lucene.analysis." + analyzerName;
+          }
+          analyzer = createAnalyzer(analyzerName);
+        } else { // No package
+          try {
+            // Attempt to instantiate a core analyzer
+            String coreClassName = "org.apache.lucene.analysis.core." + analyzerName;
+            analyzer = createAnalyzer(coreClassName);
+            analyzerName = coreClassName;
+          } catch (ClassNotFoundException e) {
+            // If not a core analyzer, try the base analysis package
+            analyzerName = "org.apache.lucene.analysis." + analyzerName;
+            analyzer = createAnalyzer(analyzerName);
+          }
         }
-        analyzer = createAnalyzer(className);
       }
       getRunData().setAnalyzer(analyzer);
-      System.out.println("Changed Analyzer to: " + className);
     } catch (Exception e) {
-      throw new RuntimeException("Error creating Analyzer: " + className, e);
+      throw new RuntimeException("Error creating Analyzer: " + analyzerName, e);
     }
     return 1;
   }
 
   /**
-   * Set the params (analyzerClassName only),  Comma-separate list of Analyzer class names.  If the Analyzer lives in
+   * Set the params (analyzerName only),  Comma-separate list of Analyzer class names.  If the Analyzer lives in
    * org.apache.lucene.analysis, the name can be shortened by dropping the o.a.l.a part of the Fully Qualified Class Name.
    * <p/>
+   * Analyzer names may also refer to previously defined AnalyzerFactory's.
+   * <p/>
    * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) >
+   * <p/>
+   * Example AnalyzerFactory usage:
+   * <pre>
+   * -AnalyzerFactory(name:'whitespace tokenized',WhitespaceTokenizer)
+   * -NewAnalyzer('whitespace tokenized')
+   * </pre>
    * @param params analyzerClassName, or empty for the StandardAnalyzer
    */
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
-      String s = tokenizer.nextToken();
-      analyzerClassNames.add(s.trim());
+    final StreamTokenizer stok = new StreamTokenizer(new StringReader(params));
+    stok.quoteChar('"');
+    stok.quoteChar('\'');
+    stok.eolIsSignificant(false);
+    stok.ordinaryChar(',');
+    try {
+      while (stok.nextToken() != StreamTokenizer.TT_EOF) {
+        switch (stok.ttype) {
+          case ',': {
+            // Do nothing
+            break;
+          }
+          case '\'':
+          case '\"':
+          case StreamTokenizer.TT_WORD: {
+            analyzerNames.add(stok.sval);
+            break;
+          }
+          default: {
+            throw new RuntimeException("Unexpected token: " + stok.toString());
+          }
+        }
+      }
+    } catch (RuntimeException e) {
+      if (e.getMessage().startsWith("Line #")) {
+        throw e;
+      } else {
+        throw new RuntimeException("Line #" + (stok.lineno() + getAlgLineNum()) + ": ", e);
+      }
+    } catch (Throwable t) {
+      throw new RuntimeException("Line #" + (stok.lineno() + getAlgLineNum()) + ": ", t);
     }
+
+
   }
 
   /* (non-Javadoc)

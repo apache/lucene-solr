@@ -55,7 +55,6 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
               "The dimension must be > 0: " + dimension);
     }
     args.remove(DIMENSION);
-    this.schema = schema;
     super.init(schema, args);
 
     // cache suffixes
@@ -69,7 +68,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public StorableField[] createFields(SchemaField field, Object value, float boost) {
+  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     String[] point = new String[0];
     try {
@@ -79,12 +78,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    StorableField[] f = new StorableField[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
+    List<StorableField> f = new ArrayList<StorableField>(dimension+1);
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
-        SchemaField sf = subField(field, i);
-        f[i] = sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f);
+        SchemaField sf = subField(field, i, schema);
+        f.add(sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
       }
     }
 
@@ -92,7 +91,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       String storedVal = externalVal;  // normalize or not?
       FieldType customType = new FieldType();
       customType.setStored(true);
-      f[f.length - 1] = createField(field.getName(), storedVal, customType, 1f);
+      f.add(createField(field.getName(), storedVal, customType, 1f));
     }
     
     return f;
@@ -102,7 +101,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     ArrayList<ValueSource> vs = new ArrayList<ValueSource>(dimension);
     for (int i=0; i<dimension; i++) {
-      SchemaField sub = subField(field, i);
+      SchemaField sub = subField(field, i, schema);
       vs.add(sub.getType().getValueSource(sub, parser));
     }
     return new PointTypeValueSource(field, vs);
@@ -146,7 +145,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
     BooleanQuery result = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
-      SchemaField subSF = subField(field, i);
+      SchemaField subSF = subField(field, i, schema);
       // points must currently be ordered... should we support specifying any two opposite corner points?
       result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
     }
@@ -164,7 +163,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     //TODO: should we assert that p1.length == dimension?
     BooleanQuery bq = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
-      SchemaField sf = subField(field, i);
+      SchemaField sf = subField(field, i, schema);
       Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
       bq.add(tq, BooleanClause.Occur.MUST);
     }
@@ -186,11 +185,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+    IndexSchema schema = parser.getReq().getSchema();
     if (dimension == 1){
       //TODO: Handle distance measures
       String lower = String.valueOf(point[0] - options.distance);
       String upper = String.valueOf(point[0] + options.distance);
-      SchemaField subSF = subField(options.field, 0);
+      SchemaField subSF = subField(options.field, 0, schema);
       // points must currently be ordered... should we support specifying any two opposite corner points?
       result = subSF.getType().getRangeQuery(parser, subSF, lower, upper, true, true);
     } else {
@@ -199,7 +199,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       double [] ur = DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
       double [] ll = DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
       for (int i = 0; i < ur.length; i++) {
-        SchemaField subSF = subField(options.field, i);
+        SchemaField subSF = subField(options.field, i, schema);
         Query range = subSF.getType().getRangeQuery(parser, subSF, String.valueOf(ll[i]), String.valueOf(ur[i]), true, true);
         tmp.add(range, BooleanClause.Occur.MUST);
 

@@ -55,9 +55,9 @@ public class AttributeSource {
     
     private static final class DefaultAttributeFactory extends AttributeFactory {
       private static final WeakIdentityMap<Class<? extends Attribute>, WeakReference<Class<? extends AttributeImpl>>> attClassImplMap =
-        WeakIdentityMap.newConcurrentHashMap();
+        WeakIdentityMap.newConcurrentHashMap(false);
       
-      private DefaultAttributeFactory() {}
+      DefaultAttributeFactory() {}
     
       @Override
       public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
@@ -201,7 +201,7 @@ public class AttributeSource {
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
   private static final WeakIdentityMap<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>> knownImplClasses =
-    WeakIdentityMap.newConcurrentHashMap();
+    WeakIdentityMap.newConcurrentHashMap(false);
   
   static LinkedList<WeakReference<Class<? extends Attribute>>> getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
     LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces = knownImplClasses.get(clazz);
@@ -259,7 +259,7 @@ public class AttributeSource {
    * already in this AttributeSource and returns it. Otherwise a
    * new instance is created, added to this AttributeSource and returned. 
    */
-  public final <A extends Attribute> A addAttribute(Class<A> attClass) {
+  public final <T extends Attribute> T addAttribute(Class<T> attClass) {
     AttributeImpl attImpl = attributes.get(attClass);
     if (attImpl == null) {
       if (!(attClass.isInterface() && Attribute.class.isAssignableFrom(attClass))) {
@@ -297,7 +297,7 @@ public class AttributeSource {
    *         available. If you want to only use the attribute, if it is available (to optimize
    *         consuming), use {@link #hasAttribute}.
    */
-  public final <A extends Attribute> A getAttribute(Class<A> attClass) {
+  public final <T extends Attribute> T getAttribute(Class<T> attClass) {
     AttributeImpl attImpl = attributes.get(attClass);
     if (attImpl == null) {
       throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass.getName() + "'.");
@@ -501,4 +501,13 @@ public class AttributeSource {
     }
   }
 
+  /**
+   * Returns a string consisting of the class's simple name, the hex representation of the identity hash code,
+   * and the current reflection of all attributes.
+   * @see #reflectAsString(boolean)
+   */
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this)) + " " + reflectAsString(false);
+  }
 }

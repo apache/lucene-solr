@@ -18,6 +18,7 @@
 package org.apache.solr.velocity;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -34,16 +35,10 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
   }
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
-    assertU(commit());
-  }
-
   @Test
-  public void testTemplateName() throws IOException {
+  public void testCustomParamTemplate() throws Exception {
+    // This test doesn't use the Solr core, just the response writer directly
+
     org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
     SolrQueryRequest req = req("v.template","custom", "v.template.custom","$response.response.response_data");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -53,5 +48,15 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     assertEquals("testing", buf.toString());
   }
 
-  // TODO: add test that works with true Solr requests and wt=velocity to ensure the test tests that it's registered properly, etc
+  @Test
+  public void testVelocityResponseWriterRegistered() {
+    QueryResponseWriter writer = h.getCore().getQueryResponseWriter("velocity");
+
+    assertTrue("VrW registered check", writer instanceof VelocityResponseWriter);
+  }
+
+  @Test
+  public void testSolrResourceLoaderTemplate() throws Exception {
+    assertEquals("0", h.query(req("q","*:*", "wt","velocity","v.template","numFound")));
+  }
 }

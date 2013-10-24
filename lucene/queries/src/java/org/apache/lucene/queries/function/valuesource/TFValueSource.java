@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /** 
- * Function that returns {@link TFIDFSimilarity#tf(int)}
+ * Function that returns {@link TFIDFSimilarity#tf(float)}
  * for every document.
  * <p>
  * Note that the configured Similarity for the field must be
@@ -67,7 +67,7 @@ public class TFValueSource extends TermFreqValueSource {
         
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
-          if (termsEnum.seekExact(indexedBytes, false)) {
+          if (termsEnum.seekExact(indexedBytes)) {
             docs = termsEnum.docs(null, null);
           } else {
             docs = null;
@@ -96,6 +96,11 @@ public class TFValueSource extends TermFreqValueSource {
             @Override
             public int advance(int target) {
               return DocIdSetIterator.NO_MORE_DOCS;
+            }
+
+            @Override
+            public long cost() {
+              return 0;
             }
           };
         }

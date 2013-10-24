@@ -44,6 +44,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "printable in pointable paint able")));
     assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt", "printable in puntable paint able ")));
     assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "paint able in pintable plantable")));
+    assertNull(h.validateUpdate(adoc("id", "7", "lowerfilt", "zxcvqwtp fg hj")));
     assertNull(h.validateUpdate(commit()));    
     //docfreq=7:  in
     //docfreq=5:  able
@@ -277,6 +278,21 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
         SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1"),
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:((+printable +in +puntable +plantable))'"
-    );    
+    );
+    assertQ(req(
+        "q", "zxcv AND qwtp AND fghj", 
+        "qt", "spellCheckWithWordbreak",
+        "defType", "edismax",
+        "qf", "lowerfilt",
+        "indent", "true",
+        SpellCheckComponent.SPELLCHECK_BUILD, "true",
+        SpellCheckComponent.COMPONENT_NAME, "true", 
+        SpellCheckComponent.SPELLCHECK_ACCURACY, ".75", 
+        SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true",
+        SpellCheckComponent.SPELLCHECK_COLLATE, "true",
+        SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
+        SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10"),
+        "//lst[@name='collation'][1 ]/str[@name='collationQuery']='zxcvqwtp AND (fg AND hj)'"
+    ); 
   }
 }

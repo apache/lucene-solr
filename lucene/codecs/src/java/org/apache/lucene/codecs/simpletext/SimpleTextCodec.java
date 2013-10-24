@@ -18,12 +18,12 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 
@@ -39,11 +39,9 @@ public final class SimpleTextCodec extends Codec {
   private final SegmentInfoFormat segmentInfos = new SimpleTextSegmentInfoFormat();
   private final FieldInfosFormat fieldInfosFormat = new SimpleTextFieldInfosFormat();
   private final TermVectorsFormat vectorsFormat = new SimpleTextTermVectorsFormat();
-  // TODO: need a plain-text impl
-  private final DocValuesFormat docValues = new SimpleTextDocValuesFormat();
-  // TODO: need a plain-text impl (using the above)
   private final NormsFormat normsFormat = new SimpleTextNormsFormat();
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
+  private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -52,11 +50,6 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public PostingsFormat postingsFormat() {
     return postings;
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return docValues;
   }
 
   @Override
@@ -87,5 +80,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return liveDocs;
+  }
+
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return dvFormat;
   }
 }

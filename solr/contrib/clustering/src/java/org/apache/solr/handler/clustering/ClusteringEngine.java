@@ -18,19 +18,18 @@ package org.apache.solr.handler.clustering;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
-
 /**
- *
- *
- **/
+ * A base class for {@link SearchClusteringEngine} and {@link DocumentClusteringEngine}.
+ * @lucene.experimental
+ */
 public class ClusteringEngine {
-  private String name;
   public static final String ENGINE_NAME = "name";
   public static final String DEFAULT_ENGINE_NAME = "default";
 
-  public String init(NamedList config, SolrCore core) {
-    name = (String) config.get(ENGINE_NAME);
+  private String name;
 
+  public String init(NamedList<?> config, SolrCore core) {
+    name = (String) config.get(ENGINE_NAME);
     return name;
   }
 

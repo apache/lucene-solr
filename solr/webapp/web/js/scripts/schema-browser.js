@@ -66,9 +66,7 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
       },
       success : function( response, text_status, xhr )
       {
-        $( 'span', trigger_element )
-          .removeClass( 'loader' );
-
+        var additional_styles = [];
         var field_data = response.fields[field];
 
         if( !field_data || !( field_data.topTerms && field_data.histogram ) )
@@ -77,6 +75,11 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
             .addClass( 'disabled' );
 
           return false;
+        }
+
+        var get_width = function get_width()
+        {
+          return $( this ).width();
         }
 
         var topterms_holder_element = $( '.topterms-holder', data_element );
@@ -111,7 +114,7 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
 
               topterms_frq_last = topterms[i+1];
               topterms_content += '<li class="clearfix">'
-                               +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
+                               +  '<p><span>' + app.format_number( topterms_frq_last ) + '</span></p>' + "\n"
                                +  '<ul>' + "\n";
             }
 
@@ -128,6 +131,13 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
 
           topterms_table_element
             .html( topterms_content );
+
+          var max_width = 10 + Math.max.apply( Math, $( 'p', topterms_table_element ).map( get_width ).get() );
+          additional_styles.push
+          (
+            topterms_table_element.selector + ' p { width: ' + max_width + 'px !important; }' + "\n" +
+            topterms_table_element.selector + ' ul { margin-left: ' + ( max_width + 5 ) + 'px !important; }'
+          );
 
           topterms_count_element
             .val( topterms_count );
@@ -152,52 +162,57 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
           histogram_holder_element
             .show();
 
-          var histogram_element = $( '.histogram', histogram_holder_element );
-
           var histogram_values = luke_array_to_hash( field_data.histogram );
-          var histogram_legend = '';
-
-          histogram_holder_element
-            .show();
+          var histogram_entries = [];
+          
+          var histogram_max = null;
+          for( var key in histogram_values )
+          {
+            histogram_max = Math.max( histogram_max, histogram_values[key] );
+          }
 
           for( var key in histogram_values )
           {
-            histogram_legend += '<dt><span>' + key + '</span></dt>' + "\n" +
-                    '<dd title="' + key + '">' +
-                    '<span>' + histogram_values[key] + '</span>' +
-                    '</dd>' + "\n";
+            histogram_entries.push
+            (
+              '<li>' + "\n" +
+              '  <dl class="clearfix" style="width: ' +  ( ( histogram_values[key] / histogram_max ) * 100 ) + '%;">' + "\n" +
+              '    <dt><span>' + app.format_number( key ) + '</span></dt>' + "\n" +
+              '    <dd><span>' + app.format_number( histogram_values[key] ) + '</span></dd>' + "\n" +
+              '  </dl>' + "\n" +
+              '</li>'
+            );
           }
 
-          $( 'dl', histogram_holder_element )
-            .html( histogram_legend );
+          $( 'ul', histogram_holder_element )
+            .html( histogram_entries.join( "\n" ) );
 
-          var histogram_values = luke_array_to_struct( field_data.histogram ).values;
+          $( 'ul li:even', histogram_holder_element )
+            .addClass( 'odd' );
 
-          histogram_element
-            .sparkline
-            (
-              histogram_values,
-              {
-                type : 'bar',
-                barColor : '#c0c0c0',
-                zeroColor : '#000000',
-                height : histogram_element.height(),
-                barWidth : 46,
-                barSpacing : 3
-              }
-            );
-
-          1 === histogram_values.length
-            ? histogram_element.addClass( 'single' )
-            : histogram_element.removeClass( 'single' );
+          var max_width = 10 + Math.max.apply( Math, $( 'dt', histogram_holder_element ).map( get_width ).get() );
+          additional_styles.push
+          (
+            histogram_holder_element.selector + ' ul { margin-left: ' + max_width + 'px !important; }' + "\n" +
+            histogram_holder_element.selector + ' li dt { left: ' + ( max_width * -1 ) + 'px !important; width: ' + max_width + 'px !important; }'
+          );
         }
 
+        if( additional_styles )
+        {
+          terminfo_element
+            .prepend( '<style type="text/css">' + additional_styles.join( "\n" ) + '</style>' );
+        }
       },
       error : function( xhr, text_status, error_thrown)
       {
+        terminfo_element
+          .addClass( 'disabled' );
       },
       complete : function( xhr, text_status )
       {
+        $( 'span', trigger_element )
+          .removeClass( 'loader' );
       }
     }
   );
@@ -213,7 +228,7 @@ sammy.bind
     var related_select_element = $( '#related select', params.schema_browser_element )
     var type = 'index';
 
-    var sammy_basepath = '#/' + $( 'p a', params.active_core ).html() + '/schema-browser';
+    var sammy_basepath = app.core_menu.find( '.active a' ).attr( 'href' );
         
     if( !related_navigation_meta.hasClass( 'done' ) )
     {
@@ -625,7 +640,7 @@ sammy.bind
                     }
 
                     related_select_element
-                      .attr( 'rel', '#/' + $( 'p a', params.active_core ).html() + '/schema-browser' )
+                      .attr( 'rel', app.core_menu.find( '.active a' ).attr( 'href' ) )
                       .append( related_options )
                       .chosen();
                                             
@@ -713,52 +728,6 @@ sammy.get
         data_element
           .show();
 
-        var keystring_to_list = function( keystring, element_class )
-        {
-          var key_list = keystring.replace( /-/g, '' ).split( '' );
-          var list = [];
-
-          for( var i in key_list )
-          {
-            var option_key = schema_browser_data.key[key_list[i]];
-
-            if( !option_key )
-            {
-              option_key = schema_browser_data.key[key_list[i].toLowerCase()];
-            }
-
-            if( !option_key )
-            {
-              option_key = schema_browser_data.key[key_list[i].toUpperCase()];
-            }
-
-            if( option_key )
-            {
-              list.push
-              (
-                '<dd ' + ( element_class ? ' class="' + element_class + '"' : '' ) + '>' +
-                option_key +
-                ',</dd>'
-              );
-            }
-          }
-
-          list[list.length-1] = list[key_list.length-1].replace( /,/, '' );
-
-          return list;
-        }
-
-        var flags = null;
-
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].flags )
-        {
-          flags = schema_browser_data.fields[field].flags;
-        }
-        else if( is_df && schema_browser_data.dynamic_fields[field] && schema_browser_data.dynamic_fields[field].flags )
-        {
-          flags = schema_browser_data.dynamic_fields[field].flags;
-        }
-
         // -- head
 
         var head_element = $( '.head', data_element );
@@ -785,72 +754,6 @@ sammy.get
 
         $( '.partial', data_element )
           .toggle( partial_state );
-
-        // -- properties
-        var properties_element = $( 'dt.properties', options_element );
-        if( flags )
-        {
-          var properties_keys = keystring_to_list( flags, 'properties' );
-
-          $( 'dd.properties', options_element )
-            .remove();
-
-          properties_element
-            .show()
-            .after( properties_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.properties', options_element )
-            .hide();
-        }
-
-        // -- schema
-        var schema_element = $( 'dt.schema', options_element );
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].schema )
-        {
-          var schema_keys = keystring_to_list( schema_browser_data.fields[field].schema, 'schema' );
-
-          $( 'dd.schema', options_element )
-            .remove();
-
-          schema_element
-            .show()
-            .after( schema_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.schema', options_element )
-            .hide();
-        }
-
-        // -- index
-        var index_element = $( 'dt.index', options_element );
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].index )
-        {
-          var index_keys = [];
-
-          if( 0 === schema_browser_data.fields[field].index.indexOf( '(' ) )
-          {
-            index_keys.push( '<dd class="index">' + schema_browser_data.fields[field].index + '</dd>' );
-          }
-          else
-          {
-            index_keys = keystring_to_list( schema_browser_data.fields[field].index, 'index' );
-          }
-
-          $( 'dd.index', options_element )
-            .remove();
-
-          index_element
-            .show()
-            .after( index_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.index', options_element )
-            .hide();
-        }
 
         // -- docs
         var docs_element = $( 'dt.docs', options_element );
@@ -918,6 +821,103 @@ sammy.get
             }
         } else {
             $( '.similarity', options_element ).hide();
+        }
+
+
+        // -- flags table
+        var flags_table = $( 'table.flags', data_element );
+
+        var flags_arr = [];
+        for( var key in schema_browser_data.key )
+        {
+          flags_arr.push( '<th data-key="' + key + '">' + schema_browser_data.key[key] + '</th>' );
+        }
+
+        $( 'thead tr', flags_table )
+          .append( flags_arr.join( "\n" ) );
+
+
+        var flags_body = $( 'tbody', flags_table );
+        flags_body.empty();
+
+        var generate_flags_row = function generate_flags_row( flags_str, title )
+        {
+          var flags_arr = [ '<th>' + title.esc() + '</th>' ];
+
+          if( 0 === flags_str.indexOf( '(' ) )
+          {
+            flags_arr.push( '<td colspan="2" class="text">' + flags_str + '</td>' );
+          }
+          else
+          {
+            var i = 0;
+            for( var key in schema_browser_data.key )
+            {
+              var flag_match = key === flags_str[i];
+
+              var flag_cell = '<td '
+                            + ' data-key="' + key + '"'
+                            + ' class="' + ( flag_match ? 'check' : '' ) + '"'
+                            + '>'
+                            + ( flag_match ? '<span>√</span>' : '&nbsp;' )
+                            + '</td>';
+
+              flags_arr.push( flag_cell );
+              i++;
+            }
+          }
+
+          flags_body
+            .append( '<tr>' + flags_arr.join( "\n" ) + '</tr>' );
+        };
+
+        var flags = null;
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].flags )
+        {
+          flags = schema_browser_data.fields[field].flags;
+        }
+        else if( is_df && schema_browser_data.dynamic_fields[field] && schema_browser_data.dynamic_fields[field].flags )
+        {
+          flags = schema_browser_data.dynamic_fields[field].flags;
+        }
+
+        if( flags )
+        {
+          generate_flags_row( flags, 'Properties' );
+        }
+
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].schema )
+        {
+          generate_flags_row( schema_browser_data.fields[field].schema, 'Schema' );
+        }
+
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].index )
+        {
+          generate_flags_row( schema_browser_data.fields[field].index, 'Index' );
+        }
+
+
+        if( 0 !== $( 'tr', flags_body ).size() )
+        {
+          var col_count = 0;
+          for( var key in schema_browser_data.key )
+          {
+            var cols = $( '[data-key="' + key + '"]', flags_table );
+            
+            var col_used = 0 !== cols.filter( '.check' ).size();
+            col_count += col_used;
+
+            cols.toggle( col_used );
+          }
+
+          $( 'td[colspan]', flags_body )
+            .attr( 'colspan', col_count );
+
+          flags_table.show();
+        }
+        else
+        {
+          flags_table.hide();
         }
 
         var analyzer_element = $( '.analyzer', data_element );

@@ -83,15 +83,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
   
-  public RecoveryStrategy(CoreContainer cc, String name, RecoveryListener recoveryListener) {
+  public RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     this.cc = cc;
-    this.coreName = name;
+    this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
     setName("RecoveryThread");
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = zkController.getNodeName() + "_" + coreName;
+    coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
   }
 
   public void setRecoveringAfterStartup(boolean recoveringAfterStartup) {
@@ -118,44 +118,40 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
   }
   
-  private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
+  private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
       throws SolrServerException, IOException {
-   
-    String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
+
     ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
     String leaderUrl = leaderCNodeProps.getCoreUrl();
     
     log.info("Attempting to replicate from " + leaderUrl + ". core=" + coreName);
     
-    // if we are the leader, either we are trying to recover faster
-    // then our ephemeral timed out or we are the only node
-    if (!leaderBaseUrl.equals(baseUrl)) {
-      
-      // send commit
-      commitOnLeader(leaderUrl);
-      
-      // use rep handler directly, so we can do this sync rather than async
-      SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
-      if (handler instanceof LazyRequestHandlerWrapper) {
-        handler = ((LazyRequestHandlerWrapper)handler).getWrappedHandler();
-      }
-      ReplicationHandler replicationHandler = (ReplicationHandler) handler;
-      
-      if (replicationHandler == null) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
-      }
-      
-      ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
-      
-      if (isClosed()) retries = INTERRUPTED;
-      boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making force=true not download files we already have?
+    // send commit
+    commitOnLeader(leaderUrl);
+    
+    // use rep handler directly, so we can do this sync rather than async
+    SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
+    if (handler instanceof LazyRequestHandlerWrapper) {
+      handler = ((LazyRequestHandlerWrapper) handler).getWrappedHandler();
+    }
+    ReplicationHandler replicationHandler = (ReplicationHandler) handler;
+    
+    if (replicationHandler == null) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
+    }
+    
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
+    
+    if (isClosed()) retries = INTERRUPTED;
+    boolean success = replicationHandler.doFetch(solrParams, false);
+    
+    if (!success) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Replication for recovery failed.");
+    }
 
-      if (!success) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
-      }
-      
       // solrcloud_debug
 //      try {
 //        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
@@ -169,38 +165,44 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 //      } catch (Exception e) {
 //        
 //      }
+    
+  }
+
+  private void commitOnLeader(String leaderUrl) throws SolrServerException,
+      IOException {
+    HttpSolrServer server = new HttpSolrServer(leaderUrl);
+    try {
+      server.setConnectionTimeout(30000);
+      server.setSoTimeout(60000);
+      UpdateRequest ureq = new UpdateRequest();
+      ureq.setParams(new ModifiableSolrParams());
+      ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
+          server);
+    } finally {
+      server.shutdown();
     }
   }
 
-  private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
-    HttpSolrServer server = new HttpSolrServer(leaderUrl);
-    server.setConnectionTimeout(30000);
-    server.setSoTimeout(60000);
-    UpdateRequest ureq = new UpdateRequest();
-    ureq.setParams(new ModifiableSolrParams());
-    ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-    ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
-    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
-        server);
-    server.shutdown();
-  }
-
-  private void sendPrepRecoveryCmd(String leaderBaseUrl,
-      String leaderCoreName) throws SolrServerException,
-      IOException {
+  private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName)
+      throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
-    server.setConnectionTimeout(45000);
-    server.setSoTimeout(120000);
-    WaitForState prepCmd = new WaitForState();
-    prepCmd.setCoreName(leaderCoreName);
-    prepCmd.setNodeName(zkController.getNodeName());
-    prepCmd.setCoreNodeName(coreZkNodeName);
-    prepCmd.setState(ZkStateReader.RECOVERING);
-    prepCmd.setCheckLive(true);
-    prepCmd.setOnlyIfLeader(true);
-    
-    server.request(prepCmd);
-    server.shutdown();
+    try {
+      server.setConnectionTimeout(45000);
+      server.setSoTimeout(120000);
+      WaitForState prepCmd = new WaitForState();
+      prepCmd.setCoreName(leaderCoreName);
+      prepCmd.setNodeName(zkController.getNodeName());
+      prepCmd.setCoreNodeName(coreZkNodeName);
+      prepCmd.setState(ZkStateReader.RECOVERING);
+      prepCmd.setCheckLive(true);
+      prepCmd.setOnlyIfLeader(true);
+      
+      server.request(prepCmd);
+    } finally {
+      server.shutdown();
+    }
   }
 
   @Override
@@ -329,10 +331,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
         boolean isLeader = leaderUrl.equals(ourUrl);
-        if (isLeader && !cloudDesc.isLeader) {
+        if (isLeader && !cloudDesc.isLeader()) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
         }
-        if (cloudDesc.isLeader) {
+        if (cloudDesc.isLeader()) {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader! core=" + coreName);
           log.info("Finished recovery process. core=" + coreName);
@@ -406,8 +408,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         
         try {
 
-          replicate(zkController.getNodeName(), core,
-              leaderprops, leaderUrl);
+          replicate(zkController.getNodeName(), core, leaderprops);
 
           replay(ulog);
           replayed = true;

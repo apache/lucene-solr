@@ -96,4 +96,9 @@ public class ScoreCachingWrappingScorer extends Scorer {
   public Collection<ChildScorer> getChildren() {
     return Collections.singleton(new ChildScorer(scorer, "CACHED"));
   }
+
+  @Override
+  public long cost() {
+    return scorer.cost();
+  }
 }

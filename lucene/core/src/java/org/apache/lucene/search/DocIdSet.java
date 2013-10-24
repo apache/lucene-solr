@@ -26,38 +26,8 @@ import org.apache.lucene.util.Bits;
  */
 public abstract class DocIdSet {
 
-  /** An empty {@code DocIdSet} instance for easy use, e.g. in Filters that hit no documents. */
-  public static final DocIdSet EMPTY_DOCIDSET = new DocIdSet() {
-    
-    private final DocIdSetIterator iterator = new DocIdSetIterator() {
-      @Override
-      public int advance(int target) { return NO_MORE_DOCS; }
-      @Override
-      public int docID() { return NO_MORE_DOCS; }
-      @Override
-      public int nextDoc() { return NO_MORE_DOCS; }
-    };
-    
-    @Override
-    public DocIdSetIterator iterator() {
-      return iterator;
-    }
-    
-    @Override
-    public boolean isCacheable() {
-      return true;
-    }
-    
-    // we explicitely provide no random access, as this filter is 100% sparse and iterator exits faster
-    @Override
-    public Bits bits() {
-      return null;
-    }
-  };
-    
   /** Provides a {@link DocIdSetIterator} to access the set.
-   * This implementation can return <code>null</code> or
-   * <code>{@linkplain #EMPTY_DOCIDSET}.iterator()</code> if there
+   * This implementation can return <code>null</code> if there
    * are no docs that match. */
   public abstract DocIdSetIterator iterator() throws IOException;
 
@@ -80,7 +50,7 @@ public abstract class DocIdSet {
 
   /**
    * This method is a hint for {@link CachingWrapperFilter}, if this <code>DocIdSet</code>
-   * should be cached without copying it into a BitSet. The default is to return
+   * should be cached without copying it. The default is to return
    * <code>false</code>. If you have an own <code>DocIdSet</code> implementation
    * that does its iteration very effective and fast without doing disk I/O,
    * override this method and return <code>true</code>.

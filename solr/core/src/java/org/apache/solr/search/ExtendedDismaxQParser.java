@@ -697,7 +697,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       start = pos;      
       
-      if (ch=='+' || ch=='-') {
+      if ((ch=='+' || ch=='-') && (pos+1)<end) {
         clause.must = ch;
         pos++;
       }
@@ -812,7 +812,7 @@ public class ExtendedDismaxQParser extends QParser {
           clause.raw = s.substring(start, pos);
           // escape colons, except for "match all" query
           if(!"*:*".equals(clause.raw)) {
-            clause.raw = clause.raw.replaceAll(":", "\\\\:");
+            clause.raw = clause.raw.replaceAll("([^\\\\]):", "$1\\\\:");
           }
         } else {
           clause.raw = s.substring(start, pos);
@@ -1055,7 +1055,7 @@ public class ExtendedDismaxQParser extends QParser {
     @Override
     protected Query getWildcardQuery(String field, String val) throws SyntaxError {
       if (val.equals("*")) {
-        if (field.equals("*")) {
+        if (field.equals("*") || getExplicitField() == null) {
           return new MatchAllDocsQuery();
         } else{
           return getPrefixQuery(field,"");
@@ -1442,10 +1442,10 @@ public class ExtendedDismaxQParser extends QParser {
     public ExtendedDismaxConfiguration(SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
       solrParams = SolrParams.wrapDefaults(localParams, params);
-      minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);
+      minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams); // req.getSearcher() here causes searcher refcount imbalance
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
-        queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);
+        queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
         throw new RuntimeException();
       }

@@ -43,7 +43,7 @@ FST Construction example:
     String inputValues[] = {"cat", "dog", "dogs"};
     long outputValues[] = {5, 7, 12};
     
-    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder&lt;Long&gt; builder = new Builder&lt;Long&gt;(INPUT_TYPE.BYTE1, outputs);
     BytesRef scratchBytes = new BytesRef();
     IntsRef scratchInts = new IntsRef();
@@ -60,8 +60,7 @@ Retrieval by key:
 </pre>
 Retrieval by value:
 <pre class="prettyprint">
-    // Only works because outputs are also in sorted order, and
-    // we passed 'true' for sharing to PositiveIntOutputs.getSingleton
+    // Only works because outputs are also in sorted order
     IntsRef key = Util.getByOutput(fst, 12);
     System.out.println(Util.toBytesRef(key, scratchBytes).utf8ToString()); // dogs
 </pre>
@@ -77,7 +76,6 @@ Iterate over key-value pairs in sorted order:
 </pre>
 N-shortest paths by weight:
 <pre class="prettyprint">
-    // Only works because we passed 'true' for sharing to PositiveIntOutputs.getSingleton
     Comparator&lt;Long&gt; comparator = new Comparator&lt;Long&gt;() {
       public int compare(Long left, Long right) {
         return left.compareTo(right);

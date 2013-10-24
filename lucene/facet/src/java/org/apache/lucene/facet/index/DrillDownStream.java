@@ -5,8 +5,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
@@ -36,7 +35,6 @@ public class DrillDownStream extends TokenStream {
   private final FacetIndexingParams indexingParams;
   private final Iterator<CategoryPath> categories;
   private final CharTermAttribute termAttribute;
-  private final PathPolicy pathPolicy;
   
   private CategoryPath current;
   private boolean isParent;
@@ -45,7 +43,6 @@ public class DrillDownStream extends TokenStream {
     termAttribute = addAttribute(CharTermAttribute.class);
     this.categories = categories.iterator();
     this.indexingParams = indexingParams;
-    this.pathPolicy = indexingParams.getPathPolicy();
   }
 
   protected void addAdditionalAttributes(CategoryPath category, boolean isParent) {
@@ -71,10 +68,7 @@ public class DrillDownStream extends TokenStream {
     addAdditionalAttributes(current, isParent);
     
     // prepare current for next call by trimming the last component (parents)
-    do {
-      // skip all parent categories which are not accepted by PathPolicy
-      current = current.subpath(current.length - 1);
-    } while (!pathPolicy.shouldAdd(current) && current.length > 0);
+    current = current.subpath(current.length - 1);
     isParent = true;
     return true;
   }

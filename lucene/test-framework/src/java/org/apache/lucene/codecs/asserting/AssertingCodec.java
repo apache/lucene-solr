@@ -17,23 +17,27 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 
 /**
- * Acts like {@link Lucene41Codec} but with additional asserts.
+ * Acts like {@link Lucene46Codec} but with additional asserts.
  */
 public final class AssertingCodec extends FilterCodec {
 
   private final PostingsFormat postings = new AssertingPostingsFormat();
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
   private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
+  private final DocValuesFormat docValues = new AssertingDocValuesFormat();
+  private final NormsFormat norms = new AssertingNormsFormat();
 
   public AssertingCodec() {
-    super("Asserting", new Lucene41Codec());
+    super("Asserting", new Lucene46Codec());
   }
 
   @Override
@@ -49,5 +53,15 @@ public final class AssertingCodec extends FilterCodec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFields;
+  }
+
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return docValues;
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return norms;
   }
 }

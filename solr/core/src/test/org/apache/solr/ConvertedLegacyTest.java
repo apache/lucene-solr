@@ -1121,7 +1121,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
                                     "standard", 0, 10, args);
     assertQ(req
             ,"//str[.='Yonik']"
-            ,"//float[.='2.9459102']"
+            ,"//float[@name='score' and . > 0]"
             );
 
     // test addition of score field

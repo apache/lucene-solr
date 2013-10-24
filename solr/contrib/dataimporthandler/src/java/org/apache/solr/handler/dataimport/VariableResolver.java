@@ -91,8 +91,9 @@ public class VariableResolver {
     Object r = null;
     if (name != null) {
       String[] nameParts = DOT_PATTERN.split(name);
-      Map<String,Object> currentLevel = currentLevelMap(nameParts,
+      CurrentLevel cr = currentLevelMap(nameParts,
           rootNamespace, false);
+      Map<String,Object> currentLevel = cr.map;
       r = currentLevel.get(nameParts[nameParts.length - 1]);
       if (r == null && name.startsWith(FUNCTIONS_NAMESPACE)
           && name.length() > FUNCTIONS_NAMESPACE.length()) {
@@ -102,6 +103,16 @@ public class VariableResolver {
           && name.length() > FUNCTIONS_NAMESPACE_SHORT.length()) {
         return resolveEvaluator(FUNCTIONS_NAMESPACE_SHORT, name);
       }
+      if (r == null) {
+        StringBuilder sb = new StringBuilder();
+        for(int i=cr.level ; i<nameParts.length ; i++) {
+          if(sb.length()>0) {
+            sb.append(".");
+          }
+          sb.append(nameParts[i]);
+        }
+        r = cr.map.get(sb.toString());
+      }      
       if (r == null) {
         r = System.getProperty(name);
       }
@@ -181,28 +192,41 @@ public class VariableResolver {
       if (name != null) {
         String[] nameParts = DOT_PATTERN.split(name);
         Map<String,Object> nameResolveLevel = currentLevelMap(nameParts,
-            rootNamespace, false);
+            rootNamespace, false).map;
         nameResolveLevel.put(nameParts[nameParts.length - 1], newMap);
       } else {
         for (Map.Entry<String,Object> entry : newMap.entrySet()) {
           String[] keyParts = DOT_PATTERN.split(entry.getKey());
           Map<String,Object> currentLevel = rootNamespace;
-          currentLevel = currentLevelMap(keyParts, currentLevel, false);
+          currentLevel = currentLevelMap(keyParts, currentLevel, false).map;
           currentLevel.put(keyParts[keyParts.length - 1], entry.getValue());
         }
       }
     }
   }
   
-  private Map<String,Object> currentLevelMap(String[] keyParts,
+  class CurrentLevel {
+    final Map<String,Object> map;
+    final int level;
+    CurrentLevel(int level, Map<String,Object> map) {
+      this.level = level;
+      this.map = map;
+    }   
+  }
+  
+  private CurrentLevel currentLevelMap(String[] keyParts,
       Map<String,Object> currentLevel, boolean includeLastLevel) {
     int j = includeLastLevel ? keyParts.length : keyParts.length - 1;
     for (int i = 0; i < j; i++) {
       Object o = currentLevel.get(keyParts[i]);
       if (o == null) {
-        Map<String,Object> nextLevel = new HashMap<String,Object>();
-        currentLevel.put(keyParts[i], nextLevel);
-        currentLevel = nextLevel;
+        if(i == j-1) {
+          Map<String,Object> nextLevel = new HashMap<String,Object>();
+          currentLevel.put(keyParts[i], nextLevel);
+          currentLevel = nextLevel;
+        } else {
+          return new CurrentLevel(i, currentLevel);
+        }
       } else if (o instanceof Map<?,?>) {
         @SuppressWarnings("unchecked")
         Map<String,Object> nextLevel = (Map<String,Object>) o;
@@ -212,7 +236,7 @@ public class VariableResolver {
             "Non-leaf nodes should be of type java.util.Map");
       }
     }
-    return currentLevel;
+    return new CurrentLevel(j-1, currentLevel);
   }
   
   public void removeNamespace(String name) {

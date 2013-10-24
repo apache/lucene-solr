@@ -22,9 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 
 /** For debugging, curiosity, transparency only!!  Do not
  *  use this codec in production.

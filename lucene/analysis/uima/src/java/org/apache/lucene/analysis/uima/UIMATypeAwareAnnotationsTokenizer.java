@@ -26,9 +26,11 @@ import org.apache.uima.cas.CASException;
 import org.apache.uima.cas.FeaturePath;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.resource.ResourceInitializationException;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * A {@link Tokenizer} which creates token from UIMA Annotations filling also their {@link TypeAttribute} according to
@@ -50,8 +52,13 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
 
   private int finalOffset = 0;
 
-  public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Reader input) {
-    super(input, descriptorPath);
+  public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Map<String, Object> configurationParameters, Reader input) {
+    this(descriptorPath, tokenType, typeAttributeFeaturePath, configurationParameters, AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  }
+
+  public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, 
+                                           Map<String, Object> configurationParameters, AttributeFactory factory, Reader input) {
+    super(factory, input, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.typeAttr = addAttribute(TypeAttribute.class);
@@ -64,6 +71,8 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
     try {
       analyzeInput();
     } catch (AnalysisEngineProcessException e) {
+      throw new IOException(e);
+    } catch (ResourceInitializationException e) {
       throw new IOException(e);
     }
     featurePath = cas.createFeaturePath();
@@ -98,8 +107,8 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
 
   @Override
   public void end() throws IOException {
-    offsetAttr.setOffset(finalOffset, finalOffset);
     super.end();
+    offsetAttr.setOffset(finalOffset, finalOffset);
   }
 
 

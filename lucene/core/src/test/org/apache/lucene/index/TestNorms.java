@@ -24,14 +24,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -42,26 +42,34 @@ import org.apache.lucene.util._TestUtil;
  * Test that norms info is preserved during index life - including
  * separate norms, addDocument, addIndexes, forceMerge.
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "Memory", "Direct", "SimpleText" })
 @Slow
 public class TestNorms extends LuceneTestCase {
   final String byteTestField = "normsTestByte";
 
-  class CustomNormEncodingSimilarity extends DefaultSimilarity {
+  class CustomNormEncodingSimilarity extends TFIDFSimilarity {
+
     @Override
-    public byte encodeNormValue(float f) {
-      return (byte) f;
+    public long encodeNormValue(float f) {
+      return (long) f;
     }
     
     @Override
-    public float decodeNormValue(byte b) {
-      return (float) b;
+    public float decodeNormValue(long norm) {
+      return norm;
     }
 
     @Override
     public float lengthNorm(FieldInvertState state) {
       return state.getLength();
     }
+
+    @Override public float coord(int overlap, int maxOverlap) { return 0; }
+    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
+    @Override public float tf(float freq) { return 0; }
+    @Override public float idf(long docFreq, long numDocs) { return 0; }
+    @Override public float sloppyFreq(int distance) { return 0; }
+    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 0; }
   }
   
   // LUCENE-1260
@@ -84,13 +92,15 @@ public class TestNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    byte fooNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "foo").getSource().getArray();
-    for (int i = 0; i < reader.maxDoc(); i++)
-      assertEquals(0, fooNorms[i]);
+    NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      assertEquals(0, fooNorms.get(i));
+    }
     
-    byte barNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "bar").getSource().getArray();
-    for (int i = 0; i < reader.maxDoc(); i++)
-      assertEquals(1, barNorms[i]);
+    NumericDocValues barNorms = MultiDocValues.getNormValues(reader, "bar");
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      assertEquals(1, barNorms.get(i));
+    }
     
     reader.close();
     dir.close();
@@ -98,99 +108,33 @@ public class TestNorms extends LuceneTestCase {
   
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
-    buildIndex(dir, true);
+    buildIndex(dir);
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    DocValues normValues = open.normValues(byteTestField);
+    NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
-    Source source = normValues.getSource();
-    assertTrue(source.hasArray());
-    assertEquals(Type.FIXED_INTS_8, normValues.getType());
-    byte[] norms = (byte[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
       StoredDocument document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
-      assertEquals((byte)expected, norms[i]);
+      assertEquals(expected, normValues.get(i));
     }
     open.close();
     dir.close();
   }
   
-  /**
-   * this test randomly creates segments with or without norms but not omitting
-   * norms. The similarity used doesn't write a norm value if writeNorms = false is
-   * passed. This differs from omitNorm since norms are simply not written for this segment
-   * while merging fills in default values based on the Norm {@link Type}
-   */
-  public void testNormsNotPresent() throws IOException {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testNormsNotPresent.1"));
-    boolean firstWriteNorm = random().nextBoolean();
-    buildIndex(dir, firstWriteNorm);
+  // TODO: create a testNormsNotPresent ourselves by adding/deleting/merging docs
 
-    Directory otherDir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testNormsNotPresent.2"));
-    boolean secondWriteNorm = random().nextBoolean();
-    buildIndex(otherDir, secondWriteNorm);
-
-    AtomicReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(otherDir));
-    FieldInfos fieldInfos = reader.getFieldInfos();
-    FieldInfo fieldInfo = fieldInfos.fieldInfo(byteTestField);
-    assertFalse(fieldInfo.omitsNorms());
-    assertTrue(fieldInfo.isIndexed());
-    if (secondWriteNorm) {
-      assertTrue(fieldInfo.hasNorms());
-    } else {
-      assertFalse(fieldInfo.hasNorms());  
-    }
-    
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    writer.addIndexes(reader);
-    AtomicReader mergedReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
-    if (!firstWriteNorm && !secondWriteNorm) {
-      DocValues normValues = mergedReader.normValues(byteTestField);
-      assertNull(normValues);
-      FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
-      assertFalse(fi.omitsNorms());
-      assertTrue(fi.isIndexed());
-      assertFalse(fi.hasNorms());
-    } else {
-      FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
-      assertFalse(fi.omitsNorms());
-      assertTrue(fi.isIndexed());
-      assertTrue(fi.hasNorms());
-      
-      DocValues normValues = mergedReader.normValues(byteTestField);
-      assertNotNull(normValues);
-      Source source = normValues.getSource();
-      assertTrue(source.hasArray());
-      assertEquals(Type.FIXED_INTS_8, normValues.getType());
-      byte[] norms = (byte[]) source.getArray();
-      for (int i = 0; i < mergedReader.maxDoc(); i++) {
-        StoredDocument document = mergedReader.document(i);
-        int expected = Integer.parseInt(document.get(byteTestField));
-        assertEquals((byte) expected, norms[i]);
-      }
-    }
-    mergedReader.close();
-    reader.close();
-
-    writer.close();
-    dir.close();
-    otherDir.close();
-  }
-
-  public void buildIndex(Directory dir, boolean writeNorms) throws IOException {
+  public void buildIndex(Directory dir) throws IOException {
     Random random = random();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
-    Similarity provider = new MySimProvider(writeNorms);
+    Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     final LineFileDocs docs = new LineFileDocs(random, true);
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      int boost = writeNorms ? 1 + random().nextInt(255) : 0;
+      int boost = random().nextInt(255);
       Field f = new TextField(byteTestField, "" + boost, Field.Store.YES);
       f.setBoost(boost);
       doc.add(f);
@@ -208,10 +152,7 @@ public class TestNorms extends LuceneTestCase {
 
   public class MySimProvider extends PerFieldSimilarityWrapper {
     Similarity delegate = new DefaultSimilarity();
-    private boolean writeNorms;
-    public MySimProvider(boolean writeNorms) {
-      this.writeNorms = writeNorms;
-    }
+
     @Override
     public float queryNorm(float sumOfSquaredWeights) {
 
@@ -221,7 +162,7 @@ public class TestNorms extends LuceneTestCase {
     @Override
     public Similarity get(String field) {
       if (byteTestField.equals(field)) {
-        return new ByteEncodingBoostSimilarity(writeNorms);
+        return new ByteEncodingBoostSimilarity();
       } else {
         return delegate;
       }
@@ -236,18 +177,10 @@ public class TestNorms extends LuceneTestCase {
   
   public static class ByteEncodingBoostSimilarity extends Similarity {
 
-    private boolean writeNorms;
-
-    public ByteEncodingBoostSimilarity(boolean writeNorms) {
-      this.writeNorms = writeNorms;
-    }
-
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      if (writeNorms) {
-        int boost = (int) state.getBoost();
-        norm.setByte((byte) (0xFF & boost));
-      }
+    public long computeNorm(FieldInvertState state) {
+      int boost = (int) state.getBoost();
+      return (0xFF & boost);
     }
 
     @Override
@@ -256,12 +189,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   } 

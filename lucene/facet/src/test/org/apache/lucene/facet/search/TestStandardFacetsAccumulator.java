@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -9,14 +8,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -33,7 +29,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -53,7 +48,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestStandardFacetsAccumulator extends LuceneTestCase {
+public class TestStandardFacetsAccumulator extends FacetTestCase {
   
   private void indexTwoDocs(IndexWriter indexWriter, FacetFields facetFields, boolean withContent) throws Exception {
     for (int i = 0; i < 2; i++) {
@@ -98,28 +93,20 @@ public class TestStandardFacetsAccumulator extends LuceneTestCase {
 
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+    IndexSearcher indexSearcher = newSearcher(indexReader);
     
     // search for "f:a", only segments 1 and 3 should match results
     Query q = new TermQuery(new Term("f", "a"));
-    ArrayList<FacetRequest> requests = new ArrayList<FacetRequest>(1);
-    CountFacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10) {
-      @Override
-      public boolean supportsComplements() {
-        return false; // disable complements
-      }
-    };
-    requests.add(countNoComplements);
-    FacetSearchParams fsp = new FacetSearchParams(requests, fip);
-    FacetsCollector fc = new FacetsCollector(fsp , indexReader, taxoReader);
+    FacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10);
+    FacetSearchParams fsp = new FacetSearchParams(fip, countNoComplements);
+    FacetsCollector fc = FacetsCollector.create(fsp , indexReader, taxoReader);
     indexSearcher.search(q, fc);
     List<FacetResult> results = fc.getFacetResults();
     assertEquals("received too many facet results", 1, results.size());
     FacetResultNode frn = results.get(0).getFacetResultNode();
-    assertEquals("wrong weight for \"A\"", 4, (int) frn.getValue());
-    assertEquals("wrong number of children", 2, frn.getNumSubResults());
-    for (FacetResultNode node : frn.getSubResults()) {
-      assertEquals("wrong weight for child " + node.getLabel(), 2, (int) node.getValue());
+    assertEquals("wrong number of children", 2, frn.subResults.size());
+    for (FacetResultNode node : frn.subResults) {
+      assertEquals("wrong weight for child " + node.label, 2, (int) node.value);
     }
     IOUtils.close(indexReader, taxoReader);
     

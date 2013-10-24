@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.de.GermanNormalizationFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
@@ -25,7 +27,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link GermanNormalizationFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_denorm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -36,6 +38,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class GermanNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
+  /** Creates a new GermanNormalizationFilterFactory */
+  public GermanNormalizationFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);

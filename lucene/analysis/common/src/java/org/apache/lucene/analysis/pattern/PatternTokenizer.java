@@ -60,14 +60,17 @@ public final class PatternTokenizer extends Tokenizer {
   private final StringBuilder str = new StringBuilder();
   private int index;
   
-  private final Pattern pattern;
   private final int group;
   private final Matcher matcher;
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
-  public PatternTokenizer(Reader input, Pattern pattern, int group) throws IOException {
-    super(input);
-    this.pattern = pattern;
+  public PatternTokenizer(Reader input, Pattern pattern, int group) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, pattern, group);
+  }
+
+  /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
+  public PatternTokenizer(AttributeFactory factory, Reader input, Pattern pattern, int group) {
+    super(factory, input);
     this.group = group;
 
     // Use "" instead of str so don't consume chars
@@ -127,13 +130,15 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     final int ofs = correctOffset(str.length());
     offsetAtt.setOffset(ofs, ofs);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     fillBuffer(str, input);
     matcher.reset(str);
     index = 0;

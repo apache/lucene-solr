@@ -43,6 +43,13 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * will match a significant amount of the term dictionary. If you really want this, consider
  * using an n-gram indexing technique (such as the SpellChecker in the 
  * <a href="{@docRoot}/../suggest/overview-summary.html">suggest module</a>) instead.
+ *
+ * <p>NOTE: terms of length 1 or 2 will sometimes not match because of how the scaled
+ * distance between two terms is computed.  For a term to match, the edit distance between
+ * the terms must be less than the minimum length term (either the input term, or
+ * the candidate term).  For example, FuzzyQuery on term "abcd" with maxEdits=2 will
+ * not match an indexed term "ab", and FuzzyQuery on term "a" with maxEdits=2 will not
+ * match an indexed term "abc".
  */
 public class FuzzyQuery extends MultiTermQuery {
   

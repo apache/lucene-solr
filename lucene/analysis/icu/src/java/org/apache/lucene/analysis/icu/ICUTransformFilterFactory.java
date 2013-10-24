@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.icu;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.icu.ICUTransformFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -38,30 +38,19 @@ import com.ibm.icu.text.Transliterator;
  * @see Transliterator
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
-  private Transliterator transliterator;
-  
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUTransformFilterFactory() {}
+  private final Transliterator transliterator;
   
   // TODO: add support for custom rules
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String id = args.get("id");
-    if (id == null) {
-      throw new IllegalArgumentException("id is required.");
-    }
-    
-    int dir;
-    String direction = args.get("direction");
-    if (direction == null || direction.equalsIgnoreCase("forward"))
-      dir = Transliterator.FORWARD;
-    else if (direction.equalsIgnoreCase("reverse"))
-      dir = Transliterator.REVERSE;
-    else
-      throw new IllegalArgumentException("invalid direction: " + direction);
-    
+  /** Creates a new ICUTransformFilterFactory */
+  public ICUTransformFilterFactory(Map<String,String> args) {
+    super(args);
+    String id = require(args, "id");
+    String direction = get(args, "direction", Arrays.asList("forward", "reverse"), "forward", false);
+    int dir = "forward".equals(direction) ? Transliterator.FORWARD : Transliterator.REVERSE;
     transliterator = Transliterator.getInstance(id, dir);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

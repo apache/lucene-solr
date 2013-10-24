@@ -25,7 +25,10 @@ import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.DateUtil;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -44,6 +47,9 @@ public class SolrQuery extends ModifiableSolrParams
       return (this == asc) ? desc : asc;
     }
   }
+
+  /** Maintains a map of current sorts */
+  private List<SortClause> sortClauses;
   
   public SolrQuery() {
     super();
@@ -529,38 +535,230 @@ public class SolrQuery extends ModifiableSolrParams
     return this.get(HighlightParams.SIMPLE_POST, "");
   }
 
+  /**
+   * Replaces the sort string with a single sort field.
+   * @deprecated Use {@link #setSort(SortClause)} instead, which is part
+   * of an api handling a wider range of sort specifications.
+   */
+  @Deprecated
   public SolrQuery setSortField(String field, ORDER order) {
     this.remove(CommonParams.SORT);
     addValueToParam(CommonParams.SORT, toSortString(field, order));
     return this;
   }
   
+  /**
+   * Adds a sort field to the end of the sort string.
+   * @deprecated Use {@link #addSort(SortClause)} instead, which is part
+   * of an api handling a wider range of sort specifications.
+   */
+  @Deprecated
   public SolrQuery addSortField(String field, ORDER order) {
     return addValueToParam(CommonParams.SORT, toSortString(field, order));
   }
 
+  /**
+   * Removes a sort field to the end of the sort string.
+   * @deprecated Use {@link #removeSort(SortClause)} instead, which is part
+   * of an api handling a wider range of sort specifications.
+   */
+  @Deprecated
   public SolrQuery removeSortField(String field, ORDER order) {
-    String s = this.get(CommonParams.SORT);
-    String removeSort = toSortString(field, order);
-    if (s != null) {
-      String[] sorts = s.split(",");
-      s = join(sorts, ", ", removeSort);
+    String[] sorts = getSortFields();
+    if (sorts != null) {
+      String removeSort = toSortString(field, order);
+      String s = join(sorts, ",", removeSort);
       if (s.length()==0) s=null;
       this.set(CommonParams.SORT, s);
     }
     return this;
   }
   
+  /**
+   * Gets an array of sort specifications.
+   * @deprecated Use {@link #getSorts()} instead, which is part
+   * of an api handling a wider range of sort specifications.
+   */
+  @Deprecated
   public String[] getSortFields() {
     String s = getSortField();
     if (s==null) return null;
-    return s.split(",");
+    return s.trim().split(", *");
   }
 
+  /**
+   * Gets the raw sort field, as it will be sent to Solr.
+   * <p>
+   * The returned sort field will always contain a serialized version
+   * of the sort string built using {@link #setSort(SortClause)},
+   * {@link #addSort(SortClause)}, {@link #addOrUpdateSort(SortClause)},
+   * {@link #removeSort(SortClause)}, {@link #clearSorts()} and 
+   * {@link #setSorts(List)}.
+   */
   public String getSortField() {
     return this.get(CommonParams.SORT);
   }
   
+  /**
+   * Clears current sort information.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery clearSorts() {
+    sortClauses = null;
+    serializeSorts();
+    return this;
+  }
+
+  /**
+   * Replaces the current sort information.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery setSorts(List<SortClause> value) {
+    sortClauses = new ArrayList<SortClause>(value);
+    serializeSorts();
+    return this;
+  }
+
+  /**
+   * Gets an a list of current sort clauses.
+   *
+   * @return an immutable list of current sort clauses
+   * @since 4.2
+   */
+  public List<SortClause> getSorts() {
+    if (sortClauses == null) return Collections.emptyList();
+    else return Collections.unmodifiableList(sortClauses);
+  }
+
+  /**
+   * Replaces the current sort information with a single sort clause
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery setSort(String field, ORDER order) {
+    return setSort(new SortClause(field, order));
+  }
+
+  /**
+   * Replaces the current sort information with a single sort clause
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery setSort(SortClause sortClause) {
+    clearSorts();
+    return addSort(sortClause);
+  }
+
+  /**
+   * Adds a single sort clause to the end of the current sort information.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery addSort(String field, ORDER order) {
+    return addSort(new SortClause(field, order));
+  }
+
+  /**
+   * Adds a single sort clause to the end of the query.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery addSort(SortClause sortClause) {
+    if (sortClauses == null) sortClauses = new ArrayList<SortClause>();
+    sortClauses.add(sortClause);
+    serializeSorts();
+    return this;
+  }
+
+  /**
+   * Updates or adds a single sort clause to the query.
+   * If the field is already used for sorting, the order
+   * of the existing field is modified; otherwise, it is
+   * added to the end.
+   * <p>
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery addOrUpdateSort(String field, ORDER order) {
+    return addOrUpdateSort(new SortClause(field, order));
+  }
+
+  /**
+   * Updates or adds a single sort field specification to the current sort
+   * information. If the sort field already exist in the sort information map,
+   * it's position is unchanged and the sort order is set; if it does not exist,
+   * it is appended at the end with the specified order..
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery addOrUpdateSort(SortClause sortClause) {
+    if (sortClauses != null) {
+      for (int index=0 ; index<sortClauses.size() ; index++) {
+        SortClause existing = sortClauses.get(index);
+        if (existing.getItem().equals(sortClause.getItem())) {
+          sortClauses.set(index, sortClause);
+          serializeSorts();
+          return this;
+        }
+      }
+    }
+    return addSort(sortClause);
+  }
+
+  /**
+   * Removes a single sort field from the current sort information.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery removeSort(SortClause sortClause) {
+    return removeSort(sortClause.getItem());
+  }
+
+  /**
+   * Removes a single sort field from the current sort information.
+   *
+   * @return the modified SolrQuery object, for easy chaining
+   * @since 4.2
+   */
+  public SolrQuery removeSort(String itemName) {
+    if (sortClauses != null) {
+      for (SortClause existing : sortClauses) {
+        if (existing.getItem().equals(itemName)) {
+          sortClauses.remove(existing);
+          if (sortClauses.isEmpty()) sortClauses = null;
+          serializeSorts();
+          break;
+        }
+      }
+    }
+    return this;
+  }
+
+  private void serializeSorts() {
+    if (sortClauses == null || sortClauses.isEmpty()) {
+      remove(CommonParams.SORT);
+    } else {
+      StringBuilder sb = new StringBuilder();
+      for (SortClause sortClause : sortClauses) {
+        if (sb.length() > 0) sb.append(",");
+        sb.append(sortClause.getItem());
+        sb.append(" ");
+        sb.append(sortClause.getOrder());
+      }
+      set(CommonParams.SORT, sb.toString());
+    }
+  }
+
   public void setGetFieldStatistics( boolean v )
   {
     this.set( StatsParams.STATS, v );
@@ -823,13 +1021,126 @@ public class SolrQuery extends ModifiableSolrParams
   private String join(String[] vals, String sep, String removeVal) {
     StringBuilder sb = new StringBuilder();
     for (int i=0; i<vals.length; i++) {
-      if (removeVal==null || !vals[i].equals(removeVal)) {
-        sb.append(vals[i]);
-        if (i<vals.length-1) {
+      if (!vals[i].equals(removeVal)) {
+        if (sb.length() > 0) {
           sb.append(sep);
         }
+        sb.append(vals[i]);
       }
     }
     return sb.toString().trim();
+  }
+
+  /**
+   * A single sort clause, encapsulating what to sort and the sort order.
+   * <p>
+   * The item specified can be "anything sortable" by solr; some examples
+   * include a simple field name, the constant string {@code score}, and functions
+   * such as {@code sum(x_f, y_f)}.
+   * <p>
+   * A SortClause can be created through different mechanisms:
+   * <PRE><code>
+   * new SortClause("product", SolrQuery.ORDER.asc);
+   * new SortClause("product", "asc");
+   * SortClause.asc("product");
+   * SortClause.desc("product");
+   * </code></PRE>
+   */
+  public static class SortClause implements java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final String item;
+    private final ORDER order;
+
+    /**
+     * Creates a SortClause based on item and order
+     * @param item item to sort on
+     * @param order direction to sort
+     */
+    public SortClause(String item, ORDER order) {
+      this.item = item;
+      this.order = order;
+    }
+
+    /**
+     * Creates a SortClause based on item and order
+     * @param item item to sort on
+     * @param order string value for direction to sort
+     */
+    public SortClause(String item, String order) {
+      this(item, ORDER.valueOf(order));
+    }
+
+    /**
+     * Creates an ascending SortClause for an item
+     * @param item item to sort on
+     */
+    public static SortClause create (String item, ORDER order) {
+      return new SortClause(item, order);
+    }
+
+    /**
+     * Creates a SortClause based on item and order
+     * @param item item to sort on
+     * @param order string value for direction to sort
+     */
+    public static SortClause create(String item, String order) {
+      return new SortClause(item, ORDER.valueOf(order));
+    }
+
+    /**
+     * Creates an ascending SortClause for an item
+     * @param item item to sort on
+     */
+    public static SortClause asc (String item) {
+      return new SortClause(item, ORDER.asc);
+    }
+
+    /**
+     * Creates a decending SortClause for an item
+     * @param item item to sort on
+     */
+    public static SortClause desc (String item) {
+      return new SortClause(item, ORDER.desc);
+    }
+
+    /**
+     * Gets the item to sort, typically a function or a fieldname
+     * @return item to sort
+     */
+    public String getItem() {
+      return item;
+    }
+
+    /**
+     * Gets the order to sort
+     * @return order to sort
+     */
+    public ORDER getOrder() {
+      return order;
+    }
+
+    public boolean equals(Object other){
+      if (this == other) return true;
+      if (!(other instanceof SortClause)) return false;
+      final SortClause that = (SortClause) other;
+      return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
+    }
+
+    public int hashCode(){
+      return this.getItem().hashCode();
+    }
+
+    /**
+     * Gets a human readable description of the sort clause.
+     * <p>
+     * The returned string is not suitable for passing to Solr,
+     * but may be useful in debug output and the like.
+     * @return a description of the current sort clause
+     */
+    public String toString() {
+      return "[" + getClass().getSimpleName() + ": item=" + getItem() + "; order=" + getOrder() + "]";
+    }
   }
 }

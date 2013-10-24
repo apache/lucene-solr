@@ -43,7 +43,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "100%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -89,7 +89,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
     params.put("autowarmCount", percentage + "%");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 1; i <= limit; i++) {
@@ -120,7 +120,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     Map<String, String> params = new HashMap<String, String>();
     params.put("size", "100");
     params.put("initialSize", "10");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -150,7 +150,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "-1");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
     cache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
@@ -173,20 +173,6 @@ public class TestFastLRUCache extends LuceneTestCase {
     assertEquals("103", cacheNew.get(103));
     cacheNew.close();
   }
-
-  private CacheRegenerator createCodeRegenerator() {
-    CacheRegenerator cr = new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                      SolrCache oldCache, Object oldKey, Object oldVal) {
-          newCache.put(oldKey, oldVal);
-          return true;
-        }
-      };
-    return cr;
-  }
-  
-  
   
   public void testSimple() throws IOException {
     FastLRUCache sc = new FastLRUCache();
@@ -194,7 +180,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     l.put("size", "100");
     l.put("initialSize", "10");
     l.put("autowarmCount", "25");
-    CacheRegenerator cr = createCodeRegenerator();
+    CacheRegenerator cr = new NoOpRegenerator();
     Object o = sc.init(l, null, cr);
     sc.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {

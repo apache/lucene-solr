@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
@@ -34,6 +35,7 @@ import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
 import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
+import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.FileUtils;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -55,6 +57,7 @@ import org.apache.lucene.util.IOUtils;
  *  <li>Directory, Writer, Reader.
  *  <li>Taxonomy Directory, Writer, Reader.
  *  <li>DocMaker, FacetSource and a few instances of QueryMaker.
+ *  <li>Named AnalysisFactories.
  *  <li>Analyzer.
  *  <li>Statistics data which updated during the run.
  * </ul>
@@ -78,6 +81,7 @@ public class PerfRunData implements Closeable {
   // directory, analyzer, docMaker - created at startup.
   // reader, writer, searcher - maintained by basic tasks. 
   private Directory directory;
+  private Map<String,AnalyzerFactory> analyzerFactories = new HashMap<String,AnalyzerFactory>();
   private Analyzer analyzer;
   private DocMaker docMaker;
   private ContentSource contentSource;
@@ -358,7 +362,7 @@ public class PerfRunData implements Closeable {
   }
 
   /**
-   * @return Returns the anlyzer.
+   * @return Returns the analyzer.
    */
   public Analyzer getAnalyzer() {
     return analyzer;
@@ -434,4 +438,7 @@ public class PerfRunData implements Closeable {
     return qm;
   }
 
+  public Map<String,AnalyzerFactory> getAnalyzerFactories() {
+    return analyzerFactories;
+  }
 }

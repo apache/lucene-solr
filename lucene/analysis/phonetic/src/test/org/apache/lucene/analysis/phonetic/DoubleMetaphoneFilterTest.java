@@ -105,6 +105,6 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random().nextBoolean()));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

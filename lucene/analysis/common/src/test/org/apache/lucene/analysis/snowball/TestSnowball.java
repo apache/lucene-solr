@@ -114,7 +114,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, lang));
         }
       };
-      checkOneTermReuse(a, "", "");
+      checkOneTerm(a, "", "");
     }
   }
   

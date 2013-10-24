@@ -27,13 +27,24 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
-import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapDocFreqInterval;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTOrdPulsing41PostingsFormat;
+import org.apache.lucene.codecs.memory.FSTPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTPulsing41PostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
@@ -41,6 +52,7 @@ import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -54,18 +66,25 @@ import org.apache.lucene.util._TestUtil;
  * documents in different orders and the test will still be deterministic
  * and reproducable.
  */
-public class RandomCodec extends Lucene41Codec {
+public class RandomCodec extends Lucene46Codec {
   /** Shuffled list of postings formats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
   
+  /** Shuffled list of docvalues formats to use for new mappings */
+  private List<DocValuesFormat> dvFormats = new ArrayList<DocValuesFormat>();
+  
   /** unique set of format names this codec knows about */
   public Set<String> formatNames = new HashSet<String>();
+  
+  /** unique set of docvalues format names this codec knows about */
+  public Set<String> dvFormatNames = new HashSet<String>();
 
   /** memorized field->postingsformat mappings */
   // note: we have to sync this map even though its just for debugging/toString, 
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on
   private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());
+  private Map<String,DocValuesFormat> previousDVMappings = Collections.synchronizedMap(new HashMap<String,DocValuesFormat>());
   private final int perFieldSeed;
 
   @Override
@@ -84,6 +103,22 @@ public class RandomCodec extends Lucene41Codec {
     return codec;
   }
 
+  @Override
+  public DocValuesFormat getDocValuesFormatForField(String name) {
+    DocValuesFormat codec = previousDVMappings.get(name);
+    if (codec == null) {
+      codec = dvFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % dvFormats.size());
+      if (codec instanceof SimpleTextDocValuesFormat && perFieldSeed % 5 != 0) {
+        // make simpletext rarer, choose again
+        codec = dvFormats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ROOT).hashCode()) % dvFormats.size());
+      }
+      previousDVMappings.put(name, codec);
+      // Safety:
+      assert previousDVMappings.size() < 10000: "test went insane";
+    }
+    return codec;
+  }
+
   public RandomCodec(Random random, Set<String> avoidCodecs) {
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
@@ -94,6 +129,10 @@ public class RandomCodec extends Lucene41Codec {
 
     add(avoidCodecs,
         new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new FSTPostingsFormat(),
+        new FSTOrdPostingsFormat(),
+        new FSTPulsing41PostingsFormat(1 + random.nextInt(20)),
+        new FSTOrdPulsing41PostingsFormat(1 + random.nextInt(20)),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
@@ -108,16 +147,31 @@ public class RandomCodec extends Lucene41Codec {
         new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)),
         new MockRandomPostingsFormat(random),
         new NestedPulsingPostingsFormat(),
-        new Lucene41WithOrds(),
+        new Lucene41WithOrds(_TestUtil.nextInt(random, 1, 1000)),
+        new Lucene41VarGapFixedInterval(_TestUtil.nextInt(random, 1, 1000)),
+        new Lucene41VarGapDocFreqInterval(_TestUtil.nextInt(random, 1, 100), _TestUtil.nextInt(random, 1, 1000)),
         new SimpleTextPostingsFormat(),
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),
         new MemoryPostingsFormat(false, random.nextFloat()));
+    
+    addDocValues(avoidCodecs,
+        new Lucene45DocValuesFormat(),
+        new DiskDocValuesFormat(),
+        new MemoryDocValuesFormat(),
+        new SimpleTextDocValuesFormat(),
+        new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);
+    Collections.shuffle(dvFormats, random);
 
     // Avoid too many open files:
-    formats = formats.subList(0, 4);
+    if (formats.size() > 4) {
+      formats = formats.subList(0, 4);
+    }
+    if (dvFormats.size() > 4) {
+      dvFormats = dvFormats.subList(0, 4);
+    }
   }
 
   public RandomCodec(Random random) {
@@ -132,9 +186,18 @@ public class RandomCodec extends Lucene41Codec {
       }
     }
   }
+  
+  private final void addDocValues(Set<String> avoidCodecs, DocValuesFormat... docvalues) {
+    for (DocValuesFormat d : docvalues) {
+      if (!avoidCodecs.contains(d.getName())) {
+        dvFormats.add(d);
+        dvFormatNames.add(d.getName());
+      }
+    }
+  }
 
   @Override
   public String toString() {
-    return super.toString() + ": " + previousMappings.toString();
+    return super.toString() + ": " + previousMappings.toString() + ", docValues:" + previousDVMappings.toString();
   }
 }

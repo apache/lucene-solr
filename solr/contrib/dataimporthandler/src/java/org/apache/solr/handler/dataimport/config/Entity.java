@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.solr.handler.dataimport.DataImportHandlerException;
 import org.apache.solr.handler.dataimport.DataImporter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.w3c.dom.Element;
 
@@ -45,9 +46,11 @@ public class Entity {
   private final Map<String,Set<EntityField>> colNameVsField;
   private final Map<String,String> allAttributes;
   private final List<Map<String,String>> allFieldAttributes;
+  private final DIHConfiguration config;
   
-  public Entity(boolean docRootFound, Element element, DataImporter di, Entity parent) {
+  public Entity(boolean docRootFound, Element element, DataImporter di, DIHConfiguration config, Entity parent) {
     this.parentEntity = parent;
+    this.config = config;
     
     String modName = ConfigParseUtil.getStringAttribute(element, ConfigNameConstants.NAME, null);
     if (modName == null) {
@@ -85,13 +88,13 @@ public class Entity {
     List<Map<String,String>> modAllFieldAttributes = new ArrayList<Map<String,String>>();
     for (Element elem : n) {
       EntityField.Builder fieldBuilder = new EntityField.Builder(elem);
-      if (di.getSchema() != null) {
+      if (config.getSchema() != null) {
         if (fieldBuilder.getNameOrColumn() != null
             && fieldBuilder.getNameOrColumn().contains("${")) {
           fieldBuilder.dynamicName = true;
         } else {
-          SchemaField schemaField = di.getSchemaField(fieldBuilder
-              .getNameOrColumn());
+          SchemaField schemaField = config.getSchemaField
+              (fieldBuilder.getNameOrColumn());
           if (schemaField != null) {
             fieldBuilder.name = schemaField.getName();
             fieldBuilder.multiValued = schemaField.multiValued();
@@ -139,8 +142,8 @@ public class Entity {
         .unmodifiableList(modAllFieldAttributes);
     
     String modPkMappingFromSchema = null;
-    if (di.getSchema() != null) {
-      SchemaField uniqueKey = di.getSchema().getUniqueKeyField();
+    if (config.getSchema() != null) {
+      SchemaField uniqueKey = config.getSchema().getUniqueKeyField();
       if (uniqueKey != null) {
         modPkMappingFromSchema = uniqueKey.getName();
         // if no fields are mentioned . solr uniqueKey is same as dih 'pk'
@@ -160,8 +163,7 @@ public class Entity {
     n = ConfigParseUtil.getChildNodes(element, "entity");
     List<Entity> modEntities = new ArrayList<Entity>();
     for (Element elem : n) {
-      modEntities
-          .add(new Entity((docRootFound || this.docRoot), elem, di, this));
+      modEntities.add(new Entity((docRootFound || this.docRoot), elem, di, config, this));
     }
     this.children = Collections.unmodifiableList(modEntities);
   }

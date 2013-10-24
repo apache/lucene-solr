@@ -278,6 +278,6 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

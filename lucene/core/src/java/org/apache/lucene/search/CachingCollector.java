@@ -93,7 +93,11 @@ public abstract class CachingCollector extends Collector {
 
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException { throw new UnsupportedOperationException(); }
-    }
+    
+    @Override
+    public long cost() { return 1; }
+
+  }
 
   // A CachingCollector which caches scores
   private static final class ScoreCachingCollector extends CachingCollector {

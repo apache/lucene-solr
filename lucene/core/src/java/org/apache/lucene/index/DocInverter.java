@@ -78,13 +78,7 @@ final class DocInverter extends DocFieldConsumer {
   }
 
   @Override
-  public boolean freeRAM() {
-    return consumer.freeRAM();
-  }
-
-  @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocInverterPerField(this, fi);
   }
-
 }

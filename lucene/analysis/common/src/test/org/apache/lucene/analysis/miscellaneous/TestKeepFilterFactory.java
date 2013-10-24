@@ -17,45 +17,38 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 
-import java.util.Map;
-import java.util.HashMap;
-
-/**
- *
- *
- **/
-public class TestKeepFilterFactory extends BaseTokenStreamTestCase {
+public class TestKeepFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new ClasspathResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
-    KeepWordFilterFactory factory = new KeepWordFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put("words", "keep-1.txt");
-    args.put("ignoreCase", "true");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
+    KeepWordFilterFactory factory = (KeepWordFilterFactory) tokenFilterFactory("KeepWord",
+        "words", "keep-1.txt",
+        "ignoreCase", "true");
     CharArraySet words = factory.getWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
 
-
-    factory = new KeepWordFilterFactory();
-    args.put("words", "keep-1.txt, keep-2.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
+    factory = (KeepWordFilterFactory) tokenFilterFactory("KeepWord",
+        "words", "keep-1.txt, keep-2.txt",
+        "ignoreCase", "true");
     words = factory.getWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 4, words.size() == 4);
-
-
-
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("KeepWord", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

@@ -56,21 +56,21 @@ public class TestTermRangeQuery extends LuceneTestCase {
     Query query = TermRangeQuery.newStringRange("content", "A", "C", false, false);
     initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("A,B,C,D, only B in range", 1, hits.length);
     reader.close();
 
     initializeIndex(new String[] {"A", "B", "D"});
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("A,B,D, only B in range", 1, hits.length);
     reader.close();
 
     addDoc("C");
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("C added, still only B in range", 1, hits.length);
     reader.close();
@@ -81,21 +81,21 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("A,B,C,D - A,B,C in range", 3, hits.length);
     reader.close();
 
     initializeIndex(new String[]{"A", "B", "D"});
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("A,B,D - A and B in range", 2, hits.length);
     reader.close();
 
     addDoc("C");
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("C added - A, B, C in range", 3, hits.length);
     reader.close();
@@ -104,7 +104,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   public void testAllDocs() throws Exception {
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TermRangeQuery query = new TermRangeQuery("content", null, null, true, true);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "content");
     assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
@@ -128,7 +128,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     initializeIndex(new String[]{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"});
 
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TermRangeQuery query = TermRangeQuery.newStringRange("content", "B", "J", true, true);
     checkBooleanTerms(searcher, query, "B", "C", "D", "E", "F", "G", "H", "I", "J");
     
@@ -227,7 +227,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
 
       @Override
-      public void reset() throws IOException {;
+      public void reset() throws IOException {
+        super.reset();
         done = false;
       }
     }
@@ -276,7 +277,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
                                  false, false);
     initializeIndex(new String[] {"A", "B", "", "C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     int numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 3, numHits);
@@ -286,7 +287,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     reader.close();
     initializeIndex(new String[] {"A", "B", "", "D"}, analyzer);
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 3, numHits);
@@ -295,7 +296,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     reader.close();
     addDoc("C");
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("C added, still A, B & <empty string> are in range", 3, numHits);
@@ -311,7 +312,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     Query query = TermRangeQuery.newStringRange("content", null, "C", true, true);
     initializeIndex(new String[]{"A", "B", "","C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     int numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 4, numHits);
@@ -320,7 +321,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     reader.close();
     initializeIndex(new String[]{"A", "B", "", "D"}, analyzer);
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,D - A, B and <empty string> in range", 3, numHits);
@@ -329,7 +330,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     reader.close();
     addDoc("C");
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     numHits = searcher.search(query, null, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("C added => A,B,<empty string>,C in range", 4, numHits);

@@ -126,7 +126,7 @@ public class TestFSTs extends LuceneTestCase {
 
       // FST ord pos int
       {
-        final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+        final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
         final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms2.length);
         for(int idx=0;idx<terms2.length;idx++) {
           pairs.add(new FSTTester.InputOutput<Long>(terms2[idx], (long) idx));
@@ -171,7 +171,7 @@ public class TestFSTs extends LuceneTestCase {
 
     // PositiveIntOutput (ord)
     {
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], (long) idx));
@@ -181,8 +181,7 @@ public class TestFSTs extends LuceneTestCase {
 
     // PositiveIntOutput (random monotonically increasing positive number)
     {
-      final boolean doShare = random().nextBoolean();
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(doShare);
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
@@ -190,12 +189,12 @@ public class TestFSTs extends LuceneTestCase {
         lastOutput = value;
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], value));
       }
-      new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, doShare).doTest(true);
+      new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, true).doTest(true);
     }
 
     // PositiveIntOutput (random positive number)
     {
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random().nextBoolean());
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], _TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
@@ -205,8 +204,8 @@ public class TestFSTs extends LuceneTestCase {
 
     // Pair<ord, (random monotonically increasing positive number>
     {
-      final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton(random().nextBoolean());
-      final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton(random().nextBoolean());
+      final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton();
+      final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton();
       final PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(o1, o2);
       final List<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>> pairs = new ArrayList<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>>(terms.length);
       long lastOutput = 0;
@@ -306,7 +305,7 @@ public class TestFSTs extends LuceneTestCase {
     }
     IndexReader r = DirectoryReader.open(writer, true);
     writer.close();
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random().nextBoolean());
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
     final boolean doRewrite = random().nextBoolean();
 
@@ -587,7 +586,13 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  // java -cp ../build/codecs/classes/java:../test-framework/lib/randomizedtesting-runner-2.0.8.jar:../build/core/classes/test:../build/core/classes/test-framework:../build/core/classes/java:../build/test-framework/classes/java:../test-framework/lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /xold/tmp/allTerms3.txt out
+  // TODO: try experiment: reverse terms before
+  // compressing -- how much smaller?
+
+  // TODO: can FST be used to index all internal substrings,
+  // mapping to term?
+
+  // java -cp ../build/codecs/classes/java:../test-framework/lib/randomizedtesting-runner-2.0.10.jar:../build/core/classes/test:../build/core/classes/test-framework:../build/core/classes/java:../build/test-framework/classes/java:../test-framework/lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /xold/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
     int prune = 0;
     int limit = Integer.MAX_VALUE;
@@ -647,8 +652,8 @@ public class TestFSTs extends LuceneTestCase {
 
     if (storeOrds && storeDocFreqs) {
       // Store both ord & docFreq:
-      final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton(true);
-      final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton(false);
+      final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton();
+      final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton();
       final PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(o1, o2);
       new VisitTerms<PairOutputs.Pair<Long,Long>>(dirOut, wordsFileIn, inputMode, prune, outputs, doPack, noArcArrays) {
         Random rand;
@@ -663,7 +668,7 @@ public class TestFSTs extends LuceneTestCase {
       }.run(limit, verify, false);
     } else if (storeOrds) {
       // Store only ords
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       new VisitTerms<Long>(dirOut, wordsFileIn, inputMode, prune, outputs, doPack, noArcArrays) {
         @Override
         public Long getOutput(IntsRef input, int ord) {
@@ -672,7 +677,7 @@ public class TestFSTs extends LuceneTestCase {
       }.run(limit, verify, true);
     } else if (storeDocFreqs) {
       // Store only docFreq
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(false);
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       new VisitTerms<Long>(dirOut, wordsFileIn, inputMode, prune, outputs, doPack, noArcArrays) {
         Random rand;
         @Override
@@ -703,6 +708,29 @@ public class TestFSTs extends LuceneTestCase {
     final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(b.finish());
     assertNull(fstEnum.seekFloor(new BytesRef("foo")));
     assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
+  }
+  
+
+  public void testDuplicateFSAString() throws Exception {
+    String str = "foobar";
+    final Outputs<Object> outputs = NoOutputs.getSingleton();
+    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    IntsRef ints = new IntsRef();
+    for(int i=0; i<10; i++) {
+      b.add(Util.toIntsRef(new BytesRef(str), ints), outputs.getNoOutput());
+    }
+    FST<Object> fst = b.finish();
+    
+    // count the input paths
+    int count = 0; 
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(fst);
+    while(fstEnum.next()!=null) {
+      count++;  
+    }
+    assertEquals(1, count);
+    
+    assertNotNull(Util.get(fst, new BytesRef(str)));
+    assertNull(Util.get(fst, new BytesRef("foobaz")));
   }
 
   /*
@@ -752,7 +780,7 @@ public class TestFSTs extends LuceneTestCase {
     // smaller FST if the outputs grow monotonically.  But
     // if numbers are "random", false should give smaller
     // final size:
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
     // Build an FST mapping BytesRef -> Long
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
@@ -839,7 +867,7 @@ public class TestFSTs extends LuceneTestCase {
 
       // turn writer into reader:
       final IndexReader r = w.getReader();
-      final IndexSearcher s = new IndexSearcher(r);
+      final IndexSearcher s = newSearcher(r);
       w.close();
 
       final List<String> allIDsList = new ArrayList<String>(allIDs);
@@ -904,20 +932,15 @@ public class TestFSTs extends LuceneTestCase {
           }
         }
 
-        final boolean useCache = random().nextBoolean();
-        if (VERBOSE) {
-          System.out.println("  useCache=" + useCache);
-        }
-
         final TermsEnum.SeekStatus status;
         if (nextID == null) {
-          if (termsEnum.seekExact(new BytesRef(id), useCache)) {
+          if (termsEnum.seekExact(new BytesRef(id))) {
             status = TermsEnum.SeekStatus.FOUND;
           } else {
             status = TermsEnum.SeekStatus.NOT_FOUND;
           }
         } else {
-          status = termsEnum.seekCeil(new BytesRef(id), useCache);
+          status = termsEnum.seekCeil(new BytesRef(id));
         }
 
         if (nextID != null) {
@@ -968,7 +991,7 @@ public class TestFSTs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: got reader=" + r);
     }
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     w.close();
 
     final List<String> allTermsList = new ArrayList<String>(allTerms);
@@ -1071,7 +1094,7 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   public void testFinalOutputOnEndState() throws Exception {
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, null, random().nextBoolean(), PackedInts.DEFAULT, true, 15);
     builder.add(Util.toUTF32("stat", new IntsRef()), 17L);
@@ -1086,7 +1109,7 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   public void testInternalFinalState() throws Exception {
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final boolean willRewrite = random().nextBoolean();
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, willRewrite, PackedInts.DEFAULT, true, 15);
     builder.add(Util.toIntsRef(new BytesRef("stat"), new IntsRef()), outputs.getNoOutput());
@@ -1107,7 +1130,7 @@ public class TestFSTs extends LuceneTestCase {
   // Make sure raw FST can differentiate between final vs
   // non-final end nodes
   public void testNonFinalStopNode() throws Exception {
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final Long nothing = outputs.getNoOutput();
     final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
 
@@ -1187,7 +1210,7 @@ public class TestFSTs extends LuceneTestCase {
   };
 
   public void testShortestPaths() throws Exception {
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRef scratch = new IntsRef();
@@ -1229,8 +1252,8 @@ public class TestFSTs extends LuceneTestCase {
   public void testShortestPathsWFST() throws Exception {
 
     PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
-        PositiveIntOutputs.getSingleton(true), // weight
-        PositiveIntOutputs.getSingleton(true)  // output
+        PositiveIntOutputs.getSingleton(), // weight
+        PositiveIntOutputs.getSingleton()  // output
     );
     
     final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
@@ -1272,7 +1295,7 @@ public class TestFSTs extends LuceneTestCase {
     final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     
-    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
     final IntsRef scratch = new IntsRef();
     
@@ -1387,8 +1410,8 @@ public class TestFSTs extends LuceneTestCase {
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     
     PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
-        PositiveIntOutputs.getSingleton(true), // weight
-        PositiveIntOutputs.getSingleton(true)  // output
+        PositiveIntOutputs.getSingleton(), // weight
+        PositiveIntOutputs.getSingleton()  // output
     );
     final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
     final IntsRef scratch = new IntsRef();

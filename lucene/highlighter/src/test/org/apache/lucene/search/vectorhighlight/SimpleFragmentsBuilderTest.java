@@ -85,7 +85,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] preTags = { "[" };
     String[] postTags = { "]" };
-    assertEquals( "&lt;h1&gt; [a] &lt;/h1&gt;",
+    assertEquals( "&lt;h1&gt; [a] &lt;&#x2F;h1&gt;",
         sfb.createFragment( reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder() ) );
   }
 

@@ -54,7 +54,7 @@ import java.io.IOException;
  * @deprecated use {@link DoubleField} or {@link TrieDoubleField} - will be removed in 5.x
  */
 @Deprecated
-public class SortableDoubleField extends PrimitiveFieldType {
+public class SortableDoubleField extends PrimitiveFieldType implements DoubleValueFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
@@ -132,6 +132,11 @@ class SortableDoubleFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public boolean exists(int doc) {
+        return termsIndex.getOrd(doc) >= 0;
+      }
+
+      @Override
       public float floatVal(int doc) {
         return (float)doubleVal(doc);
       }
@@ -149,7 +154,12 @@ class SortableDoubleFieldSource extends FieldCacheSource {
       @Override
       public double doubleVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+        if (ord == -1) {
+          return def;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2double(spare);
+        }
       }
 
       @Override
@@ -159,8 +169,7 @@ class SortableDoubleFieldSource extends FieldCacheSource {
 
       @Override
       public Object objectVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        return ord==0 ? null  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+        return exists(doc) ? doubleVal(doc) : null;
       }
 
       @Override
@@ -181,11 +190,12 @@ class SortableDoubleFieldSource extends FieldCacheSource {
           @Override
           public void fillValue(int doc) {
             int ord=termsIndex.getOrd(doc);
-            if (ord == 0) {
+            if (ord == -1) {
               mval.value = def;
               mval.exists = false;
             } else {
-              mval.value = NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+              termsIndex.lookupOrd(ord, spare);
+              mval.value = NumberUtils.SortableStr2double(spare);
               mval.exists = true;
             }
           }

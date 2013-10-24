@@ -163,4 +163,9 @@ class ReqExclScorer extends Scorer {
       return IntervalIterator.NO_MORE_INTERVALS;
     return new ConjunctionIntervalIterator(this, collectIntervals, reqScorer.intervals(collectIntervals));
   }
+
+  @Override
+  public long cost() {
+    return reqScorer.cost();
+  }
 }

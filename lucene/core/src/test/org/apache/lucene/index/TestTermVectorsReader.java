@@ -93,7 +93,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MyAnalyzer()).
             setMaxBufferedDocs(-1).
-            setMergePolicy(newLogMergePolicy(false, 10))
+            setMergePolicy(newLogMergePolicy(false, 10)).setUseCompoundFile(false)
     );
 
     Document doc = new Document();
@@ -127,7 +127,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     seg = writer.newestSegment();
     writer.close();
 
-    fieldInfos = _TestUtil.getFieldInfos(seg.info);
+    fieldInfos = SegmentReader.readFieldInfos(seg);
   }
   
   @Override
@@ -229,7 +229,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         docsEnum = _TestUtil.docs(random(), termsEnum, null, docsEnum, DocsEnum.FLAG_NONE);
         assertNotNull(docsEnum);
         int doc = docsEnum.docID();
-        assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+        assertEquals(-1, doc);
         assertTrue(docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
@@ -256,7 +256,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertNotNull(dpEnum);
       int doc = dpEnum.docID();
-      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, doc);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
@@ -266,7 +266,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       doc = dpEnum.docID();
-      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, doc);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertNotNull(dpEnum);
       assertEquals(dpEnum.freq(), positions[i].length);
@@ -289,6 +289,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
       String term = text.utf8ToString();
       //System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
+      assertNotNull(termsEnum.docs(null, null));
+      assertNull(termsEnum.docsAndPositions(null, null)); // no pos
     }
     reader.close();
   }
@@ -328,5 +330,65 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
     }
     reader.close();
+  }
+
+  public void testIllegalIndexableField() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorPayloads(true);
+    Document doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(false);
+    ft.setStoreTermVectorOffsets(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot index term vector offsets when term vectors are not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(false);
+    ft.setStoreTermVectorPositions(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot index term vector positions when term vectors are not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(false);
+    ft.setStoreTermVectorPayloads(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    w.close();
+    
+    dir.close();
   }
 }

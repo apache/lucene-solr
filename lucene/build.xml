@@ -41,7 +41,6 @@
               excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
   />
 
-
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
@@ -145,6 +144,12 @@
 
   <target name="compile-core" depends="compile-lucene-core"/>
 
+  <!-- lucene/test-framework is excluded from compilation -->
+  <target name="compile" depends="init,compile-lucene-core,compile-codecs"
+          description="Compiles core, codecs, and all modules">
+    <modules-crawl target="compile-core"/>
+  </target>
+
   <!-- Validation (license/notice/api checks). -->
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
@@ -154,31 +159,51 @@
   </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
-    <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
+    <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses">
+      <additional-filters>
+        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
+        <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
+      </additional-filters>
+    </license-check-macro>
   </target>
 
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-lib-versions" depends="compile-tools,resolve,load-custom-tasks"
+          description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
+    <lib-versions-check-macro dir="${common.dir}/.." centralized.versions.file="${common.dir}/ivy-versions.properties"/>
+  </target>
+
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+
+  <!-- TODO: Make the forbidden API checks per module! -->
+  <target name="-forbidden-apis-classpath">
+    <path id="forbidden-apis.classpath">
+      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
+      <dirset dir="${basedir}/build" includes="**/classes/*"/>
+    </path>
+  </target>
 
   <target name="-check-forbidden-jdk-apis">
-    <forbidden-apis> 
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="jdk.txt" />
-        <include name="jdk-deprecated.txt" />
-        <include name="executors.txt" />
-      </apiFileSet>
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
+        <include name="base.txt" />
+      </signaturesFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
     </forbidden-apis>
   </target>
 
   <target name="-check-forbidden-test-apis">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath"> 
       <classpath refid="junit-path"/>
       <fileset dir="${basedir}/build" includes="**/classes/test/**/*.class,test-framework/**/*.class" />
     </forbidden-apis>
   </target>
 
   <target name="-check-system-out">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/system-out.txt">
+    <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.classpath">
       <fileset dir="${basedir}/build">
         <include name="**/classes/java/**/*.class"/>
         <!-- this is basically tests -->
@@ -191,8 +216,7 @@
         <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/Compile.class"/>
         <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/DiffIt.class"/>
         <exclude name="benchmark/**"/>
-        <exclude name="demo/classes/java/org/apache/lucene/demo/IndexFiles.class"/>
-        <exclude name="demo/classes/java/org/apache/lucene/demo/SearchFiles.class"/>
+        <exclude name="demo/classes/java/org/apache/lucene/**"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/CompoundFileExtractor.class"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/IndexSplitter.class"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/MultiPassIndexSplitter.class"/>
@@ -205,6 +229,7 @@
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/classic/QueryParserTokenManager.class"/>
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class"/>
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class"/>
+        <exclude name="facet/classes/java/org/apache/lucene/facet/util/PrintTaxonomyStats.class"/>
       </fileset>
     </forbidden-apis>
   </target>
@@ -226,11 +251,14 @@
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
-  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
-          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint-unsupported" if="documentation-lint.supported"
+          description="Validates the generated documentation (HTML errors, broken links,...)">
+    <!-- we use antcall here, otherwise ANT will run all dependent targets: -->
+    <antcall target="-documentation-lint"/>
+  </target>
 
   <!-- we check for broken links across all documentation -->
-  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+  <target name="-documentation-lint" depends="documentation">
     <echo message="checking for broken html..."/>
     <jtidy-macro>
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
@@ -260,6 +288,7 @@
     <!-- codecs: problems -->
     <!-- core: problems -->
     <check-missing-javadocs dir="build/docs/demo" level="method"/>
+    <check-missing-javadocs dir="build/docs/expressions" level="method"/>
     <!-- facet: problems -->
     <!-- grouping: problems -->
     <!-- highlighter: problems -->
@@ -281,7 +310,7 @@
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
   </target>
   
-  <target name="-ecj-javadoc-lint" depends="documentation,compile-test-framework,-ecj-resolve">
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
@@ -324,7 +353,7 @@
   </target>
 
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
-  <target name="rat-sources" depends="rat-sources-typedef">
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
     <subant target="rat-sources" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
@@ -424,7 +453,7 @@
     <svn-export-source source.dir="."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/tools/javadoc/java6"/>
+    <delete dir="${svn.export.dir}/tools/javadoc/java7"/>
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/tools/clover"/>
 
@@ -520,7 +549,7 @@
     <modules-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="compile-test" description="Builds core, test-framework, and modules tests">
+  <target name="compile-test" description="Builds core, codecs, test-framework, and modules tests">
     <sequential>
       <ant dir="core" target="compile-test" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
@@ -569,6 +598,17 @@
     <property name="lucene-core.uptodate" value="true"/>
   </target>
 
+  <target name="jar" depends="jar-core,jar-test-framework"
+          description="Jars core, codecs, test-framework, and all modules">
+    <modules-crawl target="jar-core"/>
+  </target>
+
+  <target name="jar-src" description="create source jars for all modules">
+    <ant dir="${common.dir}/core" target="jar-src" inheritAll="false" />
+    <ant dir="${common.dir}/test-framework" target="jar-src" inheritAll="false" />
+    <modules-crawl target="jar-src"/>
+  </target>
+
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
@@ -580,6 +620,15 @@
 
   <target name="jar-checksums" depends="resolve">
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
+  </target>
+
+  <target name="regenerate">
+    <subant target="regenerate" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="regenerate"/>
   </target>
 
 </project>

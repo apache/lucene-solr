@@ -67,14 +67,23 @@ public final class ClasspathResourceLoader implements ResourceLoader {
       throw new IOException("Resource not found: " + resource);
     return stream;
   }
+  
+  @Override
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+    try {
+      return Class.forName(cname, true, loader).asSubclass(expectedType);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot load class: " + cname, e);
+    }
+  }
 
   @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
+    Class<? extends T> clazz = findClass(cname, expectedType);
     try {
-      final Class<? extends T> clazz = Class.forName(cname, true, loader).asSubclass(expectedType);
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException("Cannot instantiate class: " + cname, e);
+      throw new RuntimeException("Cannot create instance: " + cname, e);
     }
   }
 }

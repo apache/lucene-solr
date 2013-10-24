@@ -24,10 +24,11 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Sort.SortInfo;
+import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
-import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
@@ -41,7 +42,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
+ * to discretize any "weights" as passed from in {@link InputIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -94,7 +95,7 @@ public class FSTCompletionLookup extends Lookup {
 
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method. The number of weight
+   * {@link #build(InputIterator)} method. The number of weight
    * discretization buckets is set to {@link FSTCompletion#DEFAULT_BUCKETS} and
    * exact matches are promoted to the top of the suggestions list.
    */
@@ -104,7 +105,7 @@ public class FSTCompletionLookup extends Lookup {
 
   /**
    * This constructor prepares for creating a suggested FST using the
-   * {@link #build(TermFreqIterator)} method.
+   * {@link #build(InputIterator)} method.
    * 
    * @param buckets
    *          The number of weight discretization buckets (see
@@ -139,7 +140,10 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public void build(TermFreqIterator tfit) throws IOException {
+  public void build(InputIterator tfit) throws IOException {
+    if (tfit.hasPayloads()) {
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
     File tempInput = File.createTempFile(
         FSTCompletionLookup.class.getSimpleName(), ".input", Sort.defaultTempDir());
     File tempSorted = File.createTempFile(

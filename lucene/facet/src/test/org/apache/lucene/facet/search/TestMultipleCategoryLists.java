@@ -13,17 +13,13 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.FacetTestUtils;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.params.PerDimensionIndexingParams;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -41,7 +37,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -61,7 +56,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestMultipleCategoryLists extends LuceneTestCase {
+public class TestMultipleCategoryLists extends FacetTestCase {
 
   private static final CategoryPath[] CATEGORIES = new CategoryPath[] {
     new CategoryPath("Author", "Mark Twain"),
@@ -77,12 +72,14 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   
   @Test
   public void testDefault() throws Exception {
-    Directory[][] dirs = getDirs();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+    RandomIndexWriter iw = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
 
@@ -92,7 +89,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -105,17 +102,19 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertOrdinalsExist("$facets", ir);
 
     IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   @Test
   public void testCustom() throws Exception {
-    Directory[][] dirs = getDirs();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+    RandomIndexWriter iw = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(
         Collections.singletonMap(new CategoryPath("Author"), new CategoryListParams("$author")));
@@ -125,7 +124,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -139,17 +138,19 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertOrdinalsExist("$author", ir);
 
     IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   @Test
   public void testTwoCustomsSameField() throws Exception {
-    Directory[][] dirs = getDirs();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+    RandomIndexWriter iw = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
     paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$music"));
@@ -161,7 +162,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -176,13 +177,13 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertOrdinalsExist("$music", ir);
 
     IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   private void assertOrdinalsExist(String field, IndexReader ir) throws IOException {
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
-      if (r.docValues(field) != null) {
+      if (r.getBinaryDocValues(field) != null) {
         return; // not all segments must have this DocValues
       }
     }
@@ -191,12 +192,14 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
   @Test
   public void testDifferentFieldsAndText() throws Exception {
-    Directory[][] dirs = getDirs();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+    RandomIndexWriter iw = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
     paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$bands"));
@@ -208,7 +211,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -222,17 +225,19 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertOrdinalsExist("$composers", ir);
 
     IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   @Test
   public void testSomeSameSomeDifferent() throws Exception {
-    Directory[][] dirs = getDirs();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+    RandomIndexWriter iw = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
     paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$music"));
@@ -246,7 +251,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -259,11 +264,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertOrdinalsExist("$literature", ir);
 
     IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(dirs[0]);
-  }
-
-  private Directory[][] getDirs() {
-    return FacetTestUtils.createIndexTaxonomyDirs(1);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   private void assertCorrectResults(FacetsCollector facetsCollector) throws IOException {
@@ -271,19 +272,17 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     FacetResult results = res.get(0);
     FacetResultNode resNode = results.getFacetResultNode();
-    Iterable<? extends FacetResultNode> subResults = resNode.getSubResults();
+    Iterable<? extends FacetResultNode> subResults = resNode.subResults;
     Iterator<? extends FacetResultNode> subIter = subResults.iterator();
 
-    checkResult(resNode, "Band", 5.0);
     checkResult(subIter.next(), "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Punk", 1.0);
 
     results = res.get(1);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Band", 5.0);
     checkResult(subIter.next(), "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Rock & Pop/Dave Matthews Band", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/REM", 1.0);
@@ -294,20 +293,18 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     results = res.get(2);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Author", 3.0);
     checkResult(subIter.next(), "Author/Kurt Vonnegut", 1.0);
     checkResult(subIter.next(), "Author/Stephen King", 1.0);
     checkResult(subIter.next(), "Author/Mark Twain", 1.0);
 
     results = res.get(3);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Rock & Pop/Dave Matthews Band", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/REM", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/U2", 1.0);
@@ -331,10 +328,10 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     facetRequests.add(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
 
     // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
 
     // perform documents search and facets accumulation
-    FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, ir, tr);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, ir, tr);
     searcher.search(q, MultiCollector.wrap(topDocsCollector, facetsCollector));
     return facetsCollector;
   }
@@ -350,8 +347,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private static void checkResult(FacetResultNode sub, String label, double value) {
-    assertEquals("Label of subresult " + sub.getLabel() + " was incorrect", label, sub.getLabel().toString());
-    assertEquals("Value for " + sub.getLabel() + " subresult was incorrect", value, sub.getValue(), 0.0);
+    assertEquals("Label of subresult " + sub.label + " was incorrect", label, sub.label.toString());
+    assertEquals("Value for " + sub.label + " subresult was incorrect", value, sub.value, 0.0);
   }
 
 }

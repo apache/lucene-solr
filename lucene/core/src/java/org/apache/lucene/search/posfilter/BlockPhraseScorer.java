@@ -1,6 +1,7 @@
 package org.apache.lucene.search.posfilter;
 
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
 
@@ -25,8 +26,8 @@ public class BlockPhraseScorer extends PositionFilteredScorer {
 
   private final Interval[] subIntervals;
 
-  public BlockPhraseScorer(Scorer filteredScorer) {
-    super(filteredScorer);
+  public BlockPhraseScorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+    super(filteredScorer, simScorer);
     subIntervals = new Interval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
       subIntervals[i] = new Interval();

@@ -167,11 +167,11 @@ enabling substantial customization to how a query is created.
         If you want to find the document entitled "The Right Way" which contains the text "don't go this way", you can enter: </p>
 <pre class="code">title:"The Right Way" AND text:go</pre>
 <p>or</p>
-<pre class="code">title:"Do it right" AND right</pre>
+<pre class="code">title:"The Right Way" AND go</pre>
 <p>Since text is the default field, the field indicator is not required.</p>
 <p>Note: The field is only valid for the term that it directly precedes, so the query</p>
-<pre class="code">title:Do it right</pre>
-<p>Will only find "Do" in the title field. It will find "it" and "right" in the default field (in this case the text field). </p>
+<pre class="code">title:The Right Way</pre>
+<p>Will only find "The" in the title field. It will find "Right" and "Way" in the default field (in this case the text field). </p>
 </div>
 
         

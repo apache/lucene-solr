@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -39,7 +38,6 @@ import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -288,11 +286,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public long size() throws IOException {
       return terms.size();
     }
@@ -310,6 +303,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public int getDocCount() throws IOException {
       return 1;
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return true;
     }
 
     @Override
@@ -347,7 +345,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
     
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       iterator = terms.tailMap(text).entrySet().iterator();
       if (!iterator.hasNext()) {
         return SeekStatus.END;
@@ -410,11 +408,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
       return e;
     }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
   }
   
   // note: these two enum classes are exactly like the Default impl...
@@ -446,12 +439,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int freq) {
@@ -459,6 +448,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.freq = freq;
       this.doc = -1;
       didNext = false;
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
   
@@ -498,12 +492,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, BytesRef payloads[]) {
@@ -553,5 +543,15 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         return endOffsets[nextPos-1];
       }
     }
+    
+    @Override
+    public long cost() {
+      return 1;
+    }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
   }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest.fst;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.search.suggest.InMemorySorter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IntsRef;

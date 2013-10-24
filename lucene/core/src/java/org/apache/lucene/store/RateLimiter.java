@@ -97,7 +97,8 @@ public abstract class RateLimiter {
       // TODO: this is purely instantaneous rate; maybe we
       // should also offer decayed recent history one?
       final long targetNS = lastNS = lastNS + ((long) (bytes * nsPerByte));
-      long curNS = System.nanoTime();
+      final long startNS;
+      long curNS = startNS = System.nanoTime();
       if (lastNS < curNS) {
         lastNS = curNS;
       }
@@ -117,7 +118,7 @@ public abstract class RateLimiter {
         }
         break;
       }
-      return targetNS;
+      return curNS - startNS;
     }
   }
 }

@@ -18,25 +18,35 @@ package org.apache.lucene.analysis.wikipedia;
  */
 
 import java.io.Reader;
+import java.util.Collections;
+import java.util.Map;
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /** 
  * Factory for {@link WikipediaTokenizer}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_wiki" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WikipediaTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
+  
+  /** Creates a new WikipediaTokenizerFactory */
+  public WikipediaTokenizerFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   // TODO: add support for WikipediaTokenizer's advanced options.
   @Override
-  public Tokenizer create(Reader input) {
-    return new WikipediaTokenizer(input);
+  public WikipediaTokenizer create(AttributeFactory factory, Reader input) {
+    return new WikipediaTokenizer(factory, input, WikipediaTokenizer.TOKENS_ONLY, 
+        Collections.<String>emptySet());
   }
 }

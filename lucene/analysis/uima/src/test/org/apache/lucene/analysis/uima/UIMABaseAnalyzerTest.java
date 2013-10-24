@@ -35,7 +35,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Testcase for {@link UIMABaseAnalyzer}
@@ -48,7 +49,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation");
+    analyzer = new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation", null);
   }
 
   @Override
@@ -60,7 +61,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void baseUIMAAnalyzerStreamTest() throws Exception {
-    TokenStream ts = analyzer.tokenStream("text", new StringReader("the big brown fox jumped on the wood"));
+    TokenStream ts = analyzer.tokenStream("text", "the big brown fox jumped on the wood");
     assertTokenStreamContents(ts, new String[]{"the", "big", "brown", "fox", "jumped", "on", "the", "wood"});
   }
 
@@ -79,7 +80,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
     // try the search over the first doc
     DirectoryReader directoryReader = DirectoryReader.open(dir);
-    IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
+    IndexSearcher indexSearcher = newSearcher(directoryReader);
     TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
     StoredDocument d = indexSearcher.doc(result.scoreDocs[0].doc);
@@ -100,7 +101,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
     directoryReader.close();
     directoryReader = DirectoryReader.open(dir);
-    indexSearcher = new IndexSearcher(directoryReader);
+    indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     StoredDocument d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
@@ -110,7 +111,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     assertEquals(dogmasContents, d1.getField("contents").stringValue());
 
     // do a matchalldocs query to retrieve both docs
-    indexSearcher = new IndexSearcher(directoryReader);
+    indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     assertEquals(2, result.totalHits);
     writer.close();
@@ -120,7 +121,15 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation"),
+    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", null),
+        100 * RANDOM_MULTIPLIER);
+  }
+
+  @Test
+  public void testRandomStringsWithConfigurationParameters() throws Exception {
+    Map<String, Object> cp = new HashMap<String, Object>();
+    cp.put("line-end", "\r");
+    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestWSTokenizerAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", cp),
         100 * RANDOM_MULTIPLIER);
   }
 

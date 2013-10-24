@@ -86,7 +86,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
         this.positionedTokens.add(token);
       }
     }
-    CollectionUtil.mergeSort(this.positionedTokens, tokenComparator);
+    CollectionUtil.timSort(this.positionedTokens, tokenComparator);
     int lastPosition = -1;
     for (final Token token : this.positionedTokens) {
       int thisPosition = token.getPositionIncrement();

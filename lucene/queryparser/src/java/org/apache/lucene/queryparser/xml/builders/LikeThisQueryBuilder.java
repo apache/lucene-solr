@@ -4,7 +4,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -74,8 +73,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
     if ((stopWords != null) && (fields != null)) {
       stopWordsSet = new HashSet<String>();
       for (String field : fields) {
-        try {
-          TokenStream ts = analyzer.tokenStream(field, new StringReader(stopWords));
+        try (TokenStream ts = analyzer.tokenStream(field, stopWords)) {
           CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
           ts.reset();
           while (ts.incrementToken()) {

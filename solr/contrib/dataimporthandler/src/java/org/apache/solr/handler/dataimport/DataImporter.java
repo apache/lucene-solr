@@ -20,9 +20,7 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SystemIdResolver;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
@@ -36,7 +34,6 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrap
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
 import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.CLASS;
-import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.NAME;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +48,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -86,7 +89,6 @@ public class DataImporter {
   private ReentrantLock importLock = new ReentrantLock();
   private boolean isDeltaImportSupported = false;  
   private final String handlerName;  
-  private Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
 
   /**
    * Only for testing purposes
@@ -98,8 +100,7 @@ public class DataImporter {
   DataImporter(SolrCore core, String handlerName) {
     this.handlerName = handlerName;
     this.core = core;
-    this.schema = core.getSchema();
-    loadSchemaFieldMap();   
+    this.schema = core.getLatestSchema();
   }
   
   
@@ -110,8 +111,13 @@ public class DataImporter {
   if (importLock.tryLock()) {
       boolean success = false;
       try {        
+        if (null != params.getRequest()) {
+          if (schema != params.getRequest().getSchema()) {
+            schema = params.getRequest().getSchema();
+          }
+        }
         String dataConfigText = params.getDataConfig();
-        String dataconfigFile = (String) params.getConfigFile();        
+        String dataconfigFile = params.getConfigFile();        
         InputSource is = null;
         if(dataConfigText!=null && dataConfigText.length()>0) {
           is = new InputSource(new StringReader(dataConfigText));
@@ -161,31 +167,14 @@ public class DataImporter {
   
   
   
-  private void loadSchemaFieldMap() {
-    Map<String, SchemaField> modLnvsf = new HashMap<String, SchemaField>();
-    for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
-      modLnvsf.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
-    }
-    lowerNameVsSchemaField = Collections.unmodifiableMap(modLnvsf);
+  public String getHandlerName() {
+    return handlerName;
+  }
+
+  public IndexSchema getSchema() {
+    return schema;
   }
   
-  public SchemaField getSchemaField(String caseInsensitiveName) {
-    SchemaField schemaField = null;
-    if(schema!=null) {
-      schemaField = schema.getFieldOrNull(caseInsensitiveName);
-    }
-    if (schemaField == null) {
-      schemaField = lowerNameVsSchemaField.get(caseInsensitiveName.toLowerCase(Locale.ROOT));
-    }
-    return schemaField;
-  }
-
-   public String getHandlerName() {
-        return handlerName;
-    }
-
-    
-
   /**
    * Used by tests
    */
@@ -581,11 +570,7 @@ public class DataImporter {
     public static final String TOTAL_DOCS_SKIPPED = "Total Documents Skipped";
   }
 
-  public IndexSchema getSchema() {
-    return schema;
-  }
-
-  SolrCore getCore() {
+  public SolrCore getCore() {
     return core;
   }
   

@@ -20,6 +20,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PositionQueue;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
 
@@ -57,8 +58,8 @@ public class UnorderedNearQuery extends PositionFilterQuery {
     }
 
     @Override
-    public Scorer scorer(Scorer filteredScorer) {
-      return new WithinFilteredScorer(new UnorderedNearScorer(filteredScorer), slop);
+    public Scorer scorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      return new WithinFilteredScorer(new UnorderedNearScorer(filteredScorer, simScorer), slop, simScorer);
     }
 
     @Override
@@ -71,8 +72,8 @@ public class UnorderedNearQuery extends PositionFilterQuery {
 
     SpanningPositionQueue posQueue;
 
-    public UnorderedNearScorer(Scorer filteredScorer) {
-      super(filteredScorer);
+    public UnorderedNearScorer(Scorer filteredScorer, Similarity.SimScorer simScorer) {
+      super(filteredScorer, simScorer);
       posQueue = new SpanningPositionQueue(subScorers);
     }
 

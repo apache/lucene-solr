@@ -368,25 +368,20 @@ file, previously they were stored in text format only.</li>
 frequencies.</li>
 <li>In version 4.0, the format of the inverted index became extensible via
 the {@link org.apache.lucene.codecs.Codec Codec} api. Fast per-document storage
-({@link org.apache.lucene.index.DocValues DocValues}) was introduced. Normalization
-factors need no longer be a single byte, they can be any DocValues 
-{@link org.apache.lucene.index.DocValues.Type type}. Terms need not be unicode
-strings, they can be any byte sequence. Term offsets can optionally be indexed 
-into the postings lists. Payloads can be stored in the term vectors.</li>
+({@code DocValues}) was introduced. Normalization factors need no longer be a 
+single byte, they can be any {@link org.apache.lucene.index.NumericDocValues NumericDocValues}. 
+Terms need not be unicode strings, they can be any byte sequence. Term offsets 
+can optionally be indexed into the postings lists. Payloads can be stored in the 
+term vectors.</li>
 <li>In version 4.1, the format of the postings list changed to use either
 of FOR compression or variable-byte encoding, depending upon the frequency
-of the term.</li>
+of the term. Terms appearing only once were changed to inline directly into
+the term dictionary. Stored fields are compressed by default. </li>
 </ul>
 <a name="Limitations" id="Limitations"></a>
 <h2>Limitations</h2>
 <div>
-<p>When referring to term numbers, Lucene's current implementation uses a Java
-<code>int</code> to hold the term index, which means the
-maximum number of unique terms in any single index segment is ~2.1 billion
-times the term index interval (default 128) = ~274 billion. This is technically
-not a limitation of the index file format, just of Lucene's current
-implementation.</p>
-<p>Similarly, Lucene uses a Java <code>int</code> to refer to
+<p>Lucene uses a Java <code>int</code> to refer to
 document numbers, and the index file format uses an <code>Int32</code>
 on-disk to store document numbers. This is a limitation
 of both the index file format and the current implementation. Eventually these

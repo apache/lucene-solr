@@ -18,11 +18,11 @@ package org.apache.lucene.search.grouping.term;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,8 +52,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   private final SentinelIntSet ordSet;
   private final List<BytesRef> groups;
 
-  private FieldCache.DocTermsIndex index;
-  private final BytesRef spareBytesRef = new BytesRef();
+  private SortedDocValues index;
 
   /**
    * Expert: Constructs a {@link AbstractAllGroupsCollector}
@@ -66,8 +65,8 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
    *                    heap usage is 4 bytes * initialSize.
    */
   public TermAllGroupsCollector(String groupField, int initialSize) {
-    ordSet = new SentinelIntSet(initialSize, -1);
-    groups = new ArrayList<BytesRef>(initialSize);
+    ordSet = new SentinelIntSet(initialSize, -2);
+    groups = new ArrayList<>(initialSize);
     this.groupField = groupField;
   }
 
@@ -87,7 +86,13 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
       ordSet.put(key);
-      BytesRef term = key == 0 ? null : index.lookup(key, new BytesRef());
+      BytesRef term;
+      if (key == -1) {
+        term = null;
+      } else {
+        term =  new BytesRef();
+        index.lookupOrd(key, term);
+      }
       groups.add(term);
     }
   }
@@ -104,11 +109,14 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
     ordSet.clear();
     for (BytesRef countedGroup : groups) {
-      int ord = index.binarySearchLookup(countedGroup, spareBytesRef);
-      if (ord >= 0) {
-        ordSet.put(ord);
+      if (countedGroup == null) {
+        ordSet.put(-1);
+      } else {
+        int ord = index.lookupTerm(countedGroup);
+        if (ord >= 0) {
+          ordSet.put(ord);
+        }
       }
     }
   }
-
 }

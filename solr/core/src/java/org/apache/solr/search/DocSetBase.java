@@ -186,6 +186,11 @@ abstract class DocSetBase implements DocSet {
                 pos = bs.nextSetBit(target+base);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
+
+              @Override
+              public long cost() {
+                return bs.capacity();
+              }
             };
           }
 

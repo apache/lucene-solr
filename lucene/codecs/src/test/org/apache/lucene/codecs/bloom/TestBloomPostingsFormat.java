@@ -18,21 +18,14 @@ package org.apache.lucene.codecs.bloom;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Basic tests for BloomPostingsFormat
  */
 public class TestBloomPostingsFormat extends BasePostingsFormatTestCase {
-  private final PostingsFormat postings = new TestBloomFilteredLucene41Postings();
-  private final Codec codec = new Lucene41Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new TestBloomFilteredLucene41Postings());
 
   @Override
   protected Codec getCodec() {

@@ -200,13 +200,11 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   public void testInverseRange() throws Exception {
     AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(reader).getContext();
     NumericRangeFilter<Integer> f = NumericRangeFilter.newIntRange("field8", 8, 1000, -1000, true, true);
-    assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull("A inverse range should return the null instance", f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newIntRange("field8", 8, Integer.MAX_VALUE, null, false, false);
-    assertSame("A exclusive range starting with Integer.MAX_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull("A exclusive range starting with Integer.MAX_VALUE should return the null instance", f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newIntRange("field8", 8, null, Integer.MIN_VALUE, false, false);
-    assertSame("A exclusive range ending with Integer.MIN_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull("A exclusive range ending with Integer.MIN_VALUE should return the null instance", f.getDocIdSet(context, context.reader().getLiveDocs()));
   }
   
   @Test
@@ -327,7 +325,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     Query q=NumericRangeQuery.newIntRange("int", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);
@@ -380,8 +378,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         int a=lower; lower=upper; upper=a;
       }
       final BytesRef lowerBytes = new BytesRef(NumericUtils.BUF_SIZE_INT), upperBytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
-      NumericUtils.intToPrefixCoded(lower, 0, lowerBytes);
-      NumericUtils.intToPrefixCoded(upper, 0, upperBytes);
+      NumericUtils.intToPrefixCodedBytes(lower, 0, lowerBytes);
+      NumericUtils.intToPrefixCodedBytes(upper, 0, upperBytes);
 
       // test inclusive range
       NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);

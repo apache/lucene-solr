@@ -25,7 +25,7 @@
     <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
-    <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant dist' to build the project JAR files." />
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
@@ -55,11 +55,10 @@
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
-
+  
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
-    <property name="example.data.dir" location="example/solr/data"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
     <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
@@ -70,7 +69,6 @@
     <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
-      <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
     </java>
   </target>
@@ -126,9 +124,11 @@
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->
   <!-- ========================================================================= -->
-  
+
+  <!-- solr/test-framework is excluded from compilation -->
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
+
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="test-core, test-contrib"/>
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
@@ -136,7 +136,7 @@
           depends="-clover.load, test-solr-core, test-solrj"/>
   <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
           depends="pitest-core, pitest-contrib"/>
-  <target name="compile-test" description="Compile unit tests."
+  <target name="compile-test" description="Compile core, solrj, and contrib unit tests, and solr-test-framework."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
           depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
@@ -173,9 +173,26 @@
     </copy>
   </target>
 
+  <target name="jar" depends="jar-core,jar-solrj,jar-solr-test-framework,jar-contrib"
+          description="Jar solr core, solrj, solr-test-framework, and all contribs"/>
+
+  <target name="jar-src" 
+          description="Create source jars for solr core, solrj, solr-test-framework, and all contribs">
+    <ant dir="core" target="jar-src" inheritAll="false"/>
+    <ant dir="solrj" target="jar-src" inheritAll="false"/>
+    <ant dir="test-framework" target="jar-src" inheritAll="false"/>
+    <contrib-crawl target="jar-src"/>
+  </target>
+
   <!-- Solr core targets -->
   <target name="test-solr-core" description="Test solr core">
     <ant dir="core" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="jar-core">
+    <ant dir="${common-solr.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -217,7 +234,21 @@
   </target>
     
   <!-- Validation (license/notice/api checks). -->
-  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+  <target name="validate" depends="check-example-lucene-match-version,check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-example-lucene-match-version">
+    <fail message="Some example solrconfig.xml files do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
+      <condition>
+        <resourcecount when="greater" count="0">
+          <fileset dir="${example}" includes="**/solrconfig.xml">
+            <not>
+              <contains text="&lt;luceneMatchVersion&gt;${tests.luceneMatchVersion}&lt;" casesensitive="no"/>
+            </not>
+          </fileset>
+        </resourcecount>
+      </condition>
+    </fail>
+  </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
@@ -236,19 +267,30 @@
     </license-check-macro>
   </target>
   
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-java-apis,-check-forbidden-test-apis" 
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-java-apis,-check-forbidden-test-apis" 
           description="Check forbidden API calls in compiled class files."/>
 
+  <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
+  <target name="-forbidden-apis-classpath">
+    <path id="forbidden-apis.classpath">
+      <fileset dir="${basedir}" includes="**/lib/*.jar,**/test-lib/*.jar"/>
+      <dirset dir="${basedir}/build" includes="**/classes/*"/>
+      <path refid="solr.lucene.libs"/>
+      <path refid="classpath"/>
+      <path refid="test.classpath"/>
+    </path>
+  </target>
+
   <target name="-check-forbidden-java-apis">
-    <forbidden-apis>
-      <classpath refid="additional.dependencies"/>
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="jdk.txt" />
-        <include name="jdk-deprecated.txt" />
-        <include name="commons-io.txt" />
-        <include name="executors.txt" />
+    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <bundledSignatures name="commons-io-unsafe-${/commons-io/commons-io}"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
+        <include name="base.txt" />
         <include name="servlet-api.txt" />
-      </apiFileSet>
+      </signaturesFileSet>
       <fileset dir="${basedir}/build">
         <include name="**/*.class" />        
         <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
@@ -258,8 +300,7 @@
   </target>
 
   <target name="-check-forbidden-test-apis">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
-      <classpath refid="junit-path"/>
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
       <fileset dir="${basedir}/build">
         <include name="**/classes/test/**/*.class"/>
         <include name="solr-test-framework/**/*.class"/>
@@ -273,12 +314,13 @@
 
   <!-- rat sources -->
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
-  <target name="rat-sources" depends="rat-sources-typedef">
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
     <subant target="rat-sources" inheritall="false" >
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="webapp" includes="build.xml"/>
     </subant>
     <contrib-crawl target="rat-sources" failonerror="true"/>
   </target>
@@ -318,18 +360,7 @@
   
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="-dist-common, dist-war" />
- 
-  <target name="dist-excl-slf4j"
-          description="Creates the Solr distribution files without slf4j API or bindings."
-          depends="-dist-common, dist-war-excl-slf4j" />
- 
-  <target name="-dist-common"
-          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib">
-    <!-- Targets common to dist and dist-excl-slf4j.
-         Only usable as a dependency
-    -->
-  </target>
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, dist-war" />
  
   <target name="dist-test-framework" depends="init-dist"
           description="Creates the Solr test-framework JAR.">
@@ -346,20 +377,10 @@
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file.">
     <ant dir="webapp" target="dist" inheritall="false">
-      <property name="exclude.from.war" value="log4j-1.*" />
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
   
-  <target name="dist-war-excl-slf4j"
-          description="Creates a Solr WAR Distribution file, excluding slf4j API and bindings.">
-    <ant dir="webapp" target="dist" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="exclude.from.war" value="*slf4j*,log4j-*" />
-      <property name="solr.war.suffix" value="-excl-slf4j" />
-    </ant>
-  </target>
-
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
@@ -389,7 +410,7 @@
     <svn-export-source source.dir=".."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java6"/>
+    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java7"/>
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
@@ -444,8 +465,14 @@
   </target>
 
   <target name="create-package"
-          description="Packages the Solr Binary Distribution"
-          depends="init-dist, dist, example, documentation">
+          description="Packages the Solr Binary Distribution">
+    <antcall inheritall="true">
+      <param name="called.from.create-package" value="true"/>
+      <target name="init-dist"/>
+      <target name="dist"/>
+      <target name="example"/>
+      <target name="documentation"/>
+    </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/solr-webapp" includes="**/*"/>
@@ -463,10 +490,9 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            example/** client/README.txt client/ruby/solr-ruby/** 
-                            contrib/**/lib/** contrib/**/README.txt 
+                            example/** contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
-                  excludes="lib/README.committers.txt **/data/ **/logs/* 
+                  excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
                             **/*pom.xml.template" />
@@ -479,7 +505,7 @@
                   includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="dist/*.jar dist/*.war 
+                  includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
@@ -545,12 +571,15 @@
     </sequential>
   </target>
 
-  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
-          description="Validates the generated documentation (HTML errors, broken links,...)"/>
-  
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint-unsupported" if="documentation-lint.supported"
+          description="Validates the generated documentation (HTML errors, broken links,...)">
+    <!-- we use antcall here, otherwise ANT will run all dependent targets: -->
+    <antcall target="-documentation-lint"/>
+  </target>
+
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+  <target name="-documentation-lint" depends="documentation">
     <jtidy-macro>
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
             javadocs generates invalid XML if you deprecate a method that takes a parameter
@@ -560,20 +589,11 @@
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
     <echo message="Checking for malformed docs..."/>
-    <!-- TODO: add missing package.htmls and bump this to level=package -->
-    <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
-    <!-- prevent the modules without problems from getting worse -->
-    <check-missing-javadocs dir="${javadoc.dir}/solr-analysis-extras" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-cell" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-clustering" level="package"/>
-    <!-- solr-core: problems: -->
-    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler-extras" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-solrj" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-test-framework" level="package"/>
+    <!-- TODO: add missing docs for all classes and bump this to level=class -->
+    <check-missing-javadocs dir="${javadoc.dir}" level="package"/>
   </target>
  
-  <target name="-ecj-javadoc-lint" depends="documentation,compile-solr-test-framework,-ecj-resolve">
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,jar-test-framework,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>

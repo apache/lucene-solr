@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link CJKBigramFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_cjk" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -38,26 +38,30 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  */
 public class CJKBigramFilterFactory extends TokenFilterFactory {
-  int flags;
-  boolean outputUnigrams;
+  final int flags;
+  final boolean outputUnigrams;
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    flags = 0;
-    if (getBoolean("han", true)) {
+  /** Creates a new CJKBigramFilterFactory */
+  public CJKBigramFilterFactory(Map<String,String> args) {
+    super(args);
+    int flags = 0;
+    if (getBoolean(args, "han", true)) {
       flags |= CJKBigramFilter.HAN;
     }
-    if (getBoolean("hiragana", true)) {
+    if (getBoolean(args, "hiragana", true)) {
       flags |= CJKBigramFilter.HIRAGANA;
     }
-    if (getBoolean("katakana", true)) {
+    if (getBoolean(args, "katakana", true)) {
       flags |= CJKBigramFilter.KATAKANA;
     }
-    if (getBoolean("hangul", true)) {
+    if (getBoolean(args, "hangul", true)) {
       flags |= CJKBigramFilter.HANGUL;
     }
-    outputUnigrams = getBoolean("outputUnigrams", false);
+    this.flags = flags;
+    this.outputUnigrams = getBoolean(args, "outputUnigrams", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
   
   @Override

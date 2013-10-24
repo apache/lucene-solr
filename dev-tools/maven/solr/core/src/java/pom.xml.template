@@ -33,8 +33,8 @@
   <description>Apache Solr Core</description>
   <properties>
     <module-directory>solr/core</module-directory>
-    <top-level>../../../../..</top-level>
-    <module-path>${top-level}/${module-directory}/src/java</module-path>
+    <relative-top-level>../../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}/src/java</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -54,6 +54,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-codecs</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-common</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -66,6 +71,7 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-morfologik</artifactId>
       <version>${project.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
@@ -89,6 +95,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-join</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-queryparser</artifactId>
       <version>${project.version}</version>
       <exclusions>
@@ -107,6 +118,12 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-suggest</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.lucene</groupId>
+          <artifactId>lucene-expressions</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
@@ -117,6 +134,10 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-queries</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+      <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -131,12 +152,182 @@
       <artifactId>commons-fileupload</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-jdk14</artifactId>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-auth</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-math</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>xmlenc</groupId>
+          <artifactId>xmlenc</artifactId>                                  
+        </exclusion>
+        <exclusion>
+          <groupId>commons-configuration</groupId>
+          <artifactId>commons-configuration</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-httpclient</groupId>
+          <artifactId>commons-httpclient</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-net</groupId>
+          <artifactId>commons-net</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-json</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-server</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty-util</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>tomcat</groupId>
+          <artifactId>jasper-compiler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>tomcat</groupId>
+          <artifactId>jasper-runtime</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-el</groupId>
+          <artifactId>commons-el</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.java.dev.jets3t</groupId>
+          <artifactId>jets3t</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-digester</groupId>
+          <artifactId>commons-digester</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-core-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-mapper-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.sf.kosmosfs</groupId>
+          <artifactId>kfs</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-server</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-core-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-mapper-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty-util</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>tomcat</groupId>
+          <artifactId>jasper-runtime</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>xmlenc</groupId>
+          <artifactId>xmlenc</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-daemon</groupId>
+          <artifactId>commons-daemon</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet</artifactId>
+      <version>${restlet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.servlet</artifactId>
+      <version>${restlet.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -164,17 +355,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
       <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.woodstox</groupId>
-      <artifactId>wstx-asl</artifactId>
-      <scope>runtime</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>stax</groupId>
-          <artifactId>stax-api</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -215,6 +395,39 @@
         <configuration>
           <skip>true</skip> <!-- This skips test compilation - tests are run from solr-core-tests module -->
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>solr-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>solr-shared-test-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>check-forbidden-apis</id>
+            <configuration>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <bundledSignatures>
+                <bundledSignature>jdk-unsafe</bundledSignature>
+                <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
+              </bundledSignatures>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+              </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

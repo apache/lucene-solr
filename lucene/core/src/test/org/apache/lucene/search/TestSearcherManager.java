@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
@@ -104,6 +105,10 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       @Override
       public void run() {
         try {
+          if (VERBOSE) {
+            System.out.println("[" + Thread.currentThread().getName() + "]: launch reopen thread");
+          }
+
           while(System.currentTimeMillis() < stopTime) {
             Thread.sleep(_TestUtil.nextInt(random(), 1, 100));
             writer.commit();
@@ -331,8 +336,13 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
       @Override
-      public void afterRefresh() {
-        afterRefreshCalled.set(true);
+      public void beforeRefresh() {
+      }
+      @Override
+      public void afterRefresh(boolean didRefresh) {
+        if (didRefresh) {
+          afterRefreshCalled.set(true);
+        }
       }
     });
     iw.addDocument(new Document());
@@ -356,7 +366,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader ignored) {
-        return new IndexSearcher(other);
+        return LuceneTestCase.newSearcher(other);
       }
       };
 

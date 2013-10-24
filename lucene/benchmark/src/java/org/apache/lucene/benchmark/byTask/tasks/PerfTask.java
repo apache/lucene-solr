@@ -62,6 +62,9 @@ public abstract class PerfTask implements Cloneable {
   private boolean runInBackground;
   private int deltaPri;
 
+  // The first line of this task's definition in the alg file
+  private int algLineNum = 0;
+
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
   /** Should not be used externally */
@@ -317,4 +320,11 @@ public abstract class PerfTask implements Cloneable {
     this.disableCounting = disableCounting;
   }
 
+  public void setAlgLineNum(int algLineNum) {
+    this.algLineNum = algLineNum;
+  }
+
+  public int getAlgLineNum() {
+    return algLineNum;
+  }
 }

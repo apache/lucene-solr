@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.noggit.JSONParser;
+import org.noggit.JSONParser;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -33,23 +33,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exchange Rates Provider for {@link CurrencyField} implementing the freely available
- * exchange rates from openexchangerates.org
+ * <p>
+ * Exchange Rates Provider for {@link CurrencyField} capable of fetching &amp; 
+ * parsing the freely available exchange rates from openexchangerates.org
+ * </p>
+ * <p>
+ * Configuration Options:
+ * </p>
+ * <ul>
+ *  <li><code>ratesFileLocation</code> - A file path or absolute URL specifying the JSON data to load (mandatory)</li>
+ *  <li><code>refreshInterval</code> - How frequently (in minutes) to reload the exchange rate data (default: 1440)</li>
+ * </ul>
  * <p>
  * <b>Disclaimer:</b> This data is collected from various providers and provided free of charge
  * for informational purposes only, with no guarantee whatsoever of accuracy, validity,
  * availability or fitness for any purpose; use at your own risk. Other than that - have
  * fun, and please share/watch/fork if you think data like this should be free!
+ * </p>
+ * @see <a href="https://openexchangerates.org/documentation">openexchangerates.org JSON Data Format</a>
  */
 public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   public static Logger log = LoggerFactory.getLogger(OpenExchangeRatesOrgProvider.class);
   protected static final String PARAM_RATES_FILE_LOCATION   = "ratesFileLocation";
   protected static final String PARAM_REFRESH_INTERVAL      = "refreshInterval";
-  protected static final String DEFAULT_RATES_FILE_LOCATION = "http://openexchangerates.org/latest.json";
   protected static final String DEFAULT_REFRESH_INTERVAL    = "1440";
   
   protected String ratesFileLocation;
-  protected int refreshInterval;
+  // configured in minutes, but stored in seconds for quicker math
+  protected int refreshIntervalSeconds;
   protected ResourceLoader resourceLoader;
   
   protected OpenExchangeRates rates;
@@ -74,7 +85,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
     }
     
-    if (rates.getTimestamp() + refreshInterval*60*1000 > System.currentTimeMillis()) {
+    if ((rates.getTimestamp() + refreshIntervalSeconds)*1000 < System.currentTimeMillis()) {
       log.debug("Refresh interval has expired. Refreshing exchange rates.");
       reload();
     }
@@ -145,16 +156,23 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public void init(Map<String,String> params) throws SolrException {
     try {
-      ratesFileLocation = getParam(params.get(PARAM_RATES_FILE_LOCATION), DEFAULT_RATES_FILE_LOCATION);
-      refreshInterval = Integer.parseInt(getParam(params.get(PARAM_REFRESH_INTERVAL), DEFAULT_REFRESH_INTERVAL));
+      ratesFileLocation = params.get(PARAM_RATES_FILE_LOCATION);
+      if (null == ratesFileLocation) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Init param must be specified: " + PARAM_RATES_FILE_LOCATION);
+      }
+      int refreshInterval = Integer.parseInt(getParam(params.get(PARAM_REFRESH_INTERVAL), DEFAULT_REFRESH_INTERVAL));
       // Force a refresh interval of minimum one hour, since the API does not offer better resolution
       if (refreshInterval < 60) {
         refreshInterval = 60;
         log.warn("Specified refreshInterval was too small. Setting to 60 minutes which is the update rate of openexchangerates.org");
       }
       log.info("Initialized with rates="+ratesFileLocation+", refreshInterval="+refreshInterval+".");
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error initializing", e);
+      refreshIntervalSeconds = refreshInterval * 60;
+    } catch (SolrException e1) {
+      throw e1;
+    } catch (Exception e2) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing: " + 
+                              e2.getMessage(), e2);
     } finally {
       // Removing config params custom to us
       params.remove(PARAM_RATES_FILE_LOCATION);
@@ -175,7 +193,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   /**
    * A simple class encapsulating the JSON data from openexchangerates.org
    */
-  class OpenExchangeRates {
+  static class OpenExchangeRates {
     private Map<String, Double> rates;
     private String baseCurrency;
     private long timestamp;
@@ -244,6 +262,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     
     public long getTimestamp() {
       return timestamp;
+    }
+    /** Package protected method for test purposes
+     * @lucene.internal
+     */
+    void setTimestamp(long timestamp) {
+      this.timestamp = timestamp;
     }
 
     public String getDisclaimer() {

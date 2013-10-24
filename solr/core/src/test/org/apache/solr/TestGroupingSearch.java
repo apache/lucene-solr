@@ -18,8 +18,9 @@
 package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -35,7 +36,16 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
@@ -45,6 +55,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // force LogDocMergePolicy so that we get a predictable doc order
+    // when doing unsorted group collection
+    System.setProperty("solr.tests.mergePolicy", 
+                       LogDocMergePolicy.class.getName());
+
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -357,6 +373,29 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         req,
         "/grouped=={'sub(value4_i,1)':{'matches':2,'groups':[{'groupValue':1.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+    );
+  }
+
+  @Test
+  public void testGroupingGroupedBasedFacetingWithTaggedFilter() throws Exception {
+    assertU(add(doc("id", "1", "cat_sI", "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2", "cat_sI", "b", "bday", "2012-11-21T00:00:00Z")));
+    assertU(add(doc("id", "3", "cat_sI", "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4", "cat_sI", "b", "bday", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5", "cat_sI", "a", "bday", "2013-01-14T00:00:00Z")));
+    assertU(commit());
+
+    // Facet counts based on groups
+    SolrQueryRequest req = req("q", "*:*", "rows", "1", "group", "true", "group.field", "cat_sI",
+        "sort", "cat_sI asc", "fl", "id", "fq", "{!tag=chk}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet", "true", "group.truncate", "true", "group.sort", "bday desc",
+        "facet.query", "{!ex=chk key=LW1}bday:[2013-01-11T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM1}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM3}bday:[2012-10-18T00:00:00Z TO 2013-01-17T23:59:59Z]");
+    assertJQ(
+        req,
+        "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
+        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{},'facet_dates':{},'facet_ranges':{}}"
     );
   }
 
@@ -697,10 +736,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         int group_limit = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(11)-1;    
         int group_offset = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(2); // pick a small start normally for better coverage
 
+        IndexSchema schema = h.getCore().getLatestSchema();
+        
         String[] stringSortA = new String[1];
-        Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> sortComparator = createSort(schema, types, stringSortA);
         String sortStr = stringSortA[0];
-        Comparator<Doc> groupComparator = random().nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> groupComparator = random().nextBoolean() ? sortComparator : createSort(schema, types, stringSortA);
         String groupSortStr = stringSortA[0];
 
         // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
@@ -737,7 +778,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
         boolean includeNGroups = random().nextBoolean();
-        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
+        Object modelResponse = buildGroupedResult(schema, sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
 
         boolean truncateGroups = random().nextBoolean();
         Map<String, Integer> facetCounts = new TreeMap<String, Integer>();

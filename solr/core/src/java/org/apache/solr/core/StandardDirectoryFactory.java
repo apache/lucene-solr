@@ -23,6 +23,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
+import org.apache.solr.core.CachingDirectoryFactory.CacheValue;
 
 /**
  * Directory provider which mimics original Solr 
@@ -41,7 +44,16 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public String normalize(String path) throws IOException {
-    return new File(path).getCanonicalPath();
+    String cpath = new File(path).getCanonicalPath();
+    
+    return super.normalize(cpath);
+  }
+  
+  @Override
+  public boolean exists(String path) throws IOException {
+    // we go by the persistent storage ... 
+    File dirFile = new File(path);
+    return dirFile.canRead() && dirFile.list().length > 0;
   }
   
   public boolean isPersistent() {
@@ -49,25 +61,29 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   }
   
   @Override
-  public void remove(Directory dir) throws IOException {
-    CacheValue val = byDirectoryCache.get(dir);
-    if (val == null) {
-      throw new IllegalArgumentException("Unknown directory " + dir);
-    }
-    File dirFile = new File(val.path);
-    FileUtils.deleteDirectory(dirFile);
+  public boolean isAbsolute(String path) {
+    // back compat
+    return new File(path).isAbsolute();
   }
   
-
   @Override
-  public void remove(String path) throws IOException {
-    String fullPath = new File(path).getAbsolutePath();
-    File dirFile = new File(fullPath);
+  protected void removeDirectory(CacheValue cacheValue) throws IOException {
+    File dirFile = new File(cacheValue.path);
     FileUtils.deleteDirectory(dirFile);
   }
   
   /**
    * Override for more efficient moves.
+   * 
+   * Intended for use with replication - use
+   * carefully - some Directory wrappers will
+   * cache files for example.
+   * 
+   * This implementation works with two wrappers:
+   * NRTCachingDirectory and RateLimitedDirectoryWrapper.
+   * 
+   * You should first {@link Directory#sync(java.util.Collection)} any file that will be 
+   * moved or avoid cached files through settings.
    * 
    * @throws IOException
    *           If there is a low-level I/O error.
@@ -75,9 +91,13 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext)
       throws IOException {
-    if (fromDir instanceof FSDirectory && toDir instanceof FSDirectory) {
-      File dir1 = ((FSDirectory) fromDir).getDirectory();
-      File dir2 = ((FSDirectory) toDir).getDirectory();
+    
+    Directory baseFromDir = getBaseDir(fromDir);
+    Directory baseToDir = getBaseDir(toDir);
+    
+    if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
+      File dir1 = ((FSDirectory) baseFromDir).getDirectory();
+      File dir2 = ((FSDirectory) baseToDir).getDirectory();
       File indexFileInTmpDir = new File(dir1, fileName);
       File indexFileInIndex = new File(dir2, fileName);
       boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
@@ -87,6 +107,20 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     }
 
     super.move(fromDir, toDir, fileName, ioContext);
+  }
+
+  // special hack to work with NRTCachingDirectory and RateLimitedDirectoryWrapper
+  private Directory getBaseDir(Directory dir) {
+    Directory baseDir;
+    if (dir instanceof NRTCachingDirectory) {
+      baseDir = ((NRTCachingDirectory)dir).getDelegate();
+    } else if (dir instanceof RateLimitedDirectoryWrapper) {
+      baseDir = ((RateLimitedDirectoryWrapper)dir).getDelegate();
+    } else {
+      baseDir = dir;
+    }
+    
+    return baseDir;
   }
 
 }

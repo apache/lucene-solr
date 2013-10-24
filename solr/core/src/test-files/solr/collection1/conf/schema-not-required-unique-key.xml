@@ -20,8 +20,6 @@
     Striped down schema used to make sure an explicit required=false is
     observed for the uniqueKey field
 
-    $Id$
-    $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
   -->
 <schema name="test" version="1.0">
   <types>

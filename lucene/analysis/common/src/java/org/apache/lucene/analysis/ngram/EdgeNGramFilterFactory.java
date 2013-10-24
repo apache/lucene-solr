@@ -19,46 +19,34 @@ package org.apache.lucene.analysis.ngram;
 
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.EdgeNGramFilterFactory" side="front" minGramSize="1" maxGramSize="1"/&gt;
+ *     &lt;filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="1"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class EdgeNGramFilterFactory extends TokenFilterFactory {
-  private int maxGramSize = 0;
+  private final int maxGramSize;
+  private final int minGramSize;
 
-  private int minGramSize = 0;
-
-  private String side;
-
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String maxArg = args.get("maxGramSize");
-    maxGramSize = (maxArg != null ? Integer.parseInt(maxArg)
-        : EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
-
-    String minArg = args.get("minGramSize");
-    minGramSize = (minArg != null ? Integer.parseInt(minArg)
-        : EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
-
-    side = args.get("side");
-    if (side == null) {
-      side = EdgeNGramTokenFilter.Side.FRONT.getLabel();
+  /** Creates a new EdgeNGramFilterFactory */
+  public EdgeNGramFilterFactory(Map<String, String> args) {
+    super(args);
+    minGramSize = getInt(args, "minGramSize", EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
+    maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 
   @Override
   public EdgeNGramTokenFilter create(TokenStream input) {
-    return new EdgeNGramTokenFilter(input, side, minGramSize, maxGramSize);
+    return new EdgeNGramTokenFilter(luceneMatchVersion, input, minGramSize, maxGramSize);
   }
 }

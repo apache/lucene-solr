@@ -56,7 +56,6 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty.start(false);
     port = jetty.getLocalPort();
 
-    cores.setPersistent(false);    
   }
 
   @Override public void tearDown() throws Exception 

@@ -17,14 +17,9 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.document.ByteDocValuesField; // javadoc
-import org.apache.lucene.document.FloatDocValuesField; // javadoc
-import org.apache.lucene.index.AtomicReader; // javadoc
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -32,9 +27,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.spans.SpanQuery; // javadoc
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat; // javadoc
+import org.apache.lucene.util.SmallFloat;
+
+import java.io.IOException;
 
 /** 
  * Similarity defines the components of Lucene scoring.
@@ -52,9 +49,9 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a href="#querytime">query-time</a>.
  * <p>
  * <a name="indextime"/>
- * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState, Norm)}, allowing
+ * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link AtomicReader#normValues(String)}.  Lucene makes no assumption
+ * be later accessible via {@link AtomicReader#getNormValues(String)}.  Lucene makes no assumption
  * about what is in this norm, but it is most useful for encoding length normalization 
  * information.
  * <p>
@@ -69,9 +66,8 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * depending upon whether the average should reflect field sparsity.
  * <p>
  * Additional scoring factors can be stored in named
- * <code>*DocValuesField</code>s (such as {@link
- * ByteDocValuesField} or {@link FloatDocValuesField}), and accessed
- * at query-time with {@link AtomicReader#docValues(String)}.
+ * <code>NumericDocValuesField</code>s and accessed
+ * at query-time with {@link AtomicReader#getNumericDocValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -92,10 +88,8 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  *       is called for each query leaf node, {@link Similarity#queryNorm(float)} is called for the top-level
  *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
- *   <li>For each segment in the index, the Query creates a {@link #exactSimScorer(SimWeight, AtomicReaderContext)}
- *       (for queries with exact frequencies such as TermQuerys and exact PhraseQueries) or a 
- *       {@link #sloppySimScorer(SimWeight, AtomicReaderContext)} (for queries with sloppy frequencies such as
- *       SpanQuerys and sloppy PhraseQueries). The score() method is called for each matching document.
+ *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, AtomicReaderContext)}
+ *       The score() method is called for each matching document.
  * </ol>
  * <p>
  * <a name="explaintime"/>
@@ -149,9 +143,6 @@ public abstract class Similarity {
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
-   * 
-   * <p>Implementations should calculate a norm value based on the field
-   * state and set that value to the given {@link Norm}.
    *
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually set smaller values when <code>state.getLength()</code> is large,
@@ -160,10 +151,10 @@ public abstract class Similarity {
    * @lucene.experimental
    * 
    * @param state current processing state for this field
-   * @param norm holds the computed norm value when this method returns
+   * @return computed norm value
    */
-  public abstract void computeNorm(FieldInvertState state, Norm norm);
-  
+  public abstract long computeNorm(FieldInvertState state);
+
   /**
    * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.
    *
@@ -173,76 +164,31 @@ public abstract class Similarity {
    * @return SimWeight object with the information this Similarity needs to score a query.
    */
   public abstract SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats);
-  
+
   /**
-   * Creates a new {@link Similarity.ExactSimScorer} to score matching documents from a segment of the inverted index.
-   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
-   * @param context segment of the inverted index to be scored.
-   * @return ExactSimScorer for scoring documents across <code>context</code>
-   * @throws IOException if there is a low-level I/O error
-   */
-  public abstract ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
-  
-  /**
-   * Creates a new {@link Similarity.SloppySimScorer} to score matching documents from a segment of the inverted index.
+   * Creates a new {@link Similarity.SimScorer} to score matching documents from a segment of the inverted index.
    * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return SloppySimScorer for scoring documents across <code>context</code>
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
+  public abstract SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   
   /**
-   * API for scoring exact queries such as {@link TermQuery} and 
-   * exact {@link PhraseQuery}.
-   * <p>
-   * Frequencies are integers (the term or phrase frequency within the document)
-   */
-  public static abstract class ExactSimScorer {
-    
-    /**
-     * Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.)
-     */
-    public ExactSimScorer() {}
-
-    /**
-     * Score a single document
-     * @param doc document id
-     * @param freq term frequency
-     * @return document's score
-     */
-    public abstract float score(int doc, int freq);
-    
-    /**
-     * Explain the score for a single document
-     * @param doc document id
-     * @param freq Explanation of how the term frequency was computed
-     * @return document's score
-     */
-    public Explanation explain(int doc, Explanation freq) {
-      Explanation result = new Explanation(score(doc, (int)freq.getValue()), 
-          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:");
-      result.addDetail(freq);
-      return result;
-    }
-  }
-  
-  /**
-   * API for scoring "sloppy" queries such as {@link SpanQuery} and 
-   * sloppy {@link PhraseQuery}.
+   * API for scoring "sloppy" queries such as {@link TermQuery},
+   * {@link SpanQuery}, and {@link PhraseQuery}.
    * <p>
    * Frequencies are floating-point values: an approximate 
    * within-document frequency adjusted for "sloppiness" by 
-   * {@link SloppySimScorer#computeSlopFactor(int)}.
+   * {@link SimScorer#computeSlopFactor(int)}.
    */
-  public static abstract class SloppySimScorer {
+  public static abstract class SimScorer {
     
     /**
      * Sole constructor. (For invocation by subclass 
      * constructors, typically implicit.)
      */
-    public SloppySimScorer() {}
+    public SimScorer() {}
 
     /**
      * Score a single document

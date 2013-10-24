@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.CapitalizationFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -26,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.Set;
 
 /**
  * Factory for {@link CapitalizationFilter}.
@@ -44,7 +43,7 @@ import java.util.StringTokenizer;
  * "maxWordCount" - if the token contains more then maxWordCount words, the capitalization is
  * assumed to be correct.<br/>
  *
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_cptlztn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -53,7 +52,6 @@ import java.util.StringTokenizer;
  *           okPrefix="McK McD McA"/&gt;   
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  *
  * @since solr 1.3
  */
@@ -67,69 +65,42 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
   public static final String ONLY_FIRST_WORD = "onlyFirstWord";
   public static final String FORCE_FIRST_LETTER = "forceFirstLetter";
 
-  //Map<String,String> keep = new HashMap<String, String>(); // not synchronized because it is only initialized once
   CharArraySet keep;
 
   Collection<char[]> okPrefix = Collections.emptyList(); // for Example: McK
 
-  int minWordLength = 0;  // don't modify capitalization for words shorter then this
-  int maxWordCount = CapitalizationFilter.DEFAULT_MAX_WORD_COUNT;
-  int maxTokenLength = CapitalizationFilter.DEFAULT_MAX_TOKEN_LENGTH;
-  boolean onlyFirstWord = true;
-  boolean forceFirstLetter = true; // make sure the first letter is capitol even if it is in the keep list
+  final int minWordLength;  // don't modify capitalization for words shorter then this
+  final int maxWordCount;
+  final int maxTokenLength;
+  final boolean onlyFirstWord;
+  final boolean forceFirstLetter; // make sure the first letter is capital even if it is in the keep list
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
+  /** Creates a new CapitalizationFilterFactory */
+  public CapitalizationFilterFactory(Map<String, String> args) {
+    super(args);
     assureMatchVersion();
-
-    String k = args.get(KEEP);
+    boolean ignoreCase = getBoolean(args, KEEP_IGNORE_CASE, false);
+    Set<String> k = getSet(args, KEEP);
     if (k != null) {
-      StringTokenizer st = new StringTokenizer(k);
-      boolean ignoreCase = false;
-      String ignoreStr = args.get(KEEP_IGNORE_CASE);
-      if ("true".equalsIgnoreCase(ignoreStr)) {
-        ignoreCase = true;
-      }
       keep = new CharArraySet(luceneMatchVersion, 10, ignoreCase);
-      while (st.hasMoreTokens()) {
-        k = st.nextToken().trim();
-        keep.add(k.toCharArray());
-      }
+      keep.addAll(k);
     }
 
-    k = args.get(OK_PREFIX);
+    k = getSet(args, OK_PREFIX);
     if (k != null) {
       okPrefix = new ArrayList<char[]>();
-      StringTokenizer st = new StringTokenizer(k);
-      while (st.hasMoreTokens()) {
-        okPrefix.add(st.nextToken().trim().toCharArray());
+      for (String item : k) {
+        okPrefix.add(item.toCharArray());
       }
     }
 
-    k = args.get(MIN_WORD_LENGTH);
-    if (k != null) {
-      minWordLength = Integer.valueOf(k);
-    }
-
-    k = args.get(MAX_WORD_COUNT);
-    if (k != null) {
-      maxWordCount = Integer.valueOf(k);
-    }
-
-    k = args.get(MAX_TOKEN_LENGTH);
-    if (k != null) {
-      maxTokenLength = Integer.valueOf(k);
-    }
-
-    k = args.get(ONLY_FIRST_WORD);
-    if (k != null) {
-      onlyFirstWord = Boolean.valueOf(k);
-    }
-
-    k = args.get(FORCE_FIRST_LETTER);
-    if (k != null) {
-      forceFirstLetter = Boolean.valueOf(k);
+    minWordLength = getInt(args, MIN_WORD_LENGTH, 0);
+    maxWordCount = getInt(args, MAX_WORD_COUNT, CapitalizationFilter.DEFAULT_MAX_WORD_COUNT);
+    maxTokenLength = getInt(args, MAX_TOKEN_LENGTH, CapitalizationFilter.DEFAULT_MAX_TOKEN_LENGTH);
+    onlyFirstWord = getBoolean(args, ONLY_FIRST_WORD, true);
+    forceFirstLetter = getBoolean(args, FORCE_FIRST_LETTER, true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 

@@ -17,22 +17,32 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link HyphenatedWordsFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_hyphn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.HyphenatedWordsFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new HyphenatedWordsFilterFactory */
+  public HyphenatedWordsFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public HyphenatedWordsFilter create(TokenStream input) {
     return new HyphenatedWordsFilter(input);

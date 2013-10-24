@@ -46,17 +46,18 @@ public final class Constants {
   public static final boolean SUN_OS = OS_NAME.startsWith("SunOS");
   /** True iff running on Mac OS X */
   public static final boolean MAC_OS_X = OS_NAME.startsWith("Mac OS X");
+  /** True iff running on FreeBSD */
+  public static final boolean FREE_BSD = OS_NAME.startsWith("FreeBSD");
 
   public static final String OS_ARCH = System.getProperty("os.arch");
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
-  /** @deprecated With Lucene 4.0, we are always on Java 6 */
+  /** @deprecated With Lucene 5.0, we are always on Java 7 */
   @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA6 =
+  public static final boolean JRE_IS_MINIMUM_JAVA7 =
     new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-  
-  public static final boolean JRE_IS_MINIMUM_JAVA7;
+
   public static final boolean JRE_IS_MINIMUM_JAVA8;
   
   /** True iff running on a 64bit JVM */
@@ -87,27 +88,14 @@ public final class Constants {
     }
     JRE_IS_64BIT = is64Bit;
     
-    // this method only exists in Java 7:
-    boolean v7 = true;
+    // this method only exists in Java 8:
+    boolean v8 = true;
     try {
-      Throwable.class.getMethod("getSuppressed");
+      Collections.class.getMethod("emptySortedSet");
     } catch (NoSuchMethodException nsme) {
-      v7 = false;
+      v8 = false;
     }
-    JRE_IS_MINIMUM_JAVA7 = v7;
-    
-    if (JRE_IS_MINIMUM_JAVA7) {
-      // this method only exists in Java 8:
-      boolean v8 = true;
-      try {
-        Collections.class.getMethod("emptySortedSet");
-      } catch (NoSuchMethodException nsme) {
-        v8 = false;
-      }
-      JRE_IS_MINIMUM_JAVA8 = v8;
-    } else {
-      JRE_IS_MINIMUM_JAVA8 = false;
-    }
+    JRE_IS_MINIMUM_JAVA8 = v8;
   }
 
   // this method prevents inlining the final version constant in compiled classes,

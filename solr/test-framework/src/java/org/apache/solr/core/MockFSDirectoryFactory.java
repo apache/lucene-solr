@@ -22,6 +22,9 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -38,9 +41,36 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     // test assumes it can open an IndexWriter when that happens - we
     // have a new Directory for the same dir and still an open IW at 
     // this point
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
+    
+    Directory cdir = reduce(dir);
+    cdir = reduce(cdir);
+    cdir = reduce(cdir);
+    
+    if (cdir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)cdir).setAssertNoUnrefencedFilesOnClose(false);
+      ((MockDirectoryWrapper)cdir).setPreventDoubleWrite(false);
     }
     return dir;
+  }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    // TODO: kind of a hack - we don't know what the delegate is, so
+    // we treat it as file based since this works on most ephem impls
+    return new File(path).isAbsolute();
+  }
+  
+  private Directory reduce(Directory dir) {
+    Directory cdir = dir;
+    if (dir instanceof NRTCachingDirectory) {
+      cdir = ((NRTCachingDirectory)dir).getDelegate();
+    }
+    if (cdir instanceof RateLimitedDirectoryWrapper) {
+      cdir = ((RateLimitedDirectoryWrapper)dir).getDelegate();
+    }
+    if (cdir instanceof TrackingDirectoryWrapper) {
+      cdir = ((TrackingDirectoryWrapper)dir).getDelegate();
+    }
+    return cdir;
   }
 }

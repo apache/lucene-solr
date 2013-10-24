@@ -37,12 +37,15 @@ import java.util.Map;
  */
 public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
   private static final String ROMAJI_PARAM = "useRomaji";
-  private boolean useRomaji;
+  private final boolean useRomaji;
   
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    useRomaji = getBoolean(ROMAJI_PARAM, false);
+  /** Creates a new JapaneseReadingFormFilterFactory */
+  public JapaneseReadingFormFilterFactory(Map<String,String> args) {
+    super(args);
+    useRomaji = getBoolean(args, ROMAJI_PARAM, false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

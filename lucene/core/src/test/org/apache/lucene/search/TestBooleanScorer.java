@@ -98,6 +98,10 @@ public class TestBooleanScorer extends LuceneTestCase
         return null;
       }
       
+      @Override
+      public long cost() {
+        return 1;
+      }
     }};
     
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
@@ -154,13 +158,12 @@ public class TestBooleanScorer extends LuceneTestCase
                             
     final int[] count = new int[1];
     s.search(q, new Collector() {
-      private Scorer scorer;
     
       @Override
       public void setScorer(Scorer scorer) {
         // Make sure we got BooleanScorer:
-        this.scorer = scorer;
-        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$BucketScorer", scorer.getClass().getName());
+        final Class<?> clazz = scorer instanceof AssertingScorer ? ((AssertingScorer) scorer).getIn().getClass() : scorer.getClass();
+        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$BucketScorer", clazz.getName());
       }
       
       @Override

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -39,7 +41,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -368,57 +369,57 @@ void assertTermDocsCount(String msg,
 
   
   public void testBinaryFields() throws IOException {
-      Directory dir = newDirectory();
-      byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    Directory dir = newDirectory();
+    byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
       
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
       
-      for (int i = 0; i < 10; i++) {
-        addDoc(writer, "document number " + (i + 1));
-        addDocumentWithFields(writer);
-        addDocumentWithDifferentFields(writer);
-        addDocumentWithTermVectorFields(writer);
-      }
-      writer.close();
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      Document doc = new Document();
-      doc.add(new StoredField("bin1", bin));
-      doc.add(new TextField("junk", "junk text", Field.Store.NO));
-      writer.addDocument(doc);
-      writer.close();
-      DirectoryReader reader = DirectoryReader.open(dir);
-      StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
-      StorableField[] fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      StorableField b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      BytesRef bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      // force merge
+    for (int i = 0; i < 10; i++) {
+      addDoc(writer, "document number " + (i + 1));
+      addDocumentWithFields(writer);
+      addDocumentWithDifferentFields(writer);
+      addDocumentWithTermVectorFields(writer);
+    }
+    writer.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    Document doc = new Document();
+    doc.add(new StoredField("bin1", bin));
+    doc.add(new TextField("junk", "junk text", Field.Store.NO));
+    writer.addDocument(doc);
+    writer.close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
+    StorableField[] fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    StorableField b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    BytesRef bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    // force merge
 
 
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      writer.forceMerge(1);
-      writer.close();
-      reader = DirectoryReader.open(dir);
-      doc2 = reader.document(reader.maxDoc() - 1);
-      fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      dir.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    writer.forceMerge(1);
+    writer.close();
+    reader = DirectoryReader.open(dir);
+    doc2 = reader.document(reader.maxDoc() - 1);
+    fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    dir.close();
   }
 
   /* ??? public void testOpenEmptyDirectory() throws IOException{
@@ -429,8 +430,8 @@ void assertTermDocsCount(String msg,
     }
     try {
       DirectoryReader.open(fileDirName);
-      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // GOOD
     }
     rmDir(fileDirName);
@@ -471,8 +472,8 @@ public void testFilesOpenClose() throws IOException {
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
 
@@ -481,8 +482,8 @@ public void testFilesOpenClose() throws IOException {
     // Make sure we still get a CorruptIndexException (not NPE):
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
     
@@ -551,7 +552,7 @@ public void testFilesOpenClose() throws IOException {
     assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
     assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
     assertEquals("Single segment test differs.", index1.leaves().size() == 1, index2.leaves().size() == 1);
-    
+
     // check field names
     FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
     FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(index2);
@@ -566,21 +567,16 @@ public void testFilesOpenClose() throws IOException {
     // check norms
     for(FieldInfo fieldInfo : fieldInfos1) {
       String curField = fieldInfo.name;
-      DocValues norms1 = MultiDocValues.getNormDocValues(index1, curField);
-      DocValues norms2 = MultiDocValues.getNormDocValues(index2, curField);
-      if (norms1 != null && norms2 != null)
-      {
+      NumericDocValues norms1 = MultiDocValues.getNormValues(index1, curField);
+      NumericDocValues norms2 = MultiDocValues.getNormValues(index2, curField);
+      if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
-        byte[] b1 = (byte[]) norms1.getSource().getArray();
-        byte[] b2 = (byte[]) norms2.getSource().getArray();
-        assertEquals(b1.length, b2.length);
-        for (int i = 0; i < b1.length; i++) {
-          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", b1[i], b2[i]);
+        for (int i = 0; i < index1.maxDoc(); i++) {
+          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1.get(i), norms2.get(i));
         }
-      }
-      else
-      {
-        assertSame(norms1, norms2);
+      } else {
+        assertNull(norms1);
+        assertNull(norms2);
       }
     }
     
@@ -769,16 +765,15 @@ public void testFilesOpenClose() throws IOException {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();
-    doc.add(newStringField("number", "17", Field.Store.NO));
+    doc.add(new IntField("number", 17, Field.Store.NO));
     writer.addDocument(doc);
     writer.commit();
   
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
     AtomicReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
-    assertEquals(1, ints.length);
-    assertEquals(17, ints[0]);
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(r1, "number", false);
+    assertEquals(17, ints.get(0));
   
     // Add new segment
     writer.addDocument(doc);
@@ -789,7 +784,7 @@ public void testFilesOpenClose() throws IOException {
     assertNotNull(r2);
     r.close();
     AtomicReader sub0 = r2.leaves().get(0).reader();
-    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
+    final FieldCache.Ints ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
   
@@ -827,54 +822,6 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
   
-  // LUCENE-1609: don't load terms index
-  public void testNoTermsIndex() throws Throwable {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO));
-    doc.add(newTextField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO));
-    writer.addDocument(doc);
-    writer.addDocument(doc);
-    writer.close();
-  
-    DirectoryReader r = DirectoryReader.open(dir, -1);
-    try {
-      r.docFreq(new Term("field", "f"));
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-  
-    assertEquals(-1, ((SegmentReader) r.leaves().get(0).reader()).getTermInfosIndexDivisor());
-    writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    writer.addDocument(doc);
-    writer.close();
-  
-    // LUCENE-1718: ensure re-open carries over no terms index:
-    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-    assertNotNull(r2);
-    assertNull(DirectoryReader.openIfChanged(r2));
-    r.close();
-    List<AtomicReaderContext> leaves = r2.leaves();
-    assertEquals(2, leaves.size());
-    for(AtomicReaderContext ctx : leaves) {
-      try {
-        ctx.reader().docFreq(new Term("field", "f"));
-        fail("did not hit expected exception");
-      } catch (IllegalStateException ise) {
-        // expected
-      }
-    }
-    r2.close();
-    dir.close();
-  }
-  
   // LUCENE-2046
   public void testPrepareCommitIsCurrent() throws Throwable {
     Directory dir = newDirectory();
@@ -900,37 +847,24 @@ public void testFilesOpenClose() throws IOException {
   // LUCENE-2753
   public void testListCommits() throws Exception {
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, null).setIndexDeletionPolicy(sdp));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null)
+        .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c1");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c2");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c3");
+    sdp.snapshot();
     writer.close();
     long currentGen = 0;
     for (IndexCommit ic : DirectoryReader.listCommits(dir)) {
       assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
       currentGen = ic.getGeneration();
     }
-    dir.close();
-  }
-  
-  // LUCENE-2812
-  public void testIndexExists() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    writer.addDocument(new Document());
-    writer.prepareCommit();
-    assertFalse(DirectoryReader.indexExists(dir));
-    writer.commit();
-    writer.close();
-    assertTrue(DirectoryReader.indexExists(dir));
     dir.close();
   }
   
@@ -946,10 +880,73 @@ public void testFilesOpenClose() throws IOException {
     writer.close();
     try {
       // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
-      Assume.assumeTrue(MultiFields.totalTermFreq(r, "f", new BytesRef("b")) != -1);
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
-      assertEquals(2, MultiFields.totalTermFreq(r, "f", new BytesRef("a")));
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
+      Assume.assumeTrue(r.totalTermFreq(new Term("f", new BytesRef("b"))) != -1);
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+      assertEquals(2, r.totalTermFreq(new Term("f", new BytesRef("a"))));
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumDocFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumDocFreq("f") != -1);
+      assertEquals(2, r.getSumDocFreq("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetDocCount() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getDocCount("f") != -1);
+      assertEquals(2, r.getDocCount("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumTotalTermFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a b b", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a a b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumTotalTermFreq("f") != -1);
+      assertEquals(6, r.getSumTotalTermFreq("f"));
     } finally {
       r.close();
       dir.close();
@@ -1093,4 +1090,11 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
 
+  public void testIndexExistsOnNonExistentDirectory() throws Exception {
+    File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    tempDir.delete();
+    Directory dir = newFSDirectory(tempDir);
+    assertFalse(DirectoryReader.indexExists(dir));
+    dir.close();
+  }
 }

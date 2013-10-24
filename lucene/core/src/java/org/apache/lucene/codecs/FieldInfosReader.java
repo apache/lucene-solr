@@ -35,5 +35,5 @@ public abstract class FieldInfosReader {
 
   /** Read the {@link FieldInfos} previously written with {@link
    *  FieldInfosWriter}. */
-  public abstract FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException;
+  public abstract FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException;
 }

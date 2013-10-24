@@ -51,6 +51,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     super.setUp();
 
     System.setProperty("solr.solr.home", SOLR_HOME.getAbsolutePath());
+    System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory
     createTempDir();
@@ -60,8 +61,9 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     System.setProperty("dataDir1", dataDir.getAbsolutePath());
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
-
-    cores = new CoreContainer(SOLR_HOME.getAbsolutePath(), getSolrXml());
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+    cores = CoreContainer.createAndLoad(SOLR_HOME.getAbsolutePath(), getSolrXml());
+    //cores.setPersistent(false);
   }
   
   protected abstract File getSolrXml() throws Exception;
@@ -74,7 +76,8 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
 
     System.clearProperty("dataDir1");
     System.clearProperty("dataDir2");
-    
+    System.clearProperty("tests.shardhandler.randomSeed");
+
     deleteAdditionalFiles();
 
     File dataDir = new File(tempDir,"data");

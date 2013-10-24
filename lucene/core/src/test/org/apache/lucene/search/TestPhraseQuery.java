@@ -38,13 +38,6 @@ import com.carrotsearch.randomizedtesting.annotations.Seed;
  *
  * @see TestPositionIncrement
  */ 
-/*
- * Remove ThreadLeaks and run with (Eclipse or command line):
- * -ea -Drt.seed=AFD1E7E84B35D2B1
- * to get leaked thread errors.
- */
-// @ThreadLeaks(linger = 1000, leakedThreadsBelongToSuite = true)
-@Seed("AFD1E7E84B35D2B1")
 public class TestPhraseQuery extends LuceneTestCase {
 
   /** threshold for comparing floats */
@@ -222,7 +215,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     Directory directory = newDirectory();
-    Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
@@ -240,16 +233,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query,searcher);
-
-
-    // StopAnalyzer as of 2.4 does not leave "holes", so this matches.
-    query = new PhraseQuery();
-    query.add(new Term("field", "words"));
-    query.add(new Term("field", "here"));
-    hits = searcher.search(query, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
-    QueryUtils.check(random(), query,searcher);
-
 
     reader.close();
     directory.close();
@@ -634,16 +617,16 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
-          TokenStream ts = analyzer.tokenStream("ignore", new StringReader(term));
-          CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
-          ts.reset();
-          while(ts.incrementToken()) {
-            String text = termAttr.toString();
-            doc.add(text);
-            sb.append(text).append(' ');
+          try (TokenStream ts = analyzer.tokenStream("ignore", term)) {
+            CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+            ts.reset();
+            while(ts.incrementToken()) {
+              String text = termAttr.toString();
+              doc.add(text);
+              sb.append(text).append(' ');
+            }
+            ts.end();
           }
-          ts.end();
-          ts.close();
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));

@@ -75,7 +75,11 @@ final class JustCompileSearchSpans {
     public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileSpanQuery extends SpanQuery {
@@ -133,13 +137,18 @@ final class JustCompileSearchSpans {
     public int start() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
     
   }
   
   static final class JustCompileSpanScorer extends SpanScorer {
 
     protected JustCompileSpanScorer(Spans spans, Weight weight,
-        Similarity.SloppySimScorer docScorer) throws IOException {
+        Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
     }
 

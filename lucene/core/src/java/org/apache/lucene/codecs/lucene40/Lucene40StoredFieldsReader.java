@@ -244,4 +244,9 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
 
     return fieldsStream;
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }
