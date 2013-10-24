@@ -51,7 +51,7 @@
     <httpcomponents.version>4.2.6</httpcomponents.version>
     <commons-io.version>2.1</commons-io.version>
     <restlet.version>2.1.1</restlet.version>
-    <hadoop.version>2.0.5-alpha</hadoop.version>
+    <hadoop.version>2.2.0</hadoop.version>
 
     <!-- RandomizedTesting library system properties -->
     <tests.iters>1</tests.iters>
