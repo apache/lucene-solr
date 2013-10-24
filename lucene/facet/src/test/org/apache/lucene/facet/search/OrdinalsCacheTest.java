@@ -72,7 +72,9 @@ public class OrdinalsCacheTest extends FacetTestCase {
         }
       };
     }
-    
+
+    OrdinalsCache.clear();
+
     long ramBytesUsed = 0;
     for (Thread t : threads) {
       t.start();
