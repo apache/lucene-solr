@@ -65,6 +65,10 @@ New Features
 
 * SOLR-5338: Split shards by a route key using split.key parameter. (shalin)
 
+* SOLR-5027: CollapsingQParserPlugin for high performance field collapsing on high cardinality fields.
+  (Joel Bernstein)
+
+
 Bug Fixes
 ----------------------
   

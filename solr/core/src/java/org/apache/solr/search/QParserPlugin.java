@@ -51,7 +51,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     SwitchQParserPlugin.NAME, SwitchQParserPlugin.class,
     MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class,
     BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class,
-    BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class
+    BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class,
+    CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class
   };
 
   /** return a {@link QParser} */

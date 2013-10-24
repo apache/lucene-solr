@@ -39,6 +39,7 @@
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile->*"/>
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile->*"/>
     <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" transitive="false"/>
+    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="test->*"/>
     <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
