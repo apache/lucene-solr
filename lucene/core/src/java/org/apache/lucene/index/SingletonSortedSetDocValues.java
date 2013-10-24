@@ -37,6 +37,11 @@ public class SingletonSortedSetDocValues extends SortedSetDocValues {
     assert NO_MORE_ORDS == -1; // this allows our nextOrd() to work for missing values without a check
   }
 
+  /** Return the wrapped {@link SortedDocValues} */
+  public SortedDocValues getSortedDocValues() {
+    return in;
+  }
+
   @Override
   public long nextOrd() {
     if (set) {
