@@ -178,7 +178,8 @@ public final class Lucene45DocValuesFormat extends DocValuesFormat {
   static final String META_CODEC = "Lucene45ValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED = 1;
+  static final int VERSION_CURRENT = VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED;
   static final byte NUMERIC = 0;
   static final byte BINARY = 1;
   static final byte SORTED = 2;

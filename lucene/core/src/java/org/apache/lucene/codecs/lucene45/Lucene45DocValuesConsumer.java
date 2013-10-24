@@ -21,6 +21,7 @@ import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -42,6 +43,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
+  static final Number MISSING_ORD = Long.valueOf(-1);
 
   /** Compressed using packed blocks of ints. */
   public static final int DELTA_COMPRESSED = 0;
@@ -56,6 +58,13 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
   public static final int BINARY_VARIABLE_UNCOMPRESSED = 1;
   /** Compressed binary with shared prefixes */
   public static final int BINARY_PREFIX_COMPRESSED = 2;
+
+  /** Standard storage for sorted set values with 1 level of indirection:
+   *  docId -> address -> ord. */
+  public static final int SORTED_SET_WITH_ADDRESSES = 0;
+  /** Single-valued sorted set values, encoded as sorted values, so no level
+   *  of indirection: docId -> ord. */
+  public static final int SORTED_SET_SINGLE_VALUED_SORTED = 1;
 
   final IndexOutput data, meta;
   final int maxDoc;
@@ -340,17 +349,70 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
-  
+
+  private static boolean isSingleValued(Iterable<Number> docToOrdCount) {
+    for (Number ordCount : docToOrdCount) {
+      if (ordCount.longValue() > 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
+
+    if (isSingleValued(docToOrdCount)) {
+      meta.writeVInt(SORTED_SET_SINGLE_VALUED_SORTED);
+      // The field is single-valued, we can encode it as SORTED
+      addSortedField(field, values, new Iterable<Number>() {
+
+        @Override
+        public Iterator<Number> iterator() {
+          final Iterator<Number> docToOrdCountIt = docToOrdCount.iterator();
+          final Iterator<Number> ordsIt = ords.iterator();
+          return new Iterator<Number>() {
+
+            @Override
+            public boolean hasNext() {
+              assert ordsIt.hasNext() ? docToOrdCountIt.hasNext() : true;
+              return docToOrdCountIt.hasNext();
+            }
+
+            @Override
+            public Number next() {
+              final Number ordCount = docToOrdCountIt.next();
+              if (ordCount.longValue() == 0) {
+                return MISSING_ORD;
+              } else {
+                assert ordCount.longValue() == 1;
+                return ordsIt.next();
+              }
+            }
+
+            @Override
+            public void remove() {
+              throw new UnsupportedOperationException();
+            }
+
+          };
+        }
+
+      });
+      return;
+    }
+
+    meta.writeVInt(SORTED_SET_WITH_ADDRESSES);
+
     // write the ord -> byte[] as a binary field
     addTermsDict(field, values);
+
     // write the stream of ords as a numeric field
     // NOTE: we could return an iterator that delta-encodes these within a doc
     addNumericField(field, ords, false);
-    
+
     // write the doc -> ord count as a absolute index to the stream
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
