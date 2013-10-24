@@ -131,7 +131,13 @@ public class DocValuesFacets {
             if (sub == null) {
               sub = SortedSetDocValues.EMPTY;
             }
-            accumMulti(counts, startTermIndex, sub, disi, subIndex, ordinalMap);
+            if (sub instanceof SingletonSortedSetDocValues) {
+              // some codecs may optimize SORTED_SET storage for single-valued fields
+              final SortedDocValues values = ((SingletonSortedSetDocValues) sub).getSortedDocValues();
+              accumSingle(counts, startTermIndex, values, disi, subIndex, ordinalMap);
+            } else {
+              accumMulti(counts, startTermIndex, sub, disi, subIndex, ordinalMap);
+            }
           } else {
             SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
             if (sub == null) {

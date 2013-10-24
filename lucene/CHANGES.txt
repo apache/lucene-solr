@@ -120,6 +120,9 @@ New Features
 * LUCENE-5274: FastVectorHighlighter now supports highlighting against several
   indexed fields. (Nik Everett via Adrien Grand)
 
+* LUCENE-5304: SingletonSortedSetDocValues can now return the wrapped
+  SortedDocValues (Robert Muir, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead

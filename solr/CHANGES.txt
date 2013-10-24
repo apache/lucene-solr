@@ -141,6 +141,9 @@ Optimizations
 
 * SOLR-5370: Requests to recover when an update fails should be done in 
   background threads. (Mark Miller)
+
+* LUCENE-5300,LUCENE-5304: Specialized faceting for fields which are declared as
+  multi-valued in the schema but are actually single-valued. (Adrien Grand)
   
 Security
 ----------------------
