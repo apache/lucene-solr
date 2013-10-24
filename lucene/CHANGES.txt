@@ -191,6 +191,9 @@ Optimizations
 
 * LUCENE-5266: Improved number of read calls and branches in DirectPackedReader. (Ryan Ernst)
 
+* LUCENE-5300: Optimized SORTED_SET storage for fields which are single-valued.
+  (Adrien Grand)
+
 Documentation
 
 * LUCENE-5211: Better javadocs and error checking of 'format' option in 
