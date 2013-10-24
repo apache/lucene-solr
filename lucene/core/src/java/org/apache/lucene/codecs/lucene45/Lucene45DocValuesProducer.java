@@ -80,7 +80,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     boolean success = false;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      Lucene45DocValuesFormat.VERSION_CURRENT,
+                                      Lucene45DocValuesFormat.VERSION_START,
                                       Lucene45DocValuesFormat.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
