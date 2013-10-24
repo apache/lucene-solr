@@ -54,7 +54,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * IndexWriter writer; // writer to which the sorted index will be added
  * DirectoryReader reader; // reader on the input index
  * Sorter sorter; // determines how the documents are sorted
- * AtomicReader sortingReader = new SortingAtomicReader(reader, sorter);
+ * AtomicReader sortingReader = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sorter);
  * writer.addIndexes(reader);
  * writer.close();
  * reader.close();
