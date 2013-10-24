@@ -36,6 +36,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
@@ -85,7 +86,10 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     }
     writer.commit();
     writer.close();
-    IndexReader ir = DirectoryReader.open(dir);
+    // TODO: once we fix DocumentExpressionDictionary to
+    // accept readers with more than one segment, we can
+    // remove this wrapping:
+    IndexReader ir = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     Set<SortField> sortFields = new HashSet<SortField>(); 
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
@@ -119,7 +123,10 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     }
     writer.commit();
     writer.close();
-    IndexReader ir = DirectoryReader.open(dir);
+    // TODO: once we fix DocumentExpressionDictionary to
+    // accept readers with more than one segment, we can
+    // remove this wrapping:
+    IndexReader ir = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     Set<SortField> sortFields = new HashSet<SortField>(); 
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
@@ -173,7 +180,10 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
       assertTrue(null!=docs.remove(termToDel));
     }
     
-    IndexReader ir = DirectoryReader.open(dir);
+    // TODO: once we fix DocumentExpressionDictionary to
+    // accept readers with more than one segment, we can
+    // remove this wrapping:
+    IndexReader ir = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     assertEquals(ir.numDocs(), docs.size());
     Set<SortField> sortFields = new HashSet<SortField>(); 
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
