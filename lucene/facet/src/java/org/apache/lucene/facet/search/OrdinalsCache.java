@@ -100,7 +100,7 @@ public class OrdinalsCache {
   // reference. When it's no longer referenced, the entire inner map can be
   // evicted.
   private static final Map<Object,Map<String,CachedOrds>> ordsCache = new WeakHashMap<Object,Map<String,CachedOrds>>();
-  
+
   /**
    * Returns the {@link CachedOrds} relevant to the given
    * {@link AtomicReaderContext}, or {@code null} if there is no
@@ -140,5 +140,10 @@ public class OrdinalsCache {
       }
     }
     return size;
+  }
+
+  /** Clears all entries from the cache. */
+  public synchronized static void clear() {
+    ordsCache.clear();
   }
 }
