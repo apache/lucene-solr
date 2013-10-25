@@ -188,6 +188,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.nullPolicy = NULL_POLICY_COLLAPSE;
       } else if(nPolicy.equals((NULL_EXPAND))) {
         this.nullPolicy = NULL_POLICY_EXPAND;
+      } else {
+        throw new IOException("Invalid nullPolicy:"+nPolicy);
       }
       this.searcher = request.getSearcher();
       this.leafCount = searcher.getTopReaderContext().leaves().size();
@@ -516,6 +518,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.fieldValueCollapse =  new LongValueCollapse(searcher, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs);
       } else if(fieldType instanceof TrieFloatField) {
         this.fieldValueCollapse =  new FloatValueCollapse(searcher, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs);
+      } else {
+        throw new IOException("min/max must be either TrieInt, TrieLong or TrieFloat.");
       }
     }
 
