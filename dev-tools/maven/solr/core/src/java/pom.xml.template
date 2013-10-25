@@ -136,6 +136,10 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.carrotsearch</groupId>
+      <artifactId>hppc</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>

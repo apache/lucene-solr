@@ -553,6 +553,11 @@
         <artifactId>randomizedtesting-runner</artifactId>
         <version>2.0.10</version>
       </dependency>
+      <dependency>
+        <groupId>com.carrotsearch</groupId>
+        <artifactId>hppc</artifactId>
+        <version>0.5.2</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <prerequisites>
