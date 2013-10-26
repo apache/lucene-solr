@@ -156,5 +156,31 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     r.close();
     d.close();
   }
-  
+
+  // LUCENE-5307
+  // don't reuse the scorer of filters since they have been created with topScorer=false
+  public void testQueryWrapperFilter() throws IOException {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    doc.add(newStringField("field", "a", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    Filter filter = new QueryWrapperFilter(AssertingQuery.wrap(random(), new TermQuery(new Term("field", "a"))));
+    IndexSearcher s = newSearcher(r);
+    assert s instanceof AssertingIndexSearcher;
+    // this used to fail
+    s.search(new ConstantScoreQuery(filter), new TotalHitCountCollector());
+    
+    // check the rewrite
+    Query rewritten = new ConstantScoreQuery(filter).rewrite(r);
+    assertTrue(rewritten instanceof ConstantScoreQuery);
+    assertTrue(((ConstantScoreQuery) rewritten).getQuery() instanceof AssertingQuery);
+    
+    r.close();
+    d.close();
+  }
+
 }
