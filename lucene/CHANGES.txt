@@ -161,6 +161,10 @@ Bug Fixes
 * LUCENE-5303: OrdinalsCache did not use coreCacheKey, resulting in
   over caching across multiple threads. (Mike McCandless, Shai Erera)
 
+* LUCENE-5307: Fix topScorer inconsistency in handling QueryWrapperFilter
+  inside ConstantScoreQuery, which now rewrites to a query removing the
+  obsolete QueryWrapperFilter.  (Adrien Grand, Uwe Schindler)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
