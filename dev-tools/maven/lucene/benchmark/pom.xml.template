@@ -80,6 +80,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-spatial</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.ibm.icu</groupId>
       <artifactId>icu4j</artifactId>
     </dependency>
