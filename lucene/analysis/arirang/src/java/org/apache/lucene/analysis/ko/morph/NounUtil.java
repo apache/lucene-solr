@@ -27,19 +27,6 @@ import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 class NounUtil {
   private NounUtil() {}
-
-  private static boolean isDNoun(char ch) {
-    switch(ch) {
-      case '등':
-      case '들':
-      case '상':
-      case '간':
-      case '뿐':
-      case '별':
-      case '적': return true;
-      default: return false;
-    }
-  }
     
   /**
    * 
@@ -217,21 +204,42 @@ class NounUtil {
       
     return true;
   }
+  
+  private static boolean isDNoun(char ch) {
+    switch(ch) {
+      case '등':
+      case '들':
+      case '상':
+      case '간':
+      case '뿐':
+      case '별':
+      case '적': return true;
+      default: return false;
+    }
+  }
     
   /*
      * 마지막 음절이 명사형 접미사(등,상..)인지 조사한다.
      */
   static boolean confirmDNoun(AnalysisOutput output) {
-
-    int strlen = output.getStem().length();
-    String d = output.getStem().substring(strlen-1);      
-    if(d.length() != 1 || !isDNoun(d.charAt(0))) return false;
-
-    String s = output.getStem().substring(0, strlen-1);
-    output.setNsfx(d);
-    output.setStem(s);
+    final String currentStem = output.getStem();
+    // empty or single character
+    if (currentStem.length() <= 1) {
+      return false;
+    }
+    
+    // check suffix char
+    final char suffix = currentStem.charAt(currentStem.length()-1);
+    if (!isDNoun(suffix)) {
+      return false;
+    }
+    
+    // remove suffix
+    String stem = currentStem.substring(0, currentStem.length()-1);
+    output.setNsfx(Character.toString(suffix));
+    output.setStem(stem);
           
-    WordEntry cnoun = DictionaryUtil.getAllNoun(s);
+    WordEntry cnoun = DictionaryUtil.getAllNoun(stem);
     if(cnoun != null)  {
       if(cnoun.isCompoundNoun())
         output.setCNoun(cnoun.getCompounds());

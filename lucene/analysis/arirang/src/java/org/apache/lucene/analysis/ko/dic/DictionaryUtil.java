@@ -203,25 +203,6 @@ public class DictionaryUtil {
     return suffixs.contains(str);
   }
   
-  /**
-   * ㄴ,ㄹ,ㅁ,ㅂ과 eomi 가 결합하여 어미가 될 수 있는지 점검한다.
-   */
-  public static String combineAndEomiCheck(char s, String eomi) {
-  
-    if(eomi==null) eomi="";
-
-    if(s=='ㄴ') eomi = "은"+eomi;
-    else if(s=='ㄹ') eomi = "을"+eomi;
-    else if(s=='ㅁ') eomi = "음"+eomi;
-    else if(s=='ㅂ') eomi = "습"+eomi;
-    else eomi = s+eomi;
-
-    if(existEomi(eomi)) return eomi;    
-
-    return null;
-    
-  }
-  
   private static void readFileToSet(final Set<String> set, String dic) throws IOException {    
     DictionaryResources.readLines(dic, new LineProcessor() {
       @Override

@@ -184,7 +184,7 @@ class EomiUtil {
     if((chrs.length==3)
         &&(chrs[2]=='ㄴ'||chrs[2]=='ㄹ'||chrs[2]=='ㅁ'||chrs[2]=='ㅂ')
         &&EomiUtil.IsNLMBSyl(estem,chrs[2])
-        && DictionaryUtil.combineAndEomiCheck(chrs[2], end)!=null) 
+        && combineAndEomiCheck(chrs[2], end)!=null) 
     {    
       strs[1] = Character.toString(chrs[2]);
       if(end.length()>0) strs[1] += end;
@@ -192,7 +192,7 @@ class EomiUtil {
    	  strs[0] = stem.substring(0,strlen-1) + MorphUtil.makeChar(estem, 0);  
     } 
     else if(chrs.length==3 && chrs[2]=='ㄹ' && DictionaryUtil.getVerb(stem)!=null 
-    		&& DictionaryUtil.combineAndEomiCheck(chrs[2], end)!=null) 
+    		&& combineAndEomiCheck(chrs[2], end)!=null) 
     {
         strs[1] = Character.toString(chrs[2]);
         if(end.length()>0) strs[1] += end;
@@ -211,27 +211,27 @@ class EomiUtil {
     else if(chrs[0]!='ㅇ'&&
         (chrs[1]=='ㅏ'||chrs[1]=='ㅓ'||chrs[1]=='ㅔ'||chrs[1]=='ㅐ')&&
         (chrs.length==2 || SyllableFeatures.hasFeature(estem, SyllableFeatures.YNPAH)) &&
-        (DictionaryUtil.combineAndEomiCheck('어', end)!=null)) 
+        (combineAndEomiCheck('어', end)!=null)) 
     {        
       strs[0] = stem;
       if(chrs.length==2) strs[1] = "어"+end;  
       else strs[1] = end;    
     } 
     else if(estem=='하'&&end!=null&&end.startsWith("여")&&
-        DictionaryUtil.combineAndEomiCheck('어', end.substring(1))!=null) 
+        combineAndEomiCheck('어', end.substring(1))!=null) 
     {      
       strs[0] = stem;
       strs[1] = "어"+end.substring(1);  
     }
     else if(estem=='려'&&end!=null&& // 꺼려=>꺼리어, 꺼려서=>꺼리어서
-          DictionaryUtil.combineAndEomiCheck('어', end)!=null) 
+          combineAndEomiCheck('어', end)!=null) 
     {      
         strs[0] = stem.substring(0,stem.length()-1)+"리";
         strs[1] = "어"+end;        
     }
     else if((chrs.length==2)&&
         (chrs[1]=='ㅘ'||chrs[1]=='ㅙ'||chrs[1]=='ㅝ'||chrs[1]=='ㅕ'||chrs[1]=='ㅐ'||chrs[1]=='ㅒ')&&
-        (DictionaryUtil.combineAndEomiCheck('어', end)!=null)) 
+        (combineAndEomiCheck('어', end)!=null)) 
     {    
   
       StringBuffer sb = new StringBuffer();
@@ -264,5 +264,33 @@ class EomiUtil {
     }
     
     return strs;
+  }
+  
+  /**
+   * ㄴ,ㄹ,ㅁ,ㅂ과 eomi 가 결합하여 어미가 될 수 있는지 점검한다.
+   */
+  private static String combineAndEomiCheck(char s, String eomi) {
+  
+    if (eomi == null) {
+      eomi = "";
+    }
+    
+    switch(s) {
+      case 'ㄴ': eomi = "은" + eomi;
+               break;
+      case 'ㄹ': eomi = "을" + eomi;
+               break;
+      case 'ㅁ': eomi = "음" + eomi;
+               break;
+      case 'ㅂ': eomi = "습" + eomi;
+               break;
+      default: eomi = s + eomi;
+    }
+
+    if (DictionaryUtil.existEomi(eomi)) {
+      return eomi;    
+    } else {
+      return null;
+    }
   }
 }
