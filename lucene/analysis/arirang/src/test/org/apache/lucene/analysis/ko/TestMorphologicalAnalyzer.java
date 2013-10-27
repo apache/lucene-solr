@@ -35,7 +35,7 @@ public class TestMorphologicalAnalyzer extends TestCase {
    */
   public void testMorphAnalyze() throws Exception {
   
-    MorphAnalyzer morphAnalyzer = new MorphAnalyzer();
+    MorphAnalyzer morphAnalyzer = new MorphAnalyzer(false);
     
     assertEquals(extractStem(morphAnalyzer, "냉방을"), "냉방");
     
@@ -85,7 +85,7 @@ public class TestMorphologicalAnalyzer extends TestCase {
    */
   public void testCompoundNoun() throws Exception {
     
-    MorphAnalyzer morphAnalyzer = new MorphAnalyzer();
+    MorphAnalyzer morphAnalyzer = new MorphAnalyzer(false);
     
     assertArrayEquals(splitByUnitWord(morphAnalyzer, "과학기술연구과제가"), 
         new String[]{"과학","기술","연구","과제"});

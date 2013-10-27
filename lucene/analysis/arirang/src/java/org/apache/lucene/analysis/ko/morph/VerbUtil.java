@@ -101,7 +101,7 @@ class VerbUtil {
     WordEntry entry = null;
     if(success&&(entry=DictionaryUtil.getAllNoun(o.getStem()))!=null) { 
       if(entry.isCompoundNoun()) {
-        o.setCNoun(entry.getCompounds());
+        o.setCNounList(entry.getCompounds());
       }
       o.setScore(AnalysisOutput.SCORE_CORRECT);
     }
@@ -168,7 +168,7 @@ class VerbUtil {
     else
       stomis = EomiUtil.splitEomi(eogan,"");
 
-    if(stomis[0]==null) return false;
+    if(stomis==null) return false;
     
     o.addElist(stomis[1]);
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(stomis[0]);
@@ -190,7 +190,7 @@ class VerbUtil {
     
     o.setScore(AnalysisOutput.SCORE_CORRECT);
     if(entry.isCompoundNoun()) {
-      o.setCNoun(entry.getCompounds());
+      o.setCNounList(entry.getCompounds());
     }
     
     candidates.add(o);            
@@ -215,7 +215,7 @@ class VerbUtil {
       success = true;       
     } else if(chrs.length>2&&chrs[2]=='ㅁ'){
       String[] eres = EomiUtil.splitEomi(o.getStem().substring(0,strlen-1), "");
-      if(eres[0]==null) return false;
+      if(eres==null) return false;
       
       o.addElist(eres[1]);       
       String[] irrs = IrregularUtil.restoreIrregularVerb(eres[0], eres[1]);
@@ -259,10 +259,10 @@ class VerbUtil {
     String[] stomis = null;
     if(eogan.endsWith("아")||eogan.endsWith("어")) {
       stomis = EomiUtil.splitEomi(eogan.substring(0,eogan.length()-1),eogan.substring(eogan.length()-1));
-      if(stomis[0]==null) return false;
+      if(stomis==null) return false;
     }else {
       stomis =  EomiUtil.splitEomi(eogan, "");      
-      if(stomis[0]==null||!(stomis[1].startsWith("아")||stomis[1].startsWith("어"))) return false;
+      if(stomis==null||!(stomis[1].startsWith("아")||stomis[1].startsWith("어"))) return false;
     }
 
     String[] irrs = IrregularUtil.restoreIrregularVerb(stomis[0], stomis[1]);

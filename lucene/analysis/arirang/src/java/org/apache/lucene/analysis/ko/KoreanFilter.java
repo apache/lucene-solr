@@ -43,10 +43,10 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public final class KoreanFilter extends TokenFilter {
 
-  private final LinkedList<Token> morphQueue = new LinkedList<Token>();;
-  private final MorphAnalyzer morph = new MorphAnalyzer();
+  private final LinkedList<Token> morphQueue = new LinkedList<Token>();
+  private final MorphAnalyzer morph;
   private final WordSpaceAnalyzer wsAnal = new WordSpaceAnalyzer();
-  private final CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();
+  private final CompoundNounAnalyzer cnAnalyzer;
   
   private State currentState = null;
   
@@ -85,10 +85,11 @@ public final class KoreanFilter extends TokenFilter {
 
   public KoreanFilter(TokenStream input, boolean bigram, boolean has, boolean exactMatch, boolean cnoun) {
     super(input);
-    cnAnalyzer.setExactMach(exactMatch);
     this.bigrammable = bigram;
     this.hasOrigin = has;
     this.originCNoun = cnoun;
+    this.cnAnalyzer = new CompoundNounAnalyzer(exactMatch);
+    this.morph = new MorphAnalyzer(exactMatch);
   }
   
   public boolean incrementToken() throws IOException {
@@ -339,38 +340,30 @@ public final class KoreanFilter extends TokenFilter {
     
     // 추출된 명사가 복합명사인 경우 분리한다.
     for(int i=0;i<maxCandidate;i++) {
-      List<CompoundEntry> results = confirmCNoun(candiList.get(i).toString());
+      List<CompoundEntry> results = cnAnalyzer.analyze(candiList.get(i).toString());
       
       int pos = 0;
       int offset = 0;
-      for(CompoundEntry entry : results) {        
-        pos += entry.getWord().length();  
-        if(cnounMap.get(entry.getWord())!=null) continue;
+      if (results != null) {
+        for(CompoundEntry entry : results) {        
+          pos += entry.getWord().length();  
+          if(cnounMap.get(entry.getWord())!=null) continue;
          
-        // 한글과 매치되는 한자를 짤라서 큐에 저장한다.           
-        // nocommit: this is avoiding AIOOBE, original code:
-        // morphQueue.add(new IndexWord(term.substring(offset,pos),offset));
-        morphQueue.add(new Token(term.substring(offset,Math.min(pos, term.length())),offset));
-        cnounMap.put(entry.getWord(), entry.getWord());
+                    // 한글과 매치되는 한자를 짤라서 큐에 저장한다.           
+          // nocommit: this is avoiding AIOOBE, original code:
+          // morphQueue.add(new IndexWord(term.substring(offset,pos),offset));
+          morphQueue.add(new Token(term.substring(offset,Math.min(pos, term.length())),offset));
+          cnounMap.put(entry.getWord(), entry.getWord());
          
-        if(entry.getWord().length()<2) continue; //  한글은 2글자 이상만 저장한다.
+          if(entry.getWord().length()<2) continue; //  한글은 2글자 이상만 저장한다.
          
-        // 분리된 한글을 큐에 저장한다.  
-        morphQueue.add(new Token(entry.getWord(),offset));
+                    // 분리된 한글을 큐에 저장한다.  
+          morphQueue.add(new Token(entry.getWord(),offset));
          
-        offset = pos;
-      }       
+          offset = pos;
+        }
+      }
     }    
-  }
-  
-  private List<CompoundEntry> confirmCNoun(String input) {
-    
-    WordEntry cnoun = DictionaryUtil.getAllNoun(input);
-    if(cnoun!=null && cnoun.isCompoundNoun()) {
-      return cnoun.getCompounds();
-    }
-       
-    return cnAnalyzer.analyze(input);
   }
   
   private boolean isAlphaNumChar(int c) {

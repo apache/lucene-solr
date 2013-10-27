@@ -38,11 +38,11 @@ public class DictionaryUtil {
   
   private static final Set<String> josas = new HashSet<String>();
   
-  private static final Set<String> eomis = new HashSet<String>();;
+  private static final Set<String> eomis = new HashSet<String>();
   
-  private static final Set<String> prefixs = new HashSet<String>();;
+  private static final Set<String> prefixs = new HashSet<String>();
   
-  private static final Set<String> suffixs = new HashSet<String>();;
+  private static final Set<String> suffixs = new HashSet<String>();
   
   private static final Set<String> uncompounds = new HashSet<String>();
   
@@ -125,6 +125,11 @@ public class DictionaryUtil {
   /** Looks up a noun (but not compound noun) */
   public static WordEntry getNoun(String key) {
     return getWord(key, WordEntry.NOUN, WordEntry.COMPOUND);
+  }
+  
+  /** Looks up a compound noun */
+  public static WordEntry getCompoundNoun(String key) {
+    return getWord(key, WordEntry.COMPOUND, 0);
   }
   
   /** return all noun including compound noun */

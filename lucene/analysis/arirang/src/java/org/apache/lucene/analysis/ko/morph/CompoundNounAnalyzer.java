@@ -29,184 +29,158 @@ import org.apache.lucene.analysis.ko.dic.WordEntry;
  * 복합명사를 분해한다.
  */
 public class CompoundNounAnalyzer {
+  private final boolean exactMatch;
   
-  private boolean exactMach  = true;
-    
-  public boolean isExactMach() {
-    return exactMach;
+  public CompoundNounAnalyzer(boolean exactMatch) {
+    this.exactMatch = exactMatch;
   }
 
-  public void setExactMach(boolean exactMach) {
-    this.exactMach = exactMach;
-  }
-
+  /** Returns decompounded list for word, or null */
   public List<CompoundEntry> analyze(String input) {
-    
-    WordEntry entry = DictionaryUtil.getAllNoun(input);
-    if(entry!=null && entry.isCompoundNoun()) 
+    WordEntry entry = DictionaryUtil.getCompoundNoun(input);
+    if (entry != null) {
       return entry.getCompounds();
+    } else if (input.length() < 3) {
+      return null;
+    } else {
+      CompoundEntry[] compounds = analyze(input, true);
+      if (compounds == null) {
+        return null;
+      } else {
+        // nocommit
+        ArrayList<CompoundEntry> l = new ArrayList<CompoundEntry>();
+        l.addAll(Arrays.asList(compounds));
+        return l;
+      }
+    }
+  }
     
-    return analyze(input,true);
-    
+  private CompoundEntry[] analyze(String input, boolean isFirst) {    
+    switch(input.length()) {
+      case 3: return analyze3Word(input, isFirst);
+      case 4: return analyze4Word(input, isFirst);
+      case 5: return analyze5Word(input, isFirst);
+      default:
+        List<CompoundEntry> outputs = new ArrayList<>();
+        boolean success = analyzeLongText(input, outputs, isFirst);
+        if (success) {
+          return outputs.toArray(new CompoundEntry[0]); // nocommit
+        } else {
+          return null;
+        }
+    }
   }
   
-  public List<CompoundEntry> analyze(String input, boolean isFirst) {
-    
-    int len = input.length();
-    if(len<3) return new ArrayList<CompoundEntry>(); 
-    
-    List<CompoundEntry> outputs = new ArrayList<CompoundEntry>();
-    
-    analyze(input, outputs, isFirst);
+  private static final int[] UNITS_1_2   = {1, 2};
+  private static final int[] UNITS_2_1   = {2, 1};
 
-    return outputs;
-    
-  }
-    
-  public boolean analyze(String input, List<CompoundEntry> outputs, boolean isFirst) {
-    
-    int len = input.length();
-    boolean success = false;
-    
-    switch(len) {
-      case  3 :
-        success = analyze3Word(input,outputs,isFirst);
-        break;
-      case  4 :
-        success = analyze4Word(input,outputs,isFirst);
-        break;  
-      case  5 :
-        success = analyze5Word(input,outputs,isFirst);
-        break;
-//      case  6 :
-//        analyze6Word(input,outputs,isFirst);
-//        break;  
-      default :
-        success = analyzeLongText(input,outputs,isFirst);       
-    }
-    
-    return success;
-  }
-  
-  private boolean analyze3Word(String input,List<CompoundEntry> outputs, boolean isFirst) {
-
-    int[] units1 = {2,1};
-    CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
-    if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries1));
-      return true;    
+  private CompoundEntry[] analyze3Word(String input, boolean isFirst) {
+    CompoundEntry[] entries = analysisBySplited(UNITS_2_1, input, isFirst);
+    if (entries != null && entries[0].isExist() && entries[1].isExist()) {
+      return entries;    
     }
 
-    int[] units2 = {1,2};
-    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);
-    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries2));
-      return true;
+    entries = analysisBySplited(UNITS_1_2, input, isFirst);
+    if (entries !=null && entries[0].isExist() && entries[1].isExist()) {
+      return entries;
     }
           
-    return false;
+    return null;
   } 
   
-  private boolean analyze4Word(String input,List<CompoundEntry> outputs, boolean isFirst) {
+  private static final int[] UNITS_1_3   = {1, 3};
+  private static final int[] UNITS_2_2   = {2, 2};
+  private static final int[] UNITS_3_1   = {3, 1};
+  private static final int[] UNITS_1_2_1 = {1, 2, 1};
   
-    if(!isFirst) {
-      int[] units0 = {1,3};
-      CompoundEntry[] entries0 = analysisBySplited(units0,input,isFirst);
-      if(entries0!=null && entries0[0].isExist()&&entries0[1].isExist()) {
-        outputs.addAll(Arrays.asList(entries0));
-        return true;    
+  private CompoundEntry[] analyze4Word(String input, boolean isFirst) {   
+    if (!isFirst) {
+      CompoundEntry[] entries = analysisBySplited(UNITS_1_3, input, false);
+      if (entries != null && entries[0].isExist() && entries[1].isExist()) {
+        return entries;
       }
     }
 
-    int[] units3 = {3,1};
-    CompoundEntry[] entries3 = analysisBySplited(units3,input,isFirst);
-    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries3));    
-      return true;    
+    CompoundEntry[] entries3 = analysisBySplited(UNITS_3_1, input, isFirst);
+    if (entries3 != null && entries3[0].isExist() && entries3[1].isExist()) {
+      return entries3;    
     }
     
-    int[] units1 = {2,2};
-    CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
-    if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries1));    
-      return true;    
+    CompoundEntry[] entries2 = analysisBySplited(UNITS_2_2, input, isFirst);
+    if (entries2 != null && entries2[0].isExist() && entries2[1].isExist()) {
+      return entries2;
     }
     
-    int[] units2 = {1,2,1};
-    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst); 
-    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()&&entries2[2].isExist()) {
-      outputs.addAll(Arrays.asList(entries2));  
-      return true;
+    CompoundEntry[] entries1 = analysisBySplited(UNITS_1_2_1, input, isFirst); 
+    if (entries1 != null && entries1[0].isExist() && entries1[1].isExist() && entries1[2].isExist()) {
+      return entries1;
     }
 
-
-    if(!exactMach&&entries1!=null && (entries1[0].isExist()||entries1[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries1));  
-      return true;
+    if (!exactMatch && entries2 != null && (entries2[0].isExist() || entries2[1].isExist())) {
+      return entries2;
     }
     
-    return false;
+    return null;
   }
+
+  private static final int[] UNITS_2_3     = {2, 3};
+  private static final int[] UNITS_3_2     = {3, 2};
+  private static final int[] UNITS_4_1     = {4, 1};
+  private static final int[] UNITS_2_1_2   = {2, 1, 2};
+  private static final int[] UNITS_2_2_1   = {2, 2, 1};
   
-  private boolean analyze5Word(String input,List<CompoundEntry> outputs, boolean isFirst) {
+  private CompoundEntry[] analyze5Word(String input, boolean isFirst) {
       
-    int[] units1 = {2,3};
-    CompoundEntry[] entries1 = analysisBySplited(units1,input,isFirst);
-    if(entries1!=null && entries1[0].isExist()&&entries1[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries1));
-      return true;    
+    CompoundEntry[] entries1 = analysisBySplited(UNITS_2_3, input, isFirst);
+    if (entries1 != null && entries1[0].isExist() && entries1[1].isExist()) {
+      return entries1;    
     }
     
-    int[] units2 = {3,2};
-    CompoundEntry[] entries2 = analysisBySplited(units2,input,isFirst);
-    if(entries2!=null && entries2[0].isExist()&&entries2[1].isExist()) {
-      outputs.addAll(Arrays.asList(entries2));
-      return true;    
+    CompoundEntry[] entries2 = analysisBySplited(UNITS_3_2, input, isFirst);
+    if (entries2 != null && entries2[0].isExist() && entries2[1].isExist()) {
+      return entries2;    
     }
     
-    int[] units_1 = {4,1};
-    CompoundEntry[] entries_1 = analysisBySplited(units_1,input,isFirst);
-    if(entries_1!=null && entries_1[0].isExist()&&entries_1[1].isExist()) {     
-      outputs.addAll(Arrays.asList(entries_1));
-      return true;    
+    CompoundEntry[] entries_1 = analysisBySplited(UNITS_4_1, input, isFirst);
+    if (entries_1 != null && entries_1[0].isExist() && entries_1[1].isExist()) {     
+      return entries_1;
     }
     
-    int[] units3 = {2,2,1};
-    CompoundEntry[] entries3 = analysisBySplited(units3,input,isFirst);
-    if(entries3!=null && entries3[0].isExist()&&entries3[1].isExist()&&entries3[2].isExist()) {     
-      outputs.addAll(Arrays.asList(entries3));
-      return true;
+    CompoundEntry[] entries3 = analysisBySplited(UNITS_2_2_1, input, isFirst);
+    if (entries3 != null && entries3[0].isExist() && entries3[1].isExist() && entries3[2].isExist()) {     
+      return entries3;
     }
     
-    int[] units4 = {2,1,2};
-    CompoundEntry[] entries4 = analysisBySplited(units4,input,isFirst);
-    if(entries4!=null && entries4[0].isExist()&&entries4[1].isExist()&&entries4[2].isExist()) {     
-      outputs.addAll(Arrays.asList(entries4));
-      return true;
+    CompoundEntry[] entries4 = analysisBySplited(UNITS_2_1_2, input, isFirst);
+    if (entries4 != null && entries4[0].isExist() && entries4[1].isExist() && entries4[2].isExist()) {     
+      return entries4;
     }
     
-    if(!exactMach&&entries1!=null && (entries1[0].isExist()||entries1[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries1));  
-      return true;
+    if (!exactMatch && entries1 != null && (entries1[0].isExist() || entries1[1].isExist())) {
+      return entries1;
     }
     
-    if(!exactMach&&entries2!=null && (entries2[0].isExist()||entries2[1].isExist())) {  
-      outputs.addAll(Arrays.asList(entries2));  
-      return true;
+    if (!exactMatch && entries2 != null && (entries2[0].isExist() || entries2[1].isExist())) {  
+      return entries2;
     }
     
-    boolean is = false;
-    if(!exactMach&&entries3!=null && (entries3[0].isExist()||entries3[1].isExist())) {
-      outputs.addAll(Arrays.asList(entries3));
-      is = true;
+    CompoundEntry[] res = null;
+    if (!exactMatch && entries3 != null && (entries3[0].isExist() || entries3[1].isExist())) {
+      res = entries3;
     } 
     
-    if(!exactMach&&entries4!=null && (entries4[0].isExist()||entries4[2].isExist())) {
-      outputs.addAll(Arrays.asList(entries4));
-      is = true;
+    if (!exactMatch && entries4 != null && (entries4[0].isExist() || entries4[2].isExist())) {
+      if (res == null) {
+        res = entries4;
+      } else {
+        CompoundEntry[] both = new CompoundEntry[res.length + entries4.length];
+        System.arraycopy(res, 0, both, 0, res.length);
+        System.arraycopy(entries4, 0, both, res.length, entries4.length);
+        res = both;
+      }
     }   
     
-    return is;
+    return res;
   }
    
   private boolean analyzeLongText(String input,List<CompoundEntry> outputs, boolean isFirst) {
@@ -244,8 +218,13 @@ public class CompoundNounAnalyzer {
     boolean rSuccess = false;
     WordEntry prvEntry = DictionaryUtil.getAllNoun(prev);
     if(prvEntry==null) {
-      pSucess = analyze(prev, results, false);
-      if(!pSucess) results.add(new CompoundEntry(prev, false));
+      CompoundEntry res[] = analyze(prev, false);
+      if (res == null) {
+        results.add(new CompoundEntry(prev, false));
+      } else {
+        results.addAll(Arrays.asList(res));
+        pSucess = true;
+      }
     } else {
       pSucess = true;
       if(prvEntry.isCompoundNoun())
@@ -256,8 +235,13 @@ public class CompoundNounAnalyzer {
     
     WordEntry rearEntry = DictionaryUtil.getAllNoun(rear);
     if(rearEntry==null) {
-      rSuccess = analyze(rear, results, false);
-      if(!rSuccess) results.add(new CompoundEntry(rear, false));
+      CompoundEntry res[] = analyze(rear, false);
+      if (res == null) {
+        results.add(new CompoundEntry(rear, false));
+      } else {
+        results.addAll(Arrays.asList(res));
+        rSuccess = true;
+      }
     } else {
       rSuccess = true;
       if(rearEntry.isCompoundNoun())
@@ -310,32 +294,26 @@ public class CompoundNounAnalyzer {
    * @return  the max length
    */
   private int maxWord(String text, boolean hasSuffix, String prvText) {
-    
-    int maxlen = 0;
-    boolean existPrv = false;
-    
-    // if previous text exist in the dictionary.
-    if(prvText.length()>=2) 
-      existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-2))!=null);
-    if(!existPrv&&prvText.length()>=3)
-      existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-3))!=null);
-    
+       
     for(int i=text.length();i>1;i--) {
-      
       String seg = text.substring(0,i);
       WordEntry entry = DictionaryUtil.getAllNoun(seg);
       if(entry==null) continue;
       
-      int len = 0;
-      if(i==text.length()-1 && hasSuffix && !existPrv)
-        len = i+1;
-      else
-        len = i;
-      
-      if(len>maxlen) maxlen = len;
+      if (i == text.length()-1 && hasSuffix) {
+        // if previous text exist in the dictionary.
+        boolean existPrv = false;
+        if(prvText.length()>=2) 
+          existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-2))!=null);
+        if(!existPrv&&prvText.length()>=3)
+          existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-3))!=null);
+        return existPrv ? i : i+1;
+      } else {
+        return i;
+      }
     }   
     
-    return maxlen;
+    return 0;
   }
   
   private CompoundEntry[] analysisBySplited(int[] units, String input, boolean isFirst) {

@@ -29,25 +29,31 @@ class AnalysisOutputComparator<T> implements Comparator<T> {
     int pattern = out2.getPatn()-out1.getPatn();
     int len = out1.getStem().length()-out2.getStem().length();
     
-    if(score!=0) return score;
-    
-    if(out2.getScore()==AnalysisOutput.SCORE_CORRECT &&
-        out1.getScore()==AnalysisOutput.SCORE_CORRECT) {
-      pattern = out1.getPatn()==PatternConstants.PTN_N || out1.getPatn()==PatternConstants.PTN_AID ? -1 : pattern;
-      pattern = out2.getPatn()==PatternConstants.PTN_N || out2.getPatn()==PatternConstants.PTN_AID ? 1 : pattern;
+    if (score != 0) {
+      return score;
     }
     
-    if(pattern!=0) return pattern;
+    if (out2.getScore() == AnalysisOutput.SCORE_CORRECT &&
+        out1.getScore() == AnalysisOutput.SCORE_CORRECT) {
+      pattern = out1.getPatn() == PatternConstants.PTN_N || out1.getPatn() == PatternConstants.PTN_AID ? -1 : pattern;
+      pattern = out2.getPatn() == PatternConstants.PTN_N || out2.getPatn() == PatternConstants.PTN_AID ? 1 : pattern;
+    }
     
-    if(out2.getScore()==AnalysisOutput.SCORE_COMPOUNDS &&
-        out1.getScore()==AnalysisOutput.SCORE_COMPOUNDS) {
-      if(out2.getMaxWordLen()!=out1.getMaxWordLen())
+    if (pattern != 0) {
+      return pattern;
+    }
+    
+    if (out2.getScore() == AnalysisOutput.SCORE_COMPOUNDS &&
+        out1.getScore() == AnalysisOutput.SCORE_COMPOUNDS) {
+      if (out2.getMaxWordLen() != out1.getMaxWordLen()) {
         return out2.getMaxWordLen()-out1.getMaxWordLen();
-      if(out2.getDicWordLen()!=out1.getDicWordLen())
+      }
+      if (out2.getDicWordLen() != out1.getDicWordLen()) {
         return out2.getDicWordLen()-out1.getDicWordLen();
+      }
     }
     
-    if(out2.getPatn()==out1.getPatn()) {
+    if (out2.getPatn() == out1.getPatn()) {
       len = out2.getStem().length()-out1.getStem().length();
     }
     

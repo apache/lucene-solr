@@ -48,102 +48,112 @@ public class AnalysisOutput implements Cloneable {
   private int dicWordLen = 0; // the sum of the length of words within compound nouns
   
   public AnalysisOutput(String stem, String josa, String eomi, int patn) {
-    this.score = SCORE_ANALYSIS;    
-    this.stem=stem;
-    this.josa = josa;
-    this.eomi = eomi;
-    this.patn = patn;
+    this(stem, josa, eomi, patn, SCORE_ANALYSIS);
   }
   
   public AnalysisOutput(String stem, String josa, String eomi, int patn, int score) {
-    this(stem,josa,eomi,patn);
-    this.score = score;
+    this(stem, josa, eomi, (char)0, patn, score);
   }
   
   public AnalysisOutput(String stem, String josa, String eomi, char pos, int patn, int score) {
-    this(stem,josa,eomi,patn,score);
+    this.score = score;    
+    this.stem = stem;
+    this.josa = josa;
+    this.eomi = eomi;
+    this.patn = patn;
     this.pos = pos;
   }
   
-  public void setScore(int i) {
-    this.score = i;
-  }
-  public void setPatn(int i) {
-    this.patn = i;
-  }
-  
-  public void setStem(String s) {
-    this.stem = s;
-  }
-  
-
-  public void setPos(char c) {
-    this.pos = c;
-  }
-  
-  public void setNsfx(String s) {
-    this.nsfx = s;    
-  }
-  
-  public void setJosa(String s) {
-    this.josa = s;
-  }
-  
-  public void setEomi(String s){
-    this.eomi = s;
-  }
-  
-  public void addElist(String l){
-    this.elist.add(l);
-  }
-    
-  public void setElist(String l, int index){
-    this.elist.set(index,l);
-  }
-  
-  public void setPomi(String s) {
-    this.pomi = s;
-  }
-  public void setXverb(String s){
-    this.xverb=s;
-  }
-  public void setVsfx(String s) {
-    this.vsfx = s;
-  }
-
   public int getScore() {
-    return this.score;
+    return score;
   }
+  
+  public void setScore(int score) {
+    this.score = score;
+  }
+  
   public int getPatn() {
-    return this.patn;
+    return patn;
+  }
+  
+  public void setPatn(int patn) {
+    this.patn = patn;
   }
 
   public String getStem() {
     return stem;
   }  
+  
+  public void setStem(String stem) {
+    this.stem = stem;
+  }
+  
   public char getPos() {
-    return this.pos;
+    return pos;
   }
+  
+  public void setPos(char pos) {
+    this.pos = pos;
+  }
+  
   public String getNsfx() {
-    return this.nsfx;
+    return nsfx;
   }
+  
+  public void setNsfx(String nsfx) {
+    this.nsfx = nsfx;
+  }
+  
   public String getJosa() {
-    return this.josa;
+    return josa;
   }
+  
+  public void setJosa(String josa) {
+    this.josa = josa;
+  }
+  
   public String getEomi() {
-    return this.eomi;
+    return eomi;
   }
+  
+  public void setEomi(String eomi) {
+    this.eomi = eomi;
+  }
+  
   public List<String> getElist() {
-    return this.elist;
+    return elist;
   }
-  public String getPomi(){
-    return this.pomi;
+  
+  public void addElist(String element) {
+    elist.add(element);
   }
+    
+  public void setElist(String element, int index) {
+    elist.set(index, element);
+  }
+  
+  public String getPomi() {
+    return pomi;
+  }
+  
+  public void setPomi(String pomi) {
+    this.pomi = pomi;
+  }
+  
   public String getXverb() {
-    return this.xverb;
+    return xverb;
   }
+  
+  public void setXverb(String xverb) {
+    this.xverb = xverb;
+  }
+  
   public String getVsfx() {
-    return this.vsfx;
+    return vsfx;
+  }
+  
+  public void setVsfx(String vsfx) {
+    this.vsfx = vsfx;
   }
   
   public int getMaxWordLen() {
@@ -162,19 +172,19 @@ public class AnalysisOutput implements Cloneable {
     this.dicWordLen = dicWordLen;
   }
   
-  public void addCNoun(CompoundEntry w) {
-    compound.add(w);
-  }
-  
   public List<CompoundEntry> getCNounList() {
     return compound;
   }
   
-  public void setCNoun(List<CompoundEntry> cnoun) {
+  public void setCNounList(List<CompoundEntry> cnoun) {
     compound = cnoun;
   }
   
-  public void addCNoun(List<CompoundEntry> cnoun) {
+  public void addCNoun(CompoundEntry entry) {
+    compound.add(entry);
+  }
+  
+  public void addCNouns(List<CompoundEntry> cnoun) {
     compound.addAll(cnoun);
   }
   

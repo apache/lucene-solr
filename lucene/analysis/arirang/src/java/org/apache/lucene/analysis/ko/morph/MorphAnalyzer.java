@@ -29,14 +29,10 @@ import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 public class MorphAnalyzer {
   
-  private CompoundNounAnalyzer cnAnalyzer = new CompoundNounAnalyzer();  
+  private final CompoundNounAnalyzer cnAnalyzer;  
   
-  public MorphAnalyzer() {
-    cnAnalyzer.setExactMach(false);
-  }
-  
-  public void setExactCompound(boolean is) {
-    cnAnalyzer.setExactMach(is);
+  public MorphAnalyzer(boolean exactMatch) {
+    cnAnalyzer = new CompoundNounAnalyzer(exactMatch);
   }
   
   /**
@@ -295,7 +291,7 @@ public class MorphAnalyzer {
         output.setPos(PatternConstants.POS_ETC);
         output.setPatn(PatternConstants.PTN_ADVJ);
       }
-      if(entry.isCompoundNoun()) output.addCNoun(entry.getCompounds());
+      if(entry.isCompoundNoun()) output.addCNouns(entry.getCompounds());
     }else {
       if(MorphUtil.hasVerbOnly(stem)) return;
     }
@@ -320,7 +316,7 @@ public class MorphAnalyzer {
   void analysisWithEomi(String stem, String end, List<AnalysisOutput> candidates) {
     
     String[] morphs = EomiUtil.splitEomi(stem, end);
-    if(morphs[0]==null) return; // 어미가 사전에 등록되어 있지 않다면....
+    if(morphs==null) return; // 어미가 사전에 등록되어 있지 않다면....
 
     String[] pomis = EomiUtil.splitPomi(morphs[0]);
 
@@ -382,8 +378,8 @@ public class MorphAnalyzer {
 
     boolean success = false;
        
-    if(results.size()>1) {       
-      o.setCNoun(results);
+    if(results != null && results.size()>1) {       
+      o.setCNounList(results);
       success = true;
       int maxWordLen = 0;
       int dicWordLen = 0;

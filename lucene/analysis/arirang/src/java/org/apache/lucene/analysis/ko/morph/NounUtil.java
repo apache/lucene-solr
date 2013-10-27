@@ -56,7 +56,7 @@ class NounUtil {
     }
 
     String[] eomis = EomiUtil.splitEomi(start, end);
-    if(eomis[0]==null) return false;
+    if(eomis==null) return false;
     String[] pomis = EomiUtil.splitPomi(eomis[0]);
     o.setStem(pomis[0]);
     o.addElist(eomis[1]);       
@@ -120,7 +120,7 @@ class NounUtil {
         stomis = EomiUtil.splitEomi(eogan.substring(0,eogan.length()-1),eogan.substring(eogan.length()-1));
       else
         stomis = EomiUtil.splitEomi(eogan,"");
-      if(stomis[0]==null) return false;
+      if(stomis==null) return false;
   
       String[] irrs =  IrregularUtil.restoreIrregularVerb(stomis[0], stomis[1]);
       if(irrs!=null) {
@@ -242,9 +242,9 @@ class NounUtil {
     WordEntry cnoun = DictionaryUtil.getAllNoun(stem);
     if(cnoun != null)  {
       if(cnoun.isCompoundNoun())
-        output.setCNoun(cnoun.getCompounds());
+        output.setCNounList(cnoun.getCompounds());
       else
-        output.setCNoun(new ArrayList<CompoundEntry>()); // TODO: dont make all these lists
+        output.setCNounList(new ArrayList<CompoundEntry>()); // TODO: dont make all these lists
       output.setScore(AnalysisOutput.SCORE_CORRECT);
     }
           

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,12 +30,7 @@ import org.apache.lucene.analysis.ko.dic.WordEntry;
 
 public class WordSpaceAnalyzer {
 
-  private MorphAnalyzer morphAnal;
-  
-  public WordSpaceAnalyzer() {
-    morphAnal = new MorphAnalyzer();
-    morphAnal.setExactCompound(false);
-  }
+  private final MorphAnalyzer morphAnal = new MorphAnalyzer(false);
   
   public List<AnalysisOutput> analyze(String input)  {
 

@@ -34,7 +34,7 @@ public class TestCompoundSegment extends TestCase {
    */
   public void testSegmentCompound() throws Exception {
     
-    CompoundNounAnalyzer analyzer = new CompoundNounAnalyzer();
+    CompoundNounAnalyzer analyzer = new CompoundNounAnalyzer(false);
     
     assertArrayEquals(splitByUnitWord(analyzer, "연구개발과제")
         ,new String[]{"연구","개발","과제"});
