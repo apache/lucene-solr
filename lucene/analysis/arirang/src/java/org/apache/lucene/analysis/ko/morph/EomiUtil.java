@@ -125,7 +125,9 @@ class EomiUtil {
 
     if(nChrs.length==2&&chrs[index]=='시'&&(chrs.length<=index+1||
         (chrs.length>index+1&&chrs[index+1]!='셨'))) {
-      if(DictionaryUtil.getWord(results[0])!=null) return results;  //'시'가 포함된 단어가 있다. 성가시다/도시다/들쑤시다 
+      if (DictionaryUtil.hasWord(results[0])) {
+        return results;  //'시'가 포함된 단어가 있다. 성가시다/도시다/들쑤시다 
+      }
       pomi = chrs[index]+pomi;  
       setPomiResult(results,stem.substring(0,index),pomi);      
       if(--index==0||chrs[index]!='으') return results; // 다음이거나 선어말어미가 없다면...        

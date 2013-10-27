@@ -115,7 +115,7 @@ public class WordSpaceAnalyzer {
     if(output.getLastEnd()<input.length()) {
       
       String source = input.substring(output.getLastEnd());
-      int score = DictionaryUtil.getWord(source)==null ? AnalysisOutput.SCORE_ANALYSIS : AnalysisOutput.SCORE_CORRECT;
+      int score = DictionaryUtil.hasWord(source) ? AnalysisOutput.SCORE_CORRECT : AnalysisOutput.SCORE_ANALYSIS;
       AnalysisOutput o =new AnalysisOutput(source,null,null,PatternConstants.POS_NOUN,
           PatternConstants.PTN_N,score);
       
@@ -325,7 +325,7 @@ public class WordSpaceAnalyzer {
           ) {
         eend--;
       }else if(pvword!=null&&candidates.get(0).getPatn()>=PatternConstants.PTN_VM&& // 명사 + 용언 어구 중에.. 용언어구로 단어를 이루는 경우는 없다.
-          candidates.get(0).getPatn()<=PatternConstants.PTN_VMXMJ && DictionaryUtil.getWord(input)!=null){
+          candidates.get(0).getPatn()<=PatternConstants.PTN_VMXMJ && DictionaryUtil.hasWord(input)){
         candidates.clear();
         break;
       }else if(pvword!=null&&VerbUtil.verbSuffix(candidates.get(0).getStem())
@@ -550,7 +550,7 @@ public class WordSpaceAnalyzer {
         
     for (int i = es; i < str.length(); i++) {
       if (SyllableFeatures.hasFeature(str.charAt(i), SyllableFeatures.JOSA1)) {       
-        return DictionaryUtil.getWord(str.substring(ws,i)) != null;
+        return DictionaryUtil.hasWord(str.substring(ws,i));
       }
     }
     

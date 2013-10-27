@@ -83,6 +83,11 @@ public class DictionaryUtil {
     }
   }
   
+  /** true if this word exists */
+  public static boolean hasWord(CharSequence key) {
+    return dictionary.lookup(key) != null;
+  }
+  
   /** true if something with this prefix exists */
   public static boolean hasWordPrefix(CharSequence prefix) {
     return dictionary.hasPrefix(prefix);
@@ -98,78 +103,43 @@ public class DictionaryUtil {
     }
   }
   
-  /** Looks up noun, compound noun, or adverb */
-  public static WordEntry getWordExceptVerb(String key) {
+  /** returns word (or null) matching specified features */
+  private static WordEntry getWord(String key, int on, int off) {
     Byte clazz = dictionary.lookup(key);
     if (clazz == null) {
       return null;
     }
     char flags = dictionary.getFlags(clazz);
-    if ((flags & (WordEntry.NOUN | WordEntry.BUSA)) != 0) {
+    if ((flags & on) != 0 && (flags & off) == 0) {
       return new WordEntry(key, flags, clazz);
     } else {
       return null;
     }
+  }
+  
+  /** Looks up noun, compound noun, or adverb */
+  public static WordEntry getWordExceptVerb(String key) {
+    return getWord(key, WordEntry.NOUN | WordEntry.BUSA, 0);
   }
   
   /** Looks up a noun (but not compound noun) */
   public static WordEntry getNoun(String key) {
-    Byte clazz = dictionary.lookup(key);
-    if (clazz == null) {
-      return null;
-    }
-    char flags = dictionary.getFlags(clazz);
-    if ((flags & WordEntry.NOUN) != 0 && (flags & WordEntry.COMPOUND) == 0) {
-      return new WordEntry(key, flags, clazz);
-    } else {
-      return null;
-    }
+    return getWord(key, WordEntry.NOUN, WordEntry.COMPOUND);
   }
   
-  /**
-   * return all noun including compound noun
-   */
+  /** return all noun including compound noun */
   public static WordEntry getAllNoun(String key) {  
-    Byte clazz = dictionary.lookup(key);
-    if (clazz == null) {
-      return null;
-    }
-    char flags = dictionary.getFlags(clazz);
-    if ((flags & WordEntry.NOUN) != 0) {
-      return new WordEntry(key, flags, clazz);
-    } else {
-      return null;
-    }
+    return getWord(key, WordEntry.NOUN, 0);
   }
   
-  /**
-   * returns any verb
-   */
+  /** returns any verb */
   public static WordEntry getVerb(String key) {
-    Byte clazz = dictionary.lookup(key);
-    if (clazz == null) {
-      return null;
-    }
-    char flags = dictionary.getFlags(clazz);
-    if ((flags & WordEntry.VERB) != 0) {
-      return new WordEntry(key, flags, clazz);
-    } else {
-      return null;
-    }
+    return getWord(key, WordEntry.VERB, 0);
   }
   
   /** Looks up an adverb-only */
   public static WordEntry getBusa(String key) {
-    Byte clazz = dictionary.lookup(key);
-    if (clazz == null) {
-      return null;
-    }
-    char flags = dictionary.getFlags(clazz);
-    if ((flags & WordEntry.BUSA) != 0 && (flags & WordEntry.NOUN) == 0) {
-      return new WordEntry(key, flags, clazz);
-    } else {
-      return null;
-    }
+    return getWord(key, WordEntry.BUSA, WordEntry.NOUN);
   }
   
   /** return list of irregular compounds for word class. */

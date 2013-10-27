@@ -73,7 +73,7 @@ class HangulDictionary {
   }
   
   /** looks up word class for a word (exact match) */
-  Byte lookup(String key) {
+  Byte lookup(CharSequence key) {
     // TODO: why is does this thing lookup empty strings?
     if (key.length() == 0) {
       return null;
