@@ -469,9 +469,10 @@ regular index/search work tasks, report tasks, and control tasks.
      its own queryMaker instance.
 	 <li>
 	 <font color="#FF0066">CommitIndex</font> and 
-	 <font color="#FF0066">Optimize</font> can be used to commit
-	 changes to the index and/or optimize the index created thus
-	 far.
+	 <font color="#FF0066">ForceMerge</font> can be used to commit
+	 changes to the index then merge the index segments. The integer
+   parameter specifies how many segments to merge down to (default
+   1).
 	 <li>
 	 <font color="#FF0066">WriteLineDoc</font> prepares a 'line'
 	 file where each line holds a document with <i>title</i>, 
@@ -592,6 +593,9 @@ Here is a list of currently defined properties:
   <li><b>Doc deletion</b>:
     <ul><li>doc.delete.step
     </li></ul>
+  </li>
+
+  <li><b>Spatial</b>: Numerous; see spatial.alg
   </li>
   
   <li><b>Task alternative packages</b>:
