@@ -71,7 +71,7 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
     srcConfig.set("line.parser", config.get("query.file.line.parser", null));
     srcConfig.set("content.source.forever", "false");
 
-    List<Query> queries = new ArrayList<>();
+    List<Query> queries = new ArrayList<Query>();
     LineDocSource src = new LineDocSource();
     try {
       src.setConfig(srcConfig);
