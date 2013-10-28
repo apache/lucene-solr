@@ -190,7 +190,8 @@ public class AnalysisOutput implements Cloneable {
   
   // nocommit
   public void setCNounList(CompoundEntry[] cnoun) {
-    compound.clear();
+    // WTF, something holds on to 'previous' cnoun list after MorphAnalyzer.confirmCnoun sets it to something new.
+    compound = new ArrayList<CompoundEntry>();
     addCNouns(cnoun);
   }
   

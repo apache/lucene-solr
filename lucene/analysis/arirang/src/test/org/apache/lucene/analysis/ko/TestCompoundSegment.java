@@ -52,7 +52,7 @@ public class TestCompoundSegment extends TestCase {
    */
   private String[] splitByUnitWord(CompoundNounAnalyzer analyzer, String input) throws Exception {
     
-    List<CompoundEntry> results = analyzer.analyze(input);
+    CompoundEntry results[] = analyzer.analyze(input);
         
     List<String> nounList = new ArrayList<String>();
     for(CompoundEntry entry : results) {

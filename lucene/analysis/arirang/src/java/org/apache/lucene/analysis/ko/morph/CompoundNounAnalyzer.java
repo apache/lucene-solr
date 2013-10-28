@@ -17,10 +17,6 @@ package org.apache.lucene.analysis.ko.morph;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.WordEntry;
@@ -36,27 +32,16 @@ public class CompoundNounAnalyzer {
   }
 
   /** Returns decompounded list for word, or null */
-  public List<CompoundEntry> analyze(String input) {
+  public CompoundEntry[] analyze(String input) {
     if (input.length() < 3 || input.length() > 20) {
       // ignore less than 3 letters or more than 20 letters.
       return null;
     }
     WordEntry entry = DictionaryUtil.getCompoundNoun(input);
     if (entry != null) {
-      // nocommit
-      ArrayList<CompoundEntry> l = new ArrayList<CompoundEntry>();
-      l.addAll(Arrays.asList(entry.getCompounds()));
-      return l;
+      return entry.getCompounds();
     } else {
-      CompoundEntry[] compounds = analyze(input, true);
-      if (compounds == null) {
-        return null;
-      } else {
-        // nocommit
-        ArrayList<CompoundEntry> l = new ArrayList<CompoundEntry>();
-        l.addAll(Arrays.asList(compounds));
-        return l;
-      }
+      return analyze(input, true);
     }
   }
     

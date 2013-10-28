@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 import org.apache.lucene.analysis.ko.dic.DictionaryUtil;
 import org.apache.lucene.analysis.ko.dic.HanjaMapper;
-import org.apache.lucene.analysis.ko.dic.WordEntry;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.CompoundNounAnalyzer;
 import org.apache.lucene.analysis.ko.morph.MorphAnalyzer;
@@ -340,7 +339,7 @@ public final class KoreanFilter extends TokenFilter {
     
     // 추출된 명사가 복합명사인 경우 분리한다.
     for(int i=0;i<maxCandidate;i++) {
-      List<CompoundEntry> results = cnAnalyzer.analyze(candiList.get(i).toString());
+      CompoundEntry results[] = cnAnalyzer.analyze(candiList.get(i).toString());
       
       int pos = 0;
       int offset = 0;

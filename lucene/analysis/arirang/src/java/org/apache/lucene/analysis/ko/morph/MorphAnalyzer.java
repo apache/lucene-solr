@@ -374,11 +374,11 @@ public class MorphAnalyzer {
     if(o.getStem().length()<3) return false;
      
     
-    List<CompoundEntry> results = cnAnalyzer.analyze(o.getStem());
+    CompoundEntry results[] = cnAnalyzer.analyze(o.getStem());
 
     boolean success = false;
        
-    if(results != null && results.size()>1) {       
+    if(results != null && results.length > 1) {       
       o.setCNounList(results);
       success = true;
       int maxWordLen = 0;
