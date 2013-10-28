@@ -164,4 +164,32 @@ class HangulDictionary {
     }
     return true;
   }
+  
+  /** looks up word class for a word (exact match) */
+  int longestMatch(CharSequence key, int flags) {
+    final FST.Arc<Byte> arc = fst.getFirstArc(new FST.Arc<Byte>());
+
+    final BytesReader fstReader = fst.getBytesReader();
+
+    // Accumulate output as we go
+    byte output = 0;
+    int max = 0;
+    for (int i = 0; i < key.length(); i++) {
+      try {
+        if (findTargetArc(key.charAt(i), arc, arc, i == 0, fstReader) == null) {
+          return max;
+        }
+      } catch (IOException bogus) {
+        throw new RuntimeException();
+      }
+      output += arc.output;
+      if (arc.isFinal()) {
+        byte clazz = (byte) (output + arc.nextFinalOutput);
+        if ((getFlags(clazz) & flags) != 0) {
+          max = Math.max(max, i+1);
+        }
+      }
+    }
+    return max;
+  }
 }

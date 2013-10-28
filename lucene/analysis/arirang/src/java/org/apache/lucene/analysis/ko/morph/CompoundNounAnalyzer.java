@@ -257,29 +257,28 @@ public class CompoundNounAnalyzer {
    * @param hasSuffix   whether the input text is including a suffix character at the end
    * @return  the max length
    */
-  private int maxWord(String text, boolean hasSuffix, String prvText) {
-       
-    // nocommit: this should really be an FST walk...
-    for(int i=text.length();i>1;i--) {
-      String seg = text.substring(0,i);
-      if (!DictionaryUtil.hasAllNoun(seg)) {
-        continue;
-      }
-      
-      if (i == text.length()-1 && hasSuffix) {
-        // if previous text exist in the dictionary.
-        boolean existPrv = false;
-        if(prvText.length()>=2) 
-          existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-2)));
-        if(!existPrv&&prvText.length()>=3)
-          existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-3)));
-        return existPrv ? i : i+1;
-      } else {
-        return i;
-      }
-    }   
+  private int maxWord(String text, boolean hasSuffix, String prvText) {    
+    int max = DictionaryUtil.longestMatchAllNoun(text);
     
-    return 0;
+    if (max < 2) {
+      return 0; // matches this short don't count
+    }
+    
+    // TODO: try to clean this up
+    if (max == text.length()-1 && hasSuffix) {
+      boolean existPrv = false;
+      if (prvText.length() >= 2) {
+        existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-2)));
+      }
+      if (!existPrv && prvText.length() >= 3) {
+        existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-3)));
+      }
+      if (!existPrv) {
+        max++; // adjust for suffix
+      }
+    }
+    
+    return max;
   }
   
   private CompoundEntry[] analysisBySplited(int[] units, String input, boolean isFirst) {

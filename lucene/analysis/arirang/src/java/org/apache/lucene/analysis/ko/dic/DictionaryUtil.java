@@ -143,6 +143,11 @@ public class DictionaryUtil {
     return getWord(key, WordEntry.COMPOUND, 0);
   }
   
+  /** Returns length of longest matching noun */
+  public static int longestMatchAllNoun(CharSequence key) {
+    return dictionary.longestMatch(key, WordEntry.NOUN);
+  }
+  
   /** true if there exists noun including compound noun */
   public static boolean hasAllNoun(String key) {  
     return hasWord(key, WordEntry.NOUN, 0);
