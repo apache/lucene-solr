@@ -51,8 +51,6 @@ public class DictionaryBuilder {
     String FILES_AS_IS[] = { 
       DictionaryResources.FILE_EOMI,
       DictionaryResources.FILE_JOSA,
-      DictionaryResources.FILE_PREFIX,
-      DictionaryResources.FILE_SUFFIX,
       DictionaryResources.FILE_UNCOMPOUNDS
     };
     

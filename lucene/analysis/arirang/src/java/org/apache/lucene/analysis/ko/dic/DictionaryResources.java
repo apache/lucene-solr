@@ -31,13 +31,7 @@ import org.apache.lucene.util.IOUtils;
 public class DictionaryResources {
   
   public static final String FILE_JOSA = "josa.dic";
-  
-  public static final String FILE_EOMI = "eomi.dic";
-  
-  public static final String FILE_PREFIX = "prefix.dic";
-  
-  public static final String FILE_SUFFIX = "suffix.dic";  
-  
+  public static final String FILE_EOMI = "eomi.dic";  
   public static final String FILE_UNCOMPOUNDS = "uncompounds.dic";
   
   public static final String FILE_SYLLABLE_DAT = "syllable.dat";

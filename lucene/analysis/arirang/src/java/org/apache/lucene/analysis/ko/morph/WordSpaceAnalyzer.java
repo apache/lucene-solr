@@ -319,7 +319,7 @@ public class WordSpaceAnalyzer {
         candidates.clear();
         break;
       }else if(pvword!=null&&VerbUtil.verbSuffix(candidates.get(0).getStem())
-          &&DictionaryUtil.getNoun(pvword)!=null){ // 명사 + 용언화 접미사 + 어미 처리
+          && DictionaryUtil.hasNoun(pvword)) { // 명사 + 용언화 접미사 + 어미 처리
         candidates.clear();
         anlysisWithEomiDetail(snipt.substring(0,eend), candidates);
         pvword=null;
@@ -464,7 +464,7 @@ public class WordSpaceAnalyzer {
       output.removeLast();    
       return -1;
     }else if(nEnd<input.length() && hasJOSA1 
-      && DictionaryUtil.getNoun(o.getSource())!=null) {
+      && DictionaryUtil.hasNoun(o.getSource())) {
       return -1;
     }else if(nEnd<input.length() && o.getScore()==AnalysisOutput.SCORE_ANALYSIS 
       && DictionaryUtil.hasWordPrefix(ejend+input.charAt(nEnd))) { // 루씬하ㄴ 글형태소분석기 방지

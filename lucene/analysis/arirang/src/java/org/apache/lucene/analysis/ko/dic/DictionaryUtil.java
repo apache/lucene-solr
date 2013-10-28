@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -37,13 +36,7 @@ public class DictionaryUtil {
   private static final HangulDictionary dictionary;
   
   private static final Set<String> josas = new HashSet<String>();
-  
-  private static final Set<String> eomis = new HashSet<String>();
-  
-  private static final Set<String> prefixs = new HashSet<String>();
-  
-  private static final Set<String> suffixs = new HashSet<String>();
-  
+  private static final Set<String> eomis = new HashSet<String>();  
   private static final Set<String> uncompounds = new HashSet<String>();
   
   static {  
@@ -61,8 +54,6 @@ public class DictionaryUtil {
 
       readFileToSet(josas,DictionaryResources.FILE_JOSA);
       readFileToSet(eomis,DictionaryResources.FILE_EOMI);
-      readFileToSet(prefixs,DictionaryResources.FILE_PREFIX);
-      readFileToSet(suffixs,DictionaryResources.FILE_SUFFIX);
       
       InputStream stream = DictionaryResources.class.getResourceAsStream(DictionaryResources.FILE_WORDS_DAT);
       if (stream == null)
@@ -86,6 +77,16 @@ public class DictionaryUtil {
   /** true if this word exists */
   public static boolean hasWord(CharSequence key) {
     return dictionary.lookup(key) != null;
+  }
+  
+  /** true if word exists matching specified features */
+  private static boolean hasWord(CharSequence key, int on, int off) {
+    Byte clazz = dictionary.lookup(key);
+    if (clazz == null) {
+      return false;
+    }
+    char flags = dictionary.getFlags(clazz);
+    return (flags & on) != 0 && (flags & off) == 0;
   }
   
   /** true if something with this prefix exists */
@@ -116,12 +117,22 @@ public class DictionaryUtil {
       return null;
     }
   }
+
+  /** true if there exists noun, compound noun, or adverb */
+  public static boolean hasWordExceptVerb(String key) {
+    return hasWord(key, WordEntry.NOUN | WordEntry.BUSA, 0);
+  }
   
   /** Looks up noun, compound noun, or adverb */
   public static WordEntry getWordExceptVerb(String key) {
     return getWord(key, WordEntry.NOUN | WordEntry.BUSA, 0);
   }
   
+  /** true if there exists noun (but not compound noun) */
+  public static boolean hasNoun(String key) {
+    return hasWord(key, WordEntry.NOUN, WordEntry.COMPOUND);
+  }
+
   /** Looks up a noun (but not compound noun) */
   public static WordEntry getNoun(String key) {
     return getWord(key, WordEntry.NOUN, WordEntry.COMPOUND);
@@ -130,6 +141,11 @@ public class DictionaryUtil {
   /** Looks up a compound noun */
   public static WordEntry getCompoundNoun(String key) {
     return getWord(key, WordEntry.COMPOUND, 0);
+  }
+  
+  /** true if there exists noun including compound noun */
+  public static boolean hasAllNoun(String key) {  
+    return hasWord(key, WordEntry.NOUN, 0);
   }
   
   /** return all noun including compound noun */
@@ -168,14 +184,6 @@ public class DictionaryUtil {
   
   public static boolean existEomi(String str) {
     return eomis.contains(str);
-  }
-  
-  public static boolean existPrefix(String str) {
-    return prefixs.contains(str);
-  }
-  
-  public static boolean existSuffix(String str) {
-    return suffixs.contains(str);
   }
   
   private static void readFileToSet(final Set<String> set, String dic) throws IOException {    

@@ -185,7 +185,7 @@ public class CompoundNounAnalyzer {
   private CompoundEntry[] analyzeLongText(String input, boolean isFirst) {
     int len = input.length();
 
-    boolean hasSuffix = isFirst && DictionaryUtil.existSuffix(input.substring(len-1));        
+    boolean hasSuffix = isFirst && existSuffix(input.charAt(len-1));        
     int pos = calculatePos(input, hasSuffix);
     if (pos < 1) {
       return null; // fail to search a valid word segment
@@ -259,18 +259,20 @@ public class CompoundNounAnalyzer {
    */
   private int maxWord(String text, boolean hasSuffix, String prvText) {
        
+    // nocommit: this should really be an FST walk...
     for(int i=text.length();i>1;i--) {
       String seg = text.substring(0,i);
-      WordEntry entry = DictionaryUtil.getAllNoun(seg);
-      if(entry==null) continue;
+      if (!DictionaryUtil.hasAllNoun(seg)) {
+        continue;
+      }
       
       if (i == text.length()-1 && hasSuffix) {
         // if previous text exist in the dictionary.
         boolean existPrv = false;
         if(prvText.length()>=2) 
-          existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-2))!=null);
+          existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-2)));
         if(!existPrv&&prvText.length()>=3)
-          existPrv = (DictionaryUtil.getNoun(prvText.substring(prvText.length()-3))!=null);
+          existPrv = (DictionaryUtil.hasNoun(prvText.substring(prvText.length()-3)));
         return existPrv ? i : i+1;
       } else {
         return i;
@@ -310,11 +312,9 @@ public class CompoundNounAnalyzer {
   private CompoundEntry analyzeSingle(String input) {
     if (input.length() == 1) {
       return new CompoundEntry(input, true);
+    } else {
+      return new CompoundEntry(input, DictionaryUtil.hasWordExceptVerb(input));
     }
-    
-    WordEntry entry = DictionaryUtil.getWordExceptVerb(input);
-
-    return new CompoundEntry(input, entry != null);
   }
   
   private static boolean isAlphaNumeric(String text) {
@@ -332,10 +332,12 @@ public class CompoundNounAnalyzer {
   
   private boolean validCompound(String before, String after, boolean isFirst, int pos) {
 
-    if(pos==1&&before.length()==1&&
-        (!isFirst||!(DictionaryUtil.existPrefix(before) || isAlphaNumeric(before)))) return false;    
+    if (pos == 1 && before.length() == 1 &&
+        (!isFirst || !(existPrefix(before.charAt(0)) || isAlphaNumeric(before)))) {
+      return false;    
+    }
 
-    if(after.length()==1&&!isFirst&&!DictionaryUtil.existSuffix(after)) return false;
+    if (after.length() == 1 && !isFirst && !existSuffix(after.charAt(0))) return false;
 
     if(pos!=1&&before.length()==1) {
       if (DictionaryUtil.isUncompound(before, after)) {
@@ -350,5 +352,33 @@ public class CompoundNounAnalyzer {
     }
     
     return true;
+  }
+  
+  private static boolean existPrefix(char ch) {
+    switch (ch) {
+      case '최':  case '고':  case '남':  case '여':  case '비':  
+      case '유':  case '무':  case '군':  case '각':  case '기': 
+        return true;
+      default: return false;
+    }
+  }
+  
+  private static boolean existSuffix(char ch) {
+    switch (ch) {
+      case '각': case '감': case '값': case '객': case '계': case '길': case '고': case '공':
+      case '관': case '국': case '권': case '금': case '급': case '기': case '내': case '난':
+      case '단': case '대': case '땅': case '량': case '록': case '론': case '력': case '령':
+      case '료': case '류': case '률': case '말': case '망': case '맵': case '문': case '물':
+      case '면': case '밤': case '방': case '법': case '부': case '분': case '병': case '비':
+      case '사': case '생': case '서': case '세': case '선': case '성': case '시': case '식':
+      case '심': case '실': case '쇼': case '수': case '속': case '안': case '어': case '액':
+      case '염': case '율': case '원': case '용': case '음': case '인': case '일': case '위':
+      case '자': case '장': case '족': case '제': case '증': case '주': case '중': case '직':
+      case '진': case '집': case '적': case '전': case '점': case '죄': case '컴': case '폭':
+      case '품': case '표': case '판': case '팀': case '차': case '창': case '책': case '청':
+      case '철': case '체': case '층': case '학': case '항': case '화': case '형': case '회':
+        return true;
+      default: return false;
+    }
   }
 }
