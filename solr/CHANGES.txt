@@ -103,6 +103,11 @@ New Features
 * SOLR-5027: CollapsingQParserPlugin for high performance field collapsing on high cardinality fields.
   (Joel Bernstein)
 
+* SOLR-5395: Added a RunAlways marker interface for UpdateRequestProcessorFactory 
+  implementations indicating that they should not be removed in later stages
+  of distributed updates (usually signalled by the update.distrib parameter)
+  (yonik)
+  
 
 Bug Fixes
 ----------------------
