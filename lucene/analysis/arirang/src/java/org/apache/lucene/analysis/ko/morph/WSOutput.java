@@ -116,11 +116,11 @@ class WSOutput  implements Cloneable {
       }
       
       phrases.add(o1);
-      cnouns.remove(cnouns.get(0));
+      cnouns.remove(0);
       i--;
       
       if (isOnechar) {
-        cnouns.remove(cnouns.get(0));
+        cnouns.remove(0);
       }
     }
     

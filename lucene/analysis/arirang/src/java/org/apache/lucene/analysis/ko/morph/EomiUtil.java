@@ -23,14 +23,6 @@ import org.apache.lucene.analysis.ko.dic.SyllableFeatures;
 class EomiUtil {
   private EomiUtil() {}
 
-  static final String RESULT_FAIL = "0";
-  
-  static final String RESULT_SUCCESS = "1";
-  
-  static final String[] verbSuffix = {
-      "이","하","되","스럽","스러우","시키","있","없","같","당하","만하","드리","받","나","내"
-  };
-  
   /**
    * 선어말어미를 분석한다.
    */
@@ -181,85 +173,84 @@ class EomiUtil {
     
     char estem = stem.charAt(strlen-1);
     char[] chrs = MorphUtil.decompose(estem);
-    if (chrs.length==1) {
+    if (chrs.length == 1) {
       return null; // 한글이 아니라면...
     }
 
-    if((chrs.length==3)
-        &&(chrs[2]=='ㄴ'||chrs[2]=='ㄹ'||chrs[2]=='ㅁ'||chrs[2]=='ㅂ')
-        &&EomiUtil.IsNLMBSyl(estem,chrs[2])
-        && combineAndEomiCheck(chrs[2], end)!=null) 
-    {    
+    if (chrs.length == 3 &&
+        (chrs[2] == 'ㄴ' || chrs[2] == 'ㄹ' || chrs[2] == 'ㅁ' || chrs[2] == 'ㅂ') &&
+        EomiUtil.IsNLMBSyl(estem,chrs[2]) &&
+        combineAndEomiCheck(chrs[2], end)) {    
       String strs[] = new String[2];
       strs[1] = Character.toString(chrs[2]);
-      if(end.length()>0) strs[1] += end;
+      if (end.length() > 0) strs[1] += end;
       
    	  strs[0] = stem.substring(0,strlen-1) + MorphUtil.makeChar(estem, 0);  
    	  return strs;
-    } 
-    else if(chrs.length==3 && chrs[2]=='ㄹ' && DictionaryUtil.getVerb(stem)!=null 
-    		&& combineAndEomiCheck(chrs[2], end)!=null) 
-    {
+    } else if (chrs.length==3 && 
+               chrs[2]=='ㄹ' && 
+               DictionaryUtil.hasVerb(stem) && 
+               combineAndEomiCheck(chrs[2], end)) {
       String strs[] = new String[2];
-        strs[1] = Character.toString(chrs[2]);
-        if(end.length()>0) strs[1] += end;
-        strs[0] = stem; // "만들 때와는"에서 "만들"과 같은 경우
-        return strs;
-    }
-    else if(estem=='해'&&DictionaryUtil.existEomi("어"+end))
-    {      
+      strs[1] = Character.toString(chrs[2]);
+      if (end.length() > 0) strs[1] += end;
+      strs[0] = stem; // "만들 때와는"에서 "만들"과 같은 경우
+      return strs;
+    } else if (estem == '해' && DictionaryUtil.existEomi("어"+end)) {      
       return new String[] { stem.substring(0,strlen-1)+"하", "어"+end }; 
-    }
-    else if(estem=='히'&&DictionaryUtil.existEomi("이"+end)) 
-    {      
+    } else if (estem == '히' && DictionaryUtil.existEomi("이"+end)) {      
       return new String[] { stem.substring(0,strlen-1)+"하", "이"+end };      
-    } 
-    else if(chrs[0]!='ㅇ'&&
-        (chrs[1]=='ㅏ'||chrs[1]=='ㅓ'||chrs[1]=='ㅔ'||chrs[1]=='ㅐ')&&
-        (chrs.length==2 || SyllableFeatures.hasFeature(estem, SyllableFeatures.YNPAH)) &&
-        (combineAndEomiCheck('어', end)!=null)) 
-    {        
+    } else if (chrs[0] != 'ㅇ' &&
+              (chrs[1] == 'ㅏ' || chrs[1] == 'ㅓ' || chrs[1] == 'ㅔ' || chrs[1] == 'ㅐ') &&
+              (chrs.length == 2 || SyllableFeatures.hasFeature(estem, SyllableFeatures.YNPAH)) &&
+              combineAndEomiCheck('어', end)) {        
       if (chrs.length == 2) {
         return new String[] { stem, "어"+end };
       } else {
         return new String[] { stem, end };
       } 
-    } 
-    else if(estem=='하'&&end!=null&&end.startsWith("여")&&
-        combineAndEomiCheck('어', end.substring(1))!=null) 
-    {      
+    } else if (estem == '하' && 
+               end.startsWith("여") && 
+               combineAndEomiCheck('어', end.substring(1))) {      
       return new String[] { stem, "어"+end.substring(1) }; 
-    }
-    else if(estem=='려'&&end!=null&& // 꺼려=>꺼리어, 꺼려서=>꺼리어서
-          combineAndEomiCheck('어', end)!=null) 
-    {      
+    } else if (estem == '려' && 
+               combineAndEomiCheck('어', end)) {
+        // 꺼려=>꺼리어, 꺼려서=>꺼리어서
       return new String[] { 
           stem.substring(0,stem.length()-1)+"리",
                     "어"+end
       };      
-    }
-    else if((chrs.length==2)&&
-        (chrs[1]=='ㅘ'||chrs[1]=='ㅙ'||chrs[1]=='ㅝ'||chrs[1]=='ㅕ'||chrs[1]=='ㅐ'||chrs[1]=='ㅒ')&&
-        (combineAndEomiCheck('어', end)!=null)) 
-    {    
+    } else if ((chrs.length == 2) &&
+               (chrs[1] == 'ㅘ' || chrs[1] == 'ㅙ' || chrs[1] == 'ㅝ' || chrs[1] == 'ㅕ' || chrs[1] == 'ㅐ' || chrs[1] == 'ㅒ') &&
+               combineAndEomiCheck('어', end)) {    
   
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
       
-      if(strlen>1) sb.append(stem.substring(0,strlen-1));
+      if (strlen > 1) {
+        sb.append(stem, 0, strlen-1);
+      }
       
-      if(chrs[1]=='ㅘ')
-        sb.append(MorphUtil.makeChar(estem, 8, 0)).append(MorphUtil.replaceJongsung('아',estem));  
-      else if(chrs[1]=='ㅝ')
-        sb.append(MorphUtil.makeChar(estem, 13, 0)).append(MorphUtil.replaceJongsung('어',estem));  
-      else if(chrs[1]=='ㅙ')
-        sb.append(MorphUtil.makeChar(estem, 11, 0)).append(MorphUtil.replaceJongsung('어',estem));        
-      else if(chrs[1]=='ㅕ')
-        sb.append(Character.toString(MorphUtil.makeChar(estem, 20, 0))).append(MorphUtil.replaceJongsung('어',estem));
-      else if(chrs[1]=='ㅐ')
-        sb.append(MorphUtil.makeChar(estem, 0, 0)).append(MorphUtil.replaceJongsung('어',estem));
-      else if(chrs[1]=='ㅒ')
-        sb.append(MorphUtil.makeChar(estem, 20, 0)).append(MorphUtil.replaceJongsung('애',estem));  
-    
+      switch (chrs[1]) {
+        case 'ㅘ': sb.append(MorphUtil.makeChar(estem, 8, 0));
+                 sb.append(MorphUtil.replaceJongsung('아', estem));
+                 break;
+        case 'ㅝ': sb.append(MorphUtil.makeChar(estem, 13, 0));
+                 sb.append(MorphUtil.replaceJongsung('어', estem));
+                 break;
+        case 'ㅙ': sb.append(MorphUtil.makeChar(estem, 11, 0));
+                 sb.append(MorphUtil.replaceJongsung('어', estem));
+                 break;
+        case 'ㅕ': sb.append(MorphUtil.makeChar(estem, 20, 0));
+                 sb.append(MorphUtil.replaceJongsung('어',estem));
+                 break;
+        case 'ㅐ': sb.append(MorphUtil.makeChar(estem, 0, 0));
+                 sb.append(MorphUtil.replaceJongsung('어',estem));
+                 break;
+        case 'ㅒ': sb.append(MorphUtil.makeChar(estem, 20, 0));
+                 sb.append(MorphUtil.replaceJongsung('애',estem));
+                 break;
+      }
+  
       String strs[] = new String[2];
       strs[0] = sb.toString();
     
@@ -268,7 +259,7 @@ class EomiUtil {
       
       strs[1] = end;
       return strs;
-    } else if(!"".equals(end)&&DictionaryUtil.existEomi(end)) {    
+    } else if (end.length() > 0 && DictionaryUtil.existEomi(end)) {    
       return new String[]{stem, end};
     } else {
       return null;
@@ -278,12 +269,7 @@ class EomiUtil {
   /**
    * ㄴ,ㄹ,ㅁ,ㅂ과 eomi 가 결합하여 어미가 될 수 있는지 점검한다.
    */
-  private static String combineAndEomiCheck(char s, String eomi) {
-  
-    if (eomi == null) {
-      eomi = "";
-    }
-    
+  private static boolean combineAndEomiCheck(char s, String eomi) {
     switch(s) {
       case 'ㄴ': eomi = "은" + eomi;
                break;
@@ -296,10 +282,6 @@ class EomiUtil {
       default: eomi = s + eomi;
     }
 
-    if (DictionaryUtil.existEomi(eomi)) {
-      return eomi;    
-    } else {
-      return null;
-    }
+    return DictionaryUtil.existEomi(eomi);
   }
 }

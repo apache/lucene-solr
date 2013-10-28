@@ -158,6 +158,11 @@ public class DictionaryUtil {
     return getWord(key, WordEntry.NOUN, 0);
   }
   
+  /** true if there exists verb */
+  public static boolean hasVerb(String key) {
+    return hasWord(key, WordEntry.VERB, 0);
+  }
+  
   /** returns any verb */
   public static WordEntry getVerb(String key) {
     return getWord(key, WordEntry.VERB, 0);

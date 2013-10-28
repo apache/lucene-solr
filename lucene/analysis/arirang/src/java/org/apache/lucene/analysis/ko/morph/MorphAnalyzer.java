@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ko.morph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.ko.dic.CompoundEntry;
@@ -170,17 +171,12 @@ public class MorphAnalyzer {
    * @param candidates  analysis candidates
    */
   private void filterInCorrect(List<AnalysisOutput> candidates) {
-    List<AnalysisOutput> removeds = new ArrayList<AnalysisOutput>();
-    
-    for(AnalysisOutput o : candidates) {
-      if(o.getScore()!=AnalysisOutput.SCORE_CORRECT)
-        removeds.add(o);
-    }
-    
-    for(AnalysisOutput o : removeds) {
-      candidates.remove(o);
-    }
-    
+    for (Iterator<AnalysisOutput> iterator = candidates.iterator(); iterator.hasNext(); ) {
+      AnalysisOutput o = iterator.next();
+      if (o.getScore() != AnalysisOutput.SCORE_CORRECT) {
+        iterator.remove();
+      }
+    }    
   }
   
   private void analysisByRule(String input, List<AnalysisOutput> candidates) {
@@ -219,6 +215,7 @@ public class MorphAnalyzer {
     }
   }
   
+  // nocommit: fix this!
   private void addResults(AnalysisOutput o, List<AnalysisOutput> results, HashMap<String, AnalysisOutput> stems) {
     AnalysisOutput old = stems.get(o.getStem());
     if(old==null||old.getPos()!=o.getPos()) {
@@ -238,9 +235,8 @@ public class MorphAnalyzer {
     AnalysisOutput output = new AnalysisOutput(word, null, null, PatternConstants.PTN_N);
     output.setPos(PatternConstants.POS_NOUN);
 
-    WordEntry entry;
-    if((entry=DictionaryUtil.getWord(word))!=null) {
-
+    WordEntry entry = DictionaryUtil.getWord(word);
+    if (entry != null) {
       if (entry.isCompoundNoun()) {
         candidates.add(0,output);
       } else if (entry.isNoun()) {
@@ -249,13 +245,14 @@ public class MorphAnalyzer {
       } else if (entry.isAdverb()) {
         AnalysisOutput busa = new AnalysisOutput(word, null, null, PatternConstants.PTN_AID);
         busa.setPos(PatternConstants.POS_ETC);
-        
         busa.setScore(AnalysisOutput.SCORE_CORRECT);
         candidates.add(0,busa);    
       }
       
-      if(!entry.isVerb()) return;
-    } else if(candidates.size()==0||!NounUtil.endsWith2Josa(word)) {
+      if (!entry.isVerb()) {
+        return;
+      }
+    } else if (candidates.isEmpty() || !NounUtil.endsWith2Josa(word)) {
       output.setScore(AnalysisOutput.SCORE_ANALYSIS);
       candidates.add(0,output);
     }
