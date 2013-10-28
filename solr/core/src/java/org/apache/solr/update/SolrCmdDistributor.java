@@ -202,8 +202,8 @@ public class SolrCmdDistributor {
       return;
     }
     
-    SolrServer solrServer = servers.getSolrServer(req);
     try {
+      SolrServer solrServer = servers.getSolrServer(req);
       NamedList<Object> rsp = solrServer.request(req.uReq);
     } catch (Exception e) {
       SolrException.log(log, e);
