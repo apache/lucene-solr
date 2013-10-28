@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
-public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory implements UpdateRequestProcessorFactory.RunAlways {
   
   int maxNumToLog = 10;
   @Override

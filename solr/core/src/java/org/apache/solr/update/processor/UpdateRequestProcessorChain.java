@@ -75,7 +75,7 @@ import java.util.ArrayList;
  * <code>UpdateRequestProcessorFactory</code>.  If a chain includes 
  * <code>RunUpdateProcessorFactory</code> but does not include a 
  * <code>DistributingUpdateProcessorFactory</code>, it will be added 
- * automaticly by {@link #init init()}.
+ * automatically by {@link #init init()}.
  * </p>
  *
  * @see UpdateRequestProcessorFactory
@@ -195,8 +195,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
           if (factory instanceof DistributingUpdateProcessorFactory) {
             afterDistrib = false;
           }
-        } else if (!(factory instanceof LogUpdateProcessorFactory)) {    // TODO: use a marker interface for this?
-          // skip anything that is not the log factory
+        } else if (!(factory instanceof UpdateRequestProcessorFactory.RunAlways)) {
+          // skip anything that doesn't have the marker interface
           continue;
         }
       }
