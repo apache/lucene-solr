@@ -37,9 +37,7 @@ public class WordSpaceAnalyzer {
     WSOutput output = new WSOutput();
     
     int wStart = 0;
-    
-    int sgCount;
-    
+        
     Map<Integer, Integer> fCounter = new HashMap<Integer, Integer>();
     
     for(int i=0;i<input.length();i++) {           
@@ -61,7 +59,6 @@ public class WordSpaceAnalyzer {
       // 이 경우는 다음 음절을 조사하여 
       } else if(i!= input.length()-1 && prefixExists) { 
         // 아무짓도 하지 않음.
-        sgCount = i;
       } else if(!prefixExists && 
           (entry=DictionaryUtil.getBusa(input.substring(wStart,i+1)))!=null) {        
         candidates.add(buildSingleOutput(entry));
@@ -210,8 +207,7 @@ public class WordSpaceAnalyzer {
     boolean hasJosa = false;
     for(int i=start;i>=jstart;i--) {
       String str = snippet.substring(jstart,i+1);
-      if(DictionaryUtil.existJosa(str) && !findNounWithinStr(snippet,i,i+2) &&
-          !isNounPart(snippet,jstart)) {
+      if(DictionaryUtil.existJosa(str) && !findNounWithinStr(snippet,i,i+2)) {
         jend = i;
         hasJosa = true;
         break;
@@ -549,20 +545,5 @@ public class WordSpaceAnalyzer {
     }
     
     return false;
-  }
-  
-  private boolean isNounPart(String str, int jstart)  {
-    
-    if(true) return false;
-    
-    for(int i=jstart-1;i>=0;i--) {      
-      if(DictionaryUtil.getWordExceptVerb(str.substring(i,jstart+1))!=null)
-        return true;
-      
-    }
-    
-    
-    return false;
-    
   }
 }

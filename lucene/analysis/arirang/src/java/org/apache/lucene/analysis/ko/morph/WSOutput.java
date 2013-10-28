@@ -24,17 +24,11 @@ import org.apache.lucene.analysis.ko.dic.CompoundEntry;
 
 class WSOutput  implements Cloneable {
 
-  private int lastStart = 0;
-  
+  private int lastStart = 0; // nocommit, seems unused?
   private int lastEnd = 0;  
-  
   private List<AnalysisOutput> phrases = new ArrayList<AnalysisOutput>();
   
-  int getLastStart() {
-    return lastStart;
-  }
-
-  void setLastStart(int start) {
+  private void setLastStart(int start) {
     this.lastStart = start;
   }
 
@@ -42,33 +36,29 @@ class WSOutput  implements Cloneable {
     return lastEnd;
   }
 
-  void setLastEnd(int end) {
+  private void setLastEnd(int end) {
     this.lastStart = end;
   }
   
-
   List<AnalysisOutput> getPhrases() {
     return phrases;
   }
 
   void removeLast() {
+    if (phrases.isEmpty()) {
+      return;
+    }
         
-    if(this.phrases.size()==0) return;
+    AnalysisOutput o = phrases.remove(phrases.size()-1);
     
-    AnalysisOutput o = this.phrases.remove(this.phrases.size()-1);
-    
-    if(this.phrases.size()==0) {
-      
-      this.lastStart = 0;
-      this.lastEnd = 0;
-      
+    if (phrases.isEmpty()) {
+      lastStart = 0;
+      lastEnd = 0;
     } else {
-      
-      this.lastEnd -= o.getSource().length();
-      
-      if(this.phrases.size()>1) {
-        AnalysisOutput o1 = this.phrases.get(this.phrases.size()-1);
-        this.lastStart = lastEnd-o1.getSource().length();
+      lastEnd -= o.getSource().length();
+      if (phrases.size() > 1) {
+        AnalysisOutput o1 = phrases.get(phrases.size()-1);
+        this.lastStart = lastEnd - o1.getSource().length();
       } else {
         this.lastStart = 0;
       }
@@ -76,76 +66,74 @@ class WSOutput  implements Cloneable {
   }
   
   void addPhrase(AnalysisOutput o) {
-
-    this.lastStart = this.lastEnd;
-    this.lastEnd += o.getSource().length();
+    lastStart = lastEnd;
+    lastEnd += o.getSource().length();
     
-    if(o.getCNounList().size()==0)
-      this.phrases.add(o);
+    if (o.getCNounList().size() == 0)
+      phrases.add(o);
     else
       addCompounds(o);
   }
   
-  void addCompounds(AnalysisOutput o) {
+  private void addCompounds(AnalysisOutput o) {
     
     List<CompoundEntry> cnouns = o.getCNounList();
-      
     String source = o.getSource();    
-    int rmstemlen = 0;
-    
-//    for(int i=0;i<cnouns.size();i++) {
-//      System.out.println(cnouns.get(i).getWord());
-//    }
-    for(int i=0;i<cnouns.size()-1;i++) {
+
+    for (int i = 0; i < cnouns.size() - 1; i++) {
       
       String noun = cnouns.get(i).getWord();      
       boolean isOnechar = false;
     
       // 접두어는 처음 음절에만 온다. 복합명사 분해규칙
       // 처음이 아닌 경우 1글자는 앞 문자와 결합한다.
-      if(cnouns.get(i).getWord().length()==1 ||
-          cnouns.get(i+1).getWord().length()==1) { // 접두어는 처음 음절에만 온다. 복합명사 분해규칙
+      if (cnouns.get(i).getWord().length() == 1 ||
+          cnouns.get(i+1).getWord().length() == 1) { // 접두어는 처음 음절에만 온다. 복합명사 분해규칙
         noun += cnouns.get(i+1).getWord();      
         isOnechar = true;
       }
       
-      if(isOnechar && i>=cnouns.size()-2) break;
+      if (isOnechar && i >= cnouns.size()-2) {
+        break;
+      }
             
       int score = AnalysisOutput.SCORE_CORRECT;
-      if(!cnouns.get(i).isExist()) score=AnalysisOutput.SCORE_CANDIDATE;
+      if (!cnouns.get(i).isExist()) {
+        score = AnalysisOutput.SCORE_CANDIDATE;
+      }
       
-      AnalysisOutput o1 = new AnalysisOutput(noun, null, null, 
-          PatternConstants.POS_NOUN, PatternConstants.PTN_N, score);
+      AnalysisOutput o1 = new AnalysisOutput(noun, null, null, PatternConstants.POS_NOUN, PatternConstants.PTN_N, score);
       
       o1.setSource(noun);
       
-      if(isOnechar) {
+      if (isOnechar) {
         o1.addCNoun(cnouns.get(i));
         o1.addCNoun(cnouns.get(i+1));
       }
     
-      if(source.length()>noun.length())
+      if (source.length()>noun.length()) {
         source = source.substring(noun.length());
+      }
       
-      this.phrases.add(o1);
+      phrases.add(o1);
       cnouns.remove(cnouns.get(0));
       i--;
       
-      if(isOnechar) {
+      if (isOnechar) {
         cnouns.remove(cnouns.get(0));
       }
-
     }
     
-    o.setStem(o.getStem().substring(o.getSource().length()-source.length()));
+    o.setStem(o.getStem().substring(o.getSource().length() - source.length()));
     o.setSource(source);
-    if(cnouns.size()==1) cnouns.remove(0);
+    if (cnouns.size() == 1) { 
+      cnouns.clear();
+    }
   
-    this.phrases.add(o);
-
+    phrases.add(o);
   }
   
-  void setPhrases(List<AnalysisOutput> phrases) {
+  private void setPhrases(List<AnalysisOutput> phrases) {
     this.phrases = phrases;
   }
   
@@ -154,7 +142,6 @@ class WSOutput  implements Cloneable {
     WSOutput candidate = (WSOutput)super.clone(); // FIXME: What's this? -Christian
     
     candidate.setLastStart(lastStart);
-    
     candidate.setLastEnd(lastEnd);
     
     List<AnalysisOutput> list = new ArrayList<AnalysisOutput>();

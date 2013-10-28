@@ -110,24 +110,24 @@ class HangulDictionary {
   
   /** return list of compounds for key and word class.
    * this retrieves the splits for the class and applies them to the key */
-  List<CompoundEntry> getCompounds(String word, byte clazz) {
+  CompoundEntry[] getCompounds(String word, byte clazz) {
     int off = clazz * RECORD_SIZE;
     int numSplits = metadata[off+2];
     assert numSplits > 0;
-    List<CompoundEntry> compounds = new ArrayList<>(numSplits+1);
+    CompoundEntry compounds[] = new CompoundEntry[numSplits+1];
     int last = 0;
     for (int i = 0; i < numSplits; i++) {
       int split = metadata[off+3+i];
-      compounds.add(new CompoundEntry(word.substring(last, split), true));
+      compounds[i] = new CompoundEntry(word.substring(last, split), true);
       last = split;
     }
-    compounds.add(new CompoundEntry(word.substring(last), true));
+    compounds[numSplits] = new CompoundEntry(word.substring(last), true);
     return compounds;
   }
   
   /** return list of compounds for key and word class.
    * this retrieves the decompounded data for this irregular class */
-  List<CompoundEntry> getIrregularCompounds(byte clazz) {
+  CompoundEntry[] getIrregularCompounds(byte clazz) {
     int off = clazz * RECORD_SIZE;
     int numChars = metadata[off+2];
     // TODO: more efficient
@@ -144,7 +144,7 @@ class HangulDictionary {
       }
     }
     compounds.add(new CompoundEntry(sb.toString(), true));
-    return compounds;
+    return compounds.toArray(new CompoundEntry[compounds.size()]);
   }
   
   /** walks the fst for prefix and returns true if it his no dead end */

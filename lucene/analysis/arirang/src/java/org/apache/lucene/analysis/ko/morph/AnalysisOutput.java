@@ -188,6 +188,19 @@ public class AnalysisOutput implements Cloneable {
     compound.addAll(cnoun);
   }
   
+  // nocommit
+  public void setCNounList(CompoundEntry[] cnoun) {
+    compound.clear();
+    addCNouns(cnoun);
+  }
+  
+  // nocommit
+  public void addCNouns(CompoundEntry[] cnoun) {
+    for (CompoundEntry e : cnoun) {
+      compound.add(e);
+    }
+  }
+  
   /**
    * @return the source
    */

@@ -148,12 +148,12 @@ public class DictionaryUtil {
   }
   
   /** return list of irregular compounds for word class. */
-  static List<CompoundEntry> getIrregularCompounds(byte clazz) {
+  static CompoundEntry[] getIrregularCompounds(byte clazz) {
     return dictionary.getIrregularCompounds(clazz);
   }
   
   /** return list of compounds for key and word class. */
-  static List<CompoundEntry> getCompounds(String key, byte clazz) {
+  static CompoundEntry[] getCompounds(String key, byte clazz) {
     return dictionary.getCompounds(key, clazz);
   }
   

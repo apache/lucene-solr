@@ -37,11 +37,16 @@ public class CompoundNounAnalyzer {
 
   /** Returns decompounded list for word, or null */
   public List<CompoundEntry> analyze(String input) {
+    if (input.length() < 3 || input.length() > 20) {
+      // ignore less than 3 letters or more than 20 letters.
+      return null;
+    }
     WordEntry entry = DictionaryUtil.getCompoundNoun(input);
     if (entry != null) {
-      return entry.getCompounds();
-    } else if (input.length() < 3) {
-      return null;
+      // nocommit
+      ArrayList<CompoundEntry> l = new ArrayList<CompoundEntry>();
+      l.addAll(Arrays.asList(entry.getCompounds()));
+      return l;
     } else {
       CompoundEntry[] compounds = analyze(input, true);
       if (compounds == null) {
@@ -56,18 +61,11 @@ public class CompoundNounAnalyzer {
   }
     
   private CompoundEntry[] analyze(String input, boolean isFirst) {    
-    switch(input.length()) {
+    switch (input.length()) {
       case 3: return analyze3Word(input, isFirst);
       case 4: return analyze4Word(input, isFirst);
       case 5: return analyze5Word(input, isFirst);
-      default:
-        List<CompoundEntry> outputs = new ArrayList<>();
-        boolean success = analyzeLongText(input, outputs, isFirst);
-        if (success) {
-          return outputs.toArray(new CompoundEntry[0]); // nocommit
-        } else {
-          return null;
-        }
+      default: return analyzeLongText(input, isFirst);
     }
   }
   
@@ -182,81 +180,62 @@ public class CompoundNounAnalyzer {
     
     return res;
   }
+  
+  /** 
+   * analyzes one part of the input recursively: called by analyzeLongText
+   */
+  private CompoundEntry[] analyzeLongPart(String input) {
+    WordEntry e = DictionaryUtil.getAllNoun(input);
+    if (e == null) {
+      return analyze(input, false);
+    } else {
+      if (e.isCompoundNoun()) {
+        return e.getCompounds();
+      } else {
+        return new CompoundEntry[] { new CompoundEntry(input, true) };
+      }
+    }
+  }
    
-  private boolean analyzeLongText(String input,List<CompoundEntry> outputs, boolean isFirst) {
-    
+  private CompoundEntry[] analyzeLongText(String input, boolean isFirst) {
     int len = input.length();
-    
-    // ignore less than 3 letters or more than 20 letters.
-    if(len>20) return false; 
 
     boolean hasSuffix = isFirst && DictionaryUtil.existSuffix(input.substring(len-1));        
-    int pos = caculatePos(input, hasSuffix);
-    if(pos<1) return false; // fail to search a valid word segment
-    
-    if(pos==input.length()) {     
-      if(hasSuffix) {
-        outputs.add(
-            new CompoundEntry(input.substring(0,len-1), true));
-        outputs.add(
-            new CompoundEntry(input.substring(len-1), true));
-      } else {
-        outputs.add(
-            new CompoundEntry(input, true));
-
-      } 
-      
-      return true;
+    int pos = calculatePos(input, hasSuffix);
+    if (pos < 1) {
+      return null; // fail to search a valid word segment
     }
     
-    List<CompoundEntry> results = new ArrayList<CompoundEntry>();
-        
-    String prev = input.substring(0,pos);
+    // whole word (or word+suffix)
+    if (pos == input.length()) {     
+      if (hasSuffix) {
+        return new CompoundEntry[] { 
+            new CompoundEntry(input.substring(0, len-1), true),
+            new CompoundEntry(input.substring(len-1), true)
+        };
+      } else {
+        return new CompoundEntry[] { new CompoundEntry(input, true) };
+      } 
+    }
+    
+    String prev = input.substring(0, pos);
     String rear = input.substring(pos);
     
-    boolean pSucess = false;
-    boolean rSuccess = false;
-    WordEntry prvEntry = DictionaryUtil.getAllNoun(prev);
-    if(prvEntry==null) {
-      CompoundEntry res[] = analyze(prev, false);
-      if (res == null) {
-        results.add(new CompoundEntry(prev, false));
-      } else {
-        results.addAll(Arrays.asList(res));
-        pSucess = true;
-      }
-    } else {
-      pSucess = true;
-      if(prvEntry.isCompoundNoun())
-        results.addAll(prvEntry.getCompounds());
-      else
-        results.add(new CompoundEntry(prev, true));
+    CompoundEntry[] pRes = analyzeLongPart(prev);
+    CompoundEntry[] rRes = analyzeLongPart(rear);
+    
+    if (pRes == null && rRes == null) {
+      return null; // no good split
+    } else if (pRes == null) {
+      pRes = new CompoundEntry[] { new CompoundEntry(prev, false) };
+    } else if (rRes == null) {
+      rRes = new CompoundEntry[] { new CompoundEntry(rear, false) };
     }
     
-    WordEntry rearEntry = DictionaryUtil.getAllNoun(rear);
-    if(rearEntry==null) {
-      CompoundEntry res[] = analyze(rear, false);
-      if (res == null) {
-        results.add(new CompoundEntry(rear, false));
-      } else {
-        results.addAll(Arrays.asList(res));
-        rSuccess = true;
-      }
-    } else {
-      rSuccess = true;
-      if(rearEntry.isCompoundNoun())
-        results.addAll(rearEntry.getCompounds());
-      else
-        results.add(new CompoundEntry(rear, true));
-    }
-    
-    if(!pSucess&&!rSuccess) {
-      return false;
-    }
-    
-    outputs.addAll(results);
-    
-    return true;
+    CompoundEntry result[] = new CompoundEntry[pRes.length + rRes.length];
+    System.arraycopy(pRes, 0, result, 0, pRes.length);
+    System.arraycopy(rRes, 0, result, pRes.length, rRes.length);
+    return result;
   }
   
   /**
@@ -264,7 +243,7 @@ public class CompoundNounAnalyzer {
    * @param input the input string
    * @return  the position
    */
-  private int caculatePos(String input, boolean hasSuffix) {
+  private int calculatePos(String input, boolean hasSuffix) {
   
     int pos = -1;
     int len = input.length();
@@ -317,17 +296,17 @@ public class CompoundNounAnalyzer {
   }
   
   private CompoundEntry[] analysisBySplited(int[] units, String input, boolean isFirst) {
-  
     CompoundEntry[] entries = new CompoundEntry[units.length];
     
     int pos = 0;
     String prev = null;
     
-    for(int i=0;i<units.length;i++) {
-      
-      String str = input.substring(pos,pos+units[i]);
+    for (int i = 0; i < units.length; i++) {
+      String str = input.substring(pos, pos + units[i]);
 
-      if(i!=0&&!validCompound(prev,str,isFirst&&(i==1),i)) return null;
+      if (i != 0 && !validCompound(prev, str, isFirst && (i==1), i)) {
+        return null;
+      }
       
       entries[i] = analyzeSingle(str); // CompoundEntry 로 변환
 
@@ -336,7 +315,6 @@ public class CompoundNounAnalyzer {
     }
     
     return entries;
-    
   }
   
   /**
@@ -345,7 +323,9 @@ public class CompoundNounAnalyzer {
    * @return compound entry
    */
   private CompoundEntry analyzeSingle(String input) {
-    if(input.length()==1) return  new CompoundEntry(input, true);
+    if (input.length() == 1) {
+      return new CompoundEntry(input, true);
+    }
     
     WordEntry entry = DictionaryUtil.getWordExceptVerb(input);
 

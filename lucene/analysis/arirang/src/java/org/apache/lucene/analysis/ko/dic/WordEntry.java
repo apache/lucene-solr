@@ -92,7 +92,7 @@ public class WordEntry {
   }
   
   /** Returns List of compounds for word */
-  public List<CompoundEntry> getCompounds() {
+  public CompoundEntry[] getCompounds() {
     assert isCompoundNoun();
     // TODO: should we cache this here? see if someone is calling this repeatedly? i hope not.
     if ((features & COMPOUND_IRREGULAR) != 0) {
