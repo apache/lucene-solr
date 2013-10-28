@@ -32,13 +32,12 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StreamingSolrServers {
-  public static Logger scdlog = LoggerFactory.getLogger(SolrCmdDistributor.class);
+  public static Logger log = LoggerFactory.getLogger(StreamingSolrServers.class);
   
   private static HttpClient httpClient;
   static {
@@ -73,7 +72,7 @@ public class StreamingSolrServers {
       server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor) {
         @Override
         public void handleError(Throwable ex) {
-          scdlog.error("error", ex);
+          log.error("error", ex);
           Error error = new Error();
           error.e = (Exception) ex;
           if (ex instanceof SolrException) {
