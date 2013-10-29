@@ -321,8 +321,8 @@ public abstract class DocValuesConsumer implements Closeable {
                 if (!hasNext()) {
                   throw new NoSuchElementException();
                 }
-                int segmentNumber = map.getSegmentNumber(currentOrd);
-                int segmentOrd = (int)map.getSegmentOrd(segmentNumber, currentOrd);
+                int segmentNumber = map.getFirstSegmentNumber(currentOrd);
+                int segmentOrd = (int)map.getFirstSegmentOrd(currentOrd);
                 dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
                 currentOrd++;
                 return scratch;
@@ -457,8 +457,8 @@ public abstract class DocValuesConsumer implements Closeable {
                 if (!hasNext()) {
                   throw new NoSuchElementException();
                 }
-                int segmentNumber = map.getSegmentNumber(currentOrd);
-                long segmentOrd = map.getSegmentOrd(segmentNumber, currentOrd);
+                int segmentNumber = map.getFirstSegmentNumber(currentOrd);
+                long segmentOrd = map.getFirstSegmentOrd(currentOrd);
                 dvs[segmentNumber].lookupOrd(segmentOrd, scratch);
                 currentOrd++;
                 return scratch;

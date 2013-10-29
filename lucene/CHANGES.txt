@@ -190,6 +190,9 @@ API Changes:
   with associated suggest/spell classes.  (Areek Zillur via Mike
   McCandless)
 
+* LUCENE-5157: Rename OrdinalMap methods to clarify API and internal structure.
+  (Boaz Leskes via Adrien Grand)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
