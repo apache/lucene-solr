@@ -631,8 +631,8 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 4.1
    */
   public SolrCore(String name, CoreDescriptor cd) {
-    this.setName(name);
     coreDescriptor = cd;
+    this.setName(name);
     this.schema = null;
     this.dataDir = null;
     this.solrConfig = null;
