@@ -905,7 +905,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  private void waitForNon403or404or503(HttpSolrServer collectionClient)
+/*  private void waitForNon403or404or503(HttpSolrServer collectionClient)
       throws Exception {
     SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;
@@ -929,7 +929,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
-  }
+  }*/
   
   private void checkForMissingCollection(String collectionName)
       throws Exception {

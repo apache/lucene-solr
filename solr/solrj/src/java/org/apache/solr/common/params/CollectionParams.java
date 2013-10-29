@@ -28,7 +28,7 @@ public interface CollectionParams
 
 
   public enum CollectionAction {
-    CREATE, DELETE, RELOAD, SYNCSHARD, CREATEALIAS, DELETEALIAS, SPLITSHARD, DELETESHARD, CREATESHARD;
+    CREATE, DELETE, RELOAD, SYNCSHARD, CREATEALIAS, DELETEALIAS, SPLITSHARD, DELETESHARD, CREATESHARD, DELETEREPLICA;
     
     public static CollectionAction get( String p )
     {

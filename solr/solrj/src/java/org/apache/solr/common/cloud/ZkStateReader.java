@@ -57,6 +57,7 @@ public class ZkStateReader {
   public static final String CORE_NAME_PROP = "core";
   public static final String COLLECTION_PROP = "collection";
   public static final String SHARD_ID_PROP = "shard";
+  public static final String REPLICA_PROP = "replica";
   public static final String SHARD_RANGE_PROP = "shard_range";
   public static final String SHARD_STATE_PROP = "shard_state";
   public static final String SHARD_PARENT_PROP = "shard_parent";

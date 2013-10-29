@@ -621,7 +621,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void addLazy(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
     AddUpdateCommand cmd = new AddUpdateCommand(makeReq(core));
-    cmd.solrDoc = sdoc(fieldValues);
+    cmd.solrDoc = sdoc((Object[])fieldValues);
     updater.addDoc(cmd);
   }
 

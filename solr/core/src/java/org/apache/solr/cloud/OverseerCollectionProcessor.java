@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -59,6 +60,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +70,7 @@ import java.util.Set;
 import static org.apache.solr.cloud.Assign.Node;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 
@@ -100,6 +103,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final String SHARDS_PROP = "shards";
 
   public static final String CREATESHARD = "createshard";
+
+  public static final String DELETEREPLICA = "deletereplica";
 
   public static final String COLL_CONF = "collection.configName";
 
@@ -236,6 +241,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         createShard(zkStateReader.getClusterState(), message, results);
       } else if (DELETESHARD.equals(operation)) {
         deleteShard(zkStateReader.getClusterState(), message, results);
+      } else if (DELETEREPLICA.equals(operation)) {
+        deleteReplica(zkStateReader.getClusterState(), message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
@@ -252,6 +259,81 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } 
     
     return new OverseerSolrResponse(results);
+  }
+
+  private void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP,REPLICA_PROP);
+    String collectionName = message.getStr(COLLECTION_PROP);
+    String shard = message.getStr(SHARD_ID_PROP);
+    String replicaName = message.getStr(REPLICA_PROP);
+    DocCollection coll = clusterState.getCollection(collectionName);
+    Slice slice = coll.getSlice(shard);
+    if(slice==null){
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid shard name : "+shard+" in collection : "+ collectionName);
+    }
+    Replica replica = slice.getReplica(replicaName);
+    if(replica == null){
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid shard name : "+shard+" in collection : "+ collectionName);
+    }
+
+    String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+    String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+    //assume the core exists and try to unload it
+    if (!Slice.ACTIVE.equals(replica.getStr(Slice.STATE))) {
+      deleteCoreNode(collectionName, replicaName, replica, core);
+      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
+    } else {
+    Map m = ZkNodeProps.makeMap("qt", adminPath,
+        CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString(),
+        CoreAdminParams.CORE, core) ;
+
+      ShardRequest sreq = new ShardRequest();
+      sreq.purpose = 1;
+      if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
+      sreq.shards = new String[]{baseUrl};
+      sreq.actualShards = sreq.shards;
+      sreq.params = new ModifiableSolrParams(new MapSolrParams(m) );
+      try {
+        shardHandler.submit(sreq, baseUrl, sreq.params);
+      } catch (Exception e) {
+        log.info("Exception trying to unload core "+sreq,e);
+      }
+      if (waitForCoreNodeGone(collectionName, shard, replicaName)) return;//check if the core unload removed the corenode zk enry
+      deleteCoreNode(collectionName, replicaName, replica, core); // this could be because the core is gone but not updated in ZK yet (race condition)
+      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
+
+    }
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not  remove replica : "+collectionName+"/"+shard+"/"+replicaName);
+  }
+
+  private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName) throws InterruptedException {
+    long waitUntil = System.currentTimeMillis() + 30000;
+    boolean deleted = false;
+    while (System.currentTimeMillis() < waitUntil) {
+      Thread.sleep(100);
+      deleted = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard).getReplica(replicaName) == null;
+      if (deleted) break;
+    }
+    return deleted;
+  }
+
+  private void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws KeeperException, InterruptedException {
+    ZkNodeProps m = new ZkNodeProps(
+        Overseer.QUEUE_OPERATION, Overseer.DELETECORE,
+        ZkStateReader.CORE_NAME_PROP, core,
+        ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
+        ZkStateReader.COLLECTION_PROP, collectionName,
+        ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
+    Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
+  }
+
+  private void checkRequired(ZkNodeProps message, String... props) {
+    for (String prop : props) {
+      if(message.get(prop) == null){
+        throw new SolrException(ErrorCode.BAD_REQUEST, StrUtils.join(Arrays.asList(props),',') +" are required params" );
+      }
+    }
+
   }
 
   private void deleteCollection(ZkNodeProps message, NamedList results)
