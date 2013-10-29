@@ -59,7 +59,7 @@ public class Overseer {
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
   static enum LeaderStatus { DONT_KNOW, NO, YES };
-  
+
   private class ClusterStateUpdater implements Runnable, ClosableThread {
     
     private final ZkStateReader reader;
@@ -329,6 +329,20 @@ public class Overseer {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         assert collection.length() > 0 : message;
         
+
+        Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
+        log.info("Update state numShards={} message={}", numShards, message);
+
+        List<String> shardNames  = new ArrayList<String>();
+
+        //collection does not yet exist, create placeholders if num shards is specified
+        boolean collectionExists = state.hasCollection(collection);
+        if (!collectionExists && numShards!=null) {
+          getShardNames(numShards, shardNames);
+          state = createCollection(state, collection, shardNames, message);
+        }
+        String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
         String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
         if (coreNodeName == null) {
           coreNodeName = getAssignedCoreNodeName(state, message);
@@ -339,21 +353,18 @@ public class Overseer {
             coreNodeName = Assign.assignNode(collection, state);
           }
           message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
-        }
-        Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
-        log.info("Update state numShards={} message={}", numShards, message);
+        } else {
+          //probably, this core was removed explicitly
+          if (sliceName !=null && collectionExists &&  !"true".equals(state.getCollection(collection).getStr("autoCreated"))) {
+            Slice slice = state.getSlice(collection, sliceName);
+            if (slice.getReplica(coreNodeName) == null) {
+              log.info("core_deleted . Just return");
+              return state;
+            }
+          }
 
-        List<String> shardNames  = new ArrayList<String>();
-
-        //collection does not yet exist, create placeholders if num shards is specified
-        boolean collectionExists = state.getCollections().contains(collection);
-        if (!collectionExists && numShards!=null) {
-          getShardNames(numShards, shardNames);
-          state = createCollection(state, collection, shardNames, message);
         }
-        
         // use the provided non null shardId
-        String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
         if (sliceName == null) {
           //get shardId from ClusterState
           sliceName = getAssignedId(state, coreNodeName, message);
@@ -541,6 +552,7 @@ public class Overseer {
         }
         collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
+        if(message.getStr("fromApi") == null) collectionProps.put("autoCreated","true");
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 
         newCollections.put(collectionName, newCollection);

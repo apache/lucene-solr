@@ -107,7 +107,11 @@ New Features
   implementations indicating that they should not be removed in later stages
   of distributed updates (usually signalled by the update.distrib parameter)
   (yonik)
-  
+
+ * SOLR-5310: Add a collection admin command to remove a replica (noble)
+
+ * SOLR-5311: Avoid registering replicas which are removed (noble)
+
 
 Bug Fixes
 ----------------------

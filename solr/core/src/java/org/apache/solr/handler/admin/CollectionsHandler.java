@@ -56,6 +56,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
@@ -162,6 +163,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         break;
       }case CREATESHARD: {
         this.handleCreateShard(req, rsp);
+        break;
+      }
+      case DELETEREPLICA: {
+        this.handleRemoveReplica(req, rsp);
         break;
       }
 
@@ -295,10 +300,10 @@ public class CollectionsHandler extends RequestHandlerBase {
           "Collection name is required to create a new collection");
     }
     
-    Map<String,Object> props = new HashMap<String,Object>();
-    props.put(Overseer.QUEUE_OPERATION,
-        OverseerCollectionProcessor.CREATECOLLECTION);
-
+    Map<String,Object> props = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.CREATECOLLECTION,
+        "fromApi","true");
     copyIfNotNull(req.getParams(),props,
         "name",
         REPLICATION_FACTOR,
@@ -313,6 +318,16 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(OverseerCollectionProcessor.CREATECOLLECTION, m, rsp);
   }
+
+  private void handleRemoveReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Remove replica: " + req.getParamString());
+    req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP, "replica");
+    Map<String, Object> map = makeMap(QUEUE_OPERATION, DELETEREPLICA);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica");
+    ZkNodeProps m = new ZkNodeProps(map);
+    handleResponse(DELETEREPLICA, m, rsp);
+  }
+
 
   private void handleCreateShard(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Create shard: " + req.getParamString());

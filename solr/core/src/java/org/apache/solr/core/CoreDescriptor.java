@@ -183,7 +183,7 @@ public class CoreDescriptor {
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (container.isZooKeeperAware()) {
-      cloudDesc = new CloudDescriptor(name, coreProperties);
+      cloudDesc = new CloudDescriptor(name, coreProperties, this);
       if (params != null) {
         cloudDesc.setParams(params);
       }

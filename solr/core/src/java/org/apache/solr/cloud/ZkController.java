@@ -1356,7 +1356,7 @@ public final class ZkController {
   }
 
   public void preRegister(CoreDescriptor cd ) {
-    
+
     String coreNodeName = getCoreNodeName(cd);
 
     // make sure the node name is set on the descriptor
@@ -1367,6 +1367,21 @@ public final class ZkController {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
+      if(cd.getCloudDescriptor().getCollectionName() !=null && cd.getCloudDescriptor().getCoreNodeName() != null ) {
+        //we were already registered
+        if(zkStateReader.getClusterState().hasCollection(cd.getCloudDescriptor().getCollectionName())){
+        DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCloudDescriptor().getCollectionName());
+         if(!"true".equals(coll.getStr("autoCreated"))){
+           Slice slice = coll.getSlice(cd.getCloudDescriptor().getShardId());
+           if(slice != null){
+             if(slice.getReplica(cd.getCloudDescriptor().getCoreNodeName()) == null) {
+               log.info("core_removed This core is removed from ZK");
+               throw new SolrException(ErrorCode.NOT_FOUND,coreNodeName +" is removed");
+             }
+           }
+         }
+        }
+      }
       publish(cd, ZkStateReader.DOWN, false);
     } catch (KeeperException e) {
       log.error("", e);

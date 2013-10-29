@@ -468,55 +468,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   }
 
 
-  public static String getUrlFromZk(ClusterState clusterState, String collection) {
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
-
-    if (slices == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);
-    }
-
-    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-      Slice slice = entry.getValue();
-      Map<String,Replica> shards = slice.getReplicasMap();
-      Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,Replica> shardEntry : shardEntries) {
-        final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection); //new ZkCoreNodeProps(node).getCoreUrl();
-        }
-      }
-    }
-
-    throw new RuntimeException("Could not find a live node for collection:" + collection);
-  }
-
-  private void waitForNon403or404or503(HttpSolrServer collectionClient)
-      throws Exception {
-    SolrException exp = null;
-    long timeoutAt = System.currentTimeMillis() + 30000;
-
-    while (System.currentTimeMillis() < timeoutAt) {
-      boolean missing = false;
-
-      try {
-        collectionClient.query(new SolrQuery("*:*"));
-      } catch (SolrException e) {
-        if (!(e.code() == 403 || e.code() == 503 || e.code() == 404)) {
-          throw e;
-        }
-        exp = e;
-        missing = true;
-      }
-      if (!missing) {
-        return;
-      }
-      Thread.sleep(50);
-    }
-
-    fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
-  }
-
-
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
 

@@ -98,6 +98,9 @@ public class ClusterState implements JSONWriter.Writable {
     }
     return null;
   }
+  public boolean hasCollection(String coll){
+    return collectionStates.get(coll)!=null;
+  }
 
 
   /**
