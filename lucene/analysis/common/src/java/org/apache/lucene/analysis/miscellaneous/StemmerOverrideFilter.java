@@ -17,9 +17,6 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -33,6 +30,9 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Provides the ability to override any {@link KeywordAttribute} aware stemmer
@@ -100,15 +100,15 @@ public final class StemmerOverrideFilter extends TokenFilter {
      * @param fst the fst to lookup the overrides
      * @param ignoreCase if the keys case should be ingored
      */
-    StemmerOverrideMap(FST<BytesRef> fst, boolean ignoreCase) {
+    public StemmerOverrideMap(FST<BytesRef> fst, boolean ignoreCase) {
       this.fst = fst;
       this.ignoreCase = ignoreCase;
     }
     
     /**
-     * Returns a {@link BytesReader} to pass to the {@link #get(char[], int, Arc, BytesReader)} method.
+     * Returns a {@link BytesReader} to pass to the {@link #get(char[], int, FST.Arc, FST.BytesReader)} method.
      */
-    BytesReader getBytesReader() {
+    public BytesReader getBytesReader() {
       if (fst == null) {
         return null;
       } else {
@@ -119,7 +119,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
     /**
      * Returns the value mapped to the given key or <code>null</code> if the key is not in the FST dictionary.
      */
-    BytesRef get(char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader) throws IOException {
+    public BytesRef get(char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader) throws IOException {
       BytesRef pendingOutput = fst.outputs.getNoOutput();
       BytesRef matchOutput = null;
       int bufUpto = 0;
