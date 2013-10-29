@@ -319,13 +319,13 @@ public class MultiDocValues {
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap {
-    // cache key of whoever asked for this aweful thing
+    // cache key of whoever asked for this awful thing
     final Object owner;
-    // globalOrd -> (globalOrd - segmentOrd)
+    // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
     final MonotonicAppendingLongBuffer globalOrdDeltas;
-    // globalOrd -> sub index
-    final AppendingPackedLongBuffer subIndexes;
-    // segmentOrd -> (globalOrd - segmentOrd)
+    // globalOrd -> first segment container
+    final AppendingPackedLongBuffer firstSegments;
+    // for every segment, segmentOrd -> (globalOrd - segmentOrd)
     final MonotonicAppendingLongBuffer ordDeltas[];
     
     /** 
@@ -341,7 +341,7 @@ public class MultiDocValues {
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
       globalOrdDeltas = new MonotonicAppendingLongBuffer(PackedInts.COMPACT);
-      subIndexes = new AppendingPackedLongBuffer(PackedInts.COMPACT);
+      firstSegments = new AppendingPackedLongBuffer(PackedInts.COMPACT);
       ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
         ordDeltas[i] = new MonotonicAppendingLongBuffer();
@@ -359,23 +359,23 @@ public class MultiDocValues {
       while (mte.next() != null) {        
         TermsEnumWithSlice matches[] = mte.getMatchArray();
         for (int i = 0; i < mte.getMatchCount(); i++) {
-          int subIndex = matches[i].index;
+          int segmentIndex = matches[i].index;
           long segmentOrd = matches[i].terms.ord();
           long delta = globalOrd - segmentOrd;
-          // for each unique term, just mark the first subindex/delta where it occurs
+          // for each unique term, just mark the first segment index/delta where it occurs
           if (i == 0) {
-            subIndexes.add(subIndex);
+            firstSegments.add(segmentIndex);
             globalOrdDeltas.add(delta);
           }
           // for each per-segment ord, map it back to the global term.
-          while (segmentOrds[subIndex] <= segmentOrd) {
-            ordDeltas[subIndex].add(delta);
-            segmentOrds[subIndex]++;
+          while (segmentOrds[segmentIndex] <= segmentOrd) {
+            ordDeltas[segmentIndex].add(delta);
+            segmentOrds[segmentIndex]++;
           }
         }
         globalOrd++;
       }
-      subIndexes.freeze();
+      firstSegments.freeze();
       globalOrdDeltas.freeze();
       for (int i = 0; i < ordDeltas.length; ++i) {
         ordDeltas[i].freeze();
@@ -386,24 +386,24 @@ public class MultiDocValues {
      * Given a segment number and segment ordinal, returns
      * the corresponding global ordinal.
      */
-    public long getGlobalOrd(int subIndex, long segmentOrd) {
-      return segmentOrd + ordDeltas[subIndex].get(segmentOrd);
+    public long getGlobalOrd(int segmentIndex, long segmentOrd) {
+      return segmentOrd + ordDeltas[segmentIndex].get(segmentOrd);
     }
 
     /**
-     * Given a segment number and global ordinal, returns
-     * the corresponding segment ordinal.
+     * Given global ordinal, returns the ordinal of the first segment which contains
+     * this ordinal (the corresponding to the segment return {@link #getFirstSegmentNumber}).
      */
-    public long getSegmentOrd(int subIndex, long globalOrd) {
+    public long getFirstSegmentOrd(long globalOrd) {
       return globalOrd - globalOrdDeltas.get(globalOrd);
     }
     
     /** 
      * Given a global ordinal, returns the index of the first
-     * sub that contains this term.
+     * segment that contains this term.
      */
-    public int getSegmentNumber(long globalOrd) {
-      return (int) subIndexes.get(globalOrd);
+    public int getFirstSegmentNumber(long globalOrd) {
+      return (int) firstSegments.get(globalOrd);
     }
     
     /**
@@ -417,7 +417,7 @@ public class MultiDocValues {
      * Returns total byte size used by this ordinal map. 
      */
     public long ramBytesUsed() {
-      long size = globalOrdDeltas.ramBytesUsed() + subIndexes.ramBytesUsed();
+      long size = globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed();
       for (int i = 0; i < ordDeltas.length; i++) {
         size += ordDeltas[i].ramBytesUsed();
       }
@@ -455,8 +455,8 @@ public class MultiDocValues {
  
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-      int subIndex = mapping.getSegmentNumber(ord);
-      int segmentOrd = (int) mapping.getSegmentOrd(subIndex, ord);
+      int subIndex = mapping.getFirstSegmentNumber(ord);
+      int segmentOrd = (int) mapping.getFirstSegmentOrd(ord);
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
@@ -506,8 +506,8 @@ public class MultiDocValues {
  
     @Override
     public void lookupOrd(long ord, BytesRef result) {
-      int subIndex = mapping.getSegmentNumber(ord);
-      long segmentOrd = mapping.getSegmentOrd(subIndex, ord);
+      int subIndex = mapping.getFirstSegmentNumber(ord);
+      long segmentOrd = mapping.getFirstSegmentOrd(ord);
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
