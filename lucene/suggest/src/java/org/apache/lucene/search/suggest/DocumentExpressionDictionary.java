@@ -28,8 +28,8 @@ import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CompositeReader;  // javadocs
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
@@ -48,9 +48,6 @@ import org.apache.lucene.util.BytesRefIterator;
  *    <li>
  *      The term and (optionally) payload fields supplied
  *      are required for ALL documents and has to be stored
- *    </li>
- *    <li>
- *      {@link CompositeReader} is not supported.
  *    </li>
  *  </ul>
  */
@@ -100,21 +97,41 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
   
   final class DocumentExpressionInputIterator extends DocumentDictionary.DocumentInputIterator {
     
-    private FunctionValues weightValues;
+    private FunctionValues currentWeightValues;
+    private int currentLeafIndex = 0;
+    private final List<AtomicReaderContext> leaves;
+    
+    private final int[] starts;
     
     public DocumentExpressionInputIterator(boolean hasPayloads)
         throws IOException {
       super(hasPayloads);
-      List<AtomicReaderContext> leaves = reader.leaves();
-      if (leaves.size() > 1) {
-        throw new IllegalArgumentException("CompositeReader is not supported");
+      leaves = reader.leaves();
+      if (leaves.size() == 0) {
+        throw new IllegalArgumentException("Reader has to have at least one leaf");
       }
-      weightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(0));
+      starts = new int[leaves.size() + 1];
+      for (int i = 0; i < leaves.size(); i++) {
+        starts[i] = leaves.get(i).docBase;
+      }
+      starts[leaves.size()] = reader.maxDoc();
+      
+      currentLeafIndex = 0;
+      currentWeightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex));
     }
     
     @Override
     protected long getWeight(int docId) {
-      return weightValues.longVal(docId);
+      int subIndex = ReaderUtil.subIndex(docId, starts);
+      if (subIndex != currentLeafIndex) {
+        currentLeafIndex = subIndex;
+        try {
+          currentWeightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex));
+        } catch (IOException e) {
+          throw new RuntimeException();
+        }
+      }
+      return currentWeightValues.longVal(docId - starts[subIndex]);
     }
 
   }
