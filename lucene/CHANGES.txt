@@ -126,6 +126,8 @@ New Features
 * LUCENE-2844: The benchmark module can now test the spatial module. See
   spatial.alg  (David Smiley, Liviy Ambrose)
 
+* LUCENE-5302: Make StemmerOverrideMap's methods public (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
