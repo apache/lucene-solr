@@ -74,8 +74,9 @@ import org.apache.lucene.util.fst.Util;
  * then the partial text "ghost chr..." could see the
  * suggestion "The Ghost of Christmas Past". Note that
  * position increments MUST NOT be preserved for this example
- * to work, so you should call
- * {@link #setPreservePositionIncrements(boolean) setPreservePositionIncrements(false)}.
+ * to work, so you should call the constructor with 
+ * <code>preservePositionIncrements</code> parameter set to 
+ * false
  *
  * <p>
  * If SynonymFilter is used to map wifi and wireless network to
@@ -145,14 +146,14 @@ public class AnalyzingSuggester extends Lookup {
   private final boolean preserveSep;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)} to always
+   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to always
    *  return the exact match first, regardless of score.  This
    *  has no performance impact but could result in
    *  low-quality suggestions. */
   public static final int EXACT_FIRST = 1;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)} to preserve
+   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to preserve
    *  token separators when matching. */
   public static final int PRESERVE_SEP = 2;
 
@@ -187,21 +188,21 @@ public class AnalyzingSuggester extends Lookup {
   private boolean preservePositionIncrements;
 
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
+   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(analyzer, analyzer, EXACT_FIRST |
-   * PRESERVE_SEP, 256, -1)}
+   * PRESERVE_SEP, 256, -1, false)}
    */
   public AnalyzingSuggester(Analyzer analyzer) {
-    this(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1);
+    this(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, false);
   }
 
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
+   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(indexAnalyzer, queryAnalyzer, EXACT_FIRST |
-   * PRESERVE_SEP, 256, -1)}
+   * PRESERVE_SEP, 256, -1, false)}
    */
   public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1);
+    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, false);
   }
 
   /**
@@ -219,8 +220,11 @@ public class AnalyzingSuggester extends Lookup {
    * @param maxGraphExpansions Maximum number of graph paths
    *   to expand from the analyzed form.  Set this to -1 for
    *   no limit.
+   * @param preservePositionIncrements Whether position holes
+   *   should appear in the automata
    */
-  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions) {
+  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
+      boolean preservePositionIncrements) {
     this.indexAnalyzer = indexAnalyzer;
     this.queryAnalyzer = queryAnalyzer;
     if ((options & ~(EXACT_FIRST | PRESERVE_SEP)) != 0) {
@@ -242,12 +246,6 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("maxGraphExpansions must -1 (no limit) or > 0 (got: " + maxGraphExpansions + ")");
     }
     this.maxGraphExpansions = maxGraphExpansions;
-    preservePositionIncrements = true;
-  }
-
-  /** Whether to take position holes (position increment > 1) into account when
-   *  building the automaton, <code>true</code> by default. */
-  public void setPreservePositionIncrements(boolean preservePositionIncrements) {
     this.preservePositionIncrements = preservePositionIncrements;
   }
 

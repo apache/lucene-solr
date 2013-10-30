@@ -124,7 +124,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    *           Analyzer that will be used for analyzing query text during lookup
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS,
+    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, false, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS,
          DEFAULT_NON_FUZZY_PREFIX, DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_UNICODE_AWARE);
   }
 
@@ -143,6 +143,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    * @param maxGraphExpansions Maximum number of graph paths
    *        to expand from the analyzed form.  Set this to -1 for
    *        no limit.
+   * @param preservePositionIncrements Whether position holes should appear in the automaton
    * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} .
    * @param transpositions <code>true</code> if transpositions should be treated as a primitive 
    *        edit operation. If this is false, comparisons will implement the classic
@@ -153,9 +154,9 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer,
                         int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
-                        int maxEdits, boolean transpositions, int nonFuzzyPrefix,
-                        int minFuzzyLength, boolean unicodeAware) {
-    super(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions);
+                        boolean preservePositionIncrements, int maxEdits, boolean transpositions,
+                        int nonFuzzyPrefix, int minFuzzyLength, boolean unicodeAware) {
+    super(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions, preservePositionIncrements);
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
