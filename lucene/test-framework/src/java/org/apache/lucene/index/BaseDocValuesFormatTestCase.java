@@ -186,6 +186,44 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     directory.close();
   }
 
+  public void testTwoBinaryValues() throws IOException {
+    Directory directory = newDirectory();
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
+    Document doc = new Document();
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String text = "This is the text to be indexed. " + longTerm;
+    doc.add(newTextField("fieldname", text, Field.Store.YES));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef(longTerm)));
+    doc.add(new BinaryDocValuesField("dv2", new BytesRef(text)));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
+
+    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    Query query = new TermQuery(new Term("fieldname", "text"));
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
+    // Iterate through the results:
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      assertEquals(text, hitDoc.get("fieldname"));
+      assert ireader.leaves().size() == 1;
+      BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
+      BytesRef scratch = new BytesRef();
+      dv.get(hits.scoreDocs[i].doc, scratch);
+      assertEquals(new BytesRef(longTerm), scratch);
+      dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
+      dv.get(hits.scoreDocs[i].doc, scratch);
+      assertEquals(new BytesRef(text), scratch);
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
   public void testTwoFieldsMixed() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
@@ -2943,12 +2981,12 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
                 if (values.length > 0) {
                   assertNotNull(sortedSet);
                   sortedSet.setDocument(j);
-                  for (int i = 0; i < values.length; i++) {
+                  for (int k = 0; k < values.length; k++) {
                     long ord = sortedSet.nextOrd();
                     assertTrue(ord != SortedSetDocValues.NO_MORE_ORDS);
                     BytesRef value = new BytesRef();
                     sortedSet.lookupOrd(ord, value);
-                    assertEquals(values[i], value.utf8ToString());
+                    assertEquals(values[k], value.utf8ToString());
                   }
                   assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
                   assertTrue(sortedSetBits.get(j));
