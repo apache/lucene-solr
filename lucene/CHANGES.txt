@@ -195,6 +195,9 @@ API Changes:
 * LUCENE-5157: Rename OrdinalMap methods to clarify API and internal structure.
   (Boaz Leskes via Adrien Grand)
 
+* LUCENE-5313: Move preservePositionIncrements from setter to ctor in
+  Analyzing/FuzzySuggester.  (Areek Zillur via Mike McCandless)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child

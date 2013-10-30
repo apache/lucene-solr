@@ -175,9 +175,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           mapping.put(title, Long.valueOf(randomWeight));
       }
     }
-    
-    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(new MockAnalyzer(random()));
-    analyzingSuggester.setPreservePositionIncrements(random().nextBoolean());
+    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(new MockAnalyzer(random()), new MockAnalyzer(random()),
+        AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, random().nextBoolean());
     boolean doPayloads = random().nextBoolean();
     if (doPayloads) {
       List<Input> keysAndPayloads = new ArrayList<>();
@@ -214,8 +213,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     };
     
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
-    suggester.setPreservePositionIncrements(false);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(standard, standard, 
+        AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
+
     suggester.build(new InputArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
@@ -254,7 +254,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, options, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, options, 256, -1, false);
     suggester.build(new InputArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -459,7 +459,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    int options = AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP;
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, options, 256, -1, false);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
           new Input("x y z", 3),
@@ -498,7 +499,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
@@ -752,7 +753,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     AnalyzingSuggester suggester = new AnalyzingSuggester(a, a,
-                                                          preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1);
+                                                          preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, false);
     if (doPayloads) {
       suggester.build(new InputArrayIterator(shuffle(payloadKeys)));
     } else {
@@ -873,7 +874,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 2, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 2, -1, false);
     suggester.build(new InputArrayIterator(shuffle(new Input("a", 40),
         new Input("a ", 50), new Input(" a", 60))));
 
@@ -887,7 +888,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   public void testQueueExhaustion() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 2),
@@ -903,7 +904,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockAnalyzer(random());
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 5),
@@ -968,7 +969,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, false);
 
     suggester.build(new InputArrayIterator(shuffle(
           new Input("hambone", 6),
@@ -1037,7 +1038,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 6),
@@ -1110,7 +1111,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a a", 50),
@@ -1120,7 +1121,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   public void testDupSurfaceFormsMissingResults3() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a a", 7),
           new Input("a a", 7),
@@ -1133,7 +1134,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   public void testEndingSpace() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("i love lucy", 7),
           new Input("isla de muerta", 8),
@@ -1166,14 +1167,14 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, 1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, 1, false);
     suggester.build(new InputArrayIterator(new Input[] {new Input("a", 1)}));
     assertEquals("[a/1]", suggester.lookup("a", false, 1).toString());
   }
   
   public void testIllegalLookupArgument() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, false);
     suggester.build(new InputArrayIterator(new Input[] {
         new Input("а где Люси?", 7),
     }));

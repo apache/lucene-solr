@@ -106,6 +106,10 @@ public class FuzzyLookupFactory extends LookupFactory {
     ? Integer.parseInt(params.get(AnalyzingLookupFactory.MAX_EXPANSIONS).toString())
     : -1;
 
+    boolean preservePositionIncrements = params.get(AnalyzingLookupFactory.PRESERVE_POSITION_INCREMENTS) != null
+    ? Boolean.valueOf(params.get(AnalyzingLookupFactory.PRESERVE_POSITION_INCREMENTS).toString())
+    : false;
+    
     int maxEdits = (params.get(MAX_EDITS) != null)
     ? Integer.parseInt(params.get(MAX_EDITS).toString())
     : FuzzySuggester.DEFAULT_MAX_EDITS;
@@ -127,9 +131,9 @@ public class FuzzyLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(UNICODE_AWARE).toString())
     : FuzzySuggester.DEFAULT_UNICODE_AWARE;
     
-    return new FuzzySuggester(indexAnalyzer, queryAnalyzer, options, 
-        maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions, maxEdits, 
-        transpositions, nonFuzzyPrefix, minFuzzyLength, unicodeAware);
+    return new FuzzySuggester(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm,
+        maxGraphExpansions, preservePositionIncrements, maxEdits, transpositions, nonFuzzyPrefix,
+        minFuzzyLength, unicodeAware);
   }
 
   @Override
