@@ -61,7 +61,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
     keys.add(new Input("foo bar boo far", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, false, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
                                                   0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
     suggester.build(new InputArrayIterator(keys));
     int numIters = atLeast(10);
@@ -82,7 +82,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
     keys.add(new Input("фуу бар буу фар", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, false, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
         0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, true);
     suggester.build(new InputArrayIterator(keys));
     int numIters = atLeast(10);
@@ -208,7 +208,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, false, 1, true, 1, 3, false);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, true, 1, true, 1, 3, false);
     suggester.build(new InputArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -417,7 +417,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false, 1, true, 1, 3, false);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
           new Input("x y z", 3),
@@ -456,7 +456,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, false, 1, true, 1, 3, false);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
@@ -683,7 +683,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     FuzzySuggester suggester = new FuzzySuggester(a, a,
-                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, false, 1, false, 1, 3, unicodeAware);
+                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, true, 1, false, 1, 3, unicodeAware);
     suggester.build(new InputArrayIterator(keys));
 
     for (String prefix : allPrefixes) {
@@ -823,7 +823,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, false, 1, true, 1, 3, false);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, true, 1, true, 1, 3, false);
 
     List<Input> keys = Arrays.asList(new Input[] {
         new Input("a", 40),
@@ -844,7 +844,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testEditSeps() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, false, 2, true, 1, 3, false);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, true, 2, true, 1, 3, false);
 
     List<Input> keys = Arrays.asList(new Input[] {
         new Input("foo bar", 40),
@@ -958,7 +958,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, false, maxEdits, transpositions, prefixLen, prefixLen, false);
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, true, maxEdits, transpositions, prefixLen, prefixLen, false);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);
