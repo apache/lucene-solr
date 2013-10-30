@@ -426,56 +426,66 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
       }
     }
+    
     Class<? extends T> clazz = null;
-    
-    // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
-    final Matcher m = legacyAnalysisPattern.matcher(cname);
-    if (m.matches()) {
-      final String name = m.group(4);
-      log.trace("Trying to load class from analysis SPI using name='{}'", name);
-      try {
-        if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else {
-          log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-        }
-      } catch (IllegalArgumentException ex) { 
-        // ok, we fall back to legacy loading
-      }
-    }
-    
-    // first try cname == full name
     try {
-      return Class.forName(cname, true, classLoader).asSubclass(expectedType);
-    } catch (ClassNotFoundException e) {
-      String newName=cname;
-      if (newName.startsWith(project)) {
-        newName = cname.substring(project.length()+1);
-      }
-      for (String subpackage : subpackages) {
+      // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+      final Matcher m = legacyAnalysisPattern.matcher(cname);
+      if (m.matches()) {
+        final String name = m.group(4);
+        log.trace("Trying to load class from analysis SPI using name='{}'", name);
         try {
-          String name = base + '.' + subpackage + newName;
-          log.trace("Trying class name " + name);
-          return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e1) {
-          // ignore... assume first exception is best.
+          if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else {
+            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+          }
+        } catch (IllegalArgumentException ex) { 
+          // ok, we fall back to legacy loading
         }
       }
-  
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
-    }finally{
-      //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
-      // using a shortname
-      if ( clazz != null &&
-              clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
+      
+      // first try cname == full name
+      try {
+        return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
+      } catch (ClassNotFoundException e) {
+        String newName=cname;
+        if (newName.startsWith(project)) {
+          newName = cname.substring(project.length()+1);
+        }
+        for (String subpackage : subpackages) {
+          try {
+            String name = base + '.' + subpackage + newName;
+            log.trace("Trying class name " + name);
+            return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
+          } catch (ClassNotFoundException e1) {
+            // ignore... assume first exception is best.
+          }
+        }
+    
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
+      }
+      
+    } finally {
+      if (clazz != null) {
+        //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
+        // using a shortname
+        if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
               !cname.equals(clazz.getName()) &&
               (subpackages.length == 0 || subpackages == packages)) {
-        //store in the cache
-        classNameCache.put(cname, clazz.getName());
+          //store in the cache
+          classNameCache.put(cname, clazz.getName());
+        }
+        
+        // print warning if class is deprecated
+        if (clazz.isAnnotationPresent(Deprecated.class)) {
+          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
+              cname);
+        }
       }
     }
   }
