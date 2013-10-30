@@ -186,6 +186,9 @@ Other Changes
 * SOLR-5321: Remove unnecessary code in Overseer.updateState method which tries to
   use router name from message where none is ever sent. (shalin)
 
+* SOLR-5401: SolrResourceLoader logs a warning if a deprecated (factory) class
+  is used in schema or config.  (Uwe Schindler)
+
 ==================  4.5.1 ==================
 
 Versions of Major Components

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.util._TestUtil;
@@ -28,6 +29,7 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
@@ -39,6 +41,7 @@ import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
@@ -211,5 +214,28 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
     loader.addToClassLoader("otherLib", null, false);
     assertNotNull(loader.getClassLoader().getResource("otherFile"));
     loader.close();
+  }
+  
+  @Deprecated
+  public static final class DeprecatedTokenFilterFactory extends TokenFilterFactory {
+
+    public DeprecatedTokenFilterFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public TokenStream create(TokenStream input) {
+      return null;
+    }
+    
+  }
+  
+  public void testLoadDeprecatedFactory() throws Exception {
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    // ensure we get our exception
+    loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
+        new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
+    // TODO: How to check that a warning was printed to log file?
+    loader.close();    
   }
 }
