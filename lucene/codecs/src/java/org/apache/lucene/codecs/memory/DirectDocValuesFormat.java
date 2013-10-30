@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.ArrayUtil;
@@ -41,8 +42,12 @@ import org.apache.lucene.util.ArrayUtil;
  *        2.1 GB (see #MAX_TOTAL_BYTES_LENGTH).</li>
  *
  *    <li>For sorted set fields, the sum of the size of each
- *        document's set of values cannot exceed about 2.1
- *        B (see #MAX_SORTED_SET_ORDS).</li>
+ *        document's set of values cannot exceed about 2.1 B
+ *        values (see #MAX_SORTED_SET_ORDS).  For example,
+ *        if every document has 10 values (10 instances of
+ *        {@link SortedSetDocValuesField}) added, then no
+ *        more than ~210 M documents can be added to one
+ *        segment. </li>
  *  </ul> */
 
 public class DirectDocValuesFormat extends DocValuesFormat {
