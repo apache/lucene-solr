@@ -24,11 +24,12 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -36,12 +37,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *  segment flushes. */
 class BinaryDocValuesWriter extends DocValuesWriter {
 
-  /** Maximum length for a binary field; we set this to "a
-   *  bit" below Integer.MAX_VALUE because the exact max
-   *  allowed byte[] is JVM dependent, so we want to avoid
-   *  a case where a large value worked in one JVM but
-   *  failed later at search time with a different JVM.  */
-  private static final int MAX_LENGTH = Integer.MAX_VALUE-256;
+  /** Maximum length for a binary field. */
+  private static final int MAX_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH;
 
   // 32 KB block sizes for PagedBytes storage:
   private final static int BLOCK_BITS = 15;

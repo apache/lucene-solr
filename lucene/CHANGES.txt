@@ -70,6 +70,9 @@ New Features
 
 * LUCENE-5302: Make StemmerOverrideMap's methods public (Alan Woodward)
 
+* LUCENE-5296: Add DirectDocValuesFormat, which holds all doc values
+  in heap as uncompressed java native arrays.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
