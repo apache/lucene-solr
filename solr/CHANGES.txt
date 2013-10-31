@@ -112,6 +112,9 @@ New Features
 
  * SOLR-5311: Avoid registering replicas which are removed (noble)
 
+ * SOLR-5406: CloudSolrServer failed to propagate request parameters
+   along with delete updates. (yonik)
+
 
 Bug Fixes
 ----------------------
