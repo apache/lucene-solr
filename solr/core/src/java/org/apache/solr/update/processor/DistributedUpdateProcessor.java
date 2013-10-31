@@ -1111,6 +1111,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  // internal helper method to tell if we are the leader for an add or deleteById update
+  boolean isLeader(UpdateCommand cmd) {
+    updateCommand = cmd;
+
+    if (zkEnabled) {
+      zkCheck();
+      if (cmd instanceof AddUpdateCommand) {
+        AddUpdateCommand acmd = (AddUpdateCommand)cmd;
+        nodes = setupRequest(acmd.getHashableId(), acmd.getSolrInputDocument());
+      } else if (cmd instanceof DeleteUpdateCommand) {
+        DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
+        nodes = setupRequest(dcmd.getId(), null);
+      }
+    } else {
+      isLeader = getNonZkLeaderAssumption(req);
+    }
+
+    return isLeader;
+  }
 
   private void zkCheck() {
     if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {

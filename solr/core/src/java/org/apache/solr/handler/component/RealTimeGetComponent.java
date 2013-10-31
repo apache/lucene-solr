@@ -201,31 +201,46 @@ public class RealTimeGetComponent extends SearchComponent
 
   }
 
+
+  public static SolrInputDocument DELETED = new SolrInputDocument();
+
+  /** returns the SolrInputDocument from the current tlog, or DELETED if it has been deleted, or
+   * null if there is no record of it in the current update log.  If null is returned, it could
+   * still be in the latest index.
+   */
+  public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes) {
+
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+    if (ulog != null) {
+      Object o = ulog.lookup(idBytes);
+      if (o != null) {
+        // should currently be a List<Oper,Ver,Doc/Id>
+        List entry = (List)o;
+        assert entry.size() >= 3;
+        int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
+        switch (oper) {
+          case UpdateLog.ADD:
+            return (SolrInputDocument)entry.get(entry.size()-1);
+          case UpdateLog.DELETE:
+            return DELETED;
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
+        }
+      }
+    }
+
+    return null;
+  }
+
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes) throws IOException {
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
       SolrIndexSearcher searcher = null;
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-
-
-      if (ulog != null) {
-        Object o = ulog.lookup(idBytes);
-        if (o != null) {
-          // should currently be a List<Oper,Ver,Doc/Id>
-          List entry = (List)o;
-          assert entry.size() >= 3;
-          int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
-          switch (oper) {
-            case UpdateLog.ADD:
-              sid = (SolrInputDocument)entry.get(entry.size()-1);
-              break;
-            case UpdateLog.DELETE:
-              return null;
-            default:
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
-          }
-        }
+      sid = getInputDocumentFromTlog(core, idBytes);
+      if (sid == DELETED) {
+        return null;
       }
 
       if (sid == null) {
