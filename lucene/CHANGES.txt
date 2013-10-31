@@ -246,6 +246,11 @@ Build
   should be identical across all distributions. (Steve Rowe, Uwe Schindler,
   Shalin Shekhar Mangar)
 
+* LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
+  transitive dependency resolution for all depended-on artifacts by putting
+  an exclusion for each transitive dependency in the <dependencyManagement>
+  section of the grandparent POM. (Steve Rowe)
+
 Tests
 
 * LUCENE-5278: Fix MockTokenizer to work better with more regular expression
