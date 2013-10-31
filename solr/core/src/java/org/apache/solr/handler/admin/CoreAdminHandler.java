@@ -236,8 +236,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String rangesStr = params.get(CoreAdminParams.RANGES);    // ranges=a-b,c-d,e-f
     if (rangesStr != null)  {
       String[] rangesArr = rangesStr.split(",");
-      if (rangesArr.length == 0 || rangesArr.length == 1) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least two ranges specified to split an index");
+      if (rangesArr.length == 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least one range specified to split an index");
       } else  {
         ranges = new ArrayList<DocRouter.Range>(rangesArr.length);
         for (String r : rangesArr) {
@@ -249,6 +249,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
       }
     }
+    String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
 
@@ -300,7 +301,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName, splitKey);
       core.getUpdateHandler().split(cmd);
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.

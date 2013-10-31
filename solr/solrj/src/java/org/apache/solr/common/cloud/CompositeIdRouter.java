@@ -34,10 +34,10 @@ import java.util.List;
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
-  private static final int separator = '!';
+  public static final int separator = '!';
 
   // separator used to optionally specify number of bits to allocate toward first part.
-  private static final int bitsSeparator = '/';
+  public static final int bitsSeparator = '/';
   private int bits = 16;
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
