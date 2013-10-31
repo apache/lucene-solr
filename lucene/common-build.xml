@@ -1470,13 +1470,63 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </excludes>
     </m2-validate-dependencies>
   </target>
+  
+  <property name="module.dependencies.properties.file" location="${common.build.dir}/module.dependencies.properties"/>
 
-  <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">
-    <mkdir dir="${filtered.pom.templates.dir}"/>
-    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8">
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <pathconvert property="test.classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="test.classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <echo append="true" file="${module.dependencies.properties.file}">
+${ant.project.name}.dependencies=${classpath.list}
+${ant.project.name}.test.dependencies=${test.classpath.list}
+      </echo>
+    </sequential>
+  </target>
+
+  <property name="maven.dependencies.filters.file" location="${common.build.dir}/maven.dependencies.filters.properties"/>
+  <available file="${maven.dependencies.filters.file}" property="maven.dependencies.filters.file.exists"/>
+
+  <target name="-get-maven-dependencies" depends="compile-tools,resolve,load-custom-tasks"
+          unless="maven.dependencies.filters.file.exists">
+    <ant dir="${common.dir}/.." target="-append-all-modules-dependencies-properties" inheritall="false"/>
+    <get-maven-dependencies-macro
+        dir="${common.dir}/.."
+        centralized.versions.file="${common.dir}/ivy-versions.properties"
+        module.dependencies.properties.file="${module.dependencies.properties.file}"
+        maven.dependencies.filters.file="${maven.dependencies.filters.file}"/>
+  </target>
+
+  <target name="-get-maven-poms" depends="-get-maven-dependencies">
+    <property name="maven-build-dir" location="${common.dir}/../maven-build"/>
+    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
       <fileset dir="${common.dir}/../dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
+      </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
+      </filterset>
+      <globmapper from="*.template" to="*"/>
+    </copy>
+  </target>
+
+  <target name="filter-pom-templates" depends="-get-maven-dependencies" unless="filtered.pom.templates.uptodate">
+    <mkdir dir="${filtered.pom.templates.dir}"/>
+    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8" filtering="on">
+      <fileset dir="${common.dir}/../dev-tools/maven"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="version" value="${version}"/>
+      </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
       </filterset>
       <globmapper from="*.template" to="*"/>
     </copy>

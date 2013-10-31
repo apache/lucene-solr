@@ -743,4 +743,10 @@
     <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 
+  <target name="-append-module-dependencies-properties">
+    <ant dir="core" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <ant dir="solrj" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <ant dir="test-framework" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <contrib-crawl target="-append-module-dependencies-properties"/>
+  </target>
 </project>

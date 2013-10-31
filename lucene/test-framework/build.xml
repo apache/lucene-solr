@@ -31,6 +31,8 @@
     <path refid="ant-path"/>
   </path>
 
+  <path id="test.classpath"/>
+
   <!-- 
       Specialize compile-core to depend on lucene-core and lucene-codecs compilation.
    -->

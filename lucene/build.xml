@@ -631,4 +631,11 @@
     <modules-crawl target="regenerate"/>
   </target>
 
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <ant dir="core" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <ant dir="test-framework" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <modules-crawl target="-append-module-dependencies-properties" failonerror="true"/>
+    </sequential>
+  </target>
 </project>

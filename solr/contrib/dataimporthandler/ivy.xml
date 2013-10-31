@@ -25,8 +25,10 @@
   <dependencies>
     <dependency org="javax.activation" name="activation" rev="${/javax.activation/activation}" conf="compile->*"/>
     <dependency org="javax.mail" name="mail" rev="${/javax.mail/mail}"  conf="compile->*"/>
-    
-    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
+
+    <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" transitive="false" conf="test->*"/>
+    <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" transitive="false" conf="test->*"/>
+    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" transitive="false" conf="test->*"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

@@ -137,15 +137,9 @@
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>
   
-  <target name="get-maven-poms"
+  <target name="get-maven-poms" depends="resolve"
           description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
-    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
-      <fileset dir="${basedir}/dev-tools/maven"/>
-      <filterset begintoken="@" endtoken="@">
-        <filter token="version" value="${version}"/>
-      </filterset>
-      <globmapper from="*.template" to="*"/>
-    </copy>
+    <ant dir="lucene" target="-get-maven-poms" inheritall="false"/>
   </target>
 
   <target name="clean-maven-build"
@@ -166,7 +160,8 @@
     </subant>
   </target>
 
-  <target name="validate-maven-dependencies" depends="generate-maven-artifacts" description="Validates maven dependencies, licenses, etc.">
+  <target name="validate-maven-dependencies" depends="generate-maven-artifacts" 
+          description="Validates maven dependencies, licenses, etc.">
     <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
       <property name="filtered.pom.templates.uptodate" value="true"/>
       <fileset dir="lucene" includes="build.xml"/>
@@ -471,4 +466,13 @@ File | Project Structure | Platform Settings | SDKs):
   <!-- TODO: remove me when jenkins works -->
   <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
 
+  <target name="-append-all-modules-dependencies-properties">
+    <sequential>
+      <delete file="lucene/build/module.dependencies.properties"/>
+      <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml" />
+        <fileset dir="solr" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
 </project>

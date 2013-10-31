@@ -170,8 +170,6 @@
       <pathelement path="${facet.jar}"/>
       <pathelement path="${spatial.jar}"/>
       <pathelement path="${queries.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib"/>
-      <fileset dir="${common.dir}/spatial/lib"/>
       <path refid="base.classpath"/>
       <fileset dir="lib"/>
     </path>
@@ -227,7 +225,6 @@
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
       <pathelement path="${analyzers-icu.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib"/>
 	</path>
 	
 	<target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">
@@ -274,14 +271,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <!-- we don't actually need to compile this thing, we just want its lib -->
-    <target name="resolve-icu">
-       <ant dir="${common.dir}/analysis/icu/" target="resolve" inheritAll="false">
-         <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
-    </target>
-
-    <target name="init" depends="module-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial"/>
+    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial"/>
   
     <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">

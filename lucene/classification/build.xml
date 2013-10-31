@@ -26,14 +26,11 @@
 
   <path id="classpath">
     <path refid="base.classpath"/>
-    <pathelement path="${lucene-core.jar}"/>
     <pathelement path="${queries.jar}"/>
-    <pathelement location="${build.dir}/classes/java" />
   </path>
 
   <path id="test.classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement location="${test-framework.jar}"/>
     <pathelement location="${codecs.jar}"/>
     <path refid="test.base.classpath"/>
   </path>

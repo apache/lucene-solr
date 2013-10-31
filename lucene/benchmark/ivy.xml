@@ -22,6 +22,8 @@
       <dependency org="org.apache.commons" name="commons-compress" rev="${/org.apache.commons/commons-compress}" transitive="false"/>
       <dependency org="xerces" name="xercesImpl" rev="${/xerces/xercesImpl}" transitive="false"/>
       <dependency org="net.sourceforge.nekohtml" name="nekohtml" rev="${/net.sourceforge.nekohtml/nekohtml}" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
+      <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

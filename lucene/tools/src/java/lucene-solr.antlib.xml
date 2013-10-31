@@ -21,4 +21,7 @@
     <taskdef
         name="libversions"
         classname="org.apache.lucene.validation.LibVersionsCheckTask" />
+    <taskdef
+        name="mvndeps"
+        classname="org.apache.lucene.dependencies.GetMavenDependenciesTask" />
 </antlib> 
