@@ -115,6 +115,11 @@ New Features
  * SOLR-5406: CloudSolrServer failed to propagate request parameters
    along with delete updates. (yonik)
 
+ * SOLR-5374: Support user configured doc-centric versioning rules
+   via the optional DocBasedVersionConstraintsProcessorFactory
+   update processor (Hossman, yonik)
+
+
 
 Bug Fixes
 ----------------------
