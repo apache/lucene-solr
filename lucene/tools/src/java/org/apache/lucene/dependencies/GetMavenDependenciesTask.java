@@ -80,9 +80,10 @@ public class GetMavenDependenciesTask extends Task {
   // lucene/build/core/classes/java
   private static final Pattern COMPILATION_OUTPUT_DIRECTORY_PATTERN 
       = Pattern.compile("(lucene|solr)/build/(?:contrib/)?(.*)/classes/(?:java|test)");
-  // lucene/build/analysis/common/lucene-analyzers-common-5.0-SNAPSHOT.jar
+  // Local:   lucene/build/analysis/common/lucene-analyzers-common-5.0-SNAPSHOT.jar
+  // Jenkins: lucene/build/analysis/common/lucene-analyzers-common-5.0-2013-10-31_18-52-24.jar
   private static final Pattern INTERNAL_JAR_PATTERN 
-      = Pattern.compile(".*(lucene|solr)([^/]*?)-(?:\\d\\.)+\\d(?:-SNAPSHOT)?\\.jar");
+      = Pattern.compile(".*(lucene|solr)([^/]*?)-\\d[-._\\d]*(?:-SNAPSHOT)?\\.jar");
   private static final Pattern PROPERTY_REFERENCE_PATTERN = Pattern.compile("\\$\\{([^}]+)\\}");
   private static final String UNWANTED_INTERNAL_DEPENDENCIES
       = "/(?:test-)?lib/|test-framework/classes/java|/test-files|/resources";
