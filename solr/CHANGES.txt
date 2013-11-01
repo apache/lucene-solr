@@ -119,7 +119,8 @@ New Features
    via the optional DocBasedVersionConstraintsProcessorFactory
    update processor (Hossman, yonik)
 
-
+*  SOLR-5392: Extend solrj apis to cover collection management.
+   (Roman Shaposhnik via Mark Miller)
 
 Bug Fixes
 ----------------------
