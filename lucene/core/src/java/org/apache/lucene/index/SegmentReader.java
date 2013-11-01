@@ -75,7 +75,7 @@ public final class SegmentReader extends AtomicReader {
   
   final FieldInfos fieldInfos;
 
-  private final List<Long> dvGens = new ArrayList<>();
+  private final List<Long> dvGens = new ArrayList<Long>();
   
   /**
    * Constructs a new SegmentReader with a new core.

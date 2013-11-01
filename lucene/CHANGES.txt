@@ -131,6 +131,10 @@ New Features
 * LUCENE-5296: Add DirectDocValuesFormat, which holds all doc values
   in heap as uncompressed java native arrays.  (Mike McCandless)
 
+* LUCENE-5189: Add IndexWriter.updateNumericDocValues, to update
+  numeric DocValues fields of documents, without re-indexing them.
+  (Shai Erera, Mike McCandless, Robert Muir)
+  
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
