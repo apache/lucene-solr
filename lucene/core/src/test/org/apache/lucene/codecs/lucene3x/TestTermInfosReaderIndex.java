@@ -97,7 +97,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     r.close();
 
     FieldInfosReader infosReader = new PreFlexRWCodec().fieldInfosFormat().getFieldInfosReader();
-    FieldInfos fieldInfos = infosReader.read(directory, segment, IOContext.READONCE);
+    FieldInfos fieldInfos = infosReader.read(directory, segment, "", IOContext.READONCE);
     String segmentFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
     long tiiFileLength = directory.fileLength(segmentFileName);
     IndexInput input = directory.openInput(segmentFileName, newIOContext(random()));

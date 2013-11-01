@@ -56,7 +56,7 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
   static final byte OMIT_POSITIONS = -128;
   
   @Override
-  public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
+  public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;

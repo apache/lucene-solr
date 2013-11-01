@@ -81,13 +81,24 @@ public class SegmentWriteState {
   /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
       int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
+    this(infoStream, directory, segmentInfo, fieldInfos, termIndexInterval, segDeletes, context, "");
+  }
+
+  /**
+   * Constructor which takes segment suffix.
+   * 
+   * @see #SegmentWriteState(InfoStream, Directory, SegmentInfo, FieldInfos, int,
+   *      BufferedDeletes, IOContext)
+   */
+  public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
+      int termIndexInterval, BufferedDeletes segDeletes, IOContext context, String segmentSuffix) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
     this.termIndexInterval = termIndexInterval;
-    segmentSuffix = "";
+    this.segmentSuffix = segmentSuffix;
     this.context = context;
   }
   

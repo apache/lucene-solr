@@ -24,21 +24,22 @@ import org.apache.lucene.codecs.Codec;
 // TODO: maybe we should test this with mocks, but its easy
 // enough to test the basics via Codec
 public class TestNamedSPILoader extends LuceneTestCase {
+  
   public void testLookup() {
-    Codec codec = Codec.forName("Lucene45");
-    assertEquals("Lucene45", codec.getName());
+    Codec codec = Codec.forName("Lucene46");
+    assertEquals("Lucene46", codec.getName());
   }
   
   // we want an exception if its not found.
   public void testBogusLookup() {
     try {
-      Codec codec = Codec.forName("dskfdskfsdfksdfdsf");
+      Codec.forName("dskfdskfsdfksdfdsf");
       fail();
     } catch (IllegalArgumentException expected) {}
   }
   
   public void testAvailableServices() {
     Set<String> codecs = Codec.availableCodecs();
-    assertTrue(codecs.contains("Lucene45"));
+    assertTrue(codecs.contains("Lucene46"));
   }
 }

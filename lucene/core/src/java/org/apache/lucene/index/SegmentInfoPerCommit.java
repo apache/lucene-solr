@@ -19,7 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.lucene.store.Directory;
 
@@ -27,9 +32,8 @@ import org.apache.lucene.store.Directory;
  *  fields.
  *
  *  @lucene.experimental */
-
-public class SegmentInfoPerCommit {
-
+public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
+  
   /** The {@link SegmentInfo} that we wrap. */
   public final SegmentInfo info;
 
@@ -44,15 +48,31 @@ public class SegmentInfoPerCommit {
   // attempt to write:
   private long nextWriteDelGen;
 
+  // Generation number of the FieldInfos (-1 if there are no updates)
+  private long fieldInfosGen;
+  
+  // Normally 1 + fieldInfosGen, unless an exception was hit on last attempt to
+  // write
+  private long nextWriteFieldInfosGen;
+
+  // Track the per-generation updates files
+  private final Map<Long,Set<String>> genUpdatesFiles = new HashMap<Long,Set<String>>();
+  
   private volatile long sizeInBytes = -1;
 
-  /** Sole constructor.
-   * @param info {@link SegmentInfo} that we wrap
-   * @param delCount number of deleted documents in this segment
-   * @param delGen deletion generation number (used to name
-             deletion files)
+  /**
+   * Sole constructor.
+   * 
+   * @param info
+   *          {@link SegmentInfo} that we wrap
+   * @param delCount
+   *          number of deleted documents in this segment
+   * @param delGen
+   *          deletion generation number (used to name deletion files)
+   * @param fieldInfosGen
+   *          FieldInfos generation number (used to name field-infos files)
    **/
-  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen) {
+  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long fieldInfosGen) {
     this.info = info;
     this.delCount = delCount;
     this.delGen = delGen;
@@ -61,8 +81,26 @@ public class SegmentInfoPerCommit {
     } else {
       nextWriteDelGen = delGen+1;
     }
+    
+    this.fieldInfosGen = fieldInfosGen;
+    if (fieldInfosGen == -1) {
+      nextWriteFieldInfosGen = 1;
+    } else {
+      nextWriteFieldInfosGen = fieldInfosGen + 1;
+    }
   }
 
+  /** Returns the per generation updates files. */
+  public Map<Long,Set<String>> getUpdatesFiles() {
+    return Collections.unmodifiableMap(genUpdatesFiles);
+  }
+  
+  /** Sets the updates file names per generation. Does not deep clone the map. */
+  public void setGenUpdatesFiles(Map<Long,Set<String>> genUpdatesFiles) {
+    this.genUpdatesFiles.clear();
+    this.genUpdatesFiles.putAll(genUpdatesFiles);
+  }
+  
   /** Called when we succeed in writing deletes */
   void advanceDelGen() {
     delGen = nextWriteDelGen;
@@ -75,6 +113,21 @@ public class SegmentInfoPerCommit {
    *  file more than once. */
   void advanceNextWriteDelGen() {
     nextWriteDelGen++;
+  }
+  
+  /** Called when we succeed in writing a new FieldInfos generation. */
+  void advanceFieldInfosGen() {
+    fieldInfosGen = nextWriteFieldInfosGen;
+    nextWriteFieldInfosGen = fieldInfosGen + 1;
+    sizeInBytes = -1;
+  }
+  
+  /**
+   * Called if there was an exception while writing a new generation of
+   * FieldInfos, so that we don't try to write to the same file more than once.
+   */
+  void advanceNextWriteFieldInfosGen() {
+    nextWriteFieldInfosGen++;
   }
 
   /** Returns total size in bytes of all files for this
@@ -98,9 +151,17 @@ public class SegmentInfoPerCommit {
     // Start from the wrapped info's files:
     Collection<String> files = new HashSet<String>(info.files());
 
+    // TODO we could rely on TrackingDir.getCreatedFiles() (like we do for
+    // updates) and then maybe even be able to remove LiveDocsFormat.files().
+    
     // Must separately add any live docs files:
     info.getCodec().liveDocsFormat().files(this, files);
 
+    // Must separately add any field updates files
+    for (Set<String> updateFiles : genUpdatesFiles.values()) {
+      files.addAll(updateFiles);
+    }
+    
     return files;
   }
 
@@ -117,26 +178,30 @@ public class SegmentInfoPerCommit {
     sizeInBytes =  -1;
   }
   
-  void clearDelGen() {
-    delGen = -1;
-    sizeInBytes =  -1;
-  }
-
-  /**
-   * Sets the generation number of the live docs file.
-   * @see #getDelGen()
-   */
-  public void setDelGen(long delGen) {
-    this.delGen = delGen;
-    sizeInBytes =  -1;
-  }
-
   /** Returns true if there are any deletions for the 
    * segment at this commit. */
   public boolean hasDeletions() {
     return delGen != -1;
   }
 
+  /** Returns true if there are any field updates for the segment in this commit. */
+  public boolean hasFieldUpdates() {
+    return fieldInfosGen != -1;
+  }
+  
+  /** Returns the next available generation number of the FieldInfos files. */
+  public long getNextFieldInfosGen() {
+    return nextWriteFieldInfosGen;
+  }
+  
+  /**
+   * Returns the generation number of the field infos file or -1 if there are no
+   * field updates yet.
+   */
+  public long getFieldInfosGen() {
+    return fieldInfosGen;
+  }
+  
   /**
    * Returns the next available generation number
    * of the live docs file.
@@ -171,6 +236,9 @@ public class SegmentInfoPerCommit {
     if (delGen != -1) {
       s += ":delGen=" + delGen;
     }
+    if (fieldInfosGen != -1) {
+      s += ":fieldInfosGen=" + fieldInfosGen;
+    }
     return s;
   }
 
@@ -181,12 +249,19 @@ public class SegmentInfoPerCommit {
 
   @Override
   public SegmentInfoPerCommit clone() {
-    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen);
+    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen, fieldInfosGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to
     // be safe:
     other.nextWriteDelGen = nextWriteDelGen;
+    other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
+    
+    // deep clone
+    for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
+      other.genUpdatesFiles.put(e.getKey(), new HashSet<String>(e.getValue()));
+    }
+    
     return other;
   }
 }

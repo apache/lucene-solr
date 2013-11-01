@@ -40,7 +40,7 @@ class PreFlexRWFieldInfosReader extends FieldInfosReader {
   static final int FORMAT_MINIMUM = PreFlexRWFieldInfosWriter.FORMAT_START;
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", PreFlexRWFieldInfosWriter.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     

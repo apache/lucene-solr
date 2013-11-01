@@ -107,6 +107,11 @@ final class DocumentsWriterDeleteQueue {
     tryApplyGlobalSlice();
   }
 
+  void addNumericUpdate(NumericUpdate update) {
+    add(new NumericUpdateNode(update));
+    tryApplyGlobalSlice();
+  }
+
   /**
    * invariant for document update
    */
@@ -380,6 +385,22 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
+  private static final class NumericUpdateNode extends Node<NumericUpdate> {
+
+    NumericUpdateNode(NumericUpdate update) {
+      super(update);
+    }
+
+    @Override
+    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+      bufferedDeletes.addNumericUpdate(item, docIDUpto);
+    }
+
+    @Override
+    public String toString() {
+      return "update=" + item;
+    }
+  }
 
   private boolean forceApplyGlobalSlice() {
     globalBufferLock.lock();

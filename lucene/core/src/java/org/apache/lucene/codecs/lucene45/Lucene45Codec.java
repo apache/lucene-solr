@@ -45,10 +45,12 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  *
  * @see org.apache.lucene.codecs.lucene45 package documentation for file format details.
  * @lucene.experimental
+ * @deprecated Only for reading old 4.3-4.5 segments
  */
 // NOTE: if we make largish changes in a minor release, easier to just make Lucene46Codec or whatever
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
+@Deprecated
 public class Lucene45Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
@@ -92,12 +94,12 @@ public class Lucene45Codec extends Codec {
   }
   
   @Override
-  public final FieldInfosFormat fieldInfosFormat() {
+  public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
   
   @Override
-  public final SegmentInfoFormat segmentInfoFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
   }
   

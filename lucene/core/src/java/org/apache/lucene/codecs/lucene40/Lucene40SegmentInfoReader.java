@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +36,9 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @see Lucene40SegmentInfoFormat
  * @lucene.experimental
+ * @deprecated Only for reading old 4.0-4.5 segments
  */
+@Deprecated
 public class Lucene40SegmentInfoReader extends SegmentInfoReader {
 
   /** Sole constructor. */
@@ -60,15 +61,14 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       }
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();
-      final Map<String,String> attributes = input.readStringStringMap();
+      input.readStringStringMap(); // read deprecated attributes
       final Set<String> files = input.readStringSet();
       
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile,
-                                             null, diagnostics, Collections.unmodifiableMap(attributes));
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics);
       si.setFiles(files);
 
       success = true;

@@ -55,7 +55,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
   
   public SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
-    //System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
+    // System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
     data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
     numDocs = state.segmentInfo.getDocCount();
   }

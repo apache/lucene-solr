@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.ServiceLoader; // javadocs
+import java.util.ServiceLoader;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -76,11 +76,10 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
   }
 
   @Override
-  public final DocValuesConsumer fieldsConsumer(SegmentWriteState state)
-      throws IOException {
+  public final DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new FieldsWriter(state);
   }
-  
+
   static class ConsumerAndSuffix implements Closeable {
     DocValuesConsumer consumer;
     int suffix;
@@ -97,7 +96,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     private final Map<String,Integer> suffixes = new HashMap<String,Integer>();
     
     private final SegmentWriteState segmentWriteState;
-
+    
     public FieldsWriter(SegmentWriteState state) {
       segmentWriteState = state;
     }
@@ -123,32 +122,53 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
 
     private DocValuesConsumer getInstance(FieldInfo field) throws IOException {
-      final DocValuesFormat format = getDocValuesFormatForField(field.name);
+      DocValuesFormat format = null;
+      if (field.getDocValuesGen() != -1) {
+        final String formatName = field.getAttribute(PER_FIELD_FORMAT_KEY);
+        // this means the field never existed in that segment, yet is applied updates
+        if (formatName != null) {
+          format = DocValuesFormat.forName(formatName);
+        }
+      }
+      if (format == null) {
+        format = getDocValuesFormatForField(field.name);
+      }
       if (format == null) {
         throw new IllegalStateException("invalid null DocValuesFormat for field=\"" + field.name + "\"");
       }
       final String formatName = format.getName();
       
       String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-      assert previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
+      assert field.getDocValuesGen() != -1 || previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
       
-      Integer suffix;
+      Integer suffix = null;
       
       ConsumerAndSuffix consumer = formats.get(format);
       if (consumer == null) {
         // First time we are seeing this format; create a new instance
+
+        if (field.getDocValuesGen() != -1) {
+          final String suffixAtt = field.getAttribute(PER_FIELD_SUFFIX_KEY);
+          // even when dvGen is != -1, it can still be a new field, that never
+          // existed in the segment, and therefore doesn't have the recorded
+          // attributes yet.
+          if (suffixAtt != null) {
+            suffix = Integer.valueOf(suffixAtt);
+          }
+        }
         
-        // bump the suffix
-        suffix = suffixes.get(formatName);
         if (suffix == null) {
-          suffix = 0;
-        } else {
-          suffix = suffix + 1;
+          // bump the suffix
+          suffix = suffixes.get(formatName);
+          if (suffix == null) {
+            suffix = 0;
+          } else {
+            suffix = suffix + 1;
+          }
         }
         suffixes.put(formatName, suffix);
         
-        final String segmentSuffix = getFullSegmentSuffix(field.name,
-                                                          segmentWriteState.segmentSuffix,
+        final String segmentSuffix = getFullSegmentSuffix(segmentWriteState.segmentSuffix,
                                                           getSuffix(formatName, Integer.toString(suffix)));
         consumer = new ConsumerAndSuffix();
         consumer.consumer = format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix));
@@ -161,10 +181,10 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
       
       previousValue = field.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(suffix));
-      assert previousValue == null;
+      assert field.getDocValuesGen() != -1 || previousValue == null : "suffix=" + Integer.toString(suffix) + " prevValue=" + previousValue;
 
       // TODO: we should only provide the "slice" of FIS
-      // that this PF actually sees ...
+      // that this DVF actually sees ...
       return consumer.consumer;
     }
 
@@ -179,14 +199,11 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     return formatName + "_" + suffix;
   }
 
-  static String getFullSegmentSuffix(String fieldName, String outerSegmentSuffix, String segmentSuffix) {
+  static String getFullSegmentSuffix(String outerSegmentSuffix, String segmentSuffix) {
     if (outerSegmentSuffix.length() == 0) {
       return segmentSuffix;
     } else {
-      // TODO: support embedding; I think it should work but
-      // we need a test confirm to confirm
-      // return outerSegmentSuffix + "_" + segmentSuffix;
-      throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself (field \"" + fieldName + "\" returned PerFieldPostingsFormat)");
+      return outerSegmentSuffix + "_" + segmentSuffix;
     }
   }
 
@@ -210,7 +227,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
               final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
               assert suffix != null;
               DocValuesFormat format = DocValuesFormat.forName(formatName);
-              String segmentSuffix = getSuffix(formatName, suffix);
+              String segmentSuffix = getFullSegmentSuffix(readState.segmentSuffix, getSuffix(formatName, suffix));
               if (!formats.containsKey(segmentSuffix)) {
                 formats.put(segmentSuffix, format.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
               }

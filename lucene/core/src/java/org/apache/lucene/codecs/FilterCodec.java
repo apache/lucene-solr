@@ -21,13 +21,13 @@ package org.apache.lucene.codecs;
  * A codec that forwards all its method calls to another codec.
  * <p>
  * Extend this class when you need to reuse the functionality of an existing
- * codec. For example, if you want to build a codec that redefines Lucene45's
+ * codec. For example, if you want to build a codec that redefines Lucene46's
  * {@link LiveDocsFormat}:
  * <pre class="prettyprint">
  *   public final class CustomCodec extends FilterCodec {
  *
  *     public CustomCodec() {
- *       super("CustomCodec", new Lucene45Codec());
+ *       super("CustomCodec", new Lucene46Codec());
  *     }
  *
  *     public LiveDocsFormat liveDocsFormat() {

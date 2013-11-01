@@ -221,6 +221,10 @@ public class RandomIndexWriter implements Closeable {
     w.addIndexes(readers);
   }
   
+  public void updateNumericDocValue(Term term, String field, Long value) throws IOException {
+    w.updateNumericDocValue(term, field, value);
+  }
+  
   public void deleteDocuments(Term term) throws IOException {
     w.deleteDocuments(term);
   }

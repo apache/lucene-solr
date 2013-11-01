@@ -23,10 +23,10 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 
 /**
- * Acts like {@link Lucene45Codec} but with additional asserts.
+ * Acts like {@link Lucene46Codec} but with additional asserts.
  */
 public final class AssertingCodec extends FilterCodec {
 
@@ -37,7 +37,7 @@ public final class AssertingCodec extends FilterCodec {
   private final NormsFormat norms = new AssertingNormsFormat();
 
   public AssertingCodec() {
-    super("Asserting", new Lucene45Codec());
+    super("Asserting", new Lucene46Codec());
   }
 
   @Override
