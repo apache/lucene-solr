@@ -156,7 +156,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
     Pattern newfield2StoredTrueIndexedTrueMultiValuedTruePattern
         = Pattern.compile( "<field name=\"newfield2\" type=\"text_en\" "
-                         + "(?=.*stored=\"true\")(?=.*indexed=\"true\")(?=multiValued=\"true\").*/>");
+                         + "(?=.*stored=\"true\")(?=.*indexed=\"true\")(?=.*multiValued=\"true\").*/>");
     assertTrue(newfield2StoredTrueIndexedTrueMultiValuedTruePattern.matcher(managedSchemaContents).find());
 
     assertQ("/schema/fields/newfield2?indent=on&wt=xml",
@@ -211,7 +211,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
     Pattern newfield2StoredTrueIndexedTrueMultiValuedTruePattern
         = Pattern.compile( "<field name=\"newfield2\" type=\"text_en\" "
-                         + "(?=.*stored=\"true\")(?=.*indexed=\"true\")(?=multiValued=\"true\").*/>");
+                         + "(?=.*stored=\"true\")(?=.*indexed=\"true\")(?=.*multiValued=\"true\").*/>");
     assertTrue(newfield2StoredTrueIndexedTrueMultiValuedTruePattern.matcher(managedSchemaContents).find());
 
     assertQ("/schema/fields?indent=on&wt=xml",
