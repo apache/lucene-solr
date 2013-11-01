@@ -260,7 +260,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
     response = CollectionAdminRequest.createCollection("solrj_implicit",
-                                                       "shardA,shardB", server);
+                                                       "shardA,shardB", "conf1", server);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     coresStatus = response.getCollectionCoresStatus();
@@ -285,7 +285,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     nodesStatus = response.getCollectionNodesStatus();
     assertEquals(2, nodesStatus.size());
 
-    response = CollectionAdminRequest.createCollection("conf1", 4, server);
+    response = CollectionAdminRequest.createCollection("conf1", 4, "conf1", server);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 

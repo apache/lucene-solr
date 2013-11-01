@@ -297,13 +297,14 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
   public static CollectionAdminResponse createCollection( String name,
-                                                          Integer shards,
+                                                          Integer shards, String conf,
                                                           SolrServer server ) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
     req.setRouterName("compositeId");
     req.setNumShards(shards);
+    req.setConfigName(conf);
     return req.process( server );
   }
 
@@ -327,13 +328,14 @@ public class CollectionAdminRequest extends SolrRequest
     return req.process( server );
   }
   public static CollectionAdminResponse createCollection( String name,
-                                                          String shards,
+                                                          String shards, String conf,
                                                           SolrServer server ) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
     req.setRouterName("implicit");
     req.setShards(shards);
+    req.setConfigName(conf);
     return req.process( server );
   }
 
