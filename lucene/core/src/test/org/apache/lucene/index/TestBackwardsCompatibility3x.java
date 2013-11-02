@@ -876,7 +876,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
-    for (SegmentInfoPerCommit si : infos) {
+    for (SegmentCommitInfo si : infos) {
       assertEquals(Constants.LUCENE_MAIN_VERSION, si.info.getVersion());
     }
     return infos.size();

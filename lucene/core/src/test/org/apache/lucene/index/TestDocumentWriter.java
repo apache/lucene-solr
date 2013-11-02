@@ -62,7 +62,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(testDoc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
@@ -124,7 +124,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
@@ -196,7 +196,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
@@ -239,7 +239,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 

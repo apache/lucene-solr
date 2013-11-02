@@ -138,7 +138,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
     long totalBytes = 0;
-    for(SegmentInfoPerCommit sipc : infos) {
+    for(SegmentCommitInfo sipc : infos) {
       totalBytes += sipc.sizeInBytes();
     }
     long totalBytes2 = 0;

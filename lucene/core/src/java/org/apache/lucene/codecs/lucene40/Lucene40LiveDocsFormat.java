@@ -23,7 +23,7 @@ import java.util.Collection;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -85,7 +85,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
     final BitVector liveDocs = new BitVector(dir, filename, context);
     assert liveDocs.count() == info.info.getDocCount() - info.getDelCount():
@@ -95,7 +95,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getNextDelGen());
     final BitVector liveDocs = (BitVector) bits;
     assert liveDocs.count() == info.info.getDocCount() - info.getDelCount() - newDelCount;
@@ -104,7 +104,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException {
+  public void files(SegmentCommitInfo info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
       files.add(IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen()));
     }

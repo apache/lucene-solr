@@ -51,10 +51,10 @@ import org.apache.lucene.util.InfoStream;
  * track which BufferedDeletes packets to apply to any given
  * segment. */
 
-class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
+class BufferedUpdatesStream {
 
   // TODO: maybe linked list?
-  private final List<FrozenBufferedDeletes> deletes = new ArrayList<FrozenBufferedDeletes>();
+  private final List<FrozenBufferedUpdates> updates = new ArrayList<FrozenBufferedUpdates>();
 
   // Starts at 1 so that SegmentInfos that have never had
   // deletes applied (whose bufferedDelGen defaults to 0)
@@ -68,13 +68,13 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
 
-  public BufferedDeletesStream(InfoStream infoStream) {
+  public BufferedUpdatesStream(InfoStream infoStream) {
     this.infoStream = infoStream;
   }
 
   // Appends a new packet of buffered deletes to the stream,
   // setting its generation:
-  public synchronized long push(FrozenBufferedDeletes packet) {
+  public synchronized long push(FrozenBufferedUpdates packet) {
     /*
      * The insert operation must be atomic. If we let threads increment the gen
      * and push the packet afterwards we risk that packets are out of order.
@@ -86,19 +86,19 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     assert packet.any();
     assert checkDeleteStats();
     assert packet.delGen() < nextGen;
-    assert deletes.isEmpty() || deletes.get(deletes.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
-    deletes.add(packet);
+    assert updates.isEmpty() || updates.get(updates.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
+    updates.add(packet);
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
+      infoStream.message("BD", "push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + updates.size() + " totBytesUsed=" + bytesUsed.get());
     }
     assert checkDeleteStats();
     return packet.delGen();
   }
 
   public synchronized void clear() {
-    deletes.clear();
+    updates.clear();
     nextGen = 1;
     numTerms.set(0);
     bytesUsed.set(0);
@@ -125,9 +125,9 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     public final long gen;
 
     // If non-null, contains segments that are 100% deleted
-    public final List<SegmentInfoPerCommit> allDeleted;
+    public final List<SegmentCommitInfo> allDeleted;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted) {
+    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentCommitInfo> allDeleted) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
       this.allDeleted = allDeleted;
@@ -135,9 +135,9 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   }
 
   // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
-  private static final Comparator<SegmentInfoPerCommit> sortSegInfoByDelGen = new Comparator<SegmentInfoPerCommit>() {
+  private static final Comparator<SegmentCommitInfo> sortSegInfoByDelGen = new Comparator<SegmentCommitInfo>() {
     @Override
-    public int compare(SegmentInfoPerCommit si1, SegmentInfoPerCommit si2) {
+    public int compare(SegmentCommitInfo si1, SegmentCommitInfo si2) {
       final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
       if (cmp > 0) {
         return 1;
@@ -152,7 +152,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   /** Resolves the buffered deleted Term/Query/docIDs, into
    *  actual deleted docIDs in the liveDocs MutableBits for
    *  each SegmentReader. */
-  public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfoPerCommit> infos) throws IOException {
+  public synchronized ApplyDeletesResult applyDeletesAndUpdates(IndexWriter.ReaderPool readerPool, List<SegmentCommitInfo> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
@@ -169,34 +169,34 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
+      infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + updates.size());
     }
 
     final long gen = nextGen++;
 
-    List<SegmentInfoPerCommit> infos2 = new ArrayList<SegmentInfoPerCommit>();
+    List<SegmentCommitInfo> infos2 = new ArrayList<SegmentCommitInfo>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
-    CoalescedDeletes coalescedDeletes = null;
+    CoalescedUpdates coalescedUpdates = null;
     boolean anyNewDeletes = false;
 
     int infosIDX = infos2.size()-1;
-    int delIDX = deletes.size()-1;
+    int delIDX = updates.size()-1;
 
-    List<SegmentInfoPerCommit> allDeleted = null;
+    List<SegmentCommitInfo> allDeleted = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
 
-      final FrozenBufferedDeletes packet = delIDX >= 0 ? deletes.get(delIDX) : null;
-      final SegmentInfoPerCommit info = infos2.get(infosIDX);
+      final FrozenBufferedUpdates packet = delIDX >= 0 ? updates.get(delIDX) : null;
+      final SegmentCommitInfo info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
 
       if (packet != null && segGen < packet.delGen()) {
 //        System.out.println("  coalesce");
-        if (coalescedDeletes == null) {
-          coalescedDeletes = new CoalescedDeletes();
+        if (coalescedUpdates == null) {
+          coalescedUpdates = new CoalescedUpdates();
         }
         if (!packet.isSegmentPrivate) {
           /*
@@ -206,7 +206,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
            * its segPrivate packet (higher delGen) have been applied, the segPrivate packet has not been
            * removed.
            */
-          coalescedDeletes.update(packet);
+          coalescedUpdates.update(packet);
         }
 
         delIDX--;
@@ -216,17 +216,17 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
 
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
-        final ReadersAndLiveDocs rld = readerPool.get(info, true);
+        final ReadersAndUpdates rld = readerPool.get(info, true);
         final SegmentReader reader = rld.getReader(IOContext.READ);
         int delCount = 0;
         final boolean segAllDeletes;
         try {
           Map<String,NumericFieldUpdates> fieldUpdates = null;
-          if (coalescedDeletes != null) {
+          if (coalescedUpdates != null) {
             //System.out.println("    del coalesced");
-            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
-            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
-            fieldUpdates = applyNumericDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, fieldUpdates);
+            delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
+            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
+            fieldUpdates = applyNumericDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, fieldUpdates);
           }
           //System.out.println("    del exact");
           // Don't delete by Term here; DocumentsWriterPerThread
@@ -247,17 +247,17 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
 
         if (segAllDeletes) {
           if (allDeleted == null) {
-            allDeleted = new ArrayList<SegmentInfoPerCommit>();
+            allDeleted = new ArrayList<SegmentCommitInfo>();
           }
           allDeleted.add(info);
         }
 
         if (infoStream.isEnabled("BD")) {
-          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedUpdates == null ? "null" : coalescedUpdates) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
-        if (coalescedDeletes == null) {
-          coalescedDeletes = new CoalescedDeletes();
+        if (coalescedUpdates == null) {
+          coalescedUpdates = new CoalescedUpdates();
         }
         
         /*
@@ -272,17 +272,17 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
       } else {
         //System.out.println("  gt");
 
-        if (coalescedDeletes != null) {
+        if (coalescedUpdates != null) {
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
-          final ReadersAndLiveDocs rld = readerPool.get(info, true);
+          final ReadersAndUpdates rld = readerPool.get(info, true);
           final SegmentReader reader = rld.getReader(IOContext.READ);
           int delCount = 0;
           final boolean segAllDeletes;
           try {
-            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
-            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
-            Map<String,NumericFieldUpdates> fieldUpdates = applyNumericDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, null);
+            delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
+            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
+            Map<String,NumericFieldUpdates> fieldUpdates = applyNumericDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, null);
             if (!fieldUpdates.isEmpty()) {
               rld.writeFieldUpdates(info.info.dir, fieldUpdates);
             }
@@ -297,13 +297,13 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
 
           if (segAllDeletes) {
             if (allDeleted == null) {
-              allDeleted = new ArrayList<SegmentInfoPerCommit>();
+              allDeleted = new ArrayList<SegmentCommitInfo>();
             }
             allDeleted.add(info);
           }
 
           if (infoStream.isEnabled("BD")) {
-            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedDeletes + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedUpdates + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(gen);
@@ -332,16 +332,16 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   public synchronized void prune(SegmentInfos segmentInfos) {
     assert checkDeleteStats();
     long minGen = Long.MAX_VALUE;
-    for(SegmentInfoPerCommit info : segmentInfos) {
+    for(SegmentCommitInfo info : segmentInfos) {
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + deletes.size());
+      infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + updates.size());
     }
-    final int limit = deletes.size();
+    final int limit = updates.size();
     for(int delIDX=0;delIDX<limit;delIDX++) {
-      if (deletes.get(delIDX).delGen() >= minGen) {
+      if (updates.get(delIDX).delGen() >= minGen) {
         prune(delIDX);
         assert checkDeleteStats();
         return;
@@ -357,21 +357,21 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   private synchronized void prune(int count) {
     if (count > 0) {
       if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD", "pruneDeletes: prune " + count + " packets; " + (deletes.size() - count) + " packets remain");
+        infoStream.message("BD", "pruneDeletes: prune " + count + " packets; " + (updates.size() - count) + " packets remain");
       }
       for(int delIDX=0;delIDX<count;delIDX++) {
-        final FrozenBufferedDeletes packet = deletes.get(delIDX);
+        final FrozenBufferedUpdates packet = updates.get(delIDX);
         numTerms.addAndGet(-packet.numTermDeletes);
         assert numTerms.get() >= 0;
         bytesUsed.addAndGet(-packet.bytesUsed);
         assert bytesUsed.get() >= 0;
       }
-      deletes.subList(0, count).clear();
+      updates.subList(0, count).clear();
     }
   }
 
   // Delete by Term
-  private synchronized long applyTermDeletes(Iterable<Term> termsIter, ReadersAndLiveDocs rld, SegmentReader reader) throws IOException {
+  private synchronized long applyTermDeletes(Iterable<Term> termsIter, ReadersAndUpdates rld, SegmentReader reader) throws IOException {
     long delCount = 0;
     Fields fields = reader.fields();
     if (fields == null) {
@@ -446,7 +446,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   // NumericDocValues Updates
   // If otherFieldUpdates != null, we need to merge the updates into them
   private synchronized Map<String,NumericFieldUpdates> applyNumericDocValuesUpdates(Iterable<NumericUpdate> updates, 
-      ReadersAndLiveDocs rld, SegmentReader reader, Map<String,NumericFieldUpdates> otherFieldUpdates) throws IOException {
+      ReadersAndUpdates rld, SegmentReader reader, Map<String,NumericFieldUpdates> otherFieldUpdates) throws IOException {
     Fields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
@@ -534,7 +534,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   }
 
   // Delete by query
-  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, ReadersAndLiveDocs rld, final SegmentReader reader) throws IOException {
+  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, ReadersAndUpdates rld, final SegmentReader reader) throws IOException {
     long delCount = 0;
     final AtomicReaderContext readerContext = reader.getContext();
     boolean any = false;
@@ -581,7 +581,7 @@ class BufferedDeletesStream { // TODO (DVU_RENAME) BufferedUpdatesStream
   private boolean checkDeleteStats() {
     int numTerms2 = 0;
     long bytesUsed2 = 0;
-    for(FrozenBufferedDeletes packet : deletes) {
+    for(FrozenBufferedUpdates packet : updates) {
       numTerms2 += packet.numTermDeletes;
       bytesUsed2 += packet.bytesUsed;
     }

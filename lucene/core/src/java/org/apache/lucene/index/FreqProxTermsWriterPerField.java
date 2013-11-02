@@ -365,8 +365,8 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     assert !writeOffsets || writePositions;
 
     final Map<Term,Integer> segDeletes;
-    if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
-      segDeletes = state.segDeletes.terms;
+    if (state.segUpdates != null && state.segUpdates.terms.size() > 0) {
+      segDeletes = state.segUpdates.terms;
     } else {
       segDeletes = null;
     }

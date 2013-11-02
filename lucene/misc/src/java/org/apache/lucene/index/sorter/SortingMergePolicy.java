@@ -29,7 +29,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -64,7 +64,7 @@ public final class SortingMergePolicy extends MergePolicy {
     Sorter.DocMap docMap;
     AtomicReader sortedView;
 
-    SortingOneMerge(List<SegmentInfoPerCommit> segments) {
+    SortingOneMerge(List<SegmentCommitInfo> segments) {
       super(segments);
     }
 
@@ -87,7 +87,7 @@ public final class SortingMergePolicy extends MergePolicy {
     }
     
     @Override
-    public void setInfo(SegmentInfoPerCommit info) {
+    public void setInfo(SegmentCommitInfo info) {
       Map<String,String> diagnostics = info.info.getDiagnostics();
       diagnostics.put(SORTER_ID_PROP, sorter.getID());
       super.setInfo(info);
@@ -187,7 +187,7 @@ public final class SortingMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-      int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
+      int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
       throws IOException {
     return sortedMergeSpecification(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge));
   }
@@ -210,7 +210,7 @@ public final class SortingMergePolicy extends MergePolicy {
 
   @Override
   public boolean useCompoundFile(SegmentInfos segments,
-      SegmentInfoPerCommit newSegment) throws IOException {
+      SegmentCommitInfo newSegment) throws IOException {
     return in.useCompoundFile(segments, newSegment);
   }
 

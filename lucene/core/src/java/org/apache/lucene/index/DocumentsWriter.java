@@ -136,7 +136,7 @@ final class DocumentsWriter {
     flushPolicy = config.getFlushPolicy();
     this.writer = writer;
     this.events = new ConcurrentLinkedQueue<Event>();
-    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedDeletesStream);
+    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
   }
   
   synchronized boolean deleteQueries(final Query... queries) throws IOException {
@@ -323,7 +323,7 @@ final class DocumentsWriter {
   }
   
   public int getBufferedDeleteTermsSize() {
-    return deleteQueue.getBufferedDeleteTermsSize();
+    return deleteQueue.getBufferedUpdatesTermsSize();
   }
 
   //for testing

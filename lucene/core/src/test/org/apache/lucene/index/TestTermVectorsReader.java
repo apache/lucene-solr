@@ -45,7 +45,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
-  private SegmentInfoPerCommit seg;
+  private SegmentCommitInfo seg;
   private FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
   private static int TERM_FREQ = 3;
 

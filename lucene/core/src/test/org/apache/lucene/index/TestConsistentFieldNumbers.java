@@ -273,7 +273,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
-    for (SegmentInfoPerCommit si : sis) {
+    for (SegmentCommitInfo si : sis) {
       FieldInfos fis = SegmentReader.readFieldInfos(si);
 
       for (FieldInfo fi : fis) {

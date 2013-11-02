@@ -48,12 +48,13 @@ public class SegmentWriteState {
    *  segment. */
   public int delCountOnFlush;
 
-  /** Deletes to apply while we are flushing the segment.  A
-   *  Term is enrolled in here if it was deleted at one
-   *  point, and it's mapped to the docIDUpto, meaning any
-   *  docID &lt; docIDUpto containing this term should be
-   *  deleted. */
-  public final BufferedDeletes segDeletes;
+  /**
+   * Deletes and updates to apply while we are flushing the segment. A Term is
+   * enrolled in here if it was deleted/updated at one point, and it's mapped to
+   * the docIDUpto, meaning any docID &lt; docIDUpto containing this term should
+   * be deleted/updated.
+   */
+  public final BufferedUpdates segUpdates;
 
   /** {@link MutableBits} recording live documents; this is
    *  only set if there is one or more deleted documents. */
@@ -80,20 +81,20 @@ public class SegmentWriteState {
 
   /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
-    this(infoStream, directory, segmentInfo, fieldInfos, termIndexInterval, segDeletes, context, "");
+      int termIndexInterval, BufferedUpdates segUpdates, IOContext context) {
+    this(infoStream, directory, segmentInfo, fieldInfos, termIndexInterval, segUpdates, context, "");
   }
 
   /**
    * Constructor which takes segment suffix.
    * 
    * @see #SegmentWriteState(InfoStream, Directory, SegmentInfo, FieldInfos, int,
-   *      BufferedDeletes, IOContext)
+   *      BufferedUpdates, IOContext)
    */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedDeletes segDeletes, IOContext context, String segmentSuffix) {
+      int termIndexInterval, BufferedUpdates segUpdates, IOContext context, String segmentSuffix) {
     this.infoStream = infoStream;
-    this.segDeletes = segDeletes;
+    this.segUpdates = segUpdates;
     this.directory = directory;
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
@@ -111,7 +112,7 @@ public class SegmentWriteState {
     termIndexInterval = state.termIndexInterval;
     context = state.context;
     this.segmentSuffix = segmentSuffix;
-    segDeletes = state.segDeletes;
+    segUpdates = state.segUpdates;
     delCountOnFlush = state.delCountOnFlush;
   }
 }

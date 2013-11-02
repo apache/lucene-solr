@@ -87,7 +87,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context, int termsIndexDivisor) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context, int termsIndexDivisor) throws IOException {
 
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");

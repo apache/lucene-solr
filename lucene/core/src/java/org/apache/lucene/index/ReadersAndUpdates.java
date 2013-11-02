@@ -42,10 +42,10 @@ import org.apache.lucene.util.MutableBits;
 // Used by IndexWriter to hold open SegmentReaders (for
 // searching or merging), plus pending deletes and updates,
 // for a given segment
-class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
+class ReadersAndUpdates {
   // Not final because we replace (clone) when we need to
   // change it and it's been shared:
-  public final SegmentInfoPerCommit info;
+  public final SegmentCommitInfo info;
 
   // Tracks how many consumers are using this instance:
   private final AtomicInteger refCount = new AtomicInteger(1);
@@ -90,7 +90,7 @@ class ReadersAndLiveDocs { // TODO (DVU_RENAME) to ReaderAndUpdates
   
   private final Map<String,NumericFieldUpdates> mergingNumericUpdates = new HashMap<String,NumericFieldUpdates>();
   
-  public ReadersAndLiveDocs(IndexWriter writer, SegmentInfoPerCommit info) {
+  public ReadersAndUpdates(IndexWriter writer, SegmentCommitInfo info) {
     this.info = info;
     this.writer = writer;
     liveDocsShared = true;
