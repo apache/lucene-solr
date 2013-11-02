@@ -802,7 +802,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              System.out.println(core.getCoreDescriptor().getCoreContainer()
+              System.err.println(core.getCoreDescriptor().getCoreContainer()
                   .getZkController().getNodeName()
                   + " synched "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -927,7 +927,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              System.out.println(core.getCoreDescriptor().getCoreContainer()
+              System.err.println(core.getCoreDescriptor().getCoreContainer()
                   .getZkController().getNodeName()
                   + " to replicate "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits

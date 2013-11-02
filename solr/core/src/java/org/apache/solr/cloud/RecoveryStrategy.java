@@ -393,7 +393,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                     .getNewestSearcher(false);
                 SolrIndexSearcher searcher = searchHolder.get();
                 try {
-                  System.out.println(core.getCoreDescriptor()
+                  System.err.println(core.getCoreDescriptor()
                       .getCoreContainer().getZkController().getNodeName()
                       + " synched "
                       + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -542,7 +542,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             .getNewestSearcher(false);
         SolrIndexSearcher searcher = searchHolder.get();
         try {
-          System.out.println(core.getCoreDescriptor().getCoreContainer()
+          System.err.println(core.getCoreDescriptor().getCoreContainer()
               .getZkController().getNodeName()
               + " replayed "
               + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
