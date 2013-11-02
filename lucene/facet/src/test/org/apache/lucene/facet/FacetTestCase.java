@@ -2,8 +2,6 @@ package org.apache.lucene.facet;
 
 import java.util.Random;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.facet.codecs.facet46.Facet46Codec;
 import org.apache.lucene.facet.encoding.DGapIntEncoder;
 import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.facet.encoding.EightFlagsIntEncoder;
@@ -15,8 +13,6 @@ import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
 import org.apache.lucene.facet.encoding.VInt8IntEncoder;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -46,24 +42,6 @@ public abstract class FacetTestCase extends LuceneTestCase {
     new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new NOnesIntEncoder(3)))),
     new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new NOnesIntEncoder(4)))), 
   };
-  
-  private static Codec savedDefault = null; 
-  
-  @BeforeClass
-  public static void beforeClassFacetTestCase() throws Exception {
-    if (random().nextDouble() < 0.3) {
-      savedDefault = Codec.getDefault(); // save to restore later
-      Codec.setDefault(new Facet46Codec());
-    }
-  }
-  
-  @AfterClass
-  public static void afterClassFacetTestCase() throws Exception {
-    if (savedDefault != null) {
-      Codec.setDefault(savedDefault);
-      savedDefault = null;
-    }
-  }
   
   /** Returns a {@link CategoryListParams} with random {@link IntEncoder} and field. */
   public static CategoryListParams randomCategoryListParams() {

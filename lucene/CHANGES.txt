@@ -205,6 +205,9 @@ API Changes:
 * LUCENE-5313: Move preservePositionIncrements from setter to ctor in
   Analyzing/FuzzySuggester.  (Areek Zillur via Mike McCandless)
 
+* LUCENE-5321: Remove Facet42DocValuesFormat. Use DirectDocValuesFormat if you
+  want to load the category list into memory. (Shai Erera, Mike McCandless)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
