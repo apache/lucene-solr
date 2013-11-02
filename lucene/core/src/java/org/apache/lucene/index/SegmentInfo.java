@@ -62,6 +62,7 @@ public final class SegmentInfo {
   private Map<String,String> diagnostics;
   
   /** @deprecated not used anymore */
+  @Deprecated
   private Map<String,String> attributes;
 
   // Tracks the Lucene version this segment was created with, since 3.1. Null
@@ -284,6 +285,7 @@ public final class SegmentInfo {
    * 
    * @deprecated no longer supported
    */
+  @Deprecated
   public String getAttribute(String key) {
     if (attributes == null) {
       return null;
@@ -304,6 +306,7 @@ public final class SegmentInfo {
    * 
    * @deprecated no longer supported
    */
+  @Deprecated
   public String putAttribute(String key, String value) {
     if (attributes == null) {
       attributes = new HashMap<String,String>();
@@ -318,6 +321,7 @@ public final class SegmentInfo {
    * 
    * @deprecated no longer supported
    */
+  @Deprecated
   public Map<String,String> attributes() {
     return attributes;
   }
