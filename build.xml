@@ -136,8 +136,10 @@
   <property name="version" value="5.0-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>
-  
-  <target name="get-maven-poms" depends="resolve"
+
+  <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
+
+  <target name="get-maven-poms" depends="resolve" 
           description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
     <ant dir="lucene" target="-get-maven-poms" inheritall="false"/>
   </target>
@@ -147,14 +149,17 @@
     <delete failonerror="true" dir="${maven-build-dir}/"/>
   </target>
 
-  <target name="generate-maven-artifacts"
+  <target name="generate-maven-artifacts" depends="resolve"
           description="Generate Maven Artifacts for Lucene and Solr">
     <property name="maven.dist.dir"  location="dist/maven" />
     <mkdir dir="${maven.dist.dir}" />
-    <ant dir="lucene" target="filter-pom-templates"/>
-    <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
+    <ant dir="lucene" inheritall="false">
+      <target name="-unpack-lucene-tgz"/>
+      <target name="-filter-pom-templates"/>
+    </ant>
+    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false"/>
+    <subant target="-dist-maven" inheritall="false" failonerror="true">
       <property name="maven.dist.dir"  location="${maven.dist.dir}" />
-      <property name="filtered.pom.templates.uptodate" value="true"/>
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
@@ -163,7 +168,6 @@
   <target name="validate-maven-dependencies" depends="generate-maven-artifacts" 
           description="Validates maven dependencies, licenses, etc.">
     <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
-      <property name="filtered.pom.templates.uptodate" value="true"/>
       <fileset dir="lucene" includes="build.xml"/>
       <fileset dir="solr" includes="build.xml"/>
     </subant>

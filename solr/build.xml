@@ -603,26 +603,26 @@
     <contrib-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <!-- install-maven-tasks and define-lucene-javadoc-url are *not* a useless dependencies. Do not remove! -->
-  <target name="generate-maven-artifacts" depends="install-maven-tasks,define-lucene-javadoc-url">
+  <target name="-dist-maven" depends="install-maven-tasks">
     <sequential>
-      <subant target="dist-maven" inheritall="false" >
-        <propertyset refid="uptodate.and.compiled.properties"/>
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
+      <subant target="-dist-maven" inheritall="false" >
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="solrj" includes="build.xml"/>
         <fileset dir="test-framework" includes="build.xml"/>
         <fileset dir="webapp" includes="build.xml"/>
       </subant>
-      <contrib-crawl target="dist-maven"/>
+      <contrib-crawl target="-dist-maven"/>
     </sequential>
   </target>
-
-  <!-- only used by validate below, it needs the lucene artifacts installed: can we do this better?! -->
-  <target name="-generate-lucene-maven-artifacts">
-    <subant target="generate-maven-artifacts" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-       <fileset dir="${common.dir}" includes="build.xml"/>
-    </subant>
+  
+  <!-- define-lucene-javadoc-url is *not* a useless dependencies. Do not remove! -->
+  <target name="generate-maven-artifacts" depends="define-lucene-javadoc-url,-unpack-solr-tgz">
+    <sequential>
+      <ant dir=".." target="resolve" inheritall="false"/>
+      <antcall target="-filter-pom-templates" inheritall="false"/>
+      <antcall target="-dist-maven" inheritall="false"/>
+    </sequential>
   </target>
  
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">

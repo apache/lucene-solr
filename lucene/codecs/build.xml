@@ -22,5 +22,5 @@
 
   <import file="../module-build.xml"/>
 
-  <target name="dist-maven" depends="dist-maven-src-java"/>
+  <target name="-dist-maven" depends="-dist-maven-src-java"/>
 </project>

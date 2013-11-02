@@ -48,7 +48,7 @@
      </sequential>
   </target>
 
-  <target name="dist-maven" depends="dist-maven-src-java"/>
+  <target name="-dist-maven" depends="-dist-maven-src-java"/>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>

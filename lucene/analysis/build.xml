@@ -114,8 +114,8 @@
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
-  <target name="dist-maven">
-    <forall-analyzers target="dist-maven"/>
+  <target name="-dist-maven">
+    <forall-analyzers target="-dist-maven"/>
   </target>  	
 
   <target name="-validate-maven-dependencies">
