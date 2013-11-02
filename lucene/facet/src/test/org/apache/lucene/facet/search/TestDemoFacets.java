@@ -31,7 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
-import org.apache.lucene.facet.codecs.facet46.Facet46Codec;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
@@ -257,39 +256,39 @@ public class TestDemoFacets extends FacetTestCase {
   // LUCENE-4583: make sure if we require > 32 KB for one
   // document, we don't hit exc when using Facet42DocValuesFormat
   public void testManyFacetsInOneDocument() throws Exception {
+    assumeTrue("default Codec doesn't support huge BinaryDocValues", _TestUtil.fieldSupportsHugeBinaryDocValues(CategoryListParams.DEFAULT_FIELD));
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setCodec(new Facet46Codec());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
-
+    
     FacetFields facetFields = new FacetFields(taxoWriter);
-
+    
     int numLabels = _TestUtil.nextInt(random(), 40000, 100000);
-
+    
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     List<CategoryPath> paths = new ArrayList<CategoryPath>();
-    for(int i=0;i<numLabels;i++) {
+    for (int i = 0; i < numLabels; i++) {
       paths.add(new CategoryPath("dim", "" + i));
     }
     facetFields.addFields(doc, paths);
     writer.addDocument(doc);
-
+    
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
-
+    
     // NRT open
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     taxoWriter.close();
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("dim"), Integer.MAX_VALUE));
-
+    
     // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
-
+    
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query, and use MultiCollector to
@@ -300,13 +299,13 @@ public class TestDemoFacets extends FacetTestCase {
     FacetResultNode root = results.get(0).getFacetResultNode();
     assertEquals(numLabels, root.subResults.size());
     Set<String> allLabels = new HashSet<String>();
-    for(FacetResultNode childNode : root.subResults) {
+    for (FacetResultNode childNode : root.subResults) {
       assertEquals(2, childNode.label.length);
       allLabels.add(childNode.label.components[1]);
       assertEquals(1, (int) childNode.value);
     }
     assertEquals(numLabels, allLabels.size());
-
+    
     IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 }
