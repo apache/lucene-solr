@@ -35,7 +35,7 @@
     <core name="collection1" instanceDir="collection1" shard="${shard:}" collection="${collection:collection1}" config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"
           coreNodeName="${coreNodeName:}"/>
     <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
-      <int name="socketTimeout">${socketTimeout:120000}</int>
+      <int name="socketTimeout">${socketTimeout:240000}</int>
       <int name="connTimeout">${connTimeout:15000}</int>
     </shardHandlerFactory>
   </cores>
