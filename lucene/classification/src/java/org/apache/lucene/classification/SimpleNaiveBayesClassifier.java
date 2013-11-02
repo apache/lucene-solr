@@ -45,7 +45,7 @@ import java.util.LinkedList;
 public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private AtomicReader atomicReader;
-  private String textFieldName;
+  private String[] textFieldNames;
   private String classFieldName;
   private int docsWithClassSize;
   private Analyzer analyzer;
@@ -68,16 +68,34 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       throws IOException {
     this.atomicReader = atomicReader;
     this.indexSearcher = new IndexSearcher(this.atomicReader);
-    this.textFieldName = textFieldName;
+    this.textFieldNames = new String[]{textFieldName};
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
     this.docsWithClassSize = countDocsWithClass();
     this.query = query;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
     train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query)
+      throws IOException {
+    this.atomicReader = atomicReader;
+    this.indexSearcher = new IndexSearcher(this.atomicReader);
+    this.textFieldNames = textFieldNames;
+    this.classFieldName = classFieldName;
+    this.analyzer = analyzer;
+    this.docsWithClassSize = countDocsWithClass();
+    this.query = query;
   }
 
   private int countDocsWithClass() throws IOException {
@@ -103,13 +121,15 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<String>();
-    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc)) {
-      CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-      tokenStream.reset();
-      while (tokenStream.incrementToken()) {
-        result.add(charTermAttribute.toString());
+    for (String textFieldName : textFieldNames) {
+      try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc)) {
+        CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+        tokenStream.reset();
+        while (tokenStream.incrementToken()) {
+          result.add(charTermAttribute.toString());
+        }
+        tokenStream.end();
       }
-      tokenStream.end();
     }
     return result.toArray(new String[result.size()]);
   }
@@ -164,16 +184,23 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private double getTextTermFreqForClass(BytesRef c) throws IOException {
-    Terms terms = MultiFields.getTerms(atomicReader, textFieldName);
-    long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
-    double avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
+    double avgNumberOfUniqueTerms = 0;
+    for (String textFieldName : textFieldNames) {
+      Terms terms = MultiFields.getTerms(atomicReader, textFieldName);
+      long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
+      avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
+    }
     int docsWithC = atomicReader.docFreq(new Term(classFieldName, c));
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text field per doc * # docs with c
   }
 
   private int getWordFreqForClass(String word, BytesRef c) throws IOException {
     BooleanQuery booleanQuery = new BooleanQuery();
-    booleanQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.MUST));
+    BooleanQuery subQuery = new BooleanQuery();
+    for (String textFieldName : textFieldNames) {
+     subQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
+    }
+    booleanQuery.add(new BooleanClause(subQuery, BooleanClause.Occur.MUST));
     booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, c)), BooleanClause.Occur.MUST));
     if (query != null) {
       booleanQuery.add(query, BooleanClause.Occur.MUST);

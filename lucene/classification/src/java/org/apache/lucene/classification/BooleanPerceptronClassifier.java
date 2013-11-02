@@ -191,6 +191,11 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     weights.clear(); // free memory while waiting for GC
   }
 
+  @Override
+  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+    throw new IOException("training with multiple fields not supported by boolean perceptron classifier");
+  }
+
   private TermsEnum updateWeights(AtomicReader atomicReader, TermsEnum reuse,
       int docId, Boolean assignedClass, SortedMap<String,Double> weights,
       double modifier, boolean updateFST) throws IOException {
