@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -48,11 +49,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,21 +154,31 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Replication for recovery failed.");
     }
-
-      // solrcloud_debug
-//      try {
-//        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-//        SolrIndexSearcher searcher = searchHolder.get();
-//        try {
-//          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
-//              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
-//        } finally {
-//          searchHolder.decref();
-//        }
-//      } catch (Exception e) {
-//        
-//      }
     
+    // solrcloud_debug
+    if (Boolean.getBoolean("solr.cloud.debug")) {
+      try {
+        RefCounted<SolrIndexSearcher> searchHolder = core
+            .getNewestSearcher(false);
+        SolrIndexSearcher searcher = searchHolder.get();
+        try {
+          System.err.println(core.getCoreDescriptor().getCoreContainer()
+              .getZkController().getNodeName()
+              + " replicated "
+              + searcher.search(new MatchAllDocsQuery(), 1).totalHits
+              + " from "
+              + leaderUrl
+              + " gen:"
+              + core.getDeletionPolicy().getLatestCommit().getGeneration()
+              + " data:" + core.getDataDir());
+        } finally {
+          searchHolder.decref();
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+      }
+    }
+
   }
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException,
@@ -374,20 +387,23 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             log.info("PeerSync Recovery was successful - registering as Active. core=" + coreName);
 
             // solrcloud_debug
-            // try {
-            // RefCounted<SolrIndexSearcher> searchHolder =
-            // core.getNewestSearcher(false);
-            // SolrIndexSearcher searcher = searchHolder.get();
-            // try {
-            // System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
-            // + " synched "
-            // + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-            // } finally {
-            // searchHolder.decref();
-            // }
-            // } catch (Exception e) {
-            //
-            // }
+            if (Boolean.getBoolean("solr.cloud.debug")) {
+              try {
+                RefCounted<SolrIndexSearcher> searchHolder = core
+                    .getNewestSearcher(false);
+                SolrIndexSearcher searcher = searchHolder.get();
+                try {
+                  System.out.println(core.getCoreDescriptor()
+                      .getCoreContainer().getZkController().getNodeName()
+                      + " synched "
+                      + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+                } finally {
+                  searchHolder.decref();
+                }
+              } catch (Exception e) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+              }
+            }
 
             // sync success - register as active and return
             zkController.publish(core.getCoreDescriptor(),
@@ -410,7 +426,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
           replicate(zkController.getNodeName(), core, leaderprops);
 
-          replay(ulog);
+          replay(core);
           replayed = true;
 
           log.info("Replication Recovery was successful - registering as Active. core=" + coreName);
@@ -500,11 +516,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
     log.info("Finished recovery process. core=" + coreName);
 
+    
   }
 
-  private Future<RecoveryInfo> replay(UpdateLog ulog)
+  private Future<RecoveryInfo> replay(SolrCore core)
       throws InterruptedException, ExecutionException {
-    Future<RecoveryInfo> future = ulog.applyBufferedUpdates();
+    Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
     if (future == null) {
       // no replay needed\
       log.info("No replay needed. core=" + coreName);
@@ -519,18 +536,23 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
     
     // solrcloud_debug
-//    try {
-//      RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-//      SolrIndexSearcher searcher = searchHolder.get();
-//      try {
-//        System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
-//            + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-//      } finally {
-//        searchHolder.decref();
-//      }
-//    } catch (Exception e) {
-//      
-//    }
+    if (Boolean.getBoolean("solr.cloud.debug")) {
+      try {
+        RefCounted<SolrIndexSearcher> searchHolder = core
+            .getNewestSearcher(false);
+        SolrIndexSearcher searcher = searchHolder.get();
+        try {
+          System.out.println(core.getCoreDescriptor().getCoreContainer()
+              .getZkController().getNodeName()
+              + " replayed "
+              + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+        } finally {
+          searchHolder.decref();
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+      }
+    }
     
     return future;
   }
