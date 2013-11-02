@@ -69,42 +69,38 @@ public class SolrCmdDistributor {
     
     List<Error> errors = new ArrayList<Error>(this.errors);
     errors.addAll(servers.getErrors());
-    allErrors.addAll(errors);
+
     boolean blockUntilFinishedAgain = false;
     for (Error err : errors) {
-      try {
-        String oldNodeUrl = err.req.node.getUrl();
-        
-        // if there is a retry url, we want to retry...
-        boolean isRetry = err.req.node.checkRetry();
-        boolean doRetry = false;
-        int rspCode = err.statusCode;
-        
-        if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
-            err.e);
-        
-        // this can happen in certain situations such as shutdown
-        if (isRetry) {
-          if (rspCode == 404 || rspCode == 403 || rspCode == 503
-              || rspCode == 500) {
-            doRetry = true;
-          }
-          
-          // if its an ioexception, lets try again
-          if (err.e instanceof IOException) {
-            doRetry = true;
-          } else if (err.e instanceof SolrServerException) {
-            if (((SolrServerException) err.e).getRootCause() instanceof IOException) {
-              doRetry = true;
-            }
-          }
+      String oldNodeUrl = err.req.node.getUrl();
+      
+      // if there is a retry url, we want to retry...
+      boolean isRetry = err.req.node.checkRetry();
+      boolean doRetry = false;
+      int rspCode = err.statusCode;
+      
+      if (testing_errorHook != null) Diagnostics.call(testing_errorHook, err.e);
+      
+      // this can happen in certain situations such as shutdown
+      if (isRetry) {
+        if (rspCode == 404 || rspCode == 403 || rspCode == 503
+            || rspCode == 500) {
+          doRetry = true;
         }
         
-        if (isRetry && err.req.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
+        // if its an ioexception, lets try again
+        if (err.e instanceof IOException) {
+          doRetry = true;
+        } else if (err.e instanceof SolrServerException) {
+          if (((SolrServerException) err.e).getRootCause() instanceof IOException) {
+            doRetry = true;
+          }
+        }
+        if (err.req.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
           err.req.retries++;
           
           SolrException.log(SolrCmdDistributor.log, "forwarding update to "
-              + oldNodeUrl + " failed - retrying ... ");
+              + oldNodeUrl + " failed - retrying ... retries: " + err.req.retries);
           try {
             Thread.sleep(500);
           } catch (InterruptedException e) {
@@ -114,9 +110,11 @@ public class SolrCmdDistributor {
           
           submit(err.req);
           blockUntilFinishedAgain = true;
+        } else {
+          allErrors.add(err);
         }
-      } catch (Exception e) {
-        SolrException.log(log, "Retry attempt failed", e);
+      } else {
+        allErrors.add(err);
       }
     }
     
