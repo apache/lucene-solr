@@ -334,6 +334,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     @Override
     public void safeStop() {
       stop = true;
+      suss.blockUntilFinished();
       suss.shutdownNow();
       httpClient.getConnectionManager().shutdown();
     }
