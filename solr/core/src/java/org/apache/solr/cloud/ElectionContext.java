@@ -1,5 +1,9 @@
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -11,15 +15,14 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -223,20 +226,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       // solrcloud_debug
-      // try {
-      // RefCounted<SolrIndexSearcher> searchHolder =
-      // core.getNewestSearcher(false);
-      // SolrIndexSearcher searcher = searchHolder.get();
-      // try {
-      // System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
-      // + " synched "
-      // + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-      // } finally {
-      // searchHolder.decref();
-      // }
-      // } catch (Exception e) {
-      //
-      // }
+      if (Boolean.getBoolean("solr.cloud.debug")) {
+        try {
+          RefCounted<SolrIndexSearcher> searchHolder = core
+              .getNewestSearcher(false);
+          SolrIndexSearcher searcher = searchHolder.get();
+          try {
+            System.err.println(core.getCoreDescriptor().getCoreContainer()
+                .getZkController().getNodeName()
+                + " synched "
+                + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+          } finally {
+            searchHolder.decref();
+          }
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+        }
+      }
       if (!success) {
         rejoinLeaderElection(leaderSeqPath, core);
         return;
