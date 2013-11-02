@@ -727,7 +727,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             boolean seen = false;
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletes".equals(trace[i].getMethodName())) {
+              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
                 seen = true;
                 break;
               }
@@ -745,7 +745,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           if (!failed) {
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletes".equals(trace[i].getMethodName())) {
+              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
                 if (VERBOSE) {
                   System.out.println("TEST: mock failure: saw applyDeletes");
                   new Throwable().printStackTrace(System.out);

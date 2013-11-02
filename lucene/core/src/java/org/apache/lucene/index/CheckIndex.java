@@ -389,7 +389,7 @@ public class CheckIndex {
     String oldSegs = null;
     boolean foundNonNullVersion = false;
     Comparator<String> versionComparator = StringHelper.getVersionComparator();
-    for (SegmentInfoPerCommit si : sis) {
+    for (SegmentCommitInfo si : sis) {
       String version = si.info.getVersion();
       if (version == null) {
         // pre-3.1 segment
@@ -483,7 +483,7 @@ public class CheckIndex {
     result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfoPerCommit info = sis.info(i);
+      final SegmentCommitInfo info = sis.info(i);
       int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;

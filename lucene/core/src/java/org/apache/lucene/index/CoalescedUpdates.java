@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
+import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
 import org.apache.lucene.util.MergedIterator;
 
-class CoalescedDeletes {
+class CoalescedUpdates {
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Iterable<Term>> iterables = new ArrayList<Iterable<Term>>();
   final List<NumericUpdate> numericDVUpdates = new ArrayList<NumericUpdate>();
@@ -35,15 +35,15 @@ class CoalescedDeletes {
   @Override
   public String toString() {
     // note: we could add/collect more debugging information
-    return "CoalescedDeletes(termSets=" + iterables.size() + ",queries=" + queries.size() + ",numericUpdates=" + numericDVUpdates.size() + ")";
+    return "CoalescedUpdates(termSets=" + iterables.size() + ",queries=" + queries.size() + ",numericUpdates=" + numericDVUpdates.size() + ")";
   }
 
-  void update(FrozenBufferedDeletes in) {
+  void update(FrozenBufferedUpdates in) {
     iterables.add(in.termsIterable());
 
     for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {
       final Query query = in.queries[queryIdx];
-      queries.put(query, BufferedDeletes.MAX_INT);
+      queries.put(query, BufferedUpdates.MAX_INT);
     }
     
     for (NumericUpdate nu : in.updates) {

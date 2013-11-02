@@ -38,7 +38,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 // instance on DocumentWriterPerThread, or via sync'd code by
 // DocumentsWriterDeleteQueue
 
-class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
+class BufferedUpdates {
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
      load factor (say 2 * POINTER).  Entry is object w/ Term
@@ -116,7 +116,7 @@ class BufferedDeletes { // TODO (DVU_RENAME) BufferedUpdates?
 
   long gen;
   
-  public BufferedDeletes() {
+  public BufferedUpdates() {
     this.bytesUsed = new AtomicLong();
   }
 

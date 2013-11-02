@@ -90,9 +90,9 @@ final class StandardDirectoryReader extends DirectoryReader {
         // segmentInfos here, so that we are passing the
         // actual instance of SegmentInfoPerCommit in
         // IndexWriter's segmentInfos:
-        final SegmentInfoPerCommit info = infos.info(i);
+        final SegmentCommitInfo info = infos.info(i);
         assert info.info.dir == dir;
-        final ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
+        final ReadersAndUpdates rld = writer.readerPool.get(info, true);
         try {
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
           if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {

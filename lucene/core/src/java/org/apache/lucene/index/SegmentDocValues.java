@@ -37,7 +37,7 @@ final class SegmentDocValues {
 
   private final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<Long,RefCount<DocValuesProducer>>();
 
-  private RefCount<DocValuesProducer> newDocValuesProducer(SegmentInfoPerCommit si, IOContext context, Directory dir,
+  private RefCount<DocValuesProducer> newDocValuesProducer(SegmentCommitInfo si, IOContext context, Directory dir,
       DocValuesFormat dvFormat, final Long gen, List<FieldInfo> infos) throws IOException {
     Directory dvDir = dir;
     String segmentSuffix = "";
@@ -61,7 +61,7 @@ final class SegmentDocValues {
   }
 
   /** Returns the {@link DocValuesProducer} for the given generation. */
-  synchronized DocValuesProducer getDocValuesProducer(long gen, SegmentInfoPerCommit si, IOContext context, Directory dir, 
+  synchronized DocValuesProducer getDocValuesProducer(long gen, SegmentCommitInfo si, IOContext context, Directory dir, 
       DocValuesFormat dvFormat, List<FieldInfo> infos) throws IOException {
     RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
     if (dvp == null) {

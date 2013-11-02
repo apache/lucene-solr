@@ -71,7 +71,7 @@ public final class RandomMergePolicy extends MergePolicy {
   }
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, 
                                              int maxSegmentCount, 
-                                             Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) 
+                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge) 
     throws IOException {
     
     return inner.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge);
@@ -89,7 +89,7 @@ public final class RandomMergePolicy extends MergePolicy {
   }
 
   public boolean useCompoundFile(SegmentInfos infos,
-                                 SegmentInfoPerCommit mergedInfo)
+                                 SegmentCommitInfo mergedInfo)
     throws IOException {
     
     return inner.useCompoundFile(infos, mergedInfo);

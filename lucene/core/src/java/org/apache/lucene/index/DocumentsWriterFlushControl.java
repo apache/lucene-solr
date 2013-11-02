@@ -68,10 +68,10 @@ final class DocumentsWriterFlushControl  {
   private boolean closed = false;
   private final DocumentsWriter documentsWriter;
   private final LiveIndexWriterConfig config;
-  private final BufferedDeletesStream bufferedDeletesStream;
+  private final BufferedUpdatesStream bufferedUpdatesStream;
   private final InfoStream infoStream;
 
-  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedDeletesStream bufferedDeletesStream) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream) {
     this.infoStream = config.getInfoStream();
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
@@ -79,7 +79,7 @@ final class DocumentsWriterFlushControl  {
     this.config = config;
     this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
-    this.bufferedDeletesStream = bufferedDeletesStream;
+    this.bufferedUpdatesStream = bufferedUpdatesStream;
   }
 
   public synchronized long activeBytes() {
@@ -418,11 +418,11 @@ final class DocumentsWriterFlushControl  {
    * Returns the number of delete terms in the global pool
    */
   public int getNumGlobalTermDeletes() {
-    return documentsWriter.deleteQueue.numGlobalTermDeletes() + bufferedDeletesStream.numTerms();
+    return documentsWriter.deleteQueue.numGlobalTermDeletes() + bufferedUpdatesStream.numTerms();
   }
   
   public long getDeleteBytesUsed() {
-    return documentsWriter.deleteQueue.bytesUsed() + bufferedDeletesStream.bytesUsed();
+    return documentsWriter.deleteQueue.bytesUsed() + bufferedUpdatesStream.bytesUsed();
   }
 
   synchronized int numFlushingDWPT() {

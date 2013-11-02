@@ -23,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
+import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -34,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * structure to hold them. We don't hold docIDs because these are applied on
  * flush.
  */
-class FrozenBufferedDeletes { // TODO (DVU_RENAME) FrozenBufferedUpdates?
+class FrozenBufferedUpdates {
 
   /* Query we often undercount (say 24 bytes), plus int. */
   final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + 24;
@@ -58,7 +58,7 @@ class FrozenBufferedDeletes { // TODO (DVU_RENAME) FrozenBufferedUpdates?
                                    // only have Queries 
 
 
-  public FrozenBufferedDeletes(BufferedDeletes deletes, boolean isSegmentPrivate) {
+  public FrozenBufferedUpdates(BufferedUpdates deletes, boolean isSegmentPrivate) {
     this.isSegmentPrivate = isSegmentPrivate;
     assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries"; 
     Term termsArray[] = deletes.terms.keySet().toArray(new Term[deletes.terms.size()]);

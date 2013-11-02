@@ -46,7 +46,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
  */
 public final class SegmentReader extends AtomicReader {
 
-  private final SegmentInfoPerCommit si;
+  private final SegmentCommitInfo si;
   private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
@@ -83,7 +83,7 @@ public final class SegmentReader extends AtomicReader {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentInfoPerCommit si, IOContext context) throws IOException {
+  public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
     // TODO if the segment uses CFS, we may open the CFS file twice: once for
     // reading the FieldInfos (if they are not gen'd) and second time by
@@ -127,7 +127,7 @@ public final class SegmentReader extends AtomicReader {
   /** Create new SegmentReader sharing core from a previous
    *  SegmentReader and loading new live docs from a new
    *  deletes file.  Used by openIfChanged. */
-  SegmentReader(SegmentInfoPerCommit si, SegmentReader sr) throws IOException {
+  SegmentReader(SegmentCommitInfo si, SegmentReader sr) throws IOException {
     this(si, sr,
          si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE),
          si.info.getDocCount() - si.getDelCount());
@@ -137,7 +137,7 @@ public final class SegmentReader extends AtomicReader {
    *  SegmentReader and using the provided in-memory
    *  liveDocs.  Used by IndexWriter to provide a new NRT
    *  reader */
-  SegmentReader(SegmentInfoPerCommit si, SegmentReader sr, Bits liveDocs, int numDocs) throws IOException {
+  SegmentReader(SegmentCommitInfo si, SegmentReader sr, Bits liveDocs, int numDocs) throws IOException {
     this.si = si;
     this.liveDocs = liveDocs;
     this.numDocs = numDocs;
@@ -193,7 +193,7 @@ public final class SegmentReader extends AtomicReader {
    * 
    * @lucene.internal
    */
-  static FieldInfos readFieldInfos(SegmentInfoPerCommit info) throws IOException {
+  static FieldInfos readFieldInfos(SegmentCommitInfo info) throws IOException {
     final Directory dir;
     final boolean closeDir;
     if (info.getFieldInfosGen() == -1 && info.info.getUseCompoundFile()) {
@@ -335,7 +335,7 @@ public final class SegmentReader extends AtomicReader {
   /**
    * Return the SegmentInfoPerCommit of the segment this reader is reading.
    */
-  public SegmentInfoPerCommit getSegmentInfo() {
+  public SegmentCommitInfo getSegmentInfo() {
     return si;
   }
 

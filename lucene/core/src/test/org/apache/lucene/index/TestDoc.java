@@ -129,20 +129,20 @@ public class TestDoc extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(10))
       );
 
-      SegmentInfoPerCommit si1 = indexDoc(writer, "test.txt");
+      SegmentCommitInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
 
-      SegmentInfoPerCommit si2 = indexDoc(writer, "test2.txt");
+      SegmentCommitInfo si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
       writer.close();
 
-      SegmentInfoPerCommit siMerge = merge(directory, si1, si2, "_merge", false);
+      SegmentCommitInfo siMerge = merge(directory, si1, si2, "_merge", false);
       printSegment(out, siMerge);
 
-      SegmentInfoPerCommit siMerge2 = merge(directory, si1, si2, "_merge2", false);
+      SegmentCommitInfo siMerge2 = merge(directory, si1, si2, "_merge2", false);
       printSegment(out, siMerge2);
 
-      SegmentInfoPerCommit siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", false);
+      SegmentCommitInfo siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", false);
       printSegment(out, siMerge3);
       
       directory.close();
@@ -195,7 +195,7 @@ public class TestDoc extends LuceneTestCase {
       assertEquals(multiFileOutput, singleFileOutput);
    }
 
-   private SegmentInfoPerCommit indexDoc(IndexWriter writer, String fileName)
+   private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
    throws Exception
    {
       File file = new File(workDir, fileName);
@@ -209,7 +209,7 @@ public class TestDoc extends LuceneTestCase {
    }
 
 
-   private SegmentInfoPerCommit merge(Directory dir, SegmentInfoPerCommit si1, SegmentInfoPerCommit si2, String merged, boolean useCompoundFile)
+   private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
       IOContext context = newIOContext(random());
       SegmentReader r1 = new SegmentReader(si1, context);
@@ -239,11 +239,11 @@ public class TestDoc extends LuceneTestCase {
         }
       }
 
-      return new SegmentInfoPerCommit(info, 0, -1L, -1L);
+      return new SegmentCommitInfo(info, 0, -1L, -1L);
    }
 
 
-   private void printSegment(PrintWriter out, SegmentInfoPerCommit si)
+   private void printSegment(PrintWriter out, SegmentCommitInfo si)
    throws Exception {
       SegmentReader reader = new SegmentReader(si, newIOContext(random()));
 

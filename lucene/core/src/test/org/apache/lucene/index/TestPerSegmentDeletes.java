@@ -74,12 +74,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // flushing without applying deletes means
     // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedDeletesStream.any());
+    assertTrue(writer.bufferedUpdatesStream.any());
 
     // get reader flushes pending deletes
     // so there should not be anymore
     IndexReader r1 = writer.getReader();
-    assertFalse(writer.bufferedDeletesStream.any());
+    assertFalse(writer.bufferedUpdatesStream.any());
     r1.close();
 
     // delete id:2 from the first segment
@@ -208,8 +208,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     //System.out.println("segdels4:" + writer.docWriter.deletesToString());
   }
 
-  boolean segThere(SegmentInfoPerCommit info, SegmentInfos infos) {
-    for (SegmentInfoPerCommit si : infos) {
+  boolean segThere(SegmentCommitInfo info, SegmentInfos infos) {
+    for (SegmentCommitInfo si : infos) {
       if (si.info.name.equals(info.info.name)) return true;
     }
     return false;
@@ -272,7 +272,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-        int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
+        int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
         throws IOException {
       return null;
     }
@@ -284,7 +284,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) {
+    public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) {
       return useCompoundFile;
     }
   }

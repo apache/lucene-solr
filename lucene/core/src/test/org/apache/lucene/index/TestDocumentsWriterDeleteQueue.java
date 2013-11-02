@@ -43,8 +43,8 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
-    BufferedDeletes bd1 = new BufferedDeletes();
-    BufferedDeletes bd2 = new BufferedDeletes();
+    BufferedUpdates bd1 = new BufferedUpdates();
+    BufferedUpdates bd2 = new BufferedUpdates();
     int last1 = 0;
     int last2 = 0;
     Set<Term> uniqueValues = new HashSet<Term>();
@@ -83,7 +83,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         .numGlobalTermDeletes());
   }
 
-  private void assertAllBetween(int start, int end, BufferedDeletes deletes,
+  private void assertAllBetween(int start, int end, BufferedUpdates deletes,
       Integer[] ids) {
     for (int i = start; i <= end; i++) {
       assertEquals(Integer.valueOf(end), deletes.terms.get(new Term("id",
@@ -134,8 +134,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       }
       assertTrue(queue.anyChanges());
       if (random().nextInt(5) == 0) {
-        FrozenBufferedDeletes freezeGlobalBuffer = queue
-            .freezeGlobalBuffer(null);
+        FrozenBufferedUpdates freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
         assertEquals(termsSinceFreeze, freezeGlobalBuffer.termCount);
         assertEquals(queriesSinceFreeze, freezeGlobalBuffer.queries.length);
         queriesSinceFreeze = 0;
@@ -166,7 +165,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     assertTrue("changes in del queue but not in slice yet", queue.anyChanges());
     queue.tryApplyGlobalSlice();
     assertTrue("changes in global buffer", queue.anyChanges());
-    FrozenBufferedDeletes freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
+    FrozenBufferedUpdates freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
     assertTrue(freezeGlobalBuffer.any());
     assertEquals(1, freezeGlobalBuffer.termCount);
     assertFalse("all changes applied", queue.anyChanges());
@@ -197,8 +196,8 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     for (UpdateThread updateThread : threads) {
       DeleteSlice slice = updateThread.slice;
       queue.updateSlice(slice);
-      BufferedDeletes deletes = updateThread.deletes;
-      slice.apply(deletes, BufferedDeletes.MAX_INT);
+      BufferedUpdates deletes = updateThread.deletes;
+      slice.apply(deletes, BufferedUpdates.MAX_INT);
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
@@ -220,7 +219,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     final AtomicInteger index;
     final Integer[] ids;
     final DeleteSlice slice;
-    final BufferedDeletes deletes;
+    final BufferedUpdates deletes;
     final CountDownLatch latch;
 
     protected UpdateThread(DocumentsWriterDeleteQueue queue,
@@ -229,7 +228,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       this.index = index;
       this.ids = ids;
       this.slice = queue.newSlice();
-      deletes = new BufferedDeletes();
+      deletes = new BufferedUpdates();
       this.latch = latch;
     }
 
@@ -245,7 +244,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         Term term = new Term("id", ids[i].toString());
         queue.add(term, slice);
         assertTrue(slice.isTailItem(term));
-        slice.apply(deletes, BufferedDeletes.MAX_INT);
+        slice.apply(deletes, BufferedUpdates.MAX_INT);
       }
     }
   }

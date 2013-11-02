@@ -32,7 +32,7 @@ import org.apache.lucene.store.Directory;
  *  fields.
  *
  *  @lucene.experimental */
-public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
+public class SegmentCommitInfo {
   
   /** The {@link SegmentInfo} that we wrap. */
   public final SegmentInfo info;
@@ -72,7 +72,7 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
    * @param fieldInfosGen
    *          FieldInfos generation number (used to name field-infos files)
    **/
-  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long fieldInfosGen) {
+  public SegmentCommitInfo(SegmentInfo info, int delCount, long delGen, long fieldInfosGen) {
     this.info = info;
     this.delCount = delCount;
     this.delGen = delGen;
@@ -246,8 +246,8 @@ public class SegmentInfoPerCommit { // TODO (DVU_RENAME) to SegmentCommitInfo
   }
 
   @Override
-  public SegmentInfoPerCommit clone() {
-    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen, fieldInfosGen);
+  public SegmentCommitInfo clone() {
+    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to

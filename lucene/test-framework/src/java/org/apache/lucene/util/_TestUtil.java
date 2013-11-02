@@ -77,7 +77,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;

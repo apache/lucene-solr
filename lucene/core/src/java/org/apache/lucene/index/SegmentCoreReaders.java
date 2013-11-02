@@ -85,7 +85,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
