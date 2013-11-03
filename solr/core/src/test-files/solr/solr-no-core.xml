@@ -32,7 +32,7 @@
 
   <shardHandlerFactory name="shardHandlerFactory"
     class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:240000}</int>
+    <int name="socketTimeout">${socketTimeout:90000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>
 
