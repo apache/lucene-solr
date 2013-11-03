@@ -92,11 +92,7 @@ public class SyncStrategy {
       return false;
     }
     log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
-    // TODO: look at our state usage of sync
-    // zkController.publish(core, ZkStateReader.SYNC);
-    
-    // solrcloud_debug
-    // System.out.println("SYNC UP");
+
     if (core.getUpdateHandler().getUpdateLog() == null) {
       log.error("No UpdateLog found - cannot sync");
       return false;
