@@ -25,11 +25,26 @@
 
   <import file="../module-build.xml"/>
 
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <pathelement path="${queries.jar}"/>
+  </path>
+
+  <target name="compile-core" depends="jar-queries,common.compile-core" />
+
+  <target name="javadocs" depends="javadocs-queries,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../queries"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
   <target name="run-encoding-benchmark" depends="compile-test">
     <java classname="org.apache.lucene.util.encoding.EncodingSpeed" fork="true" failonerror="true">
       <classpath refid="test.classpath" />
       <classpath path="${build.dir}/classes/test" />
     </java>
   </target>
-	
+
 </project>
