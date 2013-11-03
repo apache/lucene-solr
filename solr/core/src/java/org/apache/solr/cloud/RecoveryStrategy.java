@@ -156,13 +156,13 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
     
     // solrcloud_debug
-    if (Boolean.getBoolean("solr.cloud.debug")) {
+    if (log.isDebugEnabled()) {
       try {
         RefCounted<SolrIndexSearcher> searchHolder = core
             .getNewestSearcher(false);
         SolrIndexSearcher searcher = searchHolder.get();
         try {
-          System.err.println(core.getCoreDescriptor().getCoreContainer()
+          log.debug(core.getCoreDescriptor().getCoreContainer()
               .getZkController().getNodeName()
               + " replicated "
               + searcher.search(new MatchAllDocsQuery(), 1).totalHits
@@ -387,13 +387,13 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             log.info("PeerSync Recovery was successful - registering as Active. core=" + coreName);
 
             // solrcloud_debug
-            if (Boolean.getBoolean("solr.cloud.debug")) {
+            if (log.isDebugEnabled()) {
               try {
                 RefCounted<SolrIndexSearcher> searchHolder = core
                     .getNewestSearcher(false);
                 SolrIndexSearcher searcher = searchHolder.get();
                 try {
-                  System.err.println(core.getCoreDescriptor()
+                  log.debug(core.getCoreDescriptor()
                       .getCoreContainer().getZkController().getNodeName()
                       + " synched "
                       + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -536,13 +536,13 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
     
     // solrcloud_debug
-    if (Boolean.getBoolean("solr.cloud.debug")) {
+    if (log.isDebugEnabled()) {
       try {
         RefCounted<SolrIndexSearcher> searchHolder = core
             .getNewestSearcher(false);
         SolrIndexSearcher searcher = searchHolder.get();
         try {
-          System.err.println(core.getCoreDescriptor().getCoreContainer()
+          log.debug(core.getCoreDescriptor().getCoreContainer()
               .getZkController().getNodeName()
               + " replayed "
               + searcher.search(new MatchAllDocsQuery(), 1).totalHits);

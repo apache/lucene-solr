@@ -796,13 +796,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props));
         // solrcloud_debug
-        if (Boolean.getBoolean("solr.cloud.debug")) {
+        if (log.isDebugEnabled()) {
           try {
             RefCounted<SolrIndexSearcher> searchHolder = core
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              System.err.println(core.getCoreDescriptor().getCoreContainer()
+              log.debug(core.getCoreDescriptor().getCoreContainer()
                   .getZkController().getNodeName()
                   + " synched "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -915,7 +915,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
         
         // solrcloud_debug
-        if (Boolean.getBoolean("solr.cloud.debug")) {
+        if (log.isDebugEnabled()) {
           try {
             ;
             LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
@@ -927,7 +927,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              System.err.println(core.getCoreDescriptor().getCoreContainer()
+              log.debug(core.getCoreDescriptor().getCoreContainer()
                   .getZkController().getNodeName()
                   + " to replicate "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits

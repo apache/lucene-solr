@@ -226,13 +226,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       // solrcloud_debug
-      if (Boolean.getBoolean("solr.cloud.debug")) {
+      if (log.isDebugEnabled()) {
         try {
           RefCounted<SolrIndexSearcher> searchHolder = core
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            System.err.println(core.getCoreDescriptor().getCoreContainer()
+            log.debug(core.getCoreDescriptor().getCoreContainer()
                 .getZkController().getNodeName()
                 + " synched "
                 + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
