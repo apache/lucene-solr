@@ -56,8 +56,9 @@ public class ChaosMonkey {
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
-  private static final boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", "true"));
-  private static final boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", "true"));
+  private static final Boolean MONKEY_ENABLED = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.enabled", "true"));
+  private static final Boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", null));
+  private static final Boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", null));
   
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
@@ -85,10 +86,25 @@ public class ChaosMonkey {
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
-    Random random = LuceneTestCase.random();
-    expireSessions = EXP; //= random.nextBoolean();
     
-    causeConnectionLoss = CONN_LOSS;//= random.nextBoolean();
+    if (!MONKEY_ENABLED) {
+      monkeyLog("The Monkey is Disabled and will not run");
+      return;
+    }
+    
+    Random random = LuceneTestCase.random();
+    if (EXP != null) {
+      expireSessions = EXP; 
+    } else {
+      expireSessions = random.nextBoolean();
+    }
+    if (CONN_LOSS != null) {
+      causeConnectionLoss = CONN_LOSS;
+    } else {
+      causeConnectionLoss = random.nextBoolean();
+    }
+    
+    
     monkeyLog("init - expire sessions:" + expireSessions
         + " cause connection loss:" + causeConnectionLoss);
   }
@@ -420,6 +436,10 @@ public class ChaosMonkey {
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders, final int roundPauseUpperLimit) {
+    if (!MONKEY_ENABLED) {
+      monkeyLog("The Monkey is disabled and will not start");
+      return;
+    }
     monkeyLog("starting");
     this.aggressivelyKillLeaders = killLeaders;
     startTime = System.currentTimeMillis();
