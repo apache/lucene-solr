@@ -36,6 +36,14 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  */
 public abstract class Sorter {
 
+  /** A comparator that keeps documents in index order. */
+  public static final DocComparator INDEX_ORDER_COMPARATOR = new DocComparator() {
+    @Override
+    public int compare(int docID1, int docID2) {
+      return docID1 - docID2;
+    }
+  };
+
   /**
    * A permutation of doc IDs. For every document ID between <tt>0</tt> and
    * {@link IndexReader#maxDoc()}, <code>oldToNew(newToOld(docID))</code> must
