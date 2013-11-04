@@ -6,6 +6,7 @@ import org.apache.lucene.facet.collections.ObjectToIntMap;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -26,6 +27,8 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+// We require sorted set DVs:
+@SuppressCodecs({"Lucene40", "Lucene41", "Appending", "Lucene3x"})
 public class TestSimpleSortedSetFacetsExample extends LuceneTestCase {
 
   private static final ObjectToIntMap<CategoryPath> expectedCounts = new ObjectToIntMap<CategoryPath>();
@@ -56,7 +59,6 @@ public class TestSimpleSortedSetFacetsExample extends LuceneTestCase {
   
   @Test
   public void testSimple() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     List<FacetResult> facetResults = new SimpleSortedSetFacetsExample().runSearch();
     assertEquals(2, facetResults.size());
     assertExpectedCounts(facetResults, expectedCounts);
@@ -64,7 +66,6 @@ public class TestSimpleSortedSetFacetsExample extends LuceneTestCase {
 
   @Test
   public void testDrillDown() throws Exception {
-    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     List<FacetResult> facetResults = new SimpleSortedSetFacetsExample().runDrillDown();
     assertEquals(1, facetResults.size());
     assertExpectedCounts(facetResults, expectedCountsDrillDown);
