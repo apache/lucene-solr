@@ -6,6 +6,7 @@ import java.util.Locale;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Test;
 
 /*
@@ -25,6 +26,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class TestExpressionAggregationFacetsExample extends LuceneTestCase {
 
   private static String toSimpleString(FacetResult fr) {
