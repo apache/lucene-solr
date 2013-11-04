@@ -31,6 +31,7 @@ import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -218,6 +219,12 @@ public class TSTLookup extends Lookup {
       IOUtils.close(in);
     }
     return true;
+  }
+
+  /** Returns byte size of the underlying TST */
+  @Override
+  public long sizeInBytes() {
+    return RamUsageEstimator.sizeOf(autocomplete);
   }
   
 }

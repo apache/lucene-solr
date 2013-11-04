@@ -287,4 +287,10 @@ public class WFSTCompletionLookup extends Lookup {
       return left.compareTo(right);
     }  
   };
+
+  /** Returns byte size of the underlying FST. */
+  @Override
+  public long sizeInBytes() {
+    return (fst == null) ? 0 : fst.sizeInBytes();
+  }
 }

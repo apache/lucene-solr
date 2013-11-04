@@ -72,6 +72,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
 
 // TODO:
@@ -598,5 +599,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       dir.close();
       dir = null;
     }
+  }
+
+  @Override
+  public long sizeInBytes() {
+    return RamUsageEstimator.sizeOf(this);
   }
 };

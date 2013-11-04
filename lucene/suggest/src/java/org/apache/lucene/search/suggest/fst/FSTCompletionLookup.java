@@ -288,4 +288,9 @@ public class FSTCompletionLookup extends Lookup {
     }
     return true;
   }
+
+  @Override
+  public long sizeInBytes() {
+    return RamUsageEstimator.sizeOf(this);
+  }
 }
