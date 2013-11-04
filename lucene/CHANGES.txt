@@ -81,6 +81,9 @@ New Features
   a ValueSource, such as a NumericDocValuesField or an expression.
   (Shai Erera)
 
+* LUCENE-5323: Add .sizeInBytes method to all suggesters (Lookup).
+  (Areek Zillur via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead

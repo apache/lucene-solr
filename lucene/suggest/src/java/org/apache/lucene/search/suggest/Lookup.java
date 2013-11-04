@@ -201,4 +201,9 @@ public abstract class Lookup {
    */
   public abstract boolean load(InputStream input) throws IOException;
   
+  /**
+   * Get the size of the underlying lookup implementation in memory
+   * @return ram size of the lookup implementation in bytes
+   */
+  public abstract long sizeInBytes();
 }

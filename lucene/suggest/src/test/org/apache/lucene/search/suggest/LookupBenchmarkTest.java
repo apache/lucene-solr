@@ -144,15 +144,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     System.err.println("-- RAM consumption");
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       Lookup lookup = buildLookup(cls, dictionaryInput);
-      long sizeInBytes;
-      if (lookup instanceof AnalyzingSuggester) {
-        // Just get size of FST: else we are also measuring
-        // size of MockAnalyzer which is non-trivial and
-        // varies depending on test seed:
-        sizeInBytes = ((AnalyzingSuggester) lookup).sizeInBytes();
-      } else {
-        sizeInBytes = RamUsageEstimator.sizeOf(lookup);
-      }
+      long sizeInBytes = lookup.sizeInBytes();
       System.err.println(
           String.format(Locale.ROOT, "%-15s size[B]:%,13d",
               lookup.getClass().getSimpleName(), 

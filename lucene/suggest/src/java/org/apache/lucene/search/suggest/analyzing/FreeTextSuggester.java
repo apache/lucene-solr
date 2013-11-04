@@ -198,7 +198,8 @@ public class FreeTextSuggester extends Lookup {
     this.separator = separator;
   }
 
-  /** Returns byte size of the underlying FST. */
+  /** Returns byte size of the underlying FST. */ 
+  @Override
   public long sizeInBytes() {
     if (fst == null) {
       return 0;
