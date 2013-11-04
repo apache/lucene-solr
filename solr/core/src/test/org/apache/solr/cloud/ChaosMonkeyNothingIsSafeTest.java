@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -38,10 +37,15 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 @Slow
+@ThreadLeakLingering(linger = 60000)
+@Ignore
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
