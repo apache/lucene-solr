@@ -142,6 +142,10 @@ New Features
 * LUCENE-5323: Add .sizeInBytes method to all suggesters (Lookup).
   (Areek Zillur via Mike McCandless)
 
+* LUCENE-5312: Add BlockJoinSorter, a new Sorter implementation that makes sure
+  to never split up blocks of documents indexed with IndexWriter.addDocuments.
+  (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
