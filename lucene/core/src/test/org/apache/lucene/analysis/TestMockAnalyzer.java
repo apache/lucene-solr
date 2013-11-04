@@ -324,17 +324,19 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     };
 
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
-    final boolean supportsOffsets = !(writer.w.getConfig().getCodec() instanceof Lucene3xCodec);
     final Document doc = new Document();
     final FieldType ft = new FieldType();
     ft.setIndexed(true);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     ft.setTokenized(true);
-    ft.setIndexOptions(supportsOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorPositions(true);
+    ft.setStoreTermVectorOffsets(true);
     doc.add(new Field("f", "a", ft));
     doc.add(new Field("f", "a", ft));
     writer.addDocument(doc, a);
     final AtomicReader reader = getOnlySegmentReader(writer.getReader());
-    final Fields fields = reader.fields();
+    final Fields fields = reader.getTermVectors(0);
     final Terms terms = fields.terms("f");
     final TermsEnum te = terms.iterator(null);
     assertEquals(new BytesRef("a"), te.next());
@@ -342,14 +344,10 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(0, dpe.nextDoc());
     assertEquals(2, dpe.freq());
     assertEquals(0, dpe.nextPosition());
-    if (supportsOffsets) {
-      assertEquals(0, dpe.startOffset());
-      final int endOffset = dpe.endOffset();
-      assertEquals(1 + positionGap, dpe.nextPosition());
-      assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
-    } else {
-      assertEquals(1 + positionGap, dpe.nextPosition());
-    }
+    assertEquals(0, dpe.startOffset());
+    final int endOffset = dpe.endOffset();
+    assertEquals(1 + positionGap, dpe.nextPosition());
+    assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
     assertEquals(null, te.next());
     reader.close();
     writer.close();
