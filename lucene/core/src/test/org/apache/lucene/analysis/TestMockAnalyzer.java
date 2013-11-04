@@ -1,19 +1,5 @@
 package org.apache.lucene.analysis;
 
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.Random;
-
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.RegExp;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,6 +16,32 @@ import org.apache.lucene.util.automaton.RegExp;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Random;
+
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
+
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
@@ -289,4 +301,53 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     
     checkOneTerm(a, "abc", "aabc");
   }
+
+  public void testChangeGaps() throws Exception {
+    // LUCENE-5324: check that it is possible to change the wrapper's gaps
+    final int positionGap = random().nextInt(1000);
+    final int offsetGap = random().nextInt(1000);
+    final Analyzer delegate = new MockAnalyzer(random());
+    final Analyzer a = new AnalyzerWrapper(delegate.getReuseStrategy()) {      
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        return delegate;
+      }
+      @Override
+      public int getPositionIncrementGap(String fieldName) {
+        return positionGap;
+      }
+      @Override
+      public int getOffsetGap(String fieldName) {
+        return offsetGap;
+      }
+    };
+
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
+    final Document doc = new Document();
+    final FieldType ft = new FieldType();
+    ft.setIndexed(true);
+    ft.setTokenized(true);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    doc.add(new Field("f", "a", ft));
+    doc.add(new Field("f", "a", ft));
+    writer.addDocument(doc, a);
+    final AtomicReader reader = getOnlySegmentReader(writer.getReader());
+    final Fields fields = reader.fields();
+    final Terms terms = fields.terms("f");
+    final TermsEnum te = terms.iterator(null);
+    assertEquals(new BytesRef("a"), te.next());
+    final DocsAndPositionsEnum dpe = te.docsAndPositions(null, null);
+    assertEquals(0, dpe.nextDoc());
+    assertEquals(2, dpe.freq());
+    assertEquals(0, dpe.nextPosition());
+    assertEquals(0, dpe.startOffset());
+    final int endOffset = dpe.endOffset();
+    assertEquals(1 + positionGap, dpe.nextPosition());
+    assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
+    assertEquals(null, te.next());
+    reader.close();
+    writer.close();
+    writer.w.getDirectory().close();
+  }
+
 }

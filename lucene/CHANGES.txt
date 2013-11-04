@@ -154,6 +154,9 @@ API Changes:
 * LUCENE-5321: Remove Facet42DocValuesFormat. Use DirectDocValuesFormat if you
   want to load the category list into memory. (Shai Erera, Mike McCandless)
 
+* LUCENE-5324: AnalyzerWrapper.getPositionIncrementGap and getOffsetGap can now
+  be overridden. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
