@@ -148,6 +148,9 @@ Bug Fixes
   work as intended for an alias spanning more than 1 collection. 
   (Thomas Egense, Shawn Heisey, Mark Miller)
 
+* SOLR-5418: Background merge after field removed from solr.xml causes error. 
+  (Reported on user's list, Robert M's patch via Erick Erickson)
+
 Optimizations
 ----------------------  
 

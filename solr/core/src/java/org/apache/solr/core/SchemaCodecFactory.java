@@ -54,25 +54,23 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
     codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
-        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
-        if (fieldOrNull == null) {
-          throw new IllegalArgumentException("no such field " + field);
-        }
-        String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
-        if (postingsFormatName != null) {
-          return PostingsFormat.forName(postingsFormatName);
+        final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
+        if (schemaField != null) {
+          String postingsFormatName = schemaField.getType().getPostingsFormat();
+          if (postingsFormatName != null) {
+            return PostingsFormat.forName(postingsFormatName);
+          }
         }
         return super.getPostingsFormatForField(field);
       }
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
-        final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);
-        if (fieldOrNull == null) {
-          throw new IllegalArgumentException("no such field " + field);
-        }
-        String docValuesFormatName = fieldOrNull.getType().getDocValuesFormat();
-        if (docValuesFormatName != null) {
-          return DocValuesFormat.forName(docValuesFormatName);
+        final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
+        if (schemaField != null) {
+          String docValuesFormatName = schemaField.getType().getDocValuesFormat();
+          if (docValuesFormatName != null) {
+            return DocValuesFormat.forName(docValuesFormatName);
+          }
         }
         return super.getDocValuesFormatForField(field);
       }

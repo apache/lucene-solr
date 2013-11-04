@@ -83,16 +83,4 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Lucene45", format.getDocValuesFormatForField("foo_memory").getName());
     assertEquals("Lucene45", format.getDocValuesFormatForField("bar_memory").getName());
   }
-
-  public void testUnknownField() {
-    Codec codec = h.getCore().getCodec();
-    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
-    try {
-      format.getPostingsFormatForField("notexisting");
-      fail("field is not existing");
-    } catch (IllegalArgumentException e) {
-      //
-    }
-
-  }
 }
