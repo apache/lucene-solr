@@ -22,7 +22,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -34,6 +34,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
@@ -323,11 +324,12 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     };
 
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
+    final boolean supportsOffsets = !(writer.w.getConfig().getCodec() instanceof Lucene3xCodec);
     final Document doc = new Document();
     final FieldType ft = new FieldType();
     ft.setIndexed(true);
     ft.setTokenized(true);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    ft.setIndexOptions(supportsOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     doc.add(new Field("f", "a", ft));
     doc.add(new Field("f", "a", ft));
     writer.addDocument(doc, a);
@@ -340,10 +342,14 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(0, dpe.nextDoc());
     assertEquals(2, dpe.freq());
     assertEquals(0, dpe.nextPosition());
-    assertEquals(0, dpe.startOffset());
-    final int endOffset = dpe.endOffset();
-    assertEquals(1 + positionGap, dpe.nextPosition());
-    assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
+    if (supportsOffsets) {
+      assertEquals(0, dpe.startOffset());
+      final int endOffset = dpe.endOffset();
+      assertEquals(1 + positionGap, dpe.nextPosition());
+      assertEquals(1 + endOffset + offsetGap, dpe.endOffset());
+    } else {
+      assertEquals(1 + positionGap, dpe.nextPosition());
+    }
     assertEquals(null, te.next());
     reader.close();
     writer.close();
