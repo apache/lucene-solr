@@ -145,6 +145,9 @@ New Features
 * LUCENE-5312: Add BlockJoinSorter, a new Sorter implementation that makes sure
   to never split up blocks of documents indexed with IndexWriter.addDocuments.
   (Adrien Grand)
+  
+* LUCENE-5297: Allow to range-facet on any ValueSource, not just
+  NumericDocValues fields. (Shai Erera)
 
 Bug Fixes
 
