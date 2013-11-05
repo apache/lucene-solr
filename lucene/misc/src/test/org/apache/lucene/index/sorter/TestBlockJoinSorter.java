@@ -41,7 +41,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("Lucene3x")
 public class TestBlockJoinSorter extends LuceneTestCase {
 
   private static class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter {
