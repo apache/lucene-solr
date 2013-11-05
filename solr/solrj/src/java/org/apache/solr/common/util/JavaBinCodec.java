@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.EnumFieldValue;
 import org.noggit.CharArr;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -62,7 +63,8 @@ public class JavaBinCodec {
           END = 15,
 
           SOLRINPUTDOC = 16,
-
+          SOLRINPUTDOC_CHILDS = 17,
+          ENUM_FIELD_VALUE = 18,
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),
@@ -223,6 +225,8 @@ public class JavaBinCodec {
         return END_OBJ;
       case SOLRINPUTDOC:
         return readSolrInputDocument(dis);
+      case ENUM_FIELD_VALUE:
+        return readEnumFieldValue(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -276,6 +280,10 @@ public class JavaBinCodec {
     }
     if (val instanceof Iterable) {
       writeIterator(((Iterable) val).iterator());
+      return true;
+    }
+    if (val instanceof EnumFieldValue) {
+      writeEnumFieldValue((EnumFieldValue) val);
       return true;
     }
     return false;
@@ -461,6 +469,27 @@ public class JavaBinCodec {
       l.add(readVal(dis));
     }
     return l;
+  }
+
+  /**
+   * write {@link EnumFieldValue} as tag+int value+string value
+   * @param enumFieldValue to write
+   */
+  public void writeEnumFieldValue(EnumFieldValue enumFieldValue) throws IOException {
+    writeTag(ENUM_FIELD_VALUE);
+    writeInt(enumFieldValue.toInt());
+    writeStr(enumFieldValue.toString());
+  }
+
+  /**
+   * read {@link EnumFieldValue} (int+string) from input stream
+   * @param dis data input stream
+   * @return {@link EnumFieldValue}
+   */
+  public EnumFieldValue readEnumFieldValue(DataInputInputStream dis) throws IOException {
+    Integer intValue = (Integer) readVal(dis);
+    String stringValue = (String) readVal(dis);
+    return new EnumFieldValue(intValue, stringValue);
   }
 
   /**

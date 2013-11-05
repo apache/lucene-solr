@@ -121,6 +121,8 @@ New Features
 
 *  SOLR-5392: Extend solrj apis to cover collection management.
    (Roman Shaposhnik via Mark Miller)
+   
+* SOLR-5084: new field type EnumField. Elran Dvir via Erick Erickson
 
 Bug Fixes
 ----------------------
