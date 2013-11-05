@@ -96,7 +96,9 @@ public class TestBlockJoinSorter extends LuceneTestCase {
       public int compare(int docID1, int docID2) {
         assertTrue(parentBits.get(docID1));
         assertTrue(parentBits.get(docID2));
-        return Long.compare(parentValues.get(docID1), parentValues.get(docID2));
+        final long v1 = parentValues.get(docID1);
+        final long v2 = parentValues.get(docID2);
+        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
       }
     };
 
@@ -106,7 +108,9 @@ public class TestBlockJoinSorter extends LuceneTestCase {
       public int compare(int docID1, int docID2) {
         assertFalse(parentBits.get(docID1));
         assertFalse(parentBits.get(docID2));
-        return Long.compare(childValues.get(docID1), childValues.get(docID2));
+        final long v1 = childValues.get(docID1);
+        final long v2 = childValues.get(docID2);
+        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
       }
     };
 
