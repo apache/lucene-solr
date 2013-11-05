@@ -27,6 +27,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -62,6 +63,8 @@ public class StatsValuesFactory {
       return new DateStatsValues(sf);
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(sf);
+    } else if (sf.getType().getClass().equals(EnumField.class)) {
+      return new EnumStatsValues(sf);
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field type " + fieldType + " is not currently supported");
     }
@@ -312,6 +315,72 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
 }
 
 /**
+ * Implementation of StatsValues that supports EnumField values
+ */
+class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
+
+  public EnumStatsValues(SchemaField sf) {
+    super(sf);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void accumulate(int docID) {
+    if (values.exists(docID)) {
+      Integer intValue = (Integer) values.objectVal(docID);
+      String stringValue = values.strVal(docID);
+      EnumFieldValue enumFieldValue = new EnumFieldValue(intValue, stringValue);
+      accumulate(enumFieldValue, 1);
+    } else {
+      missing();
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
+    if (max != null) {
+      if (max.compareTo(this.max) > 0)
+        this.max = max;
+    }
+    if (this.min == null)
+      this.min = min;
+    else if (this.min.compareTo(min) > 0)
+      this.min = min;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  protected void updateTypeSpecificStats(NamedList stv) {
+    // No type specific stats
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  protected void updateTypeSpecificStats(EnumFieldValue value, int count) {
+    // No type specific stats
+  }
+
+  /**
+   * Adds no type specific statistics
+   */
+  @Override
+  protected void addTypeSpecificStats(NamedList<Object> res) {
+    // Add no statistics
+  }
+
+
+}
+
+/**
+ * /**
  * Implementation of StatsValues that supports Date values
  */
 class DateStatsValues extends AbstractStatsValues<Date> {
