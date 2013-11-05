@@ -46,6 +46,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="tests.totals.tmpfile" />
   </propertyset>
 
   <target name="common">
