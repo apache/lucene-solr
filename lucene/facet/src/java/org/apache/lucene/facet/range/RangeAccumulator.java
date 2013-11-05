@@ -28,28 +28,14 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
 
-/** Uses a {@link NumericDocValues} and accumulates
- *  counts for provided ranges.  This is dynamic (does not
- *  use the taxonomy index or anything from the index
- *  except the NumericDocValuesField). */
-
+/**
+ * Uses {@link RangeFacetRequest#getValues(AtomicReaderContext)} and accumulates
+ * counts for provided ranges.
+ */
 public class RangeAccumulator extends FacetsAccumulator {
-
-  static class RangeSet {
-    final Range[] ranges;
-    final String field;
-
-    public RangeSet(Range[] ranges, String field) {
-      this.ranges = ranges;
-      this.field = field;
-    }
-  }
-
-  final List<RangeSet> requests = new ArrayList<RangeSet>();
 
   public RangeAccumulator(FacetRequest... facetRequests) {
     this(Arrays.asList(facetRequests));
@@ -65,9 +51,6 @@ public class RangeAccumulator extends FacetsAccumulator {
       if (fr.categoryPath.length != 1) {
         throw new IllegalArgumentException("only flat (dimension only) CategoryPath is allowed");
       }
-      
-      RangeFacetRequest<?> rfr = (RangeFacetRequest<?>) fr;
-      requests.add(new RangeSet(rfr.ranges, fr.categoryPath.components[0]));
     }
   }
 
@@ -78,35 +61,29 @@ public class RangeAccumulator extends FacetsAccumulator {
     // faster to do MachingDocs on the inside) ... see
     // patches on LUCENE-4965):
     List<FacetResult> results = new ArrayList<FacetResult>();
-    for (int i = 0; i < requests.size(); i++) {
-      RangeSet ranges = requests.get(i);
-
-      int[] counts = new int[ranges.ranges.length];
+    for (FacetRequest req : searchParams.facetRequests) {
+      RangeFacetRequest<?> rangeFR = (RangeFacetRequest<?>) req;
+      int[] counts = new int[rangeFR.ranges.length];
       for (MatchingDocs hits : matchingDocs) {
-        NumericDocValues ndv = hits.context.reader().getNumericDocValues(ranges.field);
-        if (ndv == null) {
-          continue; // no numeric values for this field in this reader
-        }
-        Bits docsWithField = hits.context.reader().getDocsWithField(ranges.field);
-
+        FunctionValues fv = rangeFR.getValues(hits.context);
         final int length = hits.bits.length();
         int doc = 0;
         while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
-          long v = ndv.get(doc);
-
           // Skip missing docs:
-          if (v == 0 && docsWithField.get(doc) == false) {
-            doc++;
+          if (!fv.exists(doc)) {
+            ++doc;
             continue;
           }
+          
+          long v = fv.longVal(doc);
 
           // TODO: if all ranges are non-overlapping, we
           // should instead do a bin-search up front
           // (really, a specialized case of the interval
           // tree)
           // TODO: use interval tree instead of linear search:
-          for (int j = 0; j < ranges.ranges.length; j++) {
-            if (ranges.ranges[j].accept(v)) {
+          for (int j = 0; j < rangeFR.ranges.length; j++) {
+            if (rangeFR.ranges[j].accept(v)) {
               counts[j]++;
             }
           }
@@ -114,19 +91,19 @@ public class RangeAccumulator extends FacetsAccumulator {
           doc++;
         }
       }
-
-      List<FacetResultNode> nodes = new ArrayList<FacetResultNode>(ranges.ranges.length);
-      for(int j=0;j<ranges.ranges.length;j++) {
-        nodes.add(new RangeFacetResultNode(ranges.field, ranges.ranges[j], counts[j]));
+      
+      List<FacetResultNode> nodes = new ArrayList<FacetResultNode>(rangeFR.ranges.length);
+      for (int j = 0; j < rangeFR.ranges.length; j++) {
+        nodes.add(new RangeFacetResultNode(rangeFR.label, rangeFR.ranges[j], counts[j]));
       }
-
+      
       FacetResultNode rootNode = new FacetResultNode(-1, 0);
-      rootNode.label = new CategoryPath(ranges.field);
+      rootNode.label = rangeFR.categoryPath;
       rootNode.subResults = nodes;
 
-      results.add(new FacetResult(searchParams.facetRequests.get(i), rootNode, nodes.size()));
+      results.add(new FacetResult(req, rootNode, nodes.size()));
     }
-
+    
     return results;
   }
 
