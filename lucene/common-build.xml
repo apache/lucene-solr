@@ -263,7 +263,6 @@
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
-    <propertyref name="tests.totals.tmpfile" />
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -881,16 +880,12 @@
         <property name="tests.caches" location="${common.dir}/tools/junit4" /> <!-- defaults -->
         <mkdir dir="${tests.cachedir}/${name}" />
 
-        <local name="junit4.stats.nonIgnored" />
-
         <junit4:junit4
             taskName="junit4"
             dir="@{workDir}"
             tempdir="@{workDir}/temp"
-            maxmemory="${tests.heapsize}"
-
-            statsPropertyPrefix="junit4.stats"
-
+            maxmemory="${tests.heapsize}" 
+            
             parallelism="@{threadNum}"
 
             printSummary="true"
@@ -1040,7 +1035,7 @@
                   </junit4:filtertrace>                    
                 </junit4:report-text>
 
-                <!-- Emits full status for all tests, their relative order on forked JVMs. -->
+                <!-- Emits full status for all tests, their relative order on slaves. -->
                 <junit4:report-text
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
@@ -1094,9 +1089,6 @@
               </fileset>
             </junit4:duplicate>
         </junit4:junit4>
-
-        <!-- Append the number of non-ignored (actually executed) tests. -->
-        <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
@@ -1262,45 +1254,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests">
-  </target>
-
-  <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
-  <target name="-test">
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms.override}" />
-  </target>
-
-  <target name="-check-totals" if="tests.totals.toplevel">
-    <!-- We are concluding a test pass at the outermost level. Sum up all executed tests. -->
-    <local name="tests.totals.content" />
-    <loadfile srcFile="${tests.totals.tmpfile}" encoding="UTF-8" property="tests.totals.content" quiet="true" />
-    <fail message="Not even a single test was executed (a typo in the filter pattern maybe)?">
-      <condition>
-        <scriptcondition language="javascript"><![CDATA[
-          var lines = ("" + project.getProperty("tests.totals.content")).split(/\n/);
-          var total = 0;
-          for (var i = 0; i < lines.length; i++) {
-            if (/^[0-9]+/.test(lines[i])) {
-              total += parseInt(lines[i]);
-            }
-          }
-          self.setValue(total == 0);
-        ]]></scriptcondition>
-      </condition>
-    </fail>
-  </target>
-
-  <target name="-init-totals" unless="tests.totals.tmpfile">
-    <echo>## TOTALS: init</echo>
-
-    <tempfile property="tests.totals.tmpfile"
-              destdir="${basedir}"
-              prefix=".test-totals-"
-              suffix=".tmp"
-              deleteonexit="true"
-              createfile="true" />
-    <property name="tests.totals.toplevel" value="true" />
   </target>
 
   <!--
