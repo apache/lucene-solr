@@ -52,7 +52,7 @@
   </target>
 
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
-  <target name="test" depends="-clover.load, test-core, test-modules, test-backwards"
+  <target name="test" depends="-clover.load, -init-totals, test-core, test-modules, test-backwards, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
