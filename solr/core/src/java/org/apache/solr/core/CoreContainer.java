@@ -452,7 +452,16 @@ public class CoreContainer {
         name.indexOf( '\\' ) >= 0 ){
       throw new RuntimeException( "Invalid core name: "+name );
     }
-    
+    // We can register a core when creating them via the admin UI, so we need to insure that the dynamic descriptors
+    // are up to date
+    CoreDescriptor cd = core.getCoreDescriptor();
+    if ((cd.isTransient() || ! cd.isLoadOnStartup())
+        && solrCores.getDynamicDescriptor(name) == null) {
+      // Store it away for later use. includes non-transient but not
+      // loaded at startup cores.
+      solrCores.putDynamicDescriptor(name, cd);
+    }
+
     SolrCore old = null;
 
     if (isShutDown) {
@@ -496,11 +505,11 @@ public class CoreContainer {
    * @return a previous core having the same name if it existed and returnPrev==true
    */
   public SolrCore register(SolrCore core, boolean returnPrev) {
-    return registerCore(false, core.getName(), core, returnPrev);
+    return registerCore(core.getCoreDescriptor().isTransient(), core.getName(), core, returnPrev);
   }
 
   public SolrCore register(String name, SolrCore core, boolean returnPrev) {
-    return registerCore(false, name, core, returnPrev);
+    return registerCore(core.getCoreDescriptor().isTransient(), name, core, returnPrev);
   }
 
   // Helper method to separate out creating a core from local configuration files. See create()
