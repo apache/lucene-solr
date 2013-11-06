@@ -268,7 +268,7 @@ Changes in backwards compatibility policy
 Build
 
 * LUCENE-5283: Fail the build if ant test didn't execute any tests 
-  (everything filtered out). (Dawid Weiss)
+  (everything filtered out). (Dawid Weiss, Uwe Schindler)
 
 * LUCENE-5249, LUCENE-5257: All Lucene/Solr modules should use the same
   dependency versions. (Steve Rowe)

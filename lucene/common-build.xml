@@ -1273,8 +1273,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
     <!-- We are concluding a test pass at the outermost level. Sum up all executed tests. -->
-    <local name="tests.totals.content" />
-    <loadfile srcFile="${tests.totals.tmpfile}" encoding="UTF-8" property="tests.totals.content" quiet="true" />
     <groovy><![CDATA[
       total = 0;
       statsFile = new File(project.getProperty("tests.totals.tmpfile"));
@@ -1294,7 +1292,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     ]]></groovy>
   </target>
 
-  <target name="-init-totals" unless="tests.totals.tmpfile">
+  <!-- The groovy dependency is wanted: this is done early before any test or any other submodule is ran, to prevent permgen errors! -->
+  <target name="-init-totals" unless="tests.totals.tmpfile" depends="resolve-groovy">
     <mkdir dir="${build.dir}" />
     <tempfile property="tests.totals.tmpfile"
               destdir="${build.dir}"
