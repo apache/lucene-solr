@@ -1391,7 +1391,19 @@ public class TestIndexWriter extends LuceneTestCase {
       }
 
       List<String> files = Arrays.asList(dir.listAll());
+
       assertTrue(files.contains("_0.cfs"));
+      assertTrue(files.contains("_0.cfe"));
+      assertTrue(files.contains("_0.si"));
+      if (iter == 1) {
+        // we run a full commit so there should be a segments file etc.
+        assertTrue(files.contains("segments_1"));
+        assertTrue(files.contains("segments.gen"));
+        assertEquals(files.toString(), files.size(), 5);
+      } else {
+        // this is an NRT reopen - no segments files yet
+        assertEquals(files.toString(), files.size(), 3);
+      }
       w.addDocument(doc);
       w.forceMerge(1);
       if (iter == 1) {
