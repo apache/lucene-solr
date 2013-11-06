@@ -497,7 +497,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       
       SolrCore core = coreContainer.create(dcore);
       
-      coreContainer.register(dcore.getName(), core, false);
+      coreContainer.register(core, false);
       
       if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
         // hack - in this case we persist once more because a core create race might

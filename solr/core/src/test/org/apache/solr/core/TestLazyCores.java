@@ -338,6 +338,61 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
+  private void createViaAdmin(CoreContainer cc, String name, String instanceDir, boolean isTransient,
+                              boolean loadOnStartup) throws Exception {
+
+    final CoreAdminHandler admin = new CoreAdminHandler(cc);
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.CREATE.toString(),
+            CoreAdminParams.INSTANCE_DIR, instanceDir,
+            CoreAdminParams.NAME, name,
+            CoreAdminParams.TRANSIENT, Boolean.toString(isTransient),
+            CoreAdminParams.LOAD_ON_STARTUP, Boolean.toString(loadOnStartup)),
+            resp);
+
+  }
+
+  // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
+  @Test
+  public void testCreateTransientFromAdmin() throws Exception {
+    final CoreContainer cc = init();
+    try {
+      copyMinConf(new File(solrHomeDirectory, "core1"));
+      copyMinConf(new File(solrHomeDirectory, "core2"));
+      copyMinConf(new File(solrHomeDirectory, "core3"));
+      copyMinConf(new File(solrHomeDirectory, "core4"));
+      copyMinConf(new File(solrHomeDirectory, "core5"));
+
+      createViaAdmin(cc, "core1", "./core1", true, true);
+      createViaAdmin(cc, "core2", "./core2", true, false);
+      createViaAdmin(cc, "core3", "./core3", true, true);
+      createViaAdmin(cc, "core4", "./core4", true, false);
+      createViaAdmin(cc, "core5", "./core5", true, false);
+
+      SolrCore c1 = cc.getCore("core1");
+      SolrCore c2 = cc.getCore("core2");
+      SolrCore c3 = cc.getCore("core3");
+      SolrCore c4 = cc.getCore("core4");
+      SolrCore c5 = cc.getCore("core5");
+
+      checkNotInCores(cc, "core1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy6"
+          , "collectionLazy7", "collectionLazy8", "collectionLazy9");
+
+      checkInCores(cc, "collection1", "collectionLazy5", "core2", "core3", "core4", "core5");
+
+      c1.close();
+      c2.close();
+      c3.close();
+      c4.close();
+      c5.close();
+
+    } finally {
+      cc.shutdown();
+    }
+  }
+
   //Make sure persisting not-loaded lazy cores is done. See SOLR-4347
 
   @Test
