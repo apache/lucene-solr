@@ -1099,4 +1099,23 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.close();
   }
 
+  /** Make sure if all we do is open NRT reader against
+   *  writer, we don't see merge starvation. */
+  public void testTooManySegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    // Create 500 segments:
+    for(int i=0;i<500;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+      IndexReader r = DirectoryReader.open(w, true);
+      // Make sure segment count never exceeds 100:
+      assertTrue(r.leaves().size() < 100);
+      r.close();
+    }
+    w.close();
+    dir.close();
+  }
 }
