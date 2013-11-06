@@ -191,6 +191,11 @@ Bug Fixes
   inside ConstantScoreQuery, which now rewrites to a query removing the
   obsolete QueryWrapperFilter.  (Adrien Grand, Uwe Schindler)
 
+* LUCENE-5330: IndexWriter didn't process all internal events on 
+  #getReader(), #close() and #rollback() which causes files to be
+  deleted at a later point in time. This could cause short-term disk
+  pollution or OOM if in-memory directories are used. (Simon Willnauer)
+
 API Changes:
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible

@@ -394,6 +394,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           }
           // Done: finish the full flush!
           docWriter.finishFullFlush(success);
+          processEvents(false, true);
           doAfterFlush();
         }
       }
@@ -929,6 +930,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           closeInternal(waitForMerges, true);
         }
       }
+      assert eventQueue.isEmpty();
     }
   }
 
@@ -1061,6 +1063,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
       // finally, restore interrupt status:
       if (interrupted) Thread.currentThread().interrupt();
+      processEvents(false, true);
     }
   }
 
@@ -2020,6 +2023,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         rollbackInternal();
       }
     }
+    assert eventQueue.isEmpty() : eventQueue;
   }
 
   private void rollbackInternal() throws IOException {
