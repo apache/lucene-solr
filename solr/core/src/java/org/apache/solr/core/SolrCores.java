@@ -288,6 +288,29 @@ class SolrCores {
     }
   }
 
+  // See SOLR-5366 for why the UNLOAD command needs to know whether a core is actually loaded or not, it might have
+  // to close the core. However, there's a race condition. If the core happens to be in the pending "to close" queue,
+  // we should NOT close it in unload core.
+  protected boolean isLoadedNotPendingClose(String name) {
+    // Just all be synchronized
+    synchronized (modifyLock) {
+      if (cores.containsKey(name)) {
+        return true;
+      }
+      if (transientCores.containsKey(name)) {
+        // Check pending
+        for (SolrCore core : pendingCloses) {
+          if (core.getName().equals(name)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected boolean isLoaded(String name) {
     synchronized (modifyLock) {
       if (cores.containsKey(name)) {

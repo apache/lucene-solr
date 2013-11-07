@@ -153,8 +153,12 @@ Bug Fixes
 * SOLR-5418: Background merge after field removed from solr.xml causes error. 
   (Reported on user's list, Robert M's patch via Erick Erickson)
   
- * SOLR-5318: Creating a core via the admin API doesn't respect transient property
+* SOLR-5318: Creating a core via the admin API doesn't respect transient property
    (Olivier Soyez via Erick Erickson)
+
+* SOLR-5388: Creating a new core via the HTTP API that results in a transient being
+  unloaded results in a " Too many close [count:-1]" error.
+  (Olivier Soyez via Erick Erickson)
 
 Optimizations
 ----------------------  
