@@ -1350,7 +1350,7 @@ public class TestIndexWriter extends LuceneTestCase {
         r = DirectoryReader.open(dir);
       }
 
-      List<String> files = Arrays.asList(dir.listAll());
+      List<String> files = new ArrayList<String>(Arrays.asList(dir.listAll()));
 
       assertTrue(files.contains("_0.cfs"));
       assertTrue(files.contains("_0.cfe"));
@@ -1362,6 +1362,9 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(files.toString(), files.size(), 5);
       } else {
         // this is an NRT reopen - no segments files yet
+
+        // RAMDir won't have a write.lock, but fs dirs will:
+        files.remove("write.lock");
         assertEquals(files.toString(), files.size(), 3);
       }
       w.addDocument(doc);
