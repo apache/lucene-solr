@@ -102,7 +102,7 @@ public class TestDemoFacets extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
         new CountFacetRequest(new CategoryPath("Author"), 10));
 
-    // Aggregatses the facet counts:
+    // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
