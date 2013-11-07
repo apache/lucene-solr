@@ -582,6 +582,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       SolrQueryResponse rsp) throws SolrException {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
+    Boolean closeCore = true;
+    if (!coreContainer.isLoadedNotPendingClose(cname)) {
+      closeCore = false;
+    }
     SolrCore core = coreContainer.remove(cname);
     try {
       if (core == null) {
@@ -653,7 +657,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (coreContainer.getZkController() != null) {
           core.getSolrCoreState().cancelRecovery();
         }
-        core.close();
+        if (closeCore) {
+          core.close();
+        }
       }
     }
     

@@ -354,6 +354,19 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   }
 
+  private void unloadViaAdmin(CoreContainer cc, String name) throws Exception {
+
+    final CoreAdminHandler admin = new CoreAdminHandler(cc);
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.UNLOAD.toString(),
+            CoreAdminParams.CORE, name),
+            resp);
+
+  }
+
+
   // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
   @Test
   public void testCreateTransientFromAdmin() throws Exception {
@@ -382,6 +395,15 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       checkInCores(cc, "collection1", "collectionLazy5", "core2", "core3", "core4", "core5");
 
+      // While we're at it, a test for SOLR-5366, unloading transient core that's been unloaded b/c it's
+      // transient generates a "too many closes" errorl
+
+      unloadViaAdmin(cc, "core1");
+      unloadViaAdmin(cc, "core2");
+      unloadViaAdmin(cc, "core3");
+      unloadViaAdmin(cc, "core4");
+      unloadViaAdmin(cc, "core5");
+
       c1.close();
       c2.close();
       c3.close();
@@ -392,6 +414,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       cc.shutdown();
     }
   }
+
 
   //Make sure persisting not-loaded lazy cores is done. See SOLR-4347
 

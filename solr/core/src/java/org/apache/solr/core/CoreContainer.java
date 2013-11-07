@@ -923,6 +923,10 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
+  public boolean isLoadedNotPendingClose(String name) {
+    return solrCores.isLoadedNotPendingClose(name);
+  }
+
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
