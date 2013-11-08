@@ -263,6 +263,7 @@
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
+    <propertyref name="tests.totals.tmpfile" />
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -884,12 +885,16 @@
         <property name="tests.caches" location="${common.dir}/tools/junit4" /> <!-- defaults -->
         <mkdir dir="${tests.cachedir}/${name}" />
 
+        <local name="junit4.stats.nonIgnored" />
+
         <junit4:junit4
             taskName="junit4"
             dir="@{workDir}"
             tempdir="@{workDir}/temp"
-            maxmemory="${tests.heapsize}" 
-            
+            maxmemory="${tests.heapsize}"
+
+            statsPropertyPrefix="junit4.stats"
+
             parallelism="@{threadNum}"
 
             printSummary="true"
@@ -1039,7 +1044,7 @@
                   </junit4:filtertrace>                    
                 </junit4:report-text>
 
-                <!-- Emits full status for all tests, their relative order on slaves. -->
+                <!-- Emits full status for all tests, their relative order on forked JVMs. -->
                 <junit4:report-text
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
@@ -1093,6 +1098,9 @@
               </fileset>
             </junit4:duplicate>
         </junit4:junit4>
+
+        <!-- Append the number of non-ignored (actually executed) tests. -->
+        <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
@@ -1258,9 +1266,46 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests">
+  </target>
+
+  <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
+  <target name="-test">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms.override}" />
+  </target>
+
+  <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
+    <!-- We are concluding a test pass at the outermost level. Sum up all executed tests. -->
+    <groovy><![CDATA[
+      total = 0;
+      statsFile = new File(project.getProperty("tests.totals.tmpfile"));
+      statsFile.eachLine("UTF-8", { line ->
+        if (line ==~ /^[0-9]+/) {
+          total += Integer.valueOf(line);
+        }
+      });
+      statsFile.delete();
+
+      if (total == 0) {
+        throw new org.apache.tools.ant.BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
+      }
+
+      // Interesting but let's keep the build output quiet.
+      // project.log("Grand total of all executed tests (including sub-modules): " + total);
+    ]]></groovy>
+  </target>
+
+  <!-- The groovy dependency is wanted: this is done early before any test or any other submodule is ran, to prevent permgen errors! -->
+  <target name="-init-totals" unless="tests.totals.tmpfile" depends="resolve-groovy">
+    <mkdir dir="${build.dir}" />
+    <tempfile property="tests.totals.tmpfile"
+              destdir="${build.dir}"
+              prefix=".test-totals-"
+              suffix=".tmp"
+              deleteonexit="true"
+              createfile="true" />
+    <property name="tests.totals.toplevel" value="true" />
   </target>
 
   <!--
