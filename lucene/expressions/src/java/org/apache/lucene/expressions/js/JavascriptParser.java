@@ -22,7 +22,8 @@ class JavascriptParser extends Parser {
     "AT_COMP_GT", "AT_COMP_GTE", "AT_COMP_LT", "AT_COMP_LTE", "AT_COMP_NEQ", 
     "AT_COND_QUE", "AT_DIVIDE", "AT_DOT", "AT_LPAREN", "AT_MODULO", "AT_MULTIPLY", 
     "AT_NEGATE", "AT_RPAREN", "AT_SUBTRACT", "DECIMAL", "DECIMALDIGIT", "DECIMALINTEGER", 
-    "EXPONENT", "HEX", "HEXDIGIT", "ID", "OCTAL", "OCTALDIGIT", "WS"
+    "EXPONENT", "HEX", "HEXDIGIT", "ID", "NAMESPACE_ID", "OCTAL", "OCTALDIGIT", 
+    "WS"
   };
   public static final int EOF=-1;
   public static final int AT_ADD=4;
@@ -61,9 +62,10 @@ class JavascriptParser extends Parser {
   public static final int HEX=37;
   public static final int HEXDIGIT=38;
   public static final int ID=39;
-  public static final int OCTAL=40;
-  public static final int OCTALDIGIT=41;
-  public static final int WS=42;
+  public static final int NAMESPACE_ID=40;
+  public static final int OCTAL=41;
+  public static final int OCTALDIGIT=42;
+  public static final int WS=43;
 
   // delegates
   public Parser[] getDelegates() {
@@ -1269,7 +1271,7 @@ class JavascriptParser extends Parser {
       case AT_LPAREN:
       case DECIMAL:
       case HEX:
-      case ID:
+      case NAMESPACE_ID:
       case OCTAL:
         {
         alt12=1;
@@ -1491,26 +1493,26 @@ class JavascriptParser extends Parser {
 
 
   // $ANTLR start "postfix"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:310:1: postfix : ( primary | ID arguments -> ^( AT_CALL ID ( arguments )? ) );
+  // src/java/org/apache/lucene/expressions/js/Javascript.g:310:1: postfix : ( primary | NAMESPACE_ID arguments -> ^( AT_CALL NAMESPACE_ID ( arguments )? ) );
   public final JavascriptParser.postfix_return postfix() throws RecognitionException {
     JavascriptParser.postfix_return retval = new JavascriptParser.postfix_return();
     retval.start = input.LT(1);
 
     CommonTree root_0 = null;
 
-    Token ID47=null;
+    Token NAMESPACE_ID47=null;
     ParserRuleReturnScope primary46 =null;
     ParserRuleReturnScope arguments48 =null;
 
-    CommonTree ID47_tree=null;
-    RewriteRuleTokenStream stream_ID=new RewriteRuleTokenStream(adaptor,"token ID");
+    CommonTree NAMESPACE_ID47_tree=null;
+    RewriteRuleTokenStream stream_NAMESPACE_ID=new RewriteRuleTokenStream(adaptor,"token NAMESPACE_ID");
     RewriteRuleSubtreeStream stream_arguments=new RewriteRuleSubtreeStream(adaptor,"rule arguments");
 
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:311:5: ( primary | ID arguments -> ^( AT_CALL ID ( arguments )? ) )
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:311:5: ( primary | NAMESPACE_ID arguments -> ^( AT_CALL NAMESPACE_ID ( arguments )? ) )
       int alt14=2;
       int LA14_0 = input.LA(1);
-      if ( (LA14_0==ID) ) {
+      if ( (LA14_0==NAMESPACE_ID) ) {
         int LA14_1 = input.LA(2);
         if ( (LA14_1==EOF||(LA14_1 >= AT_ADD && LA14_1 <= AT_BIT_AND)||(LA14_1 >= AT_BIT_OR && LA14_1 <= AT_BOOL_AND)||LA14_1==AT_BOOL_OR||(LA14_1 >= AT_COLON && LA14_1 <= AT_DIVIDE)||(LA14_1 >= AT_MODULO && LA14_1 <= AT_MULTIPLY)||(LA14_1 >= AT_RPAREN && LA14_1 <= AT_SUBTRACT)) ) {
           alt14=1;
@@ -1558,10 +1560,10 @@ class JavascriptParser extends Parser {
           }
           break;
         case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:312:7: ID arguments
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:312:7: NAMESPACE_ID arguments
           {
-          ID47=(Token)match(input,ID,FOLLOW_ID_in_postfix1168);  
-          stream_ID.add(ID47);
+          NAMESPACE_ID47=(Token)match(input,NAMESPACE_ID,FOLLOW_NAMESPACE_ID_in_postfix1168);  
+          stream_NAMESPACE_ID.add(NAMESPACE_ID47);
 
           pushFollow(FOLLOW_arguments_in_postfix1170);
           arguments48=arguments();
@@ -1569,7 +1571,7 @@ class JavascriptParser extends Parser {
 
           stream_arguments.add(arguments48.getTree());
           // AST REWRITE
-          // elements: arguments, ID
+          // elements: NAMESPACE_ID, arguments
           // token labels: 
           // rule labels: retval
           // token list labels: 
@@ -1579,14 +1581,14 @@ class JavascriptParser extends Parser {
           RewriteRuleSubtreeStream stream_retval=new RewriteRuleSubtreeStream(adaptor,"rule retval",retval!=null?retval.getTree():null);
 
           root_0 = (CommonTree)adaptor.nil();
-          // 312:20: -> ^( AT_CALL ID ( arguments )? )
+          // 312:30: -> ^( AT_CALL NAMESPACE_ID ( arguments )? )
           {
-            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:23: ^( AT_CALL ID ( arguments )? )
+            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:33: ^( AT_CALL NAMESPACE_ID ( arguments )? )
             {
             CommonTree root_1 = (CommonTree)adaptor.nil();
             root_1 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(AT_CALL, "AT_CALL"), root_1);
-            adaptor.addChild(root_1, stream_ID.nextNode());
-            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:36: ( arguments )?
+            adaptor.addChild(root_1, stream_NAMESPACE_ID.nextNode());
+            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:56: ( arguments )?
             if ( stream_arguments.hasNext() ) {
               adaptor.addChild(root_1, stream_arguments.nextTree());
             }
@@ -1631,28 +1633,28 @@ class JavascriptParser extends Parser {
 
 
   // $ANTLR start "primary"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:315:1: primary : ( ID | numeric | AT_LPAREN ! conditional AT_RPAREN !);
+  // src/java/org/apache/lucene/expressions/js/Javascript.g:315:1: primary : ( NAMESPACE_ID | numeric | AT_LPAREN ! conditional AT_RPAREN !);
   public final JavascriptParser.primary_return primary() throws RecognitionException {
     JavascriptParser.primary_return retval = new JavascriptParser.primary_return();
     retval.start = input.LT(1);
 
     CommonTree root_0 = null;
 
-    Token ID49=null;
+    Token NAMESPACE_ID49=null;
     Token AT_LPAREN51=null;
     Token AT_RPAREN53=null;
     ParserRuleReturnScope numeric50 =null;
     ParserRuleReturnScope conditional52 =null;
 
-    CommonTree ID49_tree=null;
+    CommonTree NAMESPACE_ID49_tree=null;
     CommonTree AT_LPAREN51_tree=null;
     CommonTree AT_RPAREN53_tree=null;
 
     try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:316:5: ( ID | numeric | AT_LPAREN ! conditional AT_RPAREN !)
+      // src/java/org/apache/lucene/expressions/js/Javascript.g:316:5: ( NAMESPACE_ID | numeric | AT_LPAREN ! conditional AT_RPAREN !)
       int alt15=3;
       switch ( input.LA(1) ) {
-      case ID:
+      case NAMESPACE_ID:
         {
         alt15=1;
         }
@@ -1676,14 +1678,14 @@ class JavascriptParser extends Parser {
       }
       switch (alt15) {
         case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:316:7: ID
+          // src/java/org/apache/lucene/expressions/js/Javascript.g:316:7: NAMESPACE_ID
           {
           root_0 = (CommonTree)adaptor.nil();
 
 
-          ID49=(Token)match(input,ID,FOLLOW_ID_in_primary1198); 
-          ID49_tree = (CommonTree)adaptor.create(ID49);
-          adaptor.addChild(root_0, ID49_tree);
+          NAMESPACE_ID49=(Token)match(input,NAMESPACE_ID,FOLLOW_NAMESPACE_ID_in_primary1198); 
+          NAMESPACE_ID49_tree = (CommonTree)adaptor.create(NAMESPACE_ID49);
+          adaptor.addChild(root_0, NAMESPACE_ID49_tree);
 
           }
           break;
@@ -1774,7 +1776,7 @@ class JavascriptParser extends Parser {
       // src/java/org/apache/lucene/expressions/js/Javascript.g:322:18: ( conditional ( AT_COMMA ! conditional )* )?
       int alt17=2;
       int LA17_0 = input.LA(1);
-      if ( (LA17_0==AT_ADD||LA17_0==AT_BIT_NOT||LA17_0==AT_BOOL_NOT||LA17_0==AT_LPAREN||(LA17_0 >= AT_SUBTRACT && LA17_0 <= DECIMAL)||LA17_0==HEX||(LA17_0 >= ID && LA17_0 <= OCTAL)) ) {
+      if ( (LA17_0==AT_ADD||LA17_0==AT_BIT_NOT||LA17_0==AT_BOOL_NOT||LA17_0==AT_LPAREN||(LA17_0 >= AT_SUBTRACT && LA17_0 <= DECIMAL)||LA17_0==HEX||(LA17_0 >= NAMESPACE_ID && LA17_0 <= OCTAL)) ) {
         alt17=1;
       }
       switch (alt17) {
@@ -1905,59 +1907,59 @@ class JavascriptParser extends Parser {
   public static final BitSet FOLLOW_conditional_in_expression737 = new BitSet(new long[]{0x0000000000000000L});
   public static final BitSet FOLLOW_EOF_in_expression739 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_logical_or_in_conditional757 = new BitSet(new long[]{0x0000000001000002L});
-  public static final BitSet FOLLOW_AT_COND_QUE_in_conditional760 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_COND_QUE_in_conditional760 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_conditional_in_conditional763 = new BitSet(new long[]{0x0000000000010000L});
-  public static final BitSet FOLLOW_AT_COLON_in_conditional765 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_COLON_in_conditional765 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_conditional_in_conditional768 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_logical_and_in_logical_or787 = new BitSet(new long[]{0x0000000000004002L});
-  public static final BitSet FOLLOW_AT_BOOL_OR_in_logical_or790 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_BOOL_OR_in_logical_or790 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_logical_and_in_logical_or793 = new BitSet(new long[]{0x0000000000004002L});
   public static final BitSet FOLLOW_bitwise_or_in_logical_and812 = new BitSet(new long[]{0x0000000000001002L});
-  public static final BitSet FOLLOW_AT_BOOL_AND_in_logical_and815 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_BOOL_AND_in_logical_and815 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_bitwise_or_in_logical_and818 = new BitSet(new long[]{0x0000000000001002L});
   public static final BitSet FOLLOW_bitwise_xor_in_bitwise_or837 = new BitSet(new long[]{0x0000000000000082L});
-  public static final BitSet FOLLOW_AT_BIT_OR_in_bitwise_or840 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_BIT_OR_in_bitwise_or840 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_bitwise_xor_in_bitwise_or843 = new BitSet(new long[]{0x0000000000000082L});
   public static final BitSet FOLLOW_bitwise_and_in_bitwise_xor862 = new BitSet(new long[]{0x0000000000000802L});
-  public static final BitSet FOLLOW_AT_BIT_XOR_in_bitwise_xor865 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_BIT_XOR_in_bitwise_xor865 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_bitwise_and_in_bitwise_xor868 = new BitSet(new long[]{0x0000000000000802L});
   public static final BitSet FOLLOW_equality_in_bitwise_and888 = new BitSet(new long[]{0x0000000000000022L});
-  public static final BitSet FOLLOW_AT_BIT_AND_in_bitwise_and891 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_BIT_AND_in_bitwise_and891 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_equality_in_bitwise_and894 = new BitSet(new long[]{0x0000000000000022L});
   public static final BitSet FOLLOW_relational_in_equality913 = new BitSet(new long[]{0x0000000000840002L});
-  public static final BitSet FOLLOW_set_in_equality916 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_set_in_equality916 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_relational_in_equality925 = new BitSet(new long[]{0x0000000000840002L});
   public static final BitSet FOLLOW_shift_in_relational944 = new BitSet(new long[]{0x0000000000780002L});
-  public static final BitSet FOLLOW_set_in_relational947 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_set_in_relational947 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_shift_in_relational964 = new BitSet(new long[]{0x0000000000780002L});
   public static final BitSet FOLLOW_additive_in_shift983 = new BitSet(new long[]{0x0000000000000702L});
-  public static final BitSet FOLLOW_set_in_shift986 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_set_in_shift986 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_additive_in_shift999 = new BitSet(new long[]{0x0000000000000702L});
   public static final BitSet FOLLOW_multiplicative_in_additive1018 = new BitSet(new long[]{0x0000000100000012L});
-  public static final BitSet FOLLOW_set_in_additive1021 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_set_in_additive1021 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_multiplicative_in_additive1030 = new BitSet(new long[]{0x0000000100000012L});
   public static final BitSet FOLLOW_unary_in_multiplicative1049 = new BitSet(new long[]{0x0000000032000002L});
-  public static final BitSet FOLLOW_set_in_multiplicative1052 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_set_in_multiplicative1052 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_unary_in_multiplicative1065 = new BitSet(new long[]{0x0000000032000002L});
   public static final BitSet FOLLOW_postfix_in_unary1084 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_ADD_in_unary1092 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_ADD_in_unary1092 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_unary_in_unary1095 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_unary_operator_in_unary1103 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_unary_operator_in_unary1103 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_unary_in_unary1106 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_AT_SUBTRACT_in_unary_operator1123 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_AT_BIT_NOT_in_unary_operator1135 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_AT_BOOL_NOT_in_unary_operator1143 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_primary_in_postfix1160 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_ID_in_postfix1168 = new BitSet(new long[]{0x0000000008000000L});
+  public static final BitSet FOLLOW_NAMESPACE_ID_in_postfix1168 = new BitSet(new long[]{0x0000000008000000L});
   public static final BitSet FOLLOW_arguments_in_postfix1170 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_ID_in_primary1198 = new BitSet(new long[]{0x0000000000000002L});
+  public static final BitSet FOLLOW_NAMESPACE_ID_in_primary1198 = new BitSet(new long[]{0x0000000000000002L});
   public static final BitSet FOLLOW_numeric_in_primary1206 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_LPAREN_in_primary1214 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_LPAREN_in_primary1214 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_conditional_in_primary1217 = new BitSet(new long[]{0x0000000080000000L});
   public static final BitSet FOLLOW_AT_RPAREN_in_primary1219 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_LPAREN_in_arguments1237 = new BitSet(new long[]{0x000001A388002050L});
+  public static final BitSet FOLLOW_AT_LPAREN_in_arguments1237 = new BitSet(new long[]{0x0000032388002050L});
   public static final BitSet FOLLOW_conditional_in_arguments1241 = new BitSet(new long[]{0x0000000080020000L});
-  public static final BitSet FOLLOW_AT_COMMA_in_arguments1244 = new BitSet(new long[]{0x000001A308002050L});
+  public static final BitSet FOLLOW_AT_COMMA_in_arguments1244 = new BitSet(new long[]{0x0000032308002050L});
   public static final BitSet FOLLOW_conditional_in_arguments1247 = new BitSet(new long[]{0x0000000080020000L});
   public static final BitSet FOLLOW_AT_RPAREN_in_arguments1253 = new BitSet(new long[]{0x0000000000000002L});
 }

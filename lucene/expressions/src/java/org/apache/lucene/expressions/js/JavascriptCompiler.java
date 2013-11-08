@@ -253,7 +253,7 @@ public class JavascriptCompiler {
         
         gen.cast(Type.DOUBLE_TYPE, expected);
         break;
-      case JavascriptParser.ID:
+      case JavascriptParser.NAMESPACE_ID:
         int index;
         
         if (externalsMap.containsKey(text)) {

@@ -28,7 +28,46 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     assertNotNull(JavascriptCompiler.compile("valid0+\n100"));
     assertNotNull(JavascriptCompiler.compile("logn(2, 20+10-5.0)"));
   }
-  
+
+  public void testValidNamespaces() throws Exception {
+    assertNotNull(JavascriptCompiler.compile("object.valid0"));
+    assertNotNull(JavascriptCompiler.compile("object0.object1.valid1"));
+  }
+
+  public void testInvalidNamespaces() throws Exception {
+    try {
+      JavascriptCompiler.compile("object.0invalid");
+      fail();
+    }
+    catch (ParseException expected) {
+      //expected
+    }
+
+    try {
+      JavascriptCompiler.compile("0.invalid");
+      fail();
+    }
+    catch (ParseException expected) {
+      //expected
+    }
+
+    try {
+      JavascriptCompiler.compile("object..invalid");
+      fail();
+    }
+    catch (ParseException expected) {
+      //expected
+    }
+
+    try {
+      JavascriptCompiler.compile(".invalid");
+      fail();
+    }
+    catch (ParseException expected) {
+      //expected
+    }
+  }
+
   public void testInvalidCompiles() throws Exception {
     try {
       JavascriptCompiler.compile("100 100");

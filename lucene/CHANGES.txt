@@ -74,7 +74,7 @@ New Features
   String is too restrictive (Robert Muir, Shai Erera, Mike
   McCandless)
 
-* LUCENE-5207: Added expressions module for customizing ranking
+* LUCENE-5207, LUCENE-5334: Added expressions module for customizing ranking
   with script-like syntax. 
   (Jack Conradson, Ryan Ernst, Uwe Schindler via Robert Muir)
 

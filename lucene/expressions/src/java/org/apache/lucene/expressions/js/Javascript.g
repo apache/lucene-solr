@@ -309,11 +309,11 @@ unary_operator
 
 postfix
     : primary
-    | ID arguments -> ^(AT_CALL ID arguments?)
+    | NAMESPACE_ID arguments -> ^(AT_CALL NAMESPACE_ID arguments?)
     ;
 
 primary
-    : ID
+    : NAMESPACE_ID
     | numeric
     | AT_LPAREN! conditional AT_RPAREN!
     ;
@@ -330,10 +330,15 @@ numeric
 // * Lexer Rules
 // ***********************************************************************
 
+NAMESPACE_ID
+    : ID (AT_DOT ID)*
+    ;
+
+fragment
 ID
     : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*
     ;
-    
+
 WS
     : (' '|'\t'|'\n'|'\r')+ {skip();}
     ;
