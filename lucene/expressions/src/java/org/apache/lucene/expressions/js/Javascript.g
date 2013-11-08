@@ -53,7 +53,7 @@
  */
 
 // ***********************************************************************
-// * ANTLRv3 grammar for A9 rank expression language.
+// * ANTLRv3 grammar for Lucene expression language.
 // ***********************************************************************
  
 grammar Javascript;
