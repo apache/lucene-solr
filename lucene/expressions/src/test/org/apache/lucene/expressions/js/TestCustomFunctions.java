@@ -147,7 +147,7 @@ public class TestCustomFunctions extends LuceneTestCase {
       assertTrue(e.getMessage().contains("is not public"));
     }
   }
-  
+
   static class NestedNotPublic {
     public static double method() { return 0; }
   }
@@ -259,5 +259,14 @@ public class TestCustomFunctions extends LuceneTestCase {
       pw.flush();
       assertTrue(sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
     }
+  }
+
+  /** test that namespaces work with custom expressions. */
+  public void testNamespaces() throws Exception {
+    Map<String, Method> functions = new HashMap<String, Method>();
+    functions.put("foo.bar", getClass().getMethod("zeroArgMethod"));
+    String source = "foo.bar()";
+    Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
+    assertEquals(5, expr.evaluate(0, null), DELTA);
   }
 }
