@@ -254,7 +254,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       assert null != newUserVersion;
 
       oldSolrVersion = -1;
-
+      // log.info("!!!!!!!!! isVersionNewEnough being called for " + indexedDocId.utf8ToString() + " newVersion=" + newUserVersion);
       newUserVersion = convertFieldValueUsingType(userVersionField, newUserVersion);
       Object oldUserVersion = null;
       SolrInputDocument oldDoc = null;
@@ -301,6 +301,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId);
 
         if (null == oldDoc) {
+          // log.info("VERSION no doc found, returning true");
           return true;
         }
       }
@@ -318,6 +319,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         oldSolrVersion = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
       }
 
+      // log.info("VERSION old=" + oldUserVersion + " new=" +newUserVersion );
 
       if ( null == oldUserVersion) {
         // could happen if they turn this feature on after building an index
@@ -336,12 +338,17 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
       try {
         if (0 < ((Comparable)newUserVersion).compareTo((Comparable) oldUserVersion)) {
+          // log.info("VERSION returning true (proceed with update)" );
           return true;
         }
         if (ignoreOldUpdates) {
-
+          if (log.isDebugEnabled()) {
+            log.debug("Dropping update since user version is not high enough: " + newUserVersion + "; old user version=" + oldUserVersion);
+          }
+          // log.info("VERSION returning false (dropping update)" );
           return false;
         } else {
+          // log.info("VERSION will throw conflict" );
           throw new SolrException(CONFLICT,
               "user version is not high enough: " + newUserVersion);
         }
@@ -355,81 +362,6 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
     }
 
 
-    private boolean isVersionNewEnoughStoredOnly(BytesRef indexedDocId,
-                                       Object newUserVersion) throws IOException {
-      assert null != indexedDocId;
-      assert null != newUserVersion;
-
-      oldSolrVersion = -1;
-
-      // :TODO: would be nice if a full RTG was not always needed here, ideas...
-      //  - first check fieldCache/docVals - if a versionField exists
-      //    in index that is already greater then this cmd, fail fast 
-      //    (no need to check updateLog, new version already too low)
-      //  - first check if docId is in the updateLog w/o doing the full get, if 
-      //    it's not then check fieldCache/docVals
-      //  - track versionField externally from updateLog (or as a special case 
-      //    that can be looked up by itself - similar to how _version_ is dealt with)
-      //
-      // Depending on if/when/how this is changed, what we assert about
-      // versionField on init will need updated.
-
-
-      newUserVersion = convertFieldValueUsingType(userVersionField, newUserVersion);
-      Object oldUserVersion = null;
-
-
-      SolrInputDocument oldDoc =
-        RealTimeGetComponent.getInputDocument(core, indexedDocId);
-
-      if (null == oldDoc) {
-        return true;
-      }
-      
-      oldUserVersion = oldDoc.getFieldValue(versionFieldName);
-      if ( null == oldUserVersion) {
-        // could happen if they turn this feature on after building an index
-        // w/o the versionField
-        throw new SolrException(SERVER_ERROR,
-                                "Doc exists in index, but has null versionField: "
-                                + versionFieldName);
-      }
-
-      // Make the FieldType resolve any conversion we need.
-      oldUserVersion = convertFieldValueUsingType(userVersionField, oldUserVersion);
-
-      if (! (oldUserVersion instanceof Comparable && newUserVersion instanceof Comparable) ) {
-        throw new SolrException(BAD_REQUEST, 
-                                "old version and new version are not comparable: " +
-                                oldUserVersion.getClass()+" vs "+newUserVersion.getClass());
-      }
-      
-      try { 
-        if (0 < ((Comparable)newUserVersion).compareTo((Comparable) oldUserVersion)) {
-          // since we're going to proceed with this update, we need to find the _version_
-          // so we can use optimistic concurrency.
-
-          Object o = oldDoc.getFieldValue(VersionInfo.VERSION_FIELD);
-          if (o == null) {
-            throw new SolrException(SERVER_ERROR, "No _version_ for document "+ oldDoc);
-          }
-          oldSolrVersion = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
-          return true;
-        }
-        if (ignoreOldUpdates) {
-          return false;
-        } else {
-          throw new SolrException(CONFLICT,
-                                  "user version is not high enough: " + newUserVersion);
-        }
-      } catch (ClassCastException e) {
-        throw new SolrException(BAD_REQUEST, 
-                                "old version and new version are not comparable: " +
-                                oldUserVersion.getClass()+" vs "+newUserVersion.getClass() +
-                                ": " + e.getMessage(), e);
-                                
-      }
-    }
 
     public boolean isLeader(UpdateCommand cmd) {
       if ((cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
@@ -439,12 +371,15 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         return false;
       }
       // if phase==TOLEADER, we can't just assume we are the leader... let the normal logic check.
-      return distribProc.isLeader(cmd);
+      boolean x = distribProc.isLeader(cmd);
+      // log.info("VERSION: checking if we are leader:" + x);
+      return x;
     }
 
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       if (!isLeader(cmd)) {
         super.processAdd(cmd);
+        return;
       }
 
       final SolrInputDocument newDoc = cmd.getSolrInputDocument();
@@ -471,6 +406,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
           return;
         } catch (SolrException e) {
           if (e.code() == 409) {
+            // log.info ("##################### CONFLICT ADDING newDoc=" + newDoc + " newVersion=" + newVersion );
             continue;  // if a version conflict, retry
           }
           throw e;  // rethrow
@@ -512,6 +448,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         newCmd.solrDoc = newDoc;
         newCmd.commitWithin = cmd.commitWithin;
         super.processAdd(newCmd);
+        return;
       }
 
 

@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
@@ -56,8 +57,6 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     super.sliceCount = 2;
     super.shardCount = 4;
     super.fixShardCount = true;  // we only want to test with exactly 2 slices.
-
-
 
 
     /***
@@ -102,6 +101,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
       waitForRecoveriesToFinish(false);
 
       doTestDocVersions();
+      doTestHardFail();
 
       testFinished = true;
     } finally {
@@ -111,6 +111,28 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     }
   }
 
+  private void doTestHardFail() throws Exception {
+    log.info("### STARTING doTestHardFail");
+
+    // use a leader so we test both forwarding and non-forwarding logic
+    ss = shardToLeaderJetty.get(bucket1).client.solrClient;
+
+    // ss = cloudClient;   CloudSolrServer doesn't currently support propagating error codes
+
+    doTestHardFail("p!doc1");
+    doTestHardFail("q!doc1");
+    doTestHardFail("r!doc1");
+    doTestHardFail("x!doc1");
+  }
+
+  private void doTestHardFail(String id) throws Exception {
+    vdelete(id, 5, "update.chain","external-version-failhard");
+    vadd(id, 10, "update.chain","external-version-failhard");
+    vadd(id ,15, "update.chain","external-version-failhard");
+    vaddFail(id ,11, 409, "update.chain","external-version-failhard");
+    vdeleteFail(id ,11, 409, "update.chain","external-version-failhard");
+    vdelete(id, 20, "update.chain","external-version-failhard");
+  }
 
   private void doTestDocVersions() throws Exception {
     log.info("### STARTING doTestDocVersions");
@@ -159,14 +181,8 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     //
     // now test with a non-smart client
     //
-    List<CloudJettyRunner> runners = shardToJetty.get(bucket2);
-    CloudJettyRunner leader = shardToLeaderJetty.get(bucket2);
-    CloudJettyRunner replica =  null;
-    for (CloudJettyRunner r : runners) {
-      if (r != leader) replica = r;
-    }
-
-    ss = replica.client.solrClient;
+    // use a leader so we test both forwarding and non-forwarding logic
+    ss = shardToLeaderJetty.get(bucket1).client.solrClient;
 
     vadd("b!doc5", 10);
     vadd("c!doc6", 11);
@@ -222,17 +238,52 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
   SolrServer ss;
 
-  void vdelete(String id, long version) throws Exception {
+  void vdelete(String id, long version, String... params) throws Exception {
     UpdateRequest req = new UpdateRequest();
     req.deleteById(id);
     req.setParam("del_version", Long.toString(version));
+    for (int i=0; i<params.length; i+=2) {
+      req.setParam( params[i], params[i+1]);
+    }
     ss.request(req);
     // req.process(cloudClient);
   }
 
-  void vadd(String id, long version) throws Exception {
-    index("id", id, vfield, version);
+  void vadd(String id, long version, String... params) throws Exception {
+    UpdateRequest req = new UpdateRequest();
+    req.add(sdoc("id", id, vfield, version));
+    for (int i=0; i<params.length; i+=2) {
+      req.setParam( params[i], params[i+1]);
+    }
+    ss.request(req);
   }
+
+  void vaddFail(String id, long version, int errCode, String... params) throws Exception {
+    boolean failed = false;
+    try {
+      vadd(id, version, params);
+    } catch (SolrException e) {
+      failed = true;
+      assertEquals(errCode, e.code());
+    } catch (Exception e) {
+      log.error("ERROR", e);
+    }
+    assertTrue(failed);
+  }
+
+  void vdeleteFail(String id, long version, int errCode, String... params) throws Exception {
+    boolean failed = false;
+    try {
+      vdelete(id, version, params);
+    } catch (SolrException e) {
+      failed = true;
+      assertEquals(errCode, e.code());
+    } catch (Exception e) {
+      log.error("ERROR", e);
+    }
+    assertTrue(failed);
+  }
+
 
   void doQuery(String expectedDocs, String... queryParams) throws Exception {
 
