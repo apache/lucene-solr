@@ -1475,7 +1475,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                     }
 
                     // Also test seeking the TermsEnum:
-                    for(String term : termFreqs.keySet()) {
+                    // must make copy because this very code sometimes makes puts while iterating?!
+                    Set<String> copy = new HashSet<String>(termFreqs.keySet());
+                    for(String term : copy) {
                       if (termsEnum.seekExact(new BytesRef(term))) {
                         if (random().nextBoolean()) {
                           docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
