@@ -143,4 +143,8 @@
     <forall-analyzers target="regenerate"/>
   </target>
 	
+  <target name="check-forbidden-apis">
+    <forall-analyzers target="check-forbidden-apis"/>
+  </target>
+
 </project>

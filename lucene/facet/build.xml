@@ -23,6 +23,10 @@
     Faceted indexing and search capabilities
   </description>
 
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/facet/util/PrintTaxonomyStats.class
+  "/>
+
   <import file="../module-build.xml"/>
 
   <path id="classpath">

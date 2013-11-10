@@ -220,6 +220,10 @@ Build
   should be identical across all distributions. (Steve Rowe, Uwe Schindler,
   Shalin Shekhar Mangar)
 
+* LUCENE-4753: Run forbidden-apis Ant task per module. This allows more
+  improvements and prevents OOMs after the number of class files
+  raised recently.  (Uwe Schindler)
+
 Tests
 
 * LUCENE-5278: Fix MockTokenizer to work better with more regular expression

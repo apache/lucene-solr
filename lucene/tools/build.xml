@@ -27,7 +27,18 @@
   <import file="../common-build.xml"/>
 
   <path id="classpath">
+    <!-- TODO: we need this for forbidden-apis to be happy, because it does not support "includeantruntime": -->
+    <path refid="ant-path"/>
   </path>
+
+  <path id="test.classpath"/>
+
+  <!-- redefine the test compilation, so its just a no-op -->
+  <target name="compile-test"/>
+  
+  <!-- redefine the forbidden apis to be no-ops -->
+  <target name="-check-forbidden-tests"/>
+  <target name="-check-forbidden-sysout"/>
 
   <!--  
       Specialize compile-core to not depend on clover, to exclude a 
