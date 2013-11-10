@@ -22,6 +22,14 @@
 
   <property name="build.dir" location="../build/core"/>
 
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/index/CheckIndex.class
+    org/apache/lucene/index/IndexUpgrader.class
+    org/apache/lucene/store/LockVerifyServer.class
+    org/apache/lucene/store/LockStressTest.class
+    org/apache/lucene/util/PrintStreamInfoStream.class
+  "/>
+
   <import file="../common-build.xml"/>
 
   <property name="moman.commit-hash" value="5c5c2a1e4dea" />

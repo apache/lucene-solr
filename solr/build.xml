@@ -267,49 +267,14 @@
     </license-check-macro>
   </target>
   
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-java-apis,-check-forbidden-test-apis" 
-          description="Check forbidden API calls in compiled class files."/>
-
-  <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
-  <target name="-forbidden-apis-classpath">
-    <path id="forbidden-apis.classpath">
-      <fileset dir="${basedir}" includes="**/lib/*.jar,**/test-lib/*.jar"/>
-      <dirset dir="${basedir}/build" includes="**/classes/*"/>
-      <path refid="solr.lucene.libs"/>
-      <path refid="classpath"/>
-      <path refid="test.classpath"/>
-    </path>
-  </target>
-
-  <target name="-check-forbidden-java-apis">
-    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
-    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
-      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
-      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <bundledSignatures name="commons-io-unsafe-${/commons-io/commons-io}"/>
-      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
-        <include name="base.txt" />
-        <include name="servlet-api.txt" />
-      </signaturesFileSet>
-      <fileset dir="${basedir}/build">
-        <include name="**/*.class" />        
-        <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
-        <exclude name="solr-solrj/classes/test/org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class"/>
-      </fileset>
-    </forbidden-apis>
-  </target>
-
-  <target name="-check-forbidden-test-apis">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
-      <fileset dir="${basedir}/build">
-        <include name="**/classes/test/**/*.class"/>
-        <include name="solr-test-framework/**/*.class"/>
-        <!-- not actually a test -->
-        <exclude name="solr-core/classes/test/org/apache/solr/search/DocSetPerf.class"/>
-        <!-- imported code -->
-        <exclude name="solr-core/classes/test/org/apache/solr/internal/**/*.class"/>
-      </fileset>
-    </forbidden-apis>
+  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files.">
+    <subant target="check-forbidden-apis" inheritall="false" >
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <contrib-crawl target="check-forbidden-apis" failonerror="true"/>
   </target>
 
   <!-- rat sources -->

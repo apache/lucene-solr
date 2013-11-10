@@ -26,6 +26,9 @@
     <import file="../module-build.xml"/>
     <property name="working.dir" location="work"/>
 
+    <!-- benchmark creates lots of sysout stuff, so dont run forbidden! -->
+    <target name="-check-forbidden-sysout"/>
+
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 

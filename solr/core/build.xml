@@ -23,6 +23,11 @@
   
   <property name="test.lib.dir" location="test-lib"/>
 
+  <property name="forbidden-tests-excludes" value="
+    org/apache/solr/internal/**
+    org/apache/solr/search/DocSetPerf.class
+  "/>
+
   <import file="../common-build.xml"/>
 
   <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>

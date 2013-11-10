@@ -53,6 +53,9 @@
     </invoke-module-javadoc>
   </target>
 
+  <!-- we don't check for sysout in demo, because the demo is there to use sysout :-) -->
+  <target name="-check-forbidden-sysout"/>
+
   <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,jar-queries,jar-facet,jar-expressions,common.compile-core" />
 
   <target name="default" depends="jar-core,build-web-demo"/>

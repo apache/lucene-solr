@@ -286,6 +286,10 @@ Build
 * LUCENE-5322: Clean up / simplify Maven-related Ant targets.
   (Steve Rowe)
 
+* LUCENE-4753: Run forbidden-apis Ant task per module. This allows more
+  improvements and prevents OOMs after the number of class files
+  raised recently.  (Uwe Schindler)
+
 Tests
 
 * LUCENE-5278: Fix MockTokenizer to work better with more regular expression
