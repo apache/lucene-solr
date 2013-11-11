@@ -165,7 +165,7 @@
     </subant>
   </target>
 
-  <target name="validate-maven-dependencies" depends="resolve"
+  <target name="validate-maven-dependencies" depends="generate-maven-artifacts"
           description="Validates maven dependencies, licenses, etc.">
     <sequential>
       <ant dir="lucene" inheritall="false">
