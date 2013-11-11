@@ -168,11 +168,10 @@
   <target name="validate-maven-dependencies" depends="generate-maven-artifacts"
           description="Validates maven dependencies, licenses, etc.">
     <sequential>
-      <ant dir="lucene" inheritall="false">
-        <target name="-filter-pom-templates"/>
-        <target name="-validate-maven-dependencies"/>
-      </ant>
-      <ant dir="solr" target="-validate-maven-dependencies" inheritall="false"/>
+      <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml"/>
+        <fileset dir="solr" includes="build.xml"/>
+      </subant>
     </sequential>
   </target>
   
