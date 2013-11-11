@@ -41,10 +41,10 @@ import java.util.Map;
 public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
   private MoreLikeThis mlt;
-  private String textFieldName;
+  private String[] textFieldNames;
   private String classFieldName;
   private IndexSearcher indexSearcher;
-  private int k;
+  private final int k;
   private Query query;
 
   /**
@@ -65,14 +65,17 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       throw new IOException("You must first call Classifier#train");
     }
     Query q;
+    BooleanQuery mltQuery = new BooleanQuery();
+    for (String textFieldName : textFieldNames) {
+      mltQuery.add(new BooleanClause(mlt.like(new StringReader(text), textFieldName), BooleanClause.Occur.SHOULD));
+    }
     if (query != null) {
-      Query mltQuery = mlt.like(new StringReader(text), textFieldName);
       BooleanQuery bq = new BooleanQuery();
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(mltQuery, BooleanClause.Occur.MUST);
       q = bq;
     } else {
-      q = mlt.like(new StringReader(text), textFieldName);
+      q = mltQuery;
     }
     TopDocs topDocs = indexSearcher.search(q, k);
     return selectClassFromNeighbors(topDocs);
@@ -116,11 +119,25 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    this.textFieldName = textFieldName;
+    this.textFieldNames = new String[]{textFieldName};
     this.classFieldName = classFieldName;
     mlt = new MoreLikeThis(atomicReader);
     mlt.setAnalyzer(analyzer);
     mlt.setFieldNames(new String[]{textFieldName});
+    indexSearcher = new IndexSearcher(atomicReader);
+    this.query = query;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+    this.textFieldNames = textFieldNames;
+    this.classFieldName = classFieldName;
+    mlt = new MoreLikeThis(atomicReader);
+    mlt.setAnalyzer(analyzer);
+    mlt.setFieldNames(textFieldNames);
     indexSearcher = new IndexSearcher(atomicReader);
     this.query = query;
   }
