@@ -1472,7 +1472,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
   
-  <target name="-validate-maven-dependencies.init" depends="-filter-pom-templates">
+  <target name="-validate-maven-dependencies.init">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="maven.pom.xml">

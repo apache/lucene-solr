@@ -165,12 +165,15 @@
     </subant>
   </target>
 
-  <target name="validate-maven-dependencies" depends="generate-maven-artifacts" 
+  <target name="validate-maven-dependencies" depends="resolve"
           description="Validates maven dependencies, licenses, etc.">
-    <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml"/>
-      <fileset dir="solr" includes="build.xml"/>
-    </subant>
+    <sequential>
+      <ant dir="lucene" inheritall="false">
+        <target name="-filter-pom-templates"/>
+        <target name="-validate-maven-dependencies"/>
+      </ant>
+      <ant dir="solr" target="-validate-maven-dependencies" inheritall="false"/>
+    </sequential>
   </target>
   
   <target name="run-maven-build" depends="get-maven-poms" description="Runs the Maven build using automatically generated POMs">
