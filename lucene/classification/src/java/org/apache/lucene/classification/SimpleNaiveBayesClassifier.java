@@ -102,15 +102,10 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
     if (docCount == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
-      Query q;
+      BooleanQuery q = new BooleanQuery();
+      q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))), BooleanClause.Occur.MUST));
       if (query != null) {
-        BooleanQuery bq = new BooleanQuery();
-        WildcardQuery wq = new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING)));
-        bq.add(wq, BooleanClause.Occur.MUST);
-        bq.add(query, BooleanClause.Occur.MUST);
-        q = bq;
-      } else {
-        q = new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING)));
+        q.add(query, BooleanClause.Occur.MUST);
       }
       indexSearcher.search(q,
           totalHitCountCollector);
@@ -191,7 +186,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     }
     int docsWithC = atomicReader.docFreq(new Term(classFieldName, c));
-    return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text field per doc * # docs with c
+    return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
   private int getWordFreqForClass(String word, BytesRef c) throws IOException {

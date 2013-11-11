@@ -94,12 +94,11 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {
     AtomicReader atomicReader = null;
     long trainStart = System.currentTimeMillis();
-    long trainEnd = 0l;
     try {
       populatePerformanceIndex(analyzer);
       atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
       classifier.train(atomicReader, textFieldName, classFieldName, analyzer);
-      trainEnd = System.currentTimeMillis();
+      long trainEnd = System.currentTimeMillis();
       long trainTime = trainEnd - trainStart;
       assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
     } finally {
@@ -210,6 +209,11 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
     doc.add(new Field(booleanFieldName, "false", ft));
+    indexWriter.addDocument(doc, analyzer);
+
+    doc = new Document();
+    text = "unlabeled doc";
+    doc.add(new Field(textFieldName, text, ft));
     indexWriter.addDocument(doc, analyzer);
 
     indexWriter.commit();

@@ -23,12 +23,15 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -160,14 +163,12 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     int batchCount = 0;
 
-    Query q;
+    BooleanQuery q = new BooleanQuery();
+    q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, "*")), BooleanClause.Occur.MUST));
     if (query != null) {
-      q = query;
+      q.add(new BooleanClause(query, BooleanClause.Occur.MUST));
     }
-    else {
-      q = new MatchAllDocsQuery();
-    }
-    // do a *:* search and use stored field values
+    // run the search and use stored field values
     for (ScoreDoc scoreDoc : indexSearcher.search(q,
         Integer.MAX_VALUE).scoreDocs) {
       StoredDocument doc = indexSearcher.doc(scoreDoc.doc);

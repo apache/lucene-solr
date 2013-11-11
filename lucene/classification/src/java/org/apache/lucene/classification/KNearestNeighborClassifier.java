@@ -18,6 +18,7 @@ package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -25,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -64,20 +66,16 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (mlt == null) {
       throw new IOException("You must first call Classifier#train");
     }
-    Query q;
     BooleanQuery mltQuery = new BooleanQuery();
     for (String textFieldName : textFieldNames) {
       mltQuery.add(new BooleanClause(mlt.like(new StringReader(text), textFieldName), BooleanClause.Occur.SHOULD));
     }
+    Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
+    mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));
     if (query != null) {
-      BooleanQuery bq = new BooleanQuery();
-      bq.add(query, BooleanClause.Occur.MUST);
-      bq.add(mltQuery, BooleanClause.Occur.MUST);
-      q = bq;
-    } else {
-      q = mltQuery;
+      mltQuery.add(query, BooleanClause.Occur.MUST);
     }
-    TopDocs topDocs = indexSearcher.search(q, k);
+    TopDocs topDocs = indexSearcher.search(mltQuery, k);
     return selectClassFromNeighbors(topDocs);
   }
 
