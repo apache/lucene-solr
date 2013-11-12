@@ -21,8 +21,6 @@ import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_VALUE_EQUALS_0;
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.readVLong;
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import java.io.EOFException;
