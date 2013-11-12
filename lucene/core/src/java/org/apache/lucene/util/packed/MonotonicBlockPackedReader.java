@@ -26,6 +26,7 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -33,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * {@link MonotonicBlockPackedWriter}.
  * @lucene.internal
  */
-public final class MonotonicBlockPackedReader {
+public final class MonotonicBlockPackedReader extends LongValues {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -72,14 +73,14 @@ public final class MonotonicBlockPackedReader {
     }
   }
 
-  /** Get value at <code>index</code>. */
+  @Override
   public long get(long index) {
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);
     final int idx = (int) (index & blockMask);
     return minValues[block] + (long) (idx * averages[block]) + zigZagDecode(subReaders[block].get(idx));
   }
-  
+
   /** Returns the number of values */
   public long size() {
     return valueCount;

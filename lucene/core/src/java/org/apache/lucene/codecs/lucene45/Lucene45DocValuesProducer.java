@@ -52,6 +52,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
@@ -295,24 +296,19 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     return sizeInBytes;
   }
   
-  LongNumericDocValues getNumeric(NumericEntry entry) throws IOException {
+  LongValues getNumeric(NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
     switch (entry.format) {
       case DELTA_COMPRESSED:
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-        return new LongNumericDocValues() {
-          @Override
-          public long get(long id) {
-            return reader.get(id);
-          }
-        };
+        return reader;
       case GCD_COMPRESSED:
         final long min = entry.minValue;
         final long mult = entry.gcd;
         final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-        return new LongNumericDocValues() {
+        return new LongValues() {
           @Override
           public long get(long id) {
             return min + mult * quotientReader.get(id);
@@ -322,7 +318,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         final long table[] = entry.table;
         final int bitsRequired = PackedInts.bitsRequired(table.length - 1);
         final PackedInts.Reader ords = PackedInts.getDirectReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, (int) entry.count, bitsRequired);
-        return new LongNumericDocValues() {
+        return new LongValues() {
           @Override
           public long get(long id) {
             return table[(int) ords.get((int) id)];
@@ -522,7 +518,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     final long valueCount = binaries.get(field.number).count;
     // we keep the byte[]s and list of ords on disk, these could be large
     final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
-    final LongNumericDocValues ordinals = getNumeric(ords.get(field.number));
+    final LongValues ordinals = getNumeric(ords.get(field.number));
     // but the addresses to the ord stream are in RAM
     final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
     
@@ -676,15 +672,6 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   }
 
   // internally we compose complex dv (sorted/sortedset) from other ones
-  static abstract class LongNumericDocValues extends NumericDocValues {
-    @Override
-    public final long get(int docID) {
-      return get((long) docID);
-    }
-    
-    abstract long get(long id);
-  }
-  
   static abstract class LongBinaryDocValues extends BinaryDocValues {
     @Override
     public final void get(int docID, BytesRef result) {

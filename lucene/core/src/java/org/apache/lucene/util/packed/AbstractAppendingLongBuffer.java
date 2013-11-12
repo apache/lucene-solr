@@ -18,6 +18,7 @@ package org.apache.lucene.util.packed;
  */
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.Arrays;
@@ -25,7 +26,7 @@ import java.util.Arrays;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 /** Common functionality shared by {@link AppendingDeltaPackedLongBuffer} and {@link MonotonicAppendingLongBuffer}. */
-abstract class AbstractAppendingLongBuffer {
+abstract class AbstractAppendingLongBuffer extends LongValues {
 
   static final int MIN_PAGE_SIZE = 64;
   // More than 1M doesn't really makes sense with these appending buffers
@@ -92,7 +93,7 @@ abstract class AbstractAppendingLongBuffer {
 
   abstract void packPendingValues();
 
-  /** Get a value from this buffer. */
+  @Override
   public final long get(long index) {
     assert index >= 0 && index < size();
     final int block = (int) (index >> pageShift);

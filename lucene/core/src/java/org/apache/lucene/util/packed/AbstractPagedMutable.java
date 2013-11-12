@@ -21,13 +21,14 @@ import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Base implementation for {@link PagedMutable} and {@link PagedGrowableWriter}.
  * @lucene.internal
  */
-abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> {
+abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues {
 
   static final int MIN_BLOCK_SIZE = 1 << 6;
   static final int MAX_BLOCK_SIZE = 1 << 30;
@@ -80,7 +81,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> {
     return (int) index & pageMask;
   }
 
-  /** Get value at <code>index</code>. */
+  @Override
   public final long get(long index) {
     assert index >= 0 && index < size;
     final int pageIndex = pageIndex(index);

@@ -29,12 +29,13 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LongValues;
 
 /**
  * Provides random access to a stream written with {@link BlockPackedWriter}.
  * @lucene.internal
  */
-public final class BlockPackedReader {
+public final class BlockPackedReader extends LongValues {
 
   private final int blockShift, blockMask;
   private final long valueCount;
@@ -77,7 +78,7 @@ public final class BlockPackedReader {
     this.minValues = minValues;
   }
 
-  /** Get value at <code>index</code>. */
+  @Override
   public long get(long index) {
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);

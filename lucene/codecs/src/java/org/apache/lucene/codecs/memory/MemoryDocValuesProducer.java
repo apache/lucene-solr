@@ -233,12 +233,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       case DELTA_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return reader.get(docID);
-          }
-        };
+        return reader;
       case UNCOMPRESSED:
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);

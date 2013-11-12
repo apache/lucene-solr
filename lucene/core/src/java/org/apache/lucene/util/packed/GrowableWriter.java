@@ -30,7 +30,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * <p>@lucene.internal</p>
  */
-public class GrowableWriter implements PackedInts.Mutable {
+public class GrowableWriter extends PackedInts.Mutable {
 
   private long currentMask;
   private PackedInts.Mutable current;
