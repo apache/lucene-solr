@@ -61,6 +61,13 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+======================= Lucene 4.7.0 =======================
+
+New Features
+
+* LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
+  (Jack Conradson via Robert Muir)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
