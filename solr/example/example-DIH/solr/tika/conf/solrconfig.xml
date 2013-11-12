@@ -24,7 +24,7 @@
     that you fully re-index after changing this setting as it can affect both how text is indexed
     and queried.
   -->
-  <luceneMatchVersion>4.6</luceneMatchVersion>
+  <luceneMatchVersion>4.7</luceneMatchVersion>
 
   <!--
       NOTE: In order to reduce Jar duplication, dataimporthandler-extras 
