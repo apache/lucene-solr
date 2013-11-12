@@ -470,6 +470,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           currentDocBase = contexts[currentContext].docBase;
           nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
           delegate.setNextReader(contexts[currentContext]);
+          delegate.setScorer(dummy);
         }
 
         int contextDoc = docId-currentDocBase;
@@ -582,6 +583,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           currentDocBase = contexts[currentContext].docBase;
           nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
           delegate.setNextReader(contexts[currentContext]);
+          delegate.setScorer(dummy);
         }
 
         int contextDoc = docId-currentDocBase;
