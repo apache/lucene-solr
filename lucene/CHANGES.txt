@@ -3,6 +3,13 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.7.0 =======================
+
+New Features
+
+* LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
+  (Jack Conradson via Robert Muir)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
