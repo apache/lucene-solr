@@ -62,7 +62,7 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
-Upgrading from Solr 4.5.0
+Upgrading from Solr 4.6.0
 ----------------------
                       
                       
