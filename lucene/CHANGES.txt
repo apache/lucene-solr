@@ -155,6 +155,9 @@ New Features
   
 * LUCENE-5297: Allow to range-facet on any ValueSource, not just
   NumericDocValues fields. (Shai Erera)
+  
+* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
+  configurable (Areek Zilluer via Erick Erickson)
 
 Bug Fixes
 
