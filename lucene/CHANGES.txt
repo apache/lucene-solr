@@ -9,6 +9,9 @@ New Features
 
 * LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
   (Jack Conradson via Robert Muir)
+  
+* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
+  configurable (Areek Zilluer via Erick Erickson)
 
 Build
 
@@ -108,9 +111,6 @@ New Features
 * LUCENE-5297: Allow to range-facet on any ValueSource, not just
   NumericDocValues fields. (Shai Erera)
   
-* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
-  configurable (Areek Zilluer via Erick Erickson)
-
 Bug Fixes
 
 * LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
