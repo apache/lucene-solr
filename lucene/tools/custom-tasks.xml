@@ -109,4 +109,31 @@
       </libversions>
     </sequential>
   </macrodef>
+
+  <macrodef name="get-maven-dependencies-macro">
+    <attribute name="dir"/>
+    <attribute name="centralized.versions.file"/>
+    <attribute name="module.dependencies.properties.file"/>
+    <attribute name="maven.dependencies.filters.file"/>
+    <sequential>
+      <echo>Get maven dependencies called under: @{dir}</echo>
+      <mvndeps centralizedVersionsFile="@{centralized.versions.file}"
+               moduleDependenciesPropertiesFile="@{module.dependencies.properties.file}"
+               mavenDependenciesFiltersFile="@{maven.dependencies.filters.file}">
+        <fileset dir="@{dir}">
+          <include name="**/ivy.xml" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+          <exclude name="**/maven-build/**" />
+          <exclude name="**/idea-build/**" />
+          <exclude name="**/dev-tools/**" />
+        </fileset>
+      </mvndeps>
+    </sequential>
+  </macrodef>
 </project>

@@ -46,22 +46,14 @@
   <dependencies>
     <dependency> 
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>${project.groupId}</groupId>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-queryparser</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
+@lucene-memory.internal.dependencies@
+@lucene-memory.external.dependencies@
+@lucene-memory.internal.test.dependencies@
+@lucene-memory.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>

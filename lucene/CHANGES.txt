@@ -10,6 +10,16 @@ New Features
 * LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
   (Jack Conradson via Robert Muir)
 
+Build
+
+* LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
+  transitive dependency resolution for all depended-on artifacts by putting
+  an exclusion for each transitive dependency in the <dependencyManagement>
+  section of the grandparent POM. (Steve Rowe)
+
+* LUCENE-5322: Clean up / simplify Maven-related Ant targets.
+  (Steve Rowe)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

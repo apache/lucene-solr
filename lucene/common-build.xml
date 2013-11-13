@@ -1431,10 +1431,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
              classpathref="maven-ant-tasks.classpath"/>
   </target>
 
-  <target name="dist-maven"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, -unpack-lucene-tgz, dist-maven-common"/>
-  <target name="dist-maven-common"
-          depends="jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+  <target name="-dist-maven" depends="install-maven-tasks, jar-src, javadocs">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
@@ -1457,10 +1454,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
-  <target name="dist-maven-src-java"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, -unpack-lucene-tgz, dist-maven-common-src-java"/>
-  <target name="dist-maven-common-src-java"
-          depends="-unpack-lucene-tgz, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+  <target name="-dist-maven-src-java" depends="install-maven-tasks, jar-src, javadocs">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
@@ -1483,7 +1477,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
   
-  <target name="-validate-maven-dependencies.init" depends="filter-pom-templates">
+  <target name="-validate-maven-dependencies.init">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="maven.pom.xml">
@@ -1520,29 +1514,64 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </excludes>
     </m2-validate-dependencies>
   </target>
+  
+  <property name="module.dependencies.properties.file" location="${common.build.dir}/module.dependencies.properties"/>
 
-  <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">
-    <mkdir dir="${filtered.pom.templates.dir}"/>
-    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8">
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <pathconvert property="test.classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="test.classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <echo append="true" file="${module.dependencies.properties.file}">
+${ant.project.name}.dependencies=${classpath.list}
+${ant.project.name}.test.dependencies=${test.classpath.list}
+      </echo>
+    </sequential>
+  </target>
+
+  <property name="maven.dependencies.filters.file" location="${common.build.dir}/maven.dependencies.filters.properties"/>
+
+  <target name="-get-maven-dependencies" depends="compile-tools,load-custom-tasks">
+    <ant dir="${common.dir}/.." target="-append-all-modules-dependencies-properties" inheritall="false"/>
+    <get-maven-dependencies-macro
+        dir="${common.dir}/.."
+        centralized.versions.file="${common.dir}/ivy-versions.properties"
+        module.dependencies.properties.file="${module.dependencies.properties.file}"
+        maven.dependencies.filters.file="${maven.dependencies.filters.file}"/>
+  </target>
+
+  <target name="-get-maven-poms" depends="-get-maven-dependencies">
+    <property name="maven-build-dir" location="${common.dir}/../maven-build"/>
+    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
       <fileset dir="${common.dir}/../dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
       </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
+      </filterset>
       <globmapper from="*.template" to="*"/>
     </copy>
-    <property name="filtered.pom.templates.uptodate" value="true"/>
   </target>
 
-  <target name="m2-deploy-lucene-parent-pom" depends="filter-pom-templates,m2-deploy-grandparent-pom"
-          unless="deployed.lucene.parent.pom.uptodate">
-    <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/>    <!-- Lucene parent POM -->
-    <property name="deployed.lucene.parent.pom.uptodate" value="true"/>
-  </target>
-
-  <target name="m2-deploy-grandparent-pom" depends="filter-pom-templates"
-          unless="deployed.grandparent.pom.uptodate">
-    <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>    <!-- Lucene/Solr grandparent POM -->
-    <property name="deployed.grandparent.pom.uptodate" value="true"/>
+  <target name="-filter-pom-templates" depends="-get-maven-dependencies">
+    <mkdir dir="${filtered.pom.templates.dir}"/>
+    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8" filtering="on">
+      <fileset dir="${common.dir}/../dev-tools/maven"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="version" value="${version}"/>
+      </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
+      </filterset>
+      <globmapper from="*.template" to="*"/>
+    </copy>
   </target>
 
   <target name="stage-maven-artifacts">

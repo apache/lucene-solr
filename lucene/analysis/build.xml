@@ -115,8 +115,8 @@
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
-  <target name="dist-maven">
-    <forall-analyzers target="dist-maven"/>
+  <target name="-dist-maven">
+    <forall-analyzers target="-dist-maven"/>
   </target>  	
 
   <target name="-validate-maven-dependencies">
@@ -141,6 +141,10 @@
 
   <target name="regenerate">
     <forall-analyzers target="regenerate"/>
+  </target>
+  
+  <target name="-append-module-dependencies-properties">
+    <forall-analyzers target="-append-module-dependencies-properties"/>
   </target>
 	
   <target name="check-forbidden-apis">

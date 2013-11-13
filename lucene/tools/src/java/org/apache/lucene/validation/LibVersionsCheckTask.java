@@ -314,12 +314,7 @@ public class LibVersionsCheckTask extends Task {
     DependencyRevChecker revChecker = new DependencyRevChecker(ivyXmlFile); 
     xmlReader.setContentHandler(revChecker);
     xmlReader.setErrorHandler(revChecker);
-    // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
-    CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
-        .onMalformedInput(CodingErrorAction.REPORT)
-        .onUnmappableCharacter(CodingErrorAction.REPORT);
-    InputStream stream = new FileInputStream(ivyXmlFile);
-    xmlReader.parse(new InputSource(new BufferedReader(new InputStreamReader(stream, decoder))));
+    xmlReader.parse(new InputSource(ivyXmlFile.getAbsolutePath()));
     return ! revChecker.fail;
   }
 

@@ -42,21 +42,8 @@
     <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-solrj</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <scope>provided</scope>
-    </dependency>
+@solr-webapp.internal.dependencies@
+@solr-webapp.external.dependencies@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
