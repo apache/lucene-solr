@@ -568,10 +568,12 @@
     <contrib-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <target name="-dist-maven" depends="install-maven-tasks">
+  <!-- define-lucene-javadoc-url is *not* a useless dependencies. Do not remove! -->
+  <target name="-dist-maven" depends="install-maven-tasks,define-lucene-javadoc-url">
     <sequential>
       <m2-deploy pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
       <subant target="-dist-maven" inheritall="false" >
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="solrj" includes="build.xml"/>
         <fileset dir="test-framework" includes="build.xml"/>
@@ -581,12 +583,13 @@
     </sequential>
   </target>
   
-  <!-- define-lucene-javadoc-url is *not* a useless dependencies. Do not remove! -->
-  <target name="generate-maven-artifacts" depends="define-lucene-javadoc-url,-unpack-solr-tgz">
+  <target name="generate-maven-artifacts" depends="-unpack-solr-tgz">
     <sequential>
       <ant dir=".." target="resolve" inheritall="false"/>
       <antcall target="-filter-pom-templates" inheritall="false"/>
-      <antcall target="-dist-maven" inheritall="false"/>
+      <antcall target="-dist-maven" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </antcall>
     </sequential>
   </target>
  
