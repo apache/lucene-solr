@@ -124,17 +124,22 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     CloudSolrServer client = createCloudClient(null);
     createColl(COLL_NAME, client);
     DocCollection testcoll = getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollection(COLL_NAME);
-    final Slice shard1 = testcoll.getSlices().iterator().next();
-    if(!shard1.getState().equals(Slice.ACTIVE)) fail("shard is not active");
-    boolean found = false;
-    Replica replica1 = null;
-    for (Replica replica : shard1.getReplicas()) if("active".equals(replica.getStr("state"))) replica1 =replica;
 
+    Slice shard1 = null;
+    Replica replica1 = null;
+    for (Slice slice : testcoll.getSlices()) {
+      if("active".equals( slice.getStr("state"))){
+        shard1 = slice;
+        for (Replica replica : shard1.getReplicas()) if("active".equals(replica.getStr("state"))) replica1 =replica;
+      }
+    }
+//    final Slice shard1 = testcoll.getSlices().iterator().next();
+//    if(!shard1.getState().equals(Slice.ACTIVE)) fail("shard is not active");
+//    for (Replica replica : shard1.getReplicas()) if("active".equals(replica.getStr("state"))) replica1 =replica;
     if(replica1 == null) fail("no active relicas found");
 
     removeAndWaitForReplicaGone(COLL_NAME, client, replica1, shard1.getName());
     client.shutdown();
-
 
   }
 
