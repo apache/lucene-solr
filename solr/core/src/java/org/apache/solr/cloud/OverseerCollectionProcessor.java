@@ -273,8 +273,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     Replica replica = slice.getReplica(replicaName);
     if(replica == null){
+      ArrayList<String> l = new ArrayList<String>();
+      for (Replica r : slice.getReplicas()) l.add(r.getName());
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid replica : " + replicaName + " in shard/collection : "
-          + shard + "/"+ collectionName);
+          + shard + "/"+ collectionName + " available replicas are "+ StrUtils.join(l,','));
     }
 
     String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
