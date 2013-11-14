@@ -62,8 +62,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
   
   private static File createSolrHome() throws Exception {
-    File workDir = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
-    workDir = new File(workDir, DistributedDebugComponentTest.class.getName());
+    File workDir = new File(TEMP_DIR, DistributedDebugComponentTest.class.getName());
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;
@@ -71,6 +70,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @AfterClass
   public static void afterTest() throws Exception {
+    collection1.shutdown();
+    collection2.shutdown();
+    jetty.stop();
+    jetty=null;
     cleanUpJettyHome(solrHome);
   }
   
