@@ -40,9 +40,9 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    assertU(adoc("id", "1", "title", "this is a title."));
-    assertU(adoc("id", "2", "title", "this is another title."));
-    assertU(adoc("id", "3", "title", "Mary had a little lamb."));
+    assertU(adoc("id", "1", "title", "this is a title.", "inStock_b1", "true"));
+    assertU(adoc("id", "2", "title", "this is another title.", "inStock_b1", "true"));
+    assertU(adoc("id", "3", "title", "Mary had a little lamb.", "inStock_b1", "false"));
     assertU(commit());
 
   }
@@ -147,7 +147,15 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
             "count(//lst[@name='timing']/*)=0"
     );
-
+    
+    //Grouping
+    assertQ(req("q", "*:*", "debug", CommonParams.RESULTS,
+        "group", CommonParams.TRUE,
+        "group.field", "inStock_b1",
+        "debug", CommonParams.TRUE), 
+        "//str[@name='rawquerystring']='*:*'",
+        "count(//lst[@name='explain']/*)=2"
+    );
   }
   
   @Test

@@ -326,10 +326,13 @@ public class SolrPluginUtils {
       IndexSchema schema = searcher.getSchema();
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
-      NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
-      dbg.add("explain", explainStruct
-              ? explanationsToNamedLists(explain)
-              : explanationsToStrings(explain));
+      if (results != null) {
+        NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
+        dbg.add("explain", explainStruct
+            ? explanationsToNamedLists(explain)
+            : explanationsToStrings(explain));
+      }
+
       String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery(otherQueryS, req, 0, 10);

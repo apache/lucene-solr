@@ -37,6 +37,12 @@ Upgrading from Solr 4.6.0
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-5438: DebugComponent throws NPE when used with grouping.
+  (Tomás Fernández Löbbe via shalin)
+
 Other Changes
 ---------------------
 
