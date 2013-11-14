@@ -47,11 +47,6 @@ public class FacetIndexWriter extends IndexWriter {
   private final char facetDelimChar;
   private final FacetsConfig facetsConfig;
 
-  /** Use this if you will only use SSDV facets */
-  public FacetIndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    this(d, conf, null, null, Constants.DEFAULT_DELIM_CHAR);
-  }
-
   public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig facetsConfig) throws IOException {
     this(d, conf, taxoWriter, facetsConfig, Constants.DEFAULT_DELIM_CHAR);
   }
@@ -160,12 +155,7 @@ public class FacetIndexWriter extends IndexWriter {
           throw new IllegalArgumentException("dimension \"" + facetField.dim + "\" is not hierarchical yet has " + facetField.path.length + " components");
         }
       
-        // Append dim and path:
-        String[] fullPath = new String[facetField.path.length+1];
-        fullPath[0] = facetField.dim;
-        System.arraycopy(facetField.path, 0, fullPath, 1, facetField.path.length);
-
-        CategoryPath cp = new CategoryPath(fullPath);
+        CategoryPath cp = CategoryPath.create(facetField.dim, facetField.path);
 
         int ordinal = taxoWriter.addCategory(cp);
         ordinals.ints[ordinals.length++] = ordinal;

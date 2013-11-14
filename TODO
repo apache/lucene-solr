@@ -1,7 +1,6 @@
 nocommit this!
 
 TODO
-  - branch
   - associations
   - SSDVValueSourceFacets?
   - we could put more stuff into the "schema", e.g. this field is

@@ -39,7 +39,7 @@ import org.apache.lucene.util.FixedBitSet;
 /** Aggregates sum of values from a {@link ValueSource}, for
  *  each facet label. */
 
-public class TaxonomyFacetSumValueSource {
+public class TaxonomyFacetSumValueSource extends Facets {
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
   private final float[] values;
@@ -147,29 +147,23 @@ public class TaxonomyFacetSumValueSource {
     return sum;
   }
 
-  /** Return the count for a specific path.  Returns -1 if
-   *  this path doesn't exist, else the count. */
-  public float getSpecificValue(CategoryPath path) throws IOException {
-    int ord = taxoReader.getOrdinal(path);
+  @Override
+  public Number getSpecificValue(String dim, String... path) throws IOException {
+    int ord = taxoReader.getOrdinal(CategoryPath.create(dim, path));
     if (ord < 0) {
       return -1;
     }
     return values[ord];
   }
 
-  /** Sugar, for flat fields. */
-  public SimpleFacetResult getDim(String dim, int topN) throws IOException {
-    return getTopChildren(new CategoryPath(dim), topN);
-  }
-
-  /** Returns null if this path doesn't exist or all counts
-   *  were 0, else topN children under the specified path. */
-  public SimpleFacetResult getTopChildren(CategoryPath path, int topN) throws IOException {
-    int ord = taxoReader.getOrdinal(path);
+  @Override
+  public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    CategoryPath cp = CategoryPath.create(dim, path);
+    int ord = taxoReader.getOrdinal(cp);
     if (ord == -1) {
       return null;
     }
-    return getTopChildren(path, ord, topN);
+    return getTopChildren(cp, ord, topN);
   }
 
   private SimpleFacetResult getTopChildren(CategoryPath path, int dimOrd, int topN) throws IOException {
@@ -220,8 +214,7 @@ public class TaxonomyFacetSumValueSource {
     return new SimpleFacetResult(path, sumValues, labelValues);
   }
 
-  /** Returns topN labels for any dimension that had hits,
-   *  sorted by the number of hits that dimension matched. */
+  @Override
   public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
     int ord = children[TaxonomyReader.ROOT_ORDINAL];
     List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();

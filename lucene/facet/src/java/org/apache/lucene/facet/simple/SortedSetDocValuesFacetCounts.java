@@ -52,7 +52,7 @@ import org.apache.lucene.util.PriorityQueue;
  *  After creating this class, invoke {@link #getDim} or
  *  {@link #getAllDims} to retrieve facet results. */
 
-public class SortedSetDocValuesFacetCounts {
+public class SortedSetDocValuesFacetCounts extends Facets {
 
   final SortedSetDocValuesReaderState state;
   final SortedSetDocValues dv;
@@ -71,10 +71,11 @@ public class SortedSetDocValuesFacetCounts {
     count(hits.getMatchingDocs());
   }
 
-  /** Get the topN facet labels for this dimension.
-   *  Returns null if this dimension was never seen in the
-   *  hits.  */
-  public SimpleFacetResult getDim(String dim, int topN) throws IOException {
+  @Override
+  public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    if (path.length > 0) {
+      throw new IllegalArgumentException("path should be 0 length");
+    }
     OrdRange ordRange = state.getOrdRange(dim);
     if (ordRange == null) {
       throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed");
@@ -223,14 +224,13 @@ public class SortedSetDocValuesFacetCounts {
     }
   }
 
-  /** Return the count for a specific path.  Returns -1 if
-   *  this path doesn't exist, else the count. */
-  public int getSpecificCount(CategoryPath path) {
-    if (path.length != 2) {
-      throw new IllegalArgumentException("path must be length=2");
+  @Override
+  public Number getSpecificValue(String dim, String... path) {
+    if (path.length != 1) {
+      throw new IllegalArgumentException("path must be length=1");
     }
 
-    int ord = (int) dv.lookupTerm(new BytesRef(path.toString(state.separator)));
+    int ord = (int) dv.lookupTerm(new BytesRef(dim + state.separator + path[0]));
     if (ord < 0) {
       return -1;
     }
@@ -238,8 +238,7 @@ public class SortedSetDocValuesFacetCounts {
     return counts[ord];
   }
 
-  /** Returns topN labels for any dimension that had hits,
-   *  sorted by the number of hits that dimension matched. */
+  @Override
   public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
 
     List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();

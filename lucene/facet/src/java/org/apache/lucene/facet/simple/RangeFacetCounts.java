@@ -34,7 +34,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
  * Uses {@link RangeFacetRequest#getValues(AtomicReaderContext)} and accumulates
  * counts for provided ranges.
  */
-public class RangeFacetCounts {
+public class RangeFacetCounts extends Facets {
   private final Range[] ranges;
   private final int[] counts;
   private int totCount;
@@ -82,12 +82,28 @@ public class RangeFacetCounts {
     }
   }
 
-  public SimpleFacetResult getCounts() {
+  // nocommit all args are ... unused ... this doesn't "fit"
+  // very well:
+
+  @Override
+  public SimpleFacetResult getTopChildren(int topN, String dim, String... path) {
     LabelAndValue[] labelValues = new LabelAndValue[counts.length];
     for(int i=0;i<counts.length;i++) {
       // nocommit can we add the range into this?
       labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
     }
+
     return new SimpleFacetResult(null, totCount, labelValues);
+  }
+
+  @Override
+  public Number getSpecificValue(String dim, String... path) throws IOException {
+    // nocommit we could impl this?
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
+    return Collections.singletonList(getTopChildren(topN, null));
   }
 }

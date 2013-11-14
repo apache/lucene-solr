@@ -95,6 +95,14 @@ public class CategoryPath implements Comparable<CategoryPath> {
     length = components.length;
   }
 
+  // nocommit javadocs/rename
+  public static CategoryPath create(String dim, String... path) {
+    String[] components = new String[1+path.length];
+    components[0] = dim;
+    System.arraycopy(path, 0, components, 1, path.length);
+    return new CategoryPath(components);
+  }
+
   /** Construct from a given path, separating path components with {@code delimiter}. */
   public CategoryPath(final String pathString, final char delimiter) {
     if (pathString.length() > MAX_CATEGORY_PATH_LENGTH) {

@@ -112,8 +112,8 @@ public class TestTaxonomyFacets extends FacetTestCase {
     TaxonomyFacetCounts facets = new TaxonomyFacetCounts(taxoReader, fts, c);
 
     // Retrieve & verify results:
-    assertEquals("Publish Date (5)\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getDim("Publish Date", 10).toString());
-    assertEquals("Author (5)\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", facets.getDim("Author", 10).toString());
+    assertEquals("Publish Date (5)\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("Author (5)\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", facets.getTopChildren(10, "Author").toString());
 
     // Now user drills down on Publish Date/2010:
     SimpleDrillDownQuery q2 = new SimpleDrillDownQuery(new MatchAllDocsQuery());
@@ -121,9 +121,9 @@ public class TestTaxonomyFacets extends FacetTestCase {
     c = new SimpleFacetsCollector();
     searcher.search(q2, c);
     facets = new TaxonomyFacetCounts(taxoReader, fts, c);
-    assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", facets.getDim("Author", 10).toString());
+    assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", facets.getTopChildren(10, "Author").toString());
 
-    assertEquals(1, facets.getSpecificCount(new CategoryPath("Author", "Lisa")));
+    assertEquals(1, facets.getSpecificValue("Author", "Lisa"));
 
     // Smoke test PrintTaxonomyStats:
     ByteArrayOutputStream bos = new ByteArrayOutputStream();

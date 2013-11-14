@@ -90,7 +90,7 @@ public class TestRangeFacets extends FacetTestCase {
         new LongRange("90 or above", 90L, true, 100L, false),
         new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
     
-    SimpleFacetResult result = facets.getCounts();
+    SimpleFacetResult result = facets.getTopChildren(10, null);
     assertEquals("null (101)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
                  result.toString());
     

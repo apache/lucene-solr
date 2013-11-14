@@ -46,7 +46,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
@@ -75,8 +75,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
 
-    assertEquals("a (4)\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getDim("a", 10).toString());
-    assertEquals("b (1)\n  baz (1)\n", facets.getDim("b", 10).toString());
+    assertEquals("a (4)\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("b (1)\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
 
     // DrillDown:
     SimpleDrillDownQuery q = new SimpleDrillDownQuery();
@@ -94,7 +94,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
@@ -135,7 +135,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));

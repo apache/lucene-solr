@@ -112,7 +112,7 @@ public class TestTaxonomyFacetsSumValueSource extends FacetTestCase {
     TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, new IntFieldSource("num"));
 
     // Retrieve & verify results:
-    assertEquals("Author (145.0)\n  Lisa (50.0)\n  Frank (45.0)\n  Susan (40.0)\n  Bob (10.0)\n", facets.getDim("Author", 10).toString());
+    assertEquals("Author (145.0)\n  Lisa (50.0)\n  Frank (45.0)\n  Susan (40.0)\n  Bob (10.0)\n", facets.getTopChildren(10, "Author").toString());
 
     taxoReader.close();
     searcher.getIndexReader().close();
