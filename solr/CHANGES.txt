@@ -69,6 +69,12 @@ Upgrading from Solr 4.6.0
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-5308: A new 'migrate' collection API to split all documents with a
+  route key into another collection (shalin)
+
 Other Changes
 ---------------------
 

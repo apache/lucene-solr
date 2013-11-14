@@ -161,7 +161,8 @@ public class CollectionsHandler extends RequestHandlerBase {
       case DELETESHARD: {
         this.handleDeleteShardAction(req, rsp);
         break;
-      }case CREATESHARD: {
+      }
+      case CREATESHARD: {
         this.handleCreateShard(req, rsp);
         break;
       }
@@ -169,7 +170,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleRemoveReplica(req, rsp);
         break;
       }
-
+      case MIGRATE: {
+        this.handleMigrate(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -420,6 +424,16 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
 
     handleResponse(OverseerCollectionProcessor.SPLITSHARD, m, rsp, DEFAULT_ZK_TIMEOUT * 5);
+  }
+
+  private void handleMigrate(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Migrate action invoked: " + req.getParamString());
+    req.getParams().required().check("collection", "split.key", "target.collection");
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.MIGRATE);
+    copyIfNotNull(req.getParams(), props, "collection", "split.key", "target.collection", "forward.timeout");
+    ZkNodeProps m = new ZkNodeProps(props);
+    handleResponse(OverseerCollectionProcessor.MIGRATE, m, rsp, DEFAULT_ZK_TIMEOUT * 20);
   }
 
   public static ModifiableSolrParams params(String... params) {

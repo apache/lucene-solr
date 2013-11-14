@@ -164,6 +164,8 @@ public final class SolrCore implements SolrInfoMBean {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
 
+  private final ReentrantLock ruleExpiryLock;
+
   public long getStartTime() { return startTime; }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
@@ -646,6 +648,7 @@ public final class SolrCore implements SolrInfoMBean {
     this.updateProcessorChains = null;
     this.infoRegistry = null;
     this.codec = null;
+    this.ruleExpiryLock = null;
 
     solrCoreState = null;
   }
@@ -861,6 +864,8 @@ public final class SolrCore implements SolrInfoMBean {
     // For debugging   
 //    numOpens.incrementAndGet();
 //    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
+
+    ruleExpiryLock = new ReentrantLock();
   }
     
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
@@ -2213,6 +2218,10 @@ public final class SolrCore implements SolrInfoMBean {
 
   public IndexDeletionPolicyWrapper getDeletionPolicy(){
     return solrDelPolicy;
+  }
+
+  public ReentrantLock getRuleExpiryLock() {
+    return ruleExpiryLock;
   }
 
   /////////////////////////////////////////////////////////////////////
