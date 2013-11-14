@@ -75,6 +75,12 @@ New Features
 * SOLR-5308: A new 'migrate' collection API to split all documents with a
   route key into another collection (shalin)
 
+Bug Fixes
+----------------------
+
+* SOLR-5438: DebugComponent throws NPE when used with grouping.
+  (Tomás Fernández Löbbe via shalin)
+
 Other Changes
 ---------------------
 

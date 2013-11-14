@@ -19,26 +19,20 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
 
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -87,8 +81,14 @@ public class DebugComponent extends SearchComponent
   public void process(ResponseBuilder rb) throws IOException
   {
     if( rb.isDebug() ) {
+      DocList results = null;
+      //some internal grouping requests won't have results value set
+      if(rb.getResults() != null) {
+        results = rb.getResults().docList;
+      }
+
       NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
-          rb.getQueryString(), rb.getQuery(), rb.getResults().docList, rb.isDebugQuery(), rb.isDebugResults());
+          rb.getQueryString(), rb.getQuery(), results, rb.isDebugQuery(), rb.isDebugResults());
       
       NamedList info = rb.getDebugInfo();
       if( info == null ) {
