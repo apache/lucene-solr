@@ -274,6 +274,24 @@
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
     </makeurl>
+    <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
+    <loadfile srcfile="${Codec.java}" property="defaultCodecPackage">
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <scriptfilter language="groovy">
+            <classpath>
+              <path refid="groovy.classpath"/>
+            </classpath><![CDATA[
+            //                   private static Codec defaultCodec   =   Codec    .   forName    (   "Lucene46"   )   ;
+            defaultCodecMatcher = self.getToken() =~ /defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*"([^"]+)"\s*\)\s*;/
+            self.setToken(defaultCodecMatcher[0][1].toLowerCase());
+            ]]>
+          </scriptfilter>
+        </tokenfilter>
+      </filterchain>
+    </loadfile>
+
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
@@ -286,6 +304,7 @@
       <outputproperty name="indent" value="yes"/>
       <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
+      <param name="defaultCodecPackage" expression="${defaultCodecPackage}"/>
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
