@@ -30,6 +30,9 @@ public final class LongRange extends Range {
   public final boolean minInclusive;
   public final boolean maxInclusive;
 
+  // nocommit can we require fewer args? (same for
+  // Double/FloatRange too)
+
   /** Create a LongRange. */
   public LongRange(String label, long min, boolean minInclusive, long max, boolean maxInclusive) {
     super(label);

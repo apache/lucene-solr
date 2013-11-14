@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
  * 
  * @lucene.experimental
  */
+// nocommit rename to FacetLabel?
 public class CategoryPath implements Comparable<CategoryPath> {
 
   /*
