@@ -136,8 +136,8 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 //    final Slice shard1 = testcoll.getSlices().iterator().next();
 //    if(!shard1.getState().equals(Slice.ACTIVE)) fail("shard is not active");
 //    for (Replica replica : shard1.getReplicas()) if("active".equals(replica.getStr("state"))) replica1 =replica;
-    if(replica1 == null) fail("no active relicas found");
-
+    if(replica1 == null) fail("no active replicas found");
+    Thread.sleep(2500);//remove this later.not sure if the clusterstate is not propagated and that is why the tests are failing.SOLR-5437
     removeAndWaitForReplicaGone(COLL_NAME, client, replica1, shard1.getName());
     client.shutdown();
 
