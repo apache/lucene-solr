@@ -193,6 +193,19 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  public long getTotalLogsSize() {
+    long size = 0;
+    synchronized (logs) {
+      for (TransactionLog log : logs) {
+        size += log.getLogSize();
+      }
+    }
+    return size;
+  }
+
+  public long getTotalLogsNumber() {
+    return logs.size();
+  }
 
   public VersionInfo getVersionInfo() {
     return versionInfo;

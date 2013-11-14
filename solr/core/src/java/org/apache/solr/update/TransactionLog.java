@@ -563,6 +563,10 @@ public class TransactionLog {
     return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
   }
 
+  public long getLogSize() {
+    return tlogFile.length();
+  }
+
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
    * be used from a single thread. */
