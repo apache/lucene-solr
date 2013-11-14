@@ -113,6 +113,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
+    
+    
 
     for (int i=100; i<150; i++) {
       indexr(id, i);      
@@ -315,6 +317,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("explain", SKIPVAL);  // internal docids differ, idf differs w/o global idf
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
+    handle.put("track", SKIP); //track is not included in single node search
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
     query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);

@@ -17,6 +17,20 @@
 
 package org.apache.solr.util;
 
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.BooleanClause;
@@ -37,6 +51,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,18 +71,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SyntaxError;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
-
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
  *
@@ -82,6 +85,31 @@ import java.lang.reflect.InvocationTargetException;
  * default parameter settings.
  */
 public class SolrPluginUtils {
+  
+
+  /**
+   * Map containing all the possible purposes codes of a request as key and
+   * the corresponding readable purpose as value
+   */
+  private static final Map<Integer, String> purposes;
+
+  static {
+      Map<Integer, String> map = new TreeMap<>();
+      map.put(ShardRequest.PURPOSE_PRIVATE, "PRIVATE");
+      map.put(ShardRequest.PURPOSE_GET_TERM_DFS, "GET_TERM_DFS");
+      map.put(ShardRequest.PURPOSE_GET_TOP_IDS, "GET_TOP_IDS");
+      map.put(ShardRequest.PURPOSE_REFINE_TOP_IDS, "REFINE_TOP_IDS");
+      map.put(ShardRequest.PURPOSE_GET_FACETS, "GET_FACETS");
+      map.put(ShardRequest.PURPOSE_REFINE_FACETS, "REFINE_FACETS");
+      map.put(ShardRequest.PURPOSE_GET_FIELDS, "GET_FIELDS");
+      map.put(ShardRequest.PURPOSE_GET_HIGHLIGHTS, "GET_HIGHLIGHTS");
+      map.put(ShardRequest.PURPOSE_GET_DEBUG, "GET_DEBUG");
+      map.put(ShardRequest.PURPOSE_GET_STATS, "GET_STATS");
+      map.put(ShardRequest.PURPOSE_GET_TERMS, "GET_TERMS");
+      map.put(ShardRequest.PURPOSE_GET_TOP_GROUPS, "GET_TOP_GROUPS");
+      map.put(ShardRequest.PURPOSE_GET_MLT_RESULTS, "GET_MLT_RESULTS");
+      purposes = Collections.unmodifiableMap(map);
+  }
 
   /**
    * Set default-ish params on a SolrQueryRequest.
@@ -204,6 +232,8 @@ public class SolrPluginUtils {
           rb.setDebugQuery(true);
         } else if (params[i].equals(CommonParams.RESULTS)){
           rb.setDebugResults(true);
+        } else if (params[i].equals(CommonParams.TRACK)){
+          rb.setDebugTrack(true);
         }
       }
     }
@@ -262,6 +292,7 @@ public class SolrPluginUtils {
     return dbg;
   }
   
+
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
           String userQuery,
@@ -299,7 +330,6 @@ public class SolrPluginUtils {
       dbg.add("explain", explainStruct
               ? explanationsToNamedLists(explain)
               : explanationsToStrings(explain));
-
       String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery(otherQueryS, req, 0, 10);
@@ -642,6 +672,7 @@ public class SolrPluginUtils {
   // Pattern to detect consecutive + and/or - operators
   // \s+[+-](?:\s*[+-]+)+
   private final static Pattern CONSECUTIVE_OP_PATTERN = Pattern.compile( "\\s+[+-](?:\\s*[+-]+)+" );
+  protected static final String UNKNOWN_VALUE = "Unknown";
 
   /**
    * Strips operators that are used illegally, otherwise returns its
@@ -929,6 +960,33 @@ public class SolrPluginUtils {
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       }
     }
+  }
+
+
+
+   /**
+   * Given the integer purpose of a request generates a readable value corresponding 
+   * the request purposes (there can be more than one on a single request). If 
+   * there is a purpose parameter present that's not known this method will 
+   * return {@value #UNKNOWN_VALUE}
+   * @param reqPurpose Numeric request purpose
+   * @return a comma separated list of purposes or {@value #UNKNOWN_VALUE}
+   */
+  public static String getRequestPurpose(Integer reqPurpose) {
+      if (reqPurpose != null) {
+          StringBuilder builder = new StringBuilder();
+          for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+              if ((reqPurpose & entry.getKey()) != 0) {
+                  builder.append(entry.getValue() + ",");
+              }
+          }
+          if (builder.length() == 0) {
+              return UNKNOWN_VALUE;
+          }
+          builder.setLength(builder.length() - 1);
+          return builder.toString();
+      }
+      return UNKNOWN_VALUE;
   }
   
 }

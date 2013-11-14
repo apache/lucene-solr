@@ -122,7 +122,10 @@ public interface CommonParams {
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing, etc.)
    */
   public static final String QUERY = "query";
-  
+  /**
+   * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
+   */
+  public static final String TRACK = "track";
   /** 
    * boolean indicating whether score explanations should structured (true), 
    * or plain text (false)
@@ -205,6 +208,16 @@ public interface CommonParams {
    * smallest cost to largest. If cost>=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
    */
   public static final String COST = "cost";
+
+  /**
+   * Request ID parameter added to the request when using debug=track
+   */
+  public static final String REQUEST_ID = "rid";
+
+  /**
+   * Request Purpose parameter added to each internal shard request when using debug=track
+   */
+  public static final String REQUEST_PURPOSE = "requestPurpose";
 
 }
 
