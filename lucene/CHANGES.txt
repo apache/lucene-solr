@@ -158,7 +158,7 @@ Bug Fixes
   deleted at a later point in time. This could cause short-term disk
   pollution or OOM if in-memory directories are used. (Simon Willnauer)
 
-API Changes:
+API Changes
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
   for a custom Sort that makes use of the relevance score to work correctly
