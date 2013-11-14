@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
  * 
  * @lucene.experimental
  */
-// nocommit rename to FacetLabel?
-public class CategoryPath implements Comparable<CategoryPath> {
+// nocommit rename to just Label under .facet?
+public class FacetLabel implements Comparable<FacetLabel> {
 
   /*
    * copied from DocumentWriterPerThread -- if a CategoryPath is resolved to a
@@ -38,33 +38,33 @@ public class CategoryPath implements Comparable<CategoryPath> {
    * be on the safe side.
    */
   /**
-   * The maximum number of characters a {@link CategoryPath} can have. That is
-   * {@link CategoryPath#toString(char)} length must not exceed that limit.
+   * The maximum number of characters a {@link FacetLabel} can have. That is
+   * {@link FacetLabel#toString(char)} length must not exceed that limit.
    */
   public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
-  /** An empty {@link CategoryPath} */
-  public static final CategoryPath EMPTY = new CategoryPath();
+  /** An empty {@link FacetLabel} */
+  public static final FacetLabel EMPTY = new FacetLabel();
 
   /**
-   * The components of this {@link CategoryPath}. Note that this array may be
-   * shared with other {@link CategoryPath} instances, e.g. as a result of
+   * The components of this {@link FacetLabel}. Note that this array may be
+   * shared with other {@link FacetLabel} instances, e.g. as a result of
    * {@link #subpath(int)}, therefore you should traverse the array up to
    * {@link #length} for this path's components.
    */
   public final String[] components;
 
-  /** The number of components of this {@link CategoryPath}. */
+  /** The number of components of this {@link FacetLabel}. */
   public final int length;
 
   // Used by singleton EMPTY
-  private CategoryPath() {
+  private FacetLabel() {
     components = null;
     length = 0;
   }
 
   // Used by subpath
-  private CategoryPath(final CategoryPath copyFrom, final int prefixLen) {
+  private FacetLabel(final FacetLabel copyFrom, final int prefixLen) {
     // while the code which calls this method is safe, at some point a test
     // tripped on AIOOBE in toString, but we failed to reproduce. adding the
     // assert as a safety check.
@@ -76,7 +76,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
   
   /** Construct from the given path components. */
-  public CategoryPath(final String... components) {
+  public FacetLabel(final String... components) {
     assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
     long len = 0;
     for (String comp : components) {
@@ -96,15 +96,15 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   // nocommit javadocs/rename
-  public static CategoryPath create(String dim, String... path) {
+  public static FacetLabel create(String dim, String... path) {
     String[] components = new String[1+path.length];
     components[0] = dim;
     System.arraycopy(path, 0, components, 1, path.length);
-    return new CategoryPath(components);
+    return new FacetLabel(components);
   }
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
-  public CategoryPath(final String pathString, final char delimiter) {
+  public FacetLabel(final String pathString, final char delimiter) {
     if (pathString.length() > MAX_CATEGORY_PATH_LENGTH) {
       throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
               + MAX_CATEGORY_PATH_LENGTH + " len=" + pathString.length()
@@ -143,11 +143,11 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   /**
-   * Compares this path with another {@link CategoryPath} for lexicographic
+   * Compares this path with another {@link FacetLabel} for lexicographic
    * order.
    */
   @Override
-  public int compareTo(CategoryPath other) {
+  public int compareTo(FacetLabel other) {
     final int len = length < other.length ? length : other.length;
     for (int i = 0, j = 0; i < len; i++, j++) {
       int cmp = components[i].compareTo(other.components[j]);
@@ -203,11 +203,11 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof CategoryPath)) {
+    if (!(obj instanceof FacetLabel)) {
       return false;
     }
     
-    CategoryPath other = (CategoryPath) obj;
+    FacetLabel other = (FacetLabel) obj;
     if (length != other.length) {
       return false; // not same length, cannot be equal
     }
@@ -249,13 +249,13 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   /** Returns a sub-path of this path up to {@code length} components. */
-  public CategoryPath subpath(final int length) {
+  public FacetLabel subpath(final int length) {
     if (length >= this.length || length < 0) {
       return this;
     } else if (length == 0) {
       return EMPTY;
     } else {
-      return new CategoryPath(this, length);
+      return new FacetLabel(this, length);
     }
   }
 

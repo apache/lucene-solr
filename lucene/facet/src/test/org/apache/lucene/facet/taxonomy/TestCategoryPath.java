@@ -27,19 +27,19 @@ public class TestCategoryPath extends FacetTestCase {
   
   @Test 
   public void testBasic() {
-    assertEquals(0, CategoryPath.EMPTY.length);
-    assertEquals(1, new CategoryPath("hello").length);
-    assertEquals(2, new CategoryPath("hello", "world").length);
+    assertEquals(0, FacetLabel.EMPTY.length);
+    assertEquals(1, new FacetLabel("hello").length);
+    assertEquals(2, new FacetLabel("hello", "world").length);
   }
   
   @Test 
   public void testToString() {
     // When the category is empty, we expect an empty string
-    assertEquals("", CategoryPath.EMPTY.toString('/'));
+    assertEquals("", FacetLabel.EMPTY.toString('/'));
     // one category (so no delimiter needed)
-    assertEquals("hello", new CategoryPath("hello").toString('/'));
+    assertEquals("hello", new FacetLabel("hello").toString('/'));
     // more than one category (so no delimiter needed)
-    assertEquals("hello/world", new CategoryPath("hello", "world").toString('/'));
+    assertEquals("hello/world", new FacetLabel("hello", "world").toString('/'));
   }
 
   @Test 
@@ -48,7 +48,7 @@ public class TestCategoryPath extends FacetTestCase {
     for (int i = 0; i < components.length; i++) {
       components[i] = Integer.toString(i);
     }
-    CategoryPath cp = new CategoryPath(components);
+    FacetLabel cp = new FacetLabel(components);
     for (int i = 0; i < components.length; i++) {
       assertEquals(i, Integer.parseInt(cp.components[i]));
     }
@@ -56,15 +56,15 @@ public class TestCategoryPath extends FacetTestCase {
 
   @Test
   public void testDelimiterConstructor() {
-    CategoryPath p = new CategoryPath("", '/');
+    FacetLabel p = new FacetLabel("", '/');
     assertEquals(0, p.length);
-    p = new CategoryPath("hello", '/');
+    p = new FacetLabel("hello", '/');
     assertEquals(p.length, 1);
     assertEquals(p.toString('@'), "hello");
-    p = new CategoryPath("hi/there", '/');
+    p = new FacetLabel("hi/there", '/');
     assertEquals(p.length, 2);
     assertEquals(p.toString('@'), "hi@there");
-    p = new CategoryPath("how/are/you/doing?", '/');
+    p = new FacetLabel("how/are/you/doing?", '/');
     assertEquals(p.length, 4);
     assertEquals(p.toString('@'), "how@are@you@doing?");
   }
@@ -75,17 +75,17 @@ public class TestCategoryPath extends FacetTestCase {
     // defaults to creating an object with a 0 initial capacity.
     // If we change this default later, we also need to change this
     // test.
-    CategoryPath p = CategoryPath.EMPTY;
+    FacetLabel p = FacetLabel.EMPTY;
     assertEquals(0, p.length);
     assertEquals("", p.toString('/'));
   }
   
   @Test 
   public void testSubPath() {
-    final CategoryPath p = new CategoryPath("hi", "there", "man");
+    final FacetLabel p = new FacetLabel("hi", "there", "man");
     assertEquals(p.length, 3);
     
-    CategoryPath p1 = p.subpath(2);
+    FacetLabel p1 = p.subpath(2);
     assertEquals(2, p1.length);
     assertEquals("hi/there", p1.toString('/'));
 
@@ -109,38 +109,38 @@ public class TestCategoryPath extends FacetTestCase {
 
   @Test 
   public void testEquals() {
-    assertEquals(CategoryPath.EMPTY, CategoryPath.EMPTY);
-    assertFalse(CategoryPath.EMPTY.equals(new CategoryPath("hi")));
-    assertFalse(CategoryPath.EMPTY.equals(Integer.valueOf(3)));
-    assertEquals(new CategoryPath("hello", "world"), new CategoryPath("hello", "world"));    
+    assertEquals(FacetLabel.EMPTY, FacetLabel.EMPTY);
+    assertFalse(FacetLabel.EMPTY.equals(new FacetLabel("hi")));
+    assertFalse(FacetLabel.EMPTY.equals(Integer.valueOf(3)));
+    assertEquals(new FacetLabel("hello", "world"), new FacetLabel("hello", "world"));    
   }
   
   @Test 
   public void testHashCode() {
-    assertEquals(CategoryPath.EMPTY.hashCode(), CategoryPath.EMPTY.hashCode());
-    assertFalse(CategoryPath.EMPTY.hashCode() == new CategoryPath("hi").hashCode());
-    assertEquals(new CategoryPath("hello", "world").hashCode(), new CategoryPath("hello", "world").hashCode());
+    assertEquals(FacetLabel.EMPTY.hashCode(), FacetLabel.EMPTY.hashCode());
+    assertFalse(FacetLabel.EMPTY.hashCode() == new FacetLabel("hi").hashCode());
+    assertEquals(new FacetLabel("hello", "world").hashCode(), new FacetLabel("hello", "world").hashCode());
   }
   
   @Test 
   public void testLongHashCode() {
-    assertEquals(CategoryPath.EMPTY.longHashCode(), CategoryPath.EMPTY.longHashCode());
-    assertFalse(CategoryPath.EMPTY.longHashCode() == new CategoryPath("hi").longHashCode());
-    assertEquals(new CategoryPath("hello", "world").longHashCode(), new CategoryPath("hello", "world").longHashCode());
+    assertEquals(FacetLabel.EMPTY.longHashCode(), FacetLabel.EMPTY.longHashCode());
+    assertFalse(FacetLabel.EMPTY.longHashCode() == new FacetLabel("hi").longHashCode());
+    assertEquals(new FacetLabel("hello", "world").longHashCode(), new FacetLabel("hello", "world").longHashCode());
   }
   
   @Test 
   public void testArrayConstructor() {
-    CategoryPath p = new CategoryPath("hello", "world", "yo");
+    FacetLabel p = new FacetLabel("hello", "world", "yo");
     assertEquals(3, p.length);
     assertEquals("hello/world/yo", p.toString('/'));
   }
   
   @Test 
   public void testCharsNeededForFullPath() {
-    assertEquals(0, CategoryPath.EMPTY.fullPathLength());
+    assertEquals(0, FacetLabel.EMPTY.fullPathLength());
     String[] components = { "hello", "world", "yo" };
-    CategoryPath cp = new CategoryPath(components);
+    FacetLabel cp = new FacetLabel(components);
     int expectedCharsNeeded = 0;
     for (String comp : components) {
       expectedCharsNeeded += comp.length();
@@ -151,7 +151,7 @@ public class TestCategoryPath extends FacetTestCase {
   
   @Test 
   public void testCopyToCharArray() {
-    CategoryPath p = new CategoryPath("hello", "world", "yo");
+    FacetLabel p = new FacetLabel("hello", "world", "yo");
     char[] charArray = new char[p.fullPathLength()];
     int numCharsCopied = p.copyFullPath(charArray, 0, '.');
     assertEquals(p.fullPathLength(), numCharsCopied);
@@ -160,20 +160,20 @@ public class TestCategoryPath extends FacetTestCase {
   
   @Test 
   public void testCompareTo() {
-    CategoryPath p = new CategoryPath("a/b/c/d", '/');
-    CategoryPath pother = new CategoryPath("a/b/c/d", '/');
+    FacetLabel p = new FacetLabel("a/b/c/d", '/');
+    FacetLabel pother = new FacetLabel("a/b/c/d", '/');
     assertEquals(0, pother.compareTo(p));
     assertEquals(0, p.compareTo(pother));
-    pother = new CategoryPath("", '/');
+    pother = new FacetLabel("", '/');
     assertTrue(pother.compareTo(p) < 0);
     assertTrue(p.compareTo(pother) > 0);
-    pother = new CategoryPath("a/b_/c/d", '/');
+    pother = new FacetLabel("a/b_/c/d", '/');
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
-    pother = new CategoryPath("a/b/c", '/');
+    pother = new FacetLabel("a/b/c", '/');
     assertTrue(pother.compareTo(p) < 0);
     assertTrue(p.compareTo(pother) > 0);
-    pother = new CategoryPath("a/b/c/e", '/');
+    pother = new FacetLabel("a/b/c/e", '/');
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
   }
@@ -192,7 +192,7 @@ public class TestCategoryPath extends FacetTestCase {
 
     for (String[] components : components_tests) {
       try {
-        assertNotNull(new CategoryPath(components));
+        assertNotNull(new FacetLabel(components));
         fail("empty or null components should not be allowed: " + Arrays.toString(components));
       } catch (IllegalArgumentException e) {
         // ok
@@ -206,7 +206,7 @@ public class TestCategoryPath extends FacetTestCase {
     
     for (String path : path_tests) {
       try {
-        assertNotNull(new CategoryPath(path, '/'));
+        assertNotNull(new FacetLabel(path, '/'));
         fail("empty or null components should not be allowed: " + path);
       } catch (IllegalArgumentException e) {
         // ok
@@ -214,7 +214,7 @@ public class TestCategoryPath extends FacetTestCase {
     }
 
     // a trailing path separator is produces only one component
-    assertNotNull(new CategoryPath("test/", '/'));
+    assertNotNull(new FacetLabel("test/", '/'));
     
   }
 
@@ -222,7 +222,7 @@ public class TestCategoryPath extends FacetTestCase {
   public void testInvalidDelimChar() throws Exception {
     // Make sure CategoryPath doesn't silently corrupt:
     char[] buf = new char[100];
-    CategoryPath cp = new CategoryPath("foo/bar");
+    FacetLabel cp = new FacetLabel("foo/bar");
     try {
       cp.toString();
       fail("expected exception");
@@ -235,7 +235,7 @@ public class TestCategoryPath extends FacetTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    cp = new CategoryPath("abc", "foo/bar");
+    cp = new FacetLabel("abc", "foo/bar");
     try {
       cp.toString();
       fail("expected exception");
@@ -248,7 +248,7 @@ public class TestCategoryPath extends FacetTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    cp = new CategoryPath("foo:bar");
+    cp = new FacetLabel("foo:bar");
     try {
       cp.toString(':');
       fail("expected exception");
@@ -261,7 +261,7 @@ public class TestCategoryPath extends FacetTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    cp = new CategoryPath("abc", "foo:bar");
+    cp = new FacetLabel("abc", "foo:bar");
     try {
       cp.toString(':');
       fail("expected exception");
@@ -280,7 +280,7 @@ public class TestCategoryPath extends FacetTestCase {
   public void testLongPath() throws Exception {
     String bigComp = null;
     while (true) {
-      int len = CategoryPath.MAX_CATEGORY_PATH_LENGTH;
+      int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH;
       bigComp = _TestUtil.randomSimpleString(random(), len, len);
       if (bigComp.indexOf('\u001f') != -1) {
         continue;
@@ -289,14 +289,14 @@ public class TestCategoryPath extends FacetTestCase {
     }
 
     try {
-      assertNotNull(new CategoryPath("dim", bigComp));
+      assertNotNull(new FacetLabel("dim", bigComp));
       fail("long paths should not be allowed; len=" + bigComp.length());
     } catch (IllegalArgumentException e) {
       // expected
     }
 
     try {
-      assertNotNull(new CategoryPath("dim\u001f" + bigComp, '\u001f'));
+      assertNotNull(new FacetLabel("dim\u001f" + bigComp, '\u001f'));
       fail("long paths should not be allowed; len=" + bigComp.length());
     } catch (IllegalArgumentException e) {
       // expected

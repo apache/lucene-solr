@@ -3,7 +3,7 @@ package org.apache.lucene.facet.associations;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,17 +22,17 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * limitations under the License.
  */
 
-/** Holds {@link CategoryAssociation} per {@link CategoryPath}. */
-public class CategoryAssociationsContainer implements Iterable<CategoryPath> {
+/** Holds {@link CategoryAssociation} per {@link FacetLabel}. */
+public class CategoryAssociationsContainer implements Iterable<FacetLabel> {
 
-  private final HashMap<CategoryPath,CategoryAssociation> categoryAssociations = 
-      new HashMap<CategoryPath,CategoryAssociation>();
+  private final HashMap<FacetLabel,CategoryAssociation> categoryAssociations = 
+      new HashMap<FacetLabel,CategoryAssociation>();
   
   /**
-   * Adds the {@link CategoryAssociation} for the given {@link CategoryPath
+   * Adds the {@link CategoryAssociation} for the given {@link FacetLabel
    * category}. Overrides any assocation that was previously set.
    */
-  public void setAssociation(CategoryPath category, CategoryAssociation association) {
+  public void setAssociation(FacetLabel category, CategoryAssociation association) {
     if (association == null) {
       throw new IllegalArgumentException("cannot set a null association to a category");
     }
@@ -41,14 +41,14 @@ public class CategoryAssociationsContainer implements Iterable<CategoryPath> {
   
   /**
    * Returns the {@link CategoryAssociation} that was set for the
-   * {@link CategoryPath category}, or {@code null} if none was defined.
+   * {@link FacetLabel category}, or {@code null} if none was defined.
    */
-  public CategoryAssociation getAssociation(CategoryPath category) {
+  public CategoryAssociation getAssociation(FacetLabel category) {
     return categoryAssociations.get(category);
   }
 
   @Override
-  public Iterator<CategoryPath> iterator() {
+  public Iterator<FacetLabel> iterator() {
     return categoryAssociations.keySet().iterator();
   }
   

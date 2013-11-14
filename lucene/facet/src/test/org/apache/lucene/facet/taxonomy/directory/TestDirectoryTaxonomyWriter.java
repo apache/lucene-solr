@@ -14,7 +14,7 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
@@ -59,9 +59,9 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     @Override
     public void close() {}
     @Override
-    public int get(CategoryPath categoryPath) { return -1; }
+    public int get(FacetLabel categoryPath) { return -1; }
     @Override
-    public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
+    public boolean put(FacetLabel categoryPath, int ordinal) { return true; }
     @Override
     public boolean isFull() { return true; }
     @Override
@@ -77,7 +77,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     assertFalse(DirectoryReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
-    ltw.addCategory(new CategoryPath("a"));
+    ltw.addCategory(new FacetLabel("a"));
     
     IndexReader r = DirectoryReader.open(dir);
     assertEquals("No categories should have been committed to the underlying directory", 1, r.numDocs());
@@ -91,8 +91,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Verifies taxonomy commit data
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    taxoWriter.addCategory(new CategoryPath("a"));
-    taxoWriter.addCategory(new CategoryPath("b"));
+    taxoWriter.addCategory(new FacetLabel("a"));
+    taxoWriter.addCategory(new FacetLabel("b"));
     Map<String, String> userCommitData = new HashMap<String, String>();
     userCommitData.put("testing", "1 2 3");
     taxoWriter.setCommitData(userCommitData);
@@ -109,7 +109,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // in the commit data, otherwise DirTaxoReader.refresh() might not detect
     // that the taxonomy index has been recreated.
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    taxoWriter.addCategory(new CategoryPath("c")); // add a category so that commit will happen
+    taxoWriter.addCategory(new FacetLabel("c")); // add a category so that commit will happen
     taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
     }});
@@ -133,10 +133,10 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Verifies that if rollback is called, DTW is closed.
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
-    dtw.addCategory(new CategoryPath("a"));
+    dtw.addCategory(new FacetLabel("a"));
     dtw.rollback();
     try {
-      dtw.addCategory(new CategoryPath("a"));
+      dtw.addCategory(new FacetLabel("a"));
       fail("should not have succeeded to add a category following rollback.");
     } catch (AlreadyClosedException e) {
       // expected
@@ -164,7 +164,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
     dtw.close();
     try {
-      dtw.addCategory(new CategoryPath("a"));
+      dtw.addCategory(new FacetLabel("a"));
       fail("should not have succeeded to add a category following close.");
     } catch (AlreadyClosedException e) {
       // expected
@@ -172,7 +172,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     dir.close();
   }
 
-  private void touchTaxo(DirectoryTaxonomyWriter taxoWriter, CategoryPath cp) throws IOException {
+  private void touchTaxo(DirectoryTaxonomyWriter taxoWriter, FacetLabel cp) throws IOException {
     taxoWriter.addCategory(cp);
     taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
@@ -188,11 +188,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     Directory dir = newDirectory();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new CategoryPath("a"));
+    touchTaxo(taxoWriter, new FacetLabel("a"));
     
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
 
-    touchTaxo(taxoWriter, new CategoryPath("b"));
+    touchTaxo(taxoWriter, new FacetLabel("b"));
     
     TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
     taxoReader.close();
@@ -202,11 +202,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
     taxoWriter.close();
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new CategoryPath("c"));
+    touchTaxo(taxoWriter, new FacetLabel("c"));
     taxoWriter.close();
     
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    touchTaxo(taxoWriter, new CategoryPath("d"));
+    touchTaxo(taxoWriter, new FacetLabel("d"));
     taxoWriter.close();
 
     newtr = TaxonomyReader.openIfChanged(taxoReader);
@@ -267,7 +267,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
           while (numCats.decrementAndGet() > 0) {
             try {
               int value = random.nextInt(range);
-              CategoryPath cp = new CategoryPath(Integer.toString(value / 1000), Integer.toString(value / 10000),
+              FacetLabel cp = new FacetLabel(Integer.toString(value / 1000), Integer.toString(value / 10000),
                   Integer.toString(value / 100000), Integer.toString(value));
               int ord = tw.addCategory(cp);
               assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
@@ -295,11 +295,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     assertEquals("mismatch number of categories", values.size() + 1, dtr.getSize()); // +1 for root category
     int[] parents = dtr.getParallelTaxonomyArrays().parents();
     for (String cat : values.keySet()) {
-      CategoryPath cp = new CategoryPath(cat, '/');
+      FacetLabel cp = new FacetLabel(cat, '/');
       assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
       int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      CategoryPath path = CategoryPath.EMPTY;
+      FacetLabel path = FacetLabel.EMPTY;
       for (int i = 0; i < level; i++) {
         path = cp.subpath(i + 1);
         int ord = dtr.getOrdinal(path);
@@ -322,13 +322,13 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
   public void testReplaceTaxonomy() throws Exception {
     Directory input = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(input);
-    int ordA = taxoWriter.addCategory(new CategoryPath("a"));
+    int ordA = taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.close();
     
     Directory dir = newDirectory();
     taxoWriter = new DirectoryTaxonomyWriter(dir);
-    int ordB = taxoWriter.addCategory(new CategoryPath("b"));
-    taxoWriter.addCategory(new CategoryPath("c"));
+    int ordB = taxoWriter.addCategory(new FacetLabel("b"));
+    taxoWriter.addCategory(new FacetLabel("c"));
     taxoWriter.commit();
     
     long origEpoch = getEpoch(dir);
@@ -339,10 +339,10 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // LUCENE-4633: make sure that category "a" is not added again in any case
     taxoWriter.addTaxonomy(input, new MemoryOrdinalMap());
     assertEquals("no categories should have been added", 2, taxoWriter.getSize()); // root + 'a'
-    assertEquals("category 'a' received new ordinal?", ordA, taxoWriter.addCategory(new CategoryPath("a")));
+    assertEquals("category 'a' received new ordinal?", ordA, taxoWriter.addCategory(new FacetLabel("a")));
 
     // add the same category again -- it should not receive the same ordinal !
-    int newOrdB = taxoWriter.addCategory(new CategoryPath("b"));
+    int newOrdB = taxoWriter.addCategory(new FacetLabel("b"));
     assertNotSame("new ordinal cannot be the original ordinal", ordB, newOrdB);
     assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdB);
 
@@ -362,8 +362,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // is being added.
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
-    int o1 = taxoWriter.addCategory(new CategoryPath("a"));
-    int o2 = taxoWriter.addCategory(new CategoryPath("a"));
+    int o1 = taxoWriter.addCategory(new FacetLabel("a"));
+    int o2 = taxoWriter.addCategory(new FacetLabel("a"));
     assertTrue("ordinal for same category that is added twice should be the same !", o1 == o2);
     taxoWriter.close();
     dir.close();
@@ -374,7 +374,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // LUCENE-4972: DTW used to create empty commits even if no changes were made
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.commit();
     
     long gen1 = SegmentInfos.getLastCommitGeneration(dir);
@@ -391,7 +391,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // LUCENE-4972: DTW used to create empty commits even if no changes were made
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.commit();
     
     long gen1 = SegmentInfos.getLastCommitGeneration(dir);
@@ -408,7 +408,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // LUCENE-4972: DTW used to create empty commits even if no changes were made
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.prepareCommit();
     taxoWriter.commit();
     
@@ -432,11 +432,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Add one huge label:
     String bigs = null;
     int ordinal = -1;
-    CategoryPath cp = null;
+    FacetLabel cp = null;
     while (true) {
-      int len = CategoryPath.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
+      int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
       bigs = _TestUtil.randomSimpleString(random(), len, len);
-      cp = new CategoryPath("dim", bigs);
+      cp = new FacetLabel("dim", bigs);
       ordinal = taxoWriter.addCategory(cp);
       Document doc = new Document();
       facetFields.addFields(doc, Collections.singletonList(cp));
@@ -447,9 +447,9 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Add tiny ones to cause a re-hash
     for (int i = 0; i < 3; i++) {
       String s = _TestUtil.randomSimpleString(random(), 1, 10);
-      taxoWriter.addCategory(new CategoryPath("dim", s));
+      taxoWriter.addCategory(new FacetLabel("dim", s));
       Document doc = new Document();
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim", s)));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("dim", s)));
       indexWriter.addDocument(doc);
     }
 
@@ -476,11 +476,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     
     // build source, large, taxonomy
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(srcTaxoDir);
-    int ord = taxoWriter.addCategory(new CategoryPath("A/1/1/1/1/1/1", '/'));
+    int ord = taxoWriter.addCategory(new FacetLabel("A/1/1/1/1/1/1", '/'));
     taxoWriter.close();
     
     taxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
-    int ordinal = taxoWriter.addCategory(new CategoryPath("B/1", '/'));
+    int ordinal = taxoWriter.addCategory(new FacetLabel("B/1", '/'));
     assertEquals(1, taxoWriter.getParent(ordinal)); // call getParent to initialize taxoArrays
     taxoWriter.commit();
     

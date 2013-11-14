@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
  * Add a faceted document.
@@ -44,7 +44,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 public class AddFacetedDocTask extends AddDocTask {
 
-  private final List<CategoryPath> facets = new ArrayList<CategoryPath>();
+  private final List<FacetLabel> facets = new ArrayList<FacetLabel>();
   private FacetFields facetFields;
   
   public AddFacetedDocTask(PerfRunData runData) {

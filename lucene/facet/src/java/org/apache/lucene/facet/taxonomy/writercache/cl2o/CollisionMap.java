@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -103,7 +103,7 @@ public class CollisionMap {
     this.threshold = (int) (this.capacity * this.loadFactor);
   }
 
-  public int get(CategoryPath label, int hash) {
+  public int get(FacetLabel label, int hash) {
     int bucketIndex = indexFor(hash, this.capacity);
     Entry e = this.entries[bucketIndex];
 
@@ -117,7 +117,7 @@ public class CollisionMap {
     return e.cid;
   }
 
-  public int addLabel(CategoryPath label, int hash, int cid) {
+  public int addLabel(FacetLabel label, int hash, int cid) {
     int bucketIndex = indexFor(hash, this.capacity);
     for (Entry e = this.entries[bucketIndex]; e != null; e = e.next) {
       if (e.hash == hash && CategoryPathUtils.equalsToSerialized(label, labelRepository, e.offset)) {

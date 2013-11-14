@@ -15,7 +15,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.IntsRef;
 /**
  * A utility class for adding facet fields to a document. Usually one field will
  * be added for all facets, however per the
- * {@link FacetIndexingParams#getCategoryListParams(CategoryPath)}, one field
+ * {@link FacetIndexingParams#getCategoryListParams(FacetLabel)}, one field
  * may be added for every group of facets.
  * 
  * @lucene.experimental
@@ -88,21 +88,21 @@ public class FacetFields {
 
   /**
    * Creates a mapping between a {@link CategoryListParams} and all
-   * {@link CategoryPath categories} that are associated with it.
+   * {@link FacetLabel categories} that are associated with it.
    */
-  protected Map<CategoryListParams,Iterable<CategoryPath>> createCategoryListMapping(
-      Iterable<CategoryPath> categories) {
+  protected Map<CategoryListParams,Iterable<FacetLabel>> createCategoryListMapping(
+      Iterable<FacetLabel> categories) {
     if (indexingParams.getAllCategoryListParams().size() == 1) {
       return Collections.singletonMap(indexingParams.getCategoryListParams(null), categories);
     }
-    HashMap<CategoryListParams,Iterable<CategoryPath>> categoryLists = 
-        new HashMap<CategoryListParams,Iterable<CategoryPath>>();
-    for (CategoryPath cp : categories) {
+    HashMap<CategoryListParams,Iterable<FacetLabel>> categoryLists = 
+        new HashMap<CategoryListParams,Iterable<FacetLabel>>();
+    for (FacetLabel cp : categories) {
       // each category may be indexed under a different field, so add it to the right list.
       CategoryListParams clp = indexingParams.getCategoryListParams(cp);
-      List<CategoryPath> list = (List<CategoryPath>) categoryLists.get(clp);
+      List<FacetLabel> list = (List<FacetLabel>) categoryLists.get(clp);
       if (list == null) {
-        list = new ArrayList<CategoryPath>();
+        list = new ArrayList<FacetLabel>();
         categoryLists.put(clp, list);
       }
       list.add(cp);
@@ -113,10 +113,10 @@ public class FacetFields {
   /**
    * Returns the category list data, as a mapping from key to {@link BytesRef}
    * which includes the encoded data. Every ordinal in {@code ordinals}
-   * corrspond to a {@link CategoryPath} returned from {@code categories}.
+   * corrspond to a {@link FacetLabel} returned from {@code categories}.
    */
   protected Map<String,BytesRef> getCategoryListData(CategoryListParams categoryListParams, 
-      IntsRef ordinals, Iterable<CategoryPath> categories /* needed for AssociationsFacetFields */) 
+      IntsRef ordinals, Iterable<FacetLabel> categories /* needed for AssociationsFacetFields */) 
       throws IOException {
     return new CountingListBuilder(categoryListParams, indexingParams, taxonomyWriter).build(ordinals, categories);
   }
@@ -125,7 +125,7 @@ public class FacetFields {
    * Returns a {@link DrillDownStream} for writing the categories drill-down
    * terms.
    */
-  protected DrillDownStream getDrillDownStream(Iterable<CategoryPath> categories) {
+  protected DrillDownStream getDrillDownStream(Iterable<FacetLabel> categories) {
     return new DrillDownStream(categories, indexingParams);
   }
   
@@ -148,7 +148,7 @@ public class FacetFields {
   }
   
   /** Adds the needed facet fields to the document. */
-  public void addFields(Document doc, Iterable<CategoryPath> categories) throws IOException {
+  public void addFields(Document doc, Iterable<FacetLabel> categories) throws IOException {
     if (categories == null) {
       throw new IllegalArgumentException("categories should not be null");
     }
@@ -159,19 +159,19 @@ public class FacetFields {
     // - DrillDownStream
     // - CountingListStream
 
-    final Map<CategoryListParams,Iterable<CategoryPath>> categoryLists = createCategoryListMapping(categories);
+    final Map<CategoryListParams,Iterable<FacetLabel>> categoryLists = createCategoryListMapping(categories);
 
     // for each CLP we add a different field for drill-down terms as well as for
     // counting list data.
     IntsRef ordinals = new IntsRef(32); // should be enough for most common applications
-    for (Entry<CategoryListParams, Iterable<CategoryPath>> e : categoryLists.entrySet()) {
+    for (Entry<CategoryListParams, Iterable<FacetLabel>> e : categoryLists.entrySet()) {
       final CategoryListParams clp = e.getKey();
       final String field = clp.field;
 
       // build category list data
       ordinals.length = 0; // reset
       int maxNumOrds = 0;
-      for (CategoryPath cp : e.getValue()) {
+      for (FacetLabel cp : e.getValue()) {
         int ordinal = taxonomyWriter.addCategory(cp);
         maxNumOrds += cp.length; // ordinal and potentially all parents
         if (ordinals.ints.length < maxNumOrds) {

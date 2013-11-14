@@ -7,7 +7,7 @@ import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
 import org.junit.Test;
@@ -33,11 +33,11 @@ public class PerDimensionIndexingParamsTest extends FacetTestCase {
 
   @Test
   public void testTopLevelSettings() {
-    FacetIndexingParams ifip = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
+    FacetIndexingParams ifip = new PerDimensionIndexingParams(Collections.<FacetLabel, CategoryListParams>emptyMap());
     assertNotNull("Missing default category list", ifip.getAllCategoryListParams());
     assertEquals("Expected default category list field is $facets", "$facets", ifip.getCategoryListParams(null).field);
     String expectedDDText = "a" + ifip.getFacetDelimChar() + "b";
-    CategoryPath cp = new CategoryPath("a", "b");
+    FacetLabel cp = new FacetLabel("a", "b");
     assertEquals("wrong drill-down term", new Term("$facets", expectedDDText), DrillDownQuery.term(ifip,cp));
     char[] buf = new char[20];
     int numchars = ifip.drillDownTermText(cp, buf);
@@ -55,9 +55,9 @@ public class PerDimensionIndexingParamsTest extends FacetTestCase {
   public void testCategoryListParamsAddition() {
     CategoryListParams clp = new CategoryListParams("clp");
     PerDimensionIndexingParams tlfip = new PerDimensionIndexingParams(
-        Collections.<CategoryPath,CategoryListParams> singletonMap(new CategoryPath("a"), clp));
+        Collections.<FacetLabel,CategoryListParams> singletonMap(new FacetLabel("a"), clp));
     assertEquals("Expected category list field is " + clp.field, 
-        clp.field, tlfip.getCategoryListParams(new CategoryPath("a")).field);
+        clp.field, tlfip.getCategoryListParams(new FacetLabel("a")).field);
     assertNotSame("Unexpected default category list " + clp.field, clp, tlfip.getCategoryListParams(null));
   }
 

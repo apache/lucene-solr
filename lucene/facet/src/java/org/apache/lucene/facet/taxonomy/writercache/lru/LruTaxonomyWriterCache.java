@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy.writercache.lru;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
 /*
@@ -77,7 +77,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public synchronized int get(CategoryPath categoryPath) {
+  public synchronized int get(FacetLabel categoryPath) {
     Integer res = cache.get(categoryPath);
     if (res == null) {
       return -1;
@@ -87,7 +87,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public synchronized boolean put(CategoryPath categoryPath, int ordinal) {
+  public synchronized boolean put(FacetLabel categoryPath, int ordinal) {
     boolean ret = cache.put(categoryPath, new Integer(ordinal));
     // If the cache is full, we need to clear one or more old entries
     // from the cache. However, if we delete from the cache a recent

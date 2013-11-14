@@ -47,7 +47,7 @@ import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -114,11 +114,11 @@ public class TestRangeAccumulator extends FacetTestCase {
       // For drill down by numeric range:
       doc.add(new LongField("field", l, Field.Store.NO));
 
-      CategoryPath cp;
+      FacetLabel cp;
       if ((l&3) == 0) {
-        cp = new CategoryPath("dim", "a");
+        cp = new FacetLabel("dim", "a");
       } else {
-        cp = new CategoryPath("dim", "b");
+        cp = new FacetLabel("dim", "b");
       }
       ff.addFields(doc, Collections.singletonList(cp));
       w.addDocument(doc);
@@ -132,7 +132,7 @@ public class TestRangeAccumulator extends FacetTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    final CountFacetRequest countRequest = new CountFacetRequest(new CategoryPath("dim"), 2);
+    final CountFacetRequest countRequest = new CountFacetRequest(new FacetLabel("dim"), 2);
     final RangeFacetRequest<LongRange> rangeRequest = new RangeFacetRequest<LongRange>("field",
                           new LongRange("less than 10", 0L, true, 10L, false),
                           new LongRange("less than or equal to 10", 0L, true, 10L, true),
@@ -183,7 +183,7 @@ public class TestRangeAccumulator extends FacetTestCase {
 
     // Second search, drill down on dim=b:
     ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("dim", "b"));
+    ddq.add(new FacetLabel("dim", "b"));
     dimSeen.clear();
     dsr = ds.search(null, ddq, 10, fsp);
 
@@ -221,11 +221,11 @@ public class TestRangeAccumulator extends FacetTestCase {
       // For drill down by numeric range:
       doc.add(new LongField("field", l, Field.Store.NO));
 
-      CategoryPath cp;
+      FacetLabel cp;
       if ((l&3) == 0) {
-        cp = new CategoryPath("dim", "a");
+        cp = new FacetLabel("dim", "a");
       } else {
-        cp = new CategoryPath("dim", "b");
+        cp = new FacetLabel("dim", "b");
       }
       ff.addFields(doc, Collections.singletonList(cp));
       w.addDocument(doc);
@@ -237,7 +237,7 @@ public class TestRangeAccumulator extends FacetTestCase {
     IndexSearcher s = newSearcher(r);
     final SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(s.getIndexReader());
 
-    final CountFacetRequest countRequest = new CountFacetRequest(new CategoryPath("dim"), 2);
+    final CountFacetRequest countRequest = new CountFacetRequest(new FacetLabel("dim"), 2);
     final RangeFacetRequest<LongRange> rangeRequest = new RangeFacetRequest<LongRange>("field",
                           new LongRange("less than 10", 0L, true, 10L, false),
                           new LongRange("less than or equal to 10", 0L, true, 10L, true),
@@ -288,7 +288,7 @@ public class TestRangeAccumulator extends FacetTestCase {
 
     // Second search, drill down on dim=b:
     ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("dim", "b"));
+    ddq.add(new FacetLabel("dim", "b"));
     dimSeen.clear();
     dsr = ds.search(null, ddq, 10, fsp);
 

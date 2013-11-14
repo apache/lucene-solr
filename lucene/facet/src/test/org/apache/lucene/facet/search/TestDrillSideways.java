@@ -39,7 +39,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -79,9 +79,9 @@ public class TestDrillSideways extends FacetTestCase {
 
   private void add(String ... categoryPaths) throws IOException {
     Document doc = new Document();
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for(String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
+      paths.add(new FacetLabel(categoryPath, '/'));
     }
     facetFields.addFields(doc, paths);
     writer.addDocument(doc);
@@ -119,8 +119,8 @@ public class TestDrillSideways extends FacetTestCase {
     // Count both "Publish Date" and "Author" dimensions, in
     // drill-down:
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     DrillSideways ds = new DrillSideways(searcher, taxoReader);
 
@@ -128,7 +128,7 @@ public class TestDrillSideways extends FacetTestCase {
     // case the drill-sideways + drill-down counts ==
     // drill-down of just the query: 
     DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
     DrillSidewaysResult r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(2, r.hits.totalHits);
@@ -146,7 +146,7 @@ public class TestDrillSideways extends FacetTestCase {
     // drill-sideways + drill-down counts == drill-down of
     // just the query:
     ddq = new DrillDownQuery(fsp.indexingParams);
-    ddq.add(new CategoryPath("Author", "Lisa"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
     r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(2, r.hits.totalHits);
@@ -165,7 +165,7 @@ public class TestDrillSideways extends FacetTestCase {
     // Another simple case: drill-down on on single fields
     // but OR of two values
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"), new CategoryPath("Author", "Bob"));
+    ddq.add(new FacetLabel("Author", "Lisa"), new FacetLabel("Author", "Bob"));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(3, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -179,8 +179,8 @@ public class TestDrillSideways extends FacetTestCase {
 
     // More interesting case: drill-down on two fields
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"));
-    ddq.add(new CategoryPath("Publish Date", "2010"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
+    ddq.add(new FacetLabel("Publish Date", "2010"));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(1, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -196,9 +196,9 @@ public class TestDrillSideways extends FacetTestCase {
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
 
     // Drill down on Lisa or Bob:
-    ddq.add(new CategoryPath("Author", "Lisa"),
-            new CategoryPath("Author", "Bob"));
-    ddq.add(new CategoryPath("Publish Date", "2010"));
+    ddq.add(new FacetLabel("Author", "Lisa"),
+            new FacetLabel("Author", "Bob"));
+    ddq.add(new FacetLabel("Publish Date", "2010"));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -211,10 +211,10 @@ public class TestDrillSideways extends FacetTestCase {
 
     // Test drilling down on invalid field:
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Foobar", "Baz"));
+    ddq.add(new FacetLabel("Foobar", "Baz"));
     fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Foobar"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Foobar"), 10));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(0, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -223,11 +223,11 @@ public class TestDrillSideways extends FacetTestCase {
 
     // Test drilling down on valid term or'd with invalid term:
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"),
-            new CategoryPath("Author", "Tom"));
+    ddq.add(new FacetLabel("Author", "Lisa"),
+            new FacetLabel("Author", "Tom"));
     fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -242,10 +242,10 @@ public class TestDrillSideways extends FacetTestCase {
     // LUCENE-4915: test drilling down on a dimension but
     // NOT facet counting it:
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"),
-            new CategoryPath("Author", "Tom"));
+    ddq.add(new FacetLabel("Author", "Lisa"),
+            new FacetLabel("Author", "Tom"));
     fsp = new FacetSearchParams(
-              new CountFacetRequest(new CategoryPath("Publish Date"), 10));
+              new CountFacetRequest(new FacetLabel("Publish Date"), 10));
     r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(1, r.facetResults.size());
@@ -255,10 +255,10 @@ public class TestDrillSideways extends FacetTestCase {
 
     // Test main query gets null scorer:
     fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
     ddq = new DrillDownQuery(fsp.indexingParams, new TermQuery(new Term("foobar", "baz")));
-    ddq.add(new CategoryPath("Author", "Lisa"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
     r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(0, r.hits.totalHits);
@@ -304,11 +304,11 @@ public class TestDrillSideways extends FacetTestCase {
     // Count both "Publish Date" and "Author" dimensions, in
     // drill-down:
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
     DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
 
     assertEquals(1, r.hits.totalHits);
@@ -403,11 +403,11 @@ public class TestDrillSideways extends FacetTestCase {
 
     // Two requests against the same dim:
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("dim"), 10), 
-        new CountFacetRequest(new CategoryPath("dim", "a"), 10));
+        new CountFacetRequest(new FacetLabel("dim"), 10), 
+        new CountFacetRequest(new FacetLabel("dim", "a"), 10));
 
     DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("dim", "a"));
+    ddq.add(new FacetLabel("dim", "a"));
     DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
 
     assertEquals(3, r.hits.totalHits);
@@ -532,7 +532,7 @@ public class TestDrillSideways extends FacetTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", rawDoc.id, Field.Store.YES));
       doc.add(newStringField("content", rawDoc.contentToken, Field.Store.NO));
-      List<CategoryPath> paths = new ArrayList<CategoryPath>();
+      List<FacetLabel> paths = new ArrayList<FacetLabel>();
 
       if (VERBOSE) {
         System.out.println("  doc id=" + rawDoc.id + " token=" + rawDoc.contentToken);
@@ -540,7 +540,7 @@ public class TestDrillSideways extends FacetTestCase {
       for(int dim=0;dim<numDims;dim++) {
         int dimValue = rawDoc.dims[dim];
         if (dimValue != -1) {
-          CategoryPath cp = new CategoryPath("dim" + dim, dimValues[dim][dimValue]);
+          FacetLabel cp = new FacetLabel("dim" + dim, dimValues[dim][dimValue]);
           paths.add(cp);
           doc.add(new StringField("dim" + dim, dimValues[dim][dimValue], Field.Store.YES));
           if (VERBOSE) {
@@ -549,7 +549,7 @@ public class TestDrillSideways extends FacetTestCase {
         }
         int dimValue2 = rawDoc.dims2[dim];
         if (dimValue2 != -1) {
-          CategoryPath cp = new CategoryPath("dim" + dim, dimValues[dim][dimValue2]);
+          FacetLabel cp = new FacetLabel("dim" + dim, dimValues[dim][dimValue2]);
           paths.add(cp);
           doc.add(new StringField("dim" + dim, dimValues[dim][dimValue2], Field.Store.YES));
           if (VERBOSE) {
@@ -632,7 +632,7 @@ public class TestDrillSideways extends FacetTestCase {
             if (VERBOSE) {
               System.out.println("  do facet request on dim=" + i);
             }
-            requests.add(new CountFacetRequest(new CategoryPath("dim" + i), dimValues[numDims-1].length));
+            requests.add(new CountFacetRequest(new FacetLabel("dim" + i), dimValues[numDims-1].length));
           } else {
             if (VERBOSE) {
               System.out.println("  skip facet request on dim=" + i);
@@ -696,10 +696,10 @@ public class TestDrillSideways extends FacetTestCase {
 
       for(int dim=0;dim<numDims;dim++) {
         if (drillDowns[dim] != null) {
-          CategoryPath[] paths = new CategoryPath[drillDowns[dim].length];
+          FacetLabel[] paths = new FacetLabel[drillDowns[dim].length];
           int upto = 0;
           for(String value : drillDowns[dim]) {
-            paths[upto++] = new CategoryPath("dim" + dim, value);
+            paths[upto++] = new FacetLabel("dim" + dim, value);
           }
           ddq.add(paths);
         }
@@ -1152,11 +1152,11 @@ public class TestDrillSideways extends FacetTestCase {
     taxoWriter.close();
 
     // Count "Author"
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("Author"), 10));
 
     DrillSideways ds = new DrillSideways(searcher, taxoReader);
     DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    ddq.add(new CategoryPath("Author", "Lisa"));
+    ddq.add(new FacetLabel("Author", "Lisa"));
     
     DrillSidewaysResult r = ds.search(null, ddq, 10, fsp); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);

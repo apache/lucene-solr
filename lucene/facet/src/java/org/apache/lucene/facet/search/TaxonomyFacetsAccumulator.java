@@ -14,7 +14,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
@@ -124,7 +124,7 @@ public class TaxonomyFacetsAccumulator extends FacetsAccumulator {
       CategoryListParams clp = e.getKey();
       List<FacetRequest> requests = e.getValue();
       Map<Class<? extends FacetsAggregator>,FacetsAggregator> aggClasses = new HashMap<Class<? extends FacetsAggregator>,FacetsAggregator>();
-      Map<CategoryPath,FacetsAggregator> perCategoryAggregator = new HashMap<CategoryPath,FacetsAggregator>();
+      Map<FacetLabel,FacetsAggregator> perCategoryAggregator = new HashMap<FacetLabel,FacetsAggregator>();
       for (FacetRequest fr : requests) {
         FacetsAggregator fa = fr.createFacetsAggregator(searchParams.indexingParams);
         if (fa == null) {

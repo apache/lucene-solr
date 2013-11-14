@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -203,7 +203,7 @@ public abstract class FacetsCollector extends Collector {
   /**
    * Returns a {@link FacetResult} per {@link FacetRequest} set in
    * {@link FacetSearchParams}. Note that if a {@link FacetRequest} defines a
-   * {@link CategoryPath} which does not exist in the taxonomy, an empty
+   * {@link FacetLabel} which does not exist in the taxonomy, an empty
    * {@link FacetResult} will be returned for it.
    */
   public final List<FacetResult> getFacetResults() throws IOException {

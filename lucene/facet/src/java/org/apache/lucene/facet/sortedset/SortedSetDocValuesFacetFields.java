@@ -28,7 +28,7 @@ import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.BytesRef;
 
 /** Use this to index facets if you intend to
@@ -41,13 +41,13 @@ import org.apache.lucene.util.BytesRef;
 public class SortedSetDocValuesFacetFields extends FacetFields {
 
   /** Create a {@code SortedSetDocValuesFacetField} with the
-   *  provided {@link CategoryPath}. */
+   *  provided {@link FacetLabel}. */
   public SortedSetDocValuesFacetFields()  {
     this(FacetIndexingParams.DEFAULT);
   }
 
   /** Create a {@code SortedSetDocValuesFacetField} with the
-   *  provided {@link CategoryPath}, and custom {@link
+   *  provided {@link FacetLabel}, and custom {@link
    *  FacetIndexingParams}. */
   public SortedSetDocValuesFacetFields(FacetIndexingParams fip)  {
     super(null, fip);
@@ -57,19 +57,19 @@ public class SortedSetDocValuesFacetFields extends FacetFields {
   }
 
   @Override
-  public void addFields(Document doc, Iterable<CategoryPath> categories) throws IOException {
+  public void addFields(Document doc, Iterable<FacetLabel> categories) throws IOException {
     if (categories == null) {
       throw new IllegalArgumentException("categories should not be null");
     }
 
-    final Map<CategoryListParams,Iterable<CategoryPath>> categoryLists = createCategoryListMapping(categories);
-    for (Entry<CategoryListParams, Iterable<CategoryPath>> e : categoryLists.entrySet()) {
+    final Map<CategoryListParams,Iterable<FacetLabel>> categoryLists = createCategoryListMapping(categories);
+    for (Entry<CategoryListParams, Iterable<FacetLabel>> e : categoryLists.entrySet()) {
 
       CategoryListParams clp = e.getKey();
       String dvField = clp.field + SortedSetDocValuesReaderState.FACET_FIELD_EXTENSION;
 
       // Add sorted-set DV fields, one per value:
-      for(CategoryPath cp : e.getValue()) {
+      for(FacetLabel cp : e.getValue()) {
         if (cp.length != 2) {
           throw new IllegalArgumentException("only flat facets (dimension + label) are currently supported; got " + cp);
         }

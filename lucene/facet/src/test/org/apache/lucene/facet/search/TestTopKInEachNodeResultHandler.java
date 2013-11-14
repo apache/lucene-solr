@@ -15,7 +15,7 @@ import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -107,35 +107,35 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       // facet counts and compare to control
       Query q = new TermQuery(new Term("content", "alpha"));
 
-      CountFacetRequest cfra23 = new CountFacetRequest(new CategoryPath("a"), 2);
+      CountFacetRequest cfra23 = new CountFacetRequest(new FacetLabel("a"), 2);
       cfra23.setDepth(3);
       cfra23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra22 = new CountFacetRequest(new CategoryPath("a"), 2);
+      CountFacetRequest cfra22 = new CountFacetRequest(new FacetLabel("a"), 2);
       cfra22.setDepth(2);
       cfra22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra21 = new CountFacetRequest(new CategoryPath("a"), 2);
+      CountFacetRequest cfra21 = new CountFacetRequest(new FacetLabel("a"), 2);
       cfra21.setDepth(1);
       cfra21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb22 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb22 = new CountFacetRequest(new FacetLabel("a", "b"), 2);
       cfrb22.setDepth(2);
       cfrb22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb23 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb23 = new CountFacetRequest(new FacetLabel("a", "b"), 2);
       cfrb23.setDepth(3);
       cfrb23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb21 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb21 = new CountFacetRequest(new FacetLabel("a", "b"), 2);
       cfrb21.setDepth(1);
       cfrb21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest doctor = new CountFacetRequest(new CategoryPath("Doctor"), 2);
+      CountFacetRequest doctor = new CountFacetRequest(new FacetLabel("Doctor"), 2);
       doctor.setDepth(1);
       doctor.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb20 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb20 = new CountFacetRequest(new FacetLabel("a", "b"), 2);
       cfrb20.setDepth(0);
       cfrb20.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
@@ -296,7 +296,7 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       TaxonomyWriter tw, String... strings) throws IOException {
     Document d = new Document();
     FacetFields facetFields = new FacetFields(tw, iParams);
-    facetFields.addFields(d, Collections.singletonList(new CategoryPath(strings)));
+    facetFields.addFields(d, Collections.singletonList(new FacetLabel(strings)));
     d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }

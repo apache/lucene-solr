@@ -8,7 +8,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -48,10 +48,10 @@ public class OrdinalsCacheTest extends FacetTestCase {
     FacetFields facetFields = new FacetFields(taxoWriter);
     
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("A", "1")));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("A", "1")));
     writer.addDocument(doc);
     doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("A", "2")));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("A", "2")));
     writer.addDocument(doc);
     writer.close();
     taxoWriter.close();
@@ -64,7 +64,7 @@ public class OrdinalsCacheTest extends FacetTestCase {
         public void run() {
           for (AtomicReaderContext context : reader.leaves()) {
             try {
-              OrdinalsCache.getCachedOrds(context, FacetIndexingParams.DEFAULT.getCategoryListParams(new CategoryPath("A")));
+              OrdinalsCache.getCachedOrds(context, FacetIndexingParams.DEFAULT.getCategoryListParams(new FacetLabel("A")));
             } catch (IOException e) {
               throw new RuntimeException(e);
             }

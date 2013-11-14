@@ -31,7 +31,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -59,7 +59,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
             List<String> paths = new ArrayList<String>();
             while (true) {
               Document doc = new Document();
-              List<CategoryPath> docPaths = new ArrayList<CategoryPath>();
+              List<FacetLabel> docPaths = new ArrayList<FacetLabel>();
               int numPaths = _TestUtil.nextInt(random(), 1, 5);
               for(int i=0;i<numPaths;i++) {
                 String path;
@@ -78,7 +78,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
                     }
                   }
                 }
-                docPaths.add(new CategoryPath("field", path));
+                docPaths.add(new FacetLabel("field", path));
               }
               try {
                 facetFields.addFields(doc, docPaths);
@@ -132,7 +132,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         try {
           //System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
           int topN = _TestUtil.nextInt(random(), 1, 20);
-          CountFacetRequest cfr = new CountFacetRequest(new CategoryPath("field"), topN);
+          CountFacetRequest cfr = new CountFacetRequest(new FacetLabel("field"), topN);
           FacetSearchParams fsp = new FacetSearchParams(cfr);
           FacetsCollector fc = FacetsCollector.create(fsp, pair.searcher.getIndexReader(), pair.taxonomyReader);
           pair.searcher.search(new MatchAllDocsQuery(), fc);

@@ -21,7 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
@@ -248,7 +248,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       cacheIsComplete = true;
       // Make sure that the taxonomy always contain the root category
       // with category id 0.
-      addCategory(CategoryPath.EMPTY);
+      addCategory(FacetLabel.EMPTY);
     } else {
       // There are some categories on the disk, which we have not yet
       // read into the cache, and therefore the cache is incomplete.
@@ -388,7 +388,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * returning the category's ordinal, or a negative number in case the
    * category does not yet exist in the taxonomy.
    */
-  protected synchronized int findCategory(CategoryPath categoryPath) throws IOException {
+  protected synchronized int findCategory(FacetLabel categoryPath) throws IOException {
     // If we can find the category in the cache, or we know the cache is
     // complete, we can return the response directly from it
     int res = cache.get(categoryPath);
@@ -447,7 +447,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   @Override
-  public int addCategory(CategoryPath categoryPath) throws IOException {
+  public int addCategory(FacetLabel categoryPath) throws IOException {
     ensureOpen();
     // check the cache outside the synchronized block. this results in better
     // concurrency when categories are there.
@@ -479,14 +479,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * parent is always added to the taxonomy before its child). We do this by
    * recursion.
    */
-  private int internalAddCategory(CategoryPath cp) throws IOException {
+  private int internalAddCategory(FacetLabel cp) throws IOException {
     // Find our parent's ordinal (recursively adding the parent category
     // to the taxonomy if it's not already there). Then add the parent
     // ordinal as payloads (rather than a stored field; payloads can be
     // more efficiently read into memory in bulk by LuceneTaxonomyReader)
     int parent;
     if (cp.length > 1) {
-      CategoryPath parentPath = cp.subpath(cp.length - 1);
+      FacetLabel parentPath = cp.subpath(cp.length - 1);
       parent = findCategory(parentPath);
       if (parent < 0) {
         parent = internalAddCategory(parentPath);
@@ -515,7 +515,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * Note that the methods calling addCategoryDocument() are synchornized, so
    * this method is effectively synchronized as well.
    */
-  private int addCategoryDocument(CategoryPath categoryPath, int parent) throws IOException {
+  private int addCategoryDocument(FacetLabel categoryPath, int parent) throws IOException {
     // Before Lucene 2.9, position increments >=0 were supported, so we
     // added 1 to parent to allow the parent -1 (the parent of the root).
     // Unfortunately, starting with Lucene 2.9, after LUCENE-1542, this is
@@ -596,7 +596,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
 
-  private void addToCache(CategoryPath categoryPath, int id) throws IOException {
+  private void addToCache(FacetLabel categoryPath, int id) throws IOException {
     if (cache.put(categoryPath, id)) {
       // If cache.put() returned true, it means the cache was limited in
       // size, became full, and parts of it had to be evicted. It is
@@ -729,7 +729,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // hence documents), there are no deletions in the index. Therefore, it
               // is sufficient to call next(), and then doc(), exactly once with no
               // 'validation' checks.
-              CategoryPath cp = new CategoryPath(t.utf8ToString(), delimiter);
+              FacetLabel cp = new FacetLabel(t.utf8ToString(), delimiter);
               docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
               boolean res = cache.put(cp, docsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
@@ -819,7 +819,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         te = terms.iterator(te);
         while (te.next() != null) {
           String value = te.term().utf8ToString();
-          CategoryPath cp = new CategoryPath(value, delimiter);
+          FacetLabel cp = new FacetLabel(value, delimiter);
           final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);

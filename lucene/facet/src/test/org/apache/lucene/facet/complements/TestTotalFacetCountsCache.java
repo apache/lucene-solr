@@ -21,7 +21,7 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -91,7 +91,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
       TaxonomyWriter tw, String... strings) throws IOException {
     Document doc = new Document();
     FacetFields facetFields = new FacetFields(tw, iParams);
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));
+    facetFields.addFields(doc, Collections.singletonList(new FacetLabel(strings)));
     iw.addDocument(doc);
   }
 
@@ -129,7 +129,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     
     for (String cat : CATEGORIES) {
       Document doc = new Document();
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath(cat, '/')));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel(cat, '/')));
       indexWriter.addDocument(doc);
     }
     
@@ -173,8 +173,8 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
       @Override
       public void run() {
         try {
-          FacetSearchParams fsp = new FacetSearchParams(iParams, new CountFacetRequest(new CategoryPath("a"), 10),
-              new CountFacetRequest(new CategoryPath("b"), 10));
+          FacetSearchParams fsp = new FacetSearchParams(iParams, new CountFacetRequest(new FacetLabel("a"), 10),
+              new CountFacetRequest(new FacetLabel("b"), 10));
           IndexSearcher searcher = new IndexSearcher(indexReader);
           FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
           searcher.search(new MatchAllDocsQuery(), fc);
@@ -352,7 +352,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     
     // Make the taxonomy grow without touching the index
     for (int i = 0; i < 10; i++) {
-      taxoWriter.addCategory(new CategoryPath("foo", Integer.toString(i)));
+      taxoWriter.addCategory(new FacetLabel("foo", Integer.toString(i)));
     }
     taxoWriter.commit();
     TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(taxoReader);

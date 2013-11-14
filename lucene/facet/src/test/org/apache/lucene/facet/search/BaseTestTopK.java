@@ -13,7 +13,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
 /*
@@ -78,9 +78,9 @@ public abstract class BaseTestTopK extends FacetTestBase {
   }
   
   @Override
-  protected List<CategoryPath> getCategories(int doc) {
+  protected List<FacetLabel> getCategories(int doc) {
     nextInt(doc);
-    CategoryPath cp = new CategoryPath(
+    FacetLabel cp = new FacetLabel(
         "a", 
         Integer.toString(nextInt / 1000), 
         Integer.toString(nextInt / 100), 
@@ -93,10 +93,10 @@ public abstract class BaseTestTopK extends FacetTestBase {
 
   protected FacetSearchParams searchParamsWithRequests(int numResults, FacetIndexingParams fip) {
     List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-    facetRequests.add(new CountFacetRequest(new CategoryPath("a"), numResults));
-    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1"), numResults));
-    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1", "10"), numResults));
-    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "2",  "26", "267"), numResults));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("a"), numResults));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("a", "1"), numResults));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("a", "1", "10"), numResults));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("a", "2",  "26", "267"), numResults));
     return getFacetSearchParams(facetRequests, fip);
   }
 

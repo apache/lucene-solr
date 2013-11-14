@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -42,7 +42,7 @@ public class FacetResultNode implements Comparable<FacetResultNode> {
   public int ordinal;
 
   /**
-   * The {@link CategoryPath label} of this result. May be {@code null} if not
+   * The {@link FacetLabel label} of this result. May be {@code null} if not
    * computed, in which case use {@link TaxonomyReader#getPath(int)} to label
    * it.
    * <p>
@@ -50,7 +50,7 @@ public class FacetResultNode implements Comparable<FacetResultNode> {
    * {@link FacetRequest#getNumLabel()} &lt;
    * {@link FacetRequest#numResults} there will be unlabeled nodes.
    */
-  public CategoryPath label;
+  public FacetLabel label;
   
   /**
    * The value of this result. Its actual type depends on the

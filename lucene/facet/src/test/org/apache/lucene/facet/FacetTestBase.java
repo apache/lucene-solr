@@ -25,7 +25,7 @@ import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -115,13 +115,13 @@ public abstract class FacetTestBase extends FacetTestCase {
   };
   
   /** Facets: facets[D][F] == category-path no. F for document no. D. */
-  private static final CategoryPath[][] DEFAULT_CATEGORIES = {
-      { new CategoryPath("root","a","f1"), new CategoryPath("root","a","f2") },
-      { new CategoryPath("root","a","f1"), new CategoryPath("root","a","f3") },
+  private static final FacetLabel[][] DEFAULT_CATEGORIES = {
+      { new FacetLabel("root","a","f1"), new FacetLabel("root","a","f2") },
+      { new FacetLabel("root","a","f1"), new FacetLabel("root","a","f3") },
   };
   
   /** categories to be added to specified doc */
-  protected List<CategoryPath> getCategories(int doc) {
+  protected List<FacetLabel> getCategories(int doc) {
     return Arrays.asList(DEFAULT_CATEGORIES[doc]);
   }
   
@@ -284,7 +284,7 @@ public abstract class FacetTestBase extends FacetTestCase {
   
   /** utility Create a dummy document with specified categories and content */
   protected final void indexDoc(FacetIndexingParams iParams, RandomIndexWriter iw,
-      TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException {
+      TaxonomyWriter tw, String content, List<FacetLabel> categories) throws IOException {
     Document d = new Document();
     FacetFields facetFields = new FacetFields(tw, iParams);
     facetFields.addFields(d, categories);
@@ -293,10 +293,10 @@ public abstract class FacetTestBase extends FacetTestCase {
   }
   
   /** Build the "truth" with ALL the facets enumerating indexes content. */
-  protected Map<CategoryPath, Integer> facetCountsTruth() throws IOException {
+  protected Map<FacetLabel, Integer> facetCountsTruth() throws IOException {
     FacetIndexingParams iParams = getFacetIndexingParams(Integer.MAX_VALUE);
     String delim = String.valueOf(iParams.getFacetDelimChar());
-    Map<CategoryPath, Integer> res = new HashMap<CategoryPath, Integer>();
+    Map<FacetLabel, Integer> res = new HashMap<FacetLabel, Integer>();
     HashSet<String> handledTerms = new HashSet<String>();
     for (CategoryListParams clp : iParams.getAllCategoryListParams()) {
       if (!handledTerms.add(clp.field)) {
@@ -315,14 +315,14 @@ public abstract class FacetTestBase extends FacetTestCase {
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           cnt++;
         }
-        res.put(new CategoryPath(te.term().utf8ToString().split(delim)), cnt);
+        res.put(new FacetLabel(te.term().utf8ToString().split(delim)), cnt);
       }
     }
     return res;
   }
   
   /** Validate counts for returned facets, and that there are not too many results */
-  protected static void assertCountsAndCardinality(Map<CategoryPath, Integer> facetCountsTruth, List<FacetResult> facetResults) throws Exception {
+  protected static void assertCountsAndCardinality(Map<FacetLabel, Integer> facetCountsTruth, List<FacetResult> facetResults) throws Exception {
     for (FacetResult fr : facetResults) {
       FacetResultNode topResNode = fr.getFacetResultNode();
       FacetRequest freq = fr.getFacetRequest();
@@ -334,7 +334,7 @@ public abstract class FacetTestBase extends FacetTestCase {
   }
     
   /** Validate counts for returned facets, and that there are not too many results */
-  private static void assertCountsAndCardinality(Map<CategoryPath,Integer> facetCountsTruth,  FacetResultNode resNode, int reqNumResults) throws Exception {
+  private static void assertCountsAndCardinality(Map<FacetLabel,Integer> facetCountsTruth,  FacetResultNode resNode, int reqNumResults) throws Exception {
     int actualNumResults = resNode.subResults.size();
     if (VERBOSE) {
       System.out.println("NumResults: " + actualNumResults);

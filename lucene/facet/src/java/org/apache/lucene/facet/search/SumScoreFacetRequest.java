@@ -1,7 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,7 +29,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 public class SumScoreFacetRequest extends FacetRequest {
 
   /** Create a score facet request for a given node in the taxonomy. */
-  public SumScoreFacetRequest(CategoryPath path, int num) {
+  public SumScoreFacetRequest(FacetLabel path, int num) {
     super(path, num);
   }
 

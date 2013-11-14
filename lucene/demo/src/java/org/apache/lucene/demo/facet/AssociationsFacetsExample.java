@@ -16,7 +16,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -52,17 +52,17 @@ public class AssociationsFacetsExample {
    * Categories per document, {@link #ASSOCIATIONS} hold the association value
    * for each category.
    */
-  public static CategoryPath[][] CATEGORIES = {
+  public static FacetLabel[][] CATEGORIES = {
     // Doc #1
-    { new CategoryPath("tags", "lucene") , 
-      new CategoryPath("genre", "computing")
+    { new FacetLabel("tags", "lucene") , 
+      new FacetLabel("genre", "computing")
     },
         
     // Doc #2
-    { new CategoryPath("tags", "lucene"),  
-      new CategoryPath("tags", "solr"),
-      new CategoryPath("genre", "computing"),
-      new CategoryPath("genre", "software")
+    { new FacetLabel("tags", "lucene"),  
+      new FacetLabel("tags", "solr"),
+      new FacetLabel("genre", "computing"),
+      new FacetLabel("genre", "software")
     }
   };
 
@@ -126,8 +126,8 @@ public class AssociationsFacetsExample {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     
-    CategoryPath tags = new CategoryPath("tags");
-    CategoryPath genre = new CategoryPath("genre");
+    FacetLabel tags = new FacetLabel("tags");
+    FacetLabel genre = new FacetLabel("genre");
     FacetSearchParams fsp = new FacetSearchParams(new SumIntAssociationFacetRequest(tags, 10), 
         new SumFloatAssociationFacetRequest(genre, 10));
     FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);

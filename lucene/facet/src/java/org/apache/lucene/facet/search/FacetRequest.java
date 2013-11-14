@@ -3,7 +3,7 @@ package org.apache.lucene.facet.search;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.range.RangeFacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -64,7 +64,7 @@ public abstract class FacetRequest {
   public enum SortOrder { ASCENDING, DESCENDING }
 
   /** The category being aggregated in this facet request. */
-  public final CategoryPath categoryPath;
+  public final FacetLabel categoryPath;
   
   /** The number of child categories to return for {@link #categoryPath}. */
   public final int numResults;
@@ -88,7 +88,7 @@ public abstract class FacetRequest {
    *          {@code Integer.MAX_VALUE}, all immediate child categories will be
    *          returned. Must be greater than 0.
    */
-  public FacetRequest(CategoryPath path, int numResults) {
+  public FacetRequest(FacetLabel path, int numResults) {
     if (numResults <= 0) {
       throw new IllegalArgumentException("num results must be a positive (>0) number: " + numResults);
     }

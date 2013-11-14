@@ -2,7 +2,7 @@ package org.apache.lucene.facet.search;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.junit.Test;
 
 /*
@@ -26,7 +26,7 @@ public class FacetRequestTest extends FacetTestCase {
   
   @Test(expected=IllegalArgumentException.class)
   public void testIllegalNumResults() throws Exception {
-    assertNotNull(new CountFacetRequest(new CategoryPath("a", "b"), 0));
+    assertNotNull(new CountFacetRequest(new FacetLabel("a", "b"), 0));
   }
   
   @Test(expected=IllegalArgumentException.class)
@@ -36,8 +36,8 @@ public class FacetRequestTest extends FacetTestCase {
   
   @Test
   public void testHashAndEquals() {
-    CountFacetRequest fr1 = new CountFacetRequest(new CategoryPath("a"), 8);
-    CountFacetRequest fr2 = new CountFacetRequest(new CategoryPath("a"), 8);
+    CountFacetRequest fr1 = new CountFacetRequest(new FacetLabel("a"), 8);
+    CountFacetRequest fr2 = new CountFacetRequest(new FacetLabel("a"), 8);
     assertEquals("hashCode() should agree on both objects", fr1.hashCode(), fr2.hashCode());
     assertTrue("equals() should return true", fr1.equals(fr2));
     fr1.setDepth(10);

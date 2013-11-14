@@ -18,7 +18,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.SumValueSourceFacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -61,7 +61,7 @@ public class ExpressionAggregationFacetsExample {
     Document doc = new Document();
     doc.add(new TextField("c", text, Store.NO));
     doc.add(new NumericDocValuesField("popularity", popularity));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(category, '/')));
+    facetFields.addFields(doc, Collections.singletonList(new FacetLabel(category, '/')));
     indexWriter.addDocument(doc);
   }
 
@@ -97,7 +97,7 @@ public class ExpressionAggregationFacetsExample {
     bindings.add(new SortField("popularity", SortField.Type.LONG)); // the value of the 'popularity' field
 
     FacetSearchParams fsp = new FacetSearchParams(
-        new SumValueSourceFacetRequest(new CategoryPath("A"), 10, expr.getValueSource(bindings), true));
+        new SumValueSourceFacetRequest(new FacetLabel("A"), 10, expr.getValueSource(bindings), true));
 
     // Aggregates the facet values
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);

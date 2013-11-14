@@ -6,7 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.facet.collections.LRUHashMap;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
@@ -60,8 +60,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private final DirectoryReader indexReader;
 
   // TODO: test DoubleBarrelLRUCache and consider using it instead
-  private LRUHashMap<CategoryPath, Integer> ordinalCache;
-  private LRUHashMap<Integer, CategoryPath> categoryCache;
+  private LRUHashMap<FacetLabel, Integer> ordinalCache;
+  private LRUHashMap<Integer, FacetLabel> categoryCache;
 
   private volatile TaxonomyIndexArrays taxoArrays;
 
@@ -73,15 +73,15 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
    * arrays.
    */
   DirectoryTaxonomyReader(DirectoryReader indexReader, DirectoryTaxonomyWriter taxoWriter,
-      LRUHashMap<CategoryPath,Integer> ordinalCache, LRUHashMap<Integer,CategoryPath> categoryCache,
+      LRUHashMap<FacetLabel,Integer> ordinalCache, LRUHashMap<Integer,FacetLabel> categoryCache,
       TaxonomyIndexArrays taxoArrays) throws IOException {
     this.indexReader = indexReader;
     this.taxoWriter = taxoWriter;
     this.taxoEpoch = taxoWriter == null ? -1 : taxoWriter.getTaxonomyEpoch();
     
     // use the same instance of the cache, note the protective code in getOrdinal and getPath
-    this.ordinalCache = ordinalCache == null ? new LRUHashMap<CategoryPath,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
-    this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,CategoryPath>(DEFAULT_CACHE_VALUE) : categoryCache;
+    this.ordinalCache = ordinalCache == null ? new LRUHashMap<FacetLabel,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
+    this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,FacetLabel>(DEFAULT_CACHE_VALUE) : categoryCache;
     
     this.taxoArrays = taxoArrays != null ? new TaxonomyIndexArrays(indexReader, taxoArrays) : null;
   }
@@ -103,8 +103,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<CategoryPath, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, CategoryPath>(DEFAULT_CACHE_VALUE);
+    ordinalCache = new LRUHashMap<FacetLabel, Integer>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<Integer, FacetLabel>(DEFAULT_CACHE_VALUE);
   }
   
   /**
@@ -122,8 +122,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<CategoryPath, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, CategoryPath>(DEFAULT_CACHE_VALUE);
+    ordinalCache = new LRUHashMap<FacetLabel, Integer>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<Integer, FacetLabel>(DEFAULT_CACHE_VALUE);
   }
   
   private synchronized void initTaxoArrays() throws IOException {
@@ -242,7 +242,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public int getOrdinal(CategoryPath cp) throws IOException {
+  public int getOrdinal(FacetLabel cp) throws IOException {
     ensureOpen();
     if (cp.length == 0) {
       return ROOT_ORDINAL;
@@ -288,7 +288,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public CategoryPath getPath(int ordinal) throws IOException {
+  public FacetLabel getPath(int ordinal) throws IOException {
     ensureOpen();
     
     // Since the cache is shared with DTR instances allocated from
@@ -303,14 +303,14 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     // wrapped as LRU?
     Integer catIDInteger = Integer.valueOf(ordinal);
     synchronized (categoryCache) {
-      CategoryPath res = categoryCache.get(catIDInteger);
+      FacetLabel res = categoryCache.get(catIDInteger);
       if (res != null) {
         return res;
       }
     }
     
     StoredDocument doc = indexReader.document(ordinal);
-    CategoryPath ret = new CategoryPath(doc.get(Consts.FULL), delimiter);
+    FacetLabel ret = new FacetLabel(doc.get(Consts.FULL), delimiter);
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
@@ -326,7 +326,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   
   /**
    * setCacheSize controls the maximum allowed size of each of the caches
-   * used by {@link #getPath(int)} and {@link #getOrdinal(CategoryPath)}.
+   * used by {@link #getPath(int)} and {@link #getOrdinal(FacetLabel)}.
    * <P>
    * Currently, if the given size is smaller than the current size of
    * a cache, it will not shrink, and rather we be limited to its current
@@ -364,7 +364,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     int upperl = Math.min(max, indexReader.maxDoc());
     for (int i = 0; i < upperl; i++) {
       try {
-        CategoryPath category = this.getPath(i);
+        FacetLabel category = this.getPath(i);
         if (category == null) {
           sb.append(i + ": NULL!! \n");
           continue;

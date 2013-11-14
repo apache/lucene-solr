@@ -27,7 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
  * This is a very efficient LabelToOrdinal implementation that uses a
@@ -101,7 +101,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   private void init() {
     labelRepository = new CharBlockArray();
-    CategoryPathUtils.serialize(CategoryPath.EMPTY, labelRepository);
+    CategoryPathUtils.serialize(FacetLabel.EMPTY, labelRepository);
 
     int c = this.capacity;
     for (int i = 0; i < this.hashArrays.length; i++) {
@@ -111,7 +111,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
   }
 
   @Override
-  public void addLabel(CategoryPath label, int ordinal) {
+  public void addLabel(FacetLabel label, int ordinal) {
     if (collisionMap.size() > threshold) {
       grow();
     }
@@ -130,7 +130,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
   }
 
   @Override
-  public int getOrdinal(CategoryPath label) {
+  public int getOrdinal(FacetLabel label) {
     if (label == null) {
       return LabelToOrdinal.INVALID_ORDINAL;
     }
@@ -199,7 +199,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
     }
   }
 
-  private boolean addLabel(HashArray a, CategoryPath label, int hash, int ordinal) {
+  private boolean addLabel(HashArray a, FacetLabel label, int hash, int ordinal) {
     int index = CompactLabelToOrdinal.indexFor(hash, a.offsets.length);
     int offset = a.offsets[index];
 
@@ -243,7 +243,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
     return false;
   }
 
-  private int getOrdinal(HashArray a, CategoryPath label, int hash) {
+  private int getOrdinal(HashArray a, FacetLabel label, int hash) {
     if (label == null) {
       return LabelToOrdinal.INVALID_ORDINAL;
     }
@@ -280,7 +280,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
   //
   // }
 
-  static int stringHashCode(CategoryPath label) {
+  static int stringHashCode(FacetLabel label) {
     int hash = label.hashCode();
 
     hash = hash ^ ((hash >>> 20) ^ (hash >>> 12));

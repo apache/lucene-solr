@@ -32,7 +32,7 @@ import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -66,14 +66,14 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Mixup order we add these paths, to verify tie-break
     // order is by label (unicode sort) and has nothing to
     // do w/ order we added them:
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
-    paths.add(new CategoryPath("a", "foo"));
-    paths.add(new CategoryPath("a", "bar"));
-    paths.add(new CategoryPath("a", "zoo"));
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
+    paths.add(new FacetLabel("a", "foo"));
+    paths.add(new FacetLabel("a", "bar"));
+    paths.add(new FacetLabel("a", "zoo"));
     Collections.shuffle(paths, random());
 
-    paths.add(new CategoryPath("b", "baz"));
-    paths.add(new CategoryPath("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR, "bazfoo"));
+    paths.add(new FacetLabel("b", "baz"));
+    paths.add(new FacetLabel("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR, "bazfoo"));
 
     dvFields.addFields(doc, paths);
 
@@ -83,7 +83,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     }
 
     doc = new Document();
-    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "foo")));
+    dvFields.addFields(doc, Collections.singletonList(new FacetLabel("a", "foo")));
     writer.addDocument(doc);
 
     // NRT open
@@ -91,9 +91,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.close();
 
     List<FacetRequest> requests = new ArrayList<FacetRequest>();
-    requests.add(new CountFacetRequest(new CategoryPath("a"), 10));
-    requests.add(new CountFacetRequest(new CategoryPath("b"), 10));
-    requests.add(new CountFacetRequest(new CategoryPath("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR), 10));
+    requests.add(new CountFacetRequest(new FacetLabel("a"), 10));
+    requests.add(new CountFacetRequest(new FacetLabel("b"), 10));
+    requests.add(new CountFacetRequest(new FacetLabel("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR), 10));
 
     final boolean doDimCount = random().nextBoolean();
 
@@ -133,13 +133,13 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // DrillDown:
 
     DrillDownQuery q = new DrillDownQuery(fip);
-    q.add(new CategoryPath("a", "foo"));
-    q.add(new CategoryPath("b", "baz"));
+    q.add(new FacetLabel("a", "foo"));
+    q.add(new FacetLabel("b", "baz"));
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 
     q = new DrillDownQuery(fip);
-    q.add(new CategoryPath("a"));
+    q.add(new FacetLabel("a"));
     hits = searcher.search(q, 1);
     assertEquals(2, hits.totalHits);
 
@@ -156,24 +156,24 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     SortedSetDocValuesFacetFields dvFields = new SortedSetDocValuesFacetFields();
 
     Document doc = new Document();
-    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "foo")));
+    dvFields.addFields(doc, Collections.singletonList(new FacetLabel("a", "foo")));
     writer.addDocument(doc);
 
     IndexReader r = writer.getReader();
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(r);
 
     doc = new Document();
-    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "bar")));
+    dvFields.addFields(doc, Collections.singletonList(new FacetLabel("a", "bar")));
     writer.addDocument(doc);
 
     doc = new Document();
-    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "baz")));
+    dvFields.addFields(doc, Collections.singletonList(new FacetLabel("a", "baz")));
     writer.addDocument(doc);
 
     IndexSearcher searcher = newSearcher(writer.getReader());
 
     List<FacetRequest> requests = new ArrayList<FacetRequest>();
-    requests.add(new CountFacetRequest(new CategoryPath("a"), 10));
+    requests.add(new CountFacetRequest(new FacetLabel("a"), 10));
 
     FacetSearchParams fsp = new FacetSearchParams(requests);
     

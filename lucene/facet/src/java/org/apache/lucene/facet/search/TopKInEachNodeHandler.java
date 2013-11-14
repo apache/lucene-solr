@@ -94,7 +94,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
    *         too, excluded from the FacetResult tree.
    * @throws IOException
    *           in case
-   *           {@link TaxonomyReader#getOrdinal(org.apache.lucene.facet.taxonomy.CategoryPath)}
+   *           {@link TaxonomyReader#getOrdinal(org.apache.lucene.facet.taxonomy.FacetLabel)}
    *           does.
    * @see #fetchPartitionResult(int)
    */

@@ -10,7 +10,7 @@ import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.search.OrdinalValueResolver.FloatValueResolver;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -176,7 +176,7 @@ public class SumValueSourceFacetRequest extends FacetRequest {
    * documents' values. You can also specify if the value source requires
    * document scores or not.
    */
-  public SumValueSourceFacetRequest(CategoryPath path, int num, ValueSource valueSource, boolean requiresDocScores) {
+  public SumValueSourceFacetRequest(FacetLabel path, int num, ValueSource valueSource, boolean requiresDocScores) {
     super(path, num);
     this.valueSource = valueSource;
     this.requiresDocScores = requiresDocScores;

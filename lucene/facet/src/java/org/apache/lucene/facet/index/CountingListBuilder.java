@@ -11,7 +11,7 @@ import org.apache.lucene.facet.encoding.IntEncoder;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.BytesRef;
@@ -141,13 +141,13 @@ public class CountingListBuilder implements CategoryListBuilder {
    * processing the array for other purposes.
    */
   @Override
-  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException {
+  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<FacetLabel> categories) throws IOException {
     int upto = ordinals.length; // since we may add ordinals to IntsRef, iterate upto original length
 
-    Iterator<CategoryPath> iter = categories.iterator();
+    Iterator<FacetLabel> iter = categories.iterator();
     for (int i = 0; i < upto; i++) {
       int ordinal = ordinals.ints[i];
-      CategoryPath cp = iter.next();
+      FacetLabel cp = iter.next();
       OrdinalPolicy op = clp.getOrdinalPolicy(cp.components[0]);
       if (op != OrdinalPolicy.NO_PARENTS) {
         // need to add parents too

@@ -29,7 +29,7 @@ import java.util.Map;
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState.OrdRange;
 import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
@@ -40,7 +40,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /** Compute facets counts from previously
- *  indexed {@link SortedSetDocValuesFacetFields},
+ *  indexed {@link SortedSetDocValuesFacetField},
  *  without require a separate taxonomy index.  Faceting is
  *  a bit slower (~25%), and there is added cost on every
  *  {@link IndexReader} open to create a new {@link
@@ -130,7 +130,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       labelValues[i] = new LabelAndValue(s.substring(dim.length()+1, s.length()), ordAndCount.count);
     }
 
-    return new SimpleFacetResult(new CategoryPath(dim), dimCount, labelValues);
+    return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues);
   }
 
   /** Does all the "real work" of tallying up the counts. */

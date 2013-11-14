@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -44,7 +44,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
     Document doc = new Document();
     FacetFields ff = new FacetFields(taxoWriter);
-    ff.addFields(doc, Collections.singleton(new CategoryPath("A")));
+    ff.addFields(doc, Collections.singleton(new FacetLabel("A")));
     return doc;
   }
   

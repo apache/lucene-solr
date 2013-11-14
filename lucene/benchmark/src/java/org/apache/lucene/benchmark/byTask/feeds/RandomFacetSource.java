@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
  * Simple implementation of a random facet source
@@ -47,7 +47,7 @@ public class RandomFacetSource extends FacetSource {
   private int maxValue = maxDocFacets * maxFacetDepth;
   
   @Override
-  public void getNextFacets(List<CategoryPath> facets) throws NoMoreDataException, IOException {
+  public void getNextFacets(List<FacetLabel> facets) throws NoMoreDataException, IOException {
     facets.clear();
     int numFacets = 1 + random.nextInt(maxDocFacets); // at least one facet to each doc
     for (int i = 0; i < numFacets; i++) {
@@ -57,7 +57,7 @@ public class RandomFacetSource extends FacetSource {
         components[k] = Integer.toString(random.nextInt(maxValue));
         addItem();
       }
-      CategoryPath cp = new CategoryPath(components);
+      FacetLabel cp = new FacetLabel(components);
       facets.add(cp);
       addBytes(cp.toString().length()); // very rough approximation
     }

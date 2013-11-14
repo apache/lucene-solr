@@ -3,7 +3,7 @@ package org.apache.lucene.facet.associations;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
 
@@ -52,7 +52,7 @@ public class AssociationsDrillDownStream extends DrillDownStream {
   }
   
   @Override
-  protected void addAdditionalAttributes(CategoryPath cp, boolean isParent) {
+  protected void addAdditionalAttributes(FacetLabel cp, boolean isParent) {
     if (isParent) {
       return; // associations are not added to parent categories
     }

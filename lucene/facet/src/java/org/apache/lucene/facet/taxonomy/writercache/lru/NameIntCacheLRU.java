@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.writercache.lru;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,7 +58,7 @@ class NameIntCacheLRU {
     }
   }
 
-  Integer get (CategoryPath name) {
+  Integer get (FacetLabel name) {
     Integer res = cache.get(key(name));
     if (res==null) {
       nMisses ++;
@@ -69,11 +69,11 @@ class NameIntCacheLRU {
   }
 
   /** Subclasses can override this to provide caching by e.g. hash of the string. */
-  Object key(CategoryPath name) {
+  Object key(FacetLabel name) {
     return name;
   }
 
-  Object key(CategoryPath name, int prefixLen) {
+  Object key(FacetLabel name, int prefixLen) {
     return name.subpath(prefixLen);
   }
 
@@ -81,12 +81,12 @@ class NameIntCacheLRU {
    * Add a new value to cache.
    * Return true if cache became full and some room need to be made. 
    */
-  boolean put (CategoryPath name, Integer val) {
+  boolean put (FacetLabel name, Integer val) {
     cache.put(key(name), val);
     return isCacheFull();
   }
 
-  boolean put (CategoryPath name, int prefixLen, Integer val) {
+  boolean put (FacetLabel name, int prefixLen, Integer val) {
     cache.put(key(name, prefixLen), val);
     return isCacheFull();
   }

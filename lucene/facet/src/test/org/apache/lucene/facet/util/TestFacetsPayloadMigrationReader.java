@@ -36,7 +36,7 @@ import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -159,13 +159,13 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       int numCategories = random.nextInt(3) + 1;
-      ArrayList<CategoryPath> categories = new ArrayList<CategoryPath>(numCategories);
+      ArrayList<FacetLabel> categories = new ArrayList<FacetLabel>(numCategories);
       HashSet<String> docDimensions = new HashSet<String>();
       while (numCategories-- > 0) {
         String dim = DIMENSIONS[random.nextInt(DIMENSIONS.length)];
         // we should only increment the expected count by 1 per document
         docDimensions.add(dim);
-        categories.add(new CategoryPath(dim, Integer.toString(i), Integer.toString(numCategories)));
+        categories.add(new FacetLabel(dim, Integer.toString(i), Integer.toString(numCategories)));
       }
       facetFields.addFields(doc, categories);
       doc.add(new StringField("docid", Integer.toString(i), Store.YES));
@@ -185,7 +185,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
       if (random.nextDouble() < 0.2) { // add some documents that will be deleted
         doc = new Document();
         doc.add(new StringField("del", "key", Store.NO));
-        facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dummy")));
+        facetFields.addFields(doc, Collections.singletonList(new FacetLabel("dummy")));
         indexWriter.addDocument(doc);
       }
     }
@@ -264,7 +264,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     // run faceted search and assert expected counts
     ArrayList<FacetRequest> requests = new ArrayList<FacetRequest>(expectedCounts.size());
     for (String dim : expectedCounts.keySet()) {
-      requests.add(new CountFacetRequest(new CategoryPath(dim), 5));
+      requests.add(new CountFacetRequest(new FacetLabel(dim), 5));
     }
     FacetSearchParams fsp = new FacetSearchParams(fip, requests);
     FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
@@ -283,7 +283,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
       TaxonomyReader taxoReader, IndexSearcher searcher) throws IOException {
     // verify drill-down
     for (String dim : expectedCounts.keySet()) {
-      CategoryPath drillDownCP = new CategoryPath(dim);
+      FacetLabel drillDownCP = new FacetLabel(dim);
       FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(drillDownCP, 10));
       DrillDownQuery drillDown = new DrillDownQuery(fip, new MatchAllDocsQuery());
       drillDown.add(drillDownCP);
@@ -322,7 +322,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     }
     foundOrdinals[0] = true; // ROOT ordinals isn't indexed
     // mark 'dummy' category ordinal as seen
-    int dummyOrdinal = taxoReader.getOrdinal(new CategoryPath("dummy"));
+    int dummyOrdinal = taxoReader.getOrdinal(new FacetLabel("dummy"));
     if (dummyOrdinal > 0) {
       foundOrdinals[dummyOrdinal] = true;
     }
@@ -331,7 +331,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     int numPartitions = (int) Math.ceil(taxoReader.getSize() / (double) partitionSize);
     final IntsRef ordinals = new IntsRef(32);
     for (String dim : DIMENSIONS) {
-      CategoryListParams clp = fip.getCategoryListParams(new CategoryPath(dim));
+      CategoryListParams clp = fip.getCategoryListParams(new FacetLabel(dim));
       int partitionOffset = 0;
       for (int partition = 0; partition < numPartitions; partition++, partitionOffset += partitionSize) {
         final CategoryListIterator cli = clp.createCategoryListIterator(partition);
@@ -368,14 +368,14 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     // set custom CLP fields for two dimensions and use the default ($facets) for the other two
-    HashMap<CategoryPath,CategoryListParams> params = new HashMap<CategoryPath,CategoryListParams>();
-    params.put(new CategoryPath(DIMENSIONS[0]), new CategoryListParams(DIMENSIONS[0]) {
+    HashMap<FacetLabel,CategoryListParams> params = new HashMap<FacetLabel,CategoryListParams>();
+    params.put(new FacetLabel(DIMENSIONS[0]), new CategoryListParams(DIMENSIONS[0]) {
       @Override
       public OrdinalPolicy getOrdinalPolicy(String dimension) {
         return OrdinalPolicy.ALL_PARENTS;
       }
     });
-    params.put(new CategoryPath(DIMENSIONS[1]), new CategoryListParams(DIMENSIONS[1]) {
+    params.put(new FacetLabel(DIMENSIONS[1]), new CategoryListParams(DIMENSIONS[1]) {
       @Override
       public OrdinalPolicy getOrdinalPolicy(String dimension) {
         return OrdinalPolicy.ALL_PARENTS;

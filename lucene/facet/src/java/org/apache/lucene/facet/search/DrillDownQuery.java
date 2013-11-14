@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -38,8 +38,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 /**
- * A {@link Query} for drill-down over {@link CategoryPath categories}. You
- * should call {@link #add(CategoryPath...)} for every group of categories you
+ * A {@link Query} for drill-down over {@link FacetLabel categories}. You
+ * should call {@link #add(FacetLabel...)} for every group of categories you
  * want to drill-down over. Each category in the group is {@code OR'ed} with
  * the others, and groups are {@code AND'ed}.
  * <p>
@@ -53,7 +53,7 @@ import org.apache.lucene.search.TermQuery;
 public final class DrillDownQuery extends Query {
 
   /** Return a drill-down {@link Term} for a category. */
-  public static Term term(FacetIndexingParams iParams, CategoryPath path) {
+  public static Term term(FacetIndexingParams iParams, FacetLabel path) {
     CategoryListParams clp = iParams.getCategoryListParams(path);
     char[] buffer = new char[path.fullPathLength()];
     iParams.drillDownTermText(path, buffer);
@@ -128,7 +128,7 @@ public final class DrillDownQuery extends Query {
    * Adds one dimension of drill downs; if you pass multiple values they are
    * OR'd, and then the entire dimension is AND'd against the base query.
    */
-  public void add(CategoryPath... paths) {
+  public void add(FacetLabel... paths) {
     Query q;
     if (paths[0].length == 0) {
       throw new IllegalArgumentException("all CategoryPaths must have length > 0");
@@ -141,7 +141,7 @@ public final class DrillDownQuery extends Query {
       q = new TermQuery(term(fip, paths[0]));
     } else {
       BooleanQuery bq = new BooleanQuery(true); // disable coord
-      for (CategoryPath cp : paths) {
+      for (FacetLabel cp : paths) {
         if (cp.length == 0) {
           throw new IllegalArgumentException("all CategoryPaths must have length > 0");
         }

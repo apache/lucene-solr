@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.util.CollectionUtil;
  */
 public class FacetResult {
   
-  private static FacetResultNode addIfNotExist(Map<CategoryPath, FacetResultNode> nodes, FacetResultNode node) {
+  private static FacetResultNode addIfNotExist(Map<FacetLabel, FacetResultNode> nodes, FacetResultNode node) {
     FacetResultNode n = nodes.get(node.label);
     if (n == null) {
       nodes.put(node.label, node);
@@ -51,7 +51,7 @@ public class FacetResult {
    * the hierarchy. The results are merged according to the following rules:
    * <ul>
    * <li>If two results share the same dimension (first component in their
-   * {@link CategoryPath}), they are merged.
+   * {@link FacetLabel}), they are merged.
    * <li>If a result is missing ancestors in the other results, e.g. A/B/C but
    * no corresponding A or A/B, these nodes are 'filled' with their label,
    * ordinal and value (obtained from the respective {@link FacetArrays}).
@@ -94,7 +94,7 @@ public class FacetResult {
             return fr1.getFacetRequest().categoryPath.compareTo(fr2.getFacetRequest().categoryPath);
           }
         });
-        Map<CategoryPath, FacetResultNode> mergedNodes = new HashMap<CategoryPath,FacetResultNode>();
+        Map<FacetLabel, FacetResultNode> mergedNodes = new HashMap<FacetLabel,FacetResultNode>();
         FacetArrays arrays = dimArrays != null ? dimArrays.get(frs.get(0).getFacetRequest().categoryPath.components[0]) : null;
         for (FacetResult fr : frs) {
           FacetRequest freq = fr.getFacetRequest();
@@ -105,7 +105,7 @@ public class FacetResult {
           FacetResultNode frn = fr.getFacetResultNode();
           FacetResultNode merged = mergedNodes.get(frn.label);
           if (merged == null) {
-            CategoryPath parent = frn.label.subpath(frn.label.length - 1);
+            FacetLabel parent = frn.label.subpath(frn.label.length - 1);
             FacetResultNode childNode = frn;
             FacetResultNode parentNode = null;
             while (parent.length > 0 && (parentNode = mergedNodes.get(parent)) == null) {
@@ -154,8 +154,8 @@ public class FacetResult {
         }
         
         // find the 'first' node to put on the FacetResult root
-        CategoryPath min = null;
-        for (CategoryPath cp : mergedNodes.keySet()) {
+        FacetLabel min = null;
+        for (FacetLabel cp : mergedNodes.keySet()) {
           if (min == null || cp.compareTo(min) < 0) {
             min = cp;
           }

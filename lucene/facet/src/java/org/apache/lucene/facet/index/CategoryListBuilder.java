@@ -3,7 +3,7 @@ package org.apache.lucene.facet.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -33,6 +33,6 @@ import org.apache.lucene.util.IntsRef;
 public interface CategoryListBuilder {
   
   /** Returns the encoded ordinals data. */
-  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException;
+  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<FacetLabel> categories) throws IOException;
   
 }

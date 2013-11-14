@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.associations;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
@@ -24,7 +24,7 @@ import org.apache.lucene.store.DataOutput;
  */
 
 /**
- * Allows associating an arbitrary value with a {@link CategoryPath}.
+ * Allows associating an arbitrary value with a {@link FacetLabel}.
  * 
  * @lucene.experimental
  */

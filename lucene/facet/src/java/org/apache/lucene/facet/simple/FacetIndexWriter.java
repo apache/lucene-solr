@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexWriter;
@@ -155,7 +155,7 @@ public class FacetIndexWriter extends IndexWriter {
           throw new IllegalArgumentException("dimension \"" + facetField.dim + "\" is not hierarchical yet has " + facetField.path.length + " components");
         }
       
-        CategoryPath cp = CategoryPath.create(facetField.dim, facetField.path);
+        FacetLabel cp = FacetLabel.create(facetField.dim, facetField.path);
 
         int ordinal = taxoWriter.addCategory(cp);
         ordinals.ints[ordinals.length++] = ordinal;
@@ -193,7 +193,7 @@ public class FacetIndexWriter extends IndexWriter {
       //System.out.println("  field=" + indexedFieldName);
 
       for(SortedSetDocValuesFacetField facetField : ent.getValue()) {
-        CategoryPath cp = new CategoryPath(facetField.dim, facetField.label);
+        FacetLabel cp = new FacetLabel(facetField.dim, facetField.label);
         String fullPath = cp.toString(facetDelimChar);
         //System.out.println("add " + fullPath);
 

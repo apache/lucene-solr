@@ -12,7 +12,7 @@ import org.apache.lucene.facet.complements.TotalFacetCountsCache;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -72,7 +72,7 @@ public class TestTotalFacetCounts extends FacetTestCase {
       }
       
       @Override
-      public CategoryListParams getCategoryListParams(CategoryPath category) {
+      public CategoryListParams getCategoryListParams(FacetLabel category) {
         return new CategoryListParams() {
           @Override
           public OrdinalPolicy getOrdinalPolicy(String dimension) {
@@ -89,7 +89,7 @@ public class TestTotalFacetCounts extends FacetTestCase {
     FacetFields facetFields = new FacetFields(taxoWriter, iParams);
     for (String cat : categories) {
       Document doc = new Document();
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath(cat, '/')));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel(cat, '/')));
       indexWriter.addDocument(doc);
     }
 

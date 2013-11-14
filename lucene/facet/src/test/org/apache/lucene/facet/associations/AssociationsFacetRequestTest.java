@@ -9,7 +9,7 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -47,10 +47,10 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
   private static IndexReader reader;
   private static Directory taxoDir;
   
-  private static final CategoryPath aint = new CategoryPath("int", "a");
-  private static final CategoryPath bint = new CategoryPath("int", "b");
-  private static final CategoryPath afloat = new CategoryPath("float", "a");
-  private static final CategoryPath bfloat = new CategoryPath("float", "b");
+  private static final FacetLabel aint = new FacetLabel("int", "a");
+  private static final FacetLabel bint = new FacetLabel("int", "b");
+  private static final FacetLabel afloat = new FacetLabel("float", "a");
+  private static final FacetLabel bfloat = new FacetLabel("float", "b");
   
   @BeforeClass
   public static void beforeClassAssociationsFacetRequestTest() throws Exception {

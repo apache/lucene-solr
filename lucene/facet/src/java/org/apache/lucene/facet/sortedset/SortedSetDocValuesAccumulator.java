@@ -33,7 +33,7 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues;
@@ -234,7 +234,7 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
             dimCount += counts[ord];
             FacetResultNode node = new FacetResultNode(ord, counts[ord]);
             dv.lookupOrd(ord, scratch);
-            node.label = new CategoryPath(scratch.utf8ToString().split(state.separatorRegex, 2));
+            node.label = new FacetLabel(scratch.utf8ToString().split(state.separatorRegex, 2));
             nodes.add(node);
           }
         }
@@ -258,7 +258,7 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
         }
 
         FacetResultNode rootNode = new FacetResultNode(-1, dimCount);
-        rootNode.label = new CategoryPath(new String[] {dim});
+        rootNode.label = new FacetLabel(new String[] {dim});
         rootNode.subResults = nodes;
         results.add(new FacetResult(request, rootNode, nodes.size()));
         continue;
@@ -300,13 +300,13 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
       }
 
       FacetResultNode rootNode = new FacetResultNode(-1, dimCount);
-      rootNode.label = new CategoryPath(new String[] {dim});
+      rootNode.label = new FacetLabel(new String[] {dim});
 
       FacetResultNode[] childNodes = new FacetResultNode[q.size()];
       for(int i=childNodes.length-1;i>=0;i--) {
         childNodes[i] = q.pop();
         dv.lookupOrd(childNodes[i].ordinal, scratch);
-        childNodes[i].label = new CategoryPath(scratch.utf8ToString().split(state.separatorRegex, 2));
+        childNodes[i].label = new FacetLabel(scratch.utf8ToString().split(state.separatorRegex, 2));
       }
       rootNode.subResults = Arrays.asList(childNodes);
       

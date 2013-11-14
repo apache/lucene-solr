@@ -15,7 +15,7 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -81,7 +81,7 @@ public class OrdinalMappingReaderTest extends FacetTestCase {
     DirectoryReader reader1 = DirectoryReader.open(dir);
     DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
     IndexSearcher searcher = newSearcher(reader1);
-    FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
+    FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(new FacetLabel("tag"), NUM_DOCS));
     FacetsCollector collector = FacetsCollector.create(fsp, reader1, taxReader);
     searcher.search(new MatchAllDocsQuery(), collector);
     FacetResult result = collector.getFacetResults().get(0);
@@ -107,10 +107,10 @@ public class OrdinalMappingReaderTest extends FacetTestCase {
     DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxDir);
     for (int i = 1; i <= NUM_DOCS; i++) {
       Document doc = new Document();
-      List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>(i + 1);
+      List<FacetLabel> categoryPaths = new ArrayList<FacetLabel>(i + 1);
       for (int j = i; j <= NUM_DOCS; j++) {
         int facetValue = asc? j: NUM_DOCS - j;
-        categoryPaths.add(new CategoryPath("tag", Integer.toString(facetValue)));
+        categoryPaths.add(new FacetLabel("tag", Integer.toString(facetValue)));
       }
       FacetFields facetFields = new FacetFields(taxonomyWriter, fip);
       facetFields.addFields(doc, categoryPaths);

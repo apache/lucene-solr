@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,11 +19,11 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * limitations under the License.
  */
 
-/** Utilities for use of {@link CategoryPath} by {@link CompactLabelToOrdinal}. */
+/** Utilities for use of {@link FacetLabel} by {@link CompactLabelToOrdinal}. */
 class CategoryPathUtils {
   
-  /** Serializes the given {@link CategoryPath} to the {@link CharBlockArray}. */
-  public static void serialize(CategoryPath cp, CharBlockArray charBlockArray) {
+  /** Serializes the given {@link FacetLabel} to the {@link CharBlockArray}. */
+  public static void serialize(FacetLabel cp, CharBlockArray charBlockArray) {
     charBlockArray.append((char) cp.length);
     if (cp.length == 0) {
       return;
@@ -36,7 +36,7 @@ class CategoryPathUtils {
 
   /**
    * Calculates a hash function of a path that was serialized with
-   * {@link #serialize(CategoryPath, CharBlockArray)}.
+   * {@link #serialize(FacetLabel, CharBlockArray)}.
    */
   public static int hashCodeOfSerialized(CharBlockArray charBlockArray, int offset) {
     int length = charBlockArray.charAt(offset++);
@@ -54,10 +54,10 @@ class CategoryPathUtils {
   }
 
   /**
-   * Check whether the {@link CategoryPath} is equal to the one serialized in
+   * Check whether the {@link FacetLabel} is equal to the one serialized in
    * {@link CharBlockArray}.
    */
-  public static boolean equalsToSerialized(CategoryPath cp, CharBlockArray charBlockArray, int offset) {
+  public static boolean equalsToSerialized(FacetLabel cp, CharBlockArray charBlockArray, int offset) {
     int n = charBlockArray.charAt(offset++);
     if (cp.length != n) {
       return false;

@@ -12,7 +12,7 @@ import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -55,9 +55,9 @@ public class MultiCategoryListIteratorTest extends FacetTestCase {
     }
     
     // build the PerDimensionIndexingParams
-    HashMap<CategoryPath,CategoryListParams> clps = new HashMap<CategoryPath,CategoryListParams>();
+    HashMap<FacetLabel,CategoryListParams> clps = new HashMap<FacetLabel,CategoryListParams>();
     for (String dim : dimensions) {
-      CategoryPath cp = new CategoryPath(dim);
+      FacetLabel cp = new FacetLabel(dim);
       CategoryListParams clp = randomCategoryListParams("$" + dim);
       clps.put(cp, clp);
     }
@@ -73,10 +73,10 @@ public class MultiCategoryListIteratorTest extends FacetTestCase {
     for (int i = 0; i < ndocs; i++) {
       Document doc = new Document();
       int numCategories = random.nextInt(numDimensions) + 1;
-      ArrayList<CategoryPath> categories = new ArrayList<CategoryPath>();
+      ArrayList<FacetLabel> categories = new ArrayList<FacetLabel>();
       for (int j = 0; j < numCategories; j++) {
         String dimension = dimensions[random.nextInt(dimensions.length)];
-        categories.add(new CategoryPath(dimension, Integer.toString(i)));
+        categories.add(new FacetLabel(dimension, Integer.toString(i)));
       }
       facetFields.addFields(doc, categories);
       indexWriter.addDocument(doc);
@@ -88,7 +88,7 @@ public class MultiCategoryListIteratorTest extends FacetTestCase {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     CategoryListIterator[] iterators = new CategoryListIterator[numDimensions];
     for (int i = 0; i < iterators.length; i++) {
-      CategoryListParams clp = indexingParams.getCategoryListParams(new CategoryPath(dimensions[i]));
+      CategoryListParams clp = indexingParams.getCategoryListParams(new FacetLabel(dimensions[i]));
       IntDecoder decoder = clp.createEncoder().createMatchingDecoder();
       iterators[i] = new DocValuesCategoryListIterator(clp.field, decoder);
     }
@@ -101,7 +101,7 @@ public class MultiCategoryListIteratorTest extends FacetTestCase {
         cli.getOrdinals(i, ordinals);
         assertTrue("document " + i + " does not have categories", ordinals.length > 0);
         for (int j = 0; j < ordinals.length; j++) {
-          CategoryPath cp = taxoReader.getPath(ordinals.ints[j]);
+          FacetLabel cp = taxoReader.getPath(ordinals.ints[j]);
           assertNotNull("ordinal " + ordinals.ints[j] + " not found in taxonomy", cp);
           if (cp.length == 2) {
             int globalDoc = i + context.docBase;

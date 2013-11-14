@@ -8,7 +8,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.junit.Test;
 
@@ -31,20 +31,20 @@ import org.junit.Test;
 
 public class TestTopKResultsHandler extends BaseTestTopK {
 
-  private static final CategoryPath[] CATEGORIES = {
-    new CategoryPath( "a", "b"),
-    new CategoryPath( "a", "b", "1"),
-    new CategoryPath( "a", "b", "1"),
-    new CategoryPath( "a", "b", "2"),
-    new CategoryPath( "a", "b", "2"),
-    new CategoryPath( "a", "b", "3"),
-    new CategoryPath( "a", "b", "4"),
-    new CategoryPath( "a", "c"),
-    new CategoryPath( "a", "c"),
-    new CategoryPath( "a", "c"),
-    new CategoryPath( "a", "c"),
-    new CategoryPath( "a", "c"),
-    new CategoryPath( "a", "c", "1"),
+  private static final FacetLabel[] CATEGORIES = {
+    new FacetLabel( "a", "b"),
+    new FacetLabel( "a", "b", "1"),
+    new FacetLabel( "a", "b", "1"),
+    new FacetLabel( "a", "b", "2"),
+    new FacetLabel( "a", "b", "2"),
+    new FacetLabel( "a", "b", "3"),
+    new FacetLabel( "a", "b", "4"),
+    new FacetLabel( "a", "c"),
+    new FacetLabel( "a", "c"),
+    new FacetLabel( "a", "c"),
+    new FacetLabel( "a", "c"),
+    new FacetLabel( "a", "c"),
+    new FacetLabel( "a", "c", "1"),
   };
 
   @Override
@@ -58,7 +58,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   }
   
   @Override
-  protected List<CategoryPath> getCategories(int doc) {
+  protected List<FacetLabel> getCategories(int doc) {
     return Arrays.asList(CATEGORIES[doc]);
   }
   
@@ -74,15 +74,15 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       initIndex(fip);
 
       List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-      facetRequests.add(new CountFacetRequest(new CategoryPath("a"), 100));
-      CountFacetRequest cfra = new CountFacetRequest(new CategoryPath("a"), 100);
+      facetRequests.add(new CountFacetRequest(new FacetLabel("a"), 100));
+      CountFacetRequest cfra = new CountFacetRequest(new FacetLabel("a"), 100);
       cfra.setDepth(3);
       // makes it easier to check the results in the test.
       cfra.setResultMode(ResultMode.GLOBAL_FLAT);
       facetRequests.add(cfra);
-      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "b"), 100));
-      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "b", "1"), 100));
-      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "c"), 100));
+      facetRequests.add(new CountFacetRequest(new FacetLabel("a", "b"), 100));
+      facetRequests.add(new CountFacetRequest(new FacetLabel("a", "b", "1"), 100));
+      facetRequests.add(new CountFacetRequest(new FacetLabel("a", "c"), 100));
       
       // do different facet counts and compare to control
       FacetSearchParams sParams = getFacetSearchParams(facetRequests, fip);
@@ -153,7 +153,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       initIndex(fip);
 
       // do different facet counts and compare to control
-      CategoryPath path = new CategoryPath("a", "b");
+      FacetLabel path = new FacetLabel("a", "b");
       FacetSearchParams sParams = getFacetSearchParams(fip, new CountFacetRequest(path, Integer.MAX_VALUE));
       FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);
       
@@ -193,7 +193,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
       initIndex(fip);
 
-      CategoryPath path = new CategoryPath("Miau Hattulla");
+      FacetLabel path = new FacetLabel("Miau Hattulla");
       FacetSearchParams sParams = getFacetSearchParams(fip, new CountFacetRequest(path, 10));
 
       FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);

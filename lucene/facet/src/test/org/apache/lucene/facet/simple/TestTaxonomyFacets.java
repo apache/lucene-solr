@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -117,7 +117,7 @@ public class TestTaxonomyFacets extends FacetTestCase {
 
     // Now user drills down on Publish Date/2010:
     SimpleDrillDownQuery q2 = new SimpleDrillDownQuery(new MatchAllDocsQuery());
-    q2.add(new CategoryPath("Publish Date", "2010"));
+    q2.add(new FacetLabel("Publish Date", "2010"));
     c = new SimpleFacetsCollector();
     searcher.search(q2, c);
     facets = new TaxonomyFacetCounts(taxoReader, fts, c);

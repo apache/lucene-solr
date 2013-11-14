@@ -4,7 +4,7 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
 import org.junit.Test;
@@ -33,11 +33,11 @@ public class FacetIndexingParamsTest extends FacetTestCase {
     FacetIndexingParams dfip = FacetIndexingParams.DEFAULT;
     assertNotNull("Missing default category list", dfip.getAllCategoryListParams());
     assertEquals("all categories have the same CategoryListParams by default",
-        dfip.getCategoryListParams(null), dfip.getCategoryListParams(new CategoryPath("a")));
+        dfip.getCategoryListParams(null), dfip.getCategoryListParams(new FacetLabel("a")));
     assertEquals("Expected default category list field is $facets", "$facets", dfip.getCategoryListParams(null).field);
     String expectedDDText = "a"
         + dfip.getFacetDelimChar() + "b";
-    CategoryPath cp = new CategoryPath("a", "b");
+    FacetLabel cp = new FacetLabel("a", "b");
     assertEquals("wrong drill-down term", new Term("$facets",
         expectedDDText), DrillDownQuery.term(dfip,cp));
     char[] buf = new char[20];

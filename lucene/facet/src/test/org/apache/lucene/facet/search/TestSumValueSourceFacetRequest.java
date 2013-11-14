@@ -14,7 +14,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -66,7 +66,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a", Integer.toString(i % 2))));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a", Integer.toString(i % 2))));
       iw.addDocument(doc);
     }
     
@@ -77,7 +77,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     ValueSource valueSource = new LongFieldSource("price");
-    FacetSearchParams fsp = new FacetSearchParams(new SumValueSourceFacetRequest(new CategoryPath("a"), 10, valueSource, false));
+    FacetSearchParams fsp = new FacetSearchParams(new SumValueSourceFacetRequest(new FacetLabel("a"), 10, valueSource, false));
     FacetsCollector fc = FacetsCollector.create(fsp, r, taxo);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -99,7 +99,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a", Integer.toString(i % 2))));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a", Integer.toString(i % 2))));
       iw.addDocument(doc);
     }
     
@@ -131,7 +131,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
       @Override public String description() { return "score()"; }
     };
     
-    FacetSearchParams fsp = new FacetSearchParams(new SumValueSourceFacetRequest(new CategoryPath("a"), 10, valueSource, true));
+    FacetSearchParams fsp = new FacetSearchParams(new SumValueSourceFacetRequest(new FacetLabel("a"), 10, valueSource, true));
     FacetsCollector fc = FacetsCollector.create(fsp, r, taxo);
     TopScoreDocCollector tsdc = TopScoreDocCollector.create(10, true);
     // score documents by their 'price' field - makes asserting the correct counts for the categories easier
@@ -161,7 +161,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a", Integer.toString(i % 2), "1")));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a", Integer.toString(i % 2), "1")));
       iw.addDocument(doc);
     }
     
@@ -172,7 +172,7 @@ public class TestSumValueSourceFacetRequest extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     ValueSource valueSource = new LongFieldSource("price");
-    FacetSearchParams fsp = new FacetSearchParams(fip, new SumValueSourceFacetRequest(new CategoryPath("a"), 10, valueSource, false));
+    FacetSearchParams fsp = new FacetSearchParams(fip, new SumValueSourceFacetRequest(new FacetLabel("a"), 10, valueSource, false));
     FacetsCollector fc = FacetsCollector.create(fsp, r, taxo);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     

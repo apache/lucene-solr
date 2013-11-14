@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -65,7 +65,7 @@ public class PrintTaxonomyStats {
       while (chilrenIt.next() != TaxonomyReader.INVALID_ORDINAL) {
         numImmediateChildren++;
       }
-      CategoryPath cp = r.getPath(child);
+      FacetLabel cp = r.getPath(child);
       out.println("/" + cp + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, child)) + " total categories");
       if (printTree) {
         printAllChildren(out, r, child, "  ", 1);

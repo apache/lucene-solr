@@ -21,7 +21,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.PerDimensionOrdinalPolicy;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -61,38 +61,38 @@ import org.junit.Test;
 public class CountingFacetsAggregatorTest extends FacetTestCase {
   
   private static final Term A = new Term("f", "a");
-  private static final CategoryPath CP_A = new CategoryPath("A"), CP_B = new CategoryPath("B");
-  private static final CategoryPath CP_C = new CategoryPath("C"), CP_D = new CategoryPath("D"); // indexed w/ NO_PARENTS
+  private static final FacetLabel CP_A = new FacetLabel("A"), CP_B = new FacetLabel("B");
+  private static final FacetLabel CP_C = new FacetLabel("C"), CP_D = new FacetLabel("D"); // indexed w/ NO_PARENTS
   private static final int NUM_CHILDREN_CP_A = 5, NUM_CHILDREN_CP_B = 3;
   private static final int NUM_CHILDREN_CP_C = 5, NUM_CHILDREN_CP_D = 5;
-  private static final CategoryPath[] CATEGORIES_A, CATEGORIES_B;
-  private static final CategoryPath[] CATEGORIES_C, CATEGORIES_D;
+  private static final FacetLabel[] CATEGORIES_A, CATEGORIES_B;
+  private static final FacetLabel[] CATEGORIES_C, CATEGORIES_D;
   static {
-    CATEGORIES_A = new CategoryPath[NUM_CHILDREN_CP_A];
+    CATEGORIES_A = new FacetLabel[NUM_CHILDREN_CP_A];
     for (int i = 0; i < NUM_CHILDREN_CP_A; i++) {
-      CATEGORIES_A[i] = new CategoryPath(CP_A.components[0], Integer.toString(i));
+      CATEGORIES_A[i] = new FacetLabel(CP_A.components[0], Integer.toString(i));
     }
-    CATEGORIES_B = new CategoryPath[NUM_CHILDREN_CP_B];
+    CATEGORIES_B = new FacetLabel[NUM_CHILDREN_CP_B];
     for (int i = 0; i < NUM_CHILDREN_CP_B; i++) {
-      CATEGORIES_B[i] = new CategoryPath(CP_B.components[0], Integer.toString(i));
+      CATEGORIES_B[i] = new FacetLabel(CP_B.components[0], Integer.toString(i));
     }
     
     // NO_PARENTS categories
-    CATEGORIES_C = new CategoryPath[NUM_CHILDREN_CP_C];
+    CATEGORIES_C = new FacetLabel[NUM_CHILDREN_CP_C];
     for (int i = 0; i < NUM_CHILDREN_CP_C; i++) {
-      CATEGORIES_C[i] = new CategoryPath(CP_C.components[0], Integer.toString(i));
+      CATEGORIES_C[i] = new FacetLabel(CP_C.components[0], Integer.toString(i));
     }
     
     // Multi-level categories
-    CATEGORIES_D = new CategoryPath[NUM_CHILDREN_CP_D];
+    CATEGORIES_D = new FacetLabel[NUM_CHILDREN_CP_D];
     for (int i = 0; i < NUM_CHILDREN_CP_D; i++) {
       String val = Integer.toString(i);
-      CATEGORIES_D[i] = new CategoryPath(CP_D.components[0], val, val + val); // e.g. D/1/11, D/2/22...
+      CATEGORIES_D[i] = new FacetLabel(CP_D.components[0], val, val + val); // e.g. D/1/11, D/2/22...
     }
   }
   
   private static Directory indexDir, taxoDir;
-  private static ObjectToIntMap<CategoryPath> allExpectedCounts, termExpectedCounts;
+  private static ObjectToIntMap<FacetLabel> allExpectedCounts, termExpectedCounts;
   private static FacetIndexingParams fip;
 
   @AfterClass
@@ -100,19 +100,19 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
     IOUtils.close(indexDir, taxoDir); 
   }
   
-  private static List<CategoryPath> randomCategories(Random random) {
+  private static List<FacetLabel> randomCategories(Random random) {
     // add random categories from the two dimensions, ensuring that the same
     // category is not added twice.
     int numFacetsA = random.nextInt(3) + 1; // 1-3
     int numFacetsB = random.nextInt(2) + 1; // 1-2
-    ArrayList<CategoryPath> categories_a = new ArrayList<CategoryPath>();
+    ArrayList<FacetLabel> categories_a = new ArrayList<FacetLabel>();
     categories_a.addAll(Arrays.asList(CATEGORIES_A));
-    ArrayList<CategoryPath> categories_b = new ArrayList<CategoryPath>();
+    ArrayList<FacetLabel> categories_b = new ArrayList<FacetLabel>();
     categories_b.addAll(Arrays.asList(CATEGORIES_B));
     Collections.shuffle(categories_a, random);
     Collections.shuffle(categories_b, random);
 
-    ArrayList<CategoryPath> categories = new ArrayList<CategoryPath>();
+    ArrayList<FacetLabel> categories = new ArrayList<FacetLabel>();
     categories.addAll(categories_a.subList(0, numFacetsA));
     categories.addAll(categories_b.subList(0, numFacetsB));
     
@@ -129,8 +129,8 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   
   private static void addFacets(Document doc, FacetFields facetFields, boolean updateTermExpectedCounts) 
       throws IOException {
-    List<CategoryPath> docCategories = randomCategories(random());
-    for (CategoryPath cp : docCategories) {
+    List<FacetLabel> docCategories = randomCategories(random());
+    for (FacetLabel cp : docCategories) {
       if (cp.components[0].equals(CP_D.components[0])) {
         cp = cp.subpath(2); // we'll get counts for the 2nd level only
       }
@@ -163,7 +163,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsNoTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
+      ObjectToIntMap<FacetLabel> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetFields facetFields = new FacetFields(taxoWriter, fip);
@@ -176,7 +176,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsAndTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
+      ObjectToIntMap<FacetLabel> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetFields facetFields = new FacetFields(taxoWriter, fip);
@@ -190,7 +190,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsAndSomeTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
+      ObjectToIntMap<FacetLabel> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetFields facetFields = new FacetFields(taxoWriter, fip);
@@ -207,22 +207,22 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   }
   
   // initialize expectedCounts w/ 0 for all categories
-  private static ObjectToIntMap<CategoryPath> newCounts() {
-    ObjectToIntMap<CategoryPath> counts = new ObjectToIntMap<CategoryPath>();
+  private static ObjectToIntMap<FacetLabel> newCounts() {
+    ObjectToIntMap<FacetLabel> counts = new ObjectToIntMap<FacetLabel>();
     counts.put(CP_A, 0);
     counts.put(CP_B, 0);
     counts.put(CP_C, 0);
     counts.put(CP_D, 0);
-    for (CategoryPath cp : CATEGORIES_A) {
+    for (FacetLabel cp : CATEGORIES_A) {
       counts.put(cp, 0);
     }
-    for (CategoryPath cp : CATEGORIES_B) {
+    for (FacetLabel cp : CATEGORIES_B) {
       counts.put(cp, 0);
     }
-    for (CategoryPath cp : CATEGORIES_C) {
+    for (FacetLabel cp : CATEGORIES_C) {
       counts.put(cp, 0);
     }
-    for (CategoryPath cp : CATEGORIES_D) {
+    for (FacetLabel cp : CATEGORIES_D) {
       counts.put(cp.subpath(2), 0);
     }
     return counts;

@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.facet.search.FacetArrays;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,7 +52,7 @@ public class FacetIndexingParams {
   public static final FacetIndexingParams DEFAULT = new FacetIndexingParams();
   
   /**
-   * The default delimiter with which {@link CategoryPath#components} are
+   * The default delimiter with which {@link FacetLabel#components} are
    * concatenated when written to the index, e.g. as drill-down terms. If you
    * choose to override it by overiding {@link #getFacetDelimChar()}, you should
    * make sure that you return a character that's not found in any path
@@ -79,13 +79,13 @@ public class FacetIndexingParams {
   }
 
   /**
-   * Returns the {@link CategoryListParams} for this {@link CategoryPath}. The
+   * Returns the {@link CategoryListParams} for this {@link FacetLabel}. The
    * default implementation returns the same {@link CategoryListParams} for all
    * categories (even if {@code category} is {@code null}).
    * 
    * @see PerDimensionIndexingParams
    */
-  public CategoryListParams getCategoryListParams(CategoryPath category) {
+  public CategoryListParams getCategoryListParams(FacetLabel category) {
     return clParams;
   }
 
@@ -95,9 +95,9 @@ public class FacetIndexingParams {
    * that were written.
    * <p>
    * <b>NOTE:</b> You should make sure that the {@code char[]} is large enough,
-   * by e.g. calling {@link CategoryPath#fullPathLength()}.
+   * by e.g. calling {@link FacetLabel#fullPathLength()}.
    */
-  public int drillDownTermText(CategoryPath path, char[] buffer) {
+  public int drillDownTermText(FacetLabel path, char[] buffer) {
     return path.copyFullPath(buffer, 0, getFacetDelimChar());
   }
   

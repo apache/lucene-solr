@@ -32,7 +32,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -51,9 +51,9 @@ public class FacetResultTest extends FacetTestCase {
   
   private Document newDocument(FacetFields facetFields, String... categories) throws IOException {
     Document doc = new Document();
-    List<CategoryPath> cats = new ArrayList<CategoryPath>();
+    List<FacetLabel> cats = new ArrayList<FacetLabel>();
     for (String cat : categories) {
-      cats.add(new CategoryPath(cat, '/'));
+      cats.add(new FacetLabel(cat, '/'));
     }
     facetFields.addFields(doc, cats);
     return doc;
@@ -80,22 +80,22 @@ public class FacetResultTest extends FacetTestCase {
   
   private void searchIndex(TaxonomyReader taxoReader, IndexSearcher searcher, boolean fillMissingCounts, String[] exp,
       String[][] drillDowns, int[] numResults) throws IOException {
-    CategoryPath[][] cps = new CategoryPath[drillDowns.length][];
+    FacetLabel[][] cps = new FacetLabel[drillDowns.length][];
     for (int i = 0; i < cps.length; i++) {
-      cps[i] = new CategoryPath[drillDowns[i].length];
+      cps[i] = new FacetLabel[drillDowns[i].length];
       for (int j = 0; j < cps[i].length; j++) {
-        cps[i][j] = new CategoryPath(drillDowns[i][j], '/');
+        cps[i][j] = new FacetLabel(drillDowns[i][j], '/');
       }
     }
     DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
-    for (CategoryPath[] cats : cps) {
+    for (FacetLabel[] cats : cps) {
       ddq.add(cats);
     }
     
     List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-    for (CategoryPath[] cats : cps) {
+    for (FacetLabel[] cats : cps) {
       for (int i = 0; i < cats.length; i++) {
-        CategoryPath cp = cats[i];
+        FacetLabel cp = cats[i];
         int numres = numResults == null ? 2 : numResults[i];
         // for each drill-down, add itself as well as its parent as requests, so
         // we get the drill-sideways

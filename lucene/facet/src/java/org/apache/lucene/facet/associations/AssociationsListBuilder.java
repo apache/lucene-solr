@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.apache.lucene.facet.index.CategoryListBuilder;
 import org.apache.lucene.facet.index.CountingListBuilder;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -47,10 +47,10 @@ public class AssociationsListBuilder implements CategoryListBuilder {
   }
   
   @Override
-  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException {
+  public Map<String,BytesRef> build(IntsRef ordinals, Iterable<FacetLabel> categories) throws IOException {
     final HashMap<String,BytesRef> res = new HashMap<String,BytesRef>();
     int idx = 0;
-    for (CategoryPath cp : categories) {
+    for (FacetLabel cp : categories) {
       // build per-association key BytesRef
       CategoryAssociation association = associations.getAssociation(cp);
       

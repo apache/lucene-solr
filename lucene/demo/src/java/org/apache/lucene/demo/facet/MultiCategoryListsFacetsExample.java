@@ -16,7 +16,7 @@ import org.apache.lucene.facet.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -55,18 +55,18 @@ public class MultiCategoryListsFacetsExample {
   /** Creates a new instance and populates the catetory list params mapping. */
   public MultiCategoryListsFacetsExample() {
     // index all Author facets in one category list and all Publish Date in another.
-    Map<CategoryPath,CategoryListParams> categoryListParams = new HashMap<CategoryPath,CategoryListParams>();
-    categoryListParams.put(new CategoryPath("Author"), new CategoryListParams("author"));
-    categoryListParams.put(new CategoryPath("Publish Date"), new CategoryListParams("pubdate"));
+    Map<FacetLabel,CategoryListParams> categoryListParams = new HashMap<FacetLabel,CategoryListParams>();
+    categoryListParams.put(new FacetLabel("Author"), new CategoryListParams("author"));
+    categoryListParams.put(new FacetLabel("Publish Date"), new CategoryListParams("pubdate"));
     indexingParams = new PerDimensionIndexingParams(categoryListParams);
   }
   
   private void add(IndexWriter indexWriter, FacetFields facetFields, String ... categoryPaths) throws IOException {
     Document doc = new Document();
     
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
+      paths.add(new FacetLabel(categoryPath, '/'));
     }
     facetFields.addFields(doc, paths);
     indexWriter.addDocument(doc);
@@ -101,8 +101,8 @@ public class MultiCategoryListsFacetsExample {
 
     // Count both "Publish Date" and "Author" dimensions
     FacetSearchParams fsp = new FacetSearchParams(indexingParams,
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     // Aggregatses the facet counts
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);

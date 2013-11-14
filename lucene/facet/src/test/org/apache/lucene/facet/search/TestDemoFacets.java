@@ -35,7 +35,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -62,9 +62,9 @@ public class TestDemoFacets extends FacetTestCase {
   private void add(String ... categoryPaths) throws IOException {
     Document doc = new Document();
     
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for(String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
+      paths.add(new FacetLabel(categoryPath, '/'));
     }
     facetFields.addFields(doc, paths);
     writer.addDocument(doc);
@@ -99,8 +99,8 @@ public class TestDemoFacets extends FacetTestCase {
 
     // Count both "Publish Date" and "Author" dimensions:
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
@@ -121,9 +121,9 @@ public class TestDemoFacets extends FacetTestCase {
 
     
     // Now user drills down on Publish Date/2010:
-    fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
+    fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("Author"), 10));
     DrillDownQuery q2 = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    q2.add(new CategoryPath("Publish Date/2010", '/'));
+    q2.add(new FacetLabel("Publish Date/2010", '/'));
     c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q2, c);
     results = c.getFacetResults();
@@ -167,7 +167,7 @@ public class TestDemoFacets extends FacetTestCase {
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a/path", '/')));
     writer.addDocument(doc);
     writer.close();
     taxoWriter.close();
@@ -193,7 +193,7 @@ public class TestDemoFacets extends FacetTestCase {
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a/path", '/')));
     writer.addDocument(doc);
 
     // NRT open
@@ -205,7 +205,7 @@ public class TestDemoFacets extends FacetTestCase {
     taxoWriter.close();
     
     FacetSearchParams fsp = new FacetSearchParams(fip,
-                                                  new CountFacetRequest(new CategoryPath("a", '/'), 10));
+                                                  new CountFacetRequest(new FacetLabel("a", '/'), 10));
 
     // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
@@ -241,7 +241,7 @@ public class TestDemoFacets extends FacetTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     BytesRef br = new BytesRef(new byte[] {(byte) 0xee, (byte) 0x92, (byte) 0xaa, (byte) 0xef, (byte) 0x9d, (byte) 0x89});
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim/" + br.utf8ToString(), '/')));
+    facetFields.addFields(doc, Collections.singletonList(new FacetLabel("dim/" + br.utf8ToString(), '/')));
     try {
       writer.addDocument(doc);
     } catch (IllegalArgumentException iae) {
@@ -269,9 +269,9 @@ public class TestDemoFacets extends FacetTestCase {
     
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for (int i = 0; i < numLabels; i++) {
-      paths.add(new CategoryPath("dim", "" + i));
+      paths.add(new FacetLabel("dim", "" + i));
     }
     facetFields.addFields(doc, paths);
     writer.addDocument(doc);
@@ -284,7 +284,7 @@ public class TestDemoFacets extends FacetTestCase {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     taxoWriter.close();
     
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("dim"), Integer.MAX_VALUE));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("dim"), Integer.MAX_VALUE));
     
     // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);

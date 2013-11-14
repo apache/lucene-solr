@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -37,8 +37,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 /**
- * A {@link Query} for drill-down over {@link CategoryPath categories}. You
- * should call {@link #add(CategoryPath...)} for every group of categories you
+ * A {@link Query} for drill-down over {@link FacetLabel categories}. You
+ * should call {@link #add(FacetLabel...)} for every group of categories you
  * want to drill-down over. Each category in the group is {@code OR'ed} with
  * the others, and groups are {@code AND'ed}.
  * <p>
@@ -51,7 +51,7 @@ import org.apache.lucene.search.TermQuery;
  */
 public final class SimpleDrillDownQuery extends Query {
 
-  private static Term term(String field, char delimChar, CategoryPath path) {
+  private static Term term(String field, char delimChar, FacetLabel path) {
     return new Term(field, path.toString(delimChar));
   }
 
@@ -93,7 +93,7 @@ public final class SimpleDrillDownQuery extends Query {
   }
 
   /**
-   * Creates a new {@link DrillDownQuery} without a base query, 
+   * Creates a new {@code SimpleDrillDownQuery} without a base query, 
    * to perform a pure browsing query (equivalent to using
    * {@link MatchAllDocsQuery} as base).
    */
@@ -102,7 +102,7 @@ public final class SimpleDrillDownQuery extends Query {
   }
   
   /**
-   * Creates a new {@link DrillDownQuery} over the given base query. Can be
+   * Creates a new {@code SimpleDrillDownQuery} over the given base query. Can be
    * {@code null}, in which case the result {@link Query} from
    * {@link #rewrite(IndexReader)} will be a pure browsing query, filtering on
    * the added categories only.
@@ -119,17 +119,17 @@ public final class SimpleDrillDownQuery extends Query {
    * OR'd, and then the entire dimension is AND'd against the base query.
    */
   // nocommit can we remove CatPath here?
-  public void add(CategoryPath... paths) {
+  public void add(FacetLabel... paths) {
     add(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, Constants.DEFAULT_DELIM_CHAR, paths);
   }
 
   // nocommit can we remove CatPath here?
-  public void add(String field, CategoryPath... paths) {
+  public void add(String field, FacetLabel... paths) {
     add(field, Constants.DEFAULT_DELIM_CHAR, paths);
   }
 
   // nocommit can we remove CatPath here?
-  public void add(String field, char delimChar, CategoryPath... paths) {
+  public void add(String field, char delimChar, FacetLabel... paths) {
     Query q;
     if (paths[0].length == 0) {
       throw new IllegalArgumentException("all CategoryPaths must have length > 0");
@@ -142,7 +142,7 @@ public final class SimpleDrillDownQuery extends Query {
       q = new TermQuery(term(field, delimChar, paths[0]));
     } else {
       BooleanQuery bq = new BooleanQuery(true); // disable coord
-      for (CategoryPath cp : paths) {
+      for (FacetLabel cp : paths) {
         if (cp.length == 0) {
           throw new IllegalArgumentException("all CategoryPaths must have length > 0");
         }

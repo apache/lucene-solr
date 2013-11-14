@@ -32,7 +32,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -102,7 +102,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
         
         // verify faceted search
         int id = Integer.parseInt(indexReader.getIndexCommit().getUserData().get(VERSION_ID), 16);
-        CategoryPath cp = new CategoryPath("A", Integer.toString(id, 16));
+        FacetLabel cp = new FacetLabel("A", Integer.toString(id, 16));
         IndexSearcher searcher = new IndexSearcher(indexReader);
         FacetsCollector fc = FacetsCollector.create(new FacetSearchParams(new CountFacetRequest(cp, 10)), indexReader, taxoReader);
         searcher.search(new MatchAllDocsQuery(), fc);
@@ -178,7 +178,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   private Document newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
     Document doc = new Document();
     FacetFields facetFields = new FacetFields(taxoWriter);
-    facetFields.addFields(doc, Collections.singleton(new CategoryPath("A", Integer.toString(id, 16))));
+    facetFields.addFields(doc, Collections.singleton(new FacetLabel("A", Integer.toString(id, 16))));
     return doc;
   }
   

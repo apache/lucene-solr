@@ -5,7 +5,7 @@ import java.util.List;
 import org.apache.lucene.facet.collections.ObjectToIntMap;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -31,24 +31,24 @@ import org.junit.Test;
 @SuppressCodecs({"Lucene40", "Lucene41"})
 public class TestSimpleSortedSetFacetsExample extends LuceneTestCase {
 
-  private static final ObjectToIntMap<CategoryPath> expectedCounts = new ObjectToIntMap<CategoryPath>();
+  private static final ObjectToIntMap<FacetLabel> expectedCounts = new ObjectToIntMap<FacetLabel>();
   static {
-    expectedCounts.put(new CategoryPath("Publish Year", "2012"), 2);
-    expectedCounts.put(new CategoryPath("Publish Year", "2010"), 2);
-    expectedCounts.put(new CategoryPath("Publish Year", "1999"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Lisa"), 2);
-    expectedCounts.put(new CategoryPath("Author", "Frank"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Susan"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Bob"), 1);
+    expectedCounts.put(new FacetLabel("Publish Year", "2012"), 2);
+    expectedCounts.put(new FacetLabel("Publish Year", "2010"), 2);
+    expectedCounts.put(new FacetLabel("Publish Year", "1999"), 1);
+    expectedCounts.put(new FacetLabel("Author", "Lisa"), 2);
+    expectedCounts.put(new FacetLabel("Author", "Frank"), 1);
+    expectedCounts.put(new FacetLabel("Author", "Susan"), 1);
+    expectedCounts.put(new FacetLabel("Author", "Bob"), 1);
   }
   
-  private static final ObjectToIntMap<CategoryPath> expectedCountsDrillDown = new ObjectToIntMap<CategoryPath>();
+  private static final ObjectToIntMap<FacetLabel> expectedCountsDrillDown = new ObjectToIntMap<FacetLabel>();
   static {
-    expectedCountsDrillDown.put(new CategoryPath("Author", "Lisa"), 1);
-    expectedCountsDrillDown.put(new CategoryPath("Author", "Bob"), 1);
+    expectedCountsDrillDown.put(new FacetLabel("Author", "Lisa"), 1);
+    expectedCountsDrillDown.put(new FacetLabel("Author", "Bob"), 1);
   }
   
-  private void assertExpectedCounts(List<FacetResult> facetResults, ObjectToIntMap<CategoryPath> expCounts) {
+  private void assertExpectedCounts(List<FacetResult> facetResults, ObjectToIntMap<FacetLabel> expCounts) {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       for (FacetResultNode node : root.subResults) {

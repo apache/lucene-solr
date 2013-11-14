@@ -33,7 +33,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -83,7 +83,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     
     for (int i = 0; i < 100; i++) {
-      ArrayList<CategoryPath> paths = new ArrayList<CategoryPath>();
+      ArrayList<FacetLabel> paths = new ArrayList<FacetLabel>();
       Document doc = new Document();
       if (i % 2 == 0) { // 50
         doc.add(new TextField("content", "foo", Field.Store.NO));
@@ -93,13 +93,13 @@ public class DrillDownQueryTest extends FacetTestCase {
       }
       if (i % 4 == 0) { // 25
         if (r.nextBoolean()) {
-          paths.add(new CategoryPath("a/1", '/'));
+          paths.add(new FacetLabel("a/1", '/'));
         } else {
-          paths.add(new CategoryPath("a/2", '/'));
+          paths.add(new FacetLabel("a/2", '/'));
         }
       }
       if (i % 5 == 0) { // 20
-        paths.add(new CategoryPath("b"));
+        paths.add(new FacetLabel("b"));
       }
       FacetFields facetFields = new FacetFields(taxoWriter);
       if (paths.size() > 0) {
@@ -116,9 +116,9 @@ public class DrillDownQueryTest extends FacetTestCase {
   }
   
   public DrillDownQueryTest() {
-    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("a"), randomCategoryListParams("testing_facets_a"));
-    paramsMap.put(new CategoryPath("b"), randomCategoryListParams("testing_facets_b"));
+    Map<FacetLabel,CategoryListParams> paramsMap = new HashMap<FacetLabel,CategoryListParams>();
+    paramsMap.put(new FacetLabel("a"), randomCategoryListParams("testing_facets_a"));
+    paramsMap.put(new FacetLabel("b"), randomCategoryListParams("testing_facets_b"));
     nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
     defaultParams = new FacetIndexingParams(randomCategoryListParams(CategoryListParams.DEFAULT_FIELD));
   }
@@ -127,10 +127,10 @@ public class DrillDownQueryTest extends FacetTestCase {
   public void testDefaultField() {
     String defaultField = CategoryListParams.DEFAULT_FIELD;
     
-    Term termA = DrillDownQuery.term(defaultParams, new CategoryPath("a"));
+    Term termA = DrillDownQuery.term(defaultParams, new FacetLabel("a"));
     assertEquals(new Term(defaultField, "a"), termA);
     
-    Term termB = DrillDownQuery.term(defaultParams, new CategoryPath("b"));
+    Term termB = DrillDownQuery.term(defaultParams, new FacetLabel("b"));
     assertEquals(new Term(defaultField, "b"), termB);
   }
   
@@ -140,8 +140,8 @@ public class DrillDownQueryTest extends FacetTestCase {
 
     // test (a/1 OR a/2) AND b
     DrillDownQuery q = new DrillDownQuery(defaultParams);
-    q.add(new CategoryPath("a/1", '/'), new CategoryPath("a/2", '/'));
-    q.add(new CategoryPath("b"));
+    q.add(new FacetLabel("a/1", '/'), new FacetLabel("a/2", '/'));
+    q.add(new FacetLabel("b"));
     TopDocs docs = searcher.search(q, 100);
     assertEquals(5, docs.totalHits);
   }
@@ -152,7 +152,7 @@ public class DrillDownQueryTest extends FacetTestCase {
 
     // Making sure the query yields 25 documents with the facet "a"
     DrillDownQuery q = new DrillDownQuery(defaultParams);
-    q.add(new CategoryPath("a"));
+    q.add(new FacetLabel("a"));
     QueryUtils.check(q);
     TopDocs docs = searcher.search(q, 100);
     assertEquals(25, docs.totalHits);
@@ -160,14 +160,14 @@ public class DrillDownQueryTest extends FacetTestCase {
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
     DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
-    q2.add(new CategoryPath("b"));
+    q2.add(new FacetLabel("b"));
     docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
     // Making sure that a query of both facet "a" and facet "b" yields 5 results
     DrillDownQuery q3 = new DrillDownQuery(defaultParams);
-    q3.add(new CategoryPath("a"));
-    q3.add(new CategoryPath("b"));
+    q3.add(new FacetLabel("a"));
+    q3.add(new FacetLabel("b"));
     docs = searcher.search(q3, 100);
     
     assertEquals(5, docs.totalHits);
@@ -175,7 +175,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
     DrillDownQuery q4 = new DrillDownQuery(defaultParams, fooQuery);
-    q4.add(new CategoryPath("b"));
+    q4.add(new FacetLabel("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
   }
@@ -186,12 +186,12 @@ public class DrillDownQueryTest extends FacetTestCase {
 
     // Create the base query to start with
     DrillDownQuery q = new DrillDownQuery(defaultParams);
-    q.add(new CategoryPath("a"));
+    q.add(new FacetLabel("a"));
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
     DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
-    q2.add(new CategoryPath("b"));
+    q2.add(new FacetLabel("b"));
     TopDocs docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
@@ -199,7 +199,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
     DrillDownQuery q4 = new DrillDownQuery(defaultParams, fooQuery);
-    q4.add(new CategoryPath("b"));
+    q4.add(new FacetLabel("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
   }
@@ -219,7 +219,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     
     // create a drill-down query with category "a", scores should not change
     DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
-    q2.add(new CategoryPath("a"));
+    q2.add(new FacetLabel("a"));
     docs = searcher.search(q2, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals("score of doc=" + sd.doc + " modified", scores[sd.doc], sd.score, 0f);
@@ -232,7 +232,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     DrillDownQuery q = new DrillDownQuery(defaultParams);
-    q.add(new CategoryPath("a"));
+    q.add(new FacetLabel("a"));
     TopDocs docs = searcher.search(q, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals(0f, sd.score, 0f);
@@ -241,20 +241,20 @@ public class DrillDownQueryTest extends FacetTestCase {
   
   @Test
   public void testTermNonDefault() {
-    Term termA = DrillDownQuery.term(nonDefaultParams, new CategoryPath("a"));
+    Term termA = DrillDownQuery.term(nonDefaultParams, new FacetLabel("a"));
     assertEquals(new Term("testing_facets_a", "a"), termA);
     
-    Term termB = DrillDownQuery.term(nonDefaultParams, new CategoryPath("b"));
+    Term termB = DrillDownQuery.term(nonDefaultParams, new FacetLabel("b"));
     assertEquals(new Term("testing_facets_b", "b"), termB);
   }
 
   @Test
   public void testClone() throws Exception {
     DrillDownQuery q = new DrillDownQuery(defaultParams, new MatchAllDocsQuery());
-    q.add(new CategoryPath("a"));
+    q.add(new FacetLabel("a"));
     
     DrillDownQuery clone = q.clone();
-    clone.add(new CategoryPath("b"));
+    clone.add(new FacetLabel("b"));
     
     assertFalse("query wasn't cloned: source=" + q + " clone=" + clone, q.toString().equals(clone.toString()));
   }

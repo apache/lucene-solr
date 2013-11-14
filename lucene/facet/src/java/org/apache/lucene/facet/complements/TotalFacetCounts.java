@@ -22,7 +22,7 @@ import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.IndexReader;
@@ -151,7 +151,7 @@ public class TotalFacetCounts {
   }
   
   // needed because FacetSearchParams do not allow empty FacetRequests
-  private static final FacetRequest DUMMY_REQ = new CountFacetRequest(CategoryPath.EMPTY, 1);
+  private static final FacetRequest DUMMY_REQ = new CountFacetRequest(FacetLabel.EMPTY, 1);
 
   static TotalFacetCounts compute(final IndexReader indexReader, final TaxonomyReader taxonomy, 
       final FacetIndexingParams facetIndexingParams) throws IOException {

@@ -12,7 +12,7 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -53,9 +53,9 @@ public class SimpleFacetsExample {
   private void add(IndexWriter indexWriter, FacetFields facetFields, String ... categoryPaths) throws IOException {
     Document doc = new Document();
     
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
+      paths.add(new FacetLabel(categoryPath, '/'));
     }
     facetFields.addFields(doc, paths);
     indexWriter.addDocument(doc);
@@ -90,8 +90,8 @@ public class SimpleFacetsExample {
 
     // Count both "Publish Date" and "Author" dimensions
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Date"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     // Aggregates the facet counts
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
@@ -118,12 +118,12 @@ public class SimpleFacetsExample {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // Now user drills down on Publish Date/2010:
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("Author"), 10));
 
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(fsp.indexingParams);
-    q.add(new CategoryPath("Publish Date/2010", '/'));
+    q.add(new FacetLabel("Publish Date/2010", '/'));
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q, fc);
 

@@ -2,7 +2,7 @@ package org.apache.lucene.facet.params;
 
 import java.util.Map;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +25,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * A {@link CategoryListParams} which allow controlling the
  * {@link CategoryListParams.OrdinalPolicy} used for each dimension. The
  * dimension is specified as the first component in
- * {@link CategoryPath#components}.
+ * {@link FacetLabel#components}.
  */
 public class PerDimensionOrdinalPolicy extends CategoryListParams {
 

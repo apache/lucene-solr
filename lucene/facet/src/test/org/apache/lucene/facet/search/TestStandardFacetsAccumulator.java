@@ -13,7 +13,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -57,7 +57,7 @@ public class TestStandardFacetsAccumulator extends FacetTestCase {
         doc.add(new StringField("f", "a", Store.NO));
       }
       if (facetFields != null) {
-        facetFields.addFields(doc, Collections.singletonList(new CategoryPath("A", Integer.toString(i))));
+        facetFields.addFields(doc, Collections.singletonList(new FacetLabel("A", Integer.toString(i))));
       }
       indexWriter.addDocument(doc);
     }
@@ -97,7 +97,7 @@ public class TestStandardFacetsAccumulator extends FacetTestCase {
     
     // search for "f:a", only segments 1 and 3 should match results
     Query q = new TermQuery(new Term("f", "a"));
-    FacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10);
+    FacetRequest countNoComplements = new CountFacetRequest(new FacetLabel("A"), 10);
     FacetSearchParams fsp = new FacetSearchParams(fip, countNoComplements);
     FacetsCollector fc = FacetsCollector.create(fsp , indexReader, taxoReader);
     indexSearcher.search(q, fc);

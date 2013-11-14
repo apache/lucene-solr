@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -129,7 +129,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
       String dim = ent.getKey();
       FacetsConfig.DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
-        int dimRootOrd = taxoReader.getOrdinal(new CategoryPath(dim));
+        int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
         assert dimRootOrd > 0;
         values[dimRootOrd] += rollup(children[dimRootOrd]);
       }
@@ -149,7 +149,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
 
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
-    int ord = taxoReader.getOrdinal(CategoryPath.create(dim, path));
+    int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
     if (ord < 0) {
       return -1;
     }
@@ -158,7 +158,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-    CategoryPath cp = CategoryPath.create(dim, path);
+    FacetLabel cp = FacetLabel.create(dim, path);
     int ord = taxoReader.getOrdinal(cp);
     if (ord == -1) {
       return null;
@@ -166,7 +166,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
     return getTopChildren(cp, ord, topN);
   }
 
-  private SimpleFacetResult getTopChildren(CategoryPath path, int dimOrd, int topN) throws IOException {
+  private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
     TopOrdValueQueue q = new TopOrdValueQueue(topN);
     
@@ -207,7 +207,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdValueQueue.OrdAndValue ordAndValue = q.pop();
-      CategoryPath child = taxoReader.getPath(ordAndValue.ord);
+      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }
 

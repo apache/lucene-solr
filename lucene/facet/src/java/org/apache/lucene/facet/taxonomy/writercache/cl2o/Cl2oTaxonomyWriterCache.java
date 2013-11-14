@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
 /*
@@ -68,7 +68,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public int get(CategoryPath categoryPath) {
+  public int get(FacetLabel categoryPath) {
     lock.readLock().lock();
     try {
       return cache.getOrdinal(categoryPath);
@@ -78,7 +78,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public boolean put(CategoryPath categoryPath, int ordinal) {
+  public boolean put(FacetLabel categoryPath, int ordinal) {
     lock.writeLock().lock();
     try {
       cache.addLabel(categoryPath, ordinal);

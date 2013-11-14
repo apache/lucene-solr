@@ -31,7 +31,7 @@ import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -54,9 +54,9 @@ public class SimpleSortedSetFacetsExample {
   private void add(IndexWriter indexWriter, SortedSetDocValuesFacetFields facetFields, String ... categoryPaths) throws IOException {
     Document doc = new Document();
     
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    List<FacetLabel> paths = new ArrayList<FacetLabel>();
     for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
+      paths.add(new FacetLabel(categoryPath, '/'));
     }
     facetFields.addFields(doc, paths);
     indexWriter.addDocument(doc);
@@ -87,8 +87,8 @@ public class SimpleSortedSetFacetsExample {
 
     // Count both "Publish Year" and "Author" dimensions
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Year"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+        new CountFacetRequest(new FacetLabel("Publish Year"), 10), 
+        new CountFacetRequest(new FacetLabel("Author"), 10));
 
     // Aggregatses the facet counts
     FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
@@ -114,9 +114,9 @@ public class SimpleSortedSetFacetsExample {
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
 
     // Now user drills down on Publish Year/2010:
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("Author"), 10));
     DrillDownQuery q = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    q.add(new CategoryPath("Publish Year/2010", '/'));
+    q.add(new FacetLabel("Publish Year/2010", '/'));
     FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
     searcher.search(q, fc);
 

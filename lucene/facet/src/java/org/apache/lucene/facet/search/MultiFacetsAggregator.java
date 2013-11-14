@@ -11,7 +11,7 @@ import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -41,7 +41,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 public class MultiFacetsAggregator implements FacetsAggregator {
   
-  private final Map<CategoryPath,FacetsAggregator> categoryAggregators;
+  private final Map<FacetLabel,FacetsAggregator> categoryAggregators;
   private final List<FacetsAggregator> aggregators;
   
   /**
@@ -49,11 +49,11 @@ public class MultiFacetsAggregator implements FacetsAggregator {
    * <p>
    * The mapping is used to rollup the values of the specific category by the
    * corresponding {@link FacetsAggregator}. It is ok to pass differnet
-   * {@link FacetsAggregator} instances for each {@link CategoryPath} - the
+   * {@link FacetsAggregator} instances for each {@link FacetLabel} - the
    * constructor ensures that each aggregator <u>type</u> (determined by its
    * class) is invoked only once.
    */
-  public MultiFacetsAggregator(Map<CategoryPath,FacetsAggregator> aggregators) {
+  public MultiFacetsAggregator(Map<FacetLabel,FacetsAggregator> aggregators) {
     this.categoryAggregators = aggregators;
     
     // make sure that each FacetsAggregator class is invoked only once, or

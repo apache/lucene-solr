@@ -18,11 +18,11 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.util.List;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 public final class SimpleFacetResult {
   /** Path whose children we counted. */
-  public final CategoryPath path;
+  public final FacetLabel path;
 
   /** Total value for this path (sum of all child counts, or
    *  sum of all child values), even those not included in
@@ -32,7 +32,7 @@ public final class SimpleFacetResult {
   /** Child counts. */
   public final LabelAndValue[] labelValues;
   
-  public SimpleFacetResult(CategoryPath path, Number value, LabelAndValue[] labelValues) {
+  public SimpleFacetResult(FacetLabel path, Number value, LabelAndValue[] labelValues) {
     this.path = path;
     this.value = value;
     this.labelValues = labelValues;

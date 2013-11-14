@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy.writercache.lru;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,12 +35,12 @@ public class NameHashIntCacheLRU extends NameIntCacheLRU {
   }
 
   @Override
-  Object key(CategoryPath name) {
+  Object key(FacetLabel name) {
     return new Long(name.longHashCode());
   }
 
   @Override
-  Object key(CategoryPath name, int prefixLen) {
+  Object key(FacetLabel name, int prefixLen) {
     return new Long(name.subpath(prefixLen).longHashCode());
   }
   

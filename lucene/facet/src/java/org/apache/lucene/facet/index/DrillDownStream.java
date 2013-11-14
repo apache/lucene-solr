@@ -6,7 +6,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,19 +33,19 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 public class DrillDownStream extends TokenStream {
 
   private final FacetIndexingParams indexingParams;
-  private final Iterator<CategoryPath> categories;
+  private final Iterator<FacetLabel> categories;
   private final CharTermAttribute termAttribute;
   
-  private CategoryPath current;
+  private FacetLabel current;
   private boolean isParent;
   
-  public DrillDownStream(Iterable<CategoryPath> categories, FacetIndexingParams indexingParams) {
+  public DrillDownStream(Iterable<FacetLabel> categories, FacetIndexingParams indexingParams) {
     termAttribute = addAttribute(CharTermAttribute.class);
     this.categories = categories.iterator();
     this.indexingParams = indexingParams;
   }
 
-  protected void addAdditionalAttributes(CategoryPath category, boolean isParent) {
+  protected void addAdditionalAttributes(FacetLabel category, boolean isParent) {
     // a hook for AssociationsDrillDownStream to add the associations payload to
     // the drill-down terms
   }

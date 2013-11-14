@@ -64,7 +64,7 @@ public interface TaxonomyWriter extends Closeable, TwoPhaseCommit {
    * ordinal of a category is guaranteed to be smaller then the ordinal of
    * any of its descendants. 
    */ 
-  public int addCategory(CategoryPath categoryPath) throws IOException;
+  public int addCategory(FacetLabel categoryPath) throws IOException;
   
   /**
    * getParent() returns the ordinal of the parent category of the category

@@ -25,7 +25,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -73,7 +73,7 @@ public class RangeFacetRequest<T extends Range> extends FacetRequest {
    */
   @SuppressWarnings("unchecked")
   public RangeFacetRequest(String label, ValueSource valueSource, T...ranges) {
-    super(new CategoryPath(label), 1);
+    super(new FacetLabel(label), 1);
     this.ranges = ranges;
     this.valueSource = valueSource;
     this.label = label;

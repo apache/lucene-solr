@@ -11,7 +11,7 @@ import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.IntsRef;
 /**
  * A utility class for adding facet fields to a document. Usually one field will
  * be added for all facets, however per the
- * {@link FacetIndexingParams#getCategoryListParams(CategoryPath)}, one field
+ * {@link FacetIndexingParams#getCategoryListParams(FacetLabel)}, one field
  * may be added for every group of facets.
  * 
  * @lucene.experimental
@@ -77,12 +77,12 @@ public class AssociationsFacetFields extends FacetFields {
   }
 
   @Override
-  protected Map<CategoryListParams,Iterable<CategoryPath>> createCategoryListMapping(
-      Iterable<CategoryPath> categories) {
+  protected Map<CategoryListParams,Iterable<FacetLabel>> createCategoryListMapping(
+      Iterable<FacetLabel> categories) {
     CategoryAssociationsContainer categoryAssociations = (CategoryAssociationsContainer) categories;
-    HashMap<CategoryListParams,Iterable<CategoryPath>> categoryLists = 
-        new HashMap<CategoryListParams,Iterable<CategoryPath>>();
-    for (CategoryPath cp : categories) {
+    HashMap<CategoryListParams,Iterable<FacetLabel>> categoryLists = 
+        new HashMap<CategoryListParams,Iterable<FacetLabel>>();
+    for (FacetLabel cp : categories) {
       // each category may be indexed under a different field, so add it to the right list.
       CategoryListParams clp = indexingParams.getCategoryListParams(cp);
       CategoryAssociationsContainer clpContainer = (CategoryAssociationsContainer) categoryLists.get(clp);
@@ -97,13 +97,13 @@ public class AssociationsFacetFields extends FacetFields {
   
   @Override
   protected Map<String,BytesRef> getCategoryListData(CategoryListParams categoryListParams, IntsRef ordinals,
-      Iterable<CategoryPath> categories) throws IOException {
+      Iterable<FacetLabel> categories) throws IOException {
     AssociationsListBuilder associations = new AssociationsListBuilder((CategoryAssociationsContainer) categories);
     return associations.build(ordinals, categories);
   }
   
   @Override
-  protected DrillDownStream getDrillDownStream(Iterable<CategoryPath> categories) {
+  protected DrillDownStream getDrillDownStream(Iterable<FacetLabel> categories) {
     return new AssociationsDrillDownStream((CategoryAssociationsContainer) categories, indexingParams);
   }
   
@@ -113,7 +113,7 @@ public class AssociationsFacetFields extends FacetFields {
   }
 
   @Override
-  public void addFields(Document doc, Iterable<CategoryPath> categories) throws IOException {
+  public void addFields(Document doc, Iterable<FacetLabel> categories) throws IOException {
     if (!(categories instanceof CategoryAssociationsContainer)) {
       throw new IllegalArgumentException("categories must be of type " + 
           CategoryAssociationsContainer.class.getSimpleName());

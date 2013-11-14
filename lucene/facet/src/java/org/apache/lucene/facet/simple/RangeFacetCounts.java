@@ -18,21 +18,17 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.facet.range.Range;
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 
 /**
- * Uses {@link RangeFacetRequest#getValues(AtomicReaderContext)} and accumulates
- * counts for provided ranges.
+ * accumulates counts for provided ranges.
  */
 public class RangeFacetCounts extends Facets {
   private final Range[] ranges;

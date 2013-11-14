@@ -15,7 +15,7 @@ import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -63,7 +63,7 @@ public class OversampleWithDepthTest extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
     
-    CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root"), 10);
+    CountFacetRequest facetRequest = new CountFacetRequest(new FacetLabel("root"), 10);
     // Setting the depth to '2', should potentially get all categories
     facetRequest.setDepth(2);
     facetRequest.setResultMode(ResultMode.PER_NODE_IN_TREE);
@@ -100,7 +100,7 @@ public class OversampleWithDepthTest extends FacetTestCase {
     FacetFields facetFields = new FacetFields(tw, fip);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      CategoryPath cp = new CategoryPath("root",Integer.toString(i / 10), Integer.toString(i));
+      FacetLabel cp = new FacetLabel("root",Integer.toString(i / 10), Integer.toString(i));
       facetFields.addFields(doc, Collections.singletonList(cp));
       w.addDocument(doc);
     }

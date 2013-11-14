@@ -27,7 +27,7 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.simple.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -80,8 +80,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     // DrillDown:
     SimpleDrillDownQuery q = new SimpleDrillDownQuery();
-    q.add(new CategoryPath("a", "foo"));
-    q.add(new CategoryPath("b", "baz"));
+    q.add(new FacetLabel("a", "foo"));
+    q.add(new FacetLabel("b", "baz"));
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 

@@ -9,7 +9,7 @@ import org.apache.lucene.facet.encoding.SortingIntEncoder;
 import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.util.PartitionsUtils;
 
 /*
@@ -77,7 +77,7 @@ public class CategoryListParams {
     /**
      * Encodes the ordinals of all path components except the dimension. The
      * dimension of a category is defined to be the first components in
-     * {@link CategoryPath#components}. For the category A/B/C, the ordinal of
+     * {@link FacetLabel#components}. For the category A/B/C, the ordinal of
      * A/B will be encoded as well, however not the ordinal of A.
      * 
      * <p>

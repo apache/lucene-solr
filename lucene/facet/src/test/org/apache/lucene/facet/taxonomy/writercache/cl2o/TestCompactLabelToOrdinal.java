@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
@@ -82,7 +82,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
 
       int index = random.nextInt(numUniqueValues);
-      CategoryPath label = new CategoryPath(uniqueValues[index], '/');
+      FacetLabel label = new FacetLabel(uniqueValues[index], '/');
 
       int ord1 = map.getOrdinal(label);
       int ord2 = compact.getOrdinal(label);
@@ -97,7 +97,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
     }
 
     for (int i = 0; i < numUniqueValues; i++) {
-      CategoryPath label = new CategoryPath(uniqueValues[i], '/');
+      FacetLabel label = new FacetLabel(uniqueValues[i], '/');
       int ord1 = map.getOrdinal(label);
       int ord2 = compact.getOrdinal(label);
       assertEquals(ord1, ord2);
@@ -105,17 +105,17 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
   }
 
   private static class LabelToOrdinalMap extends LabelToOrdinal {
-    private Map<CategoryPath, Integer> map = new HashMap<CategoryPath, Integer>();
+    private Map<FacetLabel, Integer> map = new HashMap<FacetLabel, Integer>();
 
     LabelToOrdinalMap() { }
     
     @Override
-    public void addLabel(CategoryPath label, int ordinal) {
+    public void addLabel(FacetLabel label, int ordinal) {
       map.put(label, ordinal);
     }
 
     @Override
-    public int getOrdinal(CategoryPath label) {
+    public int getOrdinal(FacetLabel label) {
       Integer value = map.get(label);
       return (value != null) ? value.intValue() : LabelToOrdinal.INVALID_ORDINAL;
     }

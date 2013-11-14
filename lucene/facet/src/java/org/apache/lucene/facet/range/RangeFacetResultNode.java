@@ -18,7 +18,7 @@ package org.apache.lucene.facet.range;
  */
 
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /** Holds the facet results for a {@link
  *  RangeFacetRequest}. */
@@ -28,6 +28,6 @@ public class RangeFacetResultNode extends FacetResultNode {
   RangeFacetResultNode(String field, Range range, int count) {
     super(-1, count);
     this.range = range;
-    this.label = new CategoryPath(field, range.label);
+    this.label = new FacetLabel(field, range.label);
   }
 }

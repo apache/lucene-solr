@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,12 +49,12 @@ public abstract class LabelToOrdinal {
    * Throws an {@link IllegalArgumentException} if the same label with
    * a different ordinal was previoulsy added to this table.
    */
-  public abstract void addLabel(CategoryPath label, int ordinal);
+  public abstract void addLabel(FacetLabel label, int ordinal);
 
   /**
    * @return the ordinal assigned to the given label, 
    * or {@link #INVALID_ORDINAL} if the label cannot be found in this table.
    */
-  public abstract int getOrdinal(CategoryPath label);
+  public abstract int getOrdinal(FacetLabel label);
 
 }

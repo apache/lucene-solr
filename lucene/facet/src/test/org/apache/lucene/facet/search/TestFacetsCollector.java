@@ -29,7 +29,7 @@ import org.apache.lucene.facet.sampling.TakmiSampleFixer;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -79,7 +79,7 @@ public class TestFacetsCollector extends FacetTestCase {
       if (random().nextBoolean()) { // don't match all documents
         doc.add(new StringField("f", "v", Store.NO));
       }
-      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a")));
+      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("a")));
       iw.addDocument(doc);
     }
     
@@ -89,7 +89,7 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetSearchParams fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new SumScoreFacetRequest(new FacetLabel("a"), 10));
     FacetsCollector fc = FacetsCollector.create(fsp, r, taxo);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
     ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
@@ -113,15 +113,15 @@ public class TestFacetsCollector extends FacetTestCase {
     
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetIndexingParams fip = new PerDimensionIndexingParams(Collections.singletonMap(new CategoryPath("b"), new CategoryListParams("$b")));
+    FacetIndexingParams fip = new PerDimensionIndexingParams(Collections.singletonMap(new FacetLabel("b"), new CategoryListParams("$b")));
     
     FacetFields facetFields = new FacetFields(taxonomyWriter, fip);
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
       doc.add(new StringField("f", "v", Store.NO));
-      List<CategoryPath> cats = new ArrayList<CategoryPath>();
-      cats.add(new CategoryPath("a"));
-      cats.add(new CategoryPath("b"));
+      List<FacetLabel> cats = new ArrayList<FacetLabel>();
+      cats.add(new FacetLabel("a"));
+      cats.add(new FacetLabel("b"));
       facetFields.addFields(doc, cats);
       iw.addDocument(doc);
     }
@@ -133,8 +133,8 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     FacetSearchParams sParams = new FacetSearchParams(fip,
-        new CountFacetRequest(new CategoryPath("a"), 10), 
-        new CountFacetRequest(new CategoryPath("b"), 10));
+        new CountFacetRequest(new FacetLabel("a"), 10), 
+        new CountFacetRequest(new FacetLabel("b"), 10));
     FacetsCollector fc = FacetsCollector.create(sParams, r, taxo);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -152,15 +152,15 @@ public class TestFacetsCollector extends FacetTestCase {
     
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetIndexingParams fip = new PerDimensionIndexingParams(Collections.singletonMap(new CategoryPath("b"), new CategoryListParams("$b")));
+    FacetIndexingParams fip = new PerDimensionIndexingParams(Collections.singletonMap(new FacetLabel("b"), new CategoryListParams("$b")));
     
     FacetFields facetFields = new FacetFields(taxonomyWriter, fip);
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
       doc.add(new StringField("f", "v", Store.NO));
-      List<CategoryPath> cats = new ArrayList<CategoryPath>();
-      cats.add(new CategoryPath("a"));
-      cats.add(new CategoryPath("b"));
+      List<FacetLabel> cats = new ArrayList<FacetLabel>();
+      cats.add(new FacetLabel("a"));
+      cats.add(new FacetLabel("b"));
       facetFields.addFields(doc, cats);
       iw.addDocument(doc);
     }
@@ -172,8 +172,8 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     FacetSearchParams sParams = new FacetSearchParams(fip,
-        new CountFacetRequest(new CategoryPath("a"), 10), 
-        new SumScoreFacetRequest(new CategoryPath("b"), 10));
+        new CountFacetRequest(new FacetLabel("a"), 10), 
+        new SumScoreFacetRequest(new FacetLabel("b"), 10));
     
     FacetsCollector fc = FacetsCollector.create(sParams, r, taxo);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
@@ -202,7 +202,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
-      facetFields.addFields(doc, Arrays.asList(new CategoryPath("a"), new CategoryPath("b")));
+      facetFields.addFields(doc, Arrays.asList(new FacetLabel("a"), new FacetLabel("b")));
       iw.addDocument(doc);
     }
     
@@ -212,7 +212,7 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CategoryPath.EMPTY, 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(FacetLabel.EMPTY, 10));
     
     final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
@@ -237,7 +237,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("a/1", '/'), new CategoryPath("b/1", '/')));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("a/1", '/'), new FacetLabel("b/1", '/')));
     iw.addDocument(doc);
     taxonomyWriter.close();
     iw.close();
@@ -246,8 +246,8 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("a"), 10), 
-        new CountFacetRequest(new CategoryPath("b"), 10));
+        new CountFacetRequest(new FacetLabel("a"), 10), 
+        new CountFacetRequest(new FacetLabel("b"), 10));
     final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
@@ -269,7 +269,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("a/1", '/'), new CategoryPath("b/1", '/')));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("a/1", '/'), new FacetLabel("b/1", '/')));
     iw.addDocument(doc);
     taxonomyWriter.close();
     iw.close();
@@ -278,8 +278,8 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("a"), 10), 
-        new CountFacetRequest(new CategoryPath("b"), 10));
+        new CountFacetRequest(new FacetLabel("a"), 10), 
+        new CountFacetRequest(new FacetLabel("b"), 10));
     final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     // this should populate the cached results, but doing search should clear the cache
@@ -311,7 +311,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("a/1", '/')));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("a/1", '/')));
     iw.addDocument(doc);
     taxonomyWriter.close();
     iw.close();
@@ -320,14 +320,14 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // assert IntFacetResultHandler
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("a"), 10));
     TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
     
     // assert IntFacetResultHandler
-    fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
+    fsp = new FacetSearchParams(new SumScoreFacetRequest(new FacetLabel("a"), 10));
     if (random().nextBoolean()) {
       fa = new TaxonomyFacetsAccumulator(fsp, r, taxo);
     } else {
@@ -352,7 +352,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      facetFields.addFields(doc, Arrays.asList(new CategoryPath("a", Integer.toString(i))));
+      facetFields.addFields(doc, Arrays.asList(new FacetLabel("a", Integer.toString(i))));
       iw.addDocument(doc);
     }
     
@@ -362,7 +362,7 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    CountFacetRequest cfr = new CountFacetRequest(new CategoryPath("a"), 2);
+    CountFacetRequest cfr = new CountFacetRequest(new FacetLabel("a"), 2);
     cfr.setResultMode(random().nextBoolean() ? ResultMode.GLOBAL_FLAT : ResultMode.PER_NODE_IN_TREE);
     FacetSearchParams fsp = new FacetSearchParams(cfr);
     final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
@@ -384,7 +384,7 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetFields facetFields = new FacetFields(taxoWriter);
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new CategoryPath("A/1", '/')));
+    facetFields.addFields(doc, Arrays.asList(new FacetLabel("A/1", '/')));
     indexWriter.addDocument(doc);
     IOUtils.close(indexWriter, taxoWriter);
     
@@ -392,7 +392,7 @@ public class TestFacetsCollector extends FacetTestCase {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     // ask to count a non-existing category to test labeling
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("B"), 5));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new FacetLabel("B"), 5));
     
     final SamplingParams sampleParams = new SamplingParams();
     sampleParams.setMaxSampleSize(100);
@@ -434,7 +434,7 @@ public class TestFacetsCollector extends FacetTestCase {
     searcher.search(new MatchAllDocsQuery(), fc);
     List<FacetResult> facetResults = fc.getFacetResults();
     assertNotNull(facetResults);
-    assertEquals("incorrect label returned for RangeAccumulator", new CategoryPath("f"), facetResults.get(0).getFacetResultNode().label);
+    assertEquals("incorrect label returned for RangeAccumulator", new FacetLabel("f"), facetResults.get(0).getFacetResultNode().label);
 
     IOUtils.close(indexReader, taxoReader);
 

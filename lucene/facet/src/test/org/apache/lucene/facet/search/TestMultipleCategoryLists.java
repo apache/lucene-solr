@@ -20,7 +20,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -58,16 +58,16 @@ import org.junit.Test;
 
 public class TestMultipleCategoryLists extends FacetTestCase {
 
-  private static final CategoryPath[] CATEGORIES = new CategoryPath[] {
-    new CategoryPath("Author", "Mark Twain"),
-    new CategoryPath("Author", "Stephen King"),
-    new CategoryPath("Author", "Kurt Vonnegut"),
-    new CategoryPath("Band", "Rock & Pop", "The Beatles"),
-    new CategoryPath("Band", "Punk", "The Ramones"),
-    new CategoryPath("Band", "Rock & Pop", "U2"),
-    new CategoryPath("Band", "Rock & Pop", "REM"),
-    new CategoryPath("Band", "Rock & Pop", "Dave Matthews Band"),
-    new CategoryPath("Composer", "Bach"),
+  private static final FacetLabel[] CATEGORIES = new FacetLabel[] {
+    new FacetLabel("Author", "Mark Twain"),
+    new FacetLabel("Author", "Stephen King"),
+    new FacetLabel("Author", "Kurt Vonnegut"),
+    new FacetLabel("Band", "Rock & Pop", "The Beatles"),
+    new FacetLabel("Band", "Punk", "The Ramones"),
+    new FacetLabel("Band", "Rock & Pop", "U2"),
+    new FacetLabel("Band", "Rock & Pop", "REM"),
+    new FacetLabel("Band", "Rock & Pop", "Dave Matthews Band"),
+    new FacetLabel("Composer", "Bach"),
   };
   
   @Test
@@ -81,7 +81,7 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(Collections.<FacetLabel, CategoryListParams>emptyMap());
 
     seedIndex(iw, tw, iParams);
 
@@ -117,7 +117,7 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(
-        Collections.singletonMap(new CategoryPath("Author"), new CategoryListParams("$author")));
+        Collections.singletonMap(new FacetLabel("Author"), new CategoryListParams("$author")));
     seedIndex(iw, tw, iParams);
 
     IndexReader ir = iw.getReader();
@@ -152,9 +152,9 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$music"));
-    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams("$music"));
+    Map<FacetLabel,CategoryListParams> paramsMap = new HashMap<FacetLabel,CategoryListParams>();
+    paramsMap.put(new FacetLabel("Band"), new CategoryListParams("$music"));
+    paramsMap.put(new FacetLabel("Composer"), new CategoryListParams("$music"));
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
     seedIndex(iw, tw, iParams);
 
@@ -201,9 +201,9 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$bands"));
-    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams("$composers"));
+    Map<FacetLabel,CategoryListParams> paramsMap = new HashMap<FacetLabel,CategoryListParams>();
+    paramsMap.put(new FacetLabel("Band"), new CategoryListParams("$bands"));
+    paramsMap.put(new FacetLabel("Composer"), new CategoryListParams("$composers"));
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
     seedIndex(iw, tw, iParams);
 
@@ -239,10 +239,10 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("Band"), new CategoryListParams("$music"));
-    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams("$music"));
-    paramsMap.put(new CategoryPath("Author"), new CategoryListParams("$literature"));
+    Map<FacetLabel,CategoryListParams> paramsMap = new HashMap<FacetLabel,CategoryListParams>();
+    paramsMap.put(new FacetLabel("Band"), new CategoryListParams("$music"));
+    paramsMap.put(new FacetLabel("Composer"), new CategoryListParams("$music"));
+    paramsMap.put(new FacetLabel("Author"), new CategoryListParams("$literature"));
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
 
     seedIndex(iw, tw, iParams);
@@ -318,14 +318,14 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10, true);
 
     List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-    facetRequests.add(new CountFacetRequest(new CategoryPath("Band"), 10));
-    CountFacetRequest bandDepth = new CountFacetRequest(new CategoryPath("Band"), 10);
+    facetRequests.add(new CountFacetRequest(new FacetLabel("Band"), 10));
+    CountFacetRequest bandDepth = new CountFacetRequest(new FacetLabel("Band"), 10);
     bandDepth.setDepth(2);
     // makes it easier to check the results in the test.
     bandDepth.setResultMode(ResultMode.GLOBAL_FLAT);
     facetRequests.add(bandDepth);
-    facetRequests.add(new CountFacetRequest(new CategoryPath("Author"), 10));
-    facetRequests.add(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("Author"), 10));
+    facetRequests.add(new CountFacetRequest(new FacetLabel("Band", "Rock & Pop"), 10));
 
     // Faceted search parameters indicate which facets are we interested in
     FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
@@ -338,7 +338,7 @@ public class TestMultipleCategoryLists extends FacetTestCase {
 
   private void seedIndex(RandomIndexWriter iw, TaxonomyWriter tw, FacetIndexingParams iParams) throws IOException {
     FacetFields facetFields = new FacetFields(tw, iParams);
-    for (CategoryPath cp : CATEGORIES) {
+    for (FacetLabel cp : CATEGORIES) {
       Document doc = new Document();
       facetFields.addFields(doc, Collections.singletonList(cp));
       doc.add(new TextField("content", "alpha", Field.Store.YES));

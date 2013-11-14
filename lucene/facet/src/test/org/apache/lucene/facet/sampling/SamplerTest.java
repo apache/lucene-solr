@@ -10,7 +10,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.junit.After;
 import org.junit.Before;
@@ -50,10 +50,10 @@ public class SamplerTest extends FacetTestBase {
   }
   
   @Override
-  protected List<CategoryPath> getCategories(final int doc) {
-    return new ArrayList<CategoryPath>() {
+  protected List<FacetLabel> getCategories(final int doc) {
+    return new ArrayList<FacetLabel>() {
       {
-        add(new CategoryPath("root", "a", Integer.toString(doc % 10)));
+        add(new FacetLabel("root", "a", Integer.toString(doc % 10)));
       }
     };
   }
@@ -93,7 +93,7 @@ public class SamplerTest extends FacetTestBase {
     assertNull("Fixer should be null as the test is for no-fixing",
         sp.getSampleFixer());
     FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(
-        new CategoryPath("root", "a"), 1));
+        new FacetLabel("root", "a"), 1));
     SamplingAccumulator accumulator = new SamplingAccumulator(
         new RandomSampler(sp, random()), fsp, indexReader, taxoReader);
     

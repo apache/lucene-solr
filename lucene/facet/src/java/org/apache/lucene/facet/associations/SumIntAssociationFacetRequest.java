@@ -3,7 +3,7 @@ package org.apache.lucene.facet.associations;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,7 +34,7 @@ public class SumIntAssociationFacetRequest extends FacetRequest {
    * Create an integer association facet request for a given node in the
    * taxonomy.
    */
-  public SumIntAssociationFacetRequest(CategoryPath path, int num) {
+  public SumIntAssociationFacetRequest(FacetLabel path, int num) {
     super(path, num);
   }
 

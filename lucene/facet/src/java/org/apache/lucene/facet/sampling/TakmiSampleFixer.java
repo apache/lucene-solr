@@ -7,7 +7,7 @@ import org.apache.lucene.facet.old.ScoredDocIDsIterator;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -88,7 +88,7 @@ public class TakmiSampleFixer extends SampleFixer {
     if (fresNode.label == null) {
       fresNode.label = taxonomyReader.getPath(fresNode.ordinal);
     }
-    CategoryPath catPath = fresNode.label;
+    FacetLabel catPath = fresNode.label;
 
     Term drillDownTerm = DrillDownQuery.term(searchParams.indexingParams, catPath);
     // TODO (Facet): avoid Multi*?
