@@ -37,6 +37,9 @@ Upgrading from Solr 4.6.0
 Detailed Change List
 ----------------------
 
+* SOLR-5441: Expose number of transaction log files and their size via JMX.
+  (Rafał Kuć via shalin)
+
 Bug Fixes
 ----------------------
 
