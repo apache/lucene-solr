@@ -64,6 +64,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,6 +93,9 @@ import java.util.WeakHashMap;
  */
 public class SolrDispatchFilter implements Filter
 {
+  private static final String CONNECTION_HEADER = "Connection";
+  private static final String TRANSFER_ENCODING_HEADER = "Transfer-Encoding";
+
   final Logger log;
 
   protected volatile CoreContainer cores;
@@ -495,8 +499,8 @@ public class SolrDispatchFilter implements Filter
       
       con.setDoOutput(true);
       con.setDoInput(true);
-      for (Enumeration e = req.getHeaderNames(); e.hasMoreElements();) {
-        String headerName = e.nextElement().toString();
+      for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements();) {
+        String headerName = e.nextElement();
         con.setRequestProperty(headerName, req.getHeader(headerName));
       }
       try {
@@ -518,11 +522,18 @@ public class SolrDispatchFilter implements Filter
         
         resp.setStatus(con.getResponseCode());
         
-        for (Iterator i = con.getHeaderFields().entrySet().iterator(); i
-            .hasNext();) {
-          Map.Entry mapEntry = (Map.Entry) i.next();
-          if (mapEntry.getKey() != null) resp.setHeader(mapEntry.getKey()
-              .toString(), ((List) mapEntry.getValue()).get(0).toString());
+        for (Iterator<Entry<String,List<String>>> i = con.getHeaderFields().entrySet().iterator(); i.hasNext();) {
+          Map.Entry<String,List<String>> mapEntry = i.next();
+          String header = mapEntry.getKey();
+          
+          // We pull out these two headers below because they can cause chunked
+          // encoding issues with Tomcat and certain clients
+          if (header != null && !header.equals(TRANSFER_ENCODING_HEADER)
+              && !header.equals(CONNECTION_HEADER)) {
+            for (String value : mapEntry.getValue()) {
+              resp.addHeader(mapEntry.getKey(), value);
+            }
+          }
         }
         
         resp.setCharacterEncoding(con.getContentEncoding());
