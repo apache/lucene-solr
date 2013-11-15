@@ -158,6 +158,10 @@ Bug Fixes
   deleted at a later point in time. This could cause short-term disk
   pollution or OOM if in-memory directories are used. (Simon Willnauer)
 
+* LUCENE-5342: Fixed bulk-merge issue in CompressingStoredFieldsFormat which
+  created corrupted segments when mixing chunk sizes.
+  Lucene41StoredFieldsFormat is not impacted. (Adrien Grand, Robert Muir)
+
 API Changes
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
