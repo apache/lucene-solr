@@ -593,8 +593,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
       }
 
-      params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
-          zkController.getBaseUrl(), req.getCore().getName()));
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
