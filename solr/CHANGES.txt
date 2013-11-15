@@ -80,6 +80,9 @@ New Features
 
 * SOLR-5320: Added support for tri-level compositeId routing.
   (Anshum Gupta via shalin)
+  
+* SOLR-5287: You can edit files in the conf directory from the admin UI 
+  (Erick Erickson, Stefan Matheis)
 
 Bug Fixes
 ----------------------

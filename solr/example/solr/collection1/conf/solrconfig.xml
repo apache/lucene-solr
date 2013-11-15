@@ -1116,7 +1116,9 @@
      <requestHandler name="/admin/file"       class="solr.admin.ShowFileRequestHandler" >
     -->
   <!-- If you wish to hide files under ${solr.home}/conf, explicitly
-       register the ShowFileRequestHandler using: 
+       register the ShowFileRequestHandler using the definition below. 
+       NOTE: The glob pattern ('*') is the only pattern supported at present, *.xml will
+             not exclude all files ending in '.xml'. Use it to exclude _all_ updates
     -->
   <!--
      <requestHandler name="/admin/file" 
@@ -1124,6 +1126,7 @@
        <lst name="invariants">
          <str name="hidden">synonyms.txt</str> 
          <str name="hidden">anotherfile.txt</str> 
+         <str name="hidden">*</str> 
        </lst>
      </requestHandler>
     -->

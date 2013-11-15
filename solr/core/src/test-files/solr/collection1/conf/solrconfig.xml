@@ -234,6 +234,12 @@
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
+  <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
+
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">
