@@ -337,7 +337,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       final Bits liveDocs = reader.getLiveDocs();
 
       if (matchingFieldsReader == null
-          || matchingFieldsReader.getVersion() != VERSION_CURRENT) { // means reader version is not the same as the writer version
+          || matchingFieldsReader.getVersion() != VERSION_CURRENT // means reader version is not the same as the writer version
+          || matchingFieldsReader.getCompressionMode() != compressionMode
+          || matchingFieldsReader.getChunkSize() != chunkSize) { // the way data is decompressed depends on the chunk size
         // naive merge...
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
           Document doc = reader.document(i);
@@ -362,8 +364,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               startOffsets[i] = startOffsets[i - 1] + it.lengths[i - 1];
             }
 
-            if (compressionMode == matchingFieldsReader.getCompressionMode() // same compression mode
-                && numBufferedDocs == 0 // starting a new chunk
+            if (numBufferedDocs == 0 // starting a new chunk
                 && startOffsets[it.chunkDocs - 1] < chunkSize // chunk is small enough
                 && startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] >= chunkSize // chunk is large enough
                 && nextDeletedDoc(it.docBase, liveDocs, it.docBase + it.chunkDocs) == it.docBase + it.chunkDocs) { // no deletion in the chunk
