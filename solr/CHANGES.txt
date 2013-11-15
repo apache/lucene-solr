@@ -87,6 +87,12 @@ Bug Fixes
 * SOLR-5438: DebugComponent throws NPE when used with grouping.
   (Tomás Fernández Löbbe via shalin)
 
+* SOLR-5442: Python client cannot parse proxied response when served by Tomcat.
+  (Patrick Hunt, Gregory Chanan, Vamsee Yarlagadda, Romain Rigaux, Mark Miller)
+
+* SOLR-5445: Proxied responses should propagate all headers rather than the 
+  first one for each key. (Patrick Hunt, Mark Miller) 
+
 Other Changes
 ---------------------
 
