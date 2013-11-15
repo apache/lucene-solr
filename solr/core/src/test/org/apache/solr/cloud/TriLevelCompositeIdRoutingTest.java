@@ -80,8 +80,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    Random r = new Random();
-
     for (int i=0;i < NUM_DOCS;i++) {
       int appId = r.nextInt(NUM_APPS) + 1;
       int userId = r.nextInt(NUM_USERS) + 1;
@@ -112,8 +110,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
     del("*:*");
-
-    Random r = new Random();
 
     for (int i=0;i < NUM_DOCS;i++) {
       int appId = r.nextInt(NUM_APPS) + 1;
