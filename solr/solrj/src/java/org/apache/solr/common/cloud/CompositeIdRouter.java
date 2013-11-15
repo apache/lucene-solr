@@ -61,8 +61,8 @@ public class CompositeIdRouter extends HashBasedRouter {
 
   /**
    * Get Range for a given CompositeId based route key
-   * @param routeKey
-   * @return
+   * @param routeKey to return Range for
+   * @return Range for given routeKey
    */
   public Range keyHashRange(String routeKey) {
     if (routeKey.indexOf(SEPARATOR) < 0) {
@@ -242,7 +242,6 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     /**
      * Get bit masks for routing based on routing level
-     * @return
      */
     private int[] getMasks() {
       int[] masks;
