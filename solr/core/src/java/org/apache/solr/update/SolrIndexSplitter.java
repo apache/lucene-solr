@@ -215,7 +215,7 @@ public class SolrIndexSplitter {
   }
 
   public static String getRouteKey(String idString) {
-    int idx = idString.indexOf(CompositeIdRouter.separator);
+    int idx = idString.indexOf(CompositeIdRouter.SEPARATOR);
     if (idx <= 0) return null;
     String part1 = idString.substring(0, idx);
     int commaIdx = part1.indexOf(CompositeIdRouter.bitsSeparator);

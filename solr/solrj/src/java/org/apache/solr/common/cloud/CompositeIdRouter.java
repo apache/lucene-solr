@@ -29,35 +29,18 @@ import java.util.List;
 
 //
 // user!uniqueid
+// app!user!uniqueid
 // user/4!uniqueid
+// app/2!user/4!uniqueid
 //
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
-  public static final int separator = '!';
+  public static final String SEPARATOR = "!";
 
   // separator used to optionally specify number of bits to allocate toward first part.
   public static final int bitsSeparator = '/';
   private int bits = 16;
-  private int mask1 = 0xffff0000;
-  private int mask2 = 0x0000ffff;
-
-  protected void setBits(int firstBits) {
-    this.bits = firstBits;
-    // java can't shift 32 bits
-    mask1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
-    mask2 = firstBits==32 ? 0 : (-1 >>> firstBits);
-  }
-
-  protected int getBits(String firstPart, int commaIdx) {
-    int v = 0;
-    for (int idx = commaIdx + 1; idx<firstPart.length(); idx++) {
-      char ch = firstPart.charAt(idx);
-      if (ch < '0' || ch > '9') return -1;
-      v = v * 10 + (ch - '0');
-    }
-    return v > 32 ? -1 : v;
-  }
 
   @Override
   public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
@@ -68,55 +51,26 @@ public class CompositeIdRouter extends HashBasedRouter {
         throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "No value for :"+shardFieldName + ". Unable to identify shard");
       id = o.toString();
     }
-    int idx = id.indexOf(separator);
-    if (idx < 0) {
+    if (id.indexOf(SEPARATOR) < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
     }
-    String part1 = id.substring(0, idx);
-    int commaIdx = part1.indexOf(bitsSeparator);
-    int m1 = mask1;
-    int m2 = mask2;
 
-    if (commaIdx > 0) {
-      int firstBits = getBits(part1, commaIdx);
-      if (firstBits >= 0) {
-        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
-        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
-        part1 = part1.substring(0, commaIdx);
-      }
-    }
-
-    String part2 = id.substring(idx+1);
-
-    int hash1 = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
-    int hash2 = Hash.murmurhash3_x86_32(part2, 0, part2.length(), 0);
-    return (hash1 & m1) | (hash2 & m2);
+    return new KeyParser(id).getHash();
   }
 
+
+  /**
+   * Get Range for a given CompositeId based route key
+   * @param routeKey
+   * @return
+   */
   public Range keyHashRange(String routeKey) {
-    int idx = routeKey.indexOf(separator);
-    if (idx < 0) {
+    if (routeKey.indexOf(SEPARATOR) < 0) {
       int hash = sliceHash(routeKey, null, null, null);
       return new Range(hash, hash);
     }
-    String part1 = routeKey.substring(0, idx);
-    int commaIdx = part1.indexOf(bitsSeparator);
-    int m1 = mask1;
-    int m2 = mask2;
 
-    if (commaIdx > 0) {
-      int firstBits = getBits(part1, commaIdx);
-      if (firstBits >= 0) {
-        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
-        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
-        part1 = part1.substring(0, commaIdx);
-      }
-    }
-
-    int hash = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
-    int min = hash & m1;
-    int max = min | m2;
-    return new Range(min, max);
+    return new KeyParser(routeKey).getRange();
   }
 
   @Override
@@ -128,41 +82,12 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
     String id = shardKey;
 
-    int idx = shardKey.indexOf(separator);
-    if (idx < 0) {
+    if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
       return Collections.singletonList(hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
     }
 
-    int m1 = mask1;
-    int m2 = mask2;
-
-    String part1 = id.substring(0,idx);
-    int bitsSepIdx = part1.indexOf(bitsSeparator);
-    if (bitsSepIdx > 0) {
-      int firstBits = getBits(part1, bitsSepIdx);
-      if (firstBits >= 0) {
-        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
-        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
-        part1 = part1.substring(0, bitsSepIdx);
-      }
-    }
-
-    //  If the upper bits are 0xF0000000, the range we want to cover is
-    //  0xF0000000 0xFfffffff
-
-    int hash1 = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
-    int upperBits = hash1 & m1;
-    int lowerBound = upperBits;
-    int upperBound = upperBits | m2;
-
-    if (m1 == 0) {
-      // no bits used from first part of key.. the code above will produce 0x000000000->0xffffffff which only works on unsigned space, but we're using signed space.
-      lowerBound = Integer.MIN_VALUE;
-      upperBound = Integer.MAX_VALUE;
-    }
-
-    Range completeRange = new Range(lowerBound, upperBound);
+    Range completeRange = new KeyParser(id).getRange();
 
     List<Slice> targetSlices = new ArrayList<Slice>(1);
     for (Slice slice : collection.getActiveSlices()) {
@@ -219,17 +144,18 @@ public class CompositeIdRouter extends HashBasedRouter {
     // Round to avoid splitting hash domains across ranges if such rounding is not significant.
     // With default bits==16, one would need to create more than 4000 shards before this
     // becomes false by default.
+    int mask = 0x0000ffff;
     boolean round = rangeStep >= (1<<bits)*16;
 
     while (end < max) {
       targetEnd = targetStart + rangeStep;
       end = targetEnd;
 
-      if (round && ((end & mask2) != mask2)) {
+      if (round && ((end & mask) != mask)) {
         // round up or down?
         int increment = 1 << bits;  // 0x00010000
-        long roundDown = (end | mask2) - increment ;
-        long roundUp = (end | mask2) + increment;
+        long roundDown = (end | mask) - increment ;
+        long roundUp = (end | mask) + increment;
         if (end - roundDown < roundUp - end && roundDown > start) {
           end = roundDown;
         } else {
@@ -249,4 +175,121 @@ public class CompositeIdRouter extends HashBasedRouter {
     return ranges;
   }
 
+  /**
+   * Helper class to calculate parts, masks etc for an id.
+   */
+  static class KeyParser {
+    String key;
+    int[] numBits;
+    int[] hashes;
+    int[] masks;
+    boolean triLevel;
+    int pieces;
+
+    public KeyParser(String key) {
+      String[] parts = key.split(SEPARATOR);
+      this.key = key;
+      pieces = parts.length;
+      hashes = new int[pieces];
+      numBits = new int[2];
+      if(key.endsWith("!"))
+        pieces++;
+      if(pieces == 3) {
+        numBits[0] = 8;
+        numBits[1] = 8;
+        triLevel = true;
+      } else {
+        numBits[0] = 16;
+        triLevel = false;
+
+      }
+
+      for(int i=0;i<parts.length;i++) {
+        int commaIdx = parts[i].indexOf(bitsSeparator);
+
+        if(commaIdx > 0) {
+          numBits[i] = getNumBits(parts[i], commaIdx);
+          parts[i] = parts[i].substring(0, commaIdx);
+        }
+        hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
+      }
+      masks = getMasks();
+    }
+
+    Range getRange() {
+      int lowerBound;
+      int upperBound;
+
+      if(triLevel) {
+        lowerBound = hashes[0] & masks[0] | hashes[1] & masks[1];
+        upperBound = lowerBound | masks[2];
+      } else {
+        lowerBound = hashes[0] & masks[0];
+        upperBound = lowerBound | masks[1];
+      }
+      //  If the upper bits are 0xF0000000, the range we want to cover is
+      //  0xF0000000 0xFfffffff
+
+      if ((masks[0] == 0 && !triLevel) || (masks[0] == 0 && masks[1] == 0 && triLevel)) {
+        // no bits used from first part of key.. the code above will produce 0x000000000->0xffffffff
+        // which only works on unsigned space, but we're using signed space.
+        lowerBound = Integer.MIN_VALUE;
+        upperBound = Integer.MAX_VALUE;
+      }
+      Range r = new Range(lowerBound, upperBound);
+      return r;
+    }
+
+    /**
+     * Get bit masks for routing based on routing level
+     * @return
+     */
+    private int[] getMasks() {
+      int[] masks;
+      if(triLevel)
+        masks = getBitMasks(numBits[0], numBits[1]);
+      else
+        masks = getBitMasks(numBits[0]);
+
+      return masks;
+    }
+
+    private int[] getBitMasks(int firstBits, int secondBits) {
+      // java can't shift 32 bits
+      int[] masks = new int[3];
+      masks[0] = firstBits==0 ? 0 : (-1 << (32-firstBits));
+      masks[1] = (firstBits + secondBits)==0 ? 0 : (-1 << (32 - firstBits - secondBits));
+      masks[1] = masks[0] ^ masks[1];
+      masks[2] = (firstBits + secondBits) == 32 ? 0 : ~(masks[0] | masks[1]);
+      return masks;
+    }
+
+    private int getNumBits(String firstPart, int commaIdx) {
+      int v = 0;
+      for (int idx = commaIdx + 1; idx<firstPart.length(); idx++) {
+        char ch = firstPart.charAt(idx);
+        if (ch < '0' || ch > '9') return -1;
+        v = v * 10 + (ch - '0');
+      }
+      return v > 32 ? -1 : v;
+    }
+
+    private int[] getBitMasks(int firstBits) {
+      // java can't shift 32 bits
+      int[] masks;
+      masks = new int[2];
+      masks[0] = firstBits==0 ? 0 : (-1 << (32-firstBits));
+      masks[1] = firstBits==32 ? 0 : (-1 >>> firstBits);
+      return masks;
+    }
+
+    int getHash() {
+      int result = hashes[0] & masks[0];
+
+      for(int i=1;i<pieces;i++)
+        result = result | (hashes[i] & masks[i]);
+      return result;
+    }
+
+  }
 }
