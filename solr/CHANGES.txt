@@ -90,6 +90,9 @@ Other Changes
 * SOLR-5399: Add distributed request tracking information to DebugComponent
   (Tomás Fernández Löbbe via Ryan Ernst)
 
+* SOLR-5421: Remove double set of distrib.from param in processAdd method of
+  DistributedUpdateProcessor. (Anshum Gupta via shalin)
+
 
 ==================  4.6.0 ==================
 
