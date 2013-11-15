@@ -1104,6 +1104,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testTooManySegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    MergePolicy mp = iwc.getMergePolicy();
+
+    // If we get TieredMP and it's maxMergedSegmentMB is 0
+    // then this test falsely fails:
+    if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      tmp.setMaxMergedSegmentMB(Math.max(.01, tmp.getMaxMergedSegmentMB()));
+    }
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {
