@@ -20,6 +20,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
@@ -91,6 +93,22 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     contents = new String(zkClient.getData("/configs/conf1/velocity/test.vm", null, null, true), "UTF-8");
     assertTrue("Should have found new content in a velocity/test.vm.",
         contents.indexOf("Some bogus stuff for a test.") != -1);
+
+    params = new ModifiableSolrParams();
+    request = new QueryRequest(params);
+    request.setPath("/admin/file");
+    NamedList<Object> res = client.request(request);
+
+    NamedList files = (NamedList)res.get("files");
+    assertNotNull("Should have gotten files back", files);
+    SimpleOrderedMap schema = (SimpleOrderedMap)files.get("schema.xml");
+    assertNotNull("Should have a schema returned", schema);
+    assertNull("Schema.xml should not be a directory", schema.get("directory"));
+
+    SimpleOrderedMap velocity = (SimpleOrderedMap)files.get("velocity");
+    assertNotNull("Should have velocity dir returned", velocity);
+
+    assertTrue("Velocity should be a directory", (boolean)velocity.get("directory"));
   }
 
 }

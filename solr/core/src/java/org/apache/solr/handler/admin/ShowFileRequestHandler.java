@@ -297,7 +297,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<Object>();
         files.add(f, fileInfo);
-        List<String> fchildren = zkClient.getChildren(adminFile, null, true);
+        List<String> fchildren = zkClient.getChildren(adminFile + "/" + f, null, true);
         if (fchildren.size() > 0) {
           fileInfo.add("directory", true);
         } else {

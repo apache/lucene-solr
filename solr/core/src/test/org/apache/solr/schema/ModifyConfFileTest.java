@@ -24,6 +24,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -109,6 +111,24 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       contents = FileUtils.readFileToString(new File(core.getCoreDescriptor().getInstanceDir(),
           "conf/velocity/test.vm"));
       assertEquals("Schema contents should have changed!", "Some bogus stuff for a test.", contents);
+
+      streams.clear();
+      params = params();
+      locReq = new LocalSolrQueryRequest(core, params);
+      core.execute(handler, locReq, rsp);
+
+      NamedList<Object> res = rsp.getValues();
+
+      NamedList files = (NamedList)res.get("files");
+      assertNotNull("Should have gotten files back", files);
+      SimpleOrderedMap schema = (SimpleOrderedMap)files.get("schema.xml");
+      assertNotNull("Should have a schema returned", schema);
+      assertNull("Schema.xml should not be a directory", schema.get("directory"));
+
+      SimpleOrderedMap velocity = (SimpleOrderedMap)files.get("velocity");
+      assertNotNull("Should have velocity dir returned", velocity);
+
+      assertTrue("Velocity should be a directory", (boolean)velocity.get("directory"));
 
       core.close();
     } finally {
