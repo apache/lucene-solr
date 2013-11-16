@@ -744,6 +744,17 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     doAssertParserCoverage = true;
   }
 
+  public void testQuerySimple() throws Exception {
+    SolrQueryRequest req = req("myField","foo_s");
+    try {
+      assertQueryEquals("simple", req,
+          "{!simple f=$myField}asdf",
+          "{!simple f=$myField v=asdf}",
+          "{!simple f=foo_s}asdf");
+    } finally {
+      req.close();
+    }
+  }
 
   /**
    * NOTE: defType is not only used to pick the parser, but also to record 
