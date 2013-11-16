@@ -99,6 +99,8 @@ Bug Fixes
 * SOLR-5445: Proxied responses should propagate all headers rather than the 
   first one for each key. (Patrick Hunt, Mark Miller) 
 
+* SOLR-4612: Admin UI - Analysis Screen contains empty table-columns (steffkes)
+
 Other Changes
 ---------------------
 
