@@ -258,12 +258,14 @@ public class SyncStrategy {
   public void close() {
     this.isClosed = true;
     try {
-      client.getConnectionManager().shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(recoveryCmdExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
+    
+    // we must close connection manager *after* shutting down executor
     try {
-      ExecutorUtil.shutdownNowAndAwaitTermination(recoveryCmdExecutor);
+      client.getConnectionManager().shutdown();
     } catch (Throwable e) {
       SolrException.log(log, e);
     }

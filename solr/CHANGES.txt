@@ -101,6 +101,9 @@ Bug Fixes
 
 * SOLR-4612: Admin UI - Analysis Screen contains empty table-columns (steffkes)
 
+* SOLR-5451: SyncStrategy closes it's http connection manager before the
+  executor that uses it in it's close method. (Mark Miller)
+
 Other Changes
 ---------------------
 

@@ -51,7 +51,7 @@ public class ExecutorUtil {
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
