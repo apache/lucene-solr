@@ -355,31 +355,17 @@ sammy.get
               if( 0 !== type_length )
               {
                 var global_elements_count = 0;
-                for( var i = 0; i < analysis_data[type].length; i += 2 )
+                if( 'string' === typeof analysis_data[type][1] )
                 {
-                  if( 'string' === typeof analysis_data[type][i+1] )
-                  {
-                    analysis_data[type][i+1] = [{ 'text': analysis_data[type][i+1] }]
-                  }
-
-                  var tmp = {};
-                  var cols = analysis_data[type][i+1].filter
-                  (
-                    function( obj )
-                    {
-                      var obj_position = obj.position || 0;
-                      if( !tmp[obj_position] )
-                      {
-                        tmp[obj_position] = true;
-                        return true;
-                      }
-
-                      return false;
-                    }
-                  );
-
-                  global_elements_count = Math.max( global_elements_count, cols.length );
+                  analysis_data[type][1] = [{ 'text': analysis_data[type][1] }]
                 }
+
+                var c = analysis_data[type][1].length;
+                for( var i = 0; i < c; i++ )
+                {
+                  global_elements_count = Math.max( analysis_data[type][1][i].position || 0, global_elements_count );
+                }
+
 
                 var content = '<div class="' + type + '">' + "\n";
                 content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
