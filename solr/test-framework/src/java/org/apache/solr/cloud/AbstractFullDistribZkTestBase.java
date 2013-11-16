@@ -257,7 +257,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     server.getLbServer().getHttpClient().getParams()
         .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
     server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
+        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 60000);
     return server;
   }
   
@@ -1732,12 +1732,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
-  volatile CloudSolrServer commondCloudSolrServer;
+  private CloudSolrServer commondCloudSolrServer;
+  
   protected CloudSolrServer getCommonCloudSolrServer() {
-    if (commondCloudSolrServer == null) {
-      synchronized(this) {
+    synchronized (this) {
+      if (commondCloudSolrServer == null) {
         try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
+          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
+              random().nextBoolean());
           commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.connect();
