@@ -367,6 +367,7 @@ var solr_admin = function( app_config )
                     '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
                     '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
                     '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
+                    '<li class="files"><a href="#/' + core_name + '/files"><span>Files</span></a></li>' + "\n" +
                     '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
                     '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
                     '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
