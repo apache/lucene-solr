@@ -17,6 +17,9 @@
 
 package org.apache.solr.update;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
@@ -37,7 +40,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -48,15 +50,10 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
-import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 
 /** @lucene.experimental */
 public class PeerSync  {
@@ -88,7 +85,6 @@ public class PeerSync  {
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 30000);
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
     client = HttpClientUtil.createClient(params);
   }
