@@ -65,8 +65,6 @@ public class TestTaxonomyFacets extends FacetTestCase {
 
     IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, fts);
 
-    // Reused across documents, to add the necessary facet
-    // fields:
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));

@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.simple;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -69,94 +71,56 @@ import org.apache.lucene.search.Weight;
  * @lucene.experimental
  */
 
-public class DrillSideways {
+public class SimpleDrillSideways {
 
   protected final IndexSearcher searcher;
   protected final TaxonomyReader taxoReader;
   protected final SortedSetDocValuesReaderState state;
-  
+  protected final FacetsConfig facetsConfig;
+
   /**
    * Create a new {@code DrillSideways} instance, assuming the categories were
    * indexed with {@link FacetFields}.
    */
-  public DrillSideways(IndexSearcher searcher, TaxonomyReader taxoReader) {
-    this.searcher = searcher;
-    this.taxoReader = taxoReader;
-    this.state = null;
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, TaxonomyReader taxoReader) {
+    this(searcher, facetsConfig, taxoReader, null);
   }
-  
+    
   /**
    * Create a new {@code DrillSideways} instance, assuming the categories were
    * indexed with {@link SortedSetDocValuesFacetFields}.
    */
-  public DrillSideways(IndexSearcher searcher, SortedSetDocValuesReaderState state) {
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, SortedSetDocValuesReaderState state) {
+    this(searcher, facetsConfig, null, state);
+  }
+
+  /**
+   * Create a new {@code DrillSideways} instance, where some
+   * dimensions are sorted set facets and others are
+   * taxononmy facets.
+   */
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, TaxonomyReader taxoReader, SortedSetDocValuesReaderState state) {
     this.searcher = searcher;
-    this.taxoReader = null;
+    this.facetsConfig = facetsConfig;
+    this.taxoReader = taxoReader;
     this.state = state;
   }
 
-  /** Moves any drill-downs that don't have a corresponding
-   *  facet request into the baseQuery.  This is unusual,
-   *  yet allowed, because typically the added drill-downs are because
-   *  the user has clicked on previously presented facets,
-   *  and those same facets would be computed this time
-   *  around. */
-  private static DrillDownQuery moveDrillDownOnlyClauses(DrillDownQuery in, FacetSearchParams fsp) {
-    Set<String> facetDims = new HashSet<String>();
-    for(FacetRequest fr : fsp.facetRequests) {
-      if (fr.categoryPath.length == 0) {
-        throw new IllegalArgumentException("all FacetRequests must have CategoryPath with length > 0");
-      }
-      facetDims.add(fr.categoryPath.components[0]);
-    }
+  /** Subclass can override to customize per-dim Facets
+   *  impl. */
+  protected Facets buildFacetsResult(SimpleFacetsCollector drillDowns, SimpleFacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
-    BooleanClause[] clauses = in.getBooleanQuery().getClauses();
-    Map<String,Integer> drillDownDims = in.getDims();
+    Facets drillDownFacets = new TaxonomyFacetCounts(taxoReader, facetsConfig, drillDowns);
 
-    String[] dimsByIndex = new String[drillDownDims.size()];
-    for(Map.Entry<String,Integer> ent : drillDownDims.entrySet()) {
-      dimsByIndex[ent.getValue()] = ent.getKey();
-    }
-
-    int startClause;
-    if (clauses.length == drillDownDims.size()) {
-      startClause = 0;
+    if (drillSideways == null) {
+      return drillDownFacets;
     } else {
-      assert clauses.length == 1+drillDownDims.size();
-      startClause = 1;
-    }
-
-    // Break out drill-down clauses that have no
-    // corresponding facet request and move them inside the
-    // baseQuery:
-    List<Query> nonFacetClauses = new ArrayList<Query>();
-    List<Query> facetClauses = new ArrayList<Query>();
-    Map<String,Integer> dimToIndex = new LinkedHashMap<String,Integer>();
-    for(int i=startClause;i<clauses.length;i++) {
-      Query q = clauses[i].getQuery();
-      String dim = dimsByIndex[i-startClause];
-      if (!facetDims.contains(dim)) {
-        nonFacetClauses.add(q);
-      } else {
-        facetClauses.add(q);
-        dimToIndex.put(dim, dimToIndex.size());
+      Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+      for(int i=0;i<drillSideways.length;i++) {
+        drillSidewaysFacets.put(drillSidewaysDims[i],
+                                new TaxonomyFacetCounts(taxoReader, facetsConfig, drillSideways[i]));
       }
-    }
-
-    if (!nonFacetClauses.isEmpty()) {
-      BooleanQuery newBaseQuery = new BooleanQuery(true);
-      if (startClause == 1) {
-        // Add original basaeQuery:
-        newBaseQuery.add(clauses[0].getQuery(), BooleanClause.Occur.MUST);
-      }
-      for(Query q : nonFacetClauses) {
-        newBaseQuery.add(q, BooleanClause.Occur.MUST);
-      }
-
-      return new DrillDownQuery(fsp.indexingParams, newBaseQuery, facetClauses, dimToIndex);
-    } else {
-      // No change:
-      return in;
+      return new MultiFacets(drillSidewaysFacets, drillDownFacets);
     }
   }
 
@@ -165,36 +129,17 @@ public class DrillSideways {
    * computing drill down and sideways counts.
    */
   @SuppressWarnings({"rawtypes","unchecked"})
-  public DrillSidewaysResult search(DrillDownQuery query,
-                                    Collector hitCollector, FacetSearchParams fsp) throws IOException {
-
-    if (query.fip != fsp.indexingParams) {
-      throw new IllegalArgumentException("DrillDownQuery's FacetIndexingParams should match FacetSearchParams'");
-    }
-
-    query = moveDrillDownOnlyClauses(query, fsp);
+  public SimpleDrillSidewaysResult search(SimpleDrillDownQuery query, Collector hitCollector) throws IOException {
 
     Map<String,Integer> drillDownDims = query.getDims();
 
+    SimpleFacetsCollector drillDownCollector = new SimpleFacetsCollector();
+    
     if (drillDownDims.isEmpty()) {
-      // Just do ordinary search when there are no drill-downs:
-      FacetsCollector c = FacetsCollector.create(getDrillDownAccumulator(fsp));
-      searcher.search(query, MultiCollector.wrap(hitCollector, c));
-      return new DrillSidewaysResult(c.getFacetResults(), null);
-    }
-
-    List<FacetRequest> ddRequests = new ArrayList<FacetRequest>();
-    for(FacetRequest fr : fsp.facetRequests) {
-      assert fr.categoryPath.length > 0;
-      if (!drillDownDims.containsKey(fr.categoryPath.components[0])) {
-        ddRequests.add(fr);
-      }
-    }
-    FacetSearchParams fsp2;
-    if (!ddRequests.isEmpty()) {
-      fsp2 = new FacetSearchParams(fsp.indexingParams, ddRequests);
-    } else {
-      fsp2 = null;
+      // There are no drill-down dims, so there is no
+      // drill-sideways to compute:
+      searcher.search(query, MultiCollector.wrap(hitCollector, drillDownCollector));
+      return new SimpleDrillSidewaysResult(buildFacetsResult(drillDownCollector, null, null), null);
     }
 
     BooleanQuery ddq = query.getBooleanQuery();
@@ -213,23 +158,11 @@ public class DrillSideways {
       startClause = 1;
     }
 
-    FacetsCollector drillDownCollector = fsp2 == null ? null : FacetsCollector.create(getDrillDownAccumulator(fsp2));
-
-    FacetsCollector[] drillSidewaysCollectors = new FacetsCollector[drillDownDims.size()];
+    SimpleFacetsCollector[] drillSidewaysCollectors = new SimpleFacetsCollector[drillDownDims.size()];
 
     int idx = 0;
     for(String dim : drillDownDims.keySet()) {
-      List<FacetRequest> requests = new ArrayList<FacetRequest>();
-      for(FacetRequest fr : fsp.facetRequests) {
-        assert fr.categoryPath.length > 0;
-        if (fr.categoryPath.components[0].equals(dim)) {
-          requests.add(fr);
-        }
-      }
-      // We already moved all drill-downs that didn't have a
-      // FacetRequest, in moveDrillDownOnlyClauses above:
-      assert !requests.isEmpty();
-      drillSidewaysCollectors[idx++] = FacetsCollector.create(getDrillSidewaysAccumulator(dim, new FacetSearchParams(fsp.indexingParams, requests)));
+      drillSidewaysCollectors[idx++] = new SimpleFacetsCollector();
     }
 
     boolean useCollectorMethod = scoreSubDocsAtOnce();
@@ -278,62 +211,25 @@ public class DrillSideways {
       // continue to run "optimized"
       collectorMethod(query, baseQuery, startClause, hitCollector, drillDownCollector, drillSidewaysCollectors);
     } else {
-      DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
+      SimpleDrillSidewaysQuery dsq = new SimpleDrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
       searcher.search(dsq, hitCollector);
     }
 
-    int numDims = drillDownDims.size();
-    List<FacetResult>[] drillSidewaysResults = new List[numDims];
-    List<FacetResult> drillDownResults = null;
-
-    List<FacetResult> mergedResults = new ArrayList<FacetResult>();
-    int[] requestUpto = new int[drillDownDims.size()];
-    int ddUpto = 0;
-    for(int i=0;i<fsp.facetRequests.size();i++) {
-      FacetRequest fr = fsp.facetRequests.get(i);
-      assert fr.categoryPath.length > 0;
-      Integer dimIndex = drillDownDims.get(fr.categoryPath.components[0]);
-      if (dimIndex == null) {
-        // Pure drill down dim (the current query didn't
-        // drill down on this dim):
-        if (drillDownResults == null) {
-          // Lazy init, in case all requests were against
-          // drill-sideways dims:
-          drillDownResults = drillDownCollector.getFacetResults();
-          //System.out.println("get DD results");
-        }
-        //System.out.println("add dd results " + i);
-        mergedResults.add(drillDownResults.get(ddUpto++));
-      } else {
-        // Drill sideways dim:
-        int dim = dimIndex.intValue();
-        List<FacetResult> sidewaysResult = drillSidewaysResults[dim];
-        if (sidewaysResult == null) {
-          // Lazy init, in case no facet request is against
-          // a given drill down dim:
-          sidewaysResult = drillSidewaysCollectors[dim].getFacetResults();
-          drillSidewaysResults[dim] = sidewaysResult;
-        }
-        mergedResults.add(sidewaysResult.get(requestUpto[dim]));
-        requestUpto[dim]++;
-      }
-    }
-
-    return new DrillSidewaysResult(mergedResults, null);
+    return new SimpleDrillSidewaysResult(buildFacetsResult(drillDownCollector, drillSidewaysCollectors, drillDownDims.keySet().toArray(new String[drillDownDims.size()])), null);
   }
 
   /** Uses the more general but slower method of sideways
    *  counting. This method allows an arbitrary subQuery to
    *  implement the drill down for a given dimension. */
-  private void collectorMethod(DrillDownQuery ddq, Query baseQuery, int startClause, Collector hitCollector, Collector drillDownCollector, Collector[] drillSidewaysCollectors) throws IOException {
+  private void collectorMethod(SimpleDrillDownQuery ddq, Query baseQuery, int startClause, Collector hitCollector, Collector drillDownCollector, Collector[] drillSidewaysCollectors) throws IOException {
 
     BooleanClause[] clauses = ddq.getBooleanQuery().getClauses();
 
     Map<String,Integer> drillDownDims = ddq.getDims();
 
     BooleanQuery topQuery = new BooleanQuery(true);
-    final DrillSidewaysCollector collector = new DrillSidewaysCollector(hitCollector, drillDownCollector, drillSidewaysCollectors,
-                                                                        drillDownDims);
+    final SimpleDrillSidewaysCollector collector = new SimpleDrillSidewaysCollector(hitCollector, drillDownCollector, drillSidewaysCollectors,
+                                                                                    drillDownDims);
 
     // TODO: if query is already a BQ we could copy that and
     // add clauses to it, instead of doing BQ inside BQ
@@ -413,11 +309,11 @@ public class DrillSideways {
    * Search, sorting by {@link Sort}, and computing
    * drill down and sideways counts.
    */
-  public DrillSidewaysResult search(DrillDownQuery query,
-                                    Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
-                                    boolean doMaxScore, FacetSearchParams fsp) throws IOException {
+  public SimpleDrillSidewaysResult search(SimpleDrillDownQuery query,
+                                          Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
+                                          boolean doMaxScore) throws IOException {
     if (filter != null) {
-      query = new DrillDownQuery(filter, query);
+      query = new SimpleDrillDownQuery(filter, query);
     }
     if (sort != null) {
       int limit = searcher.getIndexReader().maxDoc();
@@ -432,10 +328,10 @@ public class DrillSideways {
                                                                       doDocScores,
                                                                       doMaxScore,
                                                                       true);
-      DrillSidewaysResult r = search(query, hitCollector, fsp);
-      return new DrillSidewaysResult(r.facetResults, hitCollector.topDocs());
+      SimpleDrillSidewaysResult r = search(query, hitCollector);
+      return new SimpleDrillSidewaysResult(r.facets, hitCollector.topDocs());
     } else {
-      return search(after, query, topN, fsp);
+      return search(after, query, topN);
     }
   }
 
@@ -443,36 +339,16 @@ public class DrillSideways {
    * Search, sorting by score, and computing
    * drill down and sideways counts.
    */
-  public DrillSidewaysResult search(ScoreDoc after,
-                                    DrillDownQuery query, int topN, FacetSearchParams fsp) throws IOException {
+  public SimpleDrillSidewaysResult search(ScoreDoc after,
+                                          SimpleDrillDownQuery query, int topN) throws IOException {
     int limit = searcher.getIndexReader().maxDoc();
     if (limit == 0) {
       limit = 1; // the collector does not alow numHits = 0
     }
     topN = Math.min(topN, limit);
     TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, true);
-    DrillSidewaysResult r = search(query, hitCollector, fsp);
-    return new DrillSidewaysResult(r.facetResults, hitCollector.topDocs());
-  }
-
-  /** Override this to use a custom drill-down {@link
-   *  FacetsAccumulator}. */
-  protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
-    if (taxoReader != null) {
-      return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader, null);
-    } else {
-      return FacetsAccumulator.create(fsp, state, null);
-    }
-  }
-
-  /** Override this to use a custom drill-sideways {@link
-   *  FacetsAccumulator}. */
-  protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
-    if (taxoReader != null) {
-      return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader, null);
-    } else {
-      return FacetsAccumulator.create(fsp, state, null);
-    }
+    SimpleDrillSidewaysResult r = search(query, hitCollector);
+    return new SimpleDrillSidewaysResult(r.facets, hitCollector.topDocs());
   }
 
   /** Override this and return true if your collector
@@ -488,25 +364,18 @@ public class DrillSideways {
     return false;
   }
 
-  /**
-   * Represents the returned result from a drill sideways search. Note that if
-   * you called
-   * {@link DrillSideways#search(DrillDownQuery, Collector, FacetSearchParams)},
-   * then {@link #hits} will be {@code null}.
-   */
-  public static class DrillSidewaysResult {
+  public static class SimpleDrillSidewaysResult {
     /** Combined drill down & sideways results. */
-    public final List<FacetResult> facetResults;
+    public final Facets facets;
 
     /** Hits. */
     public final TopDocs hits;
 
-    public DrillSidewaysResult(List<FacetResult> facetResults, TopDocs hits) {
-      this.facetResults = facetResults;
+    public SimpleDrillSidewaysResult(Facets facets, TopDocs hits) {
+      this.facets = facets;
       this.hits = hits;
     }
   }
-
   private interface SetWeight {
     public void set(Weight w);
   }

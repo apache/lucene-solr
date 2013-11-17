@@ -31,6 +31,8 @@ public final class SimpleFacetResult {
 
   /** Child counts. */
   public final LabelAndValue[] labelValues;
+
+  // nocommit also return number of children?
   
   public SimpleFacetResult(FacetLabel path, Number value, LabelAndValue[] labelValues) {
     this.path = path;

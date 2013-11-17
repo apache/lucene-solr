@@ -118,17 +118,17 @@ public final class SimpleDrillDownQuery extends Query {
    * Adds one dimension of drill downs; if you pass multiple values they are
    * OR'd, and then the entire dimension is AND'd against the base query.
    */
-  // nocommit can we remove CatPath here?
+  // nocommit can we remove FacetLabel here?
   public void add(FacetLabel... paths) {
     add(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, Constants.DEFAULT_DELIM_CHAR, paths);
   }
 
-  // nocommit can we remove CatPath here?
+  // nocommit can we remove FacetLabel here?
   public void add(String field, FacetLabel... paths) {
     add(field, Constants.DEFAULT_DELIM_CHAR, paths);
   }
 
-  // nocommit can we remove CatPath here?
+  // nocommit can we remove FacetLabel here?
   public void add(String field, char delimChar, FacetLabel... paths) {
     Query q;
     if (paths[0].length == 0) {

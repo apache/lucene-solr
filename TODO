@@ -2,6 +2,7 @@ nocommit this!
 
 TODO
   - associations
+  - simplify ddq api
   - SSDVValueSourceFacets?
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?
