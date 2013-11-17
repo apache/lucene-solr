@@ -104,6 +104,8 @@ Bug Fixes
 * SOLR-5451: SyncStrategy closes it's http connection manager before the
   executor that uses it in it's close method. (Mark Miller)
 
+* SOLR-5453: Raise recovery socket read timeouts. (Mark Miller)
+
 Other Changes
 ---------------------
 
