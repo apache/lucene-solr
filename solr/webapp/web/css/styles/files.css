@@ -1,0 +1,102 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#content #files #tree
+{
+  float: left;
+  width: 20%;
+}
+
+#content #files .show #tree
+{
+  overflow: hidden;
+}
+
+#content #files #file-content
+{
+  display: none;
+  float: right;
+  position: relative;
+  width: 78%;
+  min-height: 100px
+}
+
+#content #files .show #file-content
+{
+  display: block;
+}
+
+#content #files #file-content .close
+{
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 50% 50%;
+  display: block;
+  height: 20px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
+}
+
+#content #files #file-content .close:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+}
+
+#content #files #file-content .close span
+{
+  display: none;
+}
+
+#content #files #file-content form .buttons button
+{
+  float: right;
+}
+
+#content #files #file-content textarea
+{
+  display: block;
+  height: 500px;
+  margin-bottom: 10px;
+  width: 99%;
+}
+
+#content #files #file-content button span
+{
+  background-image: url( ../../img/ico/disk-black.png );
+}
+
+#content #files #file-content form.upload
+{
+  border-top: 1px solid #c0c0c0;
+  margin-top: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+#content #files #file-content .upload input
+{
+  border: 0;
+  float: left;
+}
+
+#content #files #file-content .upload button span
+{
+  background-image: url( ../../img/ico/drive-upload.png );
+}

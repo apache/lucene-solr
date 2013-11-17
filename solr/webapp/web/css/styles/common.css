@@ -606,6 +606,12 @@ pre.syntax .tex .formula
   background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
 }
 
+#content .tree a.active
+{
+  background-color: #f0f0f0;
+  color: #00f;
+}
+
 #content .tree a .jstree-icon
 {
   background-image: url( ../../img/ico/folder.png );
