@@ -72,6 +72,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   public static void afterTest() throws Exception {
     collection1.shutdown();
     collection2.shutdown();
+    collection1 = null;
+    collection2 = null;
     jetty.stop();
     jetty=null;
     cleanUpJettyHome(solrHome);
