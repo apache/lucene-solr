@@ -255,9 +255,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
-    server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 60000);
+        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 15000);
     return server;
   }
   
