@@ -27,7 +27,6 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.simple.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -46,7 +45,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
+    FacetsConfig config = new FacetsConfig();
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, config);
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
@@ -79,9 +79,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assertEquals("b (1)\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
 
     // DrillDown:
-    SimpleDrillDownQuery q = new SimpleDrillDownQuery();
-    q.add(new FacetLabel("a", "foo"));
-    q.add(new FacetLabel("b", "baz"));
+    SimpleDrillDownQuery q = new SimpleDrillDownQuery(config);
+    q.add("a", "foo");
+    q.add("b", "baz");
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 

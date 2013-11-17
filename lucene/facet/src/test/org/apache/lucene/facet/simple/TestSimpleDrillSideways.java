@@ -39,7 +39,6 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.simple.SimpleDrillSideways.SimpleDrillSidewaysResult;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -132,8 +131,8 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     // Simple case: drill-down on a single field; in this
     // case the drill-sideways + drill-down counts ==
     // drill-down of just the query: 
-    SimpleDrillDownQuery ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"));
+    SimpleDrillDownQuery ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
     SimpleDrillSidewaysResult r = ds.search(null, ddq, 10);
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
@@ -149,8 +148,8 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     // drill-down on a single field; in this case the
     // drill-sideways + drill-down counts == drill-down of
     // just the query:
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
     r = ds.search(null, ddq, 10);
 
     assertEquals(2, r.hits.totalHits);
@@ -165,8 +164,9 @@ public class TestSimpleDrillSideways extends FacetTestCase {
 
     // Another simple case: drill-down on on single fields
     // but OR of two values
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"), new FacetLabel("Author", "Bob"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
+    ddq.add("Author", "Bob");
     r = ds.search(null, ddq, 10);
     assertEquals(3, r.hits.totalHits);
     // Publish Date is only drill-down: Lisa and Bob
@@ -178,9 +178,9 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     assertEquals("Author (5)\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // More interesting case: drill-down on two fields
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"));
-    ddq.add(new FacetLabel("Publish Date", "2010"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
+    ddq.add("Publish Date", "2010");
     r = ds.search(null, ddq, 10);
     assertEquals(1, r.hits.totalHits);
     // Publish Date is drill-sideways + drill-down: Lisa
@@ -192,12 +192,12 @@ public class TestSimpleDrillSideways extends FacetTestCase {
 
     // Even more interesting case: drill down on two fields,
     // but one of them is OR
-    ddq = new SimpleDrillDownQuery();
+    ddq = new SimpleDrillDownQuery(config);
 
     // Drill down on Lisa or Bob:
-    ddq.add(new FacetLabel("Author", "Lisa"),
-            new FacetLabel("Author", "Bob"));
-    ddq.add(new FacetLabel("Publish Date", "2010"));
+    ddq.add("Author", "Lisa");
+    ddq.add("Publish Date", "2010");
+    ddq.add("Author", "Bob");
     r = ds.search(null, ddq, 10);
     assertEquals(2, r.hits.totalHits);
     // Publish Date is both drill-sideways + drill-down:
@@ -208,17 +208,17 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // Test drilling down on invalid field:
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Foobar", "Baz"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Foobar", "Baz");
     r = ds.search(null, ddq, 10);
     assertEquals(0, r.hits.totalHits);
     assertNull(r.facets.getTopChildren(10, "Publish Date"));
     assertNull(r.facets.getTopChildren(10, "Foobar"));
 
     // Test drilling down on valid term or'd with invalid term:
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"),
-            new FacetLabel("Author", "Tom"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
+    ddq.add("Author", "Tom");
     r = ds.search(null, ddq, 10);
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
@@ -231,9 +231,9 @@ public class TestSimpleDrillSideways extends FacetTestCase {
 
     // LUCENE-4915: test drilling down on a dimension but
     // NOT facet counting it:
-    ddq = new SimpleDrillDownQuery();
-    ddq.add(new FacetLabel("Author", "Lisa"),
-            new FacetLabel("Author", "Tom"));
+    ddq = new SimpleDrillDownQuery(config);
+    ddq.add("Author", "Lisa");
+    ddq.add("Author", "Tom");
     r = ds.search(null, ddq, 10);
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
@@ -241,8 +241,8 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     assertEquals("Publish Date (2)\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
 
     // Test main query gets null scorer:
-    ddq = new SimpleDrillDownQuery(new TermQuery(new Term("foobar", "baz")));
-    ddq.add(new FacetLabel("Author", "Lisa"));
+    ddq = new SimpleDrillDownQuery(config, new TermQuery(new Term("foobar", "baz")));
+    ddq.add("Author", "Lisa");
     r = ds.search(null, ddq, 10);
 
     assertEquals(0, r.hits.totalHits);

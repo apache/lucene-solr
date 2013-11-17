@@ -76,22 +76,22 @@ public class SimpleDrillSideways {
   protected final IndexSearcher searcher;
   protected final TaxonomyReader taxoReader;
   protected final SortedSetDocValuesReaderState state;
-  protected final FacetsConfig facetsConfig;
+  protected final FacetsConfig config;
 
   /**
    * Create a new {@code DrillSideways} instance, assuming the categories were
    * indexed with {@link FacetFields}.
    */
-  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, TaxonomyReader taxoReader) {
-    this(searcher, facetsConfig, taxoReader, null);
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
+    this(searcher, config, taxoReader, null);
   }
     
   /**
    * Create a new {@code DrillSideways} instance, assuming the categories were
    * indexed with {@link SortedSetDocValuesFacetFields}.
    */
-  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, SortedSetDocValuesReaderState state) {
-    this(searcher, facetsConfig, null, state);
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig config, SortedSetDocValuesReaderState state) {
+    this(searcher, config, null, state);
   }
 
   /**
@@ -99,9 +99,9 @@ public class SimpleDrillSideways {
    * dimensions are sorted set facets and others are
    * taxononmy facets.
    */
-  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig facetsConfig, TaxonomyReader taxoReader, SortedSetDocValuesReaderState state) {
+  public SimpleDrillSideways(IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader, SortedSetDocValuesReaderState state) {
     this.searcher = searcher;
-    this.facetsConfig = facetsConfig;
+    this.config = config;
     this.taxoReader = taxoReader;
     this.state = state;
   }
@@ -110,7 +110,7 @@ public class SimpleDrillSideways {
    *  impl. */
   protected Facets buildFacetsResult(SimpleFacetsCollector drillDowns, SimpleFacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
-    Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, facetsConfig, drillDowns);
+    Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);
 
     if (drillSideways == null) {
       return drillDownFacets;
@@ -118,7 +118,7 @@ public class SimpleDrillSideways {
       Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
       for(int i=0;i<drillSideways.length;i++) {
         drillSidewaysFacets.put(drillSidewaysDims[i],
-                                new FastTaxonomyFacetCounts(taxoReader, facetsConfig, drillSideways[i]));
+                                new FastTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
       }
       return new MultiFacets(drillSidewaysFacets, drillDownFacets);
     }
@@ -313,7 +313,7 @@ public class SimpleDrillSideways {
                                           Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
                                           boolean doMaxScore) throws IOException {
     if (filter != null) {
-      query = new SimpleDrillDownQuery(filter, query);
+      query = new SimpleDrillDownQuery(config, filter, query);
     }
     if (sort != null) {
       int limit = searcher.getIndexReader().maxDoc();

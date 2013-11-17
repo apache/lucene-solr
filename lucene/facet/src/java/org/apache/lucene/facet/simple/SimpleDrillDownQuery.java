@@ -51,21 +51,23 @@ import org.apache.lucene.search.TermQuery;
  */
 public final class SimpleDrillDownQuery extends Query {
 
-  private static Term term(String field, char delimChar, FacetLabel path) {
-    return new Term(field, path.toString(delimChar));
+  private static Term term(String field, char delimChar, String dim, String[] path) {
+    return new Term(field, FacetLabel.create(dim, path).toString(delimChar));
   }
 
+  private final FacetsConfig config;
   private final BooleanQuery query;
   private final Map<String,Integer> drillDownDims = new LinkedHashMap<String,Integer>();
 
   /** Used by clone() */
-  SimpleDrillDownQuery(BooleanQuery query, Map<String,Integer> drillDownDims) {
+  SimpleDrillDownQuery(FacetsConfig config, BooleanQuery query, Map<String,Integer> drillDownDims) {
     this.query = query.clone();
     this.drillDownDims.putAll(drillDownDims);
+    this.config = config;
   }
 
   /** Used by DrillSideways */
-  SimpleDrillDownQuery(Filter filter, SimpleDrillDownQuery other) {
+  SimpleDrillDownQuery(FacetsConfig config, Filter filter, SimpleDrillDownQuery other) {
     query = new BooleanQuery(true); // disable coord
 
     BooleanClause[] clauses = other.query.getClauses();
@@ -78,10 +80,11 @@ public final class SimpleDrillDownQuery extends Query {
     for(int i=1;i<clauses.length;i++) {
       query.add(clauses[i].getQuery(), Occur.MUST);
     }
+    this.config = config;
   }
 
   /** Used by DrillSideways */
-  SimpleDrillDownQuery(Query baseQuery, List<Query> clauses, Map<String,Integer> drillDownDims) {
+  SimpleDrillDownQuery(FacetsConfig config, Query baseQuery, List<Query> clauses, Map<String,Integer> drillDownDims) {
     this.query = new BooleanQuery(true);
     if (baseQuery != null) {
       query.add(baseQuery, Occur.MUST);      
@@ -90,6 +93,7 @@ public final class SimpleDrillDownQuery extends Query {
       query.add(clause, Occur.MUST);
     }
     this.drillDownDims.putAll(drillDownDims);
+    this.config = config;
   }
 
   /**
@@ -97,8 +101,8 @@ public final class SimpleDrillDownQuery extends Query {
    * to perform a pure browsing query (equivalent to using
    * {@link MatchAllDocsQuery} as base).
    */
-  public SimpleDrillDownQuery() {
-    this(null);
+  public SimpleDrillDownQuery(FacetsConfig config) {
+    this(config, null);
   }
   
   /**
@@ -107,55 +111,57 @@ public final class SimpleDrillDownQuery extends Query {
    * {@link #rewrite(IndexReader)} will be a pure browsing query, filtering on
    * the added categories only.
    */
-  public SimpleDrillDownQuery(Query baseQuery) {
+  public SimpleDrillDownQuery(FacetsConfig config, Query baseQuery) {
     query = new BooleanQuery(true); // disable coord
     if (baseQuery != null) {
       query.add(baseQuery, Occur.MUST);
     }
+    this.config = config;
   }
 
-  /**
-   * Adds one dimension of drill downs; if you pass multiple values they are
-   * OR'd, and then the entire dimension is AND'd against the base query.
-   */
-  // nocommit can we remove FacetLabel here?
-  public void add(FacetLabel... paths) {
-    add(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, Constants.DEFAULT_DELIM_CHAR, paths);
-  }
-
-  // nocommit can we remove FacetLabel here?
-  public void add(String field, FacetLabel... paths) {
-    add(field, Constants.DEFAULT_DELIM_CHAR, paths);
-  }
-
-  // nocommit can we remove FacetLabel here?
-  public void add(String field, char delimChar, FacetLabel... paths) {
-    Query q;
-    if (paths[0].length == 0) {
-      throw new IllegalArgumentException("all CategoryPaths must have length > 0");
+  /** Merges (ORs) a new path into an existing AND'd
+   *  clause. */ 
+  private void merge(String dim, String[] path) {
+    int index = drillDownDims.get(dim);
+    if (query.getClauses().length == drillDownDims.size()+1) {
+      index++;
     }
-    String dim = paths[0].components[0];
+    ConstantScoreQuery q = (ConstantScoreQuery) query.clauses().get(index).getQuery();
+    if ((q.getQuery() instanceof BooleanQuery) == false) {
+      // App called .add(dim, customQuery) and then tried to
+      // merge a facet label in:
+      throw new RuntimeException("cannot merge with custom Query");
+    }
+    String indexedField = config.getDimConfig(dim).indexedFieldName;
+
+    // nocommit pull this from FacetsConfig
+    char delimChar = Constants.DEFAULT_DELIM_CHAR;
+    BooleanQuery bq = (BooleanQuery) q.getQuery();
+    bq.add(new TermQuery(term(indexedField, delimChar, dim, path)), Occur.SHOULD);
+  }
+
+  /** Adds one dimension of drill downs; if you pass the same
+   *  dimension again, it's OR'd with the previous
+   *  constraints on that dimension, and all dimensions are
+   *  AND'd against each other and the base query. */
+  // nocommit can we remove FacetLabel here?
+  public void add(String dim, String... path) {
+
     if (drillDownDims.containsKey(dim)) {
-      throw new IllegalArgumentException("dimension '" + dim + "' was already added");
+      merge(dim, path);
+      return;
     }
-    if (paths.length == 1) {
-      q = new TermQuery(term(field, delimChar, paths[0]));
-    } else {
-      BooleanQuery bq = new BooleanQuery(true); // disable coord
-      for (FacetLabel cp : paths) {
-        if (cp.length == 0) {
-          throw new IllegalArgumentException("all CategoryPaths must have length > 0");
-        }
-        if (!cp.components[0].equals(dim)) {
-          throw new IllegalArgumentException("multiple (OR'd) drill-down paths must be under same dimension; got '" 
-              + dim + "' and '" + cp.components[0] + "'");
-        }
-        bq.add(new TermQuery(term(field, delimChar, cp)), Occur.SHOULD);
-      }
-      q = bq;
-    }
+    String indexedField = config.getDimConfig(dim).indexedFieldName;
 
-    add(dim, q);
+    // nocommit pull this from FacetsConfig
+    char delimChar = Constants.DEFAULT_DELIM_CHAR;
+    BooleanQuery bq = new BooleanQuery(true); // disable coord
+    if (path.length == 0) {
+      throw new IllegalArgumentException("must have at least one facet label under dim");
+    }
+    bq.add(new TermQuery(term(indexedField, delimChar, dim, path)), Occur.SHOULD);
+
+    add(dim, bq);
   }
 
   /** Expert: add a custom drill-down subQuery.  Use this
@@ -177,7 +183,7 @@ public final class SimpleDrillDownQuery extends Query {
 
   @Override
   public SimpleDrillDownQuery clone() {
-    return new SimpleDrillDownQuery(query, drillDownDims);
+    return new SimpleDrillDownQuery(config, query, drillDownDims);
   }
   
   @Override

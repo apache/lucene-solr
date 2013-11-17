@@ -2,15 +2,14 @@ nocommit this!
 
 TODO
   - associations
+  - nuke delimChar?  can we escape instead?
   - wrap an IW instead of extending one?
   - re-enable ALL_BUT_DIM somehow?
-  - simplify ddq api
   - SSDVValueSourceFacets?
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?
   - standardize on facet or facets (e.g. FacetIndexWriter)
   - fewer args when constructing a range
-  - rename CategoryPath -> FacetLabel
   - how to do avg() agg?
   - test needsScores=true / valuesource associations
   - make FieldTypes optional (if all your dims are flat)?

@@ -18,7 +18,6 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -60,10 +58,10 @@ public class TestTaxonomyFacets extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig fts = new FacetsConfig();
-    fts.setHierarchical("Publish Date");
+    FacetsConfig config = new FacetsConfig();
+    config.setHierarchical("Publish Date");
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, fts);
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, config);
 
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
@@ -107,18 +105,18 @@ public class TestTaxonomyFacets extends FacetTestCase {
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
 
-    Facets facets = new FastTaxonomyFacetCounts(taxoReader, fts, c);
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
 
     // Retrieve & verify results:
     assertEquals("Publish Date (5)\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getTopChildren(10, "Publish Date").toString());
     assertEquals("Author (5)\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", facets.getTopChildren(10, "Author").toString());
 
     // Now user drills down on Publish Date/2010:
-    SimpleDrillDownQuery q2 = new SimpleDrillDownQuery(new MatchAllDocsQuery());
-    q2.add(new FacetLabel("Publish Date", "2010"));
+    SimpleDrillDownQuery q2 = new SimpleDrillDownQuery(config);
+    q2.add("Publish Date", "2010");
     c = new SimpleFacetsCollector();
     searcher.search(q2, c);
-    facets = new FastTaxonomyFacetCounts(taxoReader, fts, c);
+    facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
     assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", facets.getTopChildren(10, "Author").toString());
 
     assertEquals(1, facets.getSpecificValue("Author", "Lisa"));

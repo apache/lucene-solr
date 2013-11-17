@@ -56,7 +56,7 @@ public class SumIntAssociationFacetsAggregator implements FacetsAggregator {
     while (doc < length && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
       dv.get(doc, bytes);
       if (bytes.length > 0) {
-        // aggreate association values for ordinals
+        // aggregate association values for ordinals
         int bytesUpto = bytes.offset + bytes.length;
         int pos = bytes.offset;
         while (pos < bytesUpto) {

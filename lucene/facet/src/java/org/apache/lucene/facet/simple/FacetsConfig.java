@@ -28,8 +28,6 @@ public class FacetsConfig {
 
   // nocommit pull the delim char into there?
   // nocommit pull DimType into here (shai?)
-  // nocommit pull facet field ($facets) into here, instead
-  // of optionally setting it on FacetField
 
   private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<String,DimConfig>();
 
