@@ -18,6 +18,7 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,8 @@ import org.apache.lucene.search.TermQuery;
  */
 public final class SimpleDrillDownQuery extends Query {
 
-  private static Term term(String field, char delimChar, String dim, String[] path) {
-    return new Term(field, FacetLabel.create(dim, path).toString(delimChar));
+  private static Term term(String field, String dim, String[] path) {
+    return new Term(field, FacetIndexWriter.pathToString(dim, path));
   }
 
   private final FacetsConfig config;
@@ -134,10 +135,8 @@ public final class SimpleDrillDownQuery extends Query {
     }
     String indexedField = config.getDimConfig(dim).indexedFieldName;
 
-    // nocommit pull this from FacetsConfig
-    char delimChar = Constants.DEFAULT_DELIM_CHAR;
     BooleanQuery bq = (BooleanQuery) q.getQuery();
-    bq.add(new TermQuery(term(indexedField, delimChar, dim, path)), Occur.SHOULD);
+    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
   }
 
   /** Adds one dimension of drill downs; if you pass the same
@@ -153,13 +152,11 @@ public final class SimpleDrillDownQuery extends Query {
     }
     String indexedField = config.getDimConfig(dim).indexedFieldName;
 
-    // nocommit pull this from FacetsConfig
-    char delimChar = Constants.DEFAULT_DELIM_CHAR;
     BooleanQuery bq = new BooleanQuery(true); // disable coord
     if (path.length == 0) {
       throw new IllegalArgumentException("must have at least one facet label under dim");
     }
-    bq.add(new TermQuery(term(indexedField, delimChar, dim, path)), Occur.SHOULD);
+    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
 
     add(dim, bq);
   }

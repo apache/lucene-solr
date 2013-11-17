@@ -26,7 +26,6 @@ public class FacetsConfig {
 
   public static final String DEFAULT_INDEXED_FIELD_NAME = "$facets";
 
-  // nocommit pull the delim char into there?
   // nocommit pull DimType into here (shai?)
 
   private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<String,DimConfig>();

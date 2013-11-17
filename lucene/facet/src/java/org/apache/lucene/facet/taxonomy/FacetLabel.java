@@ -274,6 +274,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
    * Returns a string representation of the path, separating components with the
    * given delimiter.
    */
+  // nocommit remove
   public String toString(char delimiter) {
     if (length == 0) return "";
     

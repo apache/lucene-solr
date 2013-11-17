@@ -52,8 +52,6 @@ public final class SortedSetDocValuesReaderState {
   private final AtomicReader topReader;
   private final int valueCount;
   public final IndexReader origReader;
-  public final char separator;
-  final String separatorRegex;
 
   /** Holds start/end range of ords, which maps to one
    *  dimension (someday we may generalize it to map to
@@ -74,21 +72,15 @@ public final class SortedSetDocValuesReaderState {
   private final Map<String,OrdRange> prefixToOrdRange = new HashMap<String,OrdRange>();
 
   public SortedSetDocValuesReaderState(IndexReader reader) throws IOException {
-    this(reader, FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, Constants.DEFAULT_DELIM_CHAR);
-  }
-
-  public SortedSetDocValuesReaderState(IndexReader reader, String dvField) throws IOException {
-    this(reader, dvField, Constants.DEFAULT_DELIM_CHAR);
+    this(reader, FacetsConfig.DEFAULT_INDEXED_FIELD_NAME);
   }
 
   /** Create an instance, scanning the {@link
    *  SortedSetDocValues} from the provided reader, with
    *  default {@link FacetIndexingParams}. */
-  public SortedSetDocValuesReaderState(IndexReader reader, String field, char delimChar) throws IOException {
+  public SortedSetDocValuesReaderState(IndexReader reader, String field) throws IOException {
 
     this.field = field;
-    this.separator = delimChar;
-    this.separatorRegex = Pattern.quote(Character.toString(separator));
     this.origReader = reader;
 
     // We need this to create thread-safe MultiSortedSetDV
@@ -116,7 +108,7 @@ public final class SortedSetDocValuesReaderState {
     // support arbitrary hierarchy:
     for(int ord=0;ord<valueCount;ord++) {
       dv.lookupOrd(ord, spare);
-      String[] components = spare.utf8ToString().split(separatorRegex, 2);
+      String[] components = FacetIndexWriter.stringToPath(spare.utf8ToString());
       if (components.length != 2) {
         throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + spare.utf8ToString());
       }

@@ -44,17 +44,11 @@ import org.apache.lucene.util.IntsRef;
 public class FacetIndexWriter extends IndexWriter {
 
   private final TaxonomyWriter taxoWriter;
-  private final char facetDelimChar;
   private final FacetsConfig facetsConfig;
 
   public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig facetsConfig) throws IOException {
-    this(d, conf, taxoWriter, facetsConfig, Constants.DEFAULT_DELIM_CHAR);
-  }
-
-  public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig facetsConfig, char facetDelimChar) throws IOException {
     super(d, conf);
     this.taxoWriter = taxoWriter;
-    this.facetDelimChar = facetDelimChar;
     this.facetsConfig = facetsConfig;
   }
 
@@ -175,7 +169,7 @@ public class FacetIndexWriter extends IndexWriter {
 
         // Drill down:
         for(int i=2;i<=cp.length;i++) {
-          addedIndexedFields.add(new StringField(indexedFieldName, cp.subpath(i).toString(facetDelimChar), Field.Store.NO));
+          addedIndexedFields.add(new StringField(indexedFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
 
@@ -194,7 +188,7 @@ public class FacetIndexWriter extends IndexWriter {
 
       for(SortedSetDocValuesFacetField facetField : ent.getValue()) {
         FacetLabel cp = new FacetLabel(facetField.dim, facetField.label);
-        String fullPath = cp.toString(facetDelimChar);
+        String fullPath = pathToString(cp.components, cp.length);
         //System.out.println("add " + fullPath);
 
         // For facet counts:
@@ -255,4 +249,72 @@ public class FacetIndexWriter extends IndexWriter {
     return new BytesRef(bytes, 0, upto);
   }
 
+  // nocommit move these constants / methods to Util?
+
+  // Joins the path components together:
+  private static final char DELIM_CHAR = '\u001F';
+
+  // Escapes any occurrence of the path component inside the label:
+  private static final char ESCAPE_CHAR = '\u001E';
+
+  /** Turns a path into a string without stealing any
+   *  characters. */
+  public static String pathToString(String dim, String[] path) {
+    String[] fullPath = new String[1+path.length];
+    fullPath[0] = dim;
+    System.arraycopy(path, 0, fullPath, 1, path.length);
+    return pathToString(fullPath, fullPath.length);
+  }
+
+  public static String pathToString(String[] path) {
+    return pathToString(path, path.length);
+  }
+
+  public static String pathToString(String[] path, int length) {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0;i<length;i++) {
+      String s = path[i];
+      int numChars = s.length();
+      for(int j=0;j<numChars;j++) {
+        char ch = s.charAt(j);
+        if (ch == DELIM_CHAR || ch == ESCAPE_CHAR) {
+          sb.append(ESCAPE_CHAR);
+        }
+        sb.append(ch);
+      }
+      sb.append(DELIM_CHAR);
+    }
+
+    // Trim off last DELIM_CHAR:
+    sb.setLength(sb.length()-1);
+    return sb.toString();
+  }
+
+  /** Turns a result from previous call to {@link
+   *  #pathToString} back into the original {@code String[]}
+   *  without stealing any characters. */
+  public static String[] stringToPath(String s) {
+    List<String> parts = new ArrayList<String>();
+    int length = s.length();
+    char[] buffer = new char[length];
+
+    int upto = 0;
+    boolean lastEscape = false;
+    for(int i=0;i<length;i++) {
+      char ch = s.charAt(i);
+      if (lastEscape) {
+        buffer[upto++] = ch;
+        lastEscape = false;
+      } else if (ch == ESCAPE_CHAR) {
+        lastEscape = true;
+      } else if (ch == DELIM_CHAR) {
+        parts.add(new String(buffer, 0, upto));
+        upto = 0;
+      } else {
+        buffer[upto++] = ch;
+      }
+    }
+    assert !lastEscape;
+    return parts.toArray(new String[parts.size()]);
+  }
 }
