@@ -2,6 +2,10 @@ nocommit this!
 
 TODO
   - associations
+  - ords cache
+  - wrap an IW instead of extending one?
+  - re-enable ALL_BUT_DIM somehow?
+  - abstraction for 'ords source/decode'
   - simplify ddq api
   - SSDVValueSourceFacets?
   - we could put more stuff into the "schema", e.g. this field is
@@ -15,9 +19,6 @@ TODO
   - make FieldTypes optional (if all your dims are flat)?
   - add hierarchy to ssdv facets?
   - sparse faceting: allow skipping of certain dims?
-  - ords cache
-  - complements
-  - sampling
   - maybe an interface/abstract class for "FacetResults"?  has common
     API, ie to get top facets under a path, get all dims; then DS can
     use this?
