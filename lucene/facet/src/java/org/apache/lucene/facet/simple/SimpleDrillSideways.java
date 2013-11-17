@@ -110,7 +110,7 @@ public class SimpleDrillSideways {
    *  impl. */
   protected Facets buildFacetsResult(SimpleFacetsCollector drillDowns, SimpleFacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
-    Facets drillDownFacets = new TaxonomyFacetCounts(taxoReader, facetsConfig, drillDowns);
+    Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, facetsConfig, drillDowns);
 
     if (drillSideways == null) {
       return drillDownFacets;
@@ -118,7 +118,7 @@ public class SimpleDrillSideways {
       Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
       for(int i=0;i<drillSideways.length;i++) {
         drillSidewaysFacets.put(drillSidewaysDims[i],
-                                new TaxonomyFacetCounts(taxoReader, facetsConfig, drillSideways[i]));
+                                new FastTaxonomyFacetCounts(taxoReader, facetsConfig, drillSideways[i]));
       }
       return new MultiFacets(drillSidewaysFacets, drillDownFacets);
     }

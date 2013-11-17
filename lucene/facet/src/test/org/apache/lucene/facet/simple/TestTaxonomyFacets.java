@@ -107,7 +107,7 @@ public class TestTaxonomyFacets extends FacetTestCase {
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
 
-    TaxonomyFacetCounts facets = new TaxonomyFacetCounts(taxoReader, fts, c);
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, fts, c);
 
     // Retrieve & verify results:
     assertEquals("Publish Date (5)\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getTopChildren(10, "Publish Date").toString());
@@ -118,7 +118,7 @@ public class TestTaxonomyFacets extends FacetTestCase {
     q2.add(new FacetLabel("Publish Date", "2010"));
     c = new SimpleFacetsCollector();
     searcher.search(q2, c);
-    facets = new TaxonomyFacetCounts(taxoReader, fts, c);
+    facets = new FastTaxonomyFacetCounts(taxoReader, fts, c);
     assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", facets.getTopChildren(10, "Author").toString());
 
     assertEquals(1, facets.getSpecificValue("Author", "Lisa"));
@@ -185,7 +185,16 @@ public class TestTaxonomyFacets extends FacetTestCase {
     SimpleFacetsCollector c = new SimpleFacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
 
-    TaxonomyFacetCounts facets = new TaxonomyFacetCounts(taxoReader, new FacetsConfig(), c);
+    Facets facets;
+    if (random().nextBoolean()) {
+      facets = new FastTaxonomyFacetCounts(taxoReader, new FacetsConfig(), c);
+    } else {
+      OrdinalsReader ordsReader = new DocValuesOrdinalsReader();
+      if (random().nextBoolean()) {
+        ordsReader = new CachedOrdinalsReader(ordsReader);
+      }
+      facets = new TaxonomyFacetCounts(ordsReader, taxoReader, new FacetsConfig(), c);
+    }
 
     // Ask for top 10 labels for any dims that have counts:
     List<SimpleFacetResult> results = facets.getAllDims(10);

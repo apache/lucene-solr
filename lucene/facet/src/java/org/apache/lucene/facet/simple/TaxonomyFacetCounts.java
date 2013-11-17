@@ -31,24 +31,24 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IntsRef;
 
-// nocommit jdoc that this assumes/requires the default encoding
+/** Reads from any {@link OrdinalsReader}; use {@link
+ *  FastTaxonomyFacetCounts} if you are just using the
+ *  default encoding from {@link BinaryDocValues}. */
+
 public class TaxonomyFacetCounts extends Facets {
+  private final OrdinalsReader ordinalsReader;
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
   private final int[] counts;
-  private final String facetsFieldName;
   private final int[] children;
   private final int[] parents;
   private final int[] siblings;
 
-  public TaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
-    this(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, taxoReader, facetsConfig, fc);
-  }
-
-  public TaxonomyFacetCounts(String facetsFieldName, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
+  public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
     this.taxoReader = taxoReader;
-    this.facetsFieldName = facetsFieldName;
+    this.ordinalsReader = ordinalsReader;
     this.facetsConfig = facetsConfig;
     ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
     children = pta.children();
@@ -60,35 +60,17 @@ public class TaxonomyFacetCounts extends Facets {
 
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
     //System.out.println("count matchingDocs=" + matchingDocs + " facetsField=" + facetsFieldName);
+    IntsRef scratch  = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
-      BinaryDocValues dv = hits.context.reader().getBinaryDocValues(facetsFieldName);
-      if (dv == null) { // this reader does not have DocValues for the requested category list
-        continue;
-      }
+      OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
       FixedBitSet bits = hits.bits;
     
       final int length = hits.bits.length();
       int doc = 0;
-      BytesRef scratch = new BytesRef();
-      //System.out.println("count seg=" + hits.context.reader());
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
-        //System.out.println("  doc=" + doc);
-        dv.get(doc, scratch);
-        byte[] bytes = scratch.bytes;
-        int end = scratch.offset + scratch.length;
-        int ord = 0;
-        int offset = scratch.offset;
-        int prev = 0;
-        while (offset < end) {
-          byte b = bytes[offset++];
-          if (b >= 0) {
-            prev = ord = ((ord << 7) | b) + prev;
-            assert ord < counts.length: "ord=" + ord + " vs maxOrd=" + counts.length;
-            ++counts[ord];
-            ord = 0;
-          } else {
-            ord = (ord << 7) | (b & 0x7F);
-          }
+        ords.get(doc, scratch);
+        for(int i=0;i<scratch.length;i++) {
+          ++counts[scratch.ints[i]];
         }
         ++doc;
       }

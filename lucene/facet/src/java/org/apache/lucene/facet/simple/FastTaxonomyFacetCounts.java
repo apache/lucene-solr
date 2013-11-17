@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,81 +29,66 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.IntsRef;
-
-/** Aggregates sum of values from a {@link ValueSource}, for
- *  each facet label. */
 
 // nocommit jdoc that this assumes/requires the default encoding
-
-public class TaxonomyFacetSumValueSource extends Facets {
+public class FastTaxonomyFacetCounts extends Facets {
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
-  private final float[] values;
+  private final int[] counts;
+  private final String facetsFieldName;
   private final int[] children;
   private final int[] parents;
   private final int[] siblings;
-  private final OrdinalsReader ordinalsReader;
 
-  public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig facetsConfig,
-                                     SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
-    this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME), taxoReader, facetsConfig, fc, valueSource);
+  public FastTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
+    this(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, taxoReader, facetsConfig, fc);
   }
 
-  public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
-                                     FacetsConfig facetsConfig, SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
+  public FastTaxonomyFacetCounts(String facetsFieldName, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
     this.taxoReader = taxoReader;
-    this.ordinalsReader = ordinalsReader;
+    this.facetsFieldName = facetsFieldName;
     this.facetsConfig = facetsConfig;
     ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
     children = pta.children();
     parents = pta.parents();
     siblings = pta.siblings();
-    values = new float[taxoReader.getSize()];
-    sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource);
+    counts = new int[taxoReader.getSize()];
+    count(fc.getMatchingDocs());
   }
 
-  private static final class FakeScorer extends Scorer {
-    float score;
-    int docID;
-    FakeScorer() { super(null); }
-    @Override public float score() throws IOException { return score; }
-    @Override public int freq() throws IOException { throw new UnsupportedOperationException(); }
-    @Override public int docID() { return docID; }
-    @Override public int nextDoc() throws IOException { throw new UnsupportedOperationException(); }
-    @Override public int advance(int target) throws IOException { throw new UnsupportedOperationException(); }
-    @Override public long cost() { return 0; }
-  }
-
-  private final void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, ValueSource valueSource) throws IOException {
-    final FakeScorer scorer = new FakeScorer();
-    Map<String, Scorer> context = new HashMap<String, Scorer>();
-    context.put("scorer", scorer);
-    IntsRef scratch = new IntsRef();
+  private final void count(List<MatchingDocs> matchingDocs) throws IOException {
+    //System.out.println("count matchingDocs=" + matchingDocs + " facetsField=" + facetsFieldName);
     for(MatchingDocs hits : matchingDocs) {
-      OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
+      BinaryDocValues dv = hits.context.reader().getBinaryDocValues(facetsFieldName);
+      if (dv == null) { // this reader does not have DocValues for the requested category list
+        continue;
+      }
       FixedBitSet bits = hits.bits;
     
       final int length = hits.bits.length();
       int doc = 0;
-      int scoresIdx = 0;
-      float[] scores = hits.scores;
-
-      FunctionValues functionValues = valueSource.getValues(context, hits.context);
+      BytesRef scratch = new BytesRef();
+      //System.out.println("count seg=" + hits.context.reader());
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
-        ords.get(doc, scratch);
-        if (keepScores) {
-          scorer.docID = doc;
-          scorer.score = scores[scoresIdx++];
-        }
-        float value = (float) functionValues.doubleVal(doc);
-        for(int i=0;i<scratch.length;i++) {
-          values[scratch.ints[i]] += value;
+        //System.out.println("  doc=" + doc);
+        dv.get(doc, scratch);
+        byte[] bytes = scratch.bytes;
+        int end = scratch.offset + scratch.length;
+        int ord = 0;
+        int offset = scratch.offset;
+        int prev = 0;
+        while (offset < end) {
+          byte b = bytes[offset++];
+          if (b >= 0) {
+            prev = ord = ((ord << 7) | b) + prev;
+            assert ord < counts.length: "ord=" + ord + " vs maxOrd=" + counts.length;
+            ++counts[ord];
+            ord = 0;
+          } else {
+            ord = (ord << 7) | (b & 0x7F);
+          }
         }
         ++doc;
       }
@@ -118,30 +102,35 @@ public class TaxonomyFacetSumValueSource extends Facets {
       FacetsConfig.DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
         int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
-        assert dimRootOrd > 0;
-        values[dimRootOrd] += rollup(children[dimRootOrd]);
+        // It can be -1 if this field was declared in the
+        // facetsConfig but never indexed:
+        if (dimRootOrd > 0) {
+          counts[dimRootOrd] += rollup(children[dimRootOrd]);
+        }
       }
     }
   }
 
-  private float rollup(int ord) {
-    float sum = 0;
+  private int rollup(int ord) {
+    int sum = 0;
     while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      float childValue = values[ord] + rollup(children[ord]);
-      values[ord] = childValue;
+      int childValue = counts[ord] + rollup(children[ord]);
+      counts[ord] = childValue;
       sum += childValue;
       ord = siblings[ord];
     }
     return sum;
   }
 
+  /** Return the count for a specific path.  Returns -1 if
+   *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
     if (ord < 0) {
       return -1;
     }
-    return values[ord];
+    return counts[ord];
   }
 
   @Override
@@ -149,6 +138,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
     FacetLabel cp = FacetLabel.create(dim, path);
     int ord = taxoReader.getOrdinal(cp);
     if (ord == -1) {
+      //System.out.println("no ord for path=" + path);
       return null;
     }
     return getTopChildren(cp, ord, topN);
@@ -156,26 +146,26 @@ public class TaxonomyFacetSumValueSource extends Facets {
 
   private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
-    TopOrdValueQueue q = new TopOrdValueQueue(topN);
+    TopOrdCountQueue q = new TopOrdCountQueue(topN);
     
-    float bottomValue = 0;
+    int bottomCount = 0;
 
     int ord = children[dimOrd];
-    float sumValues = 0;
+    int totCount = 0;
 
-    TopOrdValueQueue.OrdAndValue reuse = null;
+    TopOrdCountQueue.OrdAndCount reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
-      if (values[ord] > 0) {
-        sumValues += values[ord];
-        if (values[ord] > bottomValue) {
+      if (counts[ord] > 0) {
+        totCount += counts[ord];
+        if (counts[ord] > bottomCount) {
           if (reuse == null) {
-            reuse = new TopOrdValueQueue.OrdAndValue();
+            reuse = new TopOrdCountQueue.OrdAndCount();
           }
           reuse.ord = ord;
-          reuse.value = values[ord];
+          reuse.count = counts[ord];
           reuse = q.insertWithOverflow(reuse);
           if (q.size() == topN) {
-            bottomValue = q.top().value;
+            bottomCount = q.top().count;
           }
         }
       }
@@ -183,23 +173,26 @@ public class TaxonomyFacetSumValueSource extends Facets {
       ord = siblings[ord];
     }
 
-    if (sumValues == 0) {
+    if (totCount == 0) {
+      //System.out.println("totCount=0 for path=" + path);
       return null;
     }
 
     FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
+    // nocommit shouldn't we verify the indexedFieldName
+    // matches what was passed to our ctor?
     if (ft.hierarchical && ft.multiValued) {
-      sumValues = values[dimOrd];
+      totCount = counts[dimOrd];
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdValueQueue.OrdAndValue ordAndValue = q.pop();
-      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
+      TopOrdCountQueue.OrdAndCount ordAndCount = q.pop();
+      FacetLabel child = taxoReader.getPath(ordAndCount.ord);
+      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndCount.count);
     }
 
-    return new SimpleFacetResult(path, sumValues, labelValues);
+    return new SimpleFacetResult(path, totCount, labelValues);
   }
 
   @Override
@@ -219,9 +212,9 @@ public class TaxonomyFacetSumValueSource extends Facets {
                      new Comparator<SimpleFacetResult>() {
                        @Override
                        public int compare(SimpleFacetResult a, SimpleFacetResult b) {
-                         if (a.value.floatValue() > b.value.floatValue()) {
+                         if (a.value.intValue() > b.value.intValue()) {
                            return -1;
-                         } else if (b.value.floatValue() > a.value.floatValue()) {
+                         } else if (b.value.intValue() > a.value.intValue()) {
                            return 1;
                          } else {
                            // Tie break by dimension
