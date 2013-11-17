@@ -32,6 +32,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
+// nocommit jdoc that this assumes/requires the default encoding
 public class TaxonomyFacetCounts extends Facets {
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
@@ -178,6 +179,8 @@ public class TaxonomyFacetCounts extends Facets {
     }
 
     FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
+    // nocommit shouldn't we verify the indexedFieldName
+    // matches what was passed to our ctor?
     if (ft.hierarchical && ft.multiValued) {
       totCount = counts[dimOrd];
     }

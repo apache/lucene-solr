@@ -39,6 +39,8 @@ import org.apache.lucene.util.FixedBitSet;
 /** Aggregates sum of values from a {@link ValueSource}, for
  *  each facet label. */
 
+// nocommit jdoc that this assumes/requires the default encoding
+
 public class TaxonomyFacetSumValueSource extends Facets {
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
