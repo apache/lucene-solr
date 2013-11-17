@@ -16,23 +16,20 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.regex.Pattern;
+import java.util.List;
 
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
@@ -69,72 +66,40 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     // Make sure the upgrade to managed schema happened
     assertEquals("Schema resource name differs from expected name", "managed-schema", collectionSchema);
-    
-    // Make sure "DO NOT EDIT" is in the content of the managed schema
-    String fileContent = getFileContentFromZooKeeper("managed-schema");
-    assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
-    
-    // Make sure the original non-managed schema is no longer in ZooKeeper
-    assertFileNotInZooKeeper("schema.xml");
 
-    // Make sure the renamed non-managed schema is present in ZooKeeper
-    fileContent = getFileContentFromZooKeeper("schema.xml.bak");
-    assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
-  }
-  
-  private String getFileContentFromZooKeeper(String fileName) throws IOException, SolrServerException {
-    QueryRequest request = new QueryRequest(params("file", fileName));
-    request.setPath("/admin/file");
-    RawResponseParser responseParser = new RawResponseParser();
-    request.setResponseParser(responseParser);
-    int which = r.nextInt(clients.size());
-    // For some reason, /admin/file requests work without stripping the /collection1 step from the URL
-    // (unlike /admin/cores requests - see above)
-    SolrServer client = clients.get(which);
-    client.request(request);
-    return responseParser.getRawFileContent();   
-  }
-  
-  private class RawResponseParser extends ResponseParser {
-    // Stolen from ShowFileRequestHandlerTest
-    private String rawFileContent = null;
-    String getRawFileContent() { return rawFileContent; }
-    @Override
-    public String getWriterType() {
-      return "mock";//unfortunately this gets put onto params wt=mock but it apparently has no effect
-    }
-    @Override
-    public NamedList<Object> processResponse(InputStream body, String encoding) {
-      try {
-        rawFileContent = IOUtils.toString(body, encoding);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      return null;
-    }
-    @Override
-    public NamedList<Object> processResponse(Reader reader) {
-      throw new UnsupportedOperationException("TODO unimplemented");//TODO
-    }
-  }
-
-  protected final void assertFileNotInZooKeeper(String fileName) throws Exception {
-    // Stolen from AbstractBadConfigTestBase
-    String errString = "Not Found";
-    ignoreException(Pattern.quote(errString));
-    String rawContent = null;
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000);
     try {
-      rawContent = getFileContentFromZooKeeper(fileName);
-    } catch (Exception e) {
-      // short circuit out if we found what we expected
-      if (-1 != e.getMessage().indexOf(errString)) return;
-      // otherwise, rethrow it, possibly completely unrelated
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-                              "Unexpected error, expected error matching: " + errString, e);
+      // Make sure "DO NOT EDIT" is in the content of the managed schema
+      String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema");
+      assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
+
+      // Make sure the original non-managed schema is no longer in ZooKeeper
+      assertFileNotInZooKeeper(zkClient, "/solr/configs/conf1", "schema.xml");
+
+      // Make sure the renamed non-managed schema is present in ZooKeeper
+      fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
+      assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
     } finally {
-      resetExceptionIgnores();
+      if (zkClient != null) {
+        zkClient.close();
+      }
     }
-    fail("File '" + fileName + "' was unexpectedly found in ZooKeeper.  Content starts with '" 
-        + rawContent.substring(0, 100) + " [...]'");
+  }
+  
+  private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
+      throws IOException, SolrServerException, KeeperException, InterruptedException {
+
+    return (new String(zkClient.getData(fileName, null, null, true), "UTF-8"));
+
+  }
+  protected final void assertFileNotInZooKeeper(SolrZkClient zkClient, String parent, String fileName) throws Exception {
+    List<String> kids = zkClient.getChildren(parent, null, true);
+    for (String kid : kids) {
+      if (kid.equalsIgnoreCase(fileName)) {
+        String rawContent = new String(zkClient.getData(fileName, null, null, true), "UTF-8");
+        fail("File '" + fileName + "' was unexpectedly found in ZooKeeper.  Content starts with '"
+            + rawContent.substring(0, 100) + " [...]'");
+      }
+    }
   }
 }
