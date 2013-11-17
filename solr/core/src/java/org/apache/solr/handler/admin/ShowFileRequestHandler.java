@@ -36,6 +36,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,13 +172,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       if (fname == null) {
         rsp.setException(new SolrException(ErrorCode.BAD_REQUEST, "No file name specified for write operation."));
       } else {
-        if (coreContainer.isZooKeeperAware()) {
-          if (isHiddenFile(rsp, fname) == false) {
+        fname = fname.replace('\\', '/');
+        if (isHiddenFile(req, rsp, fname, true) == false) {
+          if (coreContainer.isZooKeeperAware()) {
             writeToZooKeeper(req, rsp, coreContainer);
-          }
-        } else {
-          fname = fname.replace('\\', '/'); // normalize slashes. Should be done above too?
-          if (isHiddenFile(rsp, fname) == false) {
+          } else {
             writeToFileSystem(req, rsp);
           }
         }
@@ -186,20 +186,37 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   // See if we should deal with this file
 
-  private boolean isHiddenFile(SolrQueryResponse rsp, String fnameIn) {
+  private boolean isHiddenFile(SolrQueryRequest req, SolrQueryResponse rsp, String fnameIn, boolean reportError) {
     String fname = fnameIn.toUpperCase(Locale.ROOT);
     if (hiddenFiles.contains(fname) || hiddenFiles.contains("*")) {
-      log.error("Cannot access " + fname);
-      rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
+      if (reportError) {
+        log.error("Cannot access " + fname);
+        rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
+      }
       return true;
     }
 
     // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth the effort though
     // to fix it to handle all possibilities though.
     if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
-      log.error("Invalid path: " + fname);
-      rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
+      if (reportError) {
+        log.error("Invalid path: " + fname);
+        rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
+      }
       return true;
+    }
+
+    // Make sure that if the schema is managed, we don't allow editing. Don't really want to put
+    // this in the init since we're not entirely sure when the managed schema will get initialized relative to this
+    // handler.
+    SolrCore core = req.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    if (schema instanceof ManagedIndexSchema) {
+      String managed = schema.getResourceName();
+
+      if (fname.equalsIgnoreCase(managed)) {
+        return true;
+      }
     }
     return false;
   }
@@ -223,7 +240,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       adminFile = confPath;
     } else {
       fname = fname.replace('\\', '/'); // normalize slashes
-      if (isHiddenFile(rsp, fname)) {
+      if (isHiddenFile(req, rsp, fname, true)) {
         return null;
       }
       if (fname.startsWith("/")) { // Only files relative to conf are valid
@@ -291,7 +308,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
       for (String f : children) {
-        if (isHiddenFile(rsp, f)) {
+        if (isHiddenFile(req, rsp, f, false)) {
           continue;
         }
 
@@ -452,13 +469,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       for( File f : adminFile.listFiles() ) {
         String path = f.getAbsolutePath().substring( basePath );
         path = path.replace( '\\', '/' ); // normalize slashes
-        if( hiddenFiles.contains( path.toUpperCase(Locale.ROOT) ) ) {
-          continue; // don't show 'hidden' files
+
+        if (isHiddenFile(req, rsp, f.getName().replace('\\', '/'), false)) {
+          continue;
         }
-        if( f.isHidden() || f.getName().startsWith( "." ) ) {
-          continue; // skip hidden system files...
-        }
-        
+
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<Object>();
         files.add( path, fileInfo );
         if( f.isDirectory() ) {
@@ -480,7 +495,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       req.setParams(params);
 
       ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
-      content.setContentType( req.getParams().get( USE_CONTENT_TYPE ) );
+      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
 
       rsp.add(RawResponseWriter.CONTENT, content);
     }
