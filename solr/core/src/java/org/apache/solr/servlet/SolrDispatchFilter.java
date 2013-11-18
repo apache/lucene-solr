@@ -500,7 +500,11 @@ public class SolrDispatchFilter implements Filter
       con.setRequestMethod(req.getMethod());
       con.setUseCaches(false);
       
-      con.setDoOutput(true);
+      boolean isPostRequest = "POST".equals(req.getMethod());
+      
+      if (isPostRequest) {
+        con.setDoOutput(true);
+      }
       con.setDoInput(true);
       for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements();) {
         String headerName = e.nextElement();
@@ -511,7 +515,7 @@ public class SolrDispatchFilter implements Filter
 
         InputStream is;
         OutputStream os;
-        if ("POST".equals(req.getMethod())) {
+        if (isPostRequest) {
           is = req.getInputStream();
           os = con.getOutputStream(); // side effect: method is switched to POST
           try {
