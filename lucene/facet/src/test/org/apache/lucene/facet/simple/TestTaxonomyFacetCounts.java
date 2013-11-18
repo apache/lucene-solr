@@ -48,7 +48,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 
-public class TestTaxonomyFacets extends FacetTestCase {
+public class TestTaxonomyFacetCounts extends FacetTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();

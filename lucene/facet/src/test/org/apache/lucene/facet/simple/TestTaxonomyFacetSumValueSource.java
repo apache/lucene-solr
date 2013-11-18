@@ -52,7 +52,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 
-public class TestTaxonomyFacetsSumValueSource extends FacetTestCase {
+public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
   public void testBasic() throws Exception {
 

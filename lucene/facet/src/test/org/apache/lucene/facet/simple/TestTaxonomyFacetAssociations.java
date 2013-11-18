@@ -44,7 +44,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Test for associations */
-public class TestAssociationFacets extends FacetTestCase {
+public class TestTaxonomyFacetAssociations extends FacetTestCase {
   
   private static Directory dir;
   private static IndexReader reader;
@@ -113,7 +113,7 @@ public class TestAssociationFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
 
-    Facets facets = new SumIntAssociationFacets("$facets.int", taxoReader, config, fc);
+    Facets facets = new TaxonomyFacetSumIntAssociations("$facets.int", taxoReader, config, fc);
     
     assertEquals("Wrong count for category 'a'!", 200, facets.getSpecificValue("int", "a").intValue());
     assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
@@ -125,7 +125,7 @@ public class TestAssociationFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
     
-    Facets facets = new SumFloatAssociationFacets("$facets.float", taxoReader, config, fc);
+    Facets facets = new TaxonomyFacetSumFloatAssociations("$facets.float", taxoReader, config, fc);
     assertEquals("Wrong count for category 'a'!", 50f, facets.getSpecificValue("float", "a").floatValue(), 0.00001);
     assertEquals("Wrong count for category 'b'!", 10f, facets.getSpecificValue("float", "b").floatValue(), 0.00001);
   }  
@@ -138,11 +138,11 @@ public class TestAssociationFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
     
-    Facets facets = new SumFloatAssociationFacets("$facets.float", taxoReader, config, fc);
+    Facets facets = new TaxonomyFacetSumFloatAssociations("$facets.float", taxoReader, config, fc);
     assertEquals("Wrong count for category 'a'!", 50f, facets.getSpecificValue("float", "a").floatValue(), 0.00001);
     assertEquals("Wrong count for category 'b'!", 10f, facets.getSpecificValue("float", "b").floatValue(), 0.00001);
     
-    facets = new SumIntAssociationFacets("$facets.int", taxoReader, config, fc);
+    facets = new TaxonomyFacetSumIntAssociations("$facets.int", taxoReader, config, fc);
     assertEquals("Wrong count for category 'a'!", 200, facets.getSpecificValue("int", "a").intValue());
     assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
   }
@@ -152,7 +152,7 @@ public class TestAssociationFacets extends FacetTestCase {
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
-    Facets facets = new SumFloatAssociationFacets(taxoReader, config, fc);
+    Facets facets = new TaxonomyFacetSumFloatAssociations(taxoReader, config, fc);
     try {
       facets.getSpecificValue("float");
       fail("should have hit exc");

@@ -32,16 +32,15 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
-// nocommit rename to TaxonomySumFloatAssociationFacets
 // nocommit jdoc that this assumes/requires the default encoding
-public class SumFloatAssociationFacets extends TaxonomyFacets {
+public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
   private final float[] values;
 
-  public SumFloatAssociationFacets(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
+  public TaxonomyFacetSumFloatAssociations(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
     this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, taxoReader, config, fc);
   }
 
-  public SumFloatAssociationFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
+  public TaxonomyFacetSumFloatAssociations(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
     super(indexFieldName, taxoReader, config);
     values = new float[taxoReader.getSize()];
     sumValues(fc.getMatchingDocs());
