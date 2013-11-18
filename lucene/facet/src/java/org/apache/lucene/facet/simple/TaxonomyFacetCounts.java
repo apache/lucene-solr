@@ -129,26 +129,26 @@ public class TaxonomyFacetCounts extends Facets {
 
   private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
-    TopOrdCountQueue q = new TopOrdCountQueue(topN);
+    TopOrdAndIntQueue q = new TopOrdAndIntQueue(topN);
     
     int bottomCount = 0;
 
     int ord = children[dimOrd];
     int totCount = 0;
 
-    TopOrdCountQueue.OrdAndCount reuse = null;
+    TopOrdAndIntQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
       if (counts[ord] > 0) {
         totCount += counts[ord];
         if (counts[ord] > bottomCount) {
           if (reuse == null) {
-            reuse = new TopOrdCountQueue.OrdAndCount();
+            reuse = new TopOrdAndIntQueue.OrdAndValue();
           }
           reuse.ord = ord;
-          reuse.count = counts[ord];
+          reuse.value = counts[ord];
           reuse = q.insertWithOverflow(reuse);
           if (q.size() == topN) {
-            bottomCount = q.top().count;
+            bottomCount = q.top().value;
           }
         }
       }
@@ -170,9 +170,9 @@ public class TaxonomyFacetCounts extends Facets {
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdCountQueue.OrdAndCount ordAndCount = q.pop();
-      FacetLabel child = taxoReader.getPath(ordAndCount.ord);
-      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndCount.count);
+      TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
+      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
+      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }
 
     return new SimpleFacetResult(path, totCount, labelValues);

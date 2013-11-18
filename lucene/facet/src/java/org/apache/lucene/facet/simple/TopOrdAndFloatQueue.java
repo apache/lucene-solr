@@ -21,15 +21,16 @@ import org.apache.lucene.util.PriorityQueue;
 
 // nocommit make value a double and merge with TopOrdCountValueQueue?
 
-/** Keeps highest results. */
-class TopOrdValueQueue extends PriorityQueue<TopOrdValueQueue.OrdAndValue> {
+/** Keeps highest results, first by largest float value,
+ *  then tie break by smallest ord. */
+class TopOrdAndFloatQueue extends PriorityQueue<TopOrdAndFloatQueue.OrdAndValue> {
 
   public static final class OrdAndValue {
     int ord;
     float value;
   }
 
-  public TopOrdValueQueue(int topN) {
+  public TopOrdAndFloatQueue(int topN) {
     super(topN, false);
   }
 

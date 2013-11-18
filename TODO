@@ -2,7 +2,6 @@ nocommit this!
 
 TODO
   - associations
-    - make SumFloat too
   - cutover taxo writer/reader to pathToString/stringToPath
   - wrap an IW instead of extending one?  or, FacetDocument?
   - re-enable ALL_BUT_DIM somehow?

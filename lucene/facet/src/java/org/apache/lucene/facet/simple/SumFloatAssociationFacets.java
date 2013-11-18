@@ -151,20 +151,20 @@ public class SumFloatAssociationFacets extends Facets {
 
   private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
-    TopOrdValueQueue q = new TopOrdValueQueue(topN);
+    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(topN);
     
     float bottomValue = 0;
 
     int ord = children[dimOrd];
     float sumValue = 0;
 
-    TopOrdValueQueue.OrdAndValue reuse = null;
+    TopOrdAndFloatQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
       if (values[ord] > 0) {
         sumValue += values[ord];
         if (values[ord] > bottomValue) {
           if (reuse == null) {
-            reuse = new TopOrdValueQueue.OrdAndValue();
+            reuse = new TopOrdAndFloatQueue.OrdAndValue();
           }
           reuse.ord = ord;
           reuse.value = values[ord];
@@ -194,7 +194,7 @@ public class SumFloatAssociationFacets extends Facets {
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdValueQueue.OrdAndValue ordAndValue = q.pop();
+      TopOrdAndFloatQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }

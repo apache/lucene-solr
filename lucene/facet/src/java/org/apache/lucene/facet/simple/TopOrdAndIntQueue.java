@@ -19,25 +19,24 @@ package org.apache.lucene.facet.simple;
 
 import org.apache.lucene.util.PriorityQueue;
 
-// nocommit rename to TopOrdIntQueue?
+/** Keeps highest results, first by largest int value,
+ *  then tie break by smallest ord. */
+class TopOrdAndIntQueue extends PriorityQueue<TopOrdAndIntQueue.OrdAndValue> {
 
-/** Keeps highest count results. */
-class TopOrdCountQueue extends PriorityQueue<TopOrdCountQueue.OrdAndCount> {
-
-  public static final class OrdAndCount {
+  public static final class OrdAndValue {
     int ord;
-    int count;
+    int value;
   }
 
-  public TopOrdCountQueue(int topN) {
+  public TopOrdAndIntQueue(int topN) {
     super(topN, false);
   }
 
   @Override
-  protected boolean lessThan(OrdAndCount a, OrdAndCount b) {
-    if (a.count < b.count) {
+  protected boolean lessThan(OrdAndValue a, OrdAndValue b) {
+    if (a.value < b.value) {
       return true;
-    } else if (a.count > b.count) {
+    } else if (a.value > b.value) {
       return false;
     } else {
       return a.ord > b.ord;

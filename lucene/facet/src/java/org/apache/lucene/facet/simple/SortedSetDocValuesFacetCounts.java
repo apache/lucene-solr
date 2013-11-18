@@ -85,13 +85,13 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
   private final SimpleFacetResult getDim(String dim, OrdRange ordRange, int topN) {
 
-    TopOrdCountQueue q = null;
+    TopOrdAndIntQueue q = null;
 
     int bottomCount = 0;
 
     int dimCount = 0;
 
-    TopOrdCountQueue.OrdAndCount reuse = null;
+    TopOrdAndIntQueue.OrdAndValue reuse = null;
     //System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
     for(int ord=ordRange.start; ord<=ordRange.end; ord++) {
       //System.out.println("  ord=" + ord + " count=" + counts[ord]);
@@ -99,18 +99,18 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         dimCount += counts[ord];
         if (counts[ord] > bottomCount) {
           if (reuse == null) {
-            reuse = new TopOrdCountQueue.OrdAndCount();
+            reuse = new TopOrdAndIntQueue.OrdAndValue();
           }
           reuse.ord = ord;
-          reuse.count = counts[ord];
+          reuse.value = counts[ord];
           if (q == null) {
             // Lazy init, so we don't create this for the
             // sparse case unnecessarily
-            q = new TopOrdCountQueue(topN);
+            q = new TopOrdAndIntQueue(topN);
           }
           reuse = q.insertWithOverflow(reuse);
           if (q.size() == topN) {
-            bottomCount = q.top().count;
+            bottomCount = q.top().value;
           }
         }
       }
@@ -124,10 +124,10 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdCountQueue.OrdAndCount ordAndCount = q.pop();
-      dv.lookupOrd(ordAndCount.ord, scratch);
+      TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
+      dv.lookupOrd(ordAndValue.ord, scratch);
       String s = scratch.utf8ToString();
-      labelValues[i] = new LabelAndValue(s.substring(dim.length()+1, s.length()), ordAndCount.count);
+      labelValues[i] = new LabelAndValue(s.substring(dim.length()+1, s.length()), ordAndValue.value);
     }
 
     return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues);
