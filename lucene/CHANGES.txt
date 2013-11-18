@@ -93,38 +93,8 @@ New Features
 
 Bug Fixes
 
-* LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
-  of IOContext.READ (Shikhar Bhushan via Mike McCandless)
-
-* LUCENE-5242: DirectoryTaxonomyWriter.replaceTaxonomy did not fully reset
-  its state, which could result in exceptions being thrown, as well as
-  incorrect ordinals returned from getParent. (Shai Erera)
-
-* LUCENE-5254: Fixed bounded memory leak, where objects like live
-  docs bitset were not freed from an starting reader after reopening
-  to a new reader and closing the original one.  (Shai Erera, Mike
-  McCandless)
-
-* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an 
-  NRT reader hit exceptions. (Shai Erera)
-
-* LUCENE-5263: Transient IOExceptions, e.g. due to disk full or file
-  descriptor exhaustion, hit at unlucky times inside IndexWriter could
-  lead to silently losing deletions. (Shai Erera, Mike McCandless)
-
-* LUCENE-5264: CommonTermsQuery ignored minMustMatch if only high-frequent
-  terms were present in the query and the high-frequent operator was set
-  to SHOULD. (Simon Willnauer)
-
-* LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
-  unicode characters incorrectly. (Mike McCandless, Robert Muir)
-
 * LUCENE-5272: OpenBitSet.ensureCapacity did not modify numBits, causing 
   false assertion errors in fastSet. (Shai Erera)
-
-* LUCENE-5289: IndexWriter.hasUncommittedChanges was returning false
-  when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
-  Mike McCandless)
 
 * LUCENE-5303: OrdinalsCache did not use coreCacheKey, resulting in
   over caching across multiple threads. (Mike McCandless, Shai Erera)
@@ -234,6 +204,40 @@ Tests
   patterns. Previously it could only behave like CharTokenizer (where a character
   is either a "word" character or not), but now it gives a general longest-match
   behavior.  (Nik Everett via Robert Muir)
+
+======================= Lucene 4.5.1 =======================
+
+Bug Fixes
+
+* LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
+  of IOContext.READ (Shikhar Bhushan via Mike McCandless)
+
+* LUCENE-5242: DirectoryTaxonomyWriter.replaceTaxonomy did not fully reset
+  its state, which could result in exceptions being thrown, as well as
+  incorrect ordinals returned from getParent. (Shai Erera)
+
+* LUCENE-5254: Fixed bounded memory leak, where objects like live
+  docs bitset were not freed from an starting reader after reopening
+  to a new reader and closing the original one.  (Shai Erera, Mike
+  McCandless)
+
+* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an
+  NRT reader hit exceptions. (Shai Erera)
+
+* LUCENE-5263: Transient IOExceptions, e.g. due to disk full or file
+  descriptor exhaustion, hit at unlucky times inside IndexWriter could
+  lead to silently losing deletions. (Shai Erera, Mike McCandless)
+
+* LUCENE-5264: CommonTermsQuery ignored minMustMatch if only high-frequent
+  terms were present in the query and the high-frequent operator was set
+  to SHOULD. (Simon Willnauer)
+
+* LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
+  unicode characters incorrectly. (Mike McCandless, Robert Muir)
+
+* LUCENE-5289: IndexWriter.hasUncommittedChanges was returning false
+  when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
+  Mike McCandless)
 
 ======================= Lucene 4.5.0 =======================
 
