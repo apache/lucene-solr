@@ -89,6 +89,8 @@ New Features
 
 * SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)
 
+* SOLR-5456: Admin UI - Allow creating new Files (steffkes)
+
 Bug Fixes
 ----------------------
 

@@ -17,15 +17,47 @@ limitations under the License.
 
 */
 
-#content #files #tree
+#content #files #tree-holder
 {
   float: left;
   width: 20%;
 }
 
-#content #files .show #tree
+#content #files #new-file-holder
 {
-  overflow: hidden;
+  margin-top: 20px;
+  padding-bottom: 10px;
+}
+
+#content #files #new-file-holder button span
+{
+  background-image: url( ../../img/ico/plus-button.png );
+}
+
+#content #files #new-file-holder form
+{
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  display: none;
+  padding: 10px;
+}
+
+#content #files #new-file-holder form input
+{
+  margin-bottom: 3px;
+  width: 98%;
+}
+
+#content #files #new-file-holder .note
+{
+  color: #c0c0c0;
+  margin-bottom: 5px;
+}
+
+#content #files form .buttons button
+{
+  float: right;
 }
 
 #content #files #file-content
@@ -42,31 +74,15 @@ limitations under the License.
   display: block;
 }
 
-#content #files #file-content .close
+#content #files #new-file-note
 {
-  background-image: url( ../../img/ico/cross-0.png );
-  background-position: 50% 50%;
-  display: block;
-  height: 20px;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 20px;
-}
-
-#content #files #file-content .close:hover
-{
-  background-image: url( ../../img/ico/cross-1.png );
-}
-
-#content #files #file-content .close span
-{
+  background-color: #ffa662;
+  background-image: url( ../../img/ico/exclamation-button.png );
+  background-position: 10px 50%;
   display: none;
-}
-
-#content #files #file-content form .buttons button
-{
-  float: right;
+  margin-bottom: 10px;
+  padding: 10px;
+  padding-left: 31px;
 }
 
 #content #files #file-content textarea
