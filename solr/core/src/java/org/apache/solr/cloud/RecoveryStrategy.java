@@ -19,12 +19,14 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -41,6 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
@@ -161,6 +164,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         RefCounted<SolrIndexSearcher> searchHolder = core
             .getNewestSearcher(false);
         SolrIndexSearcher searcher = searchHolder.get();
+        Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
         try {
           log.debug(core.getCoreDescriptor().getCoreContainer()
               .getZkController().getNodeName()
@@ -170,8 +174,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               + leaderUrl
               + " gen:"
               + core.getDeletionPolicy().getLatestCommit().getGeneration()
-              + " data:" + core.getDataDir());
+              + " data:" + core.getDataDir()
+              + " index:" + core.getIndexDir()
+              + " newIndex:" + core.getNewIndexDir()
+              + " files:" + Arrays.asList(dir.listAll()));
         } finally {
+          core.getDirectoryFactory().release(dir);
           searchHolder.decref();
         }
       } catch (Exception e) {
