@@ -226,6 +226,8 @@ Bug Fixes
   unloaded results in a " Too many close [count:-1]" error.
   (Olivier Soyez via Erick Erickson)
 
+* SOLR-5397: Replication can fail silently in some cases. (Mark Miller)
+
 Optimizations
 ----------------------  
 
