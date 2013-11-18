@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -66,6 +67,9 @@ public class FacetIndexWriter extends IndexWriter {
     // ... and also all SortedSetDocValuesFacetFields:
     Map<String,List<SortedSetDocValuesFacetField>> dvByField = new HashMap<String,List<SortedSetDocValuesFacetField>>();
 
+    // ... and also all AssociationFacetFields
+    Map<String,List<AssociationFacetField>> assocByField = new HashMap<String,List<AssociationFacetField>>();
+
     for(IndexableField field : doc.indexableFields()) {
       if (field.fieldType() == FacetField.TYPE) {
         FacetField facetField = (FacetField) field;
@@ -90,6 +94,20 @@ public class FacetIndexWriter extends IndexWriter {
         }
         fields.add(facetField);
       }
+
+      if (field.fieldType() == AssociationFacetField.TYPE) {
+        AssociationFacetField facetField = (AssociationFacetField) field;
+        FacetsConfig.DimConfig dimConfig = facetsConfig.getDimConfig(field.name());
+
+        // nocommit how to use a different default name for assocs?
+        String indexedFieldName = dimConfig.indexedFieldName;
+        List<AssociationFacetField> fields = assocByField.get(indexedFieldName);
+        if (fields == null) {
+          fields = new ArrayList<AssociationFacetField>();
+          assocByField.put(indexedFieldName, fields);
+        }
+        fields.add(facetField);
+      }
     }
 
     List<Field> addedIndexedFields = new ArrayList<Field>();
@@ -97,13 +115,14 @@ public class FacetIndexWriter extends IndexWriter {
 
     processFacetFields(byField, addedIndexedFields, addedStoredFields);
     processSSDVFacetFields(dvByField, addedIndexedFields, addedStoredFields);
+    processAssocFacetFields(assocByField, addedIndexedFields, addedStoredFields);
 
     //System.out.println("add stored: " + addedStoredFields);
 
     final List<IndexableField> allIndexedFields = new ArrayList<IndexableField>();
     for(IndexableField field : doc.indexableFields()) {
       IndexableFieldType ft = field.fieldType();
-      if (ft != FacetField.TYPE && ft != SortedSetDocValuesFacetField.TYPE) {
+      if (ft != FacetField.TYPE && ft != SortedSetDocValuesFacetField.TYPE && ft != AssociationFacetField.TYPE) {
         allIndexedFields.add(field);
       }
     }
@@ -197,6 +216,35 @@ public class FacetIndexWriter extends IndexWriter {
         // For drill-down:
         addedIndexedFields.add(new StringField(indexedFieldName, fullPath, Field.Store.NO));
       }
+    }
+  }
+
+  private void processAssocFacetFields(Map<String,List<AssociationFacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
+    for(Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
+      byte[] bytes = new byte[16];
+      int upto = 0;
+      String indexedFieldName = ent.getKey();
+      for(AssociationFacetField field : ent.getValue()) {
+        // NOTE: we don't add parents for associations
+        // nocommit is that right?  maybe we are supposed to
+        // add to taxo writer, and just not index the parent
+        // ords?
+        int ordinal = taxoWriter.addCategory(FacetLabel.create(field.dim, field.path));
+        if (upto + 4 > bytes.length) {
+          bytes = ArrayUtil.grow(bytes, upto+4);
+        }
+        // big-endian:
+        bytes[upto++] = (byte) (ordinal >> 24);
+        bytes[upto++] = (byte) (ordinal >> 16);
+        bytes[upto++] = (byte) (ordinal >> 8);
+        bytes[upto++] = (byte) ordinal;
+        if (upto + field.assoc.length > bytes.length) {
+          bytes = ArrayUtil.grow(bytes, upto+field.assoc.length);
+        }
+        System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
+        upto += field.assoc.length;
+      }
+      addedStoredFields.add(new BinaryDocValuesField(indexedFieldName, new BytesRef(bytes, 0, upto)));
     }
   }
 
@@ -314,6 +362,7 @@ public class FacetIndexWriter extends IndexWriter {
         buffer[upto++] = ch;
       }
     }
+    parts.add(new String(buffer, 0, upto));
     assert !lastEscape;
     return parts.toArray(new String[parts.size()]);
   }

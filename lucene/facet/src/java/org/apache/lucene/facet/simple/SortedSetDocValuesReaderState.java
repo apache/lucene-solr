@@ -16,7 +16,9 @@ package org.apache.lucene.facet.simple;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -110,7 +112,7 @@ public final class SortedSetDocValuesReaderState {
       dv.lookupOrd(ord, spare);
       String[] components = FacetIndexWriter.stringToPath(spare.utf8ToString());
       if (components.length != 2) {
-        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + spare.utf8ToString());
+        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + spare.utf8ToString());
       }
       if (!components[0].equals(lastDim)) {
         if (lastDim != null) {

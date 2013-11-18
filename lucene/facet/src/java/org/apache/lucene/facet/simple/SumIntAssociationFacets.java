@@ -31,47 +31,66 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.IntsRef;
 
-/** Reads from any {@link OrdinalsReader}; use {@link
- *  FastTaxonomyFacetCounts} if you are just using the
- *  default encoding from {@link BinaryDocValues}. */
-
-// nocommit remove & add specialized Cached variation only?
-public class TaxonomyFacetCounts extends Facets {
-  private final OrdinalsReader ordinalsReader;
+// nocommit jdoc that this assumes/requires the default encoding
+public class SumIntAssociationFacets extends Facets {
   private final FacetsConfig facetsConfig;
   private final TaxonomyReader taxoReader;
-  private final int[] counts;
+  private final int[] values;
+  private final String facetsFieldName;
   private final int[] children;
   private final int[] parents;
   private final int[] siblings;
 
-  public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
+  public SumIntAssociationFacets(TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
+    this(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, taxoReader, facetsConfig, fc);
+  }
+
+  public SumIntAssociationFacets(String facetsFieldName, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
+    this.facetsFieldName = facetsFieldName;
     this.taxoReader = taxoReader;
-    this.ordinalsReader = ordinalsReader;
     this.facetsConfig = facetsConfig;
     ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
     children = pta.children();
     parents = pta.parents();
     siblings = pta.siblings();
-    counts = new int[taxoReader.getSize()];
-    count(fc.getMatchingDocs());
+    values = new int[taxoReader.getSize()];
+    sumValues(fc.getMatchingDocs());
   }
 
-  private final void count(List<MatchingDocs> matchingDocs) throws IOException {
+  private final void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
     //System.out.println("count matchingDocs=" + matchingDocs + " facetsField=" + facetsFieldName);
-    IntsRef scratch  = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
-      OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
+      BinaryDocValues dv = hits.context.reader().getBinaryDocValues(facetsFieldName);
+      if (dv == null) { // this reader does not have DocValues for the requested category list
+        continue;
+      }
       FixedBitSet bits = hits.bits;
     
       final int length = hits.bits.length();
       int doc = 0;
+      BytesRef scratch = new BytesRef();
+      //System.out.println("count seg=" + hits.context.reader());
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
-        ords.get(doc, scratch);
-        for(int i=0;i<scratch.length;i++) {
-          ++counts[scratch.ints[i]];
+        //System.out.println("  doc=" + doc);
+        // nocommit use OrdinalsReader?  but, add a
+        // BytesRef getAssociation()?
+        dv.get(doc, scratch);
+        byte[] bytes = scratch.bytes;
+        int end = scratch.offset + scratch.length;
+        int offset = scratch.offset;
+        while (offset < end) {
+          int ord = ((bytes[offset]&0xFF) << 24) |
+            ((bytes[offset+1]&0xFF) << 16) |
+            ((bytes[offset+2]&0xFF) << 8) |
+            (bytes[offset+3]&0xFF);
+          offset += 4;
+          int value = ((bytes[offset]&0xFF) << 24) |
+            ((bytes[offset+1]&0xFF) << 16) |
+            ((bytes[offset+2]&0xFF) << 8) |
+            (bytes[offset+3]&0xFF);
+          offset += 4;
+          values[ord] += value;
         }
         ++doc;
       }
@@ -80,6 +99,8 @@ public class TaxonomyFacetCounts extends Facets {
     // nocommit we could do this lazily instead:
 
     // Rollup any necessary dims:
+    // nocommit should we rollup?
+    /*
     for(Map.Entry<String,FacetsConfig.DimConfig> ent : facetsConfig.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       FacetsConfig.DimConfig ft = ent.getValue();
@@ -92,13 +113,14 @@ public class TaxonomyFacetCounts extends Facets {
         }
       }
     }
+    */
   }
 
   private int rollup(int ord) {
     int sum = 0;
     while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      int childValue = counts[ord] + rollup(children[ord]);
-      counts[ord] = childValue;
+      int childValue = values[ord] + rollup(children[ord]);
+      values[ord] = childValue;
       sum += childValue;
       ord = siblings[ord];
     }
@@ -113,7 +135,7 @@ public class TaxonomyFacetCounts extends Facets {
     if (ord < 0) {
       return -1;
     }
-    return counts[ord];
+    return values[ord];
   }
 
   @Override
@@ -131,24 +153,24 @@ public class TaxonomyFacetCounts extends Facets {
 
     TopOrdCountQueue q = new TopOrdCountQueue(topN);
     
-    int bottomCount = 0;
+    int bottomValue = 0;
 
     int ord = children[dimOrd];
-    int totCount = 0;
+    long sumValue = 0;
 
     TopOrdCountQueue.OrdAndCount reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
-      if (counts[ord] > 0) {
-        totCount += counts[ord];
-        if (counts[ord] > bottomCount) {
+      if (values[ord] > 0) {
+        sumValue += values[ord];
+        if (values[ord] > bottomValue) {
           if (reuse == null) {
             reuse = new TopOrdCountQueue.OrdAndCount();
           }
           reuse.ord = ord;
-          reuse.count = counts[ord];
+          reuse.count = values[ord];
           reuse = q.insertWithOverflow(reuse);
           if (q.size() == topN) {
-            bottomCount = q.top().count;
+            bottomValue = q.top().count;
           }
         }
       }
@@ -156,17 +178,19 @@ public class TaxonomyFacetCounts extends Facets {
       ord = siblings[ord];
     }
 
-    if (totCount == 0) {
+    if (sumValue == 0) {
       //System.out.println("totCount=0 for path=" + path);
       return null;
     }
 
+    /*
     FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
     // nocommit shouldn't we verify the indexedFieldName
     // matches what was passed to our ctor?
     if (ft.hierarchical && ft.multiValued) {
       totCount = counts[dimOrd];
     }
+    */
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {
@@ -175,7 +199,7 @@ public class TaxonomyFacetCounts extends Facets {
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndCount.count);
     }
 
-    return new SimpleFacetResult(path, totCount, labelValues);
+    return new SimpleFacetResult(path, sumValue, labelValues);
   }
 
   @Override

@@ -19,6 +19,8 @@ package org.apache.lucene.facet.simple;
 
 import org.apache.lucene.util.PriorityQueue;
 
+// nocommit rename to TopOrdIntQueue?
+
 /** Keeps highest count results. */
 class TopOrdCountQueue extends PriorityQueue<TopOrdCountQueue.OrdAndCount> {
 
