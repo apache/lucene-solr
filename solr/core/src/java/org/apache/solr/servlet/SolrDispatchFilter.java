@@ -314,9 +314,9 @@ public class SolrDispatchFilter implements Filter
           // if we couldn't find it locally, look on other nodes
           if (core == null && idx > 0) {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
-            Map<String,String[]> params = req.getParameterMap();
             // don't proxy for internal update requests
-            if (coreUrl != null && (params == null || !params.containsKey(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM))) {
+            solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
+            if (coreUrl != null && solrReq.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
               path = path.substring( idx );
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
@@ -500,9 +500,9 @@ public class SolrDispatchFilter implements Filter
       con.setRequestMethod(req.getMethod());
       con.setUseCaches(false);
       
-      boolean isPostRequest = "POST".equals(req.getMethod());
+      boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       
-      if (isPostRequest) {
+      if (isPostOrPutRequest) {
         con.setDoOutput(true);
       }
       con.setDoInput(true);
@@ -515,7 +515,7 @@ public class SolrDispatchFilter implements Filter
 
         InputStream is;
         OutputStream os;
-        if (isPostRequest) {
+        if (isPostOrPutRequest) {
           is = req.getInputStream();
           os = con.getOutputStream(); // side effect: method is switched to POST
           try {
