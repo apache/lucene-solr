@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-5453: Raise recovery socket read timeouts. (Mark Miller)
 
+* SOLR-5397: Replication can fail silently in some cases. (Mark Miller)
+
 Optimizations
 ----------------------  
 
