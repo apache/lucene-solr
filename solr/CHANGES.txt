@@ -110,6 +110,9 @@ Bug Fixes
 
 * SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)
 
+* SOLR-5460: SolrDispatchFilter#sendError can get a SolrCore that it does not 
+  close. (Mark Miller)
+
 Other Changes
 ---------------------
 

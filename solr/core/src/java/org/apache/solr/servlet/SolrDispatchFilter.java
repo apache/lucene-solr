@@ -722,6 +722,7 @@ public class SolrDispatchFilter implements Filter
       ServletRequest request, 
       HttpServletResponse response, 
       Throwable ex) throws IOException {
+    SolrCore localCore = null;
     try {
       SolrQueryResponse solrResp = new SolrQueryResponse();
       if(ex instanceof Exception) {
@@ -731,7 +732,9 @@ public class SolrDispatchFilter implements Filter
         solrResp.setException(new RuntimeException(ex));
       }
       if(core==null) {
-        core = cores.getCore(""); // default core
+        localCore = cores.getCore(""); // default core
+      } else {
+        localCore = core;
       }
       if(req==null) {
         final SolrParams solrParams;
@@ -751,6 +754,10 @@ public class SolrDispatchFilter implements Filter
       SimpleOrderedMap info = new SimpleOrderedMap();
       int code = ResponseUtils.getErrorInfo(ex, info, log);
       response.sendError( code, info.toString() );
+    } finally {
+      if (core == null && localCore != null) {
+        localCore.close();
+      }
     }
   }
 
