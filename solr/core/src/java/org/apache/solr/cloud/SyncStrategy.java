@@ -43,6 +43,10 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
@@ -86,17 +90,25 @@ public class SyncStrategy {
     if (SKIP_AUTO_RECOVERY) {
       return true;
     }
-    if (isClosed) {
-      log.warn("Closed, skipping sync up.");
-      return false;
+    boolean success;
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+    try {
+      if (isClosed) {
+        log.warn("Closed, skipping sync up.");
+        return false;
+      }
+      log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
+      
+      if (core.getUpdateHandler().getUpdateLog() == null) {
+        log.error("No UpdateLog found - cannot sync");
+        return false;
+      }
+      success = syncReplicas(zkController, core, leaderProps);
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
     }
-    log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
-
-    if (core.getUpdateHandler().getUpdateLog() == null) {
-      log.error("No UpdateLog found - cannot sync");
-      return false;
-    }
-    boolean success = syncReplicas(zkController, core, leaderProps);
     return success;
   }
   
