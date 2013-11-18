@@ -38,29 +38,18 @@ import org.apache.lucene.util.IntsRef;
  *  default encoding from {@link BinaryDocValues}. */
 
 // nocommit remove & add specialized Cached variation only?
-public class TaxonomyFacetCounts extends Facets {
+public class TaxonomyFacetCounts extends TaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
-  private final FacetsConfig facetsConfig;
-  private final TaxonomyReader taxoReader;
   private final int[] counts;
-  private final int[] children;
-  private final int[] parents;
-  private final int[] siblings;
 
-  public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
-    this.taxoReader = taxoReader;
+  public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
+    super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
-    this.facetsConfig = facetsConfig;
-    ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
-    children = pta.children();
-    parents = pta.parents();
-    siblings = pta.siblings();
     counts = new int[taxoReader.getSize()];
     count(fc.getMatchingDocs());
   }
 
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
-    //System.out.println("count matchingDocs=" + matchingDocs + " facetsField=" + facetsFieldName);
     IntsRef scratch  = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
       OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
@@ -80,13 +69,13 @@ public class TaxonomyFacetCounts extends Facets {
     // nocommit we could do this lazily instead:
 
     // Rollup any necessary dims:
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : facetsConfig.getDimConfigs().entrySet()) {
+    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       FacetsConfig.DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
         int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
         // It can be -1 if this field was declared in the
-        // facetsConfig but never indexed:
+        // config but never indexed:
         if (dimRootOrd > 0) {
           counts[dimRootOrd] += rollup(children[dimRootOrd]);
         }
@@ -109,6 +98,7 @@ public class TaxonomyFacetCounts extends Facets {
    *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
+    verifyDim(dim);
     int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
     if (ord < 0) {
       return -1;
@@ -118,16 +108,13 @@ public class TaxonomyFacetCounts extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
     FacetLabel cp = FacetLabel.create(dim, path);
-    int ord = taxoReader.getOrdinal(cp);
-    if (ord == -1) {
+    int dimOrd = taxoReader.getOrdinal(cp);
+    if (dimOrd == -1) {
       //System.out.println("no ord for path=" + path);
       return null;
     }
-    return getTopChildren(cp, ord, topN);
-  }
-
-  private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
     TopOrdAndIntQueue q = new TopOrdAndIntQueue(topN);
     
@@ -157,14 +144,10 @@ public class TaxonomyFacetCounts extends Facets {
     }
 
     if (totCount == 0) {
-      //System.out.println("totCount=0 for path=" + path);
       return null;
     }
 
-    FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
-    // nocommit shouldn't we verify the indexedFieldName
-    // matches what was passed to our ctor?
-    if (ft.hierarchical && ft.multiValued) {
+    if (dimConfig.hierarchical && dimConfig.multiValued) {
       totCount = counts[dimOrd];
     }
 
@@ -172,40 +155,9 @@ public class TaxonomyFacetCounts extends Facets {
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
+      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(path, totCount, labelValues);
-  }
-
-  @Override
-  public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
-    int ord = children[TaxonomyReader.ROOT_ORDINAL];
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      SimpleFacetResult result = getTopChildren(taxoReader.getPath(ord), ord, topN);
-      if (result != null) {
-        results.add(result);
-      }
-      ord = siblings[ord];
-    }
-
-    // Sort by highest count:
-    Collections.sort(results,
-                     new Comparator<SimpleFacetResult>() {
-                       @Override
-                       public int compare(SimpleFacetResult a, SimpleFacetResult b) {
-                         if (a.value.intValue() > b.value.intValue()) {
-                           return -1;
-                         } else if (b.value.intValue() > a.value.intValue()) {
-                           return 1;
-                         } else {
-                           // Tie break by dimension
-                           return a.path.components[0].compareTo(b.path.components[0]);
-                         }
-                       }
-                     });
-
-    return results;
+    return new SimpleFacetResult(cp, totCount, labelValues);
   }
 }

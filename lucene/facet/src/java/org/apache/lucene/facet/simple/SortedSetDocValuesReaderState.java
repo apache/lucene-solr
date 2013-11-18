@@ -74,7 +74,7 @@ public final class SortedSetDocValuesReaderState {
   private final Map<String,OrdRange> prefixToOrdRange = new HashMap<String,OrdRange>();
 
   public SortedSetDocValuesReaderState(IndexReader reader) throws IOException {
-    this(reader, FacetsConfig.DEFAULT_INDEXED_FIELD_NAME);
+    this(reader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
   /** Create an instance, scanning the {@link

@@ -49,11 +49,13 @@ public class TestAssociationFacets extends FacetTestCase {
   private static Directory dir;
   private static IndexReader reader;
   private static Directory taxoDir;
-  
+  private static TaxonomyReader taxoReader;
+
   private static final FacetLabel aint = new FacetLabel("int", "a");
   private static final FacetLabel bint = new FacetLabel("int", "b");
   private static final FacetLabel afloat = new FacetLabel("float", "a");
   private static final FacetLabel bfloat = new FacetLabel("float", "b");
+  private static final FacetsConfig config = new FacetsConfig();
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -63,8 +65,12 @@ public class TestAssociationFacets extends FacetTestCase {
     
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
+    // Cannot mix ints & floats in the same indexed field:
+    config.setIndexFieldName("int", "$facets.int");
+    config.setIndexFieldName("float", "$facets.float");
+
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    IndexWriter writer = new FacetIndexWriter(dir, iwc, taxoWriter, new FacetsConfig());
+    IndexWriter writer = new FacetIndexWriter(dir, iwc, taxoWriter, config);
 
     // index documents, 50% have only 'b' and all have 'a'
     for (int i = 0; i < 110; i++) {
@@ -85,6 +91,7 @@ public class TestAssociationFacets extends FacetTestCase {
     taxoWriter.close();
     reader = DirectoryReader.open(writer, true);
     writer.close();
+    taxoReader = new DirectoryTaxonomyReader(taxoDir);
   }
   
   @AfterClass
@@ -93,67 +100,71 @@ public class TestAssociationFacets extends FacetTestCase {
     reader = null;
     dir.close();
     dir = null;
+    taxoReader.close();
+    taxoReader = null;
     taxoDir.close();
     taxoDir = null;
   }
   
   public void testIntSumAssociation() throws Exception {
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     
     SimpleFacetsCollector fc = new SimpleFacetsCollector();
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
 
-    SumIntAssociationFacets facets = new SumIntAssociationFacets(taxoReader, new FacetsConfig(), fc);
+    Facets facets = new SumIntAssociationFacets("$facets.int", taxoReader, config, fc);
     
     assertEquals("Wrong count for category 'a'!", 200, facets.getSpecificValue("int", "a").intValue());
     assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
-    
-    taxoReader.close();
   }
 
   public void testFloatSumAssociation() throws Exception {
-    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    
     SimpleFacetsCollector fc = new SimpleFacetsCollector();
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), fc);
     
-    SumFloatAssociationFacets facets = new SumFloatAssociationFacets(taxoReader, new FacetsConfig(), fc);
+    Facets facets = new SumFloatAssociationFacets("$facets.float", taxoReader, config, fc);
+    assertEquals("Wrong count for category 'a'!", 50f, facets.getSpecificValue("float", "a").floatValue(), 0.00001);
+    assertEquals("Wrong count for category 'b'!", 10f, facets.getSpecificValue("float", "b").floatValue(), 0.00001);
+  }  
+
+  /** Make sure we can test both int and float assocs in one
+   *  index, as long as we send each to a different field. */
+  public void testIntAndFloatAssocation() throws Exception {
+    SimpleFacetsCollector fc = new SimpleFacetsCollector();
+    
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.search(new MatchAllDocsQuery(), fc);
+    
+    Facets facets = new SumFloatAssociationFacets("$facets.float", taxoReader, config, fc);
     assertEquals("Wrong count for category 'a'!", 50f, facets.getSpecificValue("float", "a").floatValue(), 0.00001);
     assertEquals("Wrong count for category 'b'!", 10f, facets.getSpecificValue("float", "b").floatValue(), 0.00001);
     
-    taxoReader.close();
-  }  
+    facets = new SumIntAssociationFacets("$facets.int", taxoReader, config, fc);
+    assertEquals("Wrong count for category 'a'!", 200, facets.getSpecificValue("int", "a").intValue());
+    assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
+  }
 
-  /*  
-  public void testDifferentAggregatorsSameCategoryList() throws Exception {
-    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    
-    // facet requests for two facets
-    FacetSearchParams fsp = new FacetSearchParams(
-        new SumIntAssociationFacetRequest(aint, 10),
-        new SumIntAssociationFacetRequest(bint, 10),
-        new SumFloatAssociationFacetRequest(afloat, 10),
-        new SumFloatAssociationFacetRequest(bfloat, 10));
-    
-    Query q = new MatchAllDocsQuery();
-    
-    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
+  public void testWrongIndexFieldName() throws Exception {
+    SimpleFacetsCollector fc = new SimpleFacetsCollector();
     
     IndexSearcher searcher = newSearcher(reader);
-    searcher.search(q, fc);
-    List<FacetResult> res = fc.getFacetResults();
-    
-    assertEquals("Wrong number of results!", 4, res.size());
-    assertEquals("Wrong count for category 'a'!", 200, (int) res.get(0).getFacetResultNode().value);
-    assertEquals("Wrong count for category 'b'!", 150, (int) res.get(1).getFacetResultNode().value);
-    assertEquals("Wrong count for category 'a'!",50f, (float) res.get(2).getFacetResultNode().value, 0.00001);
-    assertEquals("Wrong count for category 'b'!",10f, (float) res.get(3).getFacetResultNode().value, 0.00001);
-    
-    taxo.close();
+    searcher.search(new MatchAllDocsQuery(), fc);
+    Facets facets = new SumFloatAssociationFacets(taxoReader, config, fc);
+    try {
+      facets.getSpecificValue("float");
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    try {
+      facets.getTopChildren(10, "float");
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
   }
-  */  
 }

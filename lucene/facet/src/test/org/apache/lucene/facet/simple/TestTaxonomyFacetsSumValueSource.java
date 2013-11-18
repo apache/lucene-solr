@@ -184,6 +184,62 @@ public class TestTaxonomyFacetsSumValueSource extends FacetTestCase {
     dir.close();
   }
 
+  public void testWrongIndexFieldName() throws Exception {
+
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    // Writes facet ords to a separate directory from the
+    // main index:
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetsConfig config = new FacetsConfig();
+    config.setIndexFieldName("a", "$facets2");
+
+    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, config);
+
+    Document doc = new Document();
+    doc.add(new IntField("num", 10, Field.Store.NO));
+    doc.add(new FacetField("a", "foo1"));
+    writer.addDocument(doc);
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    writer.close();
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+
+    SimpleFacetsCollector c = new SimpleFacetsCollector();
+    searcher.search(new MatchAllDocsQuery(), c);    
+
+    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, config, c, new IntFieldSource("num"));
+
+    // Ask for top 10 labels for any dims that have counts:
+    List<SimpleFacetResult> results = facets.getAllDims(10);
+    assertTrue(results.isEmpty());
+
+    try {
+      facets.getSpecificValue("a");
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    try {
+      facets.getTopChildren(10, "a");
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    searcher.getIndexReader().close();
+    taxoReader.close();
+    taxoDir.close();
+    dir.close();
+  }
+
   // nocommit in the sparse case test that we are really
   // sorting by the correct dim count
 }

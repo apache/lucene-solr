@@ -31,7 +31,7 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
   private final String field;
 
   public DocValuesOrdinalsReader() {
-    this(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME);
+    this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
   public DocValuesOrdinalsReader(String field) {
@@ -56,6 +56,11 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
         decode(bytes, ordinals);
       }
     };
+  }
+
+  @Override
+  public String getIndexFieldName() {
+    return field;
   }
 
   /** Subclass & override if you change the encoding. */

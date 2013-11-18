@@ -72,6 +72,11 @@ public class CachedOrdinalsReader extends OrdinalsReader {
   }
 
   @Override
+  public String getIndexFieldName() {
+    return source.getIndexFieldName();
+  }
+
+  @Override
   public OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException {
     final CachedOrds cachedOrds = getCachedOrds(context);
     return new OrdinalsSegmentReader() {

@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *  the setters in this class to change that for any dims */
 public class FacetsConfig {
 
-  public static final String DEFAULT_INDEXED_FIELD_NAME = "$facets";
+  public static final String DEFAULT_INDEX_FIELD_NAME = "$facets";
 
   // nocommit pull DimType into here (shai?)
 
@@ -38,7 +38,7 @@ public class FacetsConfig {
 
     /** Actual field where this dimension's facet labels
      *  should be indexed */
-    String indexedFieldName = DEFAULT_INDEXED_FIELD_NAME;
+    String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
   }
 
   public final static DimConfig DEFAULT_DIM_CONFIG = new DimConfig();
@@ -70,13 +70,13 @@ public class FacetsConfig {
     ft.multiValued = true;
   }
 
-  public synchronized void setIndexedFieldName(String dimName, String indexedFieldName) {
+  public synchronized void setIndexFieldName(String dimName, String indexFieldName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
       ft = new DimConfig();
       fieldTypes.put(dimName, ft);
     }
-    ft.indexedFieldName = indexedFieldName;
+    ft.indexFieldName = indexFieldName;
   }
 
   Map<String,DimConfig> getDimConfigs() {

@@ -34,4 +34,6 @@ public abstract class OrdinalsReader {
 
   /** Set current atomic reader. */
   public abstract OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException;
+
+  public abstract String getIndexFieldName();
 }

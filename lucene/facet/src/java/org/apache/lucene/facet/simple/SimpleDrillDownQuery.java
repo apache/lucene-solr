@@ -133,7 +133,7 @@ public final class SimpleDrillDownQuery extends Query {
       // merge a facet label in:
       throw new RuntimeException("cannot merge with custom Query");
     }
-    String indexedField = config.getDimConfig(dim).indexedFieldName;
+    String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = (BooleanQuery) q.getQuery();
     bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
@@ -150,7 +150,7 @@ public final class SimpleDrillDownQuery extends Query {
       merge(dim, path);
       return;
     }
-    String indexedField = config.getDimConfig(dim).indexedFieldName;
+    String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = new BooleanQuery(true); // disable coord
     if (path.length == 0) {

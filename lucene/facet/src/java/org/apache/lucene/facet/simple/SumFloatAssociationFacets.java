@@ -32,28 +32,17 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
+// nocommit rename to TaxonomySumFloatAssociationFacets
 // nocommit jdoc that this assumes/requires the default encoding
-public class SumFloatAssociationFacets extends Facets {
-  private final FacetsConfig facetsConfig;
-  private final TaxonomyReader taxoReader;
+public class SumFloatAssociationFacets extends TaxonomyFacets {
   private final float[] values;
-  private final String facetsFieldName;
-  private final int[] children;
-  private final int[] parents;
-  private final int[] siblings;
 
-  public SumFloatAssociationFacets(TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
-    this(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME, taxoReader, facetsConfig, fc);
+  public SumFloatAssociationFacets(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
+    this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, taxoReader, config, fc);
   }
 
-  public SumFloatAssociationFacets(String facetsFieldName, TaxonomyReader taxoReader, FacetsConfig facetsConfig, SimpleFacetsCollector fc) throws IOException {
-    this.facetsFieldName = facetsFieldName;
-    this.taxoReader = taxoReader;
-    this.facetsConfig = facetsConfig;
-    ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
-    children = pta.children();
-    parents = pta.parents();
-    siblings = pta.siblings();
+  public SumFloatAssociationFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector fc) throws IOException {
+    super(indexFieldName, taxoReader, config);
     values = new float[taxoReader.getSize()];
     sumValues(fc.getMatchingDocs());
   }
@@ -61,7 +50,7 @@ public class SumFloatAssociationFacets extends Facets {
   private final void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
     //System.out.println("count matchingDocs=" + matchingDocs + " facetsField=" + facetsFieldName);
     for(MatchingDocs hits : matchingDocs) {
-      BinaryDocValues dv = hits.context.reader().getBinaryDocValues(facetsFieldName);
+      BinaryDocValues dv = hits.context.reader().getBinaryDocValues(indexFieldName);
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;
       }
@@ -101,13 +90,13 @@ public class SumFloatAssociationFacets extends Facets {
     // Rollup any necessary dims:
     // nocommit should we rollup?
     /*
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : facetsConfig.getDimConfigs().entrySet()) {
+    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       FacetsConfig.DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
         int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
         // It can be -1 if this field was declared in the
-        // facetsConfig but never indexed:
+        // config but never indexed:
         if (dimRootOrd > 0) {
           counts[dimRootOrd] += rollup(children[dimRootOrd]);
         }
@@ -131,6 +120,7 @@ public class SumFloatAssociationFacets extends Facets {
    *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
+    verifyDim(dim);
     int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
     if (ord < 0) {
       return -1;
@@ -140,16 +130,13 @@ public class SumFloatAssociationFacets extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
     FacetLabel cp = FacetLabel.create(dim, path);
-    int ord = taxoReader.getOrdinal(cp);
-    if (ord == -1) {
+    int dimOrd = taxoReader.getOrdinal(cp);
+    if (dimOrd == -1) {
       //System.out.println("no ord for path=" + path);
       return null;
     }
-    return getTopChildren(cp, ord, topN);
-  }
-
-  private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
     TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(topN);
     
@@ -184,10 +171,7 @@ public class SumFloatAssociationFacets extends Facets {
     }
 
     /*
-    FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
-    // nocommit shouldn't we verify the indexedFieldName
-    // matches what was passed to our ctor?
-    if (ft.hierarchical && ft.multiValued) {
+    if (dimConfig.hierarchical && dimConfig.multiValued) {
       totCount = counts[dimOrd];
     }
     */
@@ -199,37 +183,6 @@ public class SumFloatAssociationFacets extends Facets {
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(path, sumValue, labelValues);
-  }
-
-  @Override
-  public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
-    int ord = children[TaxonomyReader.ROOT_ORDINAL];
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      SimpleFacetResult result = getTopChildren(taxoReader.getPath(ord), ord, topN);
-      if (result != null) {
-        results.add(result);
-      }
-      ord = siblings[ord];
-    }
-
-    // Sort by highest count:
-    Collections.sort(results,
-                     new Comparator<SimpleFacetResult>() {
-                       @Override
-                       public int compare(SimpleFacetResult a, SimpleFacetResult b) {
-                         if (a.value.intValue() > b.value.intValue()) {
-                           return -1;
-                         } else if (b.value.intValue() > a.value.intValue()) {
-                           return 1;
-                         } else {
-                           // Tie break by dimension
-                           return a.path.components[0].compareTo(b.path.components[0]);
-                         }
-                       }
-                     });
-
-    return results;
+    return new SimpleFacetResult(cp, sumValue, labelValues);
   }
 }

@@ -45,12 +45,12 @@ import org.apache.lucene.util.IntsRef;
 public class FacetIndexWriter extends IndexWriter {
 
   private final TaxonomyWriter taxoWriter;
-  private final FacetsConfig facetsConfig;
+  private final FacetsConfig config;
 
-  public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig facetsConfig) throws IOException {
+  public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig config) throws IOException {
     super(d, conf);
     this.taxoWriter = taxoWriter;
-    this.facetsConfig = facetsConfig;
+    this.config = config;
   }
 
   // nocommit maybe we could somehow "own" TaxonomyWriter
@@ -73,38 +73,38 @@ public class FacetIndexWriter extends IndexWriter {
     for(IndexableField field : doc.indexableFields()) {
       if (field.fieldType() == FacetField.TYPE) {
         FacetField facetField = (FacetField) field;
-        FacetsConfig.DimConfig dimConfig = facetsConfig.getDimConfig(field.name());
-        String indexedFieldName = dimConfig.indexedFieldName;
-        List<FacetField> fields = byField.get(indexedFieldName);
+        FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
+        String indexFieldName = dimConfig.indexFieldName;
+        List<FacetField> fields = byField.get(indexFieldName);
         if (fields == null) {
           fields = new ArrayList<FacetField>();
-          byField.put(indexedFieldName, fields);
+          byField.put(indexFieldName, fields);
         }
         fields.add(facetField);
       }
 
       if (field.fieldType() == SortedSetDocValuesFacetField.TYPE) {
         SortedSetDocValuesFacetField facetField = (SortedSetDocValuesFacetField) field;
-        FacetsConfig.DimConfig dimConfig = facetsConfig.getDimConfig(field.name());
-        String indexedFieldName = dimConfig.indexedFieldName;
-        List<SortedSetDocValuesFacetField> fields = dvByField.get(indexedFieldName);
+        FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
+        String indexFieldName = dimConfig.indexFieldName;
+        List<SortedSetDocValuesFacetField> fields = dvByField.get(indexFieldName);
         if (fields == null) {
           fields = new ArrayList<SortedSetDocValuesFacetField>();
-          dvByField.put(indexedFieldName, fields);
+          dvByField.put(indexFieldName, fields);
         }
         fields.add(facetField);
       }
 
       if (field.fieldType() == AssociationFacetField.TYPE) {
         AssociationFacetField facetField = (AssociationFacetField) field;
-        FacetsConfig.DimConfig dimConfig = facetsConfig.getDimConfig(field.name());
+        FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
 
         // nocommit how to use a different default name for assocs?
-        String indexedFieldName = dimConfig.indexedFieldName;
-        List<AssociationFacetField> fields = assocByField.get(indexedFieldName);
+        String indexFieldName = dimConfig.indexFieldName;
+        List<AssociationFacetField> fields = assocByField.get(indexFieldName);
         if (fields == null) {
           fields = new ArrayList<AssociationFacetField>();
-          assocByField.put(indexedFieldName, fields);
+          assocByField.put(indexFieldName, fields);
         }
         fields.add(facetField);
       }
@@ -157,13 +157,13 @@ public class FacetIndexWriter extends IndexWriter {
       // nocommit maybe we can somehow catch singleValued
       // dim appearing more than once?
 
-      String indexedFieldName = ent.getKey();
+      String indexFieldName = ent.getKey();
       //System.out.println("  fields=" + ent.getValue());
 
       IntsRef ordinals = new IntsRef(32);
       for(FacetField facetField : ent.getValue()) {
 
-        FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(facetField.dim);
+        FacetsConfig.DimConfig ft = config.getDimConfig(facetField.dim);
         if (facetField.path.length > 1 && ft.hierarchical == false) {
           throw new IllegalArgumentException("dimension \"" + facetField.dim + "\" is not hierarchical yet has " + facetField.path.length + " components");
         }
@@ -188,13 +188,13 @@ public class FacetIndexWriter extends IndexWriter {
 
         // Drill down:
         for(int i=2;i<=cp.length;i++) {
-          addedIndexedFields.add(new StringField(indexedFieldName, pathToString(cp.components, i), Field.Store.NO));
+          addedIndexedFields.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
 
       // Facet counts:
       // DocValues are considered stored fields:
-      addedStoredFields.add(new BinaryDocValuesField(indexedFieldName, dedupAndEncode(ordinals)));
+      addedStoredFields.add(new BinaryDocValuesField(indexFieldName, dedupAndEncode(ordinals)));
     }
   }
 
@@ -202,8 +202,8 @@ public class FacetIndexWriter extends IndexWriter {
     //System.out.println("process SSDV: " + byField);
     for(Map.Entry<String,List<SortedSetDocValuesFacetField>> ent : byField.entrySet()) {
 
-      String indexedFieldName = ent.getKey();
-      //System.out.println("  field=" + indexedFieldName);
+      String indexFieldName = ent.getKey();
+      //System.out.println("  field=" + indexFieldName);
 
       for(SortedSetDocValuesFacetField facetField : ent.getValue()) {
         FacetLabel cp = new FacetLabel(facetField.dim, facetField.label);
@@ -211,10 +211,10 @@ public class FacetIndexWriter extends IndexWriter {
         //System.out.println("add " + fullPath);
 
         // For facet counts:
-        addedStoredFields.add(new SortedSetDocValuesField(indexedFieldName, new BytesRef(fullPath)));
+        addedStoredFields.add(new SortedSetDocValuesField(indexFieldName, new BytesRef(fullPath)));
 
         // For drill-down:
-        addedIndexedFields.add(new StringField(indexedFieldName, fullPath, Field.Store.NO));
+        addedIndexedFields.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
       }
     }
   }
@@ -223,7 +223,7 @@ public class FacetIndexWriter extends IndexWriter {
     for(Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
       byte[] bytes = new byte[16];
       int upto = 0;
-      String indexedFieldName = ent.getKey();
+      String indexFieldName = ent.getKey();
       for(AssociationFacetField field : ent.getValue()) {
         // NOTE: we don't add parents for associations
         // nocommit is that right?  maybe we are supposed to
@@ -244,7 +244,7 @@ public class FacetIndexWriter extends IndexWriter {
         System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
         upto += field.assoc.length;
       }
-      addedStoredFields.add(new BinaryDocValuesField(indexedFieldName, new BytesRef(bytes, 0, upto)));
+      addedStoredFields.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));
     }
   }
 

@@ -42,29 +42,19 @@ import org.apache.lucene.util.IntsRef;
 
 // nocommit jdoc that this assumes/requires the default encoding
 
-public class TaxonomyFacetSumValueSource extends Facets {
-  private final FacetsConfig facetsConfig;
-  private final TaxonomyReader taxoReader;
+public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
   private final float[] values;
-  private final int[] children;
-  private final int[] parents;
-  private final int[] siblings;
   private final OrdinalsReader ordinalsReader;
 
-  public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig facetsConfig,
+  public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
                                      SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
-    this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEXED_FIELD_NAME), taxoReader, facetsConfig, fc, valueSource);
+    this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
   }
 
   public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
-                                     FacetsConfig facetsConfig, SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
-    this.taxoReader = taxoReader;
+                                     FacetsConfig config, SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
+    super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
-    this.facetsConfig = facetsConfig;
-    ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
-    children = pta.children();
-    parents = pta.parents();
-    siblings = pta.siblings();
     values = new float[taxoReader.getSize()];
     sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource);
   }
@@ -113,7 +103,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
     // nocommit we could do this lazily instead:
 
     // Rollup any necessary dims:
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : facetsConfig.getDimConfigs().entrySet()) {
+    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       FacetsConfig.DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
@@ -137,6 +127,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
 
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
+    verifyDim(dim);
     int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
     if (ord < 0) {
       return -1;
@@ -146,15 +137,12 @@ public class TaxonomyFacetSumValueSource extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
     FacetLabel cp = FacetLabel.create(dim, path);
-    int ord = taxoReader.getOrdinal(cp);
-    if (ord == -1) {
+    int dimOrd = taxoReader.getOrdinal(cp);
+    if (dimOrd == -1) {
       return null;
     }
-    return getTopChildren(cp, ord, topN);
-  }
-
-  private SimpleFacetResult getTopChildren(FacetLabel path, int dimOrd, int topN) throws IOException {
 
     TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(topN);
     
@@ -187,8 +175,7 @@ public class TaxonomyFacetSumValueSource extends Facets {
       return null;
     }
 
-    FacetsConfig.DimConfig ft = facetsConfig.getDimConfig(path.components[0]);
-    if (ft.hierarchical && ft.multiValued) {
+    if (dimConfig.hierarchical && dimConfig.multiValued) {
       sumValues = values[dimOrd];
     }
 
@@ -196,40 +183,9 @@ public class TaxonomyFacetSumValueSource extends Facets {
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndFloatQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
+      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(path, sumValues, labelValues);
-  }
-
-  @Override
-  public List<SimpleFacetResult> getAllDims(int topN) throws IOException {
-    int ord = children[TaxonomyReader.ROOT_ORDINAL];
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      SimpleFacetResult result = getTopChildren(taxoReader.getPath(ord), ord, topN);
-      if (result != null) {
-        results.add(result);
-      }
-      ord = siblings[ord];
-    }
-
-    // Sort by highest count:
-    Collections.sort(results,
-                     new Comparator<SimpleFacetResult>() {
-                       @Override
-                       public int compare(SimpleFacetResult a, SimpleFacetResult b) {
-                         if (a.value.floatValue() > b.value.floatValue()) {
-                           return -1;
-                         } else if (b.value.floatValue() > a.value.floatValue()) {
-                           return 1;
-                         } else {
-                           // Tie break by dimension
-                           return a.path.components[0].compareTo(b.path.components[0]);
-                         }
-                       }
-                     });
-
-    return results;
+    return new SimpleFacetResult(cp, sumValues, labelValues);
   }
 }
