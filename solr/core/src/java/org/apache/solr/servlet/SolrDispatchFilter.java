@@ -315,8 +315,9 @@ public class SolrDispatchFilter implements Filter
           if (core == null && idx > 0) {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
             // don't proxy for internal update requests
-            solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
-            if (coreUrl != null && solrReq.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
+            //solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
+            //if (coreUrl != null && solrReq.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
+            if (coreUrl != null) { 
               path = path.substring( idx );
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
