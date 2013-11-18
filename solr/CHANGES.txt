@@ -113,6 +113,9 @@ Bug Fixes
 * SOLR-5460: SolrDispatchFilter#sendError can get a SolrCore that it does not 
   close. (Mark Miller)
 
+* SOLR-5461: Request proxying should only set con.setDoOutput(true) if the
+  request is a post. (Mark Miller)
+
 Other Changes
 ---------------------
 
