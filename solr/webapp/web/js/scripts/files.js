@@ -27,6 +27,7 @@ sammy.get
     var content_element = $( '#content' );
 
     var file_endpoint = core_basepath + '/admin/file';
+    var file_exists = null;
 
     var path = context.path.split( '?' );
     var selected_file = null;
@@ -70,73 +71,117 @@ sammy.get
           }
         };
 
-        $( '#tree', frame_element )
-          .jstree
-          (
-            {
-              plugins : [ 'json_data', 'sort' ],
-              json_data : {
-                ajax: {
-                  url : file_endpoint + '?wt=json',
-                  data : function( n )
-                  {
-                    if( -1 === n )
-                      return null;
-
-                    return {
-                      file : n.attr( 'data-file' )
-                    };
-                  },
-                  success : function( response, status, xhr )
-                  {
-                    var files = [];
-
-                    for( var file in response.files )
+        var load_tree = function()
+        {
+          $( '#tree', frame_element )
+            .empty()
+            .jstree
+            (
+              {
+                plugins : [ 'json_data', 'sort' ],
+                json_data : {
+                  ajax: {
+                    url : file_endpoint + '?wt=json',
+                    data : function( n )
                     {
-                      var is_directory = response.files[file].directory;
-                      var prefix = xhr.data ? xhr.data.file + '/' : ''
+                      if( -1 === n )
+                        return null;
 
-                      var item = {
-                        data: {
-                          title : file,
-                          attr : {
-                            href : '#/' + current_core + '/files?file=' + prefix + file
-                          }
-                        },
-                        attr : {
-                          'data-file' : prefix + file
-                        }
+                      return {
+                        file : n.attr( 'data-file' )
                       };
+                    },
+                    success : function( response, status, xhr )
+                    {
+                      var files = [];
 
-                      if( is_directory )
+                      for( var file in response.files )
                       {
-                        item.state = 'closed';
-                        item.data.attr.href += '/';
+                        var is_directory = response.files[file].directory;
+                        var prefix = xhr.data ? xhr.data.file + '/' : ''
+
+                        var item = {
+                          data: {
+                            title : file,
+                            attr : {
+                              href : '#/' + current_core + '/files?file=' + prefix + file
+                            }
+                          },
+                          attr : {
+                            'data-file' : prefix + file
+                          }
+                        };
+
+                        if( is_directory )
+                        {
+                          item.state = 'closed';
+                          item.data.attr.href += '/';
+                        }
+
+                        files.push( item );
                       }
 
-                      files.push( item );
+                      return files;
                     }
-
-                    return files;
-                  }
+                  },
+                  progressive_render : true
                 },
-                progressive_render : true
-              },
-              core : {
-                animation : 0
+                core : {
+                  animation : 0
+                }
               }
+            )
+            .on
+            (
+              'loaded.jstree',
+              tree_callback
+            )
+            .on
+            (
+              'open_node.jstree',
+              tree_callback
+            );
+        };
+        load_tree();
+
+        var new_file_form = $( '#new-file-holder form' );
+
+        $( '#new-file-holder > button' )
+          .on
+          (
+            'click',
+            function( event )
+            {
+              new_file_form.toggle();
+              return false;
             }
-          )
-          .on
-          (
-            'loaded.jstree',
-            tree_callback
-          )
-          .on
-          (
-            'open_node.jstree',
-            tree_callback
           );
+
+        new_file_form
+          .on
+          (
+            'submit',
+            function( event )
+            {
+              $( 'body' )
+                .animate( { scrollTop: 0 }, 500 );
+
+              window.location.href = '#/' + current_core + '/files?file=' + $( 'input', this ).val();
+
+              return false;
+            }
+          );
+
+        if( selected_file )
+        {
+          $( '#new-file-holder input' )
+            .val
+            (
+              '/' !== selected_file.substr( -1 )
+              ? selected_file.replace( /[^\/]+$/, '' )
+              : selected_file
+            );
+        }
 
         if( selected_file && '/' !== selected_file.substr( -1 ) )
         {
@@ -173,6 +218,8 @@ sammy.get
                   button
                     .addClass( 'success' );
 
+                  load_file( !file_exists );
+
                   window.setTimeout
                   (
                     function()
@@ -186,10 +233,53 @@ sammy.get
               }
             );
 
-          var load_file = function()
+          var change_button_label = function( form, label )
           {
-            $( 'form textarea', frame_element )
-              .load( endpoint );
+            $( 'span[data-' + label + ']', form )
+              .each
+              (
+                function( index, element )
+                {
+                  var self = $( this );
+                  self.text( self.data( label ) );
+                }
+              );
+          }
+
+          var load_file = function( load_tree )
+          {
+            if( load_tree )
+            {
+              load_tree();
+            }
+
+            $.ajax
+            (
+              {
+                url : endpoint,
+                context : $( 'form', frame_element ),
+                beforeSend : function( xhr, settings )
+                {
+                },
+                success : function( response, text_status, xhr )
+                {
+                  change_button_label( this, 'existing-title' );
+
+                  $( 'textarea', this )
+                    .val( xhr.responseText );
+                },
+                error : function( xhr, text_status, error_thrown)
+                {
+                  change_button_label( this, 'new-title' );
+                },
+                complete : function( xhr, text_status )
+                {
+                  file_exists = 200 === xhr.status;
+                  $( '#new-file-note' )
+                    .toggle( !file_exists );
+                }
+              }
+            );
           }
           load_file();
 
@@ -226,7 +316,7 @@ sammy.get
                         button
                           .addClass( 'success' );
 
-                        load_file();
+                        load_file( !file_exists );
 
                         $( 'body' )
                           .animate( { scrollTop: 0 }, 500 );

@@ -18,10 +18,34 @@ limitations under the License.
 
   <div id="frame">
 
-    <div id="tree" class="tree">#tree</div>
+    <div id="tree-holder">
+
+      <div id="tree" class="tree">#tree</div>
+
+      <div id="new-file-holder">
+
+        <button><span>Create new file</span></button>
+
+        <form method="get">
+
+          <p class="note">Enter filename, on the next page you can input content or upload a file.</p>
+
+          <input type="text" name="file" placeholder="sample.xml">
+
+          <div class="buttons clearfix">
+            <button type="submit">Next ›</button>
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
     <div id="file-content" class="clearfix">
 
       <a id="url" class="address-bar" href="#"></a>
+
+      <p id="new-file-note">The requested file does (not yet) exist. <strong>Save file</strong> or <strong>Upload new file</strong> will create it.</p>
 
       <form method="post" class="modify">
       
@@ -38,7 +62,7 @@ limitations under the License.
         <input type="file" name="fileupload">
 
         <div class="buttons clearfix">
-          <button><span>Replace current file</span></button>
+          <button><span data-new-title="Upload new file" data-existing-title="Replace current file">Replace current file</span></button>
         </div>
 
       </form>
