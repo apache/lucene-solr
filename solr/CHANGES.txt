@@ -108,6 +108,8 @@ Bug Fixes
 * SOLR-5451: SyncStrategy closes it's http connection manager before the
   executor that uses it in it's close method. (Mark Miller)
 
+* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)
+
 Other Changes
 ---------------------
 
