@@ -20,8 +20,10 @@ package org.apache.solr.update;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.http.client.HttpClient;
@@ -33,6 +35,8 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.Error;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +74,7 @@ public class StreamingSolrServers {
     String url = getFullUrl(req.node.getUrl());
     ConcurrentUpdateSolrServer server = solrServers.get(url);
     if (server == null) {
-      server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor) {
+      server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {
           log.error("error", ex);
@@ -86,6 +90,10 @@ public class StreamingSolrServers {
       server.setParser(new BinaryResponseParser());
       server.setRequestWriter(new BinaryRequestWriter());
       server.setPollQueueTime(0);
+      Set<String> queryParams = new HashSet<String>(2);
+      queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
+      queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
+      server.setQueryParams(queryParams);
       solrServers.put(url, server);
     }
 

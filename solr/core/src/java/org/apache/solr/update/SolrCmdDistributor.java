@@ -69,8 +69,8 @@ public class SolrCmdDistributor {
     
     List<Error> errors = new ArrayList<Error>(this.errors);
     errors.addAll(servers.getErrors());
+    List<Error> resubmitList = new ArrayList<Error>();
 
-    boolean blockUntilFinishedAgain = false;
     for (Error err : errors) {
       String oldNodeUrl = err.req.node.getUrl();
       
@@ -108,8 +108,7 @@ public class SolrCmdDistributor {
             log.warn(null, e);
           }
           
-          submit(err.req);
-          blockUntilFinishedAgain = true;
+          resubmitList.add(err);
         } else {
           allErrors.add(err);
         }
@@ -120,8 +119,11 @@ public class SolrCmdDistributor {
     
     servers.clearErrors();
     this.errors.clear();
+    for (Error err : resubmitList) {
+      submit(err.req);
+    }
     
-    if (blockUntilFinishedAgain) {
+    if (resubmitList.size() > 0) {
       servers.blockUntilFinished();
       doRetriesIfNeeded();
     }

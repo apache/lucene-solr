@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -80,6 +81,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   final int threadCount;
   boolean shutdownExecutor = false;
   int pollQueueTime = 250;
+  private final boolean streamDeletes;
 
   /**
    * Uses an internally managed HttpClient instance.
@@ -109,14 +111,35 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl,
       HttpClient client, int queueSize, int threadCount, ExecutorService es) {
+    this(solrServerUrl, client, queueSize, threadCount, es, false);
+  }
+  
+  /**
+   * Uses the supplied HttpClient to send documents to the Solr server.
+   */
+  public ConcurrentUpdateSolrServer(String solrServerUrl,
+      HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
     queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
     this.threadCount = threadCount;
     runners = new LinkedList<Runner>();
     scheduler = es;
+    this.streamDeletes = streamDeletes;
   }
 
+  public Set<String> getQueryParams() {
+    return this.server.getQueryParams();
+  }
+
+  /**
+   * Expert Method.
+   * @param queryParams set of param keys to only send via the query string
+   */
+  public void setQueryParams(Set<String> queryParams) {
+    this.server.setQueryParams(queryParams);
+  }
+  
   /**
    * Opens a connection and sends everything...
    */
@@ -261,10 +284,22 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     UpdateRequest req = (UpdateRequest) request;
 
     // this happens for commit...
-    if (req.getDocuments() == null || req.getDocuments().isEmpty()) {
-      blockUntilFinished();
-      return server.request(request);
+    if (streamDeletes) {
+      if ((req.getDocuments() == null || req.getDocuments().isEmpty())
+          && (req.getDeleteById() == null || req.getDeleteById().isEmpty())
+          && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
+        blockUntilFinished();
+        if (req.getDeleteQuery() == null) {
+          return server.request(request);
+        }
+      }
+    } else {
+      if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
+        blockUntilFinished();
+        return server.request(request);
+      }
     }
+
 
     SolrParams params = req.getParams();
     if (params != null) {

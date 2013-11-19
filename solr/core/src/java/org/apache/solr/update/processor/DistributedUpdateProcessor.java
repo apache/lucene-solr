@@ -83,6 +83,7 @@ import org.slf4j.LoggerFactory;
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
+  public static final String DISTRIB_FROM = "distrib.from";
   public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
 
   /**
