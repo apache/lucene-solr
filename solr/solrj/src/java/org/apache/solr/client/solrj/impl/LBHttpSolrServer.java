@@ -97,6 +97,8 @@ public class LBHttpSolrServer extends SolrServer {
   private volatile ResponseParser parser;
   private volatile RequestWriter requestWriter;
 
+  private Set<String> queryParams;
+
   static {
     solrQuery.setRows(0);
   }
@@ -213,6 +215,18 @@ public class LBHttpSolrServer extends SolrServer {
     }
     updateAliveList();
   }
+  
+  public Set<String> getQueryParams() {
+    return queryParams;
+  }
+
+  /**
+   * Expert Method.
+   * @param queryParams set of param keys to only send via the query string
+   */
+  public void setQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
+  }
 
   public static String normalize(String server) {
     if (server.endsWith("/"))
@@ -224,6 +238,9 @@ public class LBHttpSolrServer extends SolrServer {
     HttpSolrServer s = new HttpSolrServer(server, httpClient, parser);
     if (requestWriter != null) {
       s.setRequestWriter(requestWriter);
+    }
+    if (queryParams != null) {
+      s.setQueryParams(queryParams);
     }
     return s;
   }

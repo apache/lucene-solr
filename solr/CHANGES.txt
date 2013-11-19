@@ -108,13 +108,19 @@ Bug Fixes
 * SOLR-5451: SyncStrategy closes it's http connection manager before the
   executor that uses it in it's close method. (Mark Miller)
 
-* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)
-
 * SOLR-5460: SolrDispatchFilter#sendError can get a SolrCore that it does not 
   close. (Mark Miller)
 
 * SOLR-5461: Request proxying should only set con.setDoOutput(true) if the
   request is a post. (Mark Miller)
+
+* SOLR-5465: SolrCmdDistributor retry logic has a concurrency race bug. 
+  (Mark Miller)
+
+* SOLR-5464: ConcurrentSolrServer does not stream pure delete by id requests.
+  (Mark Miller)
+  
+* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)  
 
 Other Changes
 ---------------------
