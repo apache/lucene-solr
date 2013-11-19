@@ -122,6 +122,11 @@ Bug Fixes
   
 * SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)  
 
+Optimizations
+----------------------
+
+* SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
+
 Other Changes
 ---------------------
 

@@ -189,6 +189,11 @@ sammy.get
             .addClass( 'show' );
 
           var endpoint = file_endpoint + '?file=' + selected_file;
+
+          var content_type_map = { xml : 'text/xml', html : 'text/html', js : 'text/javascript' };
+          var file_ext = selected_file.match( /\.(\w+)$/  );
+          endpoint += '&contentType=' + ( content_type_map[ file_ext[1] || '' ] || 'text/plain' ) + ';charset=utf-8';
+
           var public_url = window.location.protocol + '//' + window.location.host + endpoint;
 
           $( '#url', frame_element )
@@ -257,15 +262,50 @@ sammy.get
             (
               {
                 url : endpoint,
-                context : $( 'form', frame_element ),
+                context : frame_element,
                 beforeSend : function( xhr, settings )
                 {
+                  var block = $( '.view-file .response', this );
+
+                  if( !block.data( 'placeholder' ) )
+                  {
+                    block.data( 'placeholder', block.text() );
+                  }
+
+                  block
+                    .text( block.data( 'placeholder' ) );
                 },
                 success : function( response, text_status, xhr )
                 {
                   change_button_label( this, 'existing-title' );
 
-                  $( 'textarea', this )
+                  var content_type = xhr.getResponseHeader( 'Content-Type' ) || '';
+                  var highlight = null;
+
+                  if( 0 === content_type.indexOf( 'text/xml' ) ||  0 === xhr.responseText.indexOf( '<?xml' ) ||
+                      0 === content_type.indexOf( 'text/html' ) ||  0 === xhr.responseText.indexOf( '<!--' ) )
+                  {
+                    highlight = 'xml';
+                  }
+                  else if( 0 === content_type.indexOf( 'text/javascript' ) )
+                  {
+                    highlight = 'javascript';
+                  }
+
+                  var code = $(
+                    '<pre class="syntax' + ( highlight ? ' language-' + highlight : '' )+ '"><code>' +
+                    xhr.responseText.esc() +
+                    '</code></pre>'
+                  );
+                  $( '.view-file .response', this )
+                    .html( code );
+
+                  if( highlight )
+                  {
+                    hljs.highlightBlock( code.get( 0 ) );
+                  }
+
+                  $( 'form textarea', this )
                     .val( xhr.responseText );
                 },
                 error : function( xhr, text_status, error_thrown)
@@ -282,6 +322,19 @@ sammy.get
             );
           }
           load_file();
+
+          $( '.top button', frame_element )
+            .on
+            (
+              'click',
+              function( event )
+              {
+                $( '#file-content', frame_element )
+                  .toggleClass( 'modify-file' );
+
+                return false;
+              }
+            );
 
           $( 'form.upload', frame_element )
             .on
@@ -340,5 +393,16 @@ sammy.get
         }
       }
     );
+  }
+);
+
+// legacy redirect for 'config' & 'schema' pages
+// #/:core/schema, #/:core/config
+sammy.get
+(
+  new RegExp( app.core_regex_base + '\\/(schema|config)$' ),
+  function( context )
+  {
+    context.redirect( '#/' + context.params.splat[0] + '/files?file=' + this.active_core.attr( context.params.splat[1] ) );    
   }
 );
