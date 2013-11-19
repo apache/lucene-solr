@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
@@ -50,6 +51,10 @@ import org.apache.lucene.util.IntsRef;
 public class DocumentBuilder {
   private final TaxonomyWriter taxoWriter;
   private final FacetsConfig config;
+
+  // Used only for best-effort detection of app mixing
+  // int/float/bytes in a single indexed field:
+  private final Map<String,String> assocDimTypes = new ConcurrentHashMap<String,String>();
 
   public DocumentBuilder(TaxonomyWriter taxoWriter, FacetsConfig config) {
     this.taxoWriter = taxoWriter;
@@ -103,6 +108,24 @@ public class DocumentBuilder {
           assocByField.put(indexFieldName, fields);
         }
         fields.add(facetField);
+
+        // Best effort: detect mis-matched types in same
+        // indexed field:
+        String type;
+        if (facetField instanceof IntAssociationFacetField) {
+          type = "int";
+        } else if (facetField instanceof FloatAssociationFacetField) {
+          type = "float";
+        } else {
+          type = "bytes";
+        }
+        // NOTE: not thread safe, but this is just best effort:
+        String curType = assocDimTypes.get(indexFieldName);
+        if (curType == null) {
+          assocDimTypes.put(indexFieldName, type);
+        } else if (!curType.equals(type)) {
+          throw new IllegalArgumentException("mixing incompatible types of AssocationFacetField (" + curType + " and " + type + ") in indexed field \"" + indexFieldName + "\"; use FacetsConfig to change the indexFieldName for each dimension");
+        }
       }
     }
 

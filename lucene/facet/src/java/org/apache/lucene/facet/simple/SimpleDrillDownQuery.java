@@ -53,7 +53,7 @@ import org.apache.lucene.search.TermQuery;
 public final class SimpleDrillDownQuery extends Query {
 
   private static Term term(String field, String dim, String[] path) {
-    return new Term(field, FacetDocument.pathToString(dim, path));
+    return new Term(field, DocumentBuilder.pathToString(dim, path));
   }
 
   private final FacetsConfig config;

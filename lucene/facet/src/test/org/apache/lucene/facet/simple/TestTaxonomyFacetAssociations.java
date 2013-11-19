@@ -40,6 +40,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -78,11 +79,11 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
       // every 11th document is added empty, this used to cause the association
       // aggregators to go into an infinite loop
       if (i % 11 != 0) {
-        doc.add(new AssociationFacetField(2, "int", "a"));
-        doc.add(new AssociationFacetField(0.5f, "float", "a"));
+        doc.add(new IntAssociationFacetField(2, "int", "a"));
+        doc.add(new FloatAssociationFacetField(0.5f, "float", "a"));
         if (i % 2 == 0) { // 50
-          doc.add(new AssociationFacetField(3, "int", "b"));
-          doc.add(new AssociationFacetField(0.2f, "float", "b"));
+          doc.add(new IntAssociationFacetField(3, "int", "b"));
+          doc.add(new FloatAssociationFacetField(0.2f, "float", "b"));
         }
       }
       writer.addDocument(builder.build(doc));
@@ -166,5 +167,26 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+  }
+
+  public void testMixedTypesInSameIndexField() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig config = new FacetsConfig();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
+    Document doc = new Document();
+    doc.add(new IntAssociationFacetField(14, "a", "x"));
+    doc.add(new FloatAssociationFacetField(55.0f, "b", "y"));
+    try {
+      writer.addDocument(builder.build(doc));
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException exc) {
+      // expected
+    }
+    IOUtils.close(writer, taxoWriter, dir, taxoDir);
   }
 }

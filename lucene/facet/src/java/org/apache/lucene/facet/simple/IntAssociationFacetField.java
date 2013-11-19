@@ -23,29 +23,17 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.util.BytesRef;
 
-/** Associates an arbitrary byte[] with the added facet
- *  path. */
-public class AssociationFacetField extends Field {
-  static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setIndexed(true);
-    TYPE.freeze();
-  }
-  protected final String dim;
-  protected final String[] path;
-  protected final BytesRef assoc;
+/** Associates an arbitrary int with the added facet
+ *  path, encoding the int into a 4-byte BytesRef. */
+public class IntAssociationFacetField extends AssociationFacetField {
 
-  public AssociationFacetField(BytesRef assoc, String dim, String... path) {
-    super("dummy", TYPE);
-    this.dim = dim;
-    this.assoc = assoc;
-    if (path.length == 0) {
-      throw new IllegalArgumentException("path must have at least one element");
-    }
-    this.path = path;
+  /** Utility ctor: associates an int value (translates it
+   *  to 4-byte BytesRef). */
+  public IntAssociationFacetField(int assoc, String dim, String... path) {
+    super(intToBytesRef(assoc), dim, path);
   }
 
-  private static BytesRef intToBytesRef(int v) {
+  public static BytesRef intToBytesRef(int v) {
     byte[] bytes = new byte[4];
     // big-endian:
     bytes[0] = (byte) (v >> 24);
@@ -55,8 +43,15 @@ public class AssociationFacetField extends Field {
     return new BytesRef(bytes);
   }
 
+  public static int bytesRefToInt(BytesRef b) {
+    return ((b.bytes[b.offset]&0xFF) << 24) |
+      ((b.bytes[b.offset+1]&0xFF) << 16) |
+      ((b.bytes[b.offset+2]&0xFF) << 8) |
+      (b.bytes[b.offset+3]&0xFF);
+  }
+
   @Override
   public String toString() {
-    return "AssociationFacetField(dim=" + dim + " path=" + Arrays.toString(path) + " bytes=" + assoc + ")";
+    return "IntAssociationFacetField(dim=" + dim + " path=" + Arrays.toString(path) + " value=" + bytesRefToInt(assoc) + ")";
   }
 }

@@ -47,21 +47,21 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     FacetsConfig config = new FacetsConfig();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetDocument facetDoc = new FacetDocument(null, config);
+    DocumentBuilder builder = new DocumentBuilder(null, config);
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
     doc.add(new SortedSetDocValuesFacetField("b", "baz"));
-    writer.addDocument(facetDoc.build(doc));
+    writer.addDocument(builder.build(doc));
     if (random().nextBoolean()) {
       writer.commit();
     }
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
-    writer.addDocument(facetDoc.build(doc));
+    writer.addDocument(builder.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());

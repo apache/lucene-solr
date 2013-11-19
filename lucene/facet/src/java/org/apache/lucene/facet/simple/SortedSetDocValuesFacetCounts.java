@@ -230,7 +230,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       throw new IllegalArgumentException("path must be length=1");
     }
 
-    int ord = (int) dv.lookupTerm(new BytesRef(FacetDocument.pathToString(dim, path)));
+    int ord = (int) dv.lookupTerm(new BytesRef(DocumentBuilder.pathToString(dim, path)));
     if (ord < 0) {
       return -1;
     }
