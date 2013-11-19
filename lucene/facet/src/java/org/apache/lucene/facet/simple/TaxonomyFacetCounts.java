@@ -60,7 +60,7 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
         ords.get(doc, scratch);
         for(int i=0;i<scratch.length;i++) {
-          ++counts[scratch.ints[i]];
+          counts[scratch.ints[scratch.offset+i]]++;
         }
         ++doc;
       }

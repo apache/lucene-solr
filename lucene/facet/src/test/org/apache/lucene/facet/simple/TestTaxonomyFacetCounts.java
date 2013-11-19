@@ -183,16 +183,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     SimpleFacetsCollector c = new SimpleFacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
 
-    Facets facets;
-    if (random().nextBoolean()) {
-      facets = new FastTaxonomyFacetCounts(taxoReader, new FacetsConfig(), c);
-    } else {
-      OrdinalsReader ordsReader = new DocValuesOrdinalsReader();
-      if (random().nextBoolean()) {
-        ordsReader = new CachedOrdinalsReader(ordsReader);
-      }
-      facets = new TaxonomyFacetCounts(ordsReader, taxoReader, new FacetsConfig(), c);
-    }
+    Facets facets = getFacetCounts(taxoReader, new FacetsConfig(), c);
 
     // Ask for top 10 labels for any dims that have counts:
     List<SimpleFacetResult> results = facets.getAllDims(10);
@@ -275,7 +266,6 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
   // nocommit in the sparse case test that we are really
   // sorting by the correct dim count
 
-  /*
   public void testReallyNoNormsForDrillDown() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
@@ -289,13 +279,12 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
           return sim;
         }
       });
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
-    FacetFields facetFields = new FacetFields(taxoWriter);      
+    IndexWriter writer = new FacetIndexWriter(dir, iwc, taxoWriter, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    doc.add(new FacetField("a", "path"));
     writer.addDocument(doc);
     writer.close();
     taxoWriter.close();
@@ -303,54 +292,42 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     taxoDir.close();
   }
 
-  public void testAllParents() throws Exception {
+  public void testMultiValuedHierarchy() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
-
-    CategoryListParams clp = new CategoryListParams("$facets") {
-        @Override
-        public OrdinalPolicy getOrdinalPolicy(String fieldName) {
-          return OrdinalPolicy.ALL_PARENTS;
-        }
-      };
-    FacetIndexingParams fip = new FacetIndexingParams(clp);
-
-    FacetFields facetFields = new FacetFields(taxoWriter, fip);
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    FacetsConfig config = new FacetsConfig();
+    config.setHierarchical("a");
+    config.setMultiValued("a");
+    IndexWriter writer = new FacetIndexWriter(dir, iwc, taxoWriter, config);
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    doc.add(new FacetField("a", "path", "x"));
+    doc.add(new FacetField("a", "path", "y"));
     writer.addDocument(doc);
 
     // NRT open
-    IndexSearcher searcher = newSearcher(writer.getReader());
+    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
     writer.close();
 
     // NRT open
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     taxoWriter.close();
     
-    FacetSearchParams fsp = new FacetSearchParams(fip,
-                                                  new CountFacetRequest(new CategoryPath("a", '/'), 10));
-
     // Aggregate the facet counts:
-    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+    SimpleFacetsCollector c = new SimpleFacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query, and use MultiCollector to
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
-    List<FacetResult> results = c.getFacetResults();
-    assertEquals(1, results.size());
-    assertEquals(1, (int) results.get(0).getFacetResultNode().value);
-
-    // LUCENE-4913:
-    for(FacetResultNode childNode : results.get(0).getFacetResultNode().subResults) {
-      assertTrue(childNode.ordinal != 0);
-    }
+    Facets facets = getFacetCounts(taxoReader, config, c);
+    SimpleFacetResult result = facets.getTopChildren(10, "a");
+    assertEquals(1, result.labelValues.length);
+    assertEquals(1, result.labelValues[0].value.intValue());
 
     searcher.getIndexReader().close();
     taxoReader.close();
@@ -358,6 +335,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     taxoDir.close();
   }
 
+  /*
   public void testLabelWithDelimiter() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();

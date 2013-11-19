@@ -1,5 +1,6 @@
 package org.apache.lucene.facet;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.facet.encoding.DGapIntEncoder;
@@ -12,6 +13,15 @@ import org.apache.lucene.facet.encoding.SortingIntEncoder;
 import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
 import org.apache.lucene.facet.encoding.VInt8IntEncoder;
 import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.simple.CachedOrdinalsReader;
+import org.apache.lucene.facet.simple.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.simple.Facets;
+import org.apache.lucene.facet.simple.FacetsConfig;
+import org.apache.lucene.facet.simple.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.simple.OrdinalsReader;
+import org.apache.lucene.facet.simple.SimpleFacetsCollector;
+import org.apache.lucene.facet.simple.TaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -60,5 +70,19 @@ public abstract class FacetTestCase extends LuceneTestCase {
       }
     };
   }
-  
+
+  public Facets getFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c) throws IOException {
+    Facets facets;
+    if (random().nextBoolean()) {
+      facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
+    } else {
+      OrdinalsReader ordsReader = new DocValuesOrdinalsReader();
+      if (random().nextBoolean()) {
+        ordsReader = new CachedOrdinalsReader(ordsReader);
+      }
+      facets = new TaxonomyFacetCounts(ordsReader, taxoReader, config, c);
+    }
+
+    return facets;
+  }
 }

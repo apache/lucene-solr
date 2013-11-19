@@ -248,6 +248,7 @@ public class FacetIndexWriter extends IndexWriter {
     }
   }
 
+  // nocommit open this up
   /** We can open this up if/when we really need
    *  pluggability on the encoding. */
   private final BytesRef dedupAndEncode(IntsRef ordinals) {

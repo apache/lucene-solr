@@ -40,17 +40,23 @@ import org.apache.lucene.util.IntsRef;
 /** Aggregates sum of values from a {@link ValueSource}, for
  *  each facet label. */
 
-// nocommit jdoc that this assumes/requires the default encoding
-
 public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
   private final float[] values;
   private final OrdinalsReader ordinalsReader;
 
+  /** Aggreggates float facet values from the provided
+   *  {@link ValueSource}, pulling ordinals using {@link
+   *  DocValuesOrdinalsReader} against the default indexed
+   *  facet field {@link
+   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */
   public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
                                      SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
     this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
   }
 
+  /** Aggreggates float facet values from the provided
+   *  {@link ValueSource}, and pulls ordinals from the
+   *  provided {@link OrdinalsReader}. */
   public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
                                      FacetsConfig config, SimpleFacetsCollector fc, ValueSource valueSource) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
