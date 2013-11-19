@@ -40,7 +40,6 @@ require
     'lib/order!scripts/documents',
     'lib/order!scripts/dataimport',
     'lib/order!scripts/dashboard',
-    'lib/order!scripts/file',
     'lib/order!scripts/files',
     'lib/order!scripts/index',
     'lib/order!scripts/java-properties',

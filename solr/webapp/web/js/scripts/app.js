@@ -364,7 +364,6 @@ var solr_admin = function( app_config )
                     //Keep this in alphabetical order after the overview
                     '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
                     '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
-                    '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
                     '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
                     '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
                     '<li class="files"><a href="#/' + core_name + '/files"><span>Files</span></a></li>' + "\n" +
@@ -372,7 +371,6 @@ var solr_admin = function( app_config )
                     '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
                     '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
                     '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
-                    '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
                     '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>'
                   )
                   .show();
