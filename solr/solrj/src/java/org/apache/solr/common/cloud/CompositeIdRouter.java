@@ -48,7 +48,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     if (shardFieldName != null && doc != null) {
       Object o = doc.getFieldValue(shardFieldName);
       if (o == null)
-        throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "No value for :"+shardFieldName + ". Unable to identify shard");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No value for :" + shardFieldName + ". Unable to identify shard");
       id = o.toString();
     }
     if (id.indexOf(SEPARATOR) < 0) {
@@ -61,6 +61,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
   /**
    * Get Range for a given CompositeId based route key
+   *
    * @param routeKey to return Range for
    * @return Range for given routeKey
    */
@@ -112,10 +113,10 @@ public class CompositeIdRouter extends HashBasedRouter {
       result.add(new Range(range.min, keyRange.min - 1));
       result.add(keyRange);
       result.add((new Range(keyRange.max + 1, range.max)));
-    } else if (range.includes(keyRange.max))  {
+    } else if (range.includes(keyRange.max)) {
       result.add(new Range(range.min, keyRange.max));
       result.add(new Range(keyRange.max + 1, range.max));
-    } else  {
+    } else {
       result.add(new Range(range.min, keyRange.min - 1));
       result.add(new Range(keyRange.min, range.max));
     }
@@ -129,7 +130,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     assert max >= min;
     if (partitions == 0) return Collections.EMPTY_LIST;
-    long rangeSize = (long)max - (long)min;
+    long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 
     List<Range> ranges = new ArrayList<Range>(partitions);
@@ -145,7 +146,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     // With default bits==16, one would need to create more than 4000 shards before this
     // becomes false by default.
     int mask = 0x0000ffff;
-    boolean round = rangeStep >= (1<<bits)*16;
+    boolean round = rangeStep >= (1 << bits) * 16;
 
     while (end < max) {
       targetEnd = targetStart + rangeStep;
@@ -154,7 +155,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       if (round && ((end & mask) != mask)) {
         // round up or down?
         int increment = 1 << bits;  // 0x00010000
-        long roundDown = (end | mask) - increment ;
+        long roundDown = (end | mask) - increment;
         long roundUp = (end | mask) + increment;
         if (end - roundDown < roundUp - end && roundDown > start) {
           end = roundDown;
@@ -167,7 +168,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       if (ranges.size() == partitions - 1) {
         end = max;
       }
-      ranges.add(new Range((int)start, (int)end));
+      ranges.add(new Range((int) start, (int) end));
       start = end + 1L;
       targetStart = targetEnd + 1L;
     }
@@ -192,9 +193,9 @@ public class CompositeIdRouter extends HashBasedRouter {
       pieces = parts.length;
       hashes = new int[pieces];
       numBits = new int[2];
-      if(key.endsWith("!"))
+      if (key.endsWith("!"))
         pieces++;
-      if(pieces == 3) {
+      if (pieces == 3) {
         numBits[0] = 8;
         numBits[1] = 8;
         triLevel = true;
@@ -204,10 +205,10 @@ public class CompositeIdRouter extends HashBasedRouter {
 
       }
 
-      for(int i=0;i<parts.length;i++) {
+      for (int i = 0; i < parts.length; i++) {
         int commaIdx = parts[i].indexOf(bitsSeparator);
 
-        if(commaIdx > 0) {
+        if (commaIdx > 0) {
           numBits[i] = getNumBits(parts[i], commaIdx);
           parts[i] = parts[i].substring(0, commaIdx);
         }
@@ -220,7 +221,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       int lowerBound;
       int upperBound;
 
-      if(triLevel) {
+      if (triLevel) {
         lowerBound = hashes[0] & masks[0] | hashes[1] & masks[1];
         upperBound = lowerBound | masks[2];
       } else {
@@ -245,7 +246,7 @@ public class CompositeIdRouter extends HashBasedRouter {
      */
     private int[] getMasks() {
       int[] masks;
-      if(triLevel)
+      if (triLevel)
         masks = getBitMasks(numBits[0], numBits[1]);
       else
         masks = getBitMasks(numBits[0]);
@@ -256,8 +257,8 @@ public class CompositeIdRouter extends HashBasedRouter {
     private int[] getBitMasks(int firstBits, int secondBits) {
       // java can't shift 32 bits
       int[] masks = new int[3];
-      masks[0] = firstBits==0 ? 0 : (-1 << (32-firstBits));
-      masks[1] = (firstBits + secondBits)==0 ? 0 : (-1 << (32 - firstBits - secondBits));
+      masks[0] = firstBits == 0 ? 0 : (-1 << (32 - firstBits));
+      masks[1] = (firstBits + secondBits) == 0 ? 0 : (-1 << (32 - firstBits - secondBits));
       masks[1] = masks[0] ^ masks[1];
       masks[2] = (firstBits + secondBits) == 32 ? 0 : ~(masks[0] | masks[1]);
       return masks;
@@ -265,7 +266,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     private int getNumBits(String firstPart, int commaIdx) {
       int v = 0;
-      for (int idx = commaIdx + 1; idx<firstPart.length(); idx++) {
+      for (int idx = commaIdx + 1; idx < firstPart.length(); idx++) {
         char ch = firstPart.charAt(idx);
         if (ch < '0' || ch > '9') return -1;
         v = v * 10 + (ch - '0');
@@ -277,15 +278,15 @@ public class CompositeIdRouter extends HashBasedRouter {
       // java can't shift 32 bits
       int[] masks;
       masks = new int[2];
-      masks[0] = firstBits==0 ? 0 : (-1 << (32-firstBits));
-      masks[1] = firstBits==32 ? 0 : (-1 >>> firstBits);
+      masks[0] = firstBits == 0 ? 0 : (-1 << (32 - firstBits));
+      masks[1] = firstBits == 32 ? 0 : (-1 >>> firstBits);
       return masks;
     }
 
     int getHash() {
       int result = hashes[0] & masks[0];
 
-      for(int i=1;i<pieces;i++)
+      for (int i = 1; i < pieces; i++)
         result = result | (hashes[i] & masks[i]);
       return result;
     }
