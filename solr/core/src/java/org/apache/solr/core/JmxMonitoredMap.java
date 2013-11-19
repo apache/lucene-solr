@@ -320,7 +320,7 @@ public class JmxMonitoredMap<K, V> extends
         try {
           list.add(new Attribute(attribute, getAttribute(attribute)));
         } catch (Exception e) {
-          LOG.warn("Could not get attibute " + attribute);
+          LOG.warn("Could not get attribute " + attribute);
         }
       }
 
