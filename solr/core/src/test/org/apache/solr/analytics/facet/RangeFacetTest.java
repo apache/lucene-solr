@@ -1,0 +1,467 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.analytics.facet;
+
+
+import java.util.ArrayList;
+
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+
+@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
+public class RangeFacetTest extends AbstractAnalyticsFacetTest {
+  static String fileName = "core/src/test-files/analytics/requestFiles/rangeFacets.txt";
+
+  public static final int INT = 71;
+  public static final int LONG = 36;
+  public static final int FLOAT = 93;
+  public static final int DOUBLE = 48;
+  public static final int DATE = 52;
+  public static final int STRING = 28;
+  public static final int NUM_LOOPS = 100;
+  
+  //INT
+  static ArrayList<ArrayList<Integer>> intLongTestStart; 
+  static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
+  static ArrayList<ArrayList<Integer>> intDateTestStart; 
+  
+  //FLOAT
+  static ArrayList<ArrayList<Float>> floatLongTestStart; 
+  static ArrayList<ArrayList<Float>> floatDoubleTestStart; 
+  static ArrayList<ArrayList<Float>> floatDateTestStart; 
+  
+  static String response;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    h.update("<delete><query>*:*</query></delete>");
+    
+    //INT
+    intLongTestStart = new ArrayList<ArrayList<Integer>>(); 
+    intDoubleTestStart = new ArrayList<ArrayList<Integer>>(); 
+    intDateTestStart = new ArrayList<ArrayList<Integer>>(); 
+    
+    //FLOAT
+    floatLongTestStart = new ArrayList<ArrayList<Float>>(); 
+    floatDoubleTestStart = new ArrayList<ArrayList<Float>>(); 
+    floatDateTestStart = new ArrayList<ArrayList<Float>>(); 
+    
+    for (int j = 0; j < NUM_LOOPS; ++j) {
+      int i = j%INT;
+      long l = j%LONG;
+      float f = j%FLOAT;
+      double d = j%DOUBLE;
+      int dt = j%DATE;
+      int s = j%STRING;
+      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
+          "double_dd", "" + d,  "date_dtd", (1000+dt) + "-01-01T23:59:59Z", "string_sd", "abc" + s));
+      //Longs
+      if (j-LONG<0) {
+        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        list1.add(i);
+        intLongTestStart.add(list1);
+        ArrayList<Float> list2 = new ArrayList<Float>();
+        list2.add(f);
+        floatLongTestStart.add(list2);
+      } else {
+        intLongTestStart.get((int)l).add(i);
+        floatLongTestStart.get((int)l).add(f);
+      }
+      //Doubles
+      if (j-DOUBLE<0) {
+        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        list1.add(i);
+        intDoubleTestStart.add(list1);
+        ArrayList<Float> list2 = new ArrayList<Float>();
+        list2.add(f);
+        floatDoubleTestStart.add(list2);
+      } else {
+        intDoubleTestStart.get((int)d).add(i);
+        floatDoubleTestStart.get((int)d).add(f);
+      }
+      //Dates
+      if (j-DATE<0) {
+        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        list1.add(i);
+        intDateTestStart.add(list1);
+        ArrayList<Float> list2 = new ArrayList<Float>();
+        list2.add(f);
+        floatDateTestStart.add(list2);
+      } else {
+        intDateTestStart.get(dt).add(i);
+        floatDateTestStart.get(dt).add(f);
+      }
+      
+      if (usually()) {
+        assertU(commit());  // to have several segments
+      }
+    }
+    
+    assertU(commit()); 
+    
+    response = h.query(request(fileToStringArr(fileName)));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void rangeTest() throws Exception {
+    
+    //Int Long
+    String intLongRange = getFacetXML(response, "ri", "rangeFacets", "long_ld");
+    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "long", "count");
+    ArrayList<Long> intLongTest = calculateStat(transformLists(intLongTestStart, 5, 30, 5
+                                                        , false, true, false, false, false), "count");
+    assertEquals(intLong,intLongTest);
+    //Int Double
+    String intDoubleRange = getFacetXML(response, "ri", "rangeFacets", "double_dd");    
+    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
+                                                          , false, false, true, false, true), "mean");
+    assertEquals(intDouble,intDoubleTest);
+    //Int Date
+    String intDateRange = getFacetXML(response, "ri", "rangeFacets", "date_dtd");
+    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
+                                                      , false, true, false, true, true), "count");
+    assertEquals(intDate,intDateTest);
+    
+    //Float Long
+    String floatLongRange = getFacetXML(response, "rf", "rangeFacets", "long_ld");
+    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
+                                                          , false, true, true, true, true), "median");
+    assertEquals(floatLong,floatLongTest);
+    //Float Double
+    String floatDoubleRange = getFacetXML(response, "rf", "rangeFacets", "double_dd");    
+    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
+                                                                     , false, false, false, true, false), "count");
+    assertEquals(floatDouble,floatDoubleTest);
+    //Float Date                      
+    String floatDateRange = getFacetXML(response, "rf", "rangeFacets", "date_dtd");
+    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
+                                                          , false, false, true, true, false), "sumOfSquares");
+    assertEquals(floatDate,floatDateTest);
+  }
+  
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void hardendRangeTest() throws Exception {
+    //Int Long
+    String intLongRange = getFacetXML(response, "hi", "rangeFacets", "long_ld");
+    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "double", "sum");
+    ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, 5
+                                                        , true, true, false, false, false), "sum");
+    assertEquals(intLong,intLongTest);
+    //Int Double
+    String intDoubleRange = getFacetXML(response, "hi", "rangeFacets", "double_dd");    
+    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
+                                                          , true, false, true, false, true), "mean");
+    assertEquals(intDouble,intDoubleTest);
+    //Int Date
+    String intDateRange = getFacetXML(response, "hi", "rangeFacets", "date_dtd");
+    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
+                                                      , true, true, false, true, true), "count");
+    assertEquals(intDate,intDateTest);
+    
+    //Float Long
+    String floatLongRange = getFacetXML(response, "hf", "rangeFacets", "long_ld");
+    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
+                                                          , true, true, true, true, true), "median");
+    assertEquals(floatLong,floatLongTest);
+    //Float Double
+    String floatDoubleRange = getFacetXML(response, "hf", "rangeFacets", "double_dd");    
+    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
+                                                                     , true, false, false, true, false), "count");
+    assertEquals(floatDouble,floatDoubleTest);
+    //Float Date                      
+    String floatDateRange = getFacetXML(response, "hf", "rangeFacets", "date_dtd");
+    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
+                                                          , true, false, true, true, false), "sumOfSquares");
+    assertEquals(floatDate,floatDateTest);
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void multiGapTest() throws Exception {
+    //Int Long
+    String intLongRange = getFacetXML(response, "mi", "rangeFacets", "long_ld");
+    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "double", "sum");
+    ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, "4,2,6,3"
+                                                        , false, true, false, false, false), "sum");
+    assertEquals(intLong,intLongTest);
+    //Int Double
+    String intDoubleRange = getFacetXML(response, "mi", "rangeFacets", "double_dd");    
+    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, "3,1,7"
+                                                          , false, false, true, false, true), "mean");
+    assertEquals(intDouble,intDoubleTest);
+    //Int Date
+    String intDateRange = getFacetXML(response, "mi", "rangeFacets", "date_dtd");
+    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, "2,7"
+                                                      , false, true, false, true, true), "count");
+    assertEquals(intDate,intDateTest);
+    
+    //Float Long
+    String floatLongRange = getFacetXML(response, "mf", "rangeFacets", "long_ld");
+    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, "1,4"
+                                                          , false, true, true, true, true), "median");;
+    assertEquals(floatLong,floatLongTest);
+    //Float Double
+    String floatDoubleRange = getFacetXML(response, "mf", "rangeFacets", "double_dd");    
+    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, "2,3,11"
+                                                          , false, false, false, true, false), "count");
+    assertEquals(floatDouble,floatDoubleTest);
+    //Float Date                      
+    String floatDateRange = getFacetXML(response, "mf", "rangeFacets", "date_dtd");
+    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, "4,5"
+                                                          , false, false, true, true, false), "sumOfSquares");
+    assertEquals(floatDate,floatDateTest);
+  }
+  
+  private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, int gap
+      , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
+    int off = (end-start)%gap;
+    if (!hardend && off>0) {
+      end+=gap-off;
+    }
+
+    ArrayList<ArrayList<T>> lists = new ArrayList<ArrayList<T>>();
+    ArrayList<T> between = new ArrayList<T>();
+    if (incLow && incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start; i<listsStart.size() && i<=end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else if (incLow && !incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start; i<listsStart.size() && i<end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else if (!incLow && incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start+1; i<listsStart.size() && i<=end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start+1; i<listsStart.size() && i<end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    }
+    
+    if (incEdge && !incLow && start>=0) {
+      lists.get(0).addAll(listsStart.get(start));
+      between.addAll(listsStart.get(start));
+    }
+    if (incEdge && !incUp && end<listsStart.size()) {
+      lists.get(lists.size()-1).addAll(listsStart.get(end));
+      between.addAll(listsStart.get(end));
+    }
+    ArrayList<T> before = new ArrayList<T>();
+    ArrayList<T> after = new ArrayList<T>();
+    if (incOut || !(incLow||incEdge)) {
+      for (int i = 0; i<=start; i++) {
+        before.addAll(listsStart.get(i));
+      }
+    } else {
+      for (int i = 0; i<start; i++) {
+        before.addAll(listsStart.get(i));
+      }
+    }
+    if (incOut || !(incUp||incEdge)) {
+      for (int i = end; i<listsStart.size(); i++) {
+        after.addAll(listsStart.get(i));
+      }
+    } 
+    else {
+      for (int i = end+1; i<listsStart.size(); i++) {
+        after.addAll(listsStart.get(i));
+      }
+    }
+    if (before.size()>0) {
+      lists.add(before);
+    }
+    if (after.size()>0) {
+      lists.add(after);
+    }
+    if (between.size()>0) {
+      lists.add(between);
+    }
+    return lists;
+  }
+  
+  private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, String gapString
+      , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
+    String[] stringGaps = gapString.split(",");
+    int[] gaps = new int[stringGaps.length];
+    for (int i = 0; i<gaps.length; i++) {
+      gaps[i] = Integer.parseInt(stringGaps[i]);
+    }
+    int bigGap = 0;
+    int last = gaps[gaps.length-1];
+    for (int i = 0; i<gaps.length-1; i++) {
+      bigGap += gaps[i];
+    }
+    int off = (end-start-bigGap)%last;
+    if (!hardend && off>0) {
+      end+=last-off;
+    }
+    
+    ArrayList<ArrayList<T>> lists = new ArrayList<ArrayList<T>>();
+    ArrayList<T> between = new ArrayList<T>();
+    int gap = 0;
+    int gapCounter = 0;
+    if (incLow && incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        if (gapCounter<gaps.length) {
+          gap = gaps[gapCounter++];
+        }
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start; i<listsStart.size() && i<=end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else if (incLow && !incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        if (gapCounter<gaps.length) {
+          gap = gaps[gapCounter++];
+        }
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start; i<listsStart.size() && i<end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else if (!incLow && incUp) {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        if (gapCounter<gaps.length) {
+          gap = gaps[gapCounter++];
+        }
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start+1; i<listsStart.size() && i<=end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    } else {
+      for (int i = start; i<end && i<listsStart.size(); i+=gap) {
+        if (gapCounter<gaps.length) {
+          gap = gaps[gapCounter++];
+        }
+        ArrayList<T> list = new ArrayList<T>();
+        for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
+          list.addAll(listsStart.get(j));
+        }
+        lists.add(list);
+      }
+      for (int i = start+1; i<listsStart.size() && i<end; i++) {
+        between.addAll(listsStart.get(i));
+      }
+    }
+    
+    if (incEdge && !incLow && start>=0) {
+      lists.get(0).addAll(listsStart.get(start));
+      between.addAll(listsStart.get(start));
+    }
+    if (incEdge && !incUp && end<listsStart.size()) {
+      lists.get(lists.size()-1).addAll(listsStart.get(end));
+      between.addAll(listsStart.get(end));
+    }
+    ArrayList<T> before = new ArrayList<T>();
+    ArrayList<T> after = new ArrayList<T>();
+    if (incOut || !(incLow||incEdge)) {
+      for (int i = 0; i<=start; i++) {
+        before.addAll(listsStart.get(i));
+      }
+    } else {
+      for (int i = 0; i<start; i++) {
+        before.addAll(listsStart.get(i));
+      }
+    }
+    if (incOut || !(incUp||incEdge)) {
+      for (int i = end; i<listsStart.size(); i++) {
+        after.addAll(listsStart.get(i));
+      }
+    } 
+    else {
+      for (int i = end+1; i<listsStart.size(); i++) {
+        after.addAll(listsStart.get(i));
+      }
+    }
+    if (before.size()>0) {
+      lists.add(before);
+    }
+    if (after.size()>0) {
+      lists.add(after);
+    }
+    if (between.size()>0) {
+      lists.add(between);
+    }
+    return lists;
+  }
+  
+}

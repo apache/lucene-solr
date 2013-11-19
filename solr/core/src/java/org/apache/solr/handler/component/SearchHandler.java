@@ -17,26 +17,26 @@
 
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 
 /**
@@ -69,6 +69,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     names.add( HighlightComponent.COMPONENT_NAME );
     names.add( StatsComponent.COMPONENT_NAME );
     names.add( DebugComponent.COMPONENT_NAME );
+    names.add( AnalyticsComponent.COMPONENT_NAME );
     return names;
   }
 
