@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 
@@ -80,7 +79,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    for (int i=0;i < NUM_DOCS;i++) {
+    for (int i = 0; i < NUM_DOCS; i++) {
       int appId = r.nextInt(NUM_APPS) + 1;
       int userId = r.nextInt(NUM_USERS) + 1;
 
@@ -93,10 +92,10 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
     HashMap<String, Integer> idMap = new HashMap<String, Integer>();
 
-    for(int i=1;i<=sliceCount;i++) {
+    for (int i = 1; i <= sliceCount; i++) {
 
       Set<String> ids = doQueryGetUniqueIdKeys("q", "*:*", "shards", "shard" + i);
-      for(String id:ids) {
+      for (String id : ids) {
         assertFalse("Found the same route key [" + id + "] in 2 shards.", idMap.containsKey(id));
         idMap.put(getKey(id), i);
       }
@@ -111,7 +110,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     // may have to look it up in clusterstate if that assumption changes.
     del("*:*");
 
-    for (int i=0;i < NUM_DOCS;i++) {
+    for (int i = 0; i < NUM_DOCS; i++) {
       int appId = r.nextInt(NUM_APPS) + 1;
       int userId = r.nextInt(NUM_USERS) + 1;
       int bitMask = r.nextInt(16) + 1;
@@ -125,10 +124,10 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
     HashMap<String, Integer> idMap = new HashMap<String, Integer>();
 
-    for(int i=1;i<=sliceCount;i++) {
+    for (int i = 1; i <= sliceCount; i++) {
 
       Set<String> ids = doQueryGetUniqueIdKeys("q", "*:*", "shards", "shard" + i);
-      for(String id:ids) {
+      for (String id : ids) {
         assertFalse("Found the same route key [" + id + "] in 2 shards.", idMap.containsKey(id));
         idMap.put(getKey(id), i);
       }
@@ -137,7 +136,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
   }
 
   void doAddDoc(String id) throws Exception {
-    index("id",id);
+    index("id", id);
     // todo - target diff servers and use cloud clients as well as non-cloud clients
   }
 
