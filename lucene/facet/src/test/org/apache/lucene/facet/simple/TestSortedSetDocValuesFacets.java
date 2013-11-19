@@ -46,24 +46,25 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     FacetsConfig config = new FacetsConfig();
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FacetDocument facetDoc = new FacetDocument(null, config);
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
     doc.add(new SortedSetDocValuesFacetField("b", "baz"));
-    writer.addDocument(doc);
+    writer.addDocument(facetDoc.build(doc));
     if (random().nextBoolean()) {
       writer.commit();
     }
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
-    writer.addDocument(doc);
+    writer.addDocument(facetDoc.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     // Per-top-reader state:
@@ -94,24 +95,25 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
-    IndexReader r = DirectoryReader.open(writer, true);
+    IndexReader r = writer.getReader();
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(r);
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "baz"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
 
     SimpleFacetsCollector c = new SimpleFacetsCollector();
 
@@ -135,11 +137,12 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), null, new FacetsConfig());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -148,7 +151,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -158,10 +161,10 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     doc.add(new SortedSetDocValuesFacetField("a", "foo3"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar2"));
     doc.add(new SortedSetDocValuesFacetField("c", "baz1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     // Per-top-reader state:

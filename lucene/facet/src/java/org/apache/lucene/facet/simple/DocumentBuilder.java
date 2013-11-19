@@ -42,25 +42,21 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
-public class FacetIndexWriter extends IndexWriter {
+/** Pass the {@link #Document} to index to {@link #build},
+ *  to translate any added {@link FacetField}s into
+ *  indexable and storable fields.  It's safe to share a
+ *  single instance of this across multiple threads. */
 
+public class DocumentBuilder {
   private final TaxonomyWriter taxoWriter;
   private final FacetsConfig config;
 
-  public FacetIndexWriter(Directory d, IndexWriterConfig conf, TaxonomyWriter taxoWriter, FacetsConfig config) throws IOException {
-    super(d, conf);
+  public DocumentBuilder(TaxonomyWriter taxoWriter, FacetsConfig config) {
     this.taxoWriter = taxoWriter;
     this.config = config;
   }
 
-  // nocommit maybe we could somehow "own" TaxonomyWriter
-  // too?  commit it in commit, close it in close, etc?
-
-  // nocommit also updateDocument, addDocument, addDocuments
-
-  @Override
-  public void addDocument(final IndexDocument doc) throws IOException {
-
+  public IndexDocument build(IndexDocument doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
     Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
 
@@ -137,7 +133,7 @@ public class FacetIndexWriter extends IndexWriter {
     //System.out.println("all indexed: " + allIndexedFields);
     //System.out.println("all stored: " + allStoredFields);
 
-    super.addDocument(new IndexDocument() {
+    return new IndexDocument() {
         @Override
         public Iterable<IndexableField> indexableFields() {
           return allIndexedFields;
@@ -147,7 +143,7 @@ public class FacetIndexWriter extends IndexWriter {
         public Iterable<StorableField> storableFields() {
           return allStoredFields;
         }
-      });
+      };
   }
 
   private void processFacetFields(Map<String,List<FacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
@@ -248,10 +244,9 @@ public class FacetIndexWriter extends IndexWriter {
     }
   }
 
-  // nocommit open this up
-  /** We can open this up if/when we really need
-   *  pluggability on the encoding. */
-  private final BytesRef dedupAndEncode(IntsRef ordinals) {
+  /** Encodes ordinals into a BytesRef; expert: subclass can
+   *  override this to change encoding. */
+  protected BytesRef dedupAndEncode(IntsRef ordinals) {
     Arrays.sort(ordinals.ints, ordinals.offset, ordinals.length);
     byte[] bytes = new byte[5*ordinals.length];
     int lastOrd = -1;
@@ -298,7 +293,7 @@ public class FacetIndexWriter extends IndexWriter {
     return new BytesRef(bytes, 0, upto);
   }
 
-  // nocommit move these constants / methods to Util?
+  // nocommit move all of this to Util?
 
   // Joins the path components together:
   private static final char DELIM_CHAR = '\u001F';

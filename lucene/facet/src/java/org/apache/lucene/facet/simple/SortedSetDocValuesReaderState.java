@@ -110,7 +110,7 @@ public final class SortedSetDocValuesReaderState {
     // support arbitrary hierarchy:
     for(int ord=0;ord<valueCount;ord++) {
       dv.lookupOrd(ord, spare);
-      String[] components = FacetIndexWriter.stringToPath(spare.utf8ToString());
+      String[] components = FacetDocument.stringToPath(spare.utf8ToString());
       if (components.length != 2) {
         throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + spare.utf8ToString());
       }

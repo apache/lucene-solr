@@ -56,7 +56,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
   private static final FacetLabel afloat = new FacetLabel("float", "a");
   private static final FacetLabel bfloat = new FacetLabel("float", "b");
   private static final FacetsConfig config = new FacetsConfig();
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
@@ -69,8 +69,8 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     config.setIndexFieldName("int", "$facets.int");
     config.setIndexFieldName("float", "$facets.float");
 
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    IndexWriter writer = new FacetIndexWriter(dir, iwc, taxoWriter, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     // index documents, 50% have only 'b' and all have 'a'
     for (int i = 0; i < 110; i++) {
@@ -85,11 +85,11 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
           doc.add(new AssociationFacetField(0.2f, "float", "b"));
         }
       }
-      writer.addDocument(doc);
+      writer.addDocument(builder.build(doc));
     }
     
     taxoWriter.close();
-    reader = DirectoryReader.open(writer, true);
+    reader = writer.getReader();
     writer.close();
     taxoReader = new DirectoryTaxonomyReader(taxoDir);
   }

@@ -63,37 +63,38 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, new FacetsConfig());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, new FacetsConfig());
 
     // Reused across documents, to add the necessary facet
     // fields:
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("Author", "Bob"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new IntField("num", 20, Field.Store.NO));
     doc.add(new FacetField("Author", "Lisa"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new IntField("num", 30, Field.Store.NO));
     doc.add(new FacetField("Author", "Lisa"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new IntField("num", 40, Field.Store.NO));
     doc.add(new FacetField("Author", "Susan"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new IntField("num", 45, Field.Store.NO));
     doc.add(new FacetField("Author", "Frank"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     // NRT open
@@ -129,12 +130,13 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, new FacetsConfig());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, new FacetsConfig());
 
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -144,7 +146,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     doc.add(new IntField("num", 20, Field.Store.NO));
     doc.add(new FacetField("a", "foo2"));
     doc.add(new FacetField("b", "bar1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -155,10 +157,10 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     doc.add(new FacetField("a", "foo3"));
     doc.add(new FacetField("b", "bar2"));
     doc.add(new FacetField("c", "baz1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     // NRT open
@@ -196,15 +198,16 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("a", "$facets2");
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     // NRT open

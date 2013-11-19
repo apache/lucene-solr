@@ -89,35 +89,36 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("Publish Date");
 
-    IndexWriter writer = new FacetIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())), taxoWriter, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
-    writer.addDocument(doc);
+    writer.addDocument(builder.build(doc));
 
     // NRT open
-    IndexSearcher searcher = newSearcher(DirectoryReader.open(writer, true));
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
 
     //System.out.println("searcher=" + searcher);

@@ -2,6 +2,7 @@ nocommit this!
 
 TODO
   - associations
+    - can we do index time detection of invalid mixing?
   - cutover taxo writer/reader to pathToString/stringToPath
   - wrap an IW instead of extending one?  or, FacetDocument?
   - re-enable ALL_BUT_DIM somehow?
