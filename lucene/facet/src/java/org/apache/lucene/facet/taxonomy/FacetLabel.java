@@ -17,10 +17,12 @@ package org.apache.lucene.facet.taxonomy;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.util.Arrays;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.facet.simple.DocumentBuilder;
+
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a
@@ -111,7 +113,13 @@ public class FacetLabel implements Comparable<FacetLabel> {
               + " path=" + pathString.substring(0, 30) + "...");
     }
 
-    String[] comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
+    // nocommit
+    String[] comps;
+    if (delimiter == '\u001F') {
+      comps = DocumentBuilder.stringToPath(pathString);
+    } else {
+      comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
+    }
     if (comps.length == 1 && comps[0].isEmpty()) {
       components = null;
       length = 0;
@@ -274,19 +282,22 @@ public class FacetLabel implements Comparable<FacetLabel> {
    * Returns a string representation of the path, separating components with the
    * given delimiter.
    */
-  // nocommit remove
-  public String toString(char delimiter) {
-    if (length == 0) return "";
-    
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < length; i++) {
-      if (components[i].indexOf(delimiter) != -1) {
-        hasDelimiter(components[i], delimiter);
-      }
-      sb.append(components[i]).append(delimiter);
-    }
-    sb.setLength(sb.length() - 1); // remove last delimiter
-    return sb.toString();
-  }
 
+  public String toString(char delimiter) {
+    // nocommit
+    if (delimiter == '\u001F') {
+      return DocumentBuilder.pathToString(components, length);
+    } else {
+      if (length == 0) return "";
+      StringBuilder sb = new StringBuilder();
+      for (int i = 0; i < length; i++) {
+        if (components[i].indexOf(delimiter) != -1) {
+          hasDelimiter(components[i], delimiter);
+        }
+        sb.append(components[i]).append(delimiter);
+      }
+      sb.setLength(sb.length() - 1); // remove last delimiter
+      return sb.toString();
+    }
+  }
 }

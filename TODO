@@ -1,11 +1,8 @@
 nocommit this!
 
 TODO
-  - associations
-    - can we do index time detection of invalid mixing?
-  - cutover taxo writer/reader to pathToString/stringToPath
-  - wrap an IW instead of extending one?  or, FacetDocument?
   - re-enable ALL_BUT_DIM somehow?
+    - this is broken for multi-valued non-hierarchical too
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?
   - standardize on facet or facets (e.g. FacetIndexWriter)

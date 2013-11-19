@@ -339,30 +339,42 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     taxoDir.close();
   }
 
-  /*
   public void testLabelWithDelimiter() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
-    BytesRef br = new BytesRef(new byte[] {(byte) 0xee, (byte) 0x92, (byte) 0xaa, (byte) 0xef, (byte) 0x9d, (byte) 0x89});
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim/" + br.utf8ToString(), '/')));
-    try {
-      writer.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    doc.add(new FacetField("dim", "test\u001Fone"));
+    doc.add(new FacetField("dim", "test\u001Etwo"));
+    writer.addDocument(builder.build(doc));
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
     writer.close();
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     taxoWriter.close();
-    dir.close();
-    taxoDir.close();
+
+    SimpleFacetsCollector c = new SimpleFacetsCollector();
+    searcher.search(new MatchAllDocsQuery(), c);
+    
+    Facets facets = getFacetCounts(taxoReader, config, c);
+    assertEquals(1, facets.getSpecificValue("dim", "test\u001Fone"));
+    assertEquals(1, facets.getSpecificValue("dim", "test\u001Etwo"));
+
+    SimpleFacetResult result = facets.getTopChildren(10, "dim");
+    assertEquals("dim (2)\n  test\u001Fone (1)\n  test\u001Etwo (1)\n", result.toString());
+    IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
-  
+
+  /*
   // LUCENE-4583: make sure if we require > 32 KB for one
   // document, we don't hit exc when using Facet42DocValuesFormat
   public void testManyFacetsInOneDocument() throws Exception {

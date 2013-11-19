@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.simple.DocumentBuilder;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -34,8 +35,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ReaderManager;
 import org.apache.lucene.index.SegmentInfos;
@@ -529,7 +530,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     Document d = new Document();
     d.add(parentStreamField);
 
-    fullPathField.setStringValue(categoryPath.toString(delimiter));
+    fullPathField.setStringValue(DocumentBuilder.pathToString(categoryPath.components, categoryPath.length));
     d.add(fullPathField);
 
     // Note that we do no pass an Analyzer here because the fields that are
