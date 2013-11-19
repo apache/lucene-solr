@@ -52,6 +52,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
@@ -315,10 +316,12 @@ public class SolrDispatchFilter implements Filter
           if (core == null && idx > 0) {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
             // don't proxy for internal update requests
-            //solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
-            //if (coreUrl != null && solrReq.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
-            if (coreUrl != null) { 
-              path = path.substring( idx );
+            SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
+            if (coreUrl != null
+                && queryParams
+                    .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null
+                && queryParams.get(DistributedUpdateProcessor.DISTRIB_FROM) == null) {
+              path = path.substring(idx);
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
             } else {
