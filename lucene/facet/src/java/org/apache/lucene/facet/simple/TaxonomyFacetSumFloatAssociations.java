@@ -18,15 +18,10 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -83,36 +78,6 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
         ++doc;
       }
     }
-
-    // nocommit we could do this lazily instead:
-
-    // Rollup any necessary dims:
-    // nocommit should we rollup?
-    /*
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
-      String dim = ent.getKey();
-      FacetsConfig.DimConfig ft = ent.getValue();
-      if (ft.hierarchical && ft.multiValued == false) {
-        int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
-        // It can be -1 if this field was declared in the
-        // config but never indexed:
-        if (dimRootOrd > 0) {
-          counts[dimRootOrd] += rollup(children[dimRootOrd]);
-        }
-      }
-    }
-    */
-  }
-
-  private float rollup(int ord) {
-    int sum = 0;
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      float childValue = values[ord] + rollup(children[ord]);
-      values[ord] = childValue;
-      sum += childValue;
-      ord = siblings[ord];
-    }
-    return sum;
   }
 
   /** Return the count for a specific path.  Returns -1 if
@@ -137,8 +102,7 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
       return null;
     }
 
-    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(topN);
-    
+    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(Math.min(taxoReader.getSize(), topN));
     float bottomValue = 0;
 
     int ord = children[dimOrd];
@@ -168,12 +132,6 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
       //System.out.println("totCount=0 for path=" + path);
       return null;
     }
-
-    /*
-    if (dimConfig.hierarchical && dimConfig.multiValued) {
-      totCount = counts[dimOrd];
-    }
-    */
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
     for(int i=labelValues.length-1;i>=0;i--) {

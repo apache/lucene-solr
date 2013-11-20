@@ -1,8 +1,8 @@
 nocommit this!
 
 TODO
-  - re-enable ALL_BUT_DIM somehow?
-    - this is broken for multi-valued non-hierarchical too
+  - add sugar apis to do sort-by-score, sort-by-field sort AND collect into SimpleFacetsCollector?
+  - getSpecificValue for a dim isn't reliable
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?
   - standardize on facet or facets (e.g. FacetIndexWriter)

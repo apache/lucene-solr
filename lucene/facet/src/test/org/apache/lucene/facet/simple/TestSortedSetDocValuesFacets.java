@@ -17,19 +17,11 @@ package org.apache.lucene.facet.simple;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.simple.SortedSetDocValuesFacetCounts;
-import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -42,10 +34,12 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   // randomly uses SortedSetDV
 
   public void testBasic() throws Exception {
+    System.out.println("here: " + defaultCodecSupportsSortedSet());
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     FacetsConfig config = new FacetsConfig();
+    config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DocumentBuilder builder = new DocumentBuilder(null, config);
 
@@ -54,6 +48,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
     doc.add(new SortedSetDocValuesFacetField("b", "baz"));
+    System.out.println("TEST: now add");
     writer.addDocument(builder.build(doc));
     if (random().nextBoolean()) {
       writer.commit();

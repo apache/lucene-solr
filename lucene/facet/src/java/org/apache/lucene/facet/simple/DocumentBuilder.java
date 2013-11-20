@@ -21,24 +21,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexDocument;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -61,6 +59,13 @@ public class DocumentBuilder {
     this.config = config;
   }
 
+  private static void checkSeen(Set<String> seenDims, String dim) {
+    if (seenDims.contains(dim)) {
+      throw new IllegalArgumentException("dimension \"" + dim + "\" is not multiValued, but it appears more than once in this document");
+    }
+    seenDims.add(dim);
+  }
+
   public IndexDocument build(IndexDocument doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
     Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
@@ -71,10 +76,15 @@ public class DocumentBuilder {
     // ... and also all AssociationFacetFields
     Map<String,List<AssociationFacetField>> assocByField = new HashMap<String,List<AssociationFacetField>>();
 
+    Set<String> seenDims = new HashSet<String>();
+
     for(IndexableField field : doc.indexableFields()) {
       if (field.fieldType() == FacetField.TYPE) {
         FacetField facetField = (FacetField) field;
         FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
+        if (dimConfig.multiValued == false) {
+          checkSeen(seenDims, facetField.dim);
+        }
         String indexFieldName = dimConfig.indexFieldName;
         List<FacetField> fields = byField.get(indexFieldName);
         if (fields == null) {
@@ -87,6 +97,9 @@ public class DocumentBuilder {
       if (field.fieldType() == SortedSetDocValuesFacetField.TYPE) {
         SortedSetDocValuesFacetField facetField = (SortedSetDocValuesFacetField) field;
         FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
+        if (dimConfig.multiValued == false) {
+          checkSeen(seenDims, facetField.dim);
+        }
         String indexFieldName = dimConfig.indexFieldName;
         List<SortedSetDocValuesFacetField> fields = dvByField.get(indexFieldName);
         if (fields == null) {
@@ -99,8 +112,16 @@ public class DocumentBuilder {
       if (field.fieldType() == AssociationFacetField.TYPE) {
         AssociationFacetField facetField = (AssociationFacetField) field;
         FacetsConfig.DimConfig dimConfig = config.getDimConfig(facetField.dim);
+        if (dimConfig.multiValued == false) {
+          checkSeen(seenDims, facetField.dim);
+        }
+        if (dimConfig.hierarchical) {
+          throw new IllegalArgumentException("AssociationFacetField cannot be hierarchical (dim=\"" + facetField.dim + "\")");
+        }
+        if (dimConfig.requireDimCount) {
+          throw new IllegalArgumentException("AssociationFacetField cannot requireDimCount (dim=\"" + facetField.dim + "\")");
+        }
 
-        // nocommit how to use a different default name for assocs?
         String indexFieldName = dimConfig.indexFieldName;
         List<AssociationFacetField> fields = assocByField.get(indexFieldName);
         if (fields == null) {
@@ -173,9 +194,6 @@ public class DocumentBuilder {
 
     for(Map.Entry<String,List<FacetField>> ent : byField.entrySet()) {
 
-      // nocommit maybe we can somehow catch singleValued
-      // dim appearing more than once?
-
       String indexFieldName = ent.getKey();
       //System.out.println("  fields=" + ent.getValue());
 
@@ -190,10 +208,13 @@ public class DocumentBuilder {
         FacetLabel cp = FacetLabel.create(facetField.dim, facetField.path);
 
         int ordinal = taxoWriter.addCategory(cp);
+        if (ordinals.length == ordinals.ints.length) {
+          ordinals.grow(ordinals.length+1);
+        }
         ordinals.ints[ordinals.length++] = ordinal;
         //System.out.println("  add cp=" + cp);
 
-        if (ft.hierarchical && ft.multiValued) {
+        if (ft.multiValued && (ft.hierarchical || ft.requireDimCount)) {
           // Add all parents too:
           int parent = taxoWriter.getParent(ordinal);
           while (parent > 0) {
@@ -202,6 +223,11 @@ public class DocumentBuilder {
             }
             ordinals.ints[ordinals.length++] = parent;
             parent = taxoWriter.getParent(parent);
+          }
+
+          if (ft.requireDimCount == false) {
+            // Remove last (dimension) ord:
+            ordinals.length--;
           }
         }
 

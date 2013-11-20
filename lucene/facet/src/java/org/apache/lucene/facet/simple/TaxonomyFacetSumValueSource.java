@@ -18,22 +18,16 @@ package org.apache.lucene.facet.simple;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
@@ -150,8 +144,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
       return null;
     }
 
-    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(topN);
-    
+    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(Math.min(taxoReader.getSize(), topN));
     float bottomValue = 0;
 
     int ord = children[dimOrd];
@@ -181,8 +174,15 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
       return null;
     }
 
-    if (dimConfig.hierarchical && dimConfig.multiValued) {
-      sumValues = values[dimOrd];
+    if (dimConfig.multiValued) {
+      if (dimConfig.requireDimCount) {
+        sumValues = values[dimOrd];
+      } else {
+        // Our sum'd count is not correct, in general:
+        sumValues = -1;
+      }
+    } else {
+      // Our sum'd dim count is accurate, so we keep it
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];

@@ -20,21 +20,35 @@ package org.apache.lucene.facet.simple;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** By default a dimension is flat and single valued; use
- *  the setters in this class to change that for any dims */
+/** By default a dimension is flat, single valued and does
+ *  not require count for the dimension; use
+ *  the setters in this class to change these settings for
+ *  any dims.
+ *
+ *  <p><b>NOTE</b>: this configuration is not saved into the
+ *  index, but it's vital, and up to the application to
+ *  ensure, that at search time the provided FacetsConfig
+ *  matches what was used during indexing.
+ *
+ *  @lucene.experimental */
 public class FacetsConfig {
 
   public static final String DEFAULT_INDEX_FIELD_NAME = "$facets";
-
-  // nocommit pull DimType into here (shai?)
 
   private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<String,DimConfig>();
 
   /** @lucene.internal */
   // nocommit expose this to the user, vs the setters?
   public static final class DimConfig {
+    /** True if this dimension is hierarchical. */
     boolean hierarchical;
+
+    /** True if this dimension is multi-valued. */
     boolean multiValued;
+
+    /** True if the count/aggregate for the entire dimension
+     *  is required, which is unusual (default is false). */
+    boolean requireDimCount;
 
     /** Actual field where this dimension's facet labels
      *  should be indexed */
@@ -52,22 +66,31 @@ public class FacetsConfig {
   }
 
   // nocommit maybe setDimConfig instead?
-  public synchronized void setHierarchical(String dimName) {
+  public synchronized void setHierarchical(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
       ft = new DimConfig();
       fieldTypes.put(dimName, ft);
     }
-    ft.hierarchical = true;
+    ft.hierarchical = v;
   }
 
-  public synchronized void setMultiValued(String dimName) {
+  public synchronized void setMultiValued(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
       ft = new DimConfig();
       fieldTypes.put(dimName, ft);
     }
-    ft.multiValued = true;
+    ft.multiValued = v;
+  }
+
+  public synchronized void setRequireDimCount(String dimName, boolean v) {
+    DimConfig ft = fieldTypes.get(dimName);
+    if (ft == null) {
+      ft = new DimConfig();
+      fieldTypes.put(dimName, ft);
+    }
+    ft.requireDimCount = v;
   }
 
   public synchronized void setIndexFieldName(String dimName, String indexFieldName) {

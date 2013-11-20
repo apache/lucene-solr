@@ -17,28 +17,18 @@ package org.apache.lucene.facet.simple;
  * limitations under the License.
  */
 
-import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.AfterClass;
@@ -68,7 +58,9 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
 
     // Cannot mix ints & floats in the same indexed field:
     config.setIndexFieldName("int", "$facets.int");
+    config.setMultiValued("int", true);
     config.setIndexFieldName("float", "$facets.float");
+    config.setMultiValued("float", true);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
@@ -181,6 +173,48 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     Document doc = new Document();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     doc.add(new FloatAssociationFacetField(55.0f, "b", "y"));
+    try {
+      writer.addDocument(builder.build(doc));
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException exc) {
+      // expected
+    }
+    IOUtils.close(writer, taxoWriter, dir, taxoDir);
+  }
+
+  public void testNoHierarchy() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig config = new FacetsConfig();
+    config.setHierarchical("a", true);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
+    Document doc = new Document();
+    doc.add(new IntAssociationFacetField(14, "a", "x"));
+    try {
+      writer.addDocument(builder.build(doc));
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException exc) {
+      // expected
+    }
+    IOUtils.close(writer, taxoWriter, dir, taxoDir);
+  }
+
+  public void testRequireDimCount() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig config = new FacetsConfig();
+    config.setRequireDimCount("a", true);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
+    Document doc = new Document();
+    doc.add(new IntAssociationFacetField(14, "a", "x"));
     try {
       writer.addDocument(builder.build(doc));
       fail("did not hit expected exception");
