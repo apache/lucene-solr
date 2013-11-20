@@ -120,6 +120,9 @@ Bug Fixes
 * SOLR-5479: SolrCmdDistributor retry logic stops if a leader for the request 
   cannot be found in 1 second. (Mark Miller)
 
+* SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
+  retries. (Mark Miller)
+
 Optimizations
 ----------------------
 

@@ -50,6 +50,7 @@ public class StreamingSolrServers {
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
     params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_USE_RETRY, false);
     httpClient = HttpClientUtil.createClient(params);
   }
   
