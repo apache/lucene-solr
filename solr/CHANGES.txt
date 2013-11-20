@@ -91,6 +91,9 @@ New Features
 
 * SOLR-5456: Admin UI - Allow creating new Files (steffkes)
 
+* SOLR-5208: Support for the setting of core.properties key/values at create-time on 
+  Collections API (Erick Erickson)
+
 Bug Fixes
 ----------------------
 

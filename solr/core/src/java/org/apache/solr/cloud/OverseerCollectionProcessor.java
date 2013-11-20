@@ -111,6 +111,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String COLL_CONF = "collection.configName";
 
+  public static final String COLL_PROP_PREFIX = "property.";
 
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
@@ -545,6 +546,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       params.set(CoreAdminParams.COLLECTION, collectionName);
       params.set(CoreAdminParams.SHARD, sliceName);
       params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+      addPropertyParams(message, params);
 
       ShardRequest sreq = new ShardRequest();
       params.set("qt", adminPath);
@@ -739,7 +741,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
         params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
         params.set(CoreAdminParams.SHARD_PARENT, parentSlice.getName());
-
+        addPropertyParams(message, params);
         sendShardRequest(nodeName, params);
       }
 
@@ -849,6 +851,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.NAME, shardName);
           params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
+          addPropertyParams(message, params);
           // TODO:  Figure the config used by the parent shard and use it.
           //params.set("collection.configName", configName);
           
@@ -1287,6 +1290,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
+  private void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
+    // Now add the property.key=value pairs
+    for (String key : message.keySet()) {
+      if (key.indexOf(COLL_PROP_PREFIX) != -1) {
+        params.set(key, message.getStr(key));
+      }
+    }
+  }
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
@@ -1401,6 +1412,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+          addPropertyParams(message, params);
 
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);

@@ -318,6 +318,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         SHARDS_PROP,
         "router.");
 
+    copyPropertiesIfNotNull(req.getParams(), props);
 
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(OverseerCollectionProcessor.CREATECOLLECTION, m, rsp);
@@ -342,6 +343,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
     copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET);
+    copyPropertiesIfNotNull(req.getParams(), map);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);
   }
@@ -372,7 +374,18 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
 
   }
-  
+
+  private void copyPropertiesIfNotNull(SolrParams params, Map<String, Object> props) {
+    Iterator<String> iter =  params.getParameterNamesIterator();
+    while (iter.hasNext()) {
+      String param = iter.next();
+      if (param.indexOf(OverseerCollectionProcessor.COLL_PROP_PREFIX) != -1) {
+        props.put(param, params.get(param));
+      }
+    }
+  }
+
+
   private void handleDeleteShardAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Deleting Shard : " + req.getParamString());
@@ -420,6 +433,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (rangesStr != null)  {
       props.put(CoreAdminParams.RANGES, rangesStr);
     }
+    copyPropertiesIfNotNull(req.getParams(), props);
 
     ZkNodeProps m = new ZkNodeProps(props);
 
