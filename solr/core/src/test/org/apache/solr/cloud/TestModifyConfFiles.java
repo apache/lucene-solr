@@ -48,6 +48,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
     params.remove("file");
     params.set("stream.body", "Testing rewrite of schema.xml file.");
+    params.set("op", "test");
     request = new QueryRequest(params);
     request.setPath("/admin/file");
     try {
@@ -57,6 +58,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       assertEquals(e.getMessage(), "No file name specified for write operation.");
     }
 
+    params.set("op", "write");
     params.set("file", "bogus.txt");
     request = new QueryRequest(params);
     request.setPath("/admin/file");
@@ -75,8 +77,6 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
     String contents = new String(zkClient.getData("/configs/conf1/schema.xml", null, null, true), "UTF-8");
-
-    //String schema = getFileContentFromZooKeeper("schema.xml");
 
     assertTrue("Schema contents should have changed!", "Testing rewrite of schema.xml file.".equals(contents));
 

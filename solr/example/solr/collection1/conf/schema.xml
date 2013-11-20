@@ -63,7 +63,7 @@
             (int, float, boolean, string...)
      -->
 
- <fields>
+<fields>
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
      type: mandatory - the name of a field type from the 

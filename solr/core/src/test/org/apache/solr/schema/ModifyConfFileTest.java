@@ -86,15 +86,16 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
       ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
       streams.add( new ContentStreamBase.StringStream( "Testing rewrite of schema.xml file." ) );
-      //streams.add( new ContentStreamBase.StringStream( "there" ) );
 
-      params = params("op", "write", "file", "schema.xml", "stream.body", "Testing rewrite of schema.xml file.");
+      params = params("op", "test", "file", "schema.xml", "stream.body", "Testing rewrite of schema.xml file.");
       LocalSolrQueryRequest locReq = new LocalSolrQueryRequest(core, params);
       locReq.setContentStreams(streams);
       core.execute(handler, locReq, rsp);
 
+      assertTrue("Schema should have caused core reload to fail!",
+          rsp.getException().getMessage().indexOf("SAXParseException") != -1);
       String contents = FileUtils.readFileToString(new File(core.getCoreDescriptor().getInstanceDir(), "conf/schema.xml"));
-      assertEquals("Schema contents should have changed!", "Testing rewrite of schema.xml file.", contents);
+      assertFalse("Schema contents should NOT have changed!", contents.contains("Testing rewrite of schema.xml file."));
 
       streams.add(new ContentStreamBase.StringStream("This should barf"));
       locReq = new LocalSolrQueryRequest(core, params);
