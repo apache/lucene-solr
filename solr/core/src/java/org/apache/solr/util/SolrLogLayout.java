@@ -112,7 +112,9 @@ public class SolrLogLayout extends Layout {
   
   public String _format(LoggingEvent event) {
     String message = (String) event.getMessage();
-    
+    if (message == null) {
+      message = "";
+    }
     StringBuilder sb = new StringBuilder(message.length() + 80);
     
     long now = event.timeStamp;
