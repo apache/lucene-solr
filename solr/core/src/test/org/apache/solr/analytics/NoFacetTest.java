@@ -225,7 +225,13 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     Double floatResult = (Double)getStatResult(response, "str", "double", "float_fd");
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
     assertTrue(Math.abs(floatResult-floatTest)<.00000000001);
-    
+
+    assertTrue("Oops: (double raws) " + Double.doubleToRawLongBits(floatResult) + " - "
+        + Double.doubleToRawLongBits(floatTest) + " < " + Double.doubleToRawLongBits(.00000000001) +
+        " Calculated diff " + Double.doubleToRawLongBits(floatResult - floatTest),
+        Math.abs(floatResult - floatTest) < .00000000001);
+
+
     //Double
     Double doubleResult = (Double)getStatResult(response, "str", "double", "double_dd");
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
