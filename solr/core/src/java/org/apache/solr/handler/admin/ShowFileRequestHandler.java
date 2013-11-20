@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,6 +31,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -128,7 +130,12 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   public static final String USE_CONTENT_TYPE = "contentType";
   
   protected Set<String> hiddenFiles;
-  
+
+  private final static String OP_PARAM = "op";
+  private final static String OP_WRITE = "write";
+  private final static String OP_TEST = "test";
+
+
   public ShowFileRequestHandler()
   {
     super();
@@ -160,14 +167,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       throws InterruptedException, KeeperException, IOException {
 
     CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
-    String op = req.getParams().get("op");
+    String op = req.getParams().get(OP_PARAM);
     if (op == null) {
       if (coreContainer.isZooKeeperAware()) {
         showFromZooKeeper(req, rsp, coreContainer);
       } else {
         showFromFileSystem(req, rsp);
       }
-    } else if ("write".equalsIgnoreCase(op)) {
+    } else if (OP_WRITE.equalsIgnoreCase(op) || OP_TEST.equalsIgnoreCase(op)) {
       String fname = req.getParams().get("file", null);
       if (fname == null) {
         rsp.setException(new SolrException(ErrorCode.BAD_REQUEST, "No file name specified for write operation."));
@@ -175,7 +182,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
         fname = fname.replace('\\', '/');
         if (isHiddenFile(req, rsp, fname, true) == false) {
           if (coreContainer.isZooKeeperAware()) {
-            writeToZooKeeper(req, rsp, coreContainer);
+            writeToZooKeeper(req, rsp);
           } else {
             writeToFileSystem(req, rsp);
           }
@@ -264,8 +271,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   // file=velocity/error.vm or file=schema.xml
   //
   // Important: Assumes that the file already exists in ZK, so far we aren't creating files there.
-  private void writeToZooKeeper(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer coreContainer)
+  private void writeToZooKeeper(SolrQueryRequest req, SolrQueryResponse rsp)
       throws KeeperException, InterruptedException, IOException {
+
+    CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
 
     String adminFile = getAdminFileFromZooKeeper(req, rsp, zkClient);
@@ -276,6 +285,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     byte[] data = IOUtils.toByteArray(new InputStreamReader(stream.getStream(), "UTF-8"), "UTF-8");
     String fname = req.getParams().get("file", null);
+    if (OP_TEST.equals(req.getParams().get(OP_PARAM)))  {
+      testReloadSuccess(req, rsp, stream);
+      return;
+    }
     // Persist the managed schema
     try {
       // Assumption: the path exists
@@ -395,9 +408,87 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       rsp.setException(new SolrException( ErrorCode.BAD_REQUEST, "File " + fname + " is a directory."));
       return;
     }
+    if (OP_TEST.equals(req.getParams().get(OP_PARAM))) {
+      testReloadSuccess(req, rsp, stream);
+      return;
+    }
 
     FileUtils.copyInputStreamToFile(stream.getStream(), adminFile);
     log.info("Successfully saved file " + adminFile.getAbsolutePath() + " locally");
+  }
+
+  private boolean testReloadSuccess(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) {
+    // Try writing the config to a temporary core and reloading to see that we don't allow people to shoot themselves
+    // in the foot.
+    File home = null;
+    try {
+      home = new File(FileUtils.getTempDirectory(), "SOLR_5459"); // Unlikely to name a core or collection this!
+      FileUtils.writeStringToFile(new File(home, "solr.xml"), "<solr></solr>"); // Use auto-discovery
+      File coll = new File(home, "SOLR_5459");
+
+      SolrCore core = req.getCore();
+      CoreDescriptor desc = core.getCoreDescriptor();
+      CoreContainer coreContainer = desc.getCoreContainer();
+
+      if (coreContainer.isZooKeeperAware()) {
+        try {
+          String confPath = ((ZkSolrResourceLoader) core.getResourceLoader()).getCollectionZkPath();
+
+          ZkController.downloadConfigDir(coreContainer.getZkController().getZkClient(), confPath,
+              new File(coll, "conf"));
+        } catch (Exception ex) {
+          log.error("Error when attempting to download conf from ZooKeeper: " + ex.getMessage());
+          rsp.setException(new SolrException(ErrorCode.BAD_REQUEST,
+              "Error when attempting to download conf from ZooKeeper" + ex.getMessage()));
+          return false;
+        }
+      } else {
+        FileUtils.copyDirectory(new File(desc.getInstanceDir(), "conf"),
+            new File(coll, "conf"));
+      }
+
+      FileUtils.writeStringToFile(new File(coll, "core.properties"), "name=SOLR_5459");
+
+      FileUtils.copyInputStreamToFile(stream.getStream(),
+          new File(new File(coll, "conf"), req.getParams().get("file", null)));
+
+      return tryReloading(rsp, home);
+
+    } catch (IOException ex) {
+      log.warn("Caught IO exception when trying to verify configs. " + ex.getMessage());
+      rsp.setException(new SolrException(ErrorCode.SERVER_ERROR,
+          "Caught IO exception when trying to verify configs. " + ex.getMessage()));
+      return false;
+    } finally {
+      if (home != null) {
+        try {
+          FileUtils.deleteDirectory(home);
+        } catch (IOException e) {
+          log.warn("Caught IO exception trying to delete temporary directory " + home + e.getMessage());
+          return true; // Don't fail for this reason!
+        }
+      }
+    }
+  }
+
+  private boolean tryReloading(SolrQueryResponse rsp, File home) {
+    CoreContainer cc = null;
+    try {
+      cc = CoreContainer.createAndLoad(home.getAbsolutePath(), new File(home, "solr.xml"));
+      if (cc.getCoreInitFailures().size() > 0) {
+        for (Exception ex : cc.getCoreInitFailures().values()) {
+          log.error("Error when attempting to reload core: " + ex.getMessage());
+          rsp.setException(new SolrException( ErrorCode.BAD_REQUEST,
+              "Error when attempting to reload core after writing config" + ex.getMessage()));
+        }
+        return false;
+      }
+      return true;
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
   }
 
   // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the local
