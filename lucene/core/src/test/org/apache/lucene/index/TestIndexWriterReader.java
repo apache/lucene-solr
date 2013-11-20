@@ -1111,6 +1111,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergedSegmentMB(Math.max(.01, tmp.getMaxMergedSegmentMB()));
+      if (tmp.getSegmentsPerTier() > 20) {
+        tmp.setSegmentsPerTier(20);
+      }
     }
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
