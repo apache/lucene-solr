@@ -94,7 +94,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
       assertTrue("Schema should have caused core reload to fail!",
           rsp.getException().getMessage().indexOf("SAXParseException") != -1);
-      String contents = FileUtils.readFileToString(new File(core.getCoreDescriptor().getInstanceDir(), "conf/schema.xml"));
+      String contents = FileUtils.readFileToString(new File(core.getCoreDescriptor().getInstanceDir(), "conf/schema.xml"), Charsets.UTF_8.toString());
       assertFalse("Schema contents should NOT have changed!", contents.contains("Testing rewrite of schema.xml file."));
 
       streams.add(new ContentStreamBase.StringStream("This should barf"));
@@ -110,7 +110,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       locReq.setContentStreams(streams);
       core.execute(handler, locReq, rsp);
       contents = FileUtils.readFileToString(new File(core.getCoreDescriptor().getInstanceDir(),
-          "conf/velocity/test.vm"));
+          "conf/velocity/test.vm"), Charsets.UTF_8.toString());
       assertEquals("Schema contents should have changed!", "Some bogus stuff for a test.", contents);
 
       streams.clear();

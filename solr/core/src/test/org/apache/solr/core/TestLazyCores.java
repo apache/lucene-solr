@@ -579,7 +579,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         System.getProperty("line.separator") + "transient=true" +
         System.getProperty("line.separator") + "loadOnStartup=true", Charsets.UTF_8.toString());
 
-    FileUtils.writeStringToFile(new File(subHome, "solrconfig.snippet.randomindexconfig.xml"), rand_snip);
+    FileUtils.writeStringToFile(new File(subHome, "solrconfig.snippet.randomindexconfig.xml"), rand_snip, Charsets.UTF_8.toString());
 
     FileUtils.writeStringToFile(new File(subHome, "solrconfig.xml"), config, Charsets.UTF_8.toString());
 
