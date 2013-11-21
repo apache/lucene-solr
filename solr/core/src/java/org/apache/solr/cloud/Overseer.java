@@ -63,6 +63,8 @@ public class Overseer {
   
   static enum LeaderStatus { DONT_KNOW, NO, YES };
 
+  private long lastUpdatedTime = 0;
+  
   private class ClusterStateUpdater implements Runnable, ClosableThread {
     
     private final ZkStateReader reader;
@@ -151,33 +153,51 @@ public class Overseer {
           break;
         }
         else if (LeaderStatus.YES != isLeader) {
-          log.debug("am_i_leader unclear {}", isLeader);                  
+          log.debug("am_i_leader unclear {}", isLeader);
           continue; // not a no, not a yes, try ask again
+        }
+        DistributedQueue.QueueEvent head = null;
+        try {
+          head = stateUpdateQueue.peek(true);
+        } catch (KeeperException e) {
+          if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+            log.warn(
+                "Solr cannot talk to ZK, exiting Overseer main queue loop", e);
+            return;
+          }
+          log.error("Exception in Overseer main queue loop", e);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+          
+        } catch (Exception e) {
+          log.error("Exception in Overseer main queue loop", e);
         }
         synchronized (reader.getUpdateLock()) {
           try {
-            byte[] head = stateUpdateQueue.peek();
-            
-            if (head != null) {
-              reader.updateClusterState(true);
-              ClusterState clusterState = reader.getClusterState();
+            reader.updateClusterState(true);
+            ClusterState clusterState = reader.getClusterState();
+
+            while (head != null) {
+              final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+              final String operation = message.getStr(QUEUE_OPERATION);
+
+              clusterState = processMessage(clusterState, message, operation);
+              workQueue.offer(head.getBytes());
+
+              stateUpdateQueue.poll();
+
+              if (System.currentTimeMillis() - lastUpdatedTime > STATE_UPDATE_DELAY) break;
               
-              while (head != null) {
-                final ZkNodeProps message = ZkNodeProps.load(head);
-                final String operation = message.getStr(QUEUE_OPERATION);
-                
-                clusterState = processMessage(clusterState, message, operation);
-                workQueue.offer(head);
-                
-                stateUpdateQueue.poll();
-                head = stateUpdateQueue.peek();
-              }
-              zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                  ZkStateReader.toJSON(clusterState), true);
+              // if an event comes in the next 100ms batch it together
+              head = stateUpdateQueue.peek(100); 
             }
+            lastUpdatedTime = System.currentTimeMillis();
+            zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                ZkStateReader.toJSON(clusterState), true);
             // clean work queue
-            while (workQueue.poll() != null);
-            
+            while (workQueue.poll() != null) ;
+
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
               log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
@@ -193,11 +213,6 @@ public class Overseer {
           }
         }
         
-        try {
-          Thread.sleep(STATE_UPDATE_DELAY);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
       }
     }
 
@@ -939,8 +954,6 @@ public class Overseer {
 
   private volatile OverseerThread updaterThread;
 
-  private volatile boolean isClosed;
-
   private ZkStateReader reader;
 
   private ShardHandler shardHandler;
@@ -954,6 +967,7 @@ public class Overseer {
   }
   
   public void start(String id) {
+    close();
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
@@ -975,7 +989,6 @@ public class Overseer {
   }
   
   public void close() {
-    isClosed = true;
     if (updaterThread != null) {
       try {
         updaterThread.close();
@@ -992,12 +1005,8 @@ public class Overseer {
         log.error("Error closing ccThread", t);
       }
     }
-    
-    try {
-      reader.close();
-    } catch (Throwable t) {
-      log.error("Error closing zkStateReader", t);
-    }
+    updaterThread = null;
+    ccThread = null;
   }
 
   /**

@@ -87,6 +87,7 @@ public  class LeaderElector {
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
+    context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
@@ -216,6 +217,8 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
+    context.joinedElectionFired();
+    
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();

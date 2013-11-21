@@ -115,7 +115,7 @@ public class DistributedQueue {
    * 
    * @return the data at the head of the queue.
    */
-  private QueueEvent element() throws NoSuchElementException, KeeperException,
+  private QueueEvent element() throws KeeperException,
       InterruptedException {
     TreeMap<Long,String> orderedChildren;
     
@@ -130,9 +130,9 @@ public class DistributedQueue {
       try {
         orderedChildren = orderedChildren(null);
       } catch (KeeperException.NoNodeException e) {
-        throw new NoSuchElementException();
+        return null;
       }
-      if (orderedChildren.size() == 0) throw new NoSuchElementException();
+      if (orderedChildren.size() == 0) return null;
       
       for (String headNode : orderedChildren.values()) {
         if (headNode != null) {
@@ -208,7 +208,7 @@ public class DistributedQueue {
     
     @Override
     public void process(WatchedEvent event) {
-      LOG.info("Watcher fired on path: " + event.getPath() + " state: "
+      LOG.info("LatchChildWatcher fired on path: " + event.getPath() + " state: "
           + event.getState() + " type " + event.getType());
       synchronized (lock) {
         this.event = event;
@@ -322,11 +322,9 @@ public class DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   public byte[] peek() throws KeeperException, InterruptedException {
-    try {
-      return element().getBytes();
-    } catch (NoSuchElementException e) {
-      return null;
-    }
+      QueueEvent element = element();
+      if(element == null) return null;
+      return element.getBytes();
   }
   
   public static class QueueEvent {
@@ -384,16 +382,29 @@ public class DistributedQueue {
   
   /**
    * Returns the data at the first element of the queue, or null if the queue is
-   * empty.
+   * empty and block is false.
    * 
+   * @param block if true, blocks until an element enters the queue
    * @return data at the first element of the queue, or null.
    */
   public QueueEvent peek(boolean block) throws KeeperException, InterruptedException {
-    if (!block) {
+    return peek(block ? Long.MAX_VALUE : 0);
+  }
+  
+  /**
+   * Returns the data at the first element of the queue, or null if the queue is
+   * empty after wait ms.
+   * 
+   * @param wait max wait time in ms.
+   * @return data at the first element of the queue, or null.
+   */
+  public QueueEvent peek(long wait) throws KeeperException, InterruptedException {
+    if (wait == 0) {
       return element();
     }
-    
+
     TreeMap<Long,String> orderedChildren;
+    boolean waitedEnough = false;
     while (true) {
       LatchChildWatcher childWatcher = new LatchChildWatcher();
       try {
@@ -402,11 +413,15 @@ public class DistributedQueue {
         zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
         continue;
       }
+      if(waitedEnough) {
+        if(orderedChildren.isEmpty()) return null;
+      }
       if (orderedChildren.size() == 0) {
-        childWatcher.await(DEFAULT_TIMEOUT);
+        childWatcher.await(wait == Long.MAX_VALUE ?  DEFAULT_TIMEOUT: wait);
+        waitedEnough = wait != Long.MAX_VALUE;
         continue;
       }
-      
+
       for (String headNode : orderedChildren.values()) {
         String path = dir + "/" + headNode;
         try {

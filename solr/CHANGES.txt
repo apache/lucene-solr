@@ -135,6 +135,9 @@ Optimizations
 
 * SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
 
+* SOLR-5436: Eliminate the 1500ms wait in overseer loop as well as
+  polling the ZK distributed queue. (Noble Paul, Mark Miller)
+
 Other Changes
 ---------------------
 

@@ -292,9 +292,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       deleteCoreNode(collectionName, replicaName, replica, core);
       if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
     } else {
-    Map m = ZkNodeProps.makeMap("qt", adminPath,
-        CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString(),
-        CoreAdminParams.CORE, core) ;
+      Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
+          CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core);
 
       ShardRequest sreq = new ShardRequest();
       sreq.purpose = 1;
