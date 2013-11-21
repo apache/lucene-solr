@@ -151,7 +151,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
-      if(rand.nextBoolean()) {
+      if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
         termsToDel.add(doc.get(FIELD_NAME));
       }
       writer.addDocument(doc);
@@ -174,6 +174,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     }
     
     IndexReader ir = DirectoryReader.open(dir);
+    assertTrue("NumDocs should be > 0 but was " + ir.numDocs(), ir.numDocs() > 0);
     assertEquals(ir.numDocs(), docs.size());
     Set<SortField> sortFields = new HashSet<SortField>(); 
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
