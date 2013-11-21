@@ -144,6 +144,9 @@ Other Changes
 * SOLR-5404: The example config references deprecated classes.
   (Uwe Schindler, Rafał Kuć  via Mark Miller)
 
+* SOLR-5487: Replication factor error message doesn't match constraint.
+  (Patrick Hunt via shalin)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
