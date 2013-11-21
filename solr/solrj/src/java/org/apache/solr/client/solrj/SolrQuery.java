@@ -782,6 +782,14 @@ public class SolrQuery extends ModifiableSolrParams
     }
   }
 
+  public void addStatsFieldCalcDistinct(String field, boolean calcDistinct) {
+    if (field == null) {
+      this.add(StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
+    } else {
+      this.add("f." + field + "." + StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
+    }
+  }
+
   public SolrQuery setFilterQueries(String ... fq) {
     this.set(CommonParams.FQ, fq);
     return this;
