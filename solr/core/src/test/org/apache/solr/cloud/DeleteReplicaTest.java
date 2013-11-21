@@ -17,7 +17,18 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Constants;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -29,43 +40,16 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
-  private static final boolean DEBUG = false;
-
-  ThreadPoolExecutor executor = new ThreadPoolExecutor(0,
-      Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("testExecutor"));
-
-  CompletionService<Object> completionService;
-  Set<Future<Object>> pending;
-
+  private CloudSolrServer client;
+  
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
+
   }
 
   @Before
@@ -74,22 +58,26 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     super.setUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
+    client = createCloudClient(null);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    client.shutdown();
   }
 
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
 
-
   public DeleteReplicaTest() {
     fixShardCount = true;
 
     sliceCount = 2;
     shardCount = 4;
-    completionService = new ExecutorCompletionService<Object>(executor);
-    pending = new HashSet<Future<Object>>();
-    checkCreatedVsState = false;
 
+    checkCreatedVsState = false;
   }
 
   @Override
@@ -109,15 +97,12 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-
   @Override
   public void doTest() throws Exception {
     deleteLiveReplicaTest();
 //    deleteInactiveReplicaTest();
 //    super.printLayout();
   }
-
-
 
   private void deleteLiveReplicaTest() throws Exception{
     String COLL_NAME = "delLiveColl";
@@ -140,7 +125,6 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(2500);//remove this later.not sure if the clusterstate is not propagated and that is why the tests are failing.SOLR-5437
     removeAndWaitForReplicaGone(COLL_NAME, client, replica1, shard1.getName());
     client.shutdown();
-
   }
 
   protected void removeAndWaitForReplicaGone(String COLL_NAME, CloudSolrServer client, Replica replica, String shard) throws SolrServerException, IOException, InterruptedException {

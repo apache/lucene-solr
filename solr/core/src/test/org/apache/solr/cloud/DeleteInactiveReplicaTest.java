@@ -17,6 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+
+import java.net.URL;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -27,24 +32,32 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
-
-import java.net.URL;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.Future;
-
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import org.junit.After;
+import org.junit.Before;
 
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
+  private CloudSolrServer client;
+
   @Override
   public void doTest() throws Exception {
     deleteInactiveReplicaTest();
   }
 
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    client = createCloudClient(null);
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    client.shutdown();
+  }
+  
   private void deleteInactiveReplicaTest() throws Exception{
     String COLL_NAME = "delDeadColl";
-    CloudSolrServer client = createCloudClient(null);
-    createCloudClient(null);
+
     createColl(COLL_NAME, client);
 
     boolean stopped = false;
@@ -105,7 +118,6 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
     }
     log.info("removed_replicas {}/{} ",shard1.getName(),replica1.getName());
     removeAndWaitForReplicaGone(COLL_NAME, client, replica1, shard1.getName());
-    client.shutdown();
 
     ChaosMonkey.start(stoppedJetty);
     log.info("restarted jetty");
