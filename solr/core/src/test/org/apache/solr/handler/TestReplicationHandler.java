@@ -751,7 +751,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   
-  @Test @Ignore("https://issues.apache.org/jira/browse/SOLR-5343")
+  @Test 
   public void doTestStressReplication() throws Exception {
     // change solrconfig on slave
     // this has no entry for pollinginterval
