@@ -94,6 +94,10 @@ New Features
 * SOLR-5208: Support for the setting of core.properties key/values at create-time on 
   Collections API (Erick Erickson)
 
+* SOLR-5428: New 'stats.calcdistinct' parameter in StatsComponent returns
+  set of distinct values and their count. This can also be specified per field
+  e.g. 'f.field.stats.calcdistinct'. (Elran Dvir via shalin)
+
 Bug Fixes
 ----------------------
 

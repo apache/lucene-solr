@@ -464,11 +464,12 @@ public class UnInvertedField extends DocTermOrds {
    *
    * @param searcher The Searcher to use to gather the statistics
    * @param baseDocs The {@link org.apache.solr.search.DocSet} to gather the stats on
+   * @param calcDistinct whether distinct values should be collected and counted
    * @param facet One or more fields to facet on.
    * @return The {@link org.apache.solr.handler.component.StatsValues} collected
    * @throws IOException If there is a low-level I/O error.
    */
-  public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, String[] facet) throws IOException {
+  public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, boolean calcDistinct, String[] facet) throws IOException {
     //this function is ripped off nearly wholesale from the getCounts function to use
     //for multiValued fields within the StatsComponent.  may be useful to find common
     //functionality between the two and refactor code somewhat
@@ -477,7 +478,7 @@ public class UnInvertedField extends DocTermOrds {
     SchemaField sf = searcher.getSchema().getField(field);
    // FieldType ft = sf.getType();
 
-    StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
+    StatsValues allstats = StatsValuesFactory.createStatsValues(sf, calcDistinct);
 
 
     DocSet docs = baseDocs;
@@ -494,7 +495,7 @@ public class UnInvertedField extends DocTermOrds {
     SortedDocValues si;
     for (String f : facet) {
       SchemaField facet_sf = searcher.getSchema().getField(f);
-      finfo[i] = new FieldFacetStats(searcher, f, sf, facet_sf);
+      finfo[i] = new FieldFacetStats(searcher, f, sf, facet_sf, calcDistinct);
       i++;
     }
 
