@@ -1567,6 +1567,14 @@ public final class ZkController {
     return updateShardHandler;
   }
 
+  public Overseer getOverseer() {
+    return overseer;
+  }
+
+  public LeaderElector getOverseerElector() {
+    return overseerElector;
+  }
+  
   /**
    * Returns the nodeName that should be used based on the specified properties.
    *
