@@ -23,6 +23,9 @@ Build
 * LUCENE-5322: Clean up / simplify Maven-related Ant targets.
   (Steve Rowe)
 
+* LUCENE-5347: Upgrade forbidden-apis checker to version 1.4.
+  (Uwe Schindler)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

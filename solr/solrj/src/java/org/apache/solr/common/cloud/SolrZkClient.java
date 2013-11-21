@@ -481,8 +481,8 @@ public class SolrZkClient {
       log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
     }
 
-    String data = FileUtils.readFileToString(file);
-    return setData(path, data.getBytes("UTF-8"), retryOnConnLoss);
+    byte[] data = FileUtils.readFileToByteArray(file);
+    return setData(path, data, retryOnConnLoss);
   }
 
   /**

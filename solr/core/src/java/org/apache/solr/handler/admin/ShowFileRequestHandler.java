@@ -423,7 +423,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     File home = null;
     try {
       home = new File(FileUtils.getTempDirectory(), "SOLR_5459"); // Unlikely to name a core or collection this!
-      FileUtils.writeStringToFile(new File(home, "solr.xml"), "<solr></solr>"); // Use auto-discovery
+      FileUtils.writeStringToFile(new File(home, "solr.xml"), "<solr></solr>", "UTF-8"); // Use auto-discovery
       File coll = new File(home, "SOLR_5459");
 
       SolrCore core = req.getCore();
@@ -447,7 +447,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
             new File(coll, "conf"));
       }
 
-      FileUtils.writeStringToFile(new File(coll, "core.properties"), "name=SOLR_5459");
+      FileUtils.writeStringToFile(new File(coll, "core.properties"), "name=SOLR_5459", "UTF-8");
 
       FileUtils.copyInputStreamToFile(stream.getStream(),
           new File(new File(coll, "conf"), req.getParams().get("file", null)));
