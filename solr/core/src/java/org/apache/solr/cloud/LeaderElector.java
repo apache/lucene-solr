@@ -63,10 +63,18 @@ public  class LeaderElector {
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
-  
+
+  // for tests
+  private volatile ElectionContext context;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     zkCmdExecutor = new ZkCmdExecutor((int) (zkClient.getZkClientTimeout()/1000.0 + 3000));
+  }
+  
+  // for tests
+  public ElectionContext getContext() {
+    return context;
   }
   
   /**
@@ -273,6 +281,7 @@ public  class LeaderElector {
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
+    this.context = context;
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     zkCmdExecutor.ensureExists(electZKPath, zkClient);

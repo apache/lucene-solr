@@ -935,9 +935,9 @@ public class Overseer {
     
   }
   
-  private OverseerThread ccThread;
+  private volatile OverseerThread ccThread;
 
-  private OverseerThread updaterThread;
+  private volatile OverseerThread updaterThread;
 
   private volatile boolean isClosed;
 
@@ -968,6 +968,10 @@ public class Overseer {
     
     updaterThread.start();
     ccThread.start();
+  }
+  
+  public OverseerThread getUpdaterThread() {
+    return updaterThread;
   }
   
   public void close() {
