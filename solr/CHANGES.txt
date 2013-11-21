@@ -127,6 +127,9 @@ Bug Fixes
 * SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
   retries. (Mark Miller)
 
+* SOLR-4709: The core reload after replication if config files have changed
+  can fail due to a race condition. (Mark Miller, Hossman))
+
 Optimizations
 ----------------------
 
