@@ -135,7 +135,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
-      assert docStatus != Status.STARTED;
     }
   }
 }
