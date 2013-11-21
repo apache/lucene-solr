@@ -73,6 +73,9 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    if (topN <= 0) {
+      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
+    }
     if (path.length > 0) {
       throw new IllegalArgumentException("path should be 0 length");
     }
@@ -126,8 +129,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       dv.lookupOrd(ordAndValue.ord, scratch);
-      String s = scratch.utf8ToString();
-      labelValues[i] = new LabelAndValue(s.substring(dim.length()+1, s.length()), ordAndValue.value);
+      String[] parts = DocumentBuilder.stringToPath(scratch.utf8ToString());
+      labelValues[i] = new LabelAndValue(parts[1], ordAndValue.value);
     }
 
     return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues);
@@ -135,11 +138,23 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
   /** Does all the "real work" of tallying up the counts. */
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
+    //System.out.println("ssdv count");
+
+    MultiDocValues.OrdinalMap ordinalMap;
+
+    // nocommit not quite right?  really, we need a way to
+    // verify that this ordinalMap "matches" the leaves in
+    // matchingDocs...
+    if (dv instanceof MultiSortedSetDocValues && matchingDocs.size() > 1) {
+      ordinalMap = ((MultiSortedSetDocValues) dv).mapping;
+    } else {
+      ordinalMap = null;
+    }
 
     for(MatchingDocs hits : matchingDocs) {
 
       AtomicReader reader = hits.context.reader();
-
+      //System.out.println("  reader=" + reader);
       // LUCENE-5090: make sure the provided reader context "matches"
       // the top-level reader passed to the
       // SortedSetDocValuesReaderState, else cryptic
@@ -150,11 +165,14 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       
       SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
       if (segValues == null) {
-        return;
+        // nocommit in trunk this was a "return" which is
+        // wrong; make a failing test
+        continue;
       }
 
       final int maxDoc = reader.maxDoc();
       assert maxDoc == hits.bits.length();
+      //System.out.println("  dv=" + dv);
 
       // nocommit, yet another option is to count all segs
       // first, only in seg-ord space, and then do a
@@ -165,33 +183,38 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       // (distributed faceting).  but this has much higher
       // temp ram req'ts (sum of number of ords across all
       // segs)
-      if (dv instanceof MultiSortedSetDocValues) {
-        MultiDocValues.OrdinalMap ordinalMap = ((MultiSortedSetDocValues) dv).mapping;
+      if (ordinalMap != null) {
         int segOrd = hits.context.ord;
 
         int numSegOrds = (int) segValues.getValueCount();
 
         if (hits.totalHits < numSegOrds/10) {
+          //System.out.println("    remap as-we-go");
           // Remap every ord to global ord as we iterate:
           int doc = 0;
           while (doc < maxDoc && (doc = hits.bits.nextSetBit(doc)) != -1) {
+            //System.out.println("    doc=" + doc);
             segValues.setDocument(doc);
             int term = (int) segValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              //System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, term));
               counts[(int) ordinalMap.getGlobalOrd(segOrd, term)]++;
               term = (int) segValues.nextOrd();
             }
             ++doc;
           }
         } else {
+          //System.out.println("    count in seg ord first");
 
           // First count in seg-ord space:
           final int[] segCounts = new int[numSegOrds];
           int doc = 0;
           while (doc < maxDoc && (doc = hits.bits.nextSetBit(doc)) != -1) {
+            //System.out.println("    doc=" + doc);
             segValues.setDocument(doc);
             int term = (int) segValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              //System.out.println("      ord=" + term);
               segCounts[term]++;
               term = (int) segValues.nextOrd();
             }
@@ -202,6 +225,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
           for(int ord=0;ord<numSegOrds;ord++) {
             int count = segCounts[ord];
             if (count != 0) {
+              //System.out.println("    migrate segOrd=" + segOrd + " ord=" + ord + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, ord));
               counts[(int) ordinalMap.getGlobalOrd(segOrd, ord)] += count;
             }
           }
@@ -229,7 +253,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     if (path.length != 1) {
       throw new IllegalArgumentException("path must be length=1");
     }
-
+    // nocommit this is not thread safe in general?  add
+    // jdocs that app must instantiate & use from same thread?
     int ord = (int) dv.lookupTerm(new BytesRef(DocumentBuilder.pathToString(dim, path)));
     if (ord < 0) {
       return -1;

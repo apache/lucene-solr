@@ -94,6 +94,9 @@ public class TaxonomyFacetSumIntAssociations extends TaxonomyFacets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    if (topN <= 0) {
+      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
+    }
     verifyDim(dim);
     FacetLabel cp = FacetLabel.create(dim, path);
     int dimOrd = taxoReader.getOrdinal(cp);

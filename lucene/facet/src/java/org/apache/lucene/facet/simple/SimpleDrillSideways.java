@@ -29,8 +29,6 @@ import java.util.Set;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -110,17 +108,30 @@ public class SimpleDrillSideways {
    *  impl. */
   protected Facets buildFacetsResult(SimpleFacetsCollector drillDowns, SimpleFacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
-    Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);
-
-    if (drillSideways == null) {
-      return drillDownFacets;
-    } else {
-      Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
-      for(int i=0;i<drillSideways.length;i++) {
-        drillSidewaysFacets.put(drillSidewaysDims[i],
-                                new FastTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
+    if (taxoReader != null) {
+      Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);
+      if (drillSideways == null) {
+        return drillDownFacets;
+      } else {
+        Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+        for(int i=0;i<drillSideways.length;i++) {
+          drillSidewaysFacets.put(drillSidewaysDims[i],
+                                  new FastTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
+        }
+        return new MultiFacets(drillSidewaysFacets, drillDownFacets);
       }
-      return new MultiFacets(drillSidewaysFacets, drillDownFacets);
+    } else {
+      Facets drillDownFacets = new SortedSetDocValuesFacetCounts(state, drillDowns);
+      if (drillSideways == null) {
+        return drillDownFacets;
+      } else {
+        Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+        for(int i=0;i<drillSideways.length;i++) {
+          drillSidewaysFacets.put(drillSidewaysDims[i],
+                                  new SortedSetDocValuesFacetCounts(state, drillSideways[i]));
+        }
+        return new MultiFacets(drillSidewaysFacets, drillDownFacets);
+      }
     }
   }
 
@@ -333,6 +344,14 @@ public class SimpleDrillSideways {
     } else {
       return search(after, query, topN);
     }
+  }
+
+  /**
+   * Search, sorting by score, and computing
+   * drill down and sideways counts.
+   */
+  public SimpleDrillSidewaysResult search(SimpleDrillDownQuery query, int topN) throws IOException {
+    return search(null, query, topN);
   }
 
   /**

@@ -27,7 +27,7 @@ import org.apache.lucene.search.Scorer;
 
 /** Verifies in collect() that all child subScorers are on
  *  the collected doc. */
-class AssertingSubDocsAtOnceCollector extends Collector {
+public class AssertingSubDocsAtOnceCollector extends Collector {
 
   // TODO: allow wrapping another Collector
 

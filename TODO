@@ -9,7 +9,6 @@ TODO
   - fewer args when constructing a range
   - how to do avg() agg?
   - test needsScores=true / valuesource associations
-  - make FieldTypes optional (if all your dims are flat)?
   - consistently name things "dimension"? calling these fields is CONFUSING
   - later
     - SSDVValueSourceFacets?

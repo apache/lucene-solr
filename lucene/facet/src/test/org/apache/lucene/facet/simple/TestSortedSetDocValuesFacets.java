@@ -23,10 +23,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
@@ -186,4 +188,37 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
   // nocommit in the sparse case test that we are really
   // sorting by the correct dim count
+
+  public void testSlowCompositeReaderWrapper() throws Exception {
+    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
+    Directory dir = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
+
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
+    writer.addDocument(builder.build(doc));
+
+    writer.commit();
+
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
+    writer.addDocument(builder.build(doc));
+
+    // NRT open
+    IndexSearcher searcher = new IndexSearcher(SlowCompositeReaderWrapper.wrap(writer.getReader()));
+
+    // Per-top-reader state:
+    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+
+    SimpleFacetsCollector c = new SimpleFacetsCollector();
+    searcher.search(new MatchAllDocsQuery(), c);    
+    Facets facets = new SortedSetDocValuesFacetCounts(state, c);
+
+    // Ask for top 10 labels for any dims that have counts:
+    assertEquals("a (2)\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+
+    IOUtils.close(writer, searcher.getIndexReader(), dir);
+  }
 }

@@ -67,6 +67,7 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
           if (b >= 0) {
             prev = ord = ((ord << 7) | b) + prev;
             assert ord < counts.length: "ord=" + ord + " vs maxOrd=" + counts.length;
+            //System.out.println("    ord=" + ord);
             ++counts[ord];
             ord = 0;
           } else {
@@ -119,12 +120,15 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    if (topN <= 0) {
+      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
+    }
     FacetsConfig.DimConfig dimConfig = verifyDim(dim);
-
+    //System.out.println("ftfc.getTopChildren topN=" + topN);
     FacetLabel cp = FacetLabel.create(dim, path);
     int dimOrd = taxoReader.getOrdinal(cp);
     if (dimOrd == -1) {
-      //System.out.println("no ord for path=" + path);
+      //System.out.println("no ord for dim=" + dim + " path=" + path);
       return null;
     }
 
@@ -137,6 +141,7 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
+      //System.out.println("  check ord=" + ord + " label=" + taxoReader.getPath(ord) + " topN=" + topN);
       if (counts[ord] > 0) {
         totCount += counts[ord];
         if (counts[ord] > bottomCount) {
@@ -156,6 +161,7 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
     }
 
     if (totCount == 0) {
+      //System.out.println("  no matches");
       return null;
     }
 
