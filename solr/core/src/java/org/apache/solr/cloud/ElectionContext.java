@@ -71,6 +71,10 @@ public abstract class ElectionContext {
   }
 
   abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
+
+  public void checkIfIamLeaderFired() {}
+
+  public void joinedElectionFired() {}
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
@@ -436,6 +440,17 @@ final class OverseerElectionContext extends ElectionContext {
         CreateMode.EPHEMERAL, true);
     
     overseer.start(id);
+  }
+  
+  @Override
+  public void joinedElectionFired() {
+    overseer.close();
+  }
+  
+  @Override
+  public void checkIfIamLeaderFired() {
+    // leader changed - close the overseer
+    overseer.close();
   }
   
 }
