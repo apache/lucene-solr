@@ -119,8 +119,9 @@ public class ZkStateReader {
   }
 
   /**
-   * Returns config value
-   * @param collection
+   * Returns config set name for collection.
+   * 
+   * @param collection to return config set name for
    */
   public String readConfigName(String collection) throws KeeperException,
       InterruptedException {
