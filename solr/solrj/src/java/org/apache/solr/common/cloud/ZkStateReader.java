@@ -74,6 +74,9 @@ public class ZkStateReader {
   public static final String ACTIVE = "active";
   public static final String DOWN = "down";
   public static final String SYNC = "sync";
+
+  public static final String CONFIGS_ZKNODE = "/configs";
+  public final static String CONFIGNAME_PROP="configName";
   
   private volatile ClusterState clusterState;
 
@@ -113,6 +116,35 @@ public class ZkStateReader {
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
+  }
+
+  /**
+   * Returns config value
+   * @param collection
+   */
+  public String readConfigName(String collection) throws KeeperException,
+      InterruptedException {
+
+    String configName = null;
+
+    String path = COLLECTIONS_ZKNODE + "/" + collection;
+    if (log.isInfoEnabled()) {
+      log.info("Load collection config from:" + path);
+    }
+    byte[] data = zkClient.getData(path, null, null, true);
+
+    if(data != null) {
+      ZkNodeProps props = ZkNodeProps.load(data);
+      configName = props.getStr(CONFIGNAME_PROP);
+    }
+
+    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
+      log.error("Specified config does not exist in ZooKeeper:" + configName);
+      throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
+          "Specified config does not exist in ZooKeeper:" + configName);
+    }
+
+    return configName;
   }
 
 

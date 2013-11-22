@@ -188,7 +188,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             }
           });
       try {
-        String configName = zkController.readConfigName(COLLECTION_NAME);
+        String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
       } finally {
         zkController.close();
