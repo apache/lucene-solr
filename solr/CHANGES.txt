@@ -135,6 +135,10 @@ Bug Fixes
   in zookeeper as UTF-8. This bug was found after upgrading to forbidden-apis
   1.4.  (Uwe Schindler)
 
+* SOLR-4376: DataImportHandler uses wrong date format for last_index_time if
+  a delta-import is run first before any full-imports.
+  (Sebastien Lorber, Arcadius Ahouansou via shalin)
+
 Optimizations
 ----------------------
 
