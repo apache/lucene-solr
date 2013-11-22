@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -43,6 +44,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs({"Lucene3x"})
 public class DocumentDictionaryTest extends LuceneTestCase {
   
   static final String FIELD_NAME = "f1";
