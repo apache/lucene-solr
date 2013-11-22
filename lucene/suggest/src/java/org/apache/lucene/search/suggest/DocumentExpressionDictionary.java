@@ -30,6 +30,7 @@ import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
@@ -37,23 +38,34 @@ import org.apache.lucene.util.BytesRefIterator;
 
 
 /**
+ * <p>
  * Dictionary with terms and optionally payload information 
  * taken from stored fields in a Lucene index. Similar to 
  * {@link DocumentDictionary}, except it computes the weight
  * of the terms in a document based on a user-defined expression
  * having one or more {@link NumericDocValuesField} in the document.
- * 
+ * </p>
  * <b>NOTE:</b> 
  *  <ul>
  *    <li>
- *      The term and (optionally) payload fields supplied
- *      are required for ALL documents and has to be stored
+ *      The term and (optionally) payload fields have to be
+ *      stored
+ *    </li>
+ *    <li>
+ *      if the term or (optionally) payload fields supplied
+ *      do not have a value for a document, then the document is 
+ *      rejected by the dictionary
+ *    </li>
+ *    <li>
+ *      All the fields used in <code>weightExpression</code> should
+ *      have values for all documents, if any of the fields do not 
+ *      have a value for a document, it will default to 0
  *    </li>
  *  </ul>
  */
 public class DocumentExpressionDictionary extends DocumentDictionary {
   
-  private ValueSource weightsValueSource;
+  private final ValueSource weightsValueSource;
   
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
@@ -86,8 +98,31 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
     for (SortField sortField: sortFields) {
       bindings.add(sortField);
     }
-    weightsValueSource = expression.getValueSource(bindings);
     
+    weightsValueSource = expression.getValueSource(bindings);
+  }
+  
+  /** 
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms, <code>payloadField</code> for the corresponding payloads
+   * and uses the <code>weightsValueSource</code> supplied to determine the 
+   * score.
+   */
+  public DocumentExpressionDictionary(IndexReader reader, String field,
+      ValueSource weightsValueSource, String payload) {
+    super(reader, field, null, payload);
+    this.weightsValueSource = weightsValueSource;  
+  }
+  
+  /** 
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms and uses the <code>weightsValueSource</code> supplied to determine the 
+   * score.
+   */
+  public DocumentExpressionDictionary(IndexReader reader, String field,
+      ValueSource weightsValueSource) {
+    super(reader, field, null, null);
+    this.weightsValueSource = weightsValueSource;  
   }
   
   @Override
@@ -98,30 +133,36 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
   final class DocumentExpressionInputIterator extends DocumentDictionary.DocumentInputIterator {
     
     private FunctionValues currentWeightValues;
-    private int currentLeafIndex = 0;
+    /** leaves of the reader */
     private final List<AtomicReaderContext> leaves;
-    
+    /** starting docIds of all the leaves */
     private final int[] starts;
+    /** current leave index */
+    private int currentLeafIndex = 0;
     
     public DocumentExpressionInputIterator(boolean hasPayloads)
         throws IOException {
       super(hasPayloads);
       leaves = reader.leaves();
-      if (leaves.size() == 0) {
-        throw new IllegalArgumentException("Reader has to have at least one leaf");
-      }
       starts = new int[leaves.size() + 1];
       for (int i = 0; i < leaves.size(); i++) {
         starts[i] = leaves.get(i).docBase;
       }
       starts[leaves.size()] = reader.maxDoc();
-      
-      currentLeafIndex = 0;
-      currentWeightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex));
+      currentWeightValues = (leaves.size() > 0) 
+          ? weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex))
+          : null;
     }
     
+    /** 
+     * Returns the weight for the current <code>docId</code> as computed 
+     * by the <code>weightsValueSource</code>
+     * */
     @Override
-    protected long getWeight(int docId) {
+    protected long getWeight(StoredDocument doc, int docId) {    
+      if (currentWeightValues == null) {
+        return 0;
+      }
       int subIndex = ReaderUtil.subIndex(docId, starts);
       if (subIndex != currentLeafIndex) {
         currentLeafIndex = subIndex;

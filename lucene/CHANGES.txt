@@ -68,6 +68,11 @@ New Features
 * LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
   (Jack Conradson via Robert Muir)
 
+* LUCENE-5329: suggest: DocumentDictionary and
+  DocumentExpressionDictionary are now lenient for dirty documents
+  (missing the term, weight or payload).  (Areek Zillur via
+  Mike McCandless)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable

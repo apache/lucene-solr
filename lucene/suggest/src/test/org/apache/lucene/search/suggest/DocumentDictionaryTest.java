@@ -1,22 +1,24 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -48,19 +50,73 @@ public class DocumentDictionaryTest extends LuceneTestCase {
   static final String WEIGHT_FIELD_NAME = "w1";
   static final String PAYLOAD_FIELD_NAME = "p1";
   
-  private Map<String, Document> generateIndexDocuments(int ndocs) {
+  /** Returns Pair(list of invalid document terms, Map of document term -> document) */
+  private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresPayload) {
     Map<String, Document> docs = new HashMap<>();
+    List<String> invalidDocTerms = new ArrayList<>();
     for(int i = 0; i < ndocs ; i++) {
-      Field field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
-      Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
-      Field weight = new StoredField(WEIGHT_FIELD_NAME, 100d + i);
       Document doc = new Document();
-      doc.add(field);
-      doc.add(payload);
-      doc.add(weight);
-      docs.put(field.stringValue(), doc);
+      boolean invalidDoc = false;
+      Field field = null;
+      // usually have valid term field in document
+      if (usually()) {
+        field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
+        doc.add(field);
+      } else {
+        invalidDoc = true;
+      }
+      
+      // even if payload is not required usually have it
+      if (requiresPayload || usually()) {
+        // usually have valid payload field in document
+        if (usually()) {
+          Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
+          doc.add(payload);
+        } else if (requiresPayload) {
+          invalidDoc = true;
+        }
+      }
+      
+      // usually have valid weight field in document
+      if (usually()) {
+        Field weight = (rarely()) ? 
+            new StoredField(WEIGHT_FIELD_NAME, 100d + i) : 
+            new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
+        doc.add(weight);
+      }
+      
+      String term = null;
+      if (invalidDoc) {
+        term = (field!=null) ? field.stringValue() : "invalid_" + i;
+        invalidDocTerms.add(term);
+      } else {
+        term = field.stringValue();
+      }
+      
+      docs.put(term, doc);
     }
-    return docs;
+    return new SimpleEntry<List<String>, Map<String, Document>>(invalidDocTerms, docs);
+  }
+  
+  @Test
+  public void testEmptyReader() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    // Make sure the index is created?
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    writer.commit();
+    writer.close();
+    IndexReader ir = DirectoryReader.open(dir);
+    Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+
+    assertNull(inputIterator.next());
+    assertEquals(inputIterator.weight(), 0);
+    assertNull(inputIterator.payload());
+    
+    ir.close();
+    dir.close();
   }
   
   @Test
@@ -69,7 +125,9 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(10);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true);
+    Map<String, Document> docs = res.getValue();
+    List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -77,15 +135,21 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), doc.getField(WEIGHT_FIELD_NAME).numericValue().longValue());
-      assertTrue(tfp.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+      Field weightField = doc.getField(WEIGHT_FIELD_NAME);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+    }
+    
+    for (String invalidTerm : invalidDocTerms) {
+      assertNotNull(docs.remove(invalidTerm));
     }
     assertTrue(docs.isEmpty());
+    
     ir.close();
     dir.close();
   }
@@ -96,7 +160,9 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(10);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false);
+    Map<String, Document> docs = res.getValue();
+    List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -104,15 +170,22 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), doc.getField(WEIGHT_FIELD_NAME).numericValue().longValue());
-      assertEquals(tfp.payload(), null);
+      Field weightField = doc.getField(WEIGHT_FIELD_NAME);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.payload(), null);
     }
+    
+    for (String invalidTerm : invalidDocTerms) {
+      assertNotNull(docs.remove(invalidTerm));
+    }
+    
     assertTrue(docs.isEmpty());
+    
     ir.close();
     dir.close();
   }
@@ -123,11 +196,14 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(10);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false);
+    Map<String, Document> docs = res.getValue();
+    List<String> invalidDocTerms = res.getKey();
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
-      if(rand.nextBoolean()) {
+      StorableField f = doc.getField(FIELD_NAME);
+      if(rand.nextBoolean() && f != null && !invalidDocTerms.contains(f.stringValue())) {
         termsToDel.add(doc.get(FIELD_NAME));
       }
       writer.addDocument(doc);
@@ -152,15 +228,21 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(ir.numDocs(), docs.size());
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), doc.getField(WEIGHT_FIELD_NAME).numericValue().longValue());
-      assertEquals(tfp.payload(), null);
+      Field weightField = doc.getField(WEIGHT_FIELD_NAME);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.payload(), null);
+    }
+    
+    for (String invalidTerm : invalidDocTerms) {
+      assertNotNull(docs.remove(invalidTerm));
     }
     assertTrue(docs.isEmpty());
+    
     ir.close();
     dir.close();
   }
