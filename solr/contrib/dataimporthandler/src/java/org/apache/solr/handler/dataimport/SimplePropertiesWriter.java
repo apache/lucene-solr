@@ -130,7 +130,8 @@ public class SimplePropertiesWriter extends DIHProperties {
     
   }
   
-  protected String convertDateToString(Date d) {
+  @Override
+  public String convertDateToString(Date d) {
     return dateFormat.format(d);
   }
   protected Date convertStringToDate(String s) {

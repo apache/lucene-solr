@@ -117,6 +117,7 @@ public class DocBuilder {
   private VariableResolver getVariableResolver() {
     try {
       VariableResolver resolver = null;
+      String epoch = propWriter.convertDateToString(EPOCH);
       if(dataImporter != null && dataImporter.getCore() != null
           && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
         resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
@@ -129,7 +130,7 @@ public class DocBuilder {
         indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.get(LAST_INDEX_TIME));
       } else  {
         // set epoch
-        indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
+        indexerNamespace.put(LAST_INDEX_TIME, epoch);
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", new HashMap<String,Object>(reqParams.getRawParams()));
@@ -140,7 +141,7 @@ public class DocBuilder {
         if (lastIndex != null) {
           entityNamespace.put(SolrWriter.LAST_INDEX_KEY, lastIndex);
         } else  {
-          entityNamespace.put(SolrWriter.LAST_INDEX_KEY, EPOCH);
+          entityNamespace.put(SolrWriter.LAST_INDEX_KEY, epoch);
         }
         indexerNamespace.put(entity.getName(), entityNamespace);
       }
