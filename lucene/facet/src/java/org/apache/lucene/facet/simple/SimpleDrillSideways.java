@@ -108,30 +108,31 @@ public class SimpleDrillSideways {
    *  impl. */
   protected Facets buildFacetsResult(SimpleFacetsCollector drillDowns, SimpleFacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
+    Facets drillDownFacets;
+    Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+
     if (taxoReader != null) {
-      Facets drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);
-      if (drillSideways == null) {
-        return drillDownFacets;
-      } else {
-        Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+      drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);
+      if (drillSideways != null) {
         for(int i=0;i<drillSideways.length;i++) {
           drillSidewaysFacets.put(drillSidewaysDims[i],
                                   new FastTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
         }
-        return new MultiFacets(drillSidewaysFacets, drillDownFacets);
       }
     } else {
-      Facets drillDownFacets = new SortedSetDocValuesFacetCounts(state, drillDowns);
-      if (drillSideways == null) {
-        return drillDownFacets;
-      } else {
-        Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+      drillDownFacets = new SortedSetDocValuesFacetCounts(state, drillDowns);
+      if (drillSideways != null) {
         for(int i=0;i<drillSideways.length;i++) {
           drillSidewaysFacets.put(drillSidewaysDims[i],
                                   new SortedSetDocValuesFacetCounts(state, drillSideways[i]));
         }
-        return new MultiFacets(drillSidewaysFacets, drillDownFacets);
       }
+    }
+
+    if (drillSidewaysFacets.isEmpty()) {
+      return drillDownFacets;
+    } else {
+      return new MultiFacets(drillSidewaysFacets, drillDownFacets);
     }
   }
 

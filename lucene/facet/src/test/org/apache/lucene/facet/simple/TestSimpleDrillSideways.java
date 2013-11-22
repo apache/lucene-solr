@@ -420,7 +420,6 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     bChance /= sum;
     cChance /= sum;
 
-    // nocommit
     int numDims = _TestUtil.nextInt(random(), 2, 5);
     //int numDims = 3;
     int numDocs = atLeast(3000);

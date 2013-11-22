@@ -71,7 +71,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
     };
   }
 
-  public Facets getFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c) throws IOException {
+  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c) throws IOException {
     Facets facets;
     if (random().nextBoolean()) {
       facets = new FastTaxonomyFacetCounts(taxoReader, config, c);

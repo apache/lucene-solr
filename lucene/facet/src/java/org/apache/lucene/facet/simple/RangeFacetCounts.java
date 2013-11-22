@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.facet.range.Range;
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -33,14 +34,16 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 public class RangeFacetCounts extends Facets {
   private final Range[] ranges;
   private final int[] counts;
+  private final String field;
   private int totCount;
 
   public RangeFacetCounts(String field, SimpleFacetsCollector hits, Range... ranges) throws IOException {
-    this(new LongFieldSource(field), hits, ranges);
+    this(field, new LongFieldSource(field), hits, ranges);
   }
 
-  public RangeFacetCounts(ValueSource valueSource, SimpleFacetsCollector hits, Range... ranges) throws IOException {
+  public RangeFacetCounts(String field, ValueSource valueSource, SimpleFacetsCollector hits, Range... ranges) throws IOException {
     this.ranges = ranges;
+    this.field = field;
     counts = new int[ranges.length];
     count(valueSource, hits.getMatchingDocs());
   }
@@ -83,13 +86,16 @@ public class RangeFacetCounts extends Facets {
 
   @Override
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) {
+    if (dim.equals(field) == false) {
+      throw new IllegalArgumentException("invalid dim \"" + dim + "\"; should be \"" + field + "\"");
+    }
     LabelAndValue[] labelValues = new LabelAndValue[counts.length];
     for(int i=0;i<counts.length;i++) {
       // nocommit can we add the range into this?
       labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
     }
 
-    return new SimpleFacetResult(null, totCount, labelValues);
+    return new SimpleFacetResult(new FacetLabel(field), totCount, labelValues);
   }
 
   @Override

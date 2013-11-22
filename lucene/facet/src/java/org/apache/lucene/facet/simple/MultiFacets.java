@@ -27,6 +27,10 @@ public class MultiFacets extends Facets {
   private final Map<String,Facets> dimToFacets;
   private final Facets defaultFacets;
 
+  public MultiFacets(Map<String,Facets> dimToFacets) {
+    this(dimToFacets = dimToFacets, null);
+  }
+
   public MultiFacets(Map<String,Facets> dimToFacets, Facets defaultFacets) {
     this.dimToFacets = dimToFacets;
     this.defaultFacets = defaultFacets;
@@ -35,6 +39,9 @@ public class MultiFacets extends Facets {
   public SimpleFacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
     Facets facets = dimToFacets.get(dim);
     if (facets == null) {
+      if (defaultFacets == null) {
+        throw new IllegalArgumentException("invalid dim \"" + dim + "\"");
+      }
       facets = defaultFacets;
     }
     return facets.getTopChildren(topN, dim, path);
@@ -43,6 +50,9 @@ public class MultiFacets extends Facets {
   public Number getSpecificValue(String dim, String... path) throws IOException {
     Facets facets = dimToFacets.get(dim);
     if (facets == null) {
+      if (defaultFacets == null) {
+        throw new IllegalArgumentException("invalid dim \"" + dim + "\"");
+      }
       facets = defaultFacets;
     }
     return facets.getSpecificValue(dim, path);

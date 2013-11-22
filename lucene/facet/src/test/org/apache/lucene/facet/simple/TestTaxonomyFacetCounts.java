@@ -173,7 +173,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     SimpleFacetsCollector c = new SimpleFacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
 
-    Facets facets = getFacetCounts(taxoReader, new FacetsConfig(), c);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, new FacetsConfig(), c);
 
     // Ask for top 10 labels for any dims that have counts:
     List<SimpleFacetResult> results = facets.getAllDims(10);
@@ -303,7 +303,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     // you'd use a "normal" query, and use MultiCollector to
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
-    Facets facets = getFacetCounts(taxoReader, config, c);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, config, c);
     SimpleFacetResult result = facets.getTopChildren(10, "a");
     assertEquals(1, result.labelValues.length);
     assertEquals(1, result.labelValues[0].value.intValue());
@@ -336,7 +336,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     SimpleFacetsCollector c = new SimpleFacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);
     
-    Facets facets = getFacetCounts(taxoReader, config, c);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, config, c);
     assertEquals(1, facets.getSpecificValue("dim", "test\u001Fone"));
     assertEquals(1, facets.getSpecificValue("dim", "test\u001Etwo"));
 
@@ -378,7 +378,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     SimpleFacetsCollector c = new SimpleFacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);
     
-    Facets facets = getFacetCounts(taxoReader, config, c);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, config, c);
     assertEquals(1, facets.getTopChildren(10, "dim").value);
     assertEquals(1, facets.getTopChildren(10, "dim2").value);
     assertEquals(1, facets.getTopChildren(10, "dim3").value);
@@ -422,7 +422,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     // you'd use a "normal" query, and use MultiCollector to
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
-    Facets facets = getFacetCounts(taxoReader, config, c);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, config, c);
 
     SimpleFacetResult result = facets.getTopChildren(Integer.MAX_VALUE, "dim");
     assertEquals(numLabels, result.labelValues.length);

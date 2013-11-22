@@ -203,10 +203,7 @@ public final class SimpleDrillDownQuery extends Query {
   @Override
   public Query rewrite(IndexReader r) throws IOException {
     if (query.clauses().size() == 0) {
-      // baseQuery given to the ctor was null + no drill-downs were added
-      // note that if only baseQuery was given to the ctor, but no drill-down terms
-      // is fine, since the rewritten query will be the original base query.
-      throw new IllegalStateException("no base query or drill-down categories given");
+      return new MatchAllDocsQuery();
     }
     return query;
   }
