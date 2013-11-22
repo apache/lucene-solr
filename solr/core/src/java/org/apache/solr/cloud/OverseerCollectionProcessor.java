@@ -1163,7 +1163,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
       if (rules != null) {
         RoutingRule rule = rules.get(splitKey);
-        if (rule.getRouteRanges().contains(splitRange)) {
+        if (rule != null && rule.getRouteRanges().contains(splitRange)) {
           added = true;
           break;
         }
@@ -1179,13 +1179,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     Replica sourceLeader = sourceSlice.getLeader();
 
     // create a temporary collection with just one node on the shard leader
-    String sourceLeaderUrl = zkStateReader.getZkClient().getBaseUrlForNodeName(sourceLeader.getNodeName());
-    if (sourceLeaderUrl.startsWith("http://")) sourceLeaderUrl = sourceLeaderUrl.substring(7);
+    String configName = zkStateReader.readConfigName(sourceCollection.getName());
     Map<String, Object> props = ZkNodeProps.makeMap(
         QUEUE_OPERATION, CREATECOLLECTION,
         "name", tempSourceCollectionName,
         REPLICATION_FACTOR, 1,
         NUM_SLICES, 1,
+        COLL_CONF, configName,
         CREATE_NODE_SET, sourceLeader.getNodeName());
     log.info("Creating temporary collection: " + props);
     createCollection(clusterState, new ZkNodeProps(props), results);
@@ -1193,6 +1193,23 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     clusterState = zkStateReader.getClusterState();
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
     Replica tempSourceLeader = clusterState.getLeader(tempSourceCollectionName, tempSourceSlice.getName());
+
+    String tempCollectionReplica1 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica1";
+    String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
+        zkStateReader.getZkClient().getBaseUrlForNodeName(sourceLeader.getNodeName()), tempCollectionReplica1);
+    // wait for the replicas to be seen as active on temp source leader
+    log.info("Asking source leader to wait for: " + tempCollectionReplica1 + " to be alive on: " + sourceLeader.getNodeName());
+    CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+    cmd.setCoreName(tempCollectionReplica1);
+    cmd.setNodeName(sourceLeader.getNodeName());
+    cmd.setCoreNodeName(coreNodeName);
+    cmd.setState(ZkStateReader.ACTIVE);
+    cmd.setCheckLive(true);
+    cmd.setOnlyIfLeader(true);
+    sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()));
+
+    collectShardResponses(results, true,
+        "MIGRATE failed to create temp collection leader or timed out waiting for it to come up");
 
     log.info("Asking source leader to split index");
     params = new ModifiableSolrParams();
@@ -1215,11 +1232,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     params.set(CoreAdminParams.SHARD, tempSourceSlice.getName());
     sendShardRequest(targetLeader.getNodeName(), params);
 
-    String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
+    coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
         zkStateReader.getZkClient().getBaseUrlForNodeName(targetLeader.getNodeName()), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     log.info("Asking temp source leader to wait for: " + tempCollectionReplica2 + " to be alive on: " + targetLeader.getNodeName());
-    CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+    cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempSourceLeader.getStr("core"));
     cmd.setNodeName(targetLeader.getNodeName());
     cmd.setCoreNodeName(coreNodeName);

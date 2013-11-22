@@ -676,7 +676,7 @@ public class CoreContainer {
             String collection = cd.getCloudDescriptor().getCollectionName();
             zkSys.getZkController().createCollectionZkNode(cd.getCloudDescriptor());
 
-            String zkConfigName = zkSys.getZkController().readConfigName(collection);
+            String zkConfigName = zkSys.getZkController().getZkStateReader().readConfigName(collection);
             if (zkConfigName == null) {
               log.error("Could not find config name for collection:" + collection);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,

@@ -733,35 +733,6 @@ public final class ZkController {
     return zkClient.exists(path, true);
   }
 
-  /**
-   * Returns config value
-   */
-  public String readConfigName(String collection) throws KeeperException,
-      InterruptedException {
-
-    String configName = null;
-
-    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
-    if (log.isInfoEnabled()) {
-      log.info("Load collection config from:" + path);
-    }
-    byte[] data = zkClient.getData(path, null, null, true);
-    
-    if(data != null) {
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-    }
-    
-    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-      log.error("Specified config does not exist in ZooKeeper:" + configName);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Specified config does not exist in ZooKeeper:" + configName);
-    }
-
-    return configName;
-  }
-
-
 
   /**
    * Register shard with ZooKeeper.
