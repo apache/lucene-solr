@@ -49,6 +49,9 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   private final int k;
   private Query query;
 
+  private int minDocsFreq;
+  private int minTermFreq;
+
   /**
    * Create a {@link Classifier} using kNN algorithm
    *
@@ -56,6 +59,19 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   public KNearestNeighborClassifier(int k) {
     this.k = k;
+  }
+
+  /**
+   * Create a {@link Classifier} using kNN algorithm
+   *
+   * @param k           the number of neighbors to analyze as an <code>int</code>
+   * @param minDocsFreq the minimum number of docs frequency for MLT to be set with {@link MoreLikeThis#setMinDocFreq(int)}
+   * @param minTermFreq the minimum number of term frequency for MLT to be set with {@link MoreLikeThis#setMinTermFreq(int)}
+   */
+  public KNearestNeighborClassifier(int k, int minDocsFreq, int minTermFreq) {
+    this.k = k;
+    this.minDocsFreq = minDocsFreq;
+    this.minTermFreq = minTermFreq;
   }
 
   /**
@@ -93,11 +109,11 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     }
     double max = 0;
     BytesRef assignedClass = new BytesRef();
-    for (BytesRef cl : classCounts.keySet()) {
-      Integer count = classCounts.get(cl);
+    for (Map.Entry<BytesRef, Integer> entry : classCounts.entrySet()) {
+      Integer count = entry.getValue();
       if (count > max) {
         max = count;
-        assignedClass = cl.clone();
+        assignedClass = entry.getKey().clone();
       }
     }
     double score = max / (double) k;
@@ -117,13 +133,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    this.textFieldNames = new String[]{textFieldName};
-    this.classFieldName = classFieldName;
-    mlt = new MoreLikeThis(atomicReader);
-    mlt.setAnalyzer(analyzer);
-    mlt.setFieldNames(new String[]{textFieldName});
-    indexSearcher = new IndexSearcher(atomicReader);
-    this.query = query;
+    train(atomicReader, new String[]{textFieldName}, classFieldName, analyzer, query);
   }
 
   /**
@@ -137,6 +147,12 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     mlt.setAnalyzer(analyzer);
     mlt.setFieldNames(textFieldNames);
     indexSearcher = new IndexSearcher(atomicReader);
+    if (minDocsFreq > 0) {
+      mlt.setMinDocFreq(minDocsFreq);
+    }
+    if (minTermFreq > 0) {
+      mlt.setMinTermFreq(minTermFreq);
+    }
     this.query = query;
   }
 }
