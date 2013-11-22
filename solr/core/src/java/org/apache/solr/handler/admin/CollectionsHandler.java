@@ -379,7 +379,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     Iterator<String> iter =  params.getParameterNamesIterator();
     while (iter.hasNext()) {
       String param = iter.next();
-      if (param.indexOf(OverseerCollectionProcessor.COLL_PROP_PREFIX) != -1) {
+      if (param.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX)) {
         props.put(param, params.get(param));
       }
     }

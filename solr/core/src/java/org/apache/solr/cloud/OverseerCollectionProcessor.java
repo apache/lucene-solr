@@ -1309,7 +1309,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   private void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
-      if (key.indexOf(COLL_PROP_PREFIX) != -1) {
+      if (key.startsWith(COLL_PROP_PREFIX)) {
         params.set(key, message.getStr(key));
       }
     }
