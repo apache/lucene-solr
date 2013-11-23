@@ -84,7 +84,7 @@ New Features
 * SOLR-5287: You can edit files in the conf directory from the admin UI 
   (Erick Erickson, Stefan Matheis)
 
-* SOLR-5447: Add a QParserPlugin for Lucene's SimpleQueryParser.
+* SOLR-5447, SOLR-5490: Add a QParserPlugin for Lucene's SimpleQueryParser.
   (Jack Conradson via shalin)
 
 * SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)

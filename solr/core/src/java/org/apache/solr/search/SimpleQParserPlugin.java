@@ -17,8 +17,12 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.simple.SimpleQueryParser;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SimpleParams;
@@ -26,6 +30,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.TextField;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.util.HashMap;
@@ -154,7 +161,35 @@ public class SimpleQParserPlugin extends QParserPlugin {
     }
 
     // Create a SimpleQueryParser using the analyzer from the schema.
-    final SimpleQueryParser parser = new SimpleQueryParser(req.getSchema().getAnalyzer(), queryFields, enabledOps);
+    final IndexSchema schema = req.getSchema();
+    final SimpleQueryParser parser = new SimpleQueryParser(req.getSchema().getAnalyzer(), queryFields, enabledOps) {
+      // Override newPrefixQuery to provide a multi term analyzer for prefix queries run against TextFields.
+      @Override
+      protected Query newPrefixQuery(String text) {
+        BooleanQuery bq = new BooleanQuery(true);
+
+        for (Map.Entry<String, Float> entry : weights.entrySet()) {
+          String field = entry.getKey();
+          FieldType type = schema.getFieldType(field);
+          Query prefix;
+
+          if (type instanceof TextField) {
+            // If the field type is a TextField then use the multi term analyzer.
+            Analyzer analyzer = ((TextField)type).getMultiTermAnalyzer();
+            String term = TextField.analyzeMultiTerm(field, text, analyzer).utf8ToString();
+            prefix = new PrefixQuery(new Term(field, term));
+          } else {
+            // If the type is *not* a TextField don't do any analysis.
+            prefix = new PrefixQuery(new Term(entry.getKey(), text));
+          }
+
+          prefix.setBoost(entry.getValue());
+          bq.add(prefix, BooleanClause.Occur.SHOULD);
+        }
+
+        return simplify(bq);
+      }
+    };
 
     // Set the default operator to be either 'AND' or 'OR' for the query.
     QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));

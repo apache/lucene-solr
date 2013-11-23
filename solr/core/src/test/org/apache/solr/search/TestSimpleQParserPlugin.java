@@ -17,6 +17,9 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,7 +47,8 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "53", "text0", "close", "text1", ")", "text-keyword0", ")"));
     assertU(adoc("id", "54", "text0", "escape", "text1", "\\", "text-keyword0", "\\"));
     assertU(adoc("id", "55", "text0", "whitespace", "text1", "whitespace", "text-keyword0", " "));
-    assertU(adoc("id", "55", "text0", "whitespace", "text1", "whitespace", "text-keyword0", "\n"));
+    assertU(adoc("id", "56", "text0", "whitespace", "text1", "whitespace", "text-keyword0", "\n"));
+    assertU(adoc("id", "57", "text0", "foobar", "text1", "foo bar", "text-keyword0", "fb"));
     assertU(commit());
   }
 
@@ -204,5 +208,13 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertJQ(req("defType", "simple", "qf", "text0 text-keyword0", "q", "t0 t2",
         "q.op", "AND"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text1", "q", "t2 t3"), "/response/numFound==2");
+  }
+
+  /** Test that multiterm analysis chain is used for prefix. */
+  public void testPrefixChain() throws Exception {
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "FOOBAR*"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "Fóóbar*"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "FOO*"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "BAR*"), "/response/numFound==0");
   }
 }
