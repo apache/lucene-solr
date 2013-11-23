@@ -120,11 +120,13 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
 
     int ord = children[dimOrd];
     int totCount = 0;
+    int childCount = 0;
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
       if (counts[ord] > 0) {
         totCount += counts[ord];
+        childCount++;
         if (counts[ord] > bottomCount) {
           if (reuse == null) {
             reuse = new TopOrdAndIntQueue.OrdAndValue();
@@ -163,6 +165,6 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, totCount, labelValues);
+    return new SimpleFacetResult(cp, totCount, labelValues, childCount);
   }
 }

@@ -74,36 +74,35 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig();
+    FacetsConfig config = new FacetsConfig(taxoWriter);
     config.setHierarchical("Publish Date", true);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -247,22 +246,18 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig();
+    FacetsConfig config = new FacetsConfig(taxoWriter);
     config.setHierarchical("Publish Date", true);
-
-    // Reused across documents, to add the necessary facet
-    // fields:
-    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
 
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     writer.commit();
 
@@ -270,7 +265,7 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     doc = new Document();
     doc.add(new FacetField("Foobar", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -301,40 +296,36 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     Directory taxoDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    FacetsConfig config = new FacetsConfig();
-    config.setHierarchical("dim", true);
-
     // Writes facet ords to a separate directory from the
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    // Reused across documents, to add the necessary facet
-    // fields:
-    DocumentBuilder builder = new DocumentBuilder(taxoWriter, config);
+    FacetsConfig config = new FacetsConfig(taxoWriter);
+    config.setHierarchical("dim", true);
 
     Document doc = new Document();
     doc.add(new FacetField("dim", "a", "x"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("dim", "a", "y"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("dim", "a", "z"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("dim", "b"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("dim", "c"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new FacetField("dim", "d"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -485,11 +476,10 @@ public class TestSimpleDrillSideways extends FacetTestCase {
     iwc.setInfoStream(InfoStream.NO_OUTPUT);
     RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(td, IndexWriterConfig.OpenMode.CREATE);
-    FacetsConfig config = new FacetsConfig();
+    FacetsConfig config = new FacetsConfig(tw);
     for(int i=0;i<numDims;i++) {
       config.setMultiValued("dim"+i, true);
     }
-    DocumentBuilder builder = new DocumentBuilder(tw, config);
 
     boolean doUseDV = canUseDV && random().nextBoolean();
 
@@ -528,7 +518,7 @@ public class TestSimpleDrillSideways extends FacetTestCase {
         }
       }
 
-      w.addDocument(builder.build(doc));
+      w.addDocument(config.build(doc));
     }
 
     if (random().nextBoolean()) {

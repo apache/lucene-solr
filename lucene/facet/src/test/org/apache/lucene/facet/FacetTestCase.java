@@ -72,11 +72,15 @@ public abstract class FacetTestCase extends LuceneTestCase {
   }
 
   public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c) throws IOException {
+    return getTaxonomyFacetCounts(taxoReader, config, c, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+  }
+
+  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c, String indexFieldName) throws IOException {
     Facets facets;
     if (random().nextBoolean()) {
-      facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
+      facets = new FastTaxonomyFacetCounts(indexFieldName, taxoReader, config, c);
     } else {
-      OrdinalsReader ordsReader = new DocValuesOrdinalsReader();
+      OrdinalsReader ordsReader = new DocValuesOrdinalsReader(indexFieldName);
       if (random().nextBoolean()) {
         ordsReader = new CachedOrdinalsReader(ordsReader);
       }

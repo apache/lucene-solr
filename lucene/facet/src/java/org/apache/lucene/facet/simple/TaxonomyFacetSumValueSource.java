@@ -25,8 +25,10 @@ import java.util.Map;
 import org.apache.lucene.facet.simple.SimpleFacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
@@ -74,7 +76,9 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
   private final void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, ValueSource valueSource) throws IOException {
     final FakeScorer scorer = new FakeScorer();
     Map<String, Scorer> context = new HashMap<String, Scorer>();
-    context.put("scorer", scorer);
+    if (keepScores) {
+      context.put("scorer", scorer);
+    }
     IntsRef scratch = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
       OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
@@ -144,6 +148,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
     FacetLabel cp = FacetLabel.create(dim, path);
     int dimOrd = taxoReader.getOrdinal(cp);
     if (dimOrd == -1) {
+      System.out.println("  no dim ord " + dim);
       return null;
     }
 
@@ -152,11 +157,13 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
 
     int ord = children[dimOrd];
     float sumValues = 0;
+    int childCount = 0;
 
     TopOrdAndFloatQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
       if (values[ord] > 0) {
         sumValues += values[ord];
+        childCount++;
         if (values[ord] > bottomValue) {
           if (reuse == null) {
             reuse = new TopOrdAndFloatQueue.OrdAndValue();
@@ -174,6 +181,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
     }
 
     if (sumValues == 0) {
+      System.out.println("  no sum");
       return null;
     }
 
@@ -195,6 +203,33 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, sumValues, labelValues);
+    return new SimpleFacetResult(cp, sumValues, labelValues, childCount);
   }
+
+  /** {@link ValueSource} that returns the score for each
+   *  hit; use this to aggregate the sum of all hit scores
+   *  for each facet label.  */
+  public static class ScoreValueSource extends ValueSource {
+    @Override
+    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, AtomicReaderContext readerContext) throws IOException {
+      final Scorer scorer = (Scorer) context.get("scorer");
+      if (scorer == null) {
+        throw new IllegalStateException("scores are missing; be sure to pass keepScores=true to SimpleFacetsCollector");
+      }
+      return new DoubleDocValues(this) {
+        @Override
+        public double doubleVal(int document) {
+          try {
+            return scorer.score();
+          } catch (IOException exception) {
+            throw new RuntimeException(exception);
+          }
+        }
+      };
+    }
+
+    @Override public boolean equals(Object o) { return o == this; }
+    @Override public int hashCode() { return System.identityHashCode(this); }
+    @Override public String description() { return "score()"; }
+    };
 }

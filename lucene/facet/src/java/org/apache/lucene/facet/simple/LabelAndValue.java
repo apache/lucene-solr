@@ -33,4 +33,15 @@ public final class LabelAndValue {
   public String toString() {
     return label + " (" + value + ")";
   }
+
+  @Override
+  public boolean equals(Object _other) {
+    if ((_other instanceof LabelAndValue) == false) {
+      return false;
+    }
+    LabelAndValue other = (LabelAndValue) _other;
+    return label.equals(other.label) && value.equals(other.value);
+  }
+
+  // nocommit hashCode
 }

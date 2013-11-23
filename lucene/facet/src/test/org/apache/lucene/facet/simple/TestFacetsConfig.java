@@ -22,7 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestDocumentBuilder extends FacetTestCase {
+public class TestFacetsConfig extends FacetTestCase {
   public void testPathToStringAndBack() throws Exception {
     int iters = atLeast(1000);
     for(int i=0;i<iters;i++) {
@@ -32,8 +32,8 @@ public class TestDocumentBuilder extends FacetTestCase {
         parts[j] = _TestUtil.randomUnicodeString(random());
       }
 
-      String s = DocumentBuilder.pathToString(parts);
-      String[] parts2 = DocumentBuilder.stringToPath(s);
+      String s = FacetsConfig.pathToString(parts);
+      String[] parts2 = FacetsConfig.stringToPath(s);
       assertTrue(Arrays.equals(parts, parts2));
     }
   }

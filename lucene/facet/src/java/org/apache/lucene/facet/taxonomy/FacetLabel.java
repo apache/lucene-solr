@@ -20,7 +20,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.facet.simple.DocumentBuilder;
+import org.apache.lucene.facet.simple.FacetsConfig;
 
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
@@ -116,7 +116,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
     // nocommit
     String[] comps;
     if (delimiter == '\u001F') {
-      comps = DocumentBuilder.stringToPath(pathString);
+      comps = FacetsConfig.stringToPath(pathString);
     } else {
       comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
     }
@@ -286,7 +286,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
   public String toString(char delimiter) {
     // nocommit
     if (delimiter == '\u001F') {
-      return DocumentBuilder.pathToString(components, length);
+      return FacetsConfig.pathToString(components, length);
     } else {
       if (length == 0) return "";
       StringBuilder sb = new StringBuilder();

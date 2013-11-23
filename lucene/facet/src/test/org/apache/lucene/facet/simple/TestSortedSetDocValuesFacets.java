@@ -36,33 +36,29 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
   // randomly uses SortedSetDV
 
   public void testBasic() throws Exception {
-    System.out.println("here: " + defaultCodecSupportsSortedSet());
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
 
     FacetsConfig config = new FacetsConfig();
     config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    DocumentBuilder builder = new DocumentBuilder(null, config);
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
     doc.add(new SortedSetDocValuesFacetField("b", "baz"));
-    System.out.println("TEST: now add");
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
     if (random().nextBoolean()) {
       writer.commit();
     }
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.close();
 
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
@@ -83,8 +79,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 
-    searcher.getIndexReader().close();
-    dir.close();
+    IOUtils.close(writer, searcher.getIndexReader(), dir);
   }
 
   // LUCENE-5090
@@ -93,22 +88,23 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
+
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     IndexReader r = writer.getReader();
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(r);
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "baz"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     IndexSearcher searcher = newSearcher(writer.getReader());
 
@@ -135,11 +131,12 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
+
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -148,7 +145,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -158,7 +155,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     doc.add(new SortedSetDocValuesFacetField("a", "foo3"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar2"));
     doc.add(new SortedSetDocValuesFacetField("c", "baz1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -194,17 +191,18 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    DocumentBuilder builder = new DocumentBuilder(null, new FacetsConfig());
+
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     writer.commit();
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
-    writer.addDocument(builder.build(doc));
+    writer.addDocument(config.build(doc));
 
     // NRT open
     IndexSearcher searcher = new IndexSearcher(SlowCompositeReaderWrapper.wrap(writer.getReader()));

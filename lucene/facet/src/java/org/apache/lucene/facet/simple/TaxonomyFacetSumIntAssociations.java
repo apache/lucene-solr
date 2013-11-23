@@ -110,11 +110,13 @@ public class TaxonomyFacetSumIntAssociations extends TaxonomyFacets {
 
     int ord = children[dimOrd];
     long sumValue = 0;
+    int childCount = 0;
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
     while(ord != TaxonomyReader.INVALID_ORDINAL) {
       if (values[ord] > 0) {
         sumValue += values[ord];
+        childCount++;
         if (values[ord] > bottomValue) {
           if (reuse == null) {
             reuse = new TopOrdAndIntQueue.OrdAndValue();
@@ -143,6 +145,6 @@ public class TaxonomyFacetSumIntAssociations extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, sumValue, labelValues);
+    return new SimpleFacetResult(cp, sumValue, labelValues, childCount);
   }
 }

@@ -111,8 +111,7 @@ public class TestRangeFacets extends FacetTestCase {
     Directory td = newDirectory();
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(td, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig();
-    DocumentBuilder builder = new DocumentBuilder(tw, config);
+    FacetsConfig config = new FacetsConfig(tw);
 
     for (long l = 0; l < 100; l++) {
       Document doc = new Document();
@@ -126,7 +125,7 @@ public class TestRangeFacets extends FacetTestCase {
       } else {
         doc.add(new FacetField("dim", "b"));
       }
-      w.addDocument(builder.build(doc));
+      w.addDocument(config.build(doc));
     }
 
     final IndexReader r = w.getReader();

@@ -93,6 +93,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     int bottomCount = 0;
 
     int dimCount = 0;
+    int childCount = 0;
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
     //System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
@@ -100,6 +101,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       //System.out.println("  ord=" + ord + " count=" + counts[ord]);
       if (counts[ord] > 0) {
         dimCount += counts[ord];
+        childCount++;
         if (counts[ord] > bottomCount) {
           if (reuse == null) {
             reuse = new TopOrdAndIntQueue.OrdAndValue();
@@ -129,11 +131,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       dv.lookupOrd(ordAndValue.ord, scratch);
-      String[] parts = DocumentBuilder.stringToPath(scratch.utf8ToString());
+      String[] parts = FacetsConfig.stringToPath(scratch.utf8ToString());
       labelValues[i] = new LabelAndValue(parts[1], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues);
+    return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues, childCount);
   }
 
   /** Does all the "real work" of tallying up the counts. */
@@ -255,7 +257,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     }
     // nocommit this is not thread safe in general?  add
     // jdocs that app must instantiate & use from same thread?
-    int ord = (int) dv.lookupTerm(new BytesRef(DocumentBuilder.pathToString(dim, path)));
+    int ord = (int) dv.lookupTerm(new BytesRef(FacetsConfig.pathToString(dim, path)));
     if (ord < 0) {
       return -1;
     }
