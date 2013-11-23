@@ -287,35 +287,34 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-    //assume the core exists and try to unload it
-    if (!Slice.ACTIVE.equals(replica.getStr(Slice.STATE))) {
-      deleteCoreNode(collectionName, replicaName, replica, core);
-      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
-    } else {
-      Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
-          CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core);
-
-      ShardRequest sreq = new ShardRequest();
-      sreq.purpose = 1;
-      if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
-      sreq.shards = new String[]{baseUrl};
-      sreq.actualShards = sreq.shards;
-      sreq.params = new ModifiableSolrParams(new MapSolrParams(m) );
-      try {
-        shardHandler.submit(sreq, baseUrl, sreq.params);
-      } catch (Exception e) {
-        log.info("Exception trying to unload core "+sreq,e);
-      }
-      if (waitForCoreNodeGone(collectionName, shard, replicaName)) return;//check if the core unload removed the corenode zk enry
-      deleteCoreNode(collectionName, replicaName, replica, core); // this could be because the core is gone but not updated in ZK yet (race condition)
-      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
-
+    
+    // assume the core exists and try to unload it
+    Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
+        CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core);
+    
+    ShardRequest sreq = new ShardRequest();
+    sreq.purpose = 1;
+    if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
+    sreq.shards = new String[] {baseUrl};
+    sreq.actualShards = sreq.shards;
+    sreq.params = new ModifiableSolrParams(new MapSolrParams(m));
+    try {
+      shardHandler.submit(sreq, baseUrl, sreq.params);
+    } catch (Exception e) {
+      log.warn("Exception trying to unload core " + sreq, e);
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not  remove replica : "+collectionName+"/"+shard+"/"+replicaName);
+    
+    collectShardResponses(!Slice.ACTIVE.equals(replica.getStr(Slice.STATE)) ? new NamedList() : results, false, null);
+    
+    if (waitForCoreNodeGone(collectionName, shard, replicaName, 5000)) return;//check if the core unload removed the corenode zk enry
+    deleteCoreNode(collectionName, replicaName, replica, core); // try and ensure core info is removed from clusterstate
+    if(waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return;
+
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not  remove replica : " + collectionName + "/" + shard+"/" + replicaName);
   }
 
-  private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName) throws InterruptedException {
-    long waitUntil = System.currentTimeMillis() + 30000;
+  private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
+    long waitUntil = System.currentTimeMillis() + timeoutms;
     boolean deleted = false;
     while (System.currentTimeMillis() < waitUntil) {
       Thread.sleep(100);
