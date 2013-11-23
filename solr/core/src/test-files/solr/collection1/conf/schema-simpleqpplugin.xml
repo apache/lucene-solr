@@ -28,6 +28,7 @@
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
         <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
       </analyzer>
     </fieldtype>
 
