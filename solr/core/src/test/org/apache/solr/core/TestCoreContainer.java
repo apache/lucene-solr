@@ -149,7 +149,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     //create solrHome
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
         + "_noCores");
-    SetUpHome(solrHomeDirectory, EMPTY_SOLR_XML);
+    
+    boolean oldSolrXml = random().nextBoolean();
+    
+    SetUpHome(solrHomeDirectory, oldSolrXml ? EMPTY_SOLR_XML : EMPTY_SOLR_XML2);
     CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     cores.load();
     try {
@@ -166,14 +169,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
       assertEquals("There core registered", 1, cores.getCores().size());
 
-
-      assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
-          "/solr/cores[@transientCacheSize='32']");
+      if (oldSolrXml) {
+        assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
+            "/solr/cores[@transientCacheSize='32']");
+      }
 
       newCore.close();
       cores.remove("core1");
       //assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
+      
+      // try and remove a core that does not exist
+      SolrCore ret = cores.remove("non_existent_core");
+      assertNull(ret);
     } finally {
       cores.shutdown();
       FileUtils.deleteDirectory(solrHomeDirectory);
@@ -274,5 +282,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "<solr persistent=\"false\">\n" +
       "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
       "  </cores>\n" +
+      "</solr>";
+  
+  private static final String EMPTY_SOLR_XML2 ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>\n" +
       "</solr>";
 }

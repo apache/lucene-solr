@@ -103,6 +103,9 @@ New Features
   This is intended to eventually replace the Suggester support through the
   SpellCheckComponent. (Areek Zillur, Varun Thacker via shalin)
 
+* SOLR-5494: CoreContainer#remove throws NPE rather than returning null when
+  a SolrCore does not exist in core discovery mode. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
