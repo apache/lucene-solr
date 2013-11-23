@@ -222,7 +222,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       return;
     int count = params.getInt(SUGGEST_COUNT, 1);
     
-    List<SuggesterResult> suggesterResults = new ArrayList<>();
+    List<SuggesterResult> suggesterResults = new ArrayList<SuggesterResult>();
     NamedList response = new SimpleOrderedMap();
     NamedList<NamedList> namedListResult = null;
     
@@ -252,7 +252,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
    * */
   private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count) {
     SuggesterResult result = new SuggesterResult();
-    Set<String> allTokens = new HashSet<>();
+    Set<String> allTokens = new HashSet<String>();
     
     // collect all tokens
     for (SuggesterResult shardResult : suggesterResults) {
@@ -272,7 +272,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           resultQueue.insertWithOverflow(res);
         }
       }
-      List<LookupResult> sortedSuggests = new LinkedList<>();
+      List<LookupResult> sortedSuggests = new LinkedList<LookupResult>();
       Collections.addAll(sortedSuggests, resultQueue.getResults());
       result.add(token, sortedSuggests);
     }
@@ -358,7 +358,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       // for each token
       for(int i = 0; i < suggestions.size() ; i++) {
         String tokenString = suggestions.getName(i);
-        List<LookupResult> lookupResults = new ArrayList<>();
+        List<LookupResult> lookupResults = new ArrayList<LookupResult>();
         NamedList suggestion = (NamedList) suggestions.getVal(i);
         // for each suggestion
         for (int j = 0; j < suggestion.size(); j++) {
@@ -366,7 +366,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           if (property.equals(SuggesterResultLabels.SUGGESTION)) {
             NamedList suggestionEntry = (NamedList) suggestion.getVal(j);
             String term = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
-            long weight = (long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
+            Long weight = (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
             String payload = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
             LookupResult res = new LookupResult(new CharsRef(term), weight, new BytesRef(payload));
             lookupResults.add(res);
