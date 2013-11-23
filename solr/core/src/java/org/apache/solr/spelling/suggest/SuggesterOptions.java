@@ -17,28 +17,22 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.suggest.Lookup;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
+import org.apache.lucene.util.CharsRef;
 
 /**
- * Suggester factory for creating {@link Lookup} instances.
- */
-public abstract class LookupFactory {
+ * Encapsulates the inputs required to be passed on to 
+ * the underlying suggester in {@link SolrSuggester}
+ **/
+public class SuggesterOptions {
   
-  /** Default lookup implementation to use for SolrSuggester */
-  public static String DEFAULT_FILE_BASED_DICT = JaspellLookupFactory.class.getName();
+  /** The token to lookup */
+  CharsRef token;
   
-  /**
-   * Create a Lookup using config options in <code>params</code> and 
-   * current <code>core</code>
-   */
-  public abstract Lookup create(NamedList params, SolrCore core);
+  /** Number of suggestions requested */
+  int count;
   
-  /** 
-   * <p>Returns the filename in which the in-memory data structure is stored </p>
-   * <b>NOTE:</b> not all {@link Lookup} implementations store in-memory data structures
-   * */
-  public abstract String storeFileName();
+  public SuggesterOptions(CharsRef token, int count) {
+    this.token = token;
+    this.count = count;
+  }
 }

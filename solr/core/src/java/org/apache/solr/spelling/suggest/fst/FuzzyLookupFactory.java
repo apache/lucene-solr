@@ -78,6 +78,9 @@ public class FuzzyLookupFactory extends LookupFactory {
     }
     // retrieve index and query analyzers for the field
     FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
+    if (ft == null) {
+      throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
+    }
     Analyzer indexAnalyzer = ft.getAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     
