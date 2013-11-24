@@ -140,7 +140,7 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 15000;
+    int zkClientConnectTimeout = 30000;
 
     if (zookeeperHost != null) {
 
