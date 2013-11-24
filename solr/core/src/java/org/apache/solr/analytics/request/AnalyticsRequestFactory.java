@@ -295,7 +295,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
     Set<String> depends = queryFacet.getDependencies();
     int place = 0;
     for (QueryFacetRequest qfr : currentList) {
-      if (qfr.getDependencies().remove(queryFacet)) {
+      if (qfr.getDependencies().remove(queryFacet.getName())) {
         break;
       }
       place++;
