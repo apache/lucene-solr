@@ -8,8 +8,6 @@ import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 
@@ -75,35 +73,6 @@ public abstract class FacetsAccumulator {
     }
     
     return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
-  }
-  
-  /**
-   * Creates a {@link FacetsAccumulator} for the given facet requests. This
-   * method supports {@link RangeAccumulator} and
-   * {@link SortedSetDocValuesAccumulator} by dividing the facet requests into
-   * {@link RangeFacetRequest} and the rest.
-   * <p>
-   * If both types of facet requests are used, it returns a
-   * {@link MultiFacetsAccumulator} and the facet results returned from
-   * {@link #accumulate(List)} may not be in the same order as the given facet
-   * requests.
-   * 
-   * @param fsp
-   *          the search params define the facet requests and the
-   *          {@link FacetIndexingParams}
-   * @param state
-   *          the {@link SortedSetDocValuesReaderState} needed for accumulating
-   *          the categories
-   * @param arrays
-   *          the {@link FacetArrays} which the accumulator should use to
-   *          store the categories weights in. Can be {@code null}.
-   */
-  public static FacetsAccumulator create(FacetSearchParams fsp, SortedSetDocValuesReaderState state, FacetArrays arrays) throws IOException {
-    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("only default partition size is supported by this method: " + fsp.indexingParams.getPartitionSize());
-    }
-    
-    return new SortedSetDocValuesAccumulator(state, fsp, arrays);
   }
   
   /** Returns an empty {@link FacetResult}. */
