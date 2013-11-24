@@ -17,17 +17,15 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.collect.ImmutableList;
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
 
 public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
 
@@ -78,10 +76,12 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
       List<CoreDescriptor> cds = ImmutableList.of(cd);
 
       SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-      assertEquals(persistor.buildSolrXML(cds),
-          "<solr><cores>" + SolrXMLCoresLocator.NEWLINE
-          + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>" + SolrXMLCoresLocator.NEWLINE
-          + "</cores></solr>");
+      String xml = persistor.buildSolrXML(cds);
+      
+      assertTrue(xml.contains("<solr><cores>"));
+      assertTrue(xml.contains("name=\"testcore\""));
+      assertTrue(xml.contains("instanceDir=\"instance/dir/\""));
+      assertTrue(xml.contains("</cores></solr>"));
     } finally {
       if (solrHomeDirectory.exists()) {
         FileUtils.deleteDirectory(solrHomeDirectory);
