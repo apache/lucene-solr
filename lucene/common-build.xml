@@ -979,6 +979,9 @@
             <!-- disable AWT while running tests -->
             <sysproperty key="java.awt.headless" value="true"/>
 
+            <!-- turn jenkins blood red for hashmap bugs, even on jdk7 -->
+            <sysproperty key="jdk.map.althashing.threshold" value="0"/>
+
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />
