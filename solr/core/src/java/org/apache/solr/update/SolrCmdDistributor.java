@@ -20,7 +20,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,8 +50,8 @@ public class SolrCmdDistributor {
     public boolean abortCheck();
   }
   
-  public SolrCmdDistributor(ExecutorService updateExecutor) {
-    servers = new StreamingSolrServers(updateExecutor);
+  public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
+    servers = new StreamingSolrServers(updateShardHandler);
   }
   
   public void finish() {

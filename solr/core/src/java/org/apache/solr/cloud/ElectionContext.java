@@ -118,9 +118,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContext.class);
   
-  private ZkController zkController;
-  private CoreContainer cc;
-  private SyncStrategy syncStrategy = new SyncStrategy();
+  private final ZkController zkController;
+  private final CoreContainer cc;
+  private final SyncStrategy syncStrategy;
 
   private volatile boolean isClosed = false;
   
@@ -131,6 +131,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.getZkStateReader());
     this.zkController = zkController;
     this.cc = cc;
+    syncStrategy = new SyncStrategy(cc.getUpdateShardHandler());
   }
   
   @Override

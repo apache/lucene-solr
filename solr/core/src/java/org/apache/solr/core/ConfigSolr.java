@@ -160,6 +160,14 @@ public abstract class ConfigSolr {
   public int getDistributedSocketTimeout() {
     return getInt(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
   }
+  
+  public int getMaxUpdateConnections() {
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONS, 10000);
+  }
+
+  public int getMaxUpdateConnectionsPerHost() {
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, 100);
+  }
 
   public int getCoreLoadThreadCount() {
     return getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, DEFAULT_CORE_LOAD_THREADS);
@@ -211,6 +219,8 @@ public abstract class ConfigSolr {
     SOLR_COREROOTDIRECTORY,
     SOLR_DISTRIBUPDATECONNTIMEOUT,
     SOLR_DISTRIBUPDATESOTIMEOUT,
+    SOLR_MAXUPDATECONNECTIONS,
+    SOLR_MAXUPDATECONNECTIONSPERHOST,
     SOLR_HOST,
     SOLR_HOSTCONTEXT,
     SOLR_HOSTPORT,

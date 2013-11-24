@@ -805,7 +805,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
-        syncStrategy = new SyncStrategy();
+        syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler());
         
         Map<String,Object> props = new HashMap<String,Object>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());

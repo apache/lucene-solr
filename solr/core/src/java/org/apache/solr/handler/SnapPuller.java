@@ -163,25 +163,18 @@ public class SnapPuller {
    */
   private AtomicBoolean pollDisabled = new AtomicBoolean(false);
 
-  // HttpClient shared by all cores (used if timeout is not specified for a core)
-  private static HttpClient client;
-  // HttpClient for this instance if connectionTimeout or readTimeout has been specified
   private final HttpClient myHttpClient;
 
-  private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
-    if (connTimeout == null && readTimeout == null && client != null)  return client;
+  private static HttpClient createHttpClient(SolrCore core, String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
     final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
     httpClientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connTimeout != null ? connTimeout : "5000");
     httpClientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, readTimeout != null ? readTimeout : "20000");
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-    // Keeping a very high number so that if you have a large number of cores
-    // no requests are kept waiting for an idle connection.
-    httpClientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
-    httpClientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000);
-    HttpClient httpClient = HttpClientUtil.createClient(httpClientParams);
-    if (client == null && connTimeout == null && readTimeout == null) client = httpClient;
+
+    HttpClient httpClient = HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager());
+
     return httpClient;
   }
 
@@ -208,7 +201,7 @@ public class SnapPuller {
     String readTimeout = (String) initArgs.get(HttpClientUtil.PROP_SO_TIMEOUT);
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    myHttpClient = createHttpClient(connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternal);
+    myHttpClient = createHttpClient(solrCore, connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternal);
     if (pollInterval != null && pollInterval > 0) {
       startExecutorService();
     } else {
