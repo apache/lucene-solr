@@ -58,12 +58,10 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   static ArrayList<String> dateTestStart; 
   static long dateMissing = 0;
   
-  //STRING
+  //STR
   static ArrayList<String> stringTestStart; 
   static long stringMissing = 0;
   
-  static String response;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml","schema-analytics.xml");
@@ -138,51 +136,51 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     assertU(commit()); 
     
     //Sort ascending tests
-    response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
       
   @Test
-  public void sumTest() throws Exception { 
+  public void sumTest() throws Exception {
     //Int
-    Double intResult = (Double)getStatResult(response, "sr", "double", "int_id");
+    Double intResult = (Double)getStatResult("sr", "int_id", VAL_TYPE.DOUBLE);
     Double intTest = (Double)calculateNumberStat(intTestStart, "sum");
     assertEquals(intResult,intTest);
     
     //Long
-    Double longResult = (Double)getStatResult(response, "sr", "double", "long_ld");
+    Double longResult = (Double)getStatResult("sr", "long_ld", VAL_TYPE.DOUBLE);
     Double longTest = (Double)calculateNumberStat(longTestStart, "sum");
     assertEquals(longResult,longTest);
     
     //Float
-    Double floatResult = (Double)getStatResult(response, "sr", "double", "float_fd");
+    Double floatResult = (Double)getStatResult("sr", "float_fd", VAL_TYPE.DOUBLE);
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "sum");
     assertEquals(floatResult,floatTest);
     
     //Double
-    Double doubleResult = (Double)getStatResult(response, "sr", "double", "double_dd");
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "sum");
+    Double doubleResult = (Double)getStatResult("sr", "double_dd", VAL_TYPE.DOUBLE);
+        Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
     assertEquals(doubleResult,doubleTest);
   }
   
   @Test
   public void sumOfSquaresTest() throws Exception { 
     //Int
-    Double intResult = (Double)getStatResult(response, "sosr", "double", "int_id");
+    Double intResult = (Double)getStatResult("sosr", "int_id", VAL_TYPE.DOUBLE);
     Double intTest = (Double)calculateNumberStat(intTestStart, "sumOfSquares");
     assertEquals(intResult,intTest);
     
     //Long
-    Double longResult = (Double)getStatResult(response, "sosr", "double", "long_ld");
+    Double longResult = (Double)getStatResult("sosr", "long_ld", VAL_TYPE.DOUBLE);
     Double longTest = (Double)calculateNumberStat(longTestStart, "sumOfSquares");
     assertEquals(longResult,longTest);
     
     //Float
-    Double floatResult = (Double)getStatResult(response, "sosr", "double", "float_fd");
+    Double floatResult = (Double)getStatResult("sosr", "float_fd", VAL_TYPE.DOUBLE);
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "sumOfSquares");
     assertEquals(floatResult,floatTest);
     
     //Double
-    Double doubleResult = (Double)getStatResult(response, "sosr", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("sosr", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "sumOfSquares");
     assertEquals(doubleResult,doubleTest);
   }
@@ -190,22 +188,22 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void meanTest() throws Exception { 
     //Int
-    Double intResult = (Double)getStatResult(response, "mr", "double", "int_id");
+    Double intResult = (Double)getStatResult("mr", "int_id", VAL_TYPE.DOUBLE);
     Double intTest = (Double)calculateNumberStat(intTestStart, "mean");
     assertEquals(intResult,intTest);
     
     //Long
-    Double longResult = (Double)getStatResult(response, "mr", "double", "long_ld");
+    Double longResult = (Double)getStatResult("mr", "long_ld", VAL_TYPE.DOUBLE);
     Double longTest = (Double)calculateNumberStat(longTestStart, "mean");
     assertEquals(longResult,longTest);
     
     //Float
-    Double floatResult = (Double)getStatResult(response, "mr", "double", "float_fd");
+    Double floatResult = (Double)getStatResult("mr", "float_fd", VAL_TYPE.DOUBLE);
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "mean");
     assertEquals(floatResult,floatTest);
     
     //Double
-    Double doubleResult = (Double)getStatResult(response, "mr", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("mr", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "mean");
     assertEquals(doubleResult,doubleTest);
   }
@@ -213,17 +211,17 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test @Ignore("SOLR-5488") 
   public void stddevTest() throws Exception { 
     //Int
-    Double intResult = (Double)getStatResult(response, "str", "double", "int_id");
+    Double intResult = (Double)getStatResult("str", "int_id", VAL_TYPE.DOUBLE);
     Double intTest = (Double)calculateNumberStat(intTestStart, "stddev");
     assertTrue(Math.abs(intResult-intTest)<.00000000001);
     
     //Long
-    Double longResult = (Double)getStatResult(response, "str", "double", "long_ld");
+    Double longResult = (Double)getStatResult("str", "long_ld", VAL_TYPE.DOUBLE);
     Double longTest = (Double)calculateNumberStat(longTestStart, "stddev");
     assertTrue(Math.abs(longResult-longTest)<.00000000001);
     
     //Float
-    Double floatResult = (Double)getStatResult(response, "str", "double", "float_fd");
+    Double floatResult = (Double)getStatResult("str", "float_fd", VAL_TYPE.DOUBLE);
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
     assertTrue("Oops: (double raws) " + Double.doubleToRawLongBits(floatResult) + " - "
         + Double.doubleToRawLongBits(floatTest) + " < " + Double.doubleToRawLongBits(.00000000001) +
@@ -234,7 +232,7 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
 
 
     //Double
-    Double doubleResult = (Double)getStatResult(response, "str", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("str", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
     assertTrue(Math.abs(doubleResult-doubleTest)<.00000000001);
   }
@@ -242,22 +240,22 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void medianTest() throws Exception { 
     //Int
-    Double intResult = (Double)getStatResult(response, "medr", "double", "int_id");
+    Double intResult = (Double)getStatResult("medr", "int_id", VAL_TYPE.DOUBLE);
     Double intTest = (Double)calculateNumberStat(intTestStart, "median");
     assertEquals(intResult,intTest);
     
     //Long
-    Double longResult = (Double)getStatResult(response, "medr", "double", "long_ld");
+    Double longResult = (Double)getStatResult("medr", "long_ld", VAL_TYPE.DOUBLE);
     Double longTest = (Double)calculateNumberStat(longTestStart, "median");
     assertEquals(longResult,longTest);
     
     //Float
-    Double floatResult = (Double)getStatResult(response, "medr", "double", "float_fd");
+    Double floatResult = (Double)getStatResult("medr", "float_fd", VAL_TYPE.DOUBLE);
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "median");
     assertEquals(floatResult,floatTest);
     
     //Double
-    Double doubleResult = (Double)getStatResult(response, "medr", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("medr", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "median");
     assertEquals(doubleResult,doubleTest);
   }
@@ -265,32 +263,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void perc20Test() throws Exception {
     //Int 20
-    Integer intResult = (Integer)getStatResult(response, "p2r", "int", "int_id");
+    Integer intResult = (Integer)getStatResult("p2r", "int_id", VAL_TYPE.INTEGER);
     Integer intTest = (Integer)calculateStat(intTestStart, "perc_20");
     assertEquals(intResult,intTest);
 
     //Long 20
-    Long longResult = (Long)getStatResult(response, "p2r", "long", "long_ld");
+    Long longResult = (Long)getStatResult("p2r", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "perc_20");
     assertEquals(longResult,longTest);
 
     //Float 20
-    Float floatResult = (Float)getStatResult(response, "p2r", "float", "float_fd");
+    Float floatResult = (Float)getStatResult("p2r", "float_fd", VAL_TYPE.FLOAT);
     Float floatTest = (Float)calculateStat(floatTestStart, "perc_20");
     assertEquals(floatResult,floatTest);
 
     //Double 20
-    Double doubleResult = (Double)getStatResult(response, "p2r", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("p2r", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateStat(doubleTestStart, "perc_20");
     assertEquals(doubleResult,doubleTest);
 
     //Date 20
-    String dateResult = (String)getStatResult(response, "p2r", "date", "date_dtd");
+    String dateResult = (String)getStatResult("p2r", "date_dtd", VAL_TYPE.DATE);
     String dateTest = (String)calculateStat(dateTestStart, "perc_20");
     assertEquals(dateResult,dateTest);
 
     //String 20
-    String stringResult = (String)getStatResult(response, "p2r", "str", "string_sd");
+    String stringResult = (String)getStatResult("p2r", "string_sd", VAL_TYPE.STRING);
     String stringTest = (String)calculateStat(stringTestStart, "perc_20");
     assertEquals(stringResult,stringTest);
   }
@@ -298,32 +296,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void perc60Test() throws Exception { 
     //Int 60
-    Integer intResult = (Integer)getStatResult(response, "p6r", "int", "int_id");
+    Integer intResult = (Integer)getStatResult("p6r", "int_id", VAL_TYPE.INTEGER);
     Integer intTest = (Integer)calculateStat(intTestStart, "perc_60");
     assertEquals(intResult,intTest);
 
     //Long 60
-    Long longResult = (Long)getStatResult(response, "p6r", "long", "long_ld");
+    Long longResult = (Long)getStatResult("p6r", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "perc_60");
     assertEquals(longResult,longTest);
 
     //Float 60
-    Float floatResult = (Float)getStatResult(response, "p6r", "float", "float_fd");
+    Float floatResult = (Float)getStatResult("p6r", "float_fd", VAL_TYPE.FLOAT);
     Float floatTest = (Float)calculateStat(floatTestStart, "perc_60");
     assertEquals(floatResult,floatTest);
 
     //Double 60
-    Double doubleResult = (Double)getStatResult(response, "p6r", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("p6r", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateStat(doubleTestStart, "perc_60");
     assertEquals(doubleResult,doubleTest);
 
     //Date 60
-    String dateResult = (String)getStatResult(response, "p6r", "date", "date_dtd");
+    String dateResult = (String)getStatResult("p6r", "date_dtd", VAL_TYPE.DATE);
     String dateTest = (String)calculateStat(dateTestStart, "perc_60");
     assertEquals(dateResult,dateTest);
 
     //String 60
-    String stringResult = (String)getStatResult(response, "p6r", "str", "string_sd");
+    String stringResult = (String)getStatResult("p6r", "string_sd", VAL_TYPE.STRING);
     String stringTest = (String)calculateStat(stringTestStart, "perc_60");
     assertEquals(stringResult,stringTest);
   }
@@ -331,32 +329,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void minTest() throws Exception { 
     //Int
-    Integer intResult = (Integer)getStatResult(response, "mir", "int", "int_id");
+    Integer intResult = (Integer)getStatResult("mir", "int_id", VAL_TYPE.INTEGER);
     Integer intTest = (Integer)calculateStat(intTestStart, "min");
     assertEquals(intResult,intTest);
 
     //Long
-    Long longResult = (Long)getStatResult(response, "mir", "long", "long_ld");
+    Long longResult = (Long)getStatResult("mir", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "min");
     assertEquals(longResult,longTest);
 
     //Float
-    Float floatResult = (Float)getStatResult(response, "mir", "float", "float_fd");
+    Float floatResult = (Float)getStatResult("mir", "float_fd", VAL_TYPE.FLOAT);
     Float floatTest = (Float)calculateStat(floatTestStart, "min");
     assertEquals(floatResult,floatTest);
 
     //Double
-    Double doubleResult = (Double)getStatResult(response, "mir", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("mir", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateStat(doubleTestStart, "min");
     assertEquals(doubleResult,doubleTest);
 
     //Date
-    String dateResult = (String)getStatResult(response, "mir", "date", "date_dtd");
+    String dateResult = (String)getStatResult("mir", "date_dtd", VAL_TYPE.DATE);
     String dateTest = (String)calculateStat(dateTestStart, "min");
     assertEquals(dateResult,dateTest);
 
     //String
-    String stringResult = (String)getStatResult(response, "mir", "str", "string_sd");
+    String stringResult = (String)getStatResult("mir", "string_sd", VAL_TYPE.STRING);
     String stringTest = (String)calculateStat(stringTestStart, "min");
     assertEquals(stringResult,stringTest);
   }
@@ -364,32 +362,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void maxTest() throws Exception { 
     //Int
-    Integer intResult = (Integer)getStatResult(response, "mar", "int", "int_id");
+    Integer intResult = (Integer)getStatResult("mar", "int_id", VAL_TYPE.INTEGER);
     Integer intTest = (Integer)calculateStat(intTestStart, "max");
     assertEquals(intResult,intTest);
 
     //Long
-    Long longResult = (Long)getStatResult(response, "mar", "long", "long_ld");
+    Long longResult = (Long)getStatResult("mar", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "max");
     assertEquals(longResult,longTest);
 
     //Float
-    Float floatResult = (Float)getStatResult(response, "mar", "float", "float_fd");
+    Float floatResult = (Float)getStatResult("mar", "float_fd", VAL_TYPE.FLOAT);
     Float floatTest = (Float)calculateStat(floatTestStart, "max");
     assertEquals(floatResult,floatTest);
 
     //Double
-    Double doubleResult = (Double)getStatResult(response, "mar", "double", "double_dd");
+    Double doubleResult = (Double)getStatResult("mar", "double_dd", VAL_TYPE.DOUBLE);
     Double doubleTest = (Double)calculateStat(doubleTestStart, "max");
     assertEquals(doubleResult,doubleTest);
 
     //Date
-    String dateResult = (String)getStatResult(response, "mar", "date", "date_dtd");
+    String dateResult = (String)getStatResult("mar", "date_dtd", VAL_TYPE.DATE);
     String dateTest = (String)calculateStat(dateTestStart, "max");
     assertEquals(dateResult,dateTest);
 
     //String
-    String stringResult = (String)getStatResult(response, "mar", "str", "string_sd");
+    String stringResult = (String)getStatResult("mar", "string_sd", VAL_TYPE.STRING);
     String stringTest = (String)calculateStat(stringTestStart, "max");
     assertEquals(stringResult,stringTest);
   }
@@ -397,32 +395,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void uniqueTest() throws Exception { 
     //Int
-    Long intResult = (Long)getStatResult(response, "ur", "long", "int_id");
+    Long intResult = (Long)getStatResult("ur", "int_id", VAL_TYPE.LONG);
     Long intTest = (Long)calculateStat(intTestStart, "unique");
     assertEquals(intResult,intTest);
 
     //Long
-    Long longResult = (Long)getStatResult(response, "ur", "long", "long_ld");
+    Long longResult = (Long)getStatResult("ur", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "unique");
     assertEquals(longResult,longTest);
 
     //Float
-    Long floatResult = (Long)getStatResult(response, "ur", "long", "float_fd");
+    Long floatResult = (Long)getStatResult("ur", "float_fd", VAL_TYPE.LONG);
     Long floatTest = (Long)calculateStat(floatTestStart, "unique");
     assertEquals(floatResult,floatTest);
 
     //Double
-    Long doubleResult = (Long)getStatResult(response, "ur", "long", "double_dd");
+    Long doubleResult = (Long)getStatResult("ur", "double_dd", VAL_TYPE.LONG);
     Long doubleTest = (Long)calculateStat(doubleTestStart, "unique");
     assertEquals(doubleResult,doubleTest);
 
     //Date
-    Long dateResult = (Long)getStatResult(response, "ur", "long", "date_dtd");
+    Long dateResult = (Long)getStatResult("ur", "date_dtd", VAL_TYPE.LONG);
     Long dateTest = (Long)calculateStat(dateTestStart, "unique");
     assertEquals(dateResult,dateTest);
 
     //String
-    Long stringResult = (Long)getStatResult(response, "ur", "long", "string_sd");
+    Long stringResult = (Long)getStatResult("ur", "string_sd", VAL_TYPE.LONG);
     Long stringTest = (Long)calculateStat(stringTestStart, "unique");
     assertEquals(stringResult,stringTest);
   }
@@ -430,32 +428,32 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void countTest() throws Exception { 
     //Int
-    Long intResult = (Long)getStatResult(response, "cr", "long", "int_id");
+    Long intResult = (Long)getStatResult("cr", "int_id", VAL_TYPE.LONG);
     Long intTest = (Long)calculateStat(intTestStart, "count");
     assertEquals(intResult,intTest);
 
     //Long
-    Long longResult = (Long)getStatResult(response, "cr", "long", "long_ld");
+    Long longResult = (Long)getStatResult("cr", "long_ld", VAL_TYPE.LONG);
     Long longTest = (Long)calculateStat(longTestStart, "count");
     assertEquals(longResult,longTest);
 
     //Float
-    Long floatResult = (Long)getStatResult(response, "cr", "long", "float_fd");
+    Long floatResult = (Long)getStatResult("cr", "float_fd", VAL_TYPE.LONG);
     Long floatTest = (Long)calculateStat(floatTestStart, "count");
     assertEquals(floatResult,floatTest);
 
     //Double
-    Long doubleResult = (Long)getStatResult(response, "cr", "long", "double_dd");
+    Long doubleResult = (Long)getStatResult("cr", "double_dd", VAL_TYPE.LONG);
     Long doubleTest = (Long)calculateStat(doubleTestStart, "count");
     assertEquals(doubleResult,doubleTest);
 
     //Date
-    Long dateResult = (Long)getStatResult(response, "cr", "long", "date_dtd");
+    Long dateResult = (Long)getStatResult("cr", "date_dtd", VAL_TYPE.LONG);
     Long dateTest = (Long)calculateStat(dateTestStart, "count");
     assertEquals(dateResult,dateTest);
 
     //String
-    Long stringResult = (Long)getStatResult(response, "cr", "long", "string_sd");
+    Long stringResult = (Long)getStatResult("cr", "string_sd", VAL_TYPE.LONG);
     Long stringTest = (Long)calculateStat(stringTestStart, "count");
     assertEquals(stringResult,stringTest);
   }  
@@ -463,27 +461,27 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
   @Test
   public void missingDefaultTest() throws Exception { 
     //Int
-    long intResult = (Long)getStatResult(response, "misr", "long", "int_id");
+    long intResult = (Long)getStatResult("misr", "int_id", VAL_TYPE.LONG);
     assertEquals(intMissing,intResult);
 
     //Long
-    long longResult = (Long)getStatResult(response, "misr", "long", "long_ld");
+    long longResult = (Long)getStatResult("misr", "long_ld", VAL_TYPE.LONG);
     assertEquals(longMissing,longResult);
 
     //Float
-    long floatResult = (Long)getStatResult(response, "misr", "long", "float_fd");
+    long floatResult = (Long)getStatResult("misr", "float_fd", VAL_TYPE.LONG);
     assertEquals(floatMissing,floatResult);
 
     //Double
-    long doubleResult = (Long)getStatResult(response, "misr", "long", "double_dd");
+    long doubleResult = (Long)getStatResult("misr", "double_dd", VAL_TYPE.LONG);
     assertEquals(doubleMissing,doubleResult);
 
     //Date
-    long dateResult = (Long)getStatResult(response, "misr", "long", "date_dtd");
+    long dateResult = (Long)getStatResult("misr", "date_dtd", VAL_TYPE.LONG);
     assertEquals(dateMissing,dateResult);
 
     //String
-    long stringResult = (Long)getStatResult(response, "misr", "long", "string_sd");
+    long stringResult = (Long)getStatResult("misr", "string_sd", VAL_TYPE.LONG);
     assertEquals(stringMissing, stringResult);
   }
 

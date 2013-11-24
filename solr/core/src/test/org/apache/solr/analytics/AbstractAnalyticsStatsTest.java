@@ -17,12 +17,15 @@
 
 package org.apache.solr.analytics;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Scanner;
 
 import org.apache.commons.lang.StringUtils;
@@ -35,31 +38,74 @@ import org.apache.solr.request.SolrQueryRequest;
 import com.google.common.collect.ObjectArrays;
 import org.apache.solr.util.ExternalPaths;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
   protected static final HashMap<String,Object> defaults = new HashMap<String,Object>();
-  
-  public Object getStatResult(String response, String request, String type, String name) {
-    String cat = "\n  <lst name=\""+request+"\">";
-    String begin = "<"+type+" name=\""+name+"\">";
-    String end = "</"+type+">";
-    int beginInt = response.indexOf(begin, response.indexOf(cat))+begin.length();
-    int endInt = response.indexOf(end, beginInt);
-    String resultStr = response.substring(beginInt, endInt);
-    if (type.equals("double")) {
-      return Double.parseDouble(resultStr);
-    } else if (type.equals("int")) {
-      return Integer.parseInt(resultStr);
-    } else if (type.equals("long")) {
-      return Long.parseLong(resultStr);
-    } else if (type.equals("float")) {
-      return Float.parseFloat(resultStr);
-    } else {
-      return resultStr;
+
+  public static enum VAL_TYPE {
+    INTEGER("int"),
+    LONG("long"),
+    FLOAT("float"),
+    DOUBLE("double"),
+    STRING("str"),
+    DATE("date");
+
+    private VAL_TYPE (final String text) {
+      this.text = text;
+    }
+
+    private final String text;
+
+    @Override
+    public String toString() {
+      return text;
     }
   }
+
+  static private Document doc;
+  static private XPathFactory xPathFact =  XPathFactory.newInstance();
+
+  public static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true); // never forget this!
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes())));
+    xPathFact = XPathFactory.newInstance();
+  }
+
+  public Object getStatResult(String section, String name, VAL_TYPE type) throws XPathExpressionException {
+
+    // Construct the XPath expression. The form better not change or all these will fail.
+    StringBuilder sb = new StringBuilder("/response/lst[@name='stats']/lst[@name='").append(section).append("']");
+
+    // This is a little fragile in that it demands the elements have the same name as type, i.e. when looking for a
+    // VAL_TYPE.DOUBLE, the element in question is <double name="blah">47.0</double>.
+    sb.append("/").append(type.toString()).append("[@name='").append(name).append("']");
+    String val = xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
+    switch (type) {
+      case INTEGER: return Integer.parseInt(val);
+      case DOUBLE:  return Double.parseDouble(val);
+      case FLOAT:   return Float.parseFloat(val);
+      case LONG:    return Long.parseLong(val);
+      case STRING:  return val;
+      case DATE:    return val;
+    }
+    fail("Unknown type used in getStatResult");
+    return null; // Really can't get here, but the compiler thinks we can!
+  }
+
 
   public <T extends Number & Comparable<T>> Double calculateNumberStat(ArrayList<T> list, String stat) {
     Double result;

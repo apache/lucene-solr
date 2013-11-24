@@ -23,6 +23,7 @@ import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.analytics.facet.AbstractAnalyticsFacetTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
@@ -36,8 +37,6 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
   static public final int DATE = 12;
   static public final int STRING = 28;
   static public final int NUM_LOOPS = 100;
-  
-  static String response;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -85,145 +84,145 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
     
     assertU(commit()); 
     
-    response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
       
   @Test
   public void addTest() throws Exception { 
-    double result = (Double)getStatResult(response, "ar", "double", "sum");
-    double calculated = (Double)getStatResult(response, "ar", "double", "sumc");
+    double result = (Double)getStatResult("ar", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("ar", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
 
-    result = (Double)getStatResult(response, "ar", "double", "mean");
-    calculated = (Double)getStatResult(response, "ar", "double", "meanc");
+    result = (Double)getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("ar", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
   
   @Test
   public void multiplyTest() throws Exception { 
-    double result = (Double)getStatResult(response, "mr", "double", "sum");
-    double calculated = (Double)getStatResult(response, "mr", "double", "sumc");
+    double result = (Double)getStatResult("mr", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("mr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
     
-    result = (Double)getStatResult(response, "mr", "double", "mean");
-    calculated = (Double)getStatResult(response, "mr", "double", "meanc");
+    result = (Double)getStatResult("mr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("mr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
   
   @Test
   public void divideTest() throws Exception { 
-    Double result = (Double)getStatResult(response, "dr", "double", "sum");
-    Double calculated = (Double)getStatResult(response, "dr", "double", "sumc");
+    Double result = (Double)getStatResult("dr", "sum", VAL_TYPE.DOUBLE);
+    Double calculated = (Double)getStatResult("dr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result.equals(calculated));
     
-    result = (Double)getStatResult(response, "dr", "double", "mean");
-    calculated = (Double)getStatResult(response, "dr", "double", "meanc");
+    result = (Double)getStatResult("dr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("dr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void powerTest() throws Exception { 
-    double result = (Double)getStatResult(response, "pr", "double", "sum");
-    double calculated = (Double)getStatResult(response, "pr", "double", "sumc");
+    double result = (Double)getStatResult("pr", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("pr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
     
-    result = (Double)getStatResult(response, "pr", "double", "mean");
-    calculated = (Double)getStatResult(response, "pr", "double", "meanc");
+    result = (Double)getStatResult("pr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("pr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
   
   @Test
   public void negateTest() throws Exception { 
-    double result = (Double)getStatResult(response, "nr", "double", "sum");
-    double calculated = (Double)getStatResult(response, "nr", "double", "sumc");
+    double result = (Double)getStatResult("nr", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("nr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
     
-    result = (Double)getStatResult(response, "nr", "double", "mean");
-    calculated = (Double)getStatResult(response, "nr", "double", "meanc");
+    result = (Double)getStatResult("nr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("nr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
-  
-  @Test
-  public void absoluteValueTest() throws Exception { 
-    double result = (Double)getStatResult(response, "avr", "double", "sum");
-    double calculated = (Double)getStatResult(response, "avr", "double", "sumc");
+
+  @Test @Ignore("SOLR-5488")
+  public void absoluteValueTest() throws Exception {
+    double result = (Double)getStatResult("avr", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("avr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
     
-    result = (Double)getStatResult(response, "avr", "double", "mean");
-    calculated = (Double)getStatResult(response, "avr", "double", "meanc");
+    result = (Double)getStatResult("avr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("avr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
   
   @Test
   public void constantNumberTest() throws Exception { 
-    double result = (Double)getStatResult(response, "cnr", "double", "sum");
-    double calculated = (Double)getStatResult(response, "cnr", "double", "sumc");
+    double result = (Double)getStatResult("cnr", "sum", VAL_TYPE.DOUBLE);
+    double calculated = (Double)getStatResult("cnr", "sumc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
     
-    result = (Double)getStatResult(response, "cnr", "double", "mean");
-    calculated = (Double)getStatResult(response, "cnr", "double", "meanc");
+    result = (Double)getStatResult("cnr", "mean", VAL_TYPE.DOUBLE);
+    calculated = (Double)getStatResult("cnr", "meanc", VAL_TYPE.DOUBLE);
     assertTrue(result==calculated);
   }
   
   @Test
-  public void dateMathTest() throws Exception { 
-    String result = (String)getStatResult(response, "dmr", "date", "median");
-    String calculated = (String)getStatResult(response, "dmr", "date", "medianc");
+  public void dateMathTest() throws Exception {
+    String result = (String)getStatResult("dmr", "median", VAL_TYPE.STRING);
+    String calculated = (String)getStatResult("dmr", "medianc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
     
-    result = (String)getStatResult(response, "dmr", "date", "max");
-    calculated = (String)getStatResult(response, "dmr", "date", "maxc");
+    result = (String)getStatResult("dmr", "max", VAL_TYPE.STRING);
+    calculated = (String)getStatResult("dmr", "maxc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void constantDateTest() throws Exception { 
-    String result = (String)getStatResult(response, "cdr", "date", "median");
-    String calculated = (String)getStatResult(response, "cdr", "date", "medianc");
+    String result = (String)getStatResult("cdr", "median", VAL_TYPE.STRING);
+    String calculated = (String)getStatResult("cdr", "medianc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
     
-    result = (String)getStatResult(response, "cdr", "date", "max");
-    calculated = (String)getStatResult(response, "cdr", "date", "maxc");
+    result = (String)getStatResult("cdr", "max", VAL_TYPE.STRING);
+    calculated = (String)getStatResult("cdr", "maxc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void constantStringTest() throws Exception { 
-    String result = (String)getStatResult(response, "csr", "str", "min");
-    String calculated = (String)getStatResult(response, "csr", "str", "minc");
+    String result = (String)getStatResult("csr", "min", VAL_TYPE.STRING);
+    String calculated = (String)getStatResult("csr", "minc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
     
-    result = (String)getStatResult(response, "csr", "str", "max");
-    calculated = (String)getStatResult(response, "csr", "str", "maxc");
+    result = (String)getStatResult("csr", "max", VAL_TYPE.STRING);
+    calculated = (String)getStatResult("csr", "maxc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void concatenateTest() throws Exception { 
-    String result = (String)getStatResult(response, "cr", "str", "min");
-    String calculated = (String)getStatResult(response, "cr", "str", "minc");
+    String result = (String)getStatResult("cr", "min", VAL_TYPE.STRING);
+    String calculated = (String)getStatResult("cr", "minc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
     
-    result = (String)getStatResult(response, "cr", "str", "max");
-    calculated = (String)getStatResult(response, "cr", "str", "maxc");
+    result = (String)getStatResult("cr", "max", VAL_TYPE.STRING);
+    calculated = (String)getStatResult("cr", "maxc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void reverseTest() throws Exception { 
-    String result = (String)getStatResult(response, "rr", "str", "min");
-    String calculated = (String)getStatResult(response, "rr", "str", "minc");
+    String result = (String)getStatResult("rr", "min", VAL_TYPE.STRING);
+    String calculated = (String)getStatResult("rr", "minc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
     
-    result = (String)getStatResult(response, "rr", "str", "max");
-    calculated = (String)getStatResult(response, "rr", "str", "maxc");
+    result = (String)getStatResult("rr", "max", VAL_TYPE.STRING);
+    calculated = (String)getStatResult("rr", "maxc", VAL_TYPE.STRING);
     assertTrue(result.equals(calculated));
   }
   
   @Test
   public void missingTest() throws Exception { 
-    double min = (Double)getStatResult(response, "ms", "double", "min");
-    double max = (Double)getStatResult(response, "ms", "double", "max");
+    double min = (Double)getStatResult("ms", "min", VAL_TYPE.DOUBLE);
+    double max = (Double)getStatResult("ms", "max", VAL_TYPE.DOUBLE);
     Assert.assertEquals((Double)48.0,(Double)max);
     Assert.assertEquals((Double)1.0,(Double)min);
   }
