@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -33,7 +32,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -51,7 +49,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   
   @BeforeClass
   public static void beforeThisClass3() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
+ 
   }
   
   @Before
@@ -120,21 +118,17 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     server.request(unloadCmd);
     
     // there should be only one shard
-    Slice shard2 = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlice(collection, "shard2");
+    int slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
     long timeoutAt = System.currentTimeMillis() + 45000;
-    while (shard2 != null) {
+    while (slices != 1) {
       if (System.currentTimeMillis() > timeoutAt) {
         printLayout();
-        fail("Still found shard2 in collection " + collection);
+        fail("Expected to find only one slice in " + collection);
       }
       
       Thread.sleep(1000);
-      shard2 = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlice(collection, "shard2");
+      slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
     }
-
-    Slice shard1 = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlice(collection, "shard1");
-    assertNotNull(shard1);
-    assertTrue(getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollections().contains(collection));
     
     // now unload one of the other
     unloadCmd = new Unload(false);
