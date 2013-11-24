@@ -55,11 +55,12 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
+  private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
+
   }
   
   public BasicDistributedZk2Test() {
@@ -144,14 +145,15 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       index_specific(client, "id", docId + 1, t1, "what happens here?");
       
       // expire a session...
-      CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
+      CloudJettyRunner cloudJetty = shardToJetty.get(SHARD1).get(0);
       chaosMonkey.expireSession(cloudJetty.jetty);
       
       indexr("id", docId + 1, t1, "slip this doc in");
       
       waitForRecoveriesToFinish(false);
       
-      checkShardConsistency("shard1");
+      checkShardConsistency(SHARD1);
+      checkShardConsistency(SHARD2);
       
       testFinished = true;
     } finally {
@@ -185,9 +187,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     waitForCollection(cloudClient.getZkStateReader(), ONE_NODE_COLLECTION, 1);
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     
-    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, "shard1", 30000);
+    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
     
-    final String baseUrl2 = getBaseUrl((HttpSolrServer) clients.get(1));
+    final String baseUrl2 = getBaseUrl((HttpSolrServer) clients.get(random().nextInt(clients.size())));
     HttpSolrServer qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection" + "core");
     
     // add a doc
@@ -502,12 +504,17 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     // new server should be part of first shard
     // how many docs are on the new shard?
-    for (CloudJettyRunner cjetty : shardToJetty.get("shard1")) {
-      if (VERBOSE) System.err.println("total:"
+    for (CloudJettyRunner cjetty : shardToJetty.get(SHARD1)) {
+      if (VERBOSE) System.err.println("shard1 total:"
+          + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+    for (CloudJettyRunner cjetty : shardToJetty.get("shard2")) {
+      if (VERBOSE) System.err.println("shard2 total:"
           + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
-    checkShardConsistency("shard1");
+    checkShardConsistency(SHARD1);
+    checkShardConsistency("shard2");
     
     assertDocCounts(VERBOSE);
   }
