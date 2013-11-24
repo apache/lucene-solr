@@ -20,11 +20,7 @@ package org.apache.lucene.facet.simple;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-
 public final class SimpleFacetResult {
-  /** Path whose children we counted. */
-  public final FacetLabel path;
 
   /** Total value for this path (sum of all child counts, or
    *  sum of all child values), even those not included in
@@ -38,8 +34,7 @@ public final class SimpleFacetResult {
   /** Child counts. */
   public final LabelAndValue[] labelValues;
 
-  public SimpleFacetResult(FacetLabel path, Number value, LabelAndValue[] labelValues, int childCount) {
-    this.path = path;
+  public SimpleFacetResult(Number value, LabelAndValue[] labelValues, int childCount) {
     this.value = value;
     this.labelValues = labelValues;
     this.childCount = childCount;
@@ -48,12 +43,11 @@ public final class SimpleFacetResult {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    if (path == null) {
-      sb.append("null");
-    } else {
-      sb.append(path.toString());
-    }
-    sb.append(" (" + value + ")\n");
+    sb.append("value=");
+    sb.append(value);
+    sb.append(" childCount=");
+    sb.append(childCount);
+    sb.append('\n');
     for(LabelAndValue labelValue : labelValues) {
       sb.append("  " + labelValue + "\n");
     }
@@ -66,8 +60,8 @@ public final class SimpleFacetResult {
       return false;
     }
     SimpleFacetResult other = (SimpleFacetResult) _other;
-    return path.equals(other.path) &&
-      value.equals(other.value) &&
+    return value.equals(other.value) &&
+      childCount == other.childCount &&
       Arrays.equals(labelValues, other.labelValues);
   }
 

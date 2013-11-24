@@ -95,7 +95,7 @@ public class RangeFacetCounts extends Facets {
       labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
     }
 
-    return new SimpleFacetResult(new FacetLabel(field), totCount, labelValues, labelValues.length);
+    return new SimpleFacetResult(totCount, labelValues, labelValues.length);
   }
 
   @Override

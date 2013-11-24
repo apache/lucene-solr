@@ -185,6 +185,6 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, totCount, labelValues, childCount);
+    return new SimpleFacetResult(totCount, labelValues, childCount);
   }
 }

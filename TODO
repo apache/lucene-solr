@@ -2,15 +2,14 @@ nocommit this!
 
 TODO
   - allow path.length==0?
+  - need test coverage of utility search methods
   - move DocumentBuilder.build -> FacetsConfig.build
-  - add sugar apis to do sort-by-score, sort-by-field sort AND collect into SimpleFacetsCollector?
   - getSpecificValue for a dim isn't reliable
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?
   - standardize on facet or facets (e.g. FacetIndexWriter)
   - fewer args when constructing a range
   - how to do avg() agg?
-  - test needsScores=true / valuesource associations
   - consistently name things "dimension"? calling these fields is CONFUSING
   - later
     - SSDVValueSourceFacets?

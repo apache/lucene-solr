@@ -82,8 +82,7 @@ abstract class TaxonomyFacets extends Facets {
                          } else if (b.value.doubleValue() > a.value.doubleValue()) {
                            return 1;
                          } else {
-                           // Tie break by dimension
-                           return a.path.components[0].compareTo(b.path.components[0]);
+                           return 0;
                          }
                        }
                      });

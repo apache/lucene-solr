@@ -96,7 +96,7 @@ public class TestRangeFacets extends FacetTestCase {
         new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
     
     SimpleFacetResult result = facets.getTopChildren(10, "field");
-    assertEquals("field (101)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+    assertEquals("value=101 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
                  result.toString());
     
     r.close();
@@ -177,8 +177,8 @@ public class TestRangeFacets extends FacetTestCase {
     SimpleDrillSidewaysResult dsr = ds.search(null, ddq, 10);
 
     assertEquals(100, dsr.hits.totalHits);
-    assertEquals("dim (100)\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("field (100)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
+    assertEquals("value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
     // Second search, drill down on dim=b:
@@ -187,8 +187,8 @@ public class TestRangeFacets extends FacetTestCase {
     dsr = ds.search(null, ddq, 10);
 
     assertEquals(75, dsr.hits.totalHits);
-    assertEquals("dim (100)\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("field (75)\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n",
+    assertEquals("value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
+    assertEquals("value=75 childCount=5\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
     // Third search, drill down on "less than or equal to 10":
@@ -197,8 +197,8 @@ public class TestRangeFacets extends FacetTestCase {
     dsr = ds.search(null, ddq, 10);
 
     assertEquals(11, dsr.hits.totalHits);
-    assertEquals("dim (11)\n  b (8)\n  a (3)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("field (100)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("value=11 childCount=2\n  b (8)\n  a (3)\n", dsr.facets.getTopChildren(10, "dim").toString());
+    assertEquals("value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
     IOUtils.close(tw, tr, td, w, r, d);
   }
@@ -227,7 +227,7 @@ public class TestRangeFacets extends FacetTestCase {
         new DoubleRange("90 or above", 90.0, true, 100.0, false),
         new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false));
                                          
-    assertEquals("field (100)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(w, r, d);
@@ -258,7 +258,7 @@ public class TestRangeFacets extends FacetTestCase {
         new FloatRange("90 or above", 90.0f, true, 100.0f, false),
         new FloatRange("over 1000", 1000.0f, false, Float.POSITIVE_INFINITY, false));
     
-    assertEquals("field (100)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
     
     IOUtils.close(w, r, d);
@@ -547,7 +547,7 @@ public class TestRangeFacets extends FacetTestCase {
         new LongRange("90 or above", 90L, true, 100L, false),
         new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false));
     
-    assertEquals("field (100)\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
+    assertEquals("value=100 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(w, r, d);

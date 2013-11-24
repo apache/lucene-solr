@@ -36,9 +36,13 @@ import org.apache.lucene.facet.util.PrintTaxonomyStats;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
@@ -104,8 +108,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
 
     // Retrieve & verify results:
-    assertEquals("Publish Date (5)\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getTopChildren(10, "Publish Date").toString());
-    assertEquals("Author (5)\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", facets.getTopChildren(10, "Author").toString());
+    assertEquals("value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", facets.getTopChildren(10, "Author").toString());
 
     // Now user drills down on Publish Date/2010:
     SimpleDrillDownQuery q2 = new SimpleDrillDownQuery(config);
@@ -113,7 +117,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     c = new SimpleFacetsCollector();
     searcher.search(q2, c);
     facets = new FastTaxonomyFacetCounts(taxoReader, config, c);
-    assertEquals("Author (2)\n  Bob (1)\n  Lisa (1)\n", facets.getTopChildren(10, "Author").toString());
+    assertEquals("value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", facets.getTopChildren(10, "Author").toString());
 
     assertEquals(1, facets.getSpecificValue("Author", "Lisa"));
 
@@ -181,9 +185,9 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     List<SimpleFacetResult> results = facets.getAllDims(10);
 
     assertEquals(3, results.size());
-    assertEquals("a (3)\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
-    assertEquals("b (2)\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
-    assertEquals("c (1)\n  baz1 (1)\n", results.get(2).toString());
+    assertEquals("value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
+    assertEquals("value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
+    assertEquals("value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
 
     IOUtils.close(writer, taxoWriter, searcher.getIndexReader(), taxoReader, taxoDir, dir);
   }
@@ -340,7 +344,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     assertEquals(1, facets.getSpecificValue("dim", "test\u001Etwo"));
 
     SimpleFacetResult result = facets.getTopChildren(10, "dim");
-    assertEquals("dim (-1)\n  test\u001Fone (1)\n  test\u001Etwo (1)\n", result.toString());
+    assertEquals("value=-1 childCount=2\n  test\u001Fone (1)\n  test\u001Etwo (1)\n", result.toString());
     IOUtils.close(writer, taxoWriter, searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 
@@ -585,5 +589,60 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     assertEquals(10, facets.getTopChildren(2, "a").childCount);
 
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
+  }
+
+  private void indexTwoDocs(IndexWriter indexWriter, FacetsConfig config, boolean withContent) throws Exception {
+    for (int i = 0; i < 2; i++) {
+      Document doc = new Document();
+      if (withContent) {
+        doc.add(new StringField("f", "a", Field.Store.NO));
+      }
+      if (config != null) {
+        doc.add(new FacetField("A", Integer.toString(i)));
+        indexWriter.addDocument(config.build(doc));
+      } else {
+        indexWriter.addDocument(doc);
+      }
+    }
+    
+    indexWriter.commit();
+  }
+  
+  public void testSegmentsWithoutCategoriesOrResults() throws Exception {
+    // tests the accumulator when there are segments with no results
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges
+    IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
+
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig config = new FacetsConfig(taxoWriter);
+    indexTwoDocs(indexWriter, config, false); // 1st segment, no content, with categories
+    indexTwoDocs(indexWriter, null, true);         // 2nd segment, with content, no categories
+    indexTwoDocs(indexWriter, config, true);  // 3rd segment ok
+    indexTwoDocs(indexWriter, null, false);        // 4th segment, no content, or categories
+    indexTwoDocs(indexWriter, null, true);         // 5th segment, with content, no categories
+    indexTwoDocs(indexWriter, config, true);  // 6th segment, with content, with categories
+    indexTwoDocs(indexWriter, null, true);         // 7th segment, with content, no categories
+    IOUtils.close(indexWriter, taxoWriter);
+
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    IndexSearcher indexSearcher = newSearcher(indexReader);
+    
+    // search for "f:a", only segments 1 and 3 should match results
+    Query q = new TermQuery(new Term("f", "a"));
+    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    indexSearcher.search(q, sfc);
+    Facets facets = getTaxonomyFacetCounts(taxoReader, config, sfc);
+    SimpleFacetResult result = facets.getTopChildren(10, "A");
+    assertEquals("wrong number of children", 2, result.labelValues.length);
+    for (LabelAndValue labelValue : result.labelValues) {
+      assertEquals("wrong weight for child " + labelValue.label, 2, labelValue.value.intValue());
+    }
+
+    IOUtils.close(indexReader, taxoReader, indexDir, taxoDir);
   }
 }

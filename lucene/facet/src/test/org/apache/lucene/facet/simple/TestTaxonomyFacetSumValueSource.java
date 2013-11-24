@@ -129,7 +129,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, new IntFieldSource("num"));
 
     // Retrieve & verify results:
-    assertEquals("Author (145.0)\n  Lisa (50.0)\n  Frank (45.0)\n  Susan (40.0)\n  Bob (10.0)\n", facets.getTopChildren(10, "Author").toString());
+    assertEquals("value=145.0 childCount=4\n  Lisa (50.0)\n  Frank (45.0)\n  Susan (40.0)\n  Bob (10.0)\n", facets.getTopChildren(10, "Author").toString());
 
     taxoReader.close();
     searcher.getIndexReader().close();
@@ -192,9 +192,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     List<SimpleFacetResult> results = facets.getAllDims(10);
 
     assertEquals(3, results.size());
-    assertEquals("a (60.0)\n  foo3 (30.0)\n  foo2 (20.0)\n  foo1 (10.0)\n", results.get(0).toString());
-    assertEquals("b (50.0)\n  bar2 (30.0)\n  bar1 (20.0)\n", results.get(1).toString());
-    assertEquals("c (30.0)\n  baz1 (30.0)\n", results.get(2).toString());
+    assertEquals("value=60.0 childCount=3\n  foo3 (30.0)\n  foo2 (20.0)\n  foo1 (10.0)\n", results.get(0).toString());
+    assertEquals("value=50.0 childCount=2\n  bar2 (30.0)\n  bar1 (20.0)\n", results.get(1).toString());
+    assertEquals("value=30.0 childCount=1\n  baz1 (30.0)\n", results.get(2).toString());
 
     IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
@@ -309,7 +309,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     SimpleFacetsCollector sfc = new SimpleFacetsCollector();
     newSearcher(r).search(new MatchAllDocsQuery(), sfc);
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, new LongFieldSource("price"));
-    assertEquals("a (10.0)\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
     
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
   }
@@ -361,7 +361,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     newSearcher(r).search(q, MultiCollector.wrap(tsdc, sfc));
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, valueSource);
     
-    assertEquals("a (10.0)\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
     
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
   }
@@ -391,7 +391,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     newSearcher(r).search(new MatchAllDocsQuery(), sfc);
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, valueSource);
     
-    assertEquals("a (10.0)\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
     
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
   }

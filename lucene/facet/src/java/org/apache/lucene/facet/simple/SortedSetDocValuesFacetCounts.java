@@ -135,7 +135,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       labelValues[i] = new LabelAndValue(parts[1], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(new FacetLabel(dim), dimCount, labelValues, childCount);
+    return new SimpleFacetResult(dimCount, labelValues, childCount);
   }
 
   /** Does all the "real work" of tallying up the counts. */
@@ -286,8 +286,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
                          } else if (b.value.intValue() > a.value.intValue()) {
                            return 1;
                          } else {
-                           // Tie break by dimension
-                           return a.path.components[0].compareTo(b.path.components[0]);
+                           return 0;
                          }
                        }
                      });

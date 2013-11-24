@@ -20,6 +20,17 @@ package org.apache.lucene.facet.simple;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+
 public abstract class Facets {
   /** Returns the topN child labels under the specified
    *  path.  Returns null if the specified path doesn't
@@ -36,4 +47,75 @@ public abstract class Facets {
    *  different dimensions were indexed depending on the
    *  type of document. */
   public abstract List<SimpleFacetResult> getAllDims(int topN) throws IOException;
+
+  // nocommit where to move?
+
+  /** Utility method, to search for top hits by score
+   *  ({@link IndexSearcher#search(Query,int)}), but
+   *  also collect results into a {@link
+   *  SimpleFacetsCollector} for faceting. */
+  public static TopDocs search(IndexSearcher searcher, Query q, int topN, SimpleFacetsCollector sfc) throws IOException {
+    // nocommit can we pass the "right" boolean for
+    // in-order...?  we'd need access to the protected
+    // IS.search methods taking Weight... could use
+    // reflection...
+    TopScoreDocCollector hitsCollector = TopScoreDocCollector.create(topN, false);
+    searcher.search(q, MultiCollector.wrap(hitsCollector, sfc));
+    return hitsCollector.topDocs();
+  }
+
+  // nocommit where to move?
+
+  /** Utility method, to search for top hits by score with a filter
+   *  ({@link IndexSearcher#search(Query,Filter,int)}), but
+   *  also collect results into a {@link
+   *  SimpleFacetsCollector} for faceting. */
+  public static TopDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, SimpleFacetsCollector sfc) throws IOException {
+    if (filter != null) {
+      q = new FilteredQuery(q, filter);
+    }
+    return search(searcher, q, topN, sfc);
+  }
+
+  // nocommit where to move?
+
+  /** Utility method, to search for top hits by a custom
+   *  {@link Sort} with a filter
+   *  ({@link IndexSearcher#search(Query,Filter,int,Sort)}), but
+   *  also collect results into a {@link
+   *  SimpleFacetsCollector} for faceting. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, Sort sort, SimpleFacetsCollector sfc) throws IOException {
+    return search(searcher, q, filter, topN, sort, false, false, sfc);
+  }
+
+  // nocommit where to move?
+
+  /** Utility method, to search for top hits by a custom
+   *  {@link Sort} with a filter
+   *  ({@link IndexSearcher#search(Query,Filter,int,Sort,boolean,boolean)}), but
+   *  also collect results into a {@link
+   *  SimpleFacetsCollector} for faceting. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, Sort sort, boolean doDocScores, boolean doMaxScore, SimpleFacetsCollector sfc) throws IOException {
+    int limit = searcher.getIndexReader().maxDoc();
+    if (limit == 0) {
+      limit = 1;
+    }
+    topN = Math.min(topN, limit);
+
+    boolean fillFields = true;
+    TopFieldCollector hitsCollector = TopFieldCollector.create(sort, topN,
+                                                               null,
+                                                               fillFields,
+                                                               doDocScores,
+                                                               doMaxScore,
+                                                               false);
+    if (filter != null) {
+      q = new FilteredQuery(q, filter);
+    }
+    searcher.search(q, MultiCollector.wrap(hitsCollector, sfc));
+    return (TopFieldDocs) hitsCollector.topDocs();
+  }
+
+  // nocommit need searchAfter variants too
+
 }

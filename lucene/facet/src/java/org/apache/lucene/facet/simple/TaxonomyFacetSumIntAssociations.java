@@ -145,6 +145,6 @@ public class TaxonomyFacetSumIntAssociations extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, sumValue, labelValues, childCount);
+    return new SimpleFacetResult(sumValue, labelValues, childCount);
   }
 }

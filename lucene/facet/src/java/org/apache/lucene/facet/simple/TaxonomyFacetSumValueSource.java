@@ -203,7 +203,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new SimpleFacetResult(cp, sumValues, labelValues, childCount);
+    return new SimpleFacetResult(sumValues, labelValues, childCount);
   }
 
   /** {@link ValueSource} that returns the score for each

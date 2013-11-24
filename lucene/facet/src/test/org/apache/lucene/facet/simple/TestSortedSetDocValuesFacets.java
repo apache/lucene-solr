@@ -69,8 +69,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
 
-    assertEquals("a (4)\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
-    assertEquals("b (1)\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
+    assertEquals("value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
 
     // DrillDown:
     SimpleDrillDownQuery q = new SimpleDrillDownQuery(config);
@@ -172,9 +172,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     List<SimpleFacetResult> results = facets.getAllDims(10);
 
     assertEquals(3, results.size());
-    assertEquals("a (3)\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
-    assertEquals("b (2)\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
-    assertEquals("c (1)\n  baz1 (1)\n", results.get(2).toString());
+    assertEquals("value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
+    assertEquals("value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
+    assertEquals("value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
 
     searcher.getIndexReader().close();
     dir.close();
@@ -215,7 +215,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Facets facets = new SortedSetDocValuesFacetCounts(state, c);
 
     // Ask for top 10 labels for any dims that have counts:
-    assertEquals("a (2)\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
     IOUtils.close(writer, searcher.getIndexReader(), dir);
   }
