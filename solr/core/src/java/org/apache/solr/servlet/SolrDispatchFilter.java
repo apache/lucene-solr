@@ -580,7 +580,7 @@ public class SolrDispatchFilter implements Filter
       Set<String> collections = clusterState.getCollections();
       for (String collection : collections) {
         slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getActiveSlices(collection));
+        slices.addAll(clusterState.getSlices(collection));
       }
     }
     
