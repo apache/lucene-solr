@@ -454,7 +454,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String solrConfigOverride) throws Exception {
     
     JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
-        solrConfigOverride, null, false, getExtraServlets());
+        solrConfigOverride, null, true, getExtraServlets());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
