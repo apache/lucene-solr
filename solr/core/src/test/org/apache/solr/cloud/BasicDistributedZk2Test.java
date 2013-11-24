@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -198,8 +199,11 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
   // 2 docs added every call
   private void addAndQueryDocs(final String baseUrl, int docs)
-      throws SolrServerException, IOException {
+      throws Exception {
     HttpSolrServer qclient = new HttpSolrServer(baseUrl + "/onenodecollection" + "core");
+    
+    // it might take a moment for the proxy node to see us in their cloud state
+    waitForNon403or404or503(qclient);
     
     // add a doc
     SolrInputDocument doc = new SolrInputDocument();
