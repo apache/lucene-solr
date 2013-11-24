@@ -230,8 +230,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     DirectUpdateHandler2.commitOnClose = false;
     
     HttpSolrServer addClient = new HttpSolrServer(url3 + "/unloadcollection3");
-    addClient.setConnectionTimeout(15000);
-    addClient.setSoTimeout(30000);
+    addClient.setConnectionTimeout(30000);
+
     // add a few docs
     for (int x = 20; x < 100; x++) {
       SolrInputDocument doc1 = getDoc(id, x, i1, -600, tlong, 600, t1,
