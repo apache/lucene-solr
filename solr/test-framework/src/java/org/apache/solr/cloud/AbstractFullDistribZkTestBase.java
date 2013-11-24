@@ -1738,6 +1738,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         try {
           commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
               random().nextBoolean());
+          commondCloudSolrServer.getLbServer().setConnectionTimeout(30000);
           commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.connect();

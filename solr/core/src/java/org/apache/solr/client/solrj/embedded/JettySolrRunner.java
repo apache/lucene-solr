@@ -227,6 +227,7 @@ public class JettySolrRunner {
           : new SelectChannelConnector();
         c.setReuseAddress(true);
         c.setLowResourcesMaxIdleTime(1500);
+        c.setSoLingerTime(0);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else if ("Socket".equals(connectorName)) {
@@ -234,6 +235,7 @@ public class JettySolrRunner {
           ? new SslSocketConnector(sslcontext)
           : new SocketConnector();
         c.setReuseAddress(true);
+        c.setSoLingerTime(0);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else {
