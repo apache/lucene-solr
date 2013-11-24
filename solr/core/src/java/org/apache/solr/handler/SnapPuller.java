@@ -788,6 +788,8 @@ public class SnapPuller {
     for (Map<String, Object> file : filesToDownload) {
       if (dir.fileExists((String) file.get(NAME))
               && dir.fileLength((String) file.get(NAME)) != (Long) file.get(SIZE)) {
+        LOG.warn("File " + file.get(NAME) + " expected to be " + file.get(SIZE)
+            + " while it is " + dir.fileLength((String) file.get(NAME)));
         // file exists and size is different, therefore we must assume
         // corrupted index
         return true;
