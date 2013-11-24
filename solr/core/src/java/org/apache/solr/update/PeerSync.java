@@ -79,15 +79,7 @@ public class PeerSync  {
   private long ourHighThreshold; // 80th percentile
   private boolean cantReachIsSuccess;
   private boolean getNoVersionsIsSuccess;
-  private static final HttpClient client;
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
-    params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    client = HttpClientUtil.createClient(params);
-  }
+  private final HttpClient client;
 
   // comparator that sorts by absolute value, putting highest first
   private static Comparator<Long> absComparator = new Comparator<Long>() {
@@ -137,7 +129,7 @@ public class PeerSync  {
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
-
+    this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();

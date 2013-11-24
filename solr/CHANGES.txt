@@ -147,6 +147,10 @@ Bug Fixes
   a delta-import is run first before any full-imports.
   (Sebastien Lorber, Arcadius Ahouansou via shalin)
 
+* SOLR-5496: We should share an http connection manager across non search 
+  HttpClients and ensure all http connection managers get shutdown.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 

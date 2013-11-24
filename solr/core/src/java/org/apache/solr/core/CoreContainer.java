@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -54,6 +58,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
@@ -88,8 +93,7 @@ public class CoreContainer {
   protected ZkContainer zkSys = new ZkContainer();
   private ShardHandlerFactory shardHandlerFactory;
   
-  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
-      new SolrjNamedThreadFactory("updateExecutor"));
+  private UpdateShardHandler updateShardHandler;
 
   protected LogWatcher logging = null;
 
@@ -102,6 +106,8 @@ public class CoreContainer {
   protected final CoresLocator coresLocator;
   
   private String hostName;
+  
+ // private ClientConnectionManager clientConnectionManager = new PoolingClientConnectionManager();
 
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
@@ -196,6 +202,8 @@ public class CoreContainer {
     }
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
+    
+    updateShardHandler = new UpdateShardHandler(cfg);
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
@@ -358,7 +366,6 @@ public class CoreContainer {
       cancelCoreRecoveries();
     }
 
-
     try {
       // First wake up the closer thread, it'll terminate almost immediately since it checks isShutDown.
       synchronized (solrCores.getModifyLock()) {
@@ -384,16 +391,20 @@ public class CoreContainer {
       }
 
     } finally {
-      if (shardHandlerFactory != null) {
-        shardHandlerFactory.close();
+      try {
+        if (shardHandlerFactory != null) {
+          shardHandlerFactory.close();
+        }
+      } finally {
+        try {
+          if (updateShardHandler != null) {
+            updateShardHandler.close();
+          }
+        } finally {
+          // we want to close zk stuff last
+          zkSys.close();
+        }
       }
-      
-      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
-      
-      // we want to close zk stuff last
-
-      zkSys.close();
-
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
@@ -866,7 +877,7 @@ public class CoreContainer {
   public InfoHandler getInfoHandler() {
     return infoHandler;
   }
-  
+
   /**
    * the default core name, or null if there is no default core name
    */
@@ -952,8 +963,8 @@ public class CoreContainer {
     return shardHandlerFactory;
   }
   
-  public ExecutorService getUpdateExecutor() {
-    return updateExecutor;
+  public UpdateShardHandler getUpdateShardHandler() {
+    return updateShardHandler;
   }
   
   // Just to tidy up the code where it did this in-line.
@@ -969,8 +980,6 @@ public class CoreContainer {
   String getCoreToOrigName(SolrCore core) {
     return solrCores.getCoreToOrigName(core);
   }
-  
-
 }
 
 class CloserThread extends Thread {

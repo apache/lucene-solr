@@ -51,8 +51,6 @@ public class ZkContainer {
   private String host;
   private int leaderVoteWait;
   private Boolean genericCoreNodeNames;
-  private int distribUpdateConnTimeout;
-  private int distribUpdateSoTimeout;
   
   public ZkContainer() {
     
@@ -67,13 +65,11 @@ public class ZkContainer {
 
     initZooKeeper(cc, solrHome,
         config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
-        config.getHost(), config.getLeaderVoteWait(), config.getGenericCoreNodeNames(),
-        config.getDistributedConnectionTimeout(), config.getDistributedSocketTimeout());
+        config.getHost(), config.getLeaderVoteWait(), config.getGenericCoreNodeNames());
   }
   
   public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
-                            String hostContext, String host, int leaderVoteWait, boolean genericCoreNodeNames,
-                            int distribUpdateConnTimeout, int distribUpdateSoTimeout) {
+                            String hostContext, String host, int leaderVoteWait, boolean genericCoreNodeNames) {
     ZkController zkController = null;
     
     // if zkHost sys property is not set, we are not using ZooKeeper
@@ -92,8 +88,6 @@ public class ZkContainer {
     this.host = host;
     this.leaderVoteWait = leaderVoteWait;
     this.genericCoreNodeNames = genericCoreNodeNames;
-    this.distribUpdateConnTimeout = distribUpdateConnTimeout;
-    this.distribUpdateSoTimeout = distribUpdateSoTimeout;
     
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
@@ -147,7 +141,7 @@ public class ZkContainer {
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
-            leaderVoteWait, genericCoreNodeNames, distribUpdateConnTimeout, distribUpdateSoTimeout,
+            leaderVoteWait, genericCoreNodeNames,
             new CurrentCoreDescriptorProvider() {
 
               @Override

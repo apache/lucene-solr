@@ -43,24 +43,22 @@ import org.slf4j.LoggerFactory;
 public class StreamingSolrServers {
   public static Logger log = LoggerFactory.getLogger(StreamingSolrServers.class);
   
-  private static HttpClient httpClient;
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
-    params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    httpClient = HttpClientUtil.createClient(params);
-  }
+  private HttpClient httpClient;
   
   private Map<String,ConcurrentUpdateSolrServer> solrServers = new HashMap<String,ConcurrentUpdateSolrServer>();
   private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
 
   private ExecutorService updateExecutor;
 
-  public StreamingSolrServers(ExecutorService updateExecutor) {
-    this.updateExecutor = updateExecutor;
+  public StreamingSolrServers(UpdateShardHandler updateShardHandler) {
+    this.updateExecutor = updateShardHandler.getUpdateExecutor();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    
+    httpClient = updateShardHandler.getHttpClient();
   }
 
   public List<Error> getErrors() {

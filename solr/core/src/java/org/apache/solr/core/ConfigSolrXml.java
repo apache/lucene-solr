@@ -107,6 +107,8 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_COREROOTDIRECTORY, doSub("solr/str[@name='coreRootDirectory']"));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, doSub("solr/solrcloud/int[@name='distribUpdateConnTimeout']"));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, doSub("solr/solrcloud/int[@name='distribUpdateSoTimeout']"));
+    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONS, doSub("solr/solrcloud/int[@name='maxUpdateConnections']"));
+    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, doSub("solr/solrcloud/int[@name='maxUpdateConnectionsPerHost']"));
     propMap.put(CfgProp.SOLR_HOST, doSub("solr/solrcloud/str[@name='host']"));
     propMap.put(CfgProp.SOLR_HOSTCONTEXT, doSub("solr/solrcloud/str[@name='hostContext']"));
     propMap.put(CfgProp.SOLR_HOSTPORT, doSub("solr/solrcloud/int[@name='hostPort']"));

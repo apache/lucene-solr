@@ -33,12 +33,13 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientParamBean;
+import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
+import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -91,6 +92,7 @@ public class HttpClientUtil {
   public static void setConfigurer(HttpClientConfigurer newConfigurer) {
     configurer = newConfigurer;
   }
+  
   /**
    * Creates new http client by using the provided configuration.
    * 
@@ -104,6 +106,20 @@ public class HttpClientUtil {
       logger.debug("Creating new http client, config:" + config);
     }
     final DefaultHttpClient httpClient = new SystemDefaultHttpClient();
+    configureClient(httpClient, config);
+    return httpClient;
+  }
+  
+  /**
+   * Creates new http client by using the provided configuration.
+   * 
+   */
+  public static HttpClient createClient(final SolrParams params, ClientConnectionManager cm) {
+    final ModifiableSolrParams config = new ModifiableSolrParams(params);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Creating new http client, config:" + config);
+    }
+    final DefaultHttpClient httpClient = new DefaultHttpClient(cm);
     configureClient(httpClient, config);
     return httpClient;
   }

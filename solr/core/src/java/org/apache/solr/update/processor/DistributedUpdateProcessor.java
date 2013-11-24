@@ -185,7 +185,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
     zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
     if (zkEnabled) {
-      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateExecutor());
+      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 
@@ -667,7 +667,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
       };
-      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateExecutor();
+      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
       executor.execute(thread);
       
     }

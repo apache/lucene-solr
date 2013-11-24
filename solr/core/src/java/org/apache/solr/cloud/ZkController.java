@@ -172,11 +172,9 @@ public final class ZkController {
   private int clientTimeout;
 
   private volatile boolean isClosed;
-  
-  private UpdateShardHandler updateShardHandler;
 
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, int leaderVoteWait, boolean genericCoreNodeNames, int distribUpdateConnTimeout, int distribUpdateSoTimeout, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, int leaderVoteWait, boolean genericCoreNodeNames, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
@@ -186,8 +184,6 @@ public final class ZkController {
     // solr.xml to indicate the root context, instead of hostContext="" 
     // which means the default of "solr"
     localHostContext = trimLeadingAndTrailingSlashes(localHostContext);
-    
-    updateShardHandler = new UpdateShardHandler(distribUpdateConnTimeout, distribUpdateSoTimeout);
     
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
@@ -411,13 +407,6 @@ public final class ZkController {
       log.error("Error closing zkClient", t);
     } 
     
-    if (updateShardHandler != null) {
-      try {
-        updateShardHandler.close();
-      } catch(Throwable t) {
-        log.error("Error closing updateShardHandler", t);
-      }
-    }
   }
 
   /**
@@ -1546,11 +1535,6 @@ public final class ZkController {
   
   public int getClientTimeout() {
     return clientTimeout;
-  }
-
-  // may return null if not in zk mode
-  public UpdateShardHandler getUpdateShardHandler() {
-    return updateShardHandler;
   }
 
   public Overseer getOverseer() {
