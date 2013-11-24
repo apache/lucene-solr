@@ -52,7 +52,7 @@ import org.apache.lucene.search.TermQuery;
  */
 public final class SimpleDrillDownQuery extends Query {
 
-  private static Term term(String field, String dim, String[] path) {
+  public static Term term(String field, String dim, String... path) {
     return new Term(field, FacetsConfig.pathToString(dim, path));
   }
 
@@ -153,9 +153,12 @@ public final class SimpleDrillDownQuery extends Query {
     String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = new BooleanQuery(true); // disable coord
+    // nocommit too anal?
+    /*
     if (path.length == 0) {
       throw new IllegalArgumentException("must have at least one facet label under dim");
     }
+    */
     bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
 
     add(dim, bq);

@@ -25,6 +25,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A per-segment cache of documents' facet ordinals. Every
@@ -45,15 +46,16 @@ import org.apache.lucene.util.IntsRef;
  * a {@link DocValuesFormat} that does not cache the data in
  * memory, at least for the category lists fields, or
  * otherwise you'll be doing double-caching.
+ *
+ * <p>
+ * <b>NOTE:</b> create one instance of this and re-use it
+ * for all facet implementations (the cache is per-instance,
+ * not static).
  */
 public class CachedOrdinalsReader extends OrdinalsReader {
 
   private final OrdinalsReader source;
-  private CachedOrds current;
 
-  // outer map is a WeakHashMap which uses reader.getCoreCacheKey() as the weak
-  // reference. When it's no longer referenced, the entire inner map can be
-  // evicted.
   private final Map<Object,CachedOrds> ordsCache = new WeakHashMap<Object,CachedOrds>();
 
   public CachedOrdinalsReader(OrdinalsReader source) {
@@ -131,5 +133,15 @@ public class CachedOrdinalsReader extends OrdinalsReader {
         this.ordinals = ords;
       }
     }
+  }
+
+  /** How many bytes is this cache using? */
+  public synchronized long ramBytesUsed() {
+    long bytes = 0;
+    for(CachedOrds ords : ordsCache.values()) {
+      bytes += RamUsageEstimator.sizeOf(ords);
+    }
+
+    return bytes;
   }
 }

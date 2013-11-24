@@ -317,7 +317,7 @@ public class FacetsConfig {
         }
 
         // Drill down:
-        for(int i=2;i<=cp.length;i++) {
+        for(int i=1;i<=cp.length;i++) {
           addedIndexedFields.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
@@ -345,6 +345,7 @@ public class FacetsConfig {
 
         // For drill-down:
         addedIndexedFields.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
+        addedIndexedFields.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
       }
     }
   }
@@ -455,6 +456,14 @@ public class FacetsConfig {
   }
 
   public static String pathToString(String[] path, int length) {
+    // nocommit .... too anal?  shouldn't we allow drill
+    // down on just dim, to get all docs that have that
+    // dim...?
+    /*
+    if (path.length < 2) {
+      throw new IllegalArgumentException("path length must be > 0 (dim=" + path[0] + ")");
+    }
+    */
     if (length == 0) {
       return "";
     }

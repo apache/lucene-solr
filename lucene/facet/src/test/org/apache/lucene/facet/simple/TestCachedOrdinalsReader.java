@@ -1,4 +1,21 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.simple;
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -18,45 +35,27 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-public class OrdinalsCacheTest extends FacetTestCase {
+public class TestCachedOrdinalsReader extends FacetTestCase {
 
   @Test
-  public void testOrdinalsCacheWithThreads() throws Exception {
+  public void testWithThreads() throws Exception {
     // LUCENE-5303: OrdinalsCache used the ThreadLocal BinaryDV instead of reader.getCoreCacheKey().
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(indexDir, conf);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetsConfig config = new FacetsConfig(taxoWriter);
     
     Document doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new FacetLabel("A", "1")));
-    writer.addDocument(doc);
+    doc.add(new FacetField("A", "1"));
+    writer.addDocument(config.build(doc));
     doc = new Document();
-    facetFields.addFields(doc, Arrays.asList(new FacetLabel("A", "2")));
-    writer.addDocument(doc);
-    writer.close();
-    taxoWriter.close();
+    doc.add(new FacetField("A", "2"));
+    writer.addDocument(config.build(doc));
     
-    final DirectoryReader reader = DirectoryReader.open(indexDir);
+    final DirectoryReader reader = DirectoryReader.open(writer, true);
+    final CachedOrdinalsReader ordsReader = new CachedOrdinalsReader(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
     Thread[] threads = new Thread[3];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new Thread("CachedOrdsThread-" + i) {
@@ -64,7 +63,7 @@ public class OrdinalsCacheTest extends FacetTestCase {
         public void run() {
           for (AtomicReaderContext context : reader.leaves()) {
             try {
-              OrdinalsCache.getCachedOrds(context, FacetIndexingParams.DEFAULT.getCategoryListParams(new FacetLabel("A")));
+              ordsReader.getReader(context);
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -73,22 +72,17 @@ public class OrdinalsCacheTest extends FacetTestCase {
       };
     }
 
-    OrdinalsCache.clear();
-
     long ramBytesUsed = 0;
     for (Thread t : threads) {
       t.start();
       t.join();
       if (ramBytesUsed == 0) {
-        ramBytesUsed = OrdinalsCache.ramBytesUsed();
+        ramBytesUsed = ordsReader.ramBytesUsed();
       } else {
-        assertEquals(ramBytesUsed, OrdinalsCache.ramBytesUsed());
+        assertEquals(ramBytesUsed, ordsReader.ramBytesUsed());
       }
     }
     
-    reader.close();
-    
-    IOUtils.close(indexDir, taxoDir);
+    IOUtils.close(writer, taxoWriter, reader, indexDir, taxoDir);
   }
-  
 }

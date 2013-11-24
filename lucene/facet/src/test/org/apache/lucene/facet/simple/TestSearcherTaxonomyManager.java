@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.simple;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,6 +31,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.search.SearcherTaxonomyManager;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
@@ -45,7 +46,8 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     Directory taxoDir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
-    final FacetFields facetFields = new FacetFields(tw);
+    final FacetsConfig config = new FacetsConfig(tw);
+    config.setMultiValued("field", true);
     final AtomicBoolean stop = new AtomicBoolean();
 
     // How many unique facets to index before stopping:
@@ -78,11 +80,10 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
                     }
                   }
                 }
-                docPaths.add(new FacetLabel("field", path));
+                doc.add(new FacetField("field", path));
               }
               try {
-                facetFields.addFields(doc, docPaths);
-                w.addDocument(doc);
+                w.addDocument(config.build(doc));
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
@@ -132,19 +133,15 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         try {
           //System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
           int topN = _TestUtil.nextInt(random(), 1, 20);
-          CountFacetRequest cfr = new CountFacetRequest(new FacetLabel("field"), topN);
-          FacetSearchParams fsp = new FacetSearchParams(cfr);
-          FacetsCollector fc = FacetsCollector.create(fsp, pair.searcher.getIndexReader(), pair.taxonomyReader);
-          pair.searcher.search(new MatchAllDocsQuery(), fc);
-          List<FacetResult> results = fc.getFacetResults();
-          FacetResult fr = results.get(0);
-          FacetResultNode root = results.get(0).getFacetResultNode();
-          assertTrue(root.ordinal != 0);
-
+          
+          SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+          pair.searcher.search(new MatchAllDocsQuery(), sfc);
+          Facets facets = getTaxonomyFacetCounts(pair.taxonomyReader, config, sfc);
+          SimpleFacetResult result = facets.getTopChildren(10, "field");
           if (pair.searcher.getIndexReader().numDocs() > 0) { 
             //System.out.println(pair.taxonomyReader.getSize());
-            assertTrue(fr.getNumValidDescendants() > 0);
-            assertFalse(root.subResults.isEmpty());
+            assertTrue(result.childCount > 0);
+            assertTrue(result.labelValues.length > 0);
           }
 
           //if (VERBOSE) {

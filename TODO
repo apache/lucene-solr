@@ -1,6 +1,7 @@
 nocommit this!
 
 TODO
+  - allow path.length==0?
   - move DocumentBuilder.build -> FacetsConfig.build
   - add sugar apis to do sort-by-score, sort-by-field sort AND collect into SimpleFacetsCollector?
   - getSpecificValue for a dim isn't reliable
