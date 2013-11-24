@@ -574,13 +574,14 @@ public class SolrDispatchFilter implements Filter
     ClusterState clusterState = cores.getZkController().getClusterState();
     Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
     boolean byCoreName = false;
+    
     if (slices == null) {
+      slices = new ArrayList<Slice>();
       // look by core name
       byCoreName = true;
-      Set<String> collections = clusterState.getCollections();
-      for (String collection : collections) {
-        slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getSlices(collection));
+      slices = getSlicesForCollections(clusterState, slices, true);
+      if (slices == null || slices.size() == 0) {
+        slices = getSlicesForCollections(clusterState, slices, false);
       }
     }
     
@@ -588,6 +589,21 @@ public class SolrDispatchFilter implements Filter
       return null;
     }
     
+    String coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+        slices, byCoreName, true);
+    
+    if (coreUrl == null) {
+      coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+          slices, byCoreName, false);
+    }
+    
+    return coreUrl;
+  }
+
+  private String getCoreUrl(CoreContainer cores, String collectionName,
+      String origCorename, ClusterState clusterState, Collection<Slice> slices,
+      boolean byCoreName, boolean activeReplicas) {
+    String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
     Iterator<Slice> it = slices.iterator();
     while (it.hasNext()) {
@@ -595,8 +611,9 @@ public class SolrDispatchFilter implements Filter
       Map<String,Replica> sliceShards = slice.getReplicasMap();
       for (ZkNodeProps nodeProps : sliceShards.values()) {
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        if (liveNodes.contains(coreNodeProps.getNodeName())
-            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) {
+        if (!activeReplicas || (liveNodes.contains(coreNodeProps.getNodeName())
+            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE))) {
+
           if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
             // if it's by core name, make sure they match
             continue;
@@ -605,7 +622,7 @@ public class SolrDispatchFilter implements Filter
             // don't count a local core
             continue;
           }
-          String coreUrl;
+
           if (origCorename != null) {
             coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
           } else {
@@ -620,6 +637,19 @@ public class SolrDispatchFilter implements Filter
       }
     }
     return null;
+  }
+
+  private Collection<Slice> getSlicesForCollections(ClusterState clusterState,
+      Collection<Slice> slices, boolean activeSlices) {
+    Set<String> collections = clusterState.getCollections();
+    for (String collection : collections) {
+      if (activeSlices) {
+        slices.addAll(clusterState.getActiveSlices(collection));
+      } else {
+        slices.addAll(clusterState.getSlices(collection));
+      }
+    }
+    return slices;
   }
   
   private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
