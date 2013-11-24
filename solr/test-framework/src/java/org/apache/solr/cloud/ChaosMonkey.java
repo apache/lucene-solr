@@ -460,7 +460,7 @@ public class ChaosMonkey {
              if (!deadPool.isEmpty()) {
                int index = random.nextInt(deadPool.size());
                JettySolrRunner jetty = deadPool.get(index).jetty;
-               if (!ChaosMonkey.start(jetty)) {
+               if (jetty.isStopped() && !ChaosMonkey.start(jetty)) {
                  continue;
                }
                //System.out.println("started on port:" + jetty.getLocalPort());
