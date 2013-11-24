@@ -2,7 +2,6 @@ package org.apache.lucene.facet.search;
 
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.range.RangeFacetRequest;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /*

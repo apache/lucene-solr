@@ -7,8 +7,6 @@ import java.util.List;
 import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.range.RangeAccumulator;
-import org.apache.lucene.facet.range.RangeFacetRequest;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
@@ -76,26 +74,7 @@ public abstract class FacetsAccumulator {
       return new OldFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
     }
     
-    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
-    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
-    for (FacetRequest fr : fsp.facetRequests) {
-      if (fr instanceof RangeFacetRequest) {
-        rangeRequests.add(fr);
-      } else {
-        nonRangeRequests.add(fr);
-      }
-    }
-
-    if (rangeRequests.isEmpty()) {
-      return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
-    } else if (nonRangeRequests.isEmpty()) {
-      return new RangeAccumulator(rangeRequests);
-    } else {
-      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
-      FacetsAccumulator accumulator = new TaxonomyFacetsAccumulator(searchParams, indexReader, taxoReader, arrays);
-      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
-      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
-    }
+    return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
   }
   
   /**
@@ -124,26 +103,7 @@ public abstract class FacetsAccumulator {
       throw new IllegalArgumentException("only default partition size is supported by this method: " + fsp.indexingParams.getPartitionSize());
     }
     
-    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
-    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
-    for (FacetRequest fr : fsp.facetRequests) {
-      if (fr instanceof RangeFacetRequest) {
-        rangeRequests.add(fr);
-      } else {
-        nonRangeRequests.add(fr);
-      }
-    }
-    
-    if (rangeRequests.isEmpty()) {
-      return new SortedSetDocValuesAccumulator(state, fsp, arrays);
-    } else if (nonRangeRequests.isEmpty()) {
-      return new RangeAccumulator(rangeRequests);
-    } else {
-      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
-      FacetsAccumulator accumulator = new SortedSetDocValuesAccumulator(state, searchParams, arrays);
-      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
-      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
-    }
+    return new SortedSetDocValuesAccumulator(state, fsp, arrays);
   }
   
   /** Returns an empty {@link FacetResult}. */
