@@ -39,7 +39,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -60,7 +59,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class
 })
-public class TestLBHttpSolrServer extends LuceneTestCase {
+public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory
       .getLogger(TestLBHttpSolrServer.class);
   SolrInstance[] solr = new SolrInstance[3];
