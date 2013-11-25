@@ -25,18 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Scanner;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.analytics.util.MedianCalculator;
-import org.apache.solr.analytics.util.PercentileCalculator;
-import org.apache.solr.request.SolrQueryRequest;
-
-import com.google.common.collect.ObjectArrays;
-import org.apache.solr.util.ExternalPaths;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -44,9 +33,19 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.analytics.util.MedianCalculator;
+import org.apache.solr.analytics.util.PercentileCalculator;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.ExternalPaths;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import com.google.common.collect.ObjectArrays;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
@@ -81,7 +80,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true); // never forget this!
     DocumentBuilder builder = factory.newDocumentBuilder();
-    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes())));
+    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("UTF-8"))));
     xPathFact = XPathFactory.newInstance();
   }
 
