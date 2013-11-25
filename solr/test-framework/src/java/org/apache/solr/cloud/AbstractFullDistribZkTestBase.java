@@ -1375,7 +1375,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           Integer delete = deletes.remove(0);
           try {
             numDeletes++;
-            controlClient.deleteById(Integer.toString(delete));
+            UpdateRequest req = new UpdateRequest();
+            req.deleteById(Integer.toString(delete));
+            req.setParam("CONTROL", "TRUE");
+            req.process(controlClient);
+            
             cloudClient.deleteById(Integer.toString(delete));
           } catch (Exception e) {
             System.err.println("REQUEST FAILED:");
