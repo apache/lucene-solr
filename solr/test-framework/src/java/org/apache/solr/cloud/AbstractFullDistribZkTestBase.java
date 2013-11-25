@@ -619,7 +619,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     req.add(doc);
     req.setParam("CONTROL", "TRUE");
     req.process(controlClient);
-    controlClient.add(doc);
     
     // if we wanted to randomly pick a client - but sometimes they may be
     // down...
