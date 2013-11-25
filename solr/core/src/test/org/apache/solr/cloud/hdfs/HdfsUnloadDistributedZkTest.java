@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.UnloadDistributedZkTest;
 import org.junit.AfterClass;
@@ -39,8 +38,6 @@ public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
-    
     dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
         HdfsUnloadDistributedZkTest.class.getName() + "_"
             + System.currentTimeMillis()).getAbsolutePath());
