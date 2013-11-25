@@ -28,7 +28,7 @@
   <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
 
-  <caches lockStrategy="artifact-lock"/>
+  <caches lockStrategy="artifact-lock" resolutionCacheDir="${common.build.dir}/ivy-resolution-cache" /> 
 
   <resolvers>
     <ibiblio name="sonatype-releases" root="http://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
