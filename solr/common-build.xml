@@ -92,7 +92,6 @@
     <pathelement location="${memory.jar}"/>
     <pathelement location="${misc.jar}"/>
     <pathelement location="${spatial.jar}"/>
-    <fileset dir="${common.dir}/expressions/lib"/>
     <pathelement location="${expressions.jar}"/>
     <pathelement location="${suggest.jar}"/>
     <pathelement location="${grouping.jar}"/>
