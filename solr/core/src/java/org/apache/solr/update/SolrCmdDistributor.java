@@ -43,6 +43,9 @@ public class SolrCmdDistributor {
   
   private StreamingSolrServers servers;
   
+  private int retryPause = 500;
+  private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
+  
   private List<Error> allErrors = new ArrayList<Error>();
   private List<Error> errors = new ArrayList<Error>();
   
@@ -52,6 +55,12 @@ public class SolrCmdDistributor {
   
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     servers = new StreamingSolrServers(updateShardHandler);
+  }
+  
+  public SolrCmdDistributor(StreamingSolrServers servers, int maxRetriesOnForward, int retryPause) {
+    this.servers = servers;
+    this.maxRetriesOnForward = maxRetriesOnForward;
+    this.retryPause = retryPause;
   }
   
   public void finish() {
@@ -85,8 +94,7 @@ public class SolrCmdDistributor {
         
         // this can happen in certain situations such as shutdown
         if (isRetry) {
-          if (rspCode == 404 || rspCode == 403 || rspCode == 503
-              || rspCode == 500) {
+          if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
             doRetry = true;
           }
           
@@ -98,14 +106,14 @@ public class SolrCmdDistributor {
               doRetry = true;
             }
           }
-          if (err.req.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
+          if (err.req.retries < maxRetriesOnForward && doRetry) {
             err.req.retries++;
             
             SolrException.log(SolrCmdDistributor.log, "forwarding update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
                 + err.req.retries);
             try {
-              Thread.sleep(500);
+              Thread.sleep(retryPause);
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               log.warn(null, e);
@@ -252,7 +260,7 @@ public class SolrCmdDistributor {
   
   public static class Error {
     public Exception e;
-    public int statusCode;
+    public int statusCode = -1;
     public Req req;
   }
   
