@@ -151,6 +151,9 @@ Bug Fixes
   HttpClients and ensure all http connection managers get shutdown.
   (Mark Miller)
 
+* SOLR-5503: Retry 'forward to leader' requests less aggressively - rather 
+  than on IOException and status 500, ConnectException. (Mark Miller)
+
 Optimizations
 ----------------------
 

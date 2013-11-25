@@ -18,12 +18,14 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -98,11 +100,16 @@ public class SolrCmdDistributor {
             doRetry = true;
           }
           
-          // if its an ioexception, lets try again
-          if (err.e instanceof IOException) {
+          // if its a connect exception, lets try again
+          if (err.e instanceof ConnectException) {
             doRetry = true;
           } else if (err.e instanceof SolrServerException) {
-            if (((SolrServerException) err.e).getRootCause() instanceof IOException) {
+            if (((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
+              doRetry = true;
+            }
+          } else if (err.e instanceof RemoteSolrException) {
+            Exception cause = (RemoteSolrException) err.e.getCause();
+            if (cause != null && cause instanceof ConnectException) {
               doRetry = true;
             }
           }
