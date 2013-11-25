@@ -614,6 +614,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @Override
   protected void indexDoc(SolrInputDocument doc) throws IOException,
       SolrServerException {
+    
+    UpdateRequest req = new UpdateRequest();
+    req.add(doc);
+    req.setParam("CONTROL", "TRUE");
+    req.process(controlClient);
     controlClient.add(doc);
     
     // if we wanted to randomly pick a client - but sometimes they may be
