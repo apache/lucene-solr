@@ -99,7 +99,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       indexThread.start();
     }
     
-    chaosMonkey.startTheMonkey(false, 500);
+    chaosMonkey.startTheMonkey(false, false, 500);
     long runLength;
     if (RUN_LENGTH != -1) {
       runLength = RUN_LENGTH;
