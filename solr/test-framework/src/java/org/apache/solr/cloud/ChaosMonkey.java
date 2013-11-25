@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -523,7 +521,7 @@ public class ChaosMonkey {
     }
     float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
     if (runtime > 20 && stops.get() == 0) {
-      TestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");
+      LuceneTestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 
