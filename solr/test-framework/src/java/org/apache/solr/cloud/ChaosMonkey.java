@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -74,7 +76,7 @@ public class ChaosMonkey {
   private boolean causeConnectionLoss;
   private boolean aggressivelyKillLeaders;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
-  private long startTime;
+  private volatile long startTime;
 
   private Thread monkeyThread;
   
@@ -518,6 +520,10 @@ public class ChaosMonkey {
       monkeyThread.join();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+    float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
+    if (runtime > 20 && stops.get() == 0) {
+      TestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 
