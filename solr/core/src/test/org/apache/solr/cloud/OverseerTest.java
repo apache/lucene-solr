@@ -519,7 +519,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           return;
         }
       }
-      Thread.sleep(100);
+      Thread.sleep(200);
     }
     
     assertEquals("Unexpected shard leader coll:" + collection + " shard:" + shard, expectedCore, (reader.getClusterState().getLeader(collection, shard)!=null)?reader.getClusterState().getLeader(collection, shard).getStr(ZkStateReader.CORE_NAME_PROP):null);
