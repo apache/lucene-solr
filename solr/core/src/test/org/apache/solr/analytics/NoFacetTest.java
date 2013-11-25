@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
@@ -208,7 +207,7 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     assertEquals(doubleResult,doubleTest);
   }
   
-  @Test @Ignore("SOLR-5488") 
+  @Test
   public void stddevTest() throws Exception { 
     //Int
     Double intResult = (Double)getStatResult("str", "int_id", VAL_TYPE.DOUBLE);

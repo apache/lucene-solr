@@ -15,7 +15,7 @@ o.mr.s.double_dd=mean(double_dd)
 
 o.str.s.int_id=stddev(int_id)
 o.str.s.long_ld=stddev(long_ld)
-o.st.s.float_fd=stddev(float_fd)
+o.str.s.float_fd=stddev(float_fd)
 o.str.s.double_dd=stddev(double_dd)
 
 o.medr.s.int_id=median(int_id)
