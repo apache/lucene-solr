@@ -177,6 +177,9 @@ Other Changes
 * SOLR-5487: Replication factor error message doesn't match constraint.
   (Patrick Hunt via shalin)
 
+* SOLR-5499: Log a warning if /get is not registered when using SolrCloud.
+  (Daniel Collins via shalin)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components

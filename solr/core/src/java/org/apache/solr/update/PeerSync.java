@@ -305,7 +305,8 @@ public class PeerSync  {
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
-        log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success");
+        log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success. " +
+            "Perhaps /get is not registered?");
         return true;
       }
       // TODO: at least log???

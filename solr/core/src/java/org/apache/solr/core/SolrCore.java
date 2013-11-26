@@ -770,7 +770,7 @@ public final class SolrCore implements SolrInfoMBean {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      
+
       // Handle things that should eventually go away
       initDeprecatedSupport();
       
@@ -854,13 +854,21 @@ public final class SolrCore implements SolrInfoMBean {
     
     CoreContainer cc = cd.getCoreContainer();
 
-    if (cc != null && cc.isZooKeeperAware() && Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
-      // set update log to buffer before publishing the core
-      getUpdateHandler().getUpdateLog().bufferUpdates();
-      
-      cd.getCloudDescriptor().setShardState(null);
-      cd.getCloudDescriptor().setShardRange(null);
-      cd.getCloudDescriptor().setShardParent(null);
+    if (cc != null && cc.isZooKeeperAware()) {
+      SolrRequestHandler realtimeGetHandler = reqHandlers.get("/get");
+      if (realtimeGetHandler == null) {
+        log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
+            "SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
+      }
+
+      if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
+        // set update log to buffer before publishing the core
+        getUpdateHandler().getUpdateLog().bufferUpdates();
+
+        cd.getCloudDescriptor().setShardState(null);
+        cd.getCloudDescriptor().setShardRange(null);
+        cd.getCloudDescriptor().setShardParent(null);
+      }
     }
     // For debugging   
 //    numOpens.incrementAndGet();
