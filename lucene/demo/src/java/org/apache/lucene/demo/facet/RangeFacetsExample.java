@@ -26,13 +26,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.LongRange;
-import org.apache.lucene.facet.simple.RangeFacetCounts;
-import org.apache.lucene.facet.simple.SimpleDrillDownQuery;
-import org.apache.lucene.facet.simple.SimpleFacetResult;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.LongRange;
+import org.apache.lucene.facet.RangeFacetCounts;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -86,10 +86,10 @@ public class RangeFacetsExample implements Closeable {
   }
 
   /** User runs a query and counts facets. */
-  public SimpleFacetResult search() throws IOException {
+  public FacetResult search() throws IOException {
 
     // Aggregates the facet counts
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    FacetsCollector sfc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -109,7 +109,7 @@ public class RangeFacetsExample implements Closeable {
 
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
-    SimpleDrillDownQuery q = new SimpleDrillDownQuery(getConfig());
+    DrillDownQuery q = new DrillDownQuery(getConfig());
 
     // Use FieldCacheRangeFilter; this will use
     // NumericDocValues:

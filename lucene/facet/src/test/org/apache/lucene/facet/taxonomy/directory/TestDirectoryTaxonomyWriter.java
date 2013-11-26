@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.simple.FacetField;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.SimpleDrillDownQuery;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -459,7 +459,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    SimpleDrillDownQuery ddq = new SimpleDrillDownQuery(new FacetsConfig());
+    DrillDownQuery ddq = new DrillDownQuery(new FacetsConfig());
     ddq.add("dim", bigs);
     assertEquals(1, searcher.search(ddq, 10).totalHits);
     

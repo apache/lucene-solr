@@ -20,24 +20,16 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.facet.simple.CachedOrdinalsReader;
-import org.apache.lucene.facet.simple.DocValuesOrdinalsReader;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.simple.OrdinalsReader;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
-import org.apache.lucene.facet.simple.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class FacetTestCase extends LuceneTestCase {
   
-  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c) throws IOException {
+  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector c) throws IOException {
     return getTaxonomyFacetCounts(taxoReader, config, c, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
-  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, SimpleFacetsCollector c, String indexFieldName) throws IOException {
+  public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector c, String indexFieldName) throws IOException {
     Facets facets;
     if (random().nextBoolean()) {
       facets = new FastTaxonomyFacetCounts(indexFieldName, taxoReader, config, c);

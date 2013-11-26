@@ -23,14 +23,14 @@ import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.FloatAssociationFacetField;
-import org.apache.lucene.facet.simple.IntAssociationFacetField;
-import org.apache.lucene.facet.simple.SimpleFacetResult;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
-import org.apache.lucene.facet.simple.TaxonomyFacetSumFloatAssociations;
-import org.apache.lucene.facet.simple.TaxonomyFacetSumIntAssociations;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FloatAssociationFacetField;
+import org.apache.lucene.facet.IntAssociationFacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.TaxonomyFacetSumFloatAssociations;
+import org.apache.lucene.facet.TaxonomyFacetSumIntAssociations;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -98,13 +98,13 @@ public class AssociationsFacetsExample {
   }
 
   /** User runs a query and aggregates facets by summing their association values. */
-  private List<SimpleFacetResult> sumAssociations() throws IOException {
+  private List<FacetResult> sumAssociations() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     FacetsConfig config = getConfig(null);
     
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    FacetsCollector sfc = new FacetsCollector();
     
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -116,7 +116,7 @@ public class AssociationsFacetsExample {
     Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, sfc);
 
     // Retrieve results
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
     results.add(tags.getTopChildren(10, "tags"));
     results.add(genre.getTopChildren(10, "genre"));
 
@@ -127,7 +127,7 @@ public class AssociationsFacetsExample {
   }
   
   /** Runs summing association example. */
-  public List<SimpleFacetResult> runSumAssociations() throws IOException {
+  public List<FacetResult> runSumAssociations() throws IOException {
     index();
     return sumAssociations();
   }
@@ -136,7 +136,7 @@ public class AssociationsFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Sum associations example:");
     System.out.println("-------------------------");
-    List<SimpleFacetResult> results = new AssociationsFacetsExample().runSumAssociations();
+    List<FacetResult> results = new AssociationsFacetsExample().runSumAssociations();
     System.out.println("tags: " + results.get(0));
     System.out.println("genre: " + results.get(1));
   }

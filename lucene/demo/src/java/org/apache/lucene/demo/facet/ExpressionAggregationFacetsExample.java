@@ -13,12 +13,12 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.facet.simple.FacetField;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.SimpleFacetResult;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
-import org.apache.lucene.facet.simple.TaxonomyFacetSumValueSource;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.TaxonomyFacetSumValueSource;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -86,7 +86,7 @@ public class ExpressionAggregationFacetsExample {
   }
 
   /** User runs a query and aggregates facets. */
-  private SimpleFacetResult search() throws IOException, ParseException {
+  private FacetResult search() throws IOException, ParseException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
@@ -100,7 +100,7 @@ public class ExpressionAggregationFacetsExample {
     bindings.add(new SortField("popularity", SortField.Type.LONG)); // the value of the 'popularity' field
 
     // Aggregates the facet values
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector(true);
+    FacetsCollector sfc = new FacetsCollector(true);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -110,7 +110,7 @@ public class ExpressionAggregationFacetsExample {
 
     // Retrieve results
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, expr.getValueSource(bindings));
-    SimpleFacetResult result = facets.getTopChildren(10, "A");
+    FacetResult result = facets.getTopChildren(10, "A");
     
     indexReader.close();
     taxoReader.close();
@@ -119,7 +119,7 @@ public class ExpressionAggregationFacetsExample {
   }
   
   /** Runs the search example. */
-  public SimpleFacetResult runSearch() throws IOException, ParseException {
+  public FacetResult runSearch() throws IOException, ParseException {
     index();
     return search();
   }
@@ -128,8 +128,7 @@ public class ExpressionAggregationFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    SimpleFacetResult result = new ExpressionAggregationFacetsExample().runSearch();
+    FacetResult result = new ExpressionAggregationFacetsExample().runSearch();
     System.out.println(result);
   }
-  
 }

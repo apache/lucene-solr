@@ -23,14 +23,14 @@ import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.SimpleDrillDownQuery;
-import org.apache.lucene.facet.simple.SimpleFacetResult;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
-import org.apache.lucene.facet.simple.SortedSetDocValuesFacetCounts;
-import org.apache.lucene.facet.simple.SortedSetDocValuesFacetField;
-import org.apache.lucene.facet.simple.SortedSetDocValuesReaderState;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.SortedSetDocValuesFacetField;
+import org.apache.lucene.facet.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -89,14 +89,14 @@ public class SimpleSortedSetFacetsExample {
   }
 
   /** User runs a query and counts facets. */
-  private List<SimpleFacetResult> search() throws IOException {
+  private List<FacetResult> search() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
     FacetsConfig config = getConfig();
 
     // Aggregatses the facet counts
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    FacetsCollector sfc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -107,7 +107,7 @@ public class SimpleSortedSetFacetsExample {
     // Retrieve results
     Facets facets = new SortedSetDocValuesFacetCounts(state, sfc);
 
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Year"));
     indexReader.close();
@@ -116,34 +116,34 @@ public class SimpleSortedSetFacetsExample {
   }
   
   /** User drills down on 'Publish Year/2010'. */
-  private SimpleFacetResult drillDown() throws IOException {
+  private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
     FacetsConfig config = getConfig();
 
     // Now user drills down on Publish Year/2010:
-    SimpleDrillDownQuery q = new SimpleDrillDownQuery(config);
+    DrillDownQuery q = new DrillDownQuery(config);
     q.add("Publish Year", "2010");
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    FacetsCollector sfc = new FacetsCollector();
     searcher.search(q, sfc);
 
     // Retrieve results
     Facets facets = new SortedSetDocValuesFacetCounts(state, sfc);
-    SimpleFacetResult result = facets.getTopChildren(10, "Author");
+    FacetResult result = facets.getTopChildren(10, "Author");
     indexReader.close();
     
     return result;
   }
 
   /** Runs the search example. */
-  public List<SimpleFacetResult> runSearch() throws IOException {
+  public List<FacetResult> runSearch() throws IOException {
     index();
     return search();
   }
   
   /** Runs the drill-down example. */
-  public SimpleFacetResult runDrillDown() throws IOException {
+  public FacetResult runDrillDown() throws IOException {
     index();
     return drillDown();
   }
@@ -153,7 +153,7 @@ public class SimpleSortedSetFacetsExample {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
     SimpleSortedSetFacetsExample example = new SimpleSortedSetFacetsExample();
-    List<SimpleFacetResult> results = example.runSearch();
+    List<FacetResult> results = example.runSearch();
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Year: " + results.get(0));
 

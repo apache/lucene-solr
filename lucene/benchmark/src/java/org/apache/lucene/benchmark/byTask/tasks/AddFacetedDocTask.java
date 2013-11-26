@@ -22,8 +22,14 @@ import java.util.List;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
-import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.index.IndexDocument;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 
 /**
  * Add a faceted document.
@@ -44,8 +50,8 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
  */
 public class AddFacetedDocTask extends AddDocTask {
 
-  private final List<FacetLabel> facets = new ArrayList<FacetLabel>();
-  private FacetFields facetFields;
+  private final List<FacetField> facets = new ArrayList<FacetField>();
+  private FacetsConfig config;
   
   public AddFacetedDocTask(PerfRunData runData) {
     super(runData);
@@ -54,19 +60,22 @@ public class AddFacetedDocTask extends AddDocTask {
   @Override
   public void setup() throws Exception {
     super.setup();
-    if (facetFields == null) {
+    if (config == null) {
       boolean withFacets = getRunData().getConfig().get("with.facets", true);
       if (withFacets) {
+        // nocommit is this called once?  are we adding same
+        // facets over and over!?
         FacetSource facetsSource = getRunData().getFacetSource();
-        facetFields = withFacets ? new FacetFields(getRunData().getTaxonomyWriter()) : null;
+        config = new FacetsConfig(getRunData().getTaxonomyWriter());
         facetsSource.getNextFacets(facets);
+        facetsSource.configure(config);
       }
     }
   }
 
   @Override
   protected String getLogMessage(int recsCount) {
-    if (facetFields == null) {
+    if (config == null) {
       return super.getLogMessage(recsCount);
     }
     return super.getLogMessage(recsCount)+ " with facets";
@@ -74,10 +83,21 @@ public class AddFacetedDocTask extends AddDocTask {
   
   @Override
   public int doLogic() throws Exception {
-    if (facetFields != null) {
-      facetFields.addFields(doc, facets);
+    if (config != null) {
+      // nocommit hokey:
+      Document doc2 = new Document();
+      for(FacetField ff : facets) {
+        doc2.add(ff);
+      }
+      IndexDocument doc3 = config.build(doc2);
+      for(StorableField field : doc3.storableFields()) {
+        doc.add((Field) field);
+      }
+      for(IndexableField field : doc3.indexableFields()) {
+        doc.add((Field) field);
+      }
+      
     }
     return super.doLogic();
   }
-
 }

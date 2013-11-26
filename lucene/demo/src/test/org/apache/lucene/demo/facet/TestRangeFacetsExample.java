@@ -19,7 +19,7 @@ package org.apache.lucene.demo.facet;
 
 import java.util.List;
 
-import org.apache.lucene.facet.simple.SimpleFacetResult;
+import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,7 +32,7 @@ public class TestRangeFacetsExample extends LuceneTestCase {
   public void testSimple() throws Exception {
     RangeFacetsExample example = new RangeFacetsExample();
     example.index();
-    SimpleFacetResult result = example.search();
+    FacetResult result = example.search();
     assertEquals("value=100 childCount=3\n  Past hour (4)\n  Past six hours (22)\n  Past day (87)\n", result.toString());
     example.close();
   }

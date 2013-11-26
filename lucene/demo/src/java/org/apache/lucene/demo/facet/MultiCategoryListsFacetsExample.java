@@ -25,12 +25,12 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.simple.FacetField;
-import org.apache.lucene.facet.simple.Facets;
-import org.apache.lucene.facet.simple.FacetsConfig;
-import org.apache.lucene.facet.simple.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.simple.SimpleFacetResult;
-import org.apache.lucene.facet.simple.SimpleFacetsCollector;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -103,13 +103,13 @@ public class MultiCategoryListsFacetsExample {
   }
 
   /** User runs a query and counts facets. */
-  private List<SimpleFacetResult> search() throws IOException {
+  private List<FacetResult> search() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     FacetsConfig config = getConfig(null);
 
-    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
+    FacetsCollector sfc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -118,7 +118,7 @@ public class MultiCategoryListsFacetsExample {
     searcher.search(new MatchAllDocsQuery(), sfc);
 
     // Retrieve results
-    List<SimpleFacetResult> results = new ArrayList<SimpleFacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
 
     // Count both "Publish Date" and "Author" dimensions
     Facets author = new FastTaxonomyFacetCounts("author", taxoReader, config, sfc);
@@ -134,7 +134,7 @@ public class MultiCategoryListsFacetsExample {
   }
 
   /** Runs the search example. */
-  public List<SimpleFacetResult> runSearch() throws IOException {
+  public List<FacetResult> runSearch() throws IOException {
     index();
     return search();
   }
@@ -143,7 +143,7 @@ public class MultiCategoryListsFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting over multiple category lists example:");
     System.out.println("-----------------------");
-    List<SimpleFacetResult> results = new MultiCategoryListsFacetsExample().runSearch();
+    List<FacetResult> results = new MultiCategoryListsFacetsExample().runSearch();
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Date: " + results.get(1));
   }

@@ -20,7 +20,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.facet.simple.FacetsConfig;
+import org.apache.lucene.facet.FacetsConfig;
 
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 

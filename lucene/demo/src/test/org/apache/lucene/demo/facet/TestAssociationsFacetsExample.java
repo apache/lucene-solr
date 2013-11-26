@@ -19,7 +19,7 @@ package org.apache.lucene.demo.facet;
 
 import java.util.List;
 
-import org.apache.lucene.facet.simple.SimpleFacetResult;
+import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ public class TestAssociationsFacetsExample extends LuceneTestCase {
   
   @Test
   public void testExamples() throws Exception {
-    List<SimpleFacetResult> res = new AssociationsFacetsExample().runSumAssociations();
+    List<FacetResult> res = new AssociationsFacetsExample().runSumAssociations();
     assertEquals("Wrong number of results", 2, res.size());
     assertEquals("value=6 childCount=2\n  lucene (4)\n  solr (2)\n", res.get(0).toString());
     assertEquals("value=1.96 childCount=2\n  computing (1.62)\n  software (0.34)\n", res.get(1).toString());

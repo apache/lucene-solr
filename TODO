@@ -2,6 +2,7 @@ nocommit this!
 
 TODO
   - allow path.length==0?
+  - make a variant/sugar of FacetsConfig.build that just updates an existing doc?
   - need test coverage of utility search methods
   - move DocumentBuilder.build -> FacetsConfig.build
   - getSpecificValue for a dim isn't reliable
