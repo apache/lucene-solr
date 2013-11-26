@@ -622,15 +622,12 @@ public class GetMavenDependenciesTask extends Task {
 
   /**
    * Convert Ant project names to artifact names: prepend "lucene-"
-   * to Lucene project names; and "solr-cell" -> "solr-extraction"
+   * to Lucene project names
    */
   private String antProjectToArtifactName(String origModule) {
     String module = origModule;
     if ( ! origModule.startsWith("solr-")) { // lucene modules names don't have "lucene-" prepended
       module = "lucene-" + module;
-    }
-    if (module.equals("solr-cell")) { 
-      module = "solr-extraction";
     }
     return module;
   }
