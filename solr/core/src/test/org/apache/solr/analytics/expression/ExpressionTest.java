@@ -17,14 +17,10 @@
 
 package org.apache.solr.analytics.expression;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Scanner;
-
+import com.google.common.collect.ObjectArrays;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.DateMathParser;
@@ -32,233 +28,213 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ObjectArrays;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
 
-@SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
-public class ExpressionTest extends SolrTestCaseJ4 {
-  static String fileName = "core/src/test-files/analytics/requestFiles/expressions.txt";
-  
-  protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "stats", "true", "olap", "true", "rows", "0" };
-  protected static final HashMap<String,Object> defaults = new HashMap<String,Object>();
+@SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Appending", "Asserting"})
+public class ExpressionTest extends AbstractAnalyticsStatsTest {
+  private static final String fileName = "core/src/test-files/analytics/requestFiles/expressions.txt";
 
-  static public final int INT = 71;
-  static public final int LONG = 36;
-  static public final int FLOAT = 93;
-  static public final int DOUBLE = 49;
-  static public final int DATE = 12;
-  static public final int STRING = 28;
-  static public final int NUM_LOOPS = 100;
-  
-  static String response;
+  private static final String[] BASEPARMS = new String[]{"q", "*:*", "indent", "true", "stats", "true", "olap", "true", "rows", "0"};
+
+  private static final int INT = 71;
+  private static final int LONG = 36;
+  private static final int FLOAT = 93;
+  private static final int DOUBLE = 49;
+  private static final int DATE = 12;
+  private static final int STRING = 28;
+  private static final int NUM_LOOPS = 100;
+
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-basic.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
-    
+
     for (int j = 0; j < NUM_LOOPS; ++j) {
-      int i = j%INT;
-      long l = j%LONG;
-      float f = j%FLOAT;
-      double d = j%DOUBLE;
-      String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
-      String s = "str" + (j%STRING);
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-            "double_dd", "" + d,  "date_dtd", dt, "string_sd", s));
-      
+      int i = j % INT;
+      long l = j % LONG;
+      float f = j % FLOAT;
+      double d = j % DOUBLE;
+      String dt = (1800 + j % DATE) + "-12-31T23:59:59Z";
+      String s = "str" + (j % STRING);
+      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
+          "double_dd", "" + d, "date_dtd", dt, "string_sd", s));
+
       if (usually()) {
         commit(); // to have several segments
       }
     }
-    
-    assertU(commit()); 
-    
-    //Sort ascending tests
-    response = h.query(request(fileToStringArr(fileName)));
-  }
-      
-  @Test
-  public void addTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "ar", "double", "sum");
-    double uniqueResult = ((Long)getStatResult(response, "ar", "long", "unique")).doubleValue();
-    double result = (Double)getStatResult(response, "ar", "double", "su");
-    assertTrue(sumResult+uniqueResult==result);
 
-    double meanResult = (Double)getStatResult(response, "ar", "double", "mean");
-    double medianResult = (Double)getStatResult(response, "ar", "double", "median");
-    double countResult = ((Long)getStatResult(response, "ar", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "ar", "double", "mcm");
-    assertTrue(meanResult+countResult+medianResult==result);
-  }
-  
-  @Test
-  public void multiplyTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "mr", "double", "sum");
-    double uniqueResult = ((Long)getStatResult(response, "mr", "long", "unique")).doubleValue();
-    double result = (Double)getStatResult(response, "mr", "double", "su");
-    assertTrue(sumResult*uniqueResult==result);
-    
-    double meanResult = (Double)getStatResult(response, "mr", "double", "mean");
-    double medianResult = (Double)getStatResult(response, "mr", "double", "median");
-    double countResult = ((Long)getStatResult(response, "mr", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "mr", "double", "mcm");
-    assertTrue(meanResult*countResult*medianResult==result);
-  }
-  
-  @Test
-  public void divideTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "dr", "double", "sum");
-    double uniqueResult = ((Long)getStatResult(response, "dr", "long", "unique")).doubleValue();
-    double result = (Double)getStatResult(response, "dr", "double", "su");
-    assertTrue(sumResult/uniqueResult==result);
-    
-    double meanResult = (Double)getStatResult(response, "dr", "double", "mean");
-    double countResult = ((Long)getStatResult(response, "dr", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "dr", "double", "mc");
-    assertTrue(meanResult/countResult==result);
-  }
-  
-  @Test
-  public void powerTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "pr", "double", "sum");
-    double uniqueResult = ((Long)getStatResult(response, "pr", "long", "unique")).doubleValue();
-    double result = (Double)getStatResult(response, "pr", "double", "su");
-    assertTrue(Math.pow(sumResult,uniqueResult)==result);
-    
-    double meanResult = (Double)getStatResult(response, "pr", "double", "mean");
-    double countResult = ((Long)getStatResult(response, "pr", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "pr", "double", "mc");
-    assertTrue(Math.pow(meanResult,countResult)==result);
-  }
-  
-  @Test
-  public void negateTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "nr", "double", "sum");
-    double result = (Double)getStatResult(response, "nr", "double", "s");
-    assertTrue(-1*sumResult==result);
+    assertU(commit());
 
-    double countResult = ((Long)getStatResult(response, "nr", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "nr", "double", "c");
-    assertTrue(-1*countResult==result);
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
-  
-  @Test
-  public void absoluteValueTest() throws Exception { 
-    double sumResult = (Double)getStatResult(response, "avr", "double", "sum");
-    double result = (Double)getStatResult(response, "avr", "double", "s");
-    assertTrue(sumResult==result);
 
-    double countResult = ((Long)getStatResult(response, "avr", "long", "count")).doubleValue();
-    result = (Double)getStatResult(response, "avr", "double", "c");
-    assertTrue(countResult==result);
-  }
-  
   @Test
-  public void constantNumberTest() throws Exception { 
-    double result = (Double)getStatResult(response, "cnr", "double", "c8");
-    assertTrue(8==result);
+  public void addTest() throws Exception {
+    double sumResult = (Double) getStatResult("ar", "sum", VAL_TYPE.DOUBLE);
+    double uniqueResult = ((Long) getStatResult("ar", "unique", VAL_TYPE.LONG)).doubleValue();
+    double result = (Double) getStatResult("ar", "su", VAL_TYPE.DOUBLE);
+    assertEquals(sumResult + uniqueResult, result, 0.0);
 
-    result = (Double)getStatResult(response, "cnr", "double", "c10");
-    assertTrue(10==result);
+    double meanResult = (Double) getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
+    double medianResult = (Double) getStatResult("ar", "median", VAL_TYPE.DOUBLE);
+    double countResult = ((Long) getStatResult("ar", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("ar", "mcm", VAL_TYPE.DOUBLE);
+    assertEquals(meanResult + countResult + medianResult, result, 0.0);
   }
-  
+
+  @Test
+  public void multiplyTest() throws Exception {
+    double sumResult = (Double) getStatResult("mr", "sum", VAL_TYPE.DOUBLE);
+    double uniqueResult = ((Long) getStatResult("mr", "unique", VAL_TYPE.LONG)).doubleValue();
+    double result = (Double) getStatResult("mr", "su", VAL_TYPE.DOUBLE);
+    assertEquals(sumResult * uniqueResult, result, 0.0);
+
+    double meanResult = (Double) getStatResult("mr", "mean", VAL_TYPE.DOUBLE);
+    double medianResult = (Double) getStatResult("mr", "median", VAL_TYPE.DOUBLE);
+    double countResult = ((Long) getStatResult("mr", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("mr", "mcm", VAL_TYPE.DOUBLE);
+    assertEquals(meanResult * countResult * medianResult, result, 0.0);
+  }
+
+  @Test
+  public void divideTest() throws Exception {
+    double sumResult = (Double) getStatResult("dr", "sum", VAL_TYPE.DOUBLE);
+    double uniqueResult = ((Long) getStatResult("dr", "unique", VAL_TYPE.LONG)).doubleValue();
+    double result = (Double) getStatResult("dr", "su", VAL_TYPE.DOUBLE);
+    assertEquals(sumResult / uniqueResult, result, 0.0);
+
+    double meanResult = (Double) getStatResult("dr", "mean", VAL_TYPE.DOUBLE);
+    double countResult = ((Long) getStatResult("dr", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("dr", "mc", VAL_TYPE.DOUBLE);
+    assertEquals(meanResult / countResult, result, 0.0);
+  }
+
+  @Test
+  public void powerTest() throws Exception {
+    double sumResult = (Double) getStatResult("pr", "sum", VAL_TYPE.DOUBLE);
+    double uniqueResult = ((Long) getStatResult("pr", "unique", VAL_TYPE.LONG)).doubleValue();
+    double result = (Double) getStatResult("pr", "su", VAL_TYPE.DOUBLE);
+    assertEquals(Math.pow(sumResult, uniqueResult), result, 0.0);
+
+    double meanResult = (Double) getStatResult("pr", "mean", VAL_TYPE.DOUBLE);
+    double countResult = ((Long) getStatResult("pr", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("pr", "mc", VAL_TYPE.DOUBLE);
+    assertEquals(Math.pow(meanResult, countResult), result, 0.0);
+  }
+
+  @Test
+  public void negateTest() throws Exception {
+    double sumResult = (Double) getStatResult("nr", "sum", VAL_TYPE.DOUBLE);
+    double result = (Double) getStatResult("nr", "s", VAL_TYPE.DOUBLE);
+    assertEquals(-1 * sumResult, result, 0.0);
+
+    double countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("nr", "c", VAL_TYPE.DOUBLE);
+    assertEquals(-1 * countResult, result, 0.0);
+  }
+
+  @Test
+  public void absoluteValueTest() throws Exception {
+    double sumResult = (Double) getStatResult("avr", "sum", VAL_TYPE.DOUBLE);
+    double result = (Double) getStatResult("avr", "s", VAL_TYPE.DOUBLE);
+    assertEquals(sumResult, result, 0.0);
+
+    double countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG)).doubleValue();
+    result = (Double) getStatResult("avr", "c", VAL_TYPE.DOUBLE);
+    assertEquals(countResult, result, 0.0);
+  }
+
+  @Test
+  public void constantNumberTest() throws Exception {
+    double result = (Double) getStatResult("cnr", "c8", VAL_TYPE.DOUBLE);
+    assertEquals(8, result, 0.0);
+
+    result = (Double) getStatResult("cnr", "c10", VAL_TYPE.DOUBLE);
+    assertEquals(10, result, 0.0);
+  }
+
   @SuppressWarnings("deprecation")
   @Test
-  public void dateMathTest() throws Exception { 
-    String math = (String)getStatResult(response, "dmr", "str", "cme");
+  public void dateMathTest() throws Exception {
+    String math = (String) getStatResult("dmr", "cme", VAL_TYPE.STRING);
     DateMathParser date = new DateMathParser();
-    date.setNow(TrieDateField.parseDate((String)getStatResult(response, "dmr", "date", "median")));
-    String dateMath = (String)getStatResult(response, "dmr", "date", "dmme");
-    assertTrue(TrieDateField.parseDate(dateMath).equals(date.parseMath(math)));
-    
-    math = (String)getStatResult(response, "dmr", "str", "cma");
+    date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "median", VAL_TYPE.DATE)));
+    String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
+    assertEquals(TrieDateField.parseDate(dateMath), date.parseMath(math));
+
+    math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     date = new DateMathParser();
-    date.setNow(TrieDateField.parseDate((String)getStatResult(response, "dmr", "date", "max")));
-    dateMath = (String)getStatResult(response, "dmr", "date", "dmma");
-    assertTrue(TrieDateField.parseDate(dateMath).equals(date.parseMath(math)));
+    date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "max", VAL_TYPE.DATE)));
+    dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
+    assertEquals(TrieDateField.parseDate(dateMath), date.parseMath(math));
   }
-  
-  @Test
-  public void constantDateTest() throws Exception { 
-    String date = (String)getStatResult(response, "cdr", "date", "cd1");
-    String str = (String)getStatResult(response, "cdr", "str", "cs1");
-    assertTrue(date.equals(str));
-    
-    date = (String)getStatResult(response, "cdr", "date", "cd2");
-    str = (String)getStatResult(response, "cdr", "str", "cs2");
-    assertTrue(date.equals(str));
-  }
-  
-  @Test
-  public void constantStringTest() throws Exception { 
-    String str = (String)getStatResult(response, "csr", "str", "cs1");
-    assertTrue(str.equals("this is the first"));
 
-    str = (String)getStatResult(response, "csr", "str", "cs2");
-    assertTrue(str.equals("this is the second"));
-
-    str = (String)getStatResult(response, "csr", "str", "cs3");
-    assertTrue(str.equals("this is the third"));
-  }
-  
   @Test
-  public void concatenateTest() throws Exception { 
+  public void constantDateTest() throws Exception {
+    String date = (String) getStatResult("cdr", "cd1", VAL_TYPE.DATE);
+    String str = (String) getStatResult("cdr", "cs1", VAL_TYPE.STRING);
+    assertEquals(date, str);
+
+    date = (String) getStatResult("cdr", "cd2", VAL_TYPE.DATE);
+    str = (String) getStatResult("cdr", "cs2", VAL_TYPE.STRING);
+    assertEquals(date, str);
+  }
+
+  @Test
+  public void constantStringTest() throws Exception {
+    String str = (String) getStatResult("csr", "cs1", VAL_TYPE.STRING);
+    assertEquals(str, "this is the first");
+
+    str = (String) getStatResult("csr", "cs2", VAL_TYPE.STRING);
+    assertEquals(str, "this is the second");
+
+    str = (String) getStatResult("csr", "cs3", VAL_TYPE.STRING);
+    assertEquals(str, "this is the third");
+  }
+
+  @Test
+  public void concatenateTest() throws Exception {
     StringBuilder builder = new StringBuilder();
-    builder.append((String)getStatResult(response, "cr", "str", "csmin"));
-    builder.append((String)getStatResult(response, "cr", "str", "min"));
-    String concat = (String)getStatResult(response, "cr", "str", "ccmin");
-    assertTrue(concat.equals(builder.toString()));
+    builder.append((String) getStatResult("cr", "csmin", VAL_TYPE.STRING));
+    builder.append((String) getStatResult("cr", "min", VAL_TYPE.STRING));
+    String concat = (String) getStatResult("cr", "ccmin", VAL_TYPE.STRING);
+    assertEquals(concat, builder.toString());
 
     builder.setLength(0);
-    builder.append((String)getStatResult(response, "cr", "str", "csmax"));
-    builder.append((String)getStatResult(response, "cr", "str", "max"));
-    concat = (String)getStatResult(response, "cr", "str", "ccmax");
-    assertTrue(concat.equals(builder.toString()));
+    builder.append((String) getStatResult("cr", "csmax", VAL_TYPE.STRING));
+    builder.append((String) getStatResult("cr", "max", VAL_TYPE.STRING));
+    concat = (String) getStatResult("cr", "ccmax", VAL_TYPE.STRING);
+    assertEquals(concat, builder.toString());
   }
-  
+
   @Test
-  public void reverseTest() throws Exception { 
+  public void reverseTest() throws Exception {
     StringBuilder builder = new StringBuilder();
-    builder.append((String)getStatResult(response, "rr", "str", "min"));
-    String rev = (String)getStatResult(response, "rr", "str", "rmin");
-    assertTrue(rev.equals(builder.reverse().toString()));
+    builder.append((String) getStatResult("rr", "min", VAL_TYPE.STRING));
+    String rev = (String) getStatResult("rr", "rmin", VAL_TYPE.STRING);
+    assertEquals(rev, builder.reverse().toString());
 
     builder.setLength(0);
-    builder.append((String)getStatResult(response, "rr", "str", "max"));
-    rev = (String)getStatResult(response, "rr", "str", "rmax");
-    assertTrue(rev.equals(builder.reverse().toString()));
+    builder.append((String) getStatResult("rr", "max", VAL_TYPE.STRING));
+    rev = (String) getStatResult("rr", "rmax", VAL_TYPE.STRING);
+    assertEquals(rev, builder.reverse().toString());
   }
-  
-  public Object getStatResult(String response, String request, String type, String name) {
-    String cat = "\n  <lst name=\""+request+"\">";
-    String begin = "<"+type+" name=\""+name+"\">";
-    String end = "</"+type+">";
-    int beginInt = response.indexOf(begin, response.indexOf(cat))+begin.length();
-    int endInt = response.indexOf(end, beginInt);
-    String resultStr = response.substring(beginInt, endInt);
-    if (type.equals("double")) {
-      return Double.parseDouble(resultStr);
-    } else if (type.equals("int")) {
-      return Integer.parseInt(resultStr);
-    } else if (type.equals("long")) {
-      return Long.parseLong(resultStr);
-    } else if (type.equals("float")) {
-      return Float.parseFloat(resultStr);
-    } else {
-      return resultStr;
-    }
+
+  public static SolrQueryRequest request(String... args) {
+    return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
   }
-  
-  public static SolrQueryRequest request(String...args){
-    return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
-  }
-  
+
   public static String[] fileToStringArr(String fileName) throws FileNotFoundException {
     Scanner file = new Scanner(new File(ExternalPaths.SOURCE_HOME, fileName), "UTF-8");
     ArrayList<String> strList = new ArrayList<String>();
     while (file.hasNextLine()) {
       String line = file.nextLine();
-      if (line.length()<2) {
+      if (line.length() < 2) {
         continue;
       }
       String[] param = line.split("=");
