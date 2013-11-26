@@ -88,7 +88,7 @@ public class GetMavenDependenciesTask extends Task {
   private static final String UNWANTED_INTERNAL_DEPENDENCIES
       = "/(?:test-)?lib/|test-framework/classes/java|/test-files|/resources";
   private static final Pattern SHARED_EXTERNAL_DEPENDENCIES_PATTERN
-      = Pattern.compile("((?:solr|lucene)/(?!test-framework).*)/lib/");
+      = Pattern.compile("((?:solr|lucene)/(?!test-framework).*)/((?:test-)?)lib/");
 
   private static final String DEPENDENCY_MANAGEMENT_PROPERTY = "lucene.solr.dependency.management";
   private static final String IVY_USER_DIR_PROPERTY = "ivy.default.ivy.user.dir";
@@ -281,10 +281,16 @@ public class GetMavenDependenciesTask extends Task {
       Set<String> moduleDependencies = interModuleExternalTestScopeDependencies.get(artifactId);
       if (null != moduleDependencies) {
         for (String otherArtifactId : moduleDependencies) {
+          int testScopePos = otherArtifactId.indexOf(":test");
+          boolean isTestScope = false;
+          if (-1 != testScopePos) {
+            otherArtifactId = otherArtifactId.substring(0, testScopePos);
+            isTestScope = true;
+          }
           SortedSet<ExternalDependency> otherExtDeps = allExternalDependencies.get(otherArtifactId);
           if (null != otherExtDeps) {
             for (ExternalDependency otherDep : otherExtDeps) {
-              if ( ! otherDep.isTestDependency) {
+              if (otherDep.isTestDependency == isTestScope) {
                 if (  ! deps.contains(otherDep)
                    && (  null == allExternalDependencies.get(artifactId)
                       || ! allExternalDependencies.get(artifactId).contains(otherDep))) { 
@@ -523,8 +529,10 @@ public class GetMavenDependenciesTask extends Task {
           matcher = SHARED_EXTERNAL_DEPENDENCIES_PATTERN.matcher(dependency);
           if (matcher.find()) {
             String otherArtifactName = matcher.group(1);
+            boolean isTestScope = null != matcher.group(2) && matcher.group(2).length() > 0;
             otherArtifactName = otherArtifactName.replace('/', '-');
             otherArtifactName = otherArtifactName.replace("lucene-analysis", "lucene-analyzers");
+            otherArtifactName = otherArtifactName.replace("solr-contrib-solr-", "solr-");
             otherArtifactName = otherArtifactName.replace("solr-contrib-", "solr-");
             if ( ! otherArtifactName.equals(artifactName)) {
               Map<String,Set<String>> sharedDeps
@@ -533,6 +541,9 @@ public class GetMavenDependenciesTask extends Task {
               if (null == sharedSet) {
                 sharedSet = new HashSet<String>();
                 sharedDeps.put(artifactName, sharedSet);
+              }
+              if (isTestScope) {
+                otherArtifactName += ":test";
               }
               sharedSet.add(otherArtifactName);
             }
@@ -645,34 +656,16 @@ public class GetMavenDependenciesTask extends Task {
     Document document = documentBuilder.parse(ivyXmlFile);
     String dependencyPath = "/ivy-module/dependencies/dependency[not(starts-with(@conf,'start->'))]";
     NodeList dependencies = (NodeList)xpath.evaluate(dependencyPath, document, XPathConstants.NODESET);
-    for (int i = 0 ; i < dependencies.getLength() ; ++i) {
-      Element dependency = (Element)dependencies.item(i);
+    for (int depNum = 0 ; depNum < dependencies.getLength() ; ++depNum) {
+      Element dependency = (Element)dependencies.item(depNum);
       String groupId = dependency.getAttribute("org");
       String artifactId = dependency.getAttribute("name");
       String dependencyCoordinate = groupId + ':' + artifactId;
-      String classifier = null;
       Set<String> classifiers = dependencyClassifiers.get(dependencyCoordinate);
       if (null == classifiers) {
         classifiers = new HashSet<>();
         dependencyClassifiers.put(dependencyCoordinate, classifiers);
       }
-      if (dependency.hasChildNodes()) {
-        NodeList artifacts = (NodeList)xpath.evaluate("artifact", dependency, XPathConstants.NODESET);
-        Element firstArtifact = (Element)artifacts.item(0);
-        if (artifacts.getLength() > 0) {
-          if (  ! "jar".equals(firstArtifact.getAttribute("type"))
-             && ! "jar".equals(firstArtifact.getAttribute("ext"))) {
-            nonJarDependencies.add(dependencyCoordinate);
-            continue; // ignore non-jar dependencies
-          }
-          String mavenClassifier = firstArtifact.getAttribute("maven:classifier");
-          if ( ! mavenClassifier.isEmpty()) {
-            classifier = mavenClassifier;
-            classifiers.add(classifier);
-          }
-        }
-      }
-      classifiers.add(classifier);
       String conf = dependency.getAttribute("conf");
       boolean isTestDependency = conf.contains("test");
       boolean isOptional = optionalExternalDependencies.contains(dependencyCoordinate);
@@ -681,7 +674,30 @@ public class GetMavenDependenciesTask extends Task {
         deps = new TreeSet<ExternalDependency>();
         allExternalDependencies.put(module, deps);
       }
-      deps.add(new ExternalDependency(groupId, artifactId, classifier, isTestDependency, isOptional));
+      NodeList artifacts = null;
+      if (dependency.hasChildNodes()) {
+        artifacts = (NodeList)xpath.evaluate("artifact", dependency, XPathConstants.NODESET);
+      }
+      if (null != artifacts && artifacts.getLength() > 0) {
+        for (int artifactNum = 0 ; artifactNum < artifacts.getLength() ; ++artifactNum) {
+          Element artifact = (Element)artifacts.item(artifactNum);
+          String type = artifact.getAttribute("type");
+          String ext = artifact.getAttribute("ext");
+          if ((type.isEmpty() && ext.isEmpty()) || type.equals("jar") || ext.equals("jar")) {
+            String classifier = artifact.getAttribute("maven:classifier");
+            if (classifier.isEmpty()) {
+              classifier = null;
+            }
+            classifiers.add(classifier);
+            deps.add(new ExternalDependency(groupId, artifactId, classifier, isTestDependency, isOptional));
+          } else { // not a jar
+            nonJarDependencies.add(dependencyCoordinate);
+          }
+        }
+      } else {
+        classifiers.add(null);
+        deps.add(new ExternalDependency(groupId, artifactId, null, isTestDependency, isOptional));
+      }
     }
   }
 
@@ -771,7 +787,7 @@ public class GetMavenDependenciesTask extends Task {
     }
     builder.append('-');
     builder.append(matcher.group(4));
-    return builder.toString();
+    return builder.toString().replace("solr-solr-", "solr-");
   }
 
   /**
