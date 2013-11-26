@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 15;
+  private static final int MAX_RETRIES_ON_FORWARD = 25;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
   
   private StreamingSolrServers servers;
