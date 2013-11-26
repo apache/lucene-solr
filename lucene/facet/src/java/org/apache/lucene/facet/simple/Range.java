@@ -17,33 +17,17 @@ package org.apache.lucene.facet.simple;
  * limitations under the License.
  */
 
-import java.util.Arrays;
+/** Represents a single labelled range, one facet label in
+ *  the facets computed by {@link RangeAccumulator}.
+ *
+ *  @lucene.experimental */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+public abstract class Range {
+  public final String label;
 
-/** Add an instance of this to your Document for every facet
- *  label. */
-public class FacetField extends Field {
-  static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setIndexed(true);
-    TYPE.freeze();
-  }
-  public final String dim;
-  public final String[] path;
-
-  public FacetField(String dim, String... path) {
-    super("dummy", TYPE);
-    this.dim = dim;
-    if (path.length == 0) {
-      throw new IllegalArgumentException("path must have at least one element");
-    }
-    this.path = path;
+  protected Range(String label) {
+    this.label = label;
   }
 
-  @Override
-  public String toString() {
-    return "FacetField(dim=" + dim + " path=" + Arrays.toString(path) + ")";
-  }
+  public abstract boolean accept(long value);
 }

@@ -31,13 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.collections.ObjectToIntMap;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.params.PerDimensionOrdinalPolicy;
-import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -92,7 +85,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
   
   private static Directory indexDir, taxoDir;
-  private static ObjectToIntMap<String> allExpectedCounts, termExpectedCounts;
+  private static Map<String,Integer> allExpectedCounts, termExpectedCounts;
 
   @AfterClass
   public static void afterClassCountingFacetsAggregatorTest() throws Exception {
@@ -172,7 +165,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsNoTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<String> expectedCounts) throws IOException {
+                                                 Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig(taxoWriter);
@@ -185,7 +178,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsAndTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<String> expectedCounts) throws IOException {
+                                                  Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig(taxoWriter);
@@ -199,7 +192,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
   
   private static void indexDocsWithFacetsAndSomeTerms(IndexWriter indexWriter, TaxonomyWriter taxoWriter, 
-      ObjectToIntMap<String> expectedCounts) throws IOException {
+                                                      Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig(taxoWriter);
@@ -216,8 +209,8 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
   
   // initialize expectedCounts w/ 0 for all categories
-  private static ObjectToIntMap<String> newCounts() {
-    ObjectToIntMap<String> counts = new ObjectToIntMap<String>();
+  private static Map<String,Integer> newCounts() {
+    Map<String,Integer> counts = new HashMap<String,Integer>();
     counts.put(CP_A, 0);
     counts.put(CP_B, 0);
     counts.put(CP_C, 0);
@@ -285,12 +278,12 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     SimpleFacetResult result = facets.getTopChildren(NUM_CHILDREN_CP_A, CP_A);
     assertEquals(-1, result.value.intValue());
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(termExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(termExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value);
     }
     result = facets.getTopChildren(NUM_CHILDREN_CP_B, CP_B);
-    assertEquals(termExpectedCounts.get(CP_B), result.value.intValue());
+    assertEquals(termExpectedCounts.get(CP_B), result.value);
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(termExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(termExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value);
     }
     
     IOUtils.close(indexReader, taxoReader);
@@ -311,16 +304,16 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     assertEquals(-1, result.value.intValue());
     int prevValue = Integer.MAX_VALUE;
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value);
       assertTrue("wrong sort order of sub results: labelValue.value=" + labelValue.value + " prevValue=" + prevValue, labelValue.value.intValue() <= prevValue);
       prevValue = labelValue.value.intValue();
     }
 
     result = facets.getTopChildren(NUM_CHILDREN_CP_B, CP_B);
-    assertEquals(allExpectedCounts.get(CP_B), result.value.intValue());
+    assertEquals(allExpectedCounts.get(CP_B), result.value);
     prevValue = Integer.MAX_VALUE;
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value);
       assertTrue("wrong sort order of sub results: labelValue.value=" + labelValue.value + " prevValue=" + prevValue, labelValue.value.intValue() <= prevValue);
       prevValue = labelValue.value.intValue();
     }
@@ -342,12 +335,12 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     SimpleFacetResult result = facets.getTopChildren(Integer.MAX_VALUE, CP_A);
     assertEquals(-1, result.value.intValue());
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_A + "/" + labelValue.label), labelValue.value);
     }
     result = facets.getTopChildren(Integer.MAX_VALUE, CP_B);
-    assertEquals(allExpectedCounts.get(CP_B), result.value.intValue());
+    assertEquals(allExpectedCounts.get(CP_B), result.value);
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_B + "/" + labelValue.label), labelValue.value);
     }
     
     IOUtils.close(indexReader, taxoReader);
@@ -365,14 +358,14 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     Facets facets = getTaxonomyFacetCounts(taxoReader, getConfig(), sfc);
 
     SimpleFacetResult result = facets.getTopChildren(NUM_CHILDREN_CP_C, CP_C);
-    assertEquals(allExpectedCounts.get(CP_C), result.value.intValue());
+    assertEquals(allExpectedCounts.get(CP_C), result.value);
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_C + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_C + "/" + labelValue.label), labelValue.value);
     }
     result = facets.getTopChildren(NUM_CHILDREN_CP_D, CP_D);
-    assertEquals(allExpectedCounts.get(CP_C), result.value.intValue());
+    assertEquals(allExpectedCounts.get(CP_C), result.value);
     for(LabelAndValue labelValue : result.labelValues) {
-      assertEquals(allExpectedCounts.get(CP_D + "/" + labelValue.label), labelValue.value.intValue());
+      assertEquals(allExpectedCounts.get(CP_D + "/" + labelValue.label), labelValue.value);
     }
     
     IOUtils.close(indexReader, taxoReader);

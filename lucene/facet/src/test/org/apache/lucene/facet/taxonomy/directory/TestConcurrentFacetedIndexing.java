@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.simple.FacetField;
+import org.apache.lucene.facet.simple.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
@@ -56,12 +57,12 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     
   };
   
-  static FacetLabel newCategory() {
+  static FacetField newCategory() {
     Random r = random();
     String l1 = "l1." + r.nextInt(10); // l1.0-l1.9 (10 categories)
     String l2 = "l2." + r.nextInt(30); // l2.0-l2.29 (30 categories)
     String l3 = "l3." + r.nextInt(100); // l3.0-l3.99 (100 categories)
-    return new FacetLabel(l1, l2, l3);
+    return new FacetField(l1, l2, l3);
   }
   
   static TaxonomyWriterCache newTaxoWriterCache(int ndocs) {
@@ -87,10 +88,14 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     final IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, newTaxoWriterCache(numDocs.get()));
     final Thread[] indexThreads = new Thread[atLeast(4)];
+    final FacetsConfig config = new FacetsConfig(tw);
+    for(int i=0;i<10;i++) {
+      config.setHierarchical("l1." + i, true);
+      config.setMultiValued("l1." + i, true);
+    }
 
     for (int i = 0; i < indexThreads.length; i++) {
       indexThreads[i] = new Thread() {
-        private final FacetFields facetFields = new FacetFields(tw);
         
         @Override
         public void run() {
@@ -99,20 +104,20 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
             try {
               Document doc = new Document();
               int numCats = random.nextInt(3) + 1; // 1-3
-              List<FacetLabel> cats = new ArrayList<FacetLabel>(numCats);
               while (numCats-- > 0) {
-                FacetLabel cp = newCategory();
-                cats.add(cp);
+                FacetField ff = newCategory();
+                doc.add(ff);
+
+                FacetLabel label = FacetLabel.create(ff.dim, ff.path);
                 // add all prefixes to values
-                int level = cp.length;
+                int level = label.length;
                 while (level > 0) {
-                  String s = cp.subpath(level).toString('/');
+                  String s = label.subpath(level).toString('/');
                   values.put(s, s);
                   --level;
                 }
               }
-              facetFields.addFields(doc, cats);
-              iw.addDocument(doc);
+              iw.addDocument(config.build(doc));
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -140,9 +145,8 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
         parentOrd = ord; // next level should have this parent
       }
     }
-    tr.close();
 
-    IOUtils.close(tw, iw, taxoDir, indexDir);
+    IOUtils.close(tw, iw, tr, taxoDir, indexDir);
   }
 
 }

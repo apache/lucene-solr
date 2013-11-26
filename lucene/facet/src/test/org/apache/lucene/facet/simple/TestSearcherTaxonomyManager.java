@@ -27,11 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.facet.simple.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
@@ -61,7 +57,6 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
             List<String> paths = new ArrayList<String>();
             while (true) {
               Document doc = new Document();
-              List<FacetLabel> docPaths = new ArrayList<FacetLabel>();
               int numPaths = _TestUtil.nextInt(random(), 1, 5);
               for(int i=0;i<numPaths;i++) {
                 String path;
@@ -73,7 +68,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
                   path = null;
                   while (true) {
                     path = _TestUtil.randomRealisticUnicodeString(random());
-                    if (path.length() != 0 && !seen.contains(path) && path.indexOf(FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR) == -1) {
+                    if (path.length() != 0 && !seen.contains(path)) {
                       seen.add(path);
                       paths.add(path);
                       break;

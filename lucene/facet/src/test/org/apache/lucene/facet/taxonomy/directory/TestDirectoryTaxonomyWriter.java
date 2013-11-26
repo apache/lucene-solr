@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.DrillDownQuery;
+import org.apache.lucene.facet.simple.FacetField;
+import org.apache.lucene.facet.simple.FacetsConfig;
+import org.apache.lucene.facet.simple.SimpleDrillDownQuery;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -23,8 +23,8 @@ import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -427,30 +427,28 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new Cl2oTaxonomyWriterCache(2, 1f, 1));
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetsConfig config = new FacetsConfig(taxoWriter);
     
     // Add one huge label:
     String bigs = null;
     int ordinal = -1;
-    FacetLabel cp = null;
-    while (true) {
-      int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
-      bigs = _TestUtil.randomSimpleString(random(), len, len);
-      cp = new FacetLabel("dim", bigs);
-      ordinal = taxoWriter.addCategory(cp);
-      Document doc = new Document();
-      facetFields.addFields(doc, Collections.singletonList(cp));
-      indexWriter.addDocument(doc);
-      break;
-    }
+
+    int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
+    bigs = _TestUtil.randomSimpleString(random(), len, len);
+    FacetField ff = new FacetField("dim", bigs);
+    FacetLabel cp = FacetLabel.create("dim", bigs);
+    ordinal = taxoWriter.addCategory(cp);
+    Document doc = new Document();
+    doc.add(ff);
+    indexWriter.addDocument(config.build(doc));
 
     // Add tiny ones to cause a re-hash
     for (int i = 0; i < 3; i++) {
       String s = _TestUtil.randomSimpleString(random(), 1, 10);
       taxoWriter.addCategory(new FacetLabel("dim", s));
-      Document doc = new Document();
-      facetFields.addFields(doc, Collections.singletonList(new FacetLabel("dim", s)));
-      indexWriter.addDocument(doc);
+      doc = new Document();
+      doc.add(new FacetField("dim", s));
+      indexWriter.addDocument(config.build(doc));
     }
 
     // when too large components were allowed to be added, this resulted in a new added category
@@ -461,13 +459,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT);
-    ddq.add(cp);
+    SimpleDrillDownQuery ddq = new SimpleDrillDownQuery(new FacetsConfig());
+    ddq.add("dim", bigs);
     assertEquals(1, searcher.search(ddq, 10).totalHits);
     
-    IOUtils.close(indexReader, taxoReader);
-    
-    IOUtils.close(indexDir, taxoDir);
+    IOUtils.close(indexReader, taxoReader, indexDir, taxoDir);
   }
   
   @Test

@@ -32,8 +32,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.search.AssertingSubDocsAtOnceCollector;
 import org.apache.lucene.facet.simple.SimpleDrillSideways.SimpleDrillSidewaysResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
