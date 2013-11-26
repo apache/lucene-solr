@@ -103,6 +103,9 @@ New Features
   This is intended to eventually replace the Suggester support through the
   SpellCheckComponent. (Areek Zillur, Varun Thacker via shalin)
 
+* SOLR-5492: Return the replica that actually served the query in shards.info
+  response. (shalin)
+
 Bug Fixes
 ----------------------
 

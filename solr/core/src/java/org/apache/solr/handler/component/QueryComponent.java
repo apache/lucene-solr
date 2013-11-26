@@ -813,11 +813,15 @@ public class QueryComponent extends SearchComponent
             StringWriter trace = new StringWriter();
             t.printStackTrace(new PrintWriter(trace));
             nl.add("trace", trace.toString() );
+            if (srsp.getShardAddress() != null) {
+              nl.add("shardAddress", srsp.getShardAddress());
+            }
           }
           else {
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
+            nl.add("shardAddress", srsp.getShardAddress());
           }
           if(srsp.getSolrResponse()!=null) {
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
