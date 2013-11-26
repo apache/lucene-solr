@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.writercache.cl2o;
+package org.apache.lucene.facet.taxonomy.writercache;
 
 import java.io.IOException;
 import java.io.InputStream;

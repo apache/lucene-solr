@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.writercache.lru;
+package org.apache.lucene.facet.taxonomy.writercache;
 
 import java.util.HashMap;
 import java.util.Iterator;

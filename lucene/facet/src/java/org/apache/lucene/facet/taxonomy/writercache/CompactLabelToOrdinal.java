@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.writercache.cl2o;
+package org.apache.lucene.facet.taxonomy.writercache;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

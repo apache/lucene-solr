@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.writercache.cl2o;
+package org.apache.lucene.facet.taxonomy.writercache;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
