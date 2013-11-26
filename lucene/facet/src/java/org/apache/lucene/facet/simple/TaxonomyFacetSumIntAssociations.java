@@ -142,7 +142,7 @@ public class TaxonomyFacetSumIntAssociations extends TaxonomyFacets {
     for(int i=labelValues.length-1;i>=0;i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[path.length], ordAndValue.value);
+      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
     return new SimpleFacetResult(sumValue, labelValues, childCount);

@@ -26,13 +26,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.RangeAccumulator;
-import org.apache.lucene.facet.range.RangeFacetRequest;
-import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
+import org.apache.lucene.facet.simple.Facets;
+import org.apache.lucene.facet.simple.FacetsConfig;
+import org.apache.lucene.facet.simple.LongRange;
+import org.apache.lucene.facet.simple.RangeFacetCounts;
+import org.apache.lucene.facet.simple.SimpleDrillDownQuery;
+import org.apache.lucene.facet.simple.SimpleFacetResult;
+import org.apache.lucene.facet.simple.SimpleFacetsCollector;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -44,12 +44,17 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 
+
 /** Shows simple usage of dynamic range faceting. */
 public class RangeFacetsExample implements Closeable {
 
   private final Directory indexDir = new RAMDirectory();
   private IndexSearcher searcher;
   private final long nowSec = System.currentTimeMillis();
+
+  final LongRange PAST_HOUR = new LongRange("Past hour", nowSec-3600, true, nowSec, true);
+  final LongRange PAST_SIX_HOURS = new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true);
+  final LongRange PAST_DAY = new LongRange("Past day", nowSec-24*3600, true, nowSec, true);
 
   /** Empty constructor */
   public RangeFacetsExample() {}
@@ -76,24 +81,27 @@ public class RangeFacetsExample implements Closeable {
     indexWriter.close();
   }
 
-  /** User runs a query and counts facets. */
-  public List<FacetResult> search() throws IOException {
+  private FacetsConfig getConfig() {
+    return new FacetsConfig();
+  }
 
-    RangeFacetRequest<LongRange> rangeFacetRequest = new RangeFacetRequest<LongRange>("timestamp",
-                                     new LongRange("Past hour", nowSec-3600, true, nowSec, true),
-                                     new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true),
-                                     new LongRange("Past day", nowSec-24*3600, true, nowSec, true));
-    // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(rangeFacetRequest));
+  /** User runs a query and counts facets. */
+  public SimpleFacetResult search() throws IOException {
+
+    // Aggregates the facet counts
+    SimpleFacetsCollector sfc = new SimpleFacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query, and use MultiCollector to
     // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    searcher.search(new MatchAllDocsQuery(), sfc);
 
-    // Retrieve results
-    return fc.getFacetResults();
+    Facets facets = new RangeFacetCounts("timestamp", sfc,
+                                         PAST_HOUR,
+                                         PAST_SIX_HOURS,
+                                         PAST_DAY);
+    return facets.getTopChildren(10, "timestamp");
   }
   
   /** User drills down on the specified range. */
@@ -101,7 +109,7 @@ public class RangeFacetsExample implements Closeable {
 
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
-    DrillDownQuery q = new DrillDownQuery(FacetIndexingParams.DEFAULT);
+    SimpleDrillDownQuery q = new SimpleDrillDownQuery(getConfig());
 
     // Use FieldCacheRangeFilter; this will use
     // NumericDocValues:
@@ -124,15 +132,12 @@ public class RangeFacetsExample implements Closeable {
 
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    List<FacetResult> results = example.search();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    System.out.println(example.search());
 
     System.out.println("\n");
     System.out.println("Facet drill-down example (timestamp/Past six hours):");
     System.out.println("---------------------------------------------");
-    TopDocs hits = example.drillDown((LongRange) ((RangeFacetRequest<LongRange>) results.get(0).getFacetRequest()).ranges[1]);
+    TopDocs hits = example.drillDown(example.PAST_SIX_HOURS);
     System.out.println(hits.totalHits + " totalHits");
 
     example.close();

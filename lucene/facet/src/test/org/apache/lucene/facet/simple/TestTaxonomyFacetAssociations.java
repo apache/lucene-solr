@@ -107,7 +107,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     searcher.search(new MatchAllDocsQuery(), fc);
 
     Facets facets = new TaxonomyFacetSumIntAssociations("$facets.int", taxoReader, config, fc);
-    
+    assertEquals("value=350 childCount=2\n  a (200)\n  b (150)\n", facets.getTopChildren(10, "int").toString());
     assertEquals("Wrong count for category 'a'!", 200, facets.getSpecificValue("int", "a").intValue());
     assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
   }
@@ -119,6 +119,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     searcher.search(new MatchAllDocsQuery(), fc);
     
     Facets facets = new TaxonomyFacetSumFloatAssociations("$facets.float", taxoReader, config, fc);
+    assertEquals("value=59.999996 childCount=2\n  a (50.0)\n  b (9.999995)\n", facets.getTopChildren(10, "float").toString());
     assertEquals("Wrong count for category 'a'!", 50f, facets.getSpecificValue("float", "a").floatValue(), 0.00001);
     assertEquals("Wrong count for category 'b'!", 10f, facets.getSpecificValue("float", "b").floatValue(), 0.00001);
   }  
