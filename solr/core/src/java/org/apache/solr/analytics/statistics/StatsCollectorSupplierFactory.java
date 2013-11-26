@@ -421,7 +421,7 @@ public class StatsCollectorSupplierFactory {
       return null;
     }
     Object defaultObject;
-    Class<? extends ValueSource> type = delegateSource.getClass();
+
     ValueSource src = delegateSource;
     if (delegateSource instanceof FilterFieldSource) {
       src = ((FilterFieldSource)delegateSource).getRootSource();
@@ -431,6 +431,12 @@ public class StatsCollectorSupplierFactory {
         defaultObject = new Integer(arguments[1]);
       } catch (NumberFormatException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into an integer.",e);
+      }
+    } else if ( src instanceof DateFieldSource || src instanceof MultiDateFunction) {
+      try {
+        defaultObject = TrieDateField.parseDate(arguments[1]);
+      } catch (ParseException e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into a date.",e);
       }
     } else if ( src instanceof LongFieldSource ) {
       try {
@@ -450,12 +456,6 @@ public class StatsCollectorSupplierFactory {
         defaultObject = new Double(arguments[1]);
       } catch (NumberFormatException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into a double.",e);
-      }
-    } else if ( src instanceof DateFieldSource || src instanceof MultiDateFunction) {
-      try {
-        defaultObject = TrieDateField.parseDate(arguments[1]);
-      } catch (ParseException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into a date.",e);
       }
     } else {
       defaultObject = arguments[1];

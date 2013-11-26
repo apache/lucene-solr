@@ -1186,11 +1186,12 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   }
 
   private boolean checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {
-    boolean b = true;
-    for (int i = 0; i<list1.size() && b; i++) {
-      b = b && (Math.abs(list1.get(i)-list2.get(i))<.00000000001);
+    for (int i = 0; i<list1.size(); i++) {
+      if ((Math.abs(list1.get(i)-list2.get(i))<.00000000001) == false) {
+        return false;
+      }
     }
-    return b;
+    return true;
   }
 
 }

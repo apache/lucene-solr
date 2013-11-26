@@ -160,21 +160,17 @@ public class ExpressionFactory {
     int start = 0;
     List<String> arguments = new ArrayList<String>();
     char[] chars = expression.toCharArray();
-    boolean escapedCharacter = false;
     for (int count = 0; count < expression.length(); count++) {
       char c = chars[count];
-      if (c==',' && stack == 0 && !escapedCharacter) {
+      if (c==',' && stack == 0) {
         arguments.add(expression.substring(start, count).replace("\\(","(").replace("\\)",")").replace("\\,",",").trim());
         start = count+1;
-      } else if (c == '(' && !escapedCharacter) {
+      } else if (c == '(') {
         stack ++;
-      } else if (c == ')' && !escapedCharacter) {
+      } else if (c == ')') {
         stack --;
       } else if (c == '\\') {
-        escapedCharacter=true;
-      }
-      if (escapedCharacter) {
-        escapedCharacter=false;
+        ; // Do nothing.
       }
     }
     if (stack==0) {
