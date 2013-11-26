@@ -16,6 +16,7 @@
 */
 
 var loglevel_path = app.config.solr_path + '/admin/info/logging';
+var cookie_logging_timezone = 'logging_timezone';
 var frame_element = null;
 
 var logging_handler = function( response, text_status, xhr )
@@ -253,10 +254,17 @@ var logging_handler = function( response, text_status, xhr )
 
 };
 
+var format_time_options = {};
+
 var format_time = function( time )
 {
   time = time ? new Date( time ) : new Date();
-  return '<abbr title="' + time.toLocaleString().esc() + '">' + time.toTimeString().split( ' ' ).shift().esc() + '</abbr>';
+  return '<time datetime="' + time.toISOString().esc() + '">' + format_time_content( time ) + '</abbr>';
+}
+
+var format_time_content = function( time )
+{
+  return time.toLocaleString( undefined, format_time_options ).esc();
 }
 
 var load_logging_viewer = function()
@@ -423,7 +431,7 @@ sammy.get
               '<table border="0" cellpadding="0" cellspacing="0">' + "\n" +
                 '<thead>' + "\n" +
                   '<tr>' + "\n" +
-                    '<th class="time">Time</th>' + "\n" +
+                    '<th class="time">Time (<span>Local</span>)</th>' + "\n" +
                     '<th class="level">Level</th>' + "\n" +
                     '<th class="logger">Logger</th>' + "\n" +
                     '<th class="message">Message</th>' + "\n" +
@@ -435,7 +443,10 @@ sammy.get
                   '</tr>' + "\n" +
                 '</thead>' + "\n" +
               '</table>' + "\n" +
-              '<div id="state" class="loader">&nbsp;</div>' + "\n" +
+              '<div id="footer" class="clearfix">' + "\n" +
+                '<div id="state" class="loader">&nbsp;</div>' + "\n" +
+                '<div id="date-format"><a>Show dates in UTC</a></div>' + "\n" +
+              '</div>' + "\n" +
             '</div>'
           );
 
@@ -475,6 +486,52 @@ sammy.get
               return false;
             }
           );
+
+        var date_format = $( '#date-format a', frame_element );
+
+        date_format
+          .off( 'click' )
+          .on
+          (
+            'click',
+            function( event )
+            {
+              var self = $( this );
+
+              if( !self.hasClass( 'on' ) )
+              {
+                self.addClass( 'on' );
+                $( 'table th.time span', frame_element ).text( 'UTC' );
+                format_time_options.timeZone = 'UTC';
+                $.cookie( cookie_logging_timezone, 'UTC' );
+              }
+              else
+              {
+                self.removeClass( 'on' );
+                $( 'table th.time span', frame_element ).text( 'Local' );
+                delete format_time_options.timeZone;
+                $.cookie( cookie_logging_timezone, null );
+              }
+
+              $( 'time', frame_element )
+                .each
+                (
+                  function( index, element )
+                  {
+                    var self = $( element );
+                    self.text( format_time_content( new Date( self.attr( 'datetime' ) ) ) );
+                  }
+                )
+
+              return false;
+            }
+          );
+
+        if( 'UTC' === $.cookie( cookie_logging_timezone ) )
+        {
+          date_format
+            .trigger( 'click' );
+        }
       }
     );
   }
