@@ -41,12 +41,48 @@ limitations under the License.
   position: relative;
 }
 
+#content #logging #viewer time
+{
+  white-space: pre;
+}
+
+#content #logging #viewer #footer
+{
+  margin-top: 20px;
+}
+
 #content #logging #viewer #state
 {
   background-position: 0 50%;
+  float: left;
   color: #c0c0c0;
-  margin-top: 20px;
   padding-left: 21px;
+  width: 45%;
+}
+
+#content #logging #viewer #date-format
+{
+  float: right;
+}
+
+#content #logging #viewer #date-format a
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  display: block;
+  padding-left: 21px;
+}
+
+#content #logging #viewer #date-format a:hover
+{
+  color: #008;
+}
+
+#content #logging #viewer #date-format a.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
 }
 
 #content #logging #viewer table

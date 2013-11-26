@@ -162,6 +162,9 @@ Optimizations
 * SOLR-5436: Eliminate the 1500ms wait in overseer loop as well as
   polling the ZK distributed queue. (Noble Paul, Mark Miller)
 
+* SOLR-5189: Solr 4.x Web UI Log Viewer does not display 'date' column from 
+  logs (steffkes)
+
 Other Changes
 ---------------------
 
