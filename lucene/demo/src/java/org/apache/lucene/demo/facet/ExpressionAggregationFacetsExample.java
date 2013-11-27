@@ -100,16 +100,15 @@ public class ExpressionAggregationFacetsExample {
     bindings.add(new SortField("popularity", SortField.Type.LONG)); // the value of the 'popularity' field
 
     // Aggregates the facet values
-    FacetsCollector sfc = new FacetsCollector(true);
+    FacetsCollector fc = new FacetsCollector(true);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, expr.getValueSource(bindings));
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getValueSource(bindings));
     FacetResult result = facets.getTopChildren(10, "A");
     
     indexReader.close();

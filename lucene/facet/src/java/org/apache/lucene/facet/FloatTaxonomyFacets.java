@@ -35,7 +35,6 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
     values = new float[taxoReader.getSize()];
   }
   
-  // nocommit we could do this lazily instead:
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
     for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {

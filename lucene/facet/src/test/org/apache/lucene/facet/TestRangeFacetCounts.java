@@ -18,12 +18,8 @@ package org.apache.lucene.facet;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -33,9 +29,7 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -50,8 +44,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 
 
-// nocommit rename to TestRangeFacetCounts
-public class TestRangeFacets extends FacetTestCase {
+public class TestRangeFacetCounts extends FacetTestCase {
 
   public void testBasicLong() throws Exception {
     Directory d = newDirectory();

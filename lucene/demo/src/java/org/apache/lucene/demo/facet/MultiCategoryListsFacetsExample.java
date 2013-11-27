@@ -109,22 +109,21 @@ public class MultiCategoryListsFacetsExample {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     FacetsConfig config = getConfig(null);
 
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
     List<FacetResult> results = new ArrayList<FacetResult>();
 
     // Count both "Publish Date" and "Author" dimensions
-    Facets author = new FastTaxonomyFacetCounts("author", taxoReader, config, sfc);
+    Facets author = new FastTaxonomyFacetCounts("author", taxoReader, config, fc);
     results.add(author.getTopChildren(10, "Author"));
 
-    Facets pubDate = new FastTaxonomyFacetCounts("pubdate", taxoReader, config, sfc);
+    Facets pubDate = new FastTaxonomyFacetCounts("pubdate", taxoReader, config, fc);
     results.add(pubDate.getTopChildren(10, "Publish Date"));
     
     indexReader.close();

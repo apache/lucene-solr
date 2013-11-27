@@ -89,15 +89,14 @@ public class RangeFacetsExample implements Closeable {
   public FacetResult search() throws IOException {
 
     // Aggregates the facet counts
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
-    Facets facets = new RangeFacetCounts("timestamp", sfc,
+    Facets facets = new RangeFacetCounts("timestamp", fc,
                                          PAST_HOUR,
                                          PAST_SIX_HOURS,
                                          PAST_DAY);

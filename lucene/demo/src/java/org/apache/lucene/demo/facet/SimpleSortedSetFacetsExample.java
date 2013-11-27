@@ -96,16 +96,15 @@ public class SimpleSortedSetFacetsExample {
     FacetsConfig config = getConfig();
 
     // Aggregatses the facet counts
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    Facets facets = new SortedSetDocValuesFacetCounts(state, sfc);
+    Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
 
     List<FacetResult> results = new ArrayList<FacetResult>();
     results.add(facets.getTopChildren(10, "Author"));
@@ -125,11 +124,11 @@ public class SimpleSortedSetFacetsExample {
     // Now user drills down on Publish Year/2010:
     DrillDownQuery q = new DrillDownQuery(config);
     q.add("Publish Year", "2010");
-    FacetsCollector sfc = new FacetsCollector();
-    searcher.search(q, sfc);
+    FacetsCollector fc = new FacetsCollector();
+    Facets.search(searcher, q, 10, fc);
 
     // Retrieve results
-    Facets facets = new SortedSetDocValuesFacetCounts(state, sfc);
+    Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
     FacetResult result = facets.getTopChildren(10, "Author");
     indexReader.close();
     

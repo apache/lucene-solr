@@ -104,16 +104,15 @@ public class AssociationsFacetsExample {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     FacetsConfig config = getConfig(null);
     
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
     
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
     
-    Facets tags = new TaxonomyFacetSumIntAssociations("$tags", taxoReader, config, sfc);
-    Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, sfc);
+    Facets tags = new TaxonomyFacetSumIntAssociations("$tags", taxoReader, config, fc);
+    Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);
 
     // Retrieve results
     List<FacetResult> results = new ArrayList<FacetResult>();

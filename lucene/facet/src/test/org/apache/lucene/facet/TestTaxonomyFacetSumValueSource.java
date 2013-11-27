@@ -17,15 +17,9 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,11 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.PrintTaxonomyStats;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -51,22 +41,15 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
 
 public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
@@ -122,8 +105,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
+    // you'd use a "normal" query and one of the
+    // Facets.search utility methods:
     searcher.search(new MatchAllDocsQuery(), c);
 
     TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, new IntFieldSource("num"));
@@ -274,15 +257,13 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector fc = new FacetsCollector(true);
-    TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
     ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
     csq.setBoost(2.0f);
     
-    newSearcher(r).search(csq, MultiCollector.wrap(fc, topDocs));
+    TopDocs td = Facets.search(newSearcher(r), csq, 10, fc);
 
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());
     
-    TopDocs td = topDocs.topDocs();
     int expected = (int) (td.getMaxScore() * td.totalHits);
     assertEquals(expected, facets.getSpecificValue("dim", "a").intValue());
     
@@ -354,12 +335,12 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       @Override public String description() { return "score()"; }
     };
     
-    FacetsCollector sfc = new FacetsCollector(true);
+    FacetsCollector fc = new FacetsCollector(true);
     TopScoreDocCollector tsdc = TopScoreDocCollector.create(10, true);
     // score documents by their 'price' field - makes asserting the correct counts for the categories easier
     Query q = new FunctionQuery(new LongFieldSource("price"));
-    newSearcher(r).search(q, MultiCollector.wrap(tsdc, sfc));
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, valueSource);
+    Facets.search(newSearcher(r), q, 10, fc);
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, valueSource);
     
     assertEquals("value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
     
@@ -416,15 +397,14 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(iw, true);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
-    FacetsCollector sfc = new FacetsCollector(true);
-    TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
-    newSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(sfc, topDocs));
+    FacetsCollector fc = new FacetsCollector(true);
+    TopDocs hits = Facets.search(newSearcher(r), new MatchAllDocsQuery(), 10, fc);
     
-    Facets facets1 = getTaxonomyFacetCounts(taxoReader, config, sfc);
-    Facets facets2 = new TaxonomyFacetSumValueSource(new DocValuesOrdinalsReader("$b"), taxoReader, config, sfc, new TaxonomyFacetSumValueSource.ScoreValueSource());
+    Facets facets1 = getTaxonomyFacetCounts(taxoReader, config, fc);
+    Facets facets2 = new TaxonomyFacetSumValueSource(new DocValuesOrdinalsReader("$b"), taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());
 
     assertEquals(r.maxDoc(), facets1.getTopChildren(10, "a").value.intValue());
-    double expected = topDocs.topDocs().getMaxScore() * r.numDocs();
+    double expected = hits.getMaxScore() * r.numDocs();
     assertEquals(r.maxDoc(), facets2.getTopChildren(10, "b").value.doubleValue(), 1E-10);
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
   }

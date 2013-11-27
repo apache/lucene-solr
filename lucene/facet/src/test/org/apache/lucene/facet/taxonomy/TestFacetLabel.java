@@ -23,7 +23,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestCategoryPath extends FacetTestCase {
+public class TestFacetLabel extends FacetTestCase {
   
   @Test 
   public void testBasic() {

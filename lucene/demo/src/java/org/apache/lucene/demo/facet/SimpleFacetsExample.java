@@ -105,19 +105,18 @@ public class SimpleFacetsExample {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     FacetsConfig config = getConfig(null);
 
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), sfc);
+    // you'd use a "normal" query:
+    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
     List<FacetResult> results = new ArrayList<FacetResult>();
 
     // Count both "Publish Date" and "Author" dimensions
-    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, sfc);
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Date"));
     
@@ -140,11 +139,11 @@ public class SimpleFacetsExample {
 
     // Now user drills down on Publish Date/2010:
     q.add("Publish Date", "2010");
-    FacetsCollector sfc = new FacetsCollector();
-    searcher.search(q, sfc);
+    FacetsCollector fc = new FacetsCollector();
+    Facets.search(searcher, q, 10, fc);
 
     // Retrieve results
-    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, sfc);
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
     FacetResult result = facets.getTopChildren(10, "Author");
 
     indexReader.close();

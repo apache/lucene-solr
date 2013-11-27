@@ -20,13 +20,16 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
@@ -52,74 +55,108 @@ public abstract class Facets {
    *  depending on the type of document. */
   public abstract List<FacetResult> getAllDims(int topN) throws IOException;
 
-  // nocommit where to move?
+  // nocommit where to put these utility methods?
 
-  /** Utility method, to search for top hits by score
-   *  ({@link IndexSearcher#search(Query,int)}), but
-   *  also collect results into a {@link
-   *  FacetsCollector} for faceting. */
-  public static TopDocs search(IndexSearcher searcher, Query q, int topN, FacetsCollector sfc) throws IOException {
-    // TODO: can we pass the "right" boolean for
-    // in-order...?  we'd need access to the protected
-    // IS.search methods taking Weight... could use
-    // reflection...
-    TopScoreDocCollector hitsCollector = TopScoreDocCollector.create(topN, false);
-    searcher.search(q, MultiCollector.wrap(hitsCollector, sfc));
-    return hitsCollector.topDocs();
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopDocs search(IndexSearcher searcher, Query q, int n, FacetsCollector fc) throws IOException {
+    return doSearch(searcher, null, q, null, n, null, false, false, fc);
   }
 
-  // nocommit where to move?
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopDocs search(IndexSearcher searcher, Query q, Filter filter, int n, FacetsCollector fc) throws IOException {
+    return doSearch(searcher, null, q, filter, n, null, false, false, fc);
+  }
 
-  /** Utility method, to search for top hits by score with a filter
-   *  ({@link IndexSearcher#search(Query,Filter,int)}), but
-   *  also collect results into a {@link
-   *  FacetsCollector} for faceting. */
-  public static TopDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, FacetsCollector sfc) throws IOException {
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, FacetsCollector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, FacetsCollector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, doDocScores, doMaxScore, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, FacetsCollector fc) throws IOException {
+    return doSearch(searcher, after, q, null, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, FacetsCollector fc) throws IOException {
+    return doSearch(searcher, after, q, filter, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, FacetsCollector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link FacetsCollector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, FacetsCollector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, doDocScores, doMaxScore, fc);
+  }
+
+  private static TopDocs doSearch(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort,
+                                  boolean doDocScores, boolean doMaxScore, FacetsCollector fc) throws IOException {
+
     if (filter != null) {
       q = new FilteredQuery(q, filter);
     }
-    return search(searcher, q, topN, sfc);
-  }
 
-  // nocommit where to move?
-
-  /** Utility method, to search for top hits by a custom
-   *  {@link Sort} with a filter
-   *  ({@link IndexSearcher#search(Query,Filter,int,Sort)}), but
-   *  also collect results into a {@link
-   *  FacetsCollector} for faceting. */
-  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, Sort sort, FacetsCollector sfc) throws IOException {
-    return search(searcher, q, filter, topN, sort, false, false, sfc);
-  }
-
-  // nocommit where to move?
-
-  /** Utility method, to search for top hits by a custom
-   *  {@link Sort} with a filter
-   *  ({@link IndexSearcher#search(Query,Filter,int,Sort,boolean,boolean)}), but
-   *  also collect results into a {@link
-   *  FacetsCollector} for faceting. */
-  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int topN, Sort sort, boolean doDocScores, boolean doMaxScore, FacetsCollector sfc) throws IOException {
     int limit = searcher.getIndexReader().maxDoc();
     if (limit == 0) {
       limit = 1;
     }
-    topN = Math.min(topN, limit);
+    n = Math.min(n, limit);
 
-    boolean fillFields = true;
-    TopFieldCollector hitsCollector = TopFieldCollector.create(sort, topN,
-                                                               null,
-                                                               fillFields,
-                                                               doDocScores,
-                                                               doMaxScore,
-                                                               false);
-    if (filter != null) {
-      q = new FilteredQuery(q, filter);
+    if (after != null && after.doc >= limit) {
+      throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
+                                         + after.doc + " limit=" + limit);
     }
-    searcher.search(q, MultiCollector.wrap(hitsCollector, sfc));
-    return (TopFieldDocs) hitsCollector.topDocs();
+
+    TopDocsCollector<?> hitsCollector;
+    if (sort != null) {
+      if (after != null && !(after instanceof FieldDoc)) {
+        // TODO: if we fix type safety of TopFieldDocs we can
+        // remove this
+        throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+      }
+      boolean fillFields = true;
+      hitsCollector = TopFieldCollector.create(sort, n,
+                                               (FieldDoc) after,
+                                               fillFields,
+                                               doDocScores,
+                                               doMaxScore,
+                                               false);
+    } else {
+      // TODO: can we pass the right boolean for
+      // in-order instead of hardwired to false...?  we'd
+      // need access to the protected IS.search methods
+      // taking Weight... could use reflection...
+      hitsCollector = TopScoreDocCollector.create(n, after, false);
+    }
+    searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
+    return hitsCollector.topDocs();
   }
-
-  // nocommit need searchAfter variants too
-
 }
