@@ -118,7 +118,7 @@ public class SolrCmdDistributor {
             
             SolrException.log(SolrCmdDistributor.log, "forwarding update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries);
+                + err.req.retries + " " + err.req.cmdString, err.e);
             try {
               Thread.sleep(retryPause);
             } catch (InterruptedException e) {
@@ -166,7 +166,7 @@ public class SolrCmdDistributor {
         uReq.deleteByQuery(cmd.query);
       }
       
-      submit(new Req(node, uReq, sync));
+      submit(new Req(cmd.toString(), node, uReq, sync));
     }
   }
   
@@ -180,7 +180,7 @@ public class SolrCmdDistributor {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
       uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-      submit(new Req(node, uReq, synchronous));
+      submit(new Req(cmd.toString(), node, uReq, synchronous));
     }
     
   }
@@ -200,7 +200,7 @@ public class SolrCmdDistributor {
     log.debug("Distrib commit to:" + nodes + " params:" + params);
     
     for (Node node : nodes) {
-      submit(new Req(node, uReq, false));
+      submit(new Req(cmd.toString(), node, uReq, false));
     }
     
   }
@@ -249,11 +249,13 @@ public class SolrCmdDistributor {
     public UpdateRequest uReq;
     public int retries;
     public boolean synchronous;
+    public String cmdString;
     
-    public Req(Node node, UpdateRequest uReq, boolean synchronous) {
+    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
+      this.cmdString = cmdString;
     }
   }
     
