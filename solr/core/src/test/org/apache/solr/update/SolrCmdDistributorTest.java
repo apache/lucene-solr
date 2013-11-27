@@ -318,7 +318,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     testMaxRetries();
     testOneRetry();
-    testRetryNode();
+    testRetryNodeAgainstBadAddress();
+    testRetryNodeWontRetrySocketError();
   }
 
   private void testMaxRetries() throws IOException {
@@ -393,13 +394,60 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    // we will get java.net.SocketException: Network is unreachable, which we don't retry on
+    // we will get java.net.ConnectException which we retry on
     assertEquals(numFoundBefore + 1, numFoundAfter);
     assertEquals(0, cmdDistrib.getErrors().size());
   }
 
+  private void testRetryNodeWontRetrySocketError() throws Exception {
+    final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
+    long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
+    ss.setExp(Exp.SOCKET_EXCEPTION);
+    ArrayList<Node> nodes = new ArrayList<Node>();
 
-  private void testRetryNode() throws SolrServerException, IOException {
+    ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
+        ZkStateReader.CORE_NAME_PROP, "");
+
+    final AtomicInteger retries = new AtomicInteger();
+    nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+      @Override
+      public boolean checkRetry() {
+        retries.incrementAndGet();
+        return true;
+      }
+    };
+    
+
+    nodes.add(retryNode);
+    
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
+    cmdDistrib.distribAdd(cmd, nodes, params);
+    
+    ss.setExp(null);
+    cmdDistrib.distribCommit(ccmd, nodes, params);
+    cmdDistrib.finish();
+    
+    // it will checkRetry, but not actually do it...
+    assertEquals(1, retries.get());
+    
+    
+    long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    
+    // we will get java.net.SocketException: Network is unreachable, which we don't retry on
+    assertEquals(numFoundBefore, numFoundAfter);
+    assertEquals(1, cmdDistrib.getErrors().size());
+  }
+
+  private void testRetryNodeAgainstBadAddress() throws SolrServerException, IOException {
     // Test RetryNode
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
@@ -439,10 +487,17 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    // we will get java.net.SocketException: Network is unreachable and not retry
-    assertEquals(numFoundBefore, numFoundAfter);
+    // different OS's will throw different exceptions for the bad address above
+    if (numFoundBefore != numFoundAfter) {
+      assertEquals(0, cmdDistrib.getErrors().size());
+      assertEquals(numFoundBefore + 1, numFoundAfter);
+    } else {
+      // we will get java.net.SocketException: Network is unreachable and not retry
+      assertEquals(numFoundBefore, numFoundAfter);
+      
+      assertEquals(1, cmdDistrib.getErrors().size());
+    }
     
-    assertEquals(1, cmdDistrib.getErrors().size());
   }
   
   @Override
