@@ -19,20 +19,27 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.Document; // javadoc
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 
-/** Add an instance of this to your Document for every facet
- *  label. */
+/** Add an instance of this to your {@link Document} for
+ *  every facet label. */
 public class FacetField extends Field {
   static final FieldType TYPE = new FieldType();
   static {
     TYPE.setIndexed(true);
     TYPE.freeze();
   }
+
+  /** Dimension for this field. */
   public final String dim;
+
+  /** Path for this field. */
   public final String[] path;
 
+  /** Creates the this from {@code dim} and
+   *  {@code path}. */
   public FacetField(String dim, String... path) {
     super("dummy", TYPE);
     this.dim = dim;

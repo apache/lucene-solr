@@ -31,21 +31,25 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 
+/** Common base class for all facets implementations.
+ *
+ *  @lucene.experimental */
 public abstract class Facets {
   /** Returns the topN child labels under the specified
    *  path.  Returns null if the specified path doesn't
-   *  exist. */
+   *  exist or if this dimension was never seen. */
   public abstract FacetResult getTopChildren(int topN, String dim, String... path) throws IOException;
 
-  /** Return the count for a specific path.  Returns -1 if
+  /** Return the count or value
+   *  for a specific path.  Returns -1 if
    *  this path doesn't exist, else the count. */
   public abstract Number getSpecificValue(String dim, String... path) throws IOException;
 
   /** Returns topN labels for any dimension that had hits,
    *  sorted by the number of hits that dimension matched;
    *  this is used for "sparse" faceting, where many
-   *  different dimensions were indexed depending on the
-   *  type of document. */
+   *  different dimensions were indexed, for example
+   *  depending on the type of document. */
   public abstract List<FacetResult> getAllDims(int topN) throws IOException;
 
   // nocommit where to move?
@@ -55,7 +59,7 @@ public abstract class Facets {
    *  also collect results into a {@link
    *  FacetsCollector} for faceting. */
   public static TopDocs search(IndexSearcher searcher, Query q, int topN, FacetsCollector sfc) throws IOException {
-    // nocommit can we pass the "right" boolean for
+    // TODO: can we pass the "right" boolean for
     // in-order...?  we'd need access to the protected
     // IS.search methods taking Weight... could use
     // reflection...

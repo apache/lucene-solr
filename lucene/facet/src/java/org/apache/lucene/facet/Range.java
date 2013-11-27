@@ -17,11 +17,10 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-/** Represents a single labelled range, one facet label in
- *  the facets computed by {@link RangeAccumulator}.
+/** Represents a single labeled range, one facet label in
+ *  the facets computed by {@link RangeFacetCounts}.
  *
  *  @lucene.experimental */
-
 public abstract class Range {
   public final String label;
 

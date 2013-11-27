@@ -19,20 +19,27 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.Document; // javadocs
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.util.BytesRef;
 
-/** Associates an arbitrary int with the added facet
- *  path, encoding the int into a 4-byte BytesRef. */
+/** Add an instance of this to your {@link Document} to add
+ *  a facet label associated with an int.  Use {@link
+ *  TaxonomyFacetSumIntAssociations} to aggregate int values
+ *  per facet label at search time.
+ * 
+ *  @lucene.experimental */
 public class IntAssociationFacetField extends AssociationFacetField {
 
-  /** Utility ctor: associates an int value (translates it
-   *  to 4-byte BytesRef). */
+  /** Creates this from {@code dim} and {@code path} and an
+   *  int association */
   public IntAssociationFacetField(int assoc, String dim, String... path) {
     super(intToBytesRef(assoc), dim, path);
   }
 
+  /** Encodes an {@code int} as a 4-byte {@link BytesRef},
+   *  big-endian. */
   public static BytesRef intToBytesRef(int v) {
     byte[] bytes = new byte[4];
     // big-endian:
@@ -43,6 +50,7 @@ public class IntAssociationFacetField extends AssociationFacetField {
     return new BytesRef(bytes);
   }
 
+  /** Decodes a previously encoded {@code int}. */
   public static int bytesRefToInt(BytesRef b) {
     return ((b.bytes[b.offset]&0xFF) << 24) |
       ((b.bytes[b.offset+1]&0xFF) << 16) |

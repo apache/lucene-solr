@@ -4,7 +4,6 @@ TODO
   - allow path.length==0?
   - make a variant/sugar of FacetsConfig.build that just updates an existing doc?
   - need test coverage of utility search methods
-  - move DocumentBuilder.build -> FacetsConfig.build
   - getSpecificValue for a dim isn't reliable
   - we could put more stuff into the "schema", e.g. this field is
     sorted-set-DV and that one is taxo?

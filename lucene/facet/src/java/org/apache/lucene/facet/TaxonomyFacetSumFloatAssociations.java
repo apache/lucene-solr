@@ -27,14 +27,22 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
-// nocommit jdoc that this assumes/requires the default encoding
+/** Aggregates sum of int values previously indexed with
+ *  {@link FloatAssociationFacetField}, assuming the default
+ *  encoding.
+ *
+ *  @lucene.experimental */
 public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
   private final float[] values;
 
+  /** Create {@code TaxonomyFacetSumFloatAssociations} against
+   *  the default index field. */
   public TaxonomyFacetSumFloatAssociations(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, taxoReader, config, fc);
   }
 
+  /** Create {@code TaxonomyFacetSumFloatAssociations} against
+   *  the specified index field. */
   public TaxonomyFacetSumFloatAssociations(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     super(indexFieldName, taxoReader, config);
     values = new float[taxoReader.getSize()];
@@ -80,8 +88,6 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
     }
   }
 
-  /** Return the count for a specific path.  Returns -1 if
-   *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     verifyDim(dim);
@@ -94,6 +100,7 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
 
   @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    // TODO: can we factor this out?
     if (topN <= 0) {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }

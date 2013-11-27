@@ -28,14 +28,24 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
-// nocommit jdoc that this assumes/requires the default encoding
+/** Computes facets counts, assuming the default encoding
+ *  into DocValues was used.
+ *
+ * @lucene.experimental */
 public class FastTaxonomyFacetCounts extends TaxonomyFacets {
   private final int[] counts;
 
+  /** Create {@code FastTaxonomyFacetCounts}, which also
+   *  counts all facet labels. */
   public FastTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, taxoReader, config, fc);
   }
 
+  /** Create {@code FastTaxonomyFacetCounts}, using the
+   *  specified {@code indexFieldName} for ordinals.  Use
+   *  this if you had set {@link
+   *  FacetsConfig#setIndexFieldName} to change the index
+   *  field name for certain dimensions. */
   public FastTaxonomyFacetCounts(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     super(indexFieldName, taxoReader, config);
     counts = new int[taxoReader.getSize()];
@@ -106,8 +116,6 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
     return sum;
   }
 
-  /** Return the count for a specific path.  Returns -1 if
-   *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     verifyDim(dim);
@@ -120,6 +128,7 @@ public class FastTaxonomyFacetCounts extends TaxonomyFacets {
 
   @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    // TODO: can we factor this out?
     if (topN <= 0) {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }

@@ -19,12 +19,20 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.Document; // javadocs
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.util.BytesRef;
 
-/** Associates an arbitrary byte[] with the added facet
- *  path. */
+/** Add an instance of this to your {@link Document} to add
+ *  a facet label associated with an arbitrary byte[].
+ *  This will require a custom {@link Facets}
+ *  implementation at search time; see {@link
+ *  IntAssociationFacetField} and {@link
+ *  FloatAssociationFacetField} to use existing {@link
+ *  Facets} implementations.
+ * 
+ *  @lucene.experimental */
 public class AssociationFacetField extends Field {
   static final FieldType TYPE = new FieldType();
   static {
@@ -35,6 +43,8 @@ public class AssociationFacetField extends Field {
   protected final String[] path;
   protected final BytesRef assoc;
 
+  /** Creates this from {@code dim} and {@code path} and an
+   *  association */
   public AssociationFacetField(BytesRef assoc, String dim, String... path) {
     super("dummy", TYPE);
     this.dim = dim;

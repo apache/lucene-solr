@@ -65,7 +65,6 @@ import org.apache.lucene.search.Weight;
  *
  * @lucene.experimental
  */
-
 public class DrillSideways {
 
   protected final IndexSearcher searcher;
@@ -73,27 +72,21 @@ public class DrillSideways {
   protected final SortedSetDocValuesReaderState state;
   protected final FacetsConfig config;
 
-  /**
-   * Create a new {@code DrillSideways} instance, assuming the categories were
-   * indexed with {@link FacetFields}.
-   */
+  /** Create a new {@code DrillSideways} instance. */
   public DrillSideways(IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
     this(searcher, config, taxoReader, null);
   }
     
-  /**
-   * Create a new {@code DrillSideways} instance, assuming the categories were
-   * indexed with {@link SortedSetDocValuesFacetFields}.
-   */
+  /** Create a new {@code DrillSideways} instance, assuming the categories were
+   *  indexed with {@link SortedSetDocValuesFacetField}. */
   public DrillSideways(IndexSearcher searcher, FacetsConfig config, SortedSetDocValuesReaderState state) {
     this(searcher, config, null, state);
   }
 
-  /**
-   * Create a new {@code DrillSideways} instance, where some
-   * dimensions are sorted set facets and others are
-   * taxononmy facets.
-   */
+  /** Create a new {@code DrillSideways} instance, where some
+   *  dimensions were indexed with {@link
+   *  SortedSetDocValuesFacetField} and others were indexed
+   *  with {@link FacetField}. */
   public DrillSideways(IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader, SortedSetDocValuesReaderState state) {
     this.searcher = searcher;
     this.config = config;

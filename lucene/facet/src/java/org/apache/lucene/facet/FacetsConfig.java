@@ -41,15 +41,16 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
-/** By default a dimension is flat, single valued and does
+/** Records per-dimension configuration.  By default a
+ *  dimension is flat, single valued and does
  *  not require count for the dimension; use
  *  the setters in this class to change these settings for
- *  any dims.
+ *  each dim.
  *
  *  <p><b>NOTE</b>: this configuration is not saved into the
  *  index, but it's vital, and up to the application to
- *  ensure, that at search time the provided FacetsConfig
- *  matches what was used during indexing.
+ *  ensure, that at search time the provided {@code
+ *  FacetsConfig} matches what was used during indexing.
  *
  *  @lucene.experimental */
 public class FacetsConfig {
@@ -64,7 +65,9 @@ public class FacetsConfig {
 
   private final TaxonomyWriter taxoWriter;
 
-  /** @lucene.internal */
+  /** Holds the configuration for one dimension
+   *
+   * @lucene.experimental */
   // nocommit expose this to the user, vs the setters?
   public static final class DimConfig {
     /** True if this dimension is hierarchical. */
@@ -82,16 +85,22 @@ public class FacetsConfig {
     String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
   }
 
+  /** Default per-dimension configuration. */
+  public final static DimConfig DEFAULT_DIM_CONFIG = new DimConfig();
+
+  /** Default constructor. */
   public FacetsConfig() {
     this(null);
   }
 
+  /** Use this constructor at index time, with the provided
+   *  {@link TaxonomyWriter}, and then use the {@link
+   *  #build} method to index documents. */
   public FacetsConfig(TaxonomyWriter taxoWriter) {
     this.taxoWriter = taxoWriter;
   }
 
-  public final static DimConfig DEFAULT_DIM_CONFIG = new DimConfig();
-
+  /** Get the current configuration for a dimension. */
   public DimConfig getDimConfig(String dimName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -100,7 +109,8 @@ public class FacetsConfig {
     return ft;
   }
 
-  // nocommit maybe setDimConfig instead?
+  /** Pass {@code true} if this dimension is hierarchical
+   *  (has depth > 1 paths). */
   public synchronized void setHierarchical(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -110,6 +120,8 @@ public class FacetsConfig {
     ft.hierarchical = v;
   }
 
+  /** Pass {@code true} if this dimension may have more than
+   *  one value per document. */
   public synchronized void setMultiValued(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -119,6 +131,9 @@ public class FacetsConfig {
     ft.multiValued = v;
   }
 
+  /** Pass {@code true} if at search time you require
+   *  accurate counts of the dimension, i.e. how many
+   *  hits have this dimension. */
   public synchronized void setRequireDimCount(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -128,6 +143,9 @@ public class FacetsConfig {
     ft.requireDimCount = v;
   }
 
+  /** Specify which index field name should hold the
+   *  ordinals for this dimension; this is only used by the
+   *  taxonomy based facet methods. */
   public synchronized void setIndexFieldName(String dimName, String indexFieldName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -149,7 +167,7 @@ public class FacetsConfig {
   }
 
   /** Translates any added {@link FacetField}s into normal
-   *  fields for indexing */
+   *  fields for indexing. */
   public IndexDocument build(IndexDocument doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
     Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
@@ -442,8 +460,7 @@ public class FacetsConfig {
   // Escapes any occurrence of the path component inside the label:
   private static final char ESCAPE_CHAR = '\u001E';
 
-  /** Turns a path into a string without stealing any
-   *  characters. */
+  /** Turns a dim + path into an encoded string. */
   public static String pathToString(String dim, String[] path) {
     String[] fullPath = new String[1+path.length];
     fullPath[0] = dim;
@@ -451,10 +468,13 @@ public class FacetsConfig {
     return pathToString(fullPath, fullPath.length);
   }
 
+  /** Turns a dim + path into an encoded string. */
   public static String pathToString(String[] path) {
     return pathToString(path, path.length);
   }
 
+  /** Turns the first {@code} length elements of {@code
+   * path} into an encoded string. */
   public static String pathToString(String[] path, int length) {
     // nocommit .... too anal?  shouldn't we allow drill
     // down on just dim, to get all docs that have that
@@ -486,9 +506,9 @@ public class FacetsConfig {
     return sb.toString();
   }
 
-  /** Turns a result from previous call to {@link
-   *  #pathToString} back into the original {@code String[]}
-   *  without stealing any characters. */
+  /** Turns an encoded string (from a previous call to {@link
+   *  #pathToString}) back into the original {@code
+   *  String[]}. */
   public static String[] stringToPath(String s) {
     List<String> parts = new ArrayList<String>();
     int length = s.length();

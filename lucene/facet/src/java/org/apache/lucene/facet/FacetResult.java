@@ -27,8 +27,7 @@ public final class FacetResult {
    *  the topN. */
   public final Number value;
 
-  /** How many labels were populated under the requested
-   *  path. */
+  /** How many child labels were encountered. */
   public final int childCount;
 
   /** Child counts. */

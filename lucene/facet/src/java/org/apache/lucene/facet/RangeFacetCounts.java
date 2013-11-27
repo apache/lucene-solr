@@ -27,19 +27,28 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 
-/**
- * accumulates counts for provided ranges.
- */
+/** {@link Facets} implementation that computes counts for
+ *  dynamic ranges from a provided {@link ValueSource}.  Use
+ *  this for dimensions that change in real-time (e.g. a
+ *  relative time based dimension like "Past day", "Past 2
+ *  days", etc.) or that change for each user (e.g. a
+ *  distance dimension like "< 1 km", "< 2 km", etc.).
+ *
+ *  @lucene.experimental */
 public class RangeFacetCounts extends Facets {
   private final Range[] ranges;
   private final int[] counts;
   private final String field;
   private int totCount;
 
+  /** Create {@code RangeFacetCounts}, using {@link
+   *  LongFieldSource} from the specified field. */
   public RangeFacetCounts(String field, FacetsCollector hits, Range... ranges) throws IOException {
     this(field, new LongFieldSource(field), hits, ranges);
   }
 
+  /** Create {@code RangeFacetCounts}, using the provided
+   *  {@link ValueSource}. */
   public RangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Range... ranges) throws IOException {
     this.ranges = ranges;
     this.field = field;

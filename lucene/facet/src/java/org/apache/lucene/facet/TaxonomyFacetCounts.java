@@ -30,13 +30,19 @@ import org.apache.lucene.util.IntsRef;
 
 /** Reads from any {@link OrdinalsReader}; use {@link
  *  FastTaxonomyFacetCounts} if you are just using the
- *  default encoding from {@link BinaryDocValues}. */
+ *  default encoding from {@link BinaryDocValues}.
+ * 
+ * @lucene.experimental */
 
 // nocommit remove & add specialized Cached variation only?
 public class TaxonomyFacetCounts extends TaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
   private final int[] counts;
 
+  /** Create {@code TaxonomyFacetCounts}, which also
+   *  counts all facet labels.  Use this for a non-default
+   *  {@link OrdinalsReader}; otherwise use {@link
+   *  FastTaxonomyFacetCounts}. */
   public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
@@ -89,8 +95,6 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
     return sum;
   }
 
-  /** Return the count for a specific path.  Returns -1 if
-   *  this path doesn't exist, else the count. */
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     verifyDim(dim);
@@ -103,6 +107,7 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
 
   @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    // TODO: can we factor this out?
     if (topN <= 0) {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }

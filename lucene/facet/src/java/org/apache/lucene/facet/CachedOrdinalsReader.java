@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.lucene.codecs.DocValuesFormat; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues; // javadocs
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;

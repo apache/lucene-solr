@@ -34,8 +34,9 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
 /** Aggregates sum of values from a {@link ValueSource}, for
- *  each facet label. */
-
+ *  each facet label.
+ *
+ *  @lucene.experimental */
 public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
   private final float[] values;
   private final OrdinalsReader ordinalsReader;
@@ -141,6 +142,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
 
   @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+    // TODO: can we factor this out?
     if (topN <= 0) {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }

@@ -33,14 +33,14 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 /**
- * A {@link Query} for drill-down over {@link FacetLabel categories}. You
- * should call {@link #add(FacetLabel...)} for every group of categories you
- * want to drill-down over. Each category in the group is {@code OR'ed} with
- * the others, and groups are {@code AND'ed}.
+ * A {@link Query} for drill-down over facet categories. You
+ * should call {@link #add(String, String...)} for every group of categories you
+ * want to drill-down over.
  * <p>
  * <b>NOTE:</b> if you choose to create your own {@link Query} by calling
  * {@link #term}, it is recommended to wrap it with {@link ConstantScoreQuery}
@@ -51,6 +51,7 @@ import org.apache.lucene.search.TermQuery;
  */
 public final class DrillDownQuery extends Query {
 
+  /** Creates a drill-down term. */
   public static Term term(String field, String dim, String... path) {
     return new Term(field, FacetsConfig.pathToString(dim, path));
   }
@@ -96,21 +97,17 @@ public final class DrillDownQuery extends Query {
     this.config = config;
   }
 
-  /**
-   * Creates a new {@code DrillDownQuery} without a base query, 
-   * to perform a pure browsing query (equivalent to using
-   * {@link MatchAllDocsQuery} as base).
-   */
+  /** Creates a new {@code DrillDownQuery} without a base query, 
+   *  to perform a pure browsing query (equivalent to using
+   *  {@link MatchAllDocsQuery} as base). */
   public DrillDownQuery(FacetsConfig config) {
     this(config, null);
   }
   
-  /**
-   * Creates a new {@code DrillDownQuery} over the given base query. Can be
-   * {@code null}, in which case the result {@link Query} from
-   * {@link #rewrite(IndexReader)} will be a pure browsing query, filtering on
-   * the added categories only.
-   */
+  /** Creates a new {@code DrillDownQuery} over the given base query. Can be
+   *  {@code null}, in which case the result {@link Query} from
+   *  {@link #rewrite(IndexReader)} will be a pure browsing query, filtering on
+   *  the added categories only. */
   public DrillDownQuery(FacetsConfig config, Query baseQuery) {
     query = new BooleanQuery(true); // disable coord
     if (baseQuery != null) {
@@ -139,10 +136,9 @@ public final class DrillDownQuery extends Query {
   }
 
   /** Adds one dimension of drill downs; if you pass the same
-   *  dimension again, it's OR'd with the previous
-   *  constraints on that dimension, and all dimensions are
+   *  dimension more than once it is OR'd with the previous
+   *  cofnstraints on that dimension, and all dimensions are
    *  AND'd against each other and the base query. */
-  // nocommit can we remove FacetLabel here?
   public void add(String dim, String... path) {
 
     if (drillDownDims.containsKey(dim)) {
@@ -165,7 +161,9 @@ public final class DrillDownQuery extends Query {
 
   /** Expert: add a custom drill-down subQuery.  Use this
    *  when you have a separate way to drill-down on the
-   *  dimension than the indexed facet ordinals. */
+   *  dimension than the indexed facet ordinals (for
+   *  example, use a {@link NumericRangeQuery} to drill down
+   *  after{@link RangeFacetCounts}. */
   public void add(String dim, Query subQuery) {
 
     // TODO: we should use FilteredQuery?

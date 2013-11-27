@@ -71,13 +71,14 @@ public final class SortedSetDocValuesReaderState {
 
   private final Map<String,OrdRange> prefixToOrdRange = new HashMap<String,OrdRange>();
 
+  /** Creates this, pulling doc values from the default {@link
+   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */ 
   public SortedSetDocValuesReaderState(IndexReader reader) throws IOException {
     this(reader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
-  /** Create an instance, scanning the {@link
-   *  SortedSetDocValues} from the provided reader, with
-   *  default {@link FacetIndexingParams}. */
+  /** Creates this, pulling doc values from the specified
+   *  field. */
   public SortedSetDocValuesReaderState(IndexReader reader, String field) throws IOException {
 
     this.field = field;

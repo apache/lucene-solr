@@ -27,23 +27,19 @@ import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /** Base class for all taxonomy-based facets impls. */
-abstract class TaxonomyFacets extends Facets {
+public abstract class TaxonomyFacets extends Facets {
   protected final String indexFieldName;
   protected final TaxonomyReader taxoReader;
   protected final FacetsConfig config;
   protected final int[] children;
-  protected final int[] parents;
   protected final int[] siblings;
 
-  /** Sole parameter is the field name that holds the facet
-   *  counts. */
   protected TaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     this.indexFieldName = indexFieldName;
     this.taxoReader = taxoReader;
     this.config = config;
     ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
     children = pta.children();
-    parents = pta.parents();
     siblings = pta.siblings();
   }
 

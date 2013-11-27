@@ -43,5 +43,8 @@ public final class LabelAndValue {
     return label.equals(other.label) && value.equals(other.value);
   }
 
-  // nocommit hashCode
+  @Override
+  public int hashCode() {
+    return label.hashCode() + 1439 * value.hashCode();
+  }
 }
