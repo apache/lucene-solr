@@ -125,7 +125,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
     int prevVal = collisionMap.addLabel(label, hash, ordinal);
     if (prevVal != ordinal) {
-      throw new IllegalArgumentException("Label already exists: " + label.toString('/') + " prev ordinal " + prevVal);
+      throw new IllegalArgumentException("Label already exists: " + label + " prev ordinal " + prevVal);
     }
   }
 

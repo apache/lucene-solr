@@ -104,8 +104,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   
   // Records the taxonomy index epoch, updated on replaceTaxonomy as well.
   private long indexEpoch;
-  
-  private char delimiter = Consts.DEFAULT_DELIMITER;
+
   private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
   private Field parentStreamField;
   private Field fullPathField;
@@ -140,23 +139,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return infos.getUserData();
   }
   
-  /**
-   * Changes the character that the taxonomy uses in its internal storage as a
-   * delimiter between category components. Do not use this method unless you
-   * really know what you are doing. It has nothing to do with whatever
-   * character the application may be using to represent categories for its own
-   * use.
-   * <p>
-   * If you do use this method, make sure you call it before any other methods
-   * that actually queries the taxonomy. Moreover, make sure you always pass the
-   * same delimiter for all taxonomy writer and reader instances you create for
-   * the same directory.
-   */
-  public void setDelimiter(char delimiter) {
-    ensureOpen();
-    this.delimiter = delimiter;
-  }
-
   /**
    * Forcibly unlocks the taxonomy in the named directory.
    * <P>
@@ -422,7 +404,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
-      final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
+      final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
       TermsEnum termsEnum = null; // reuse
       DocsEnum docs = null; // reuse
       for (AtomicReaderContext ctx : reader.leaves()) {
@@ -730,7 +712,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // hence documents), there are no deletions in the index. Therefore, it
               // is sufficient to call next(), and then doc(), exactly once with no
               // 'validation' checks.
-              FacetLabel cp = new FacetLabel(t.utf8ToString(), delimiter);
+              FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(t.utf8ToString()));
               docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
               boolean res = cache.put(cp, docsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
@@ -819,8 +801,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         final Terms terms = ar.terms(Consts.FULL);
         te = terms.iterator(te);
         while (te.next() != null) {
-          String value = te.term().utf8ToString();
-          FacetLabel cp = new FacetLabel(value, delimiter);
+          FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(te.term().utf8ToString()));
           final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);

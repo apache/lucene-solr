@@ -1,8 +1,6 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -112,7 +110,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
                 // add all prefixes to values
                 int level = label.length;
                 while (level > 0) {
-                  String s = label.subpath(level).toString('/');
+                  String s = FacetsConfig.pathToString(label.components, level);
                   values.put(s, s);
                   --level;
                 }
@@ -133,7 +131,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     assertEquals("mismatch number of categories", values.size() + 1, tr.getSize()); // +1 for root category
     int[] parents = tr.getParallelTaxonomyArrays().parents();
     for (String cat : values.keySet()) {
-      FacetLabel cp = new FacetLabel(cat, '/');
+      FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(cat));
       assertTrue("category not found " + cp, tr.getOrdinal(cp) > 0);
       int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)

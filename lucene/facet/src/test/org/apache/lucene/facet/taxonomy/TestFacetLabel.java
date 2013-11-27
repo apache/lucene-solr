@@ -35,11 +35,11 @@ public class TestFacetLabel extends FacetTestCase {
   @Test 
   public void testToString() {
     // When the category is empty, we expect an empty string
-    assertEquals("", FacetLabel.EMPTY.toString('/'));
-    // one category (so no delimiter needed)
-    assertEquals("hello", new FacetLabel("hello").toString('/'));
-    // more than one category (so no delimiter needed)
-    assertEquals("hello/world", new FacetLabel("hello", "world").toString('/'));
+    assertEquals("FacetLabel: []", FacetLabel.EMPTY.toString());
+    // one category
+    assertEquals("FacetLabel: [hello]", new FacetLabel("hello").toString());
+    // more than one category
+    assertEquals("FacetLabel: [hello, world]", new FacetLabel("hello", "world").toString());
   }
 
   @Test 
@@ -55,21 +55,6 @@ public class TestFacetLabel extends FacetTestCase {
   }
 
   @Test
-  public void testDelimiterConstructor() {
-    FacetLabel p = new FacetLabel("", '/');
-    assertEquals(0, p.length);
-    p = new FacetLabel("hello", '/');
-    assertEquals(p.length, 1);
-    assertEquals(p.toString('@'), "hello");
-    p = new FacetLabel("hi/there", '/');
-    assertEquals(p.length, 2);
-    assertEquals(p.toString('@'), "hi@there");
-    p = new FacetLabel("how/are/you/doing?", '/');
-    assertEquals(p.length, 4);
-    assertEquals(p.toString('@'), "how@are@you@doing?");
-  }
-  
-  @Test
   public void testDefaultConstructor() {
     // test that the default constructor (no parameters) currently
     // defaults to creating an object with a 0 initial capacity.
@@ -77,7 +62,7 @@ public class TestFacetLabel extends FacetTestCase {
     // test.
     FacetLabel p = FacetLabel.EMPTY;
     assertEquals(0, p.length);
-    assertEquals("", p.toString('/'));
+    assertEquals("FacetLabel: []", p.toString());
   }
   
   @Test 
@@ -87,22 +72,22 @@ public class TestFacetLabel extends FacetTestCase {
     
     FacetLabel p1 = p.subpath(2);
     assertEquals(2, p1.length);
-    assertEquals("hi/there", p1.toString('/'));
+    assertEquals("FacetLabel: [hi, there]", p1.toString());
 
     p1 = p.subpath(1);
     assertEquals(1, p1.length);
-    assertEquals("hi", p1.toString('/'));
+    assertEquals("FacetLabel: [hi]", p1.toString());
 
     p1 = p.subpath(0);
     assertEquals(0, p1.length);
-    assertEquals("", p1.toString('/'));
+    assertEquals("FacetLabel: []", p1.toString());
 
     // with all the following lengths, the prefix should be the whole path 
     int[] lengths = { 3, -1, 4 };
     for (int i = 0; i < lengths.length; i++) {
       p1 = p.subpath(lengths[i]);
       assertEquals(3, p1.length);
-      assertEquals("hi/there/man", p1.toString('/'));
+      assertEquals("FacetLabel: [hi, there, man]", p1.toString());
       assertEquals(p, p1);
     }
   }
@@ -133,47 +118,25 @@ public class TestFacetLabel extends FacetTestCase {
   public void testArrayConstructor() {
     FacetLabel p = new FacetLabel("hello", "world", "yo");
     assertEquals(3, p.length);
-    assertEquals("hello/world/yo", p.toString('/'));
-  }
-  
-  @Test 
-  public void testCharsNeededForFullPath() {
-    assertEquals(0, FacetLabel.EMPTY.fullPathLength());
-    String[] components = { "hello", "world", "yo" };
-    FacetLabel cp = new FacetLabel(components);
-    int expectedCharsNeeded = 0;
-    for (String comp : components) {
-      expectedCharsNeeded += comp.length();
-    }
-    expectedCharsNeeded += cp.length - 1; // delimiter chars
-    assertEquals(expectedCharsNeeded, cp.fullPathLength());
-  }
-  
-  @Test 
-  public void testCopyToCharArray() {
-    FacetLabel p = new FacetLabel("hello", "world", "yo");
-    char[] charArray = new char[p.fullPathLength()];
-    int numCharsCopied = p.copyFullPath(charArray, 0, '.');
-    assertEquals(p.fullPathLength(), numCharsCopied);
-    assertEquals("hello.world.yo", new String(charArray, 0, numCharsCopied));
+    assertEquals("FacetLabel: [hello, world, yo]", p.toString());
   }
   
   @Test 
   public void testCompareTo() {
-    FacetLabel p = new FacetLabel("a/b/c/d", '/');
-    FacetLabel pother = new FacetLabel("a/b/c/d", '/');
+    FacetLabel p = new FacetLabel("a", "b", "c", "d");
+    FacetLabel pother = new FacetLabel("a", "b", "c", "d");
     assertEquals(0, pother.compareTo(p));
     assertEquals(0, p.compareTo(pother));
-    pother = new FacetLabel("", '/');
+    pother = new FacetLabel();
     assertTrue(pother.compareTo(p) < 0);
     assertTrue(p.compareTo(pother) > 0);
-    pother = new FacetLabel("a/b_/c/d", '/');
+    pother = new FacetLabel("a", "b_", "c", "d");
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
-    pother = new FacetLabel("a/b/c", '/');
+    pother = new FacetLabel("a", "b", "c");
     assertTrue(pother.compareTo(p) < 0);
     assertTrue(p.compareTo(pother) > 0);
-    pother = new FacetLabel("a/b/c/e", '/');
+    pother = new FacetLabel("a", "b", "c", "e");
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
   }
@@ -198,82 +161,6 @@ public class TestFacetLabel extends FacetTestCase {
         // ok
       }
     }
-    
-    String[] path_tests = new String[] {
-        "/test", // empty in the beginning
-        "test//foo", // empty in the middle
-    };
-    
-    for (String path : path_tests) {
-      try {
-        assertNotNull(new FacetLabel(path, '/'));
-        fail("empty or null components should not be allowed: " + path);
-      } catch (IllegalArgumentException e) {
-        // ok
-      }
-    }
-
-    // a trailing path separator is produces only one component
-    assertNotNull(new FacetLabel("test/", '/'));
-    
-  }
-
-  @Test
-  public void testInvalidDelimChar() throws Exception {
-    // Make sure CategoryPath doesn't silently corrupt:
-    char[] buf = new char[100];
-    FacetLabel cp = new FacetLabel("foo/bar");
-    try {
-      cp.toString();
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
-      cp.copyFullPath(buf, 0, '/');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    cp = new FacetLabel("abc", "foo/bar");
-    try {
-      cp.toString();
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
-      cp.copyFullPath(buf, 0, '/');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    cp = new FacetLabel("foo:bar");
-    try {
-      cp.toString(':');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
-      cp.copyFullPath(buf, 0, ':');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    cp = new FacetLabel("abc", "foo:bar");
-    try {
-      cp.toString(':');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
-      cp.copyFullPath(buf, 0, ':');
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
   }
 
   @Test
@@ -294,13 +181,5 @@ public class TestFacetLabel extends FacetTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     }
-
-    try {
-      assertNotNull(new FacetLabel("dim\u001f" + bigComp, '\u001f'));
-      fail("long paths should not be allowed; len=" + bigComp.length());
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
   }
-  
 }

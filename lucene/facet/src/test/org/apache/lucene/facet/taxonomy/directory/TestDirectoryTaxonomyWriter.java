@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -271,10 +270,10 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
                   Integer.toString(value / 100000), Integer.toString(value));
               int ord = tw.addCategory(cp);
               assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
-              String l1 = cp.subpath(1).toString('/');
-              String l2 = cp.subpath(2).toString('/');
-              String l3 = cp.subpath(3).toString('/');
-              String l4 = cp.subpath(4).toString('/');
+              String l1 = FacetsConfig.pathToString(cp.components, 1);
+              String l2 = FacetsConfig.pathToString(cp.components, 2);
+              String l3 = FacetsConfig.pathToString(cp.components, 3);
+              String l4 = FacetsConfig.pathToString(cp.components, 4);
               values.put(l1, l1);
               values.put(l2, l2);
               values.put(l3, l3);
@@ -295,7 +294,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     assertEquals("mismatch number of categories", values.size() + 1, dtr.getSize()); // +1 for root category
     int[] parents = dtr.getParallelTaxonomyArrays().parents();
     for (String cat : values.keySet()) {
-      FacetLabel cp = new FacetLabel(cat, '/');
+      FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(cat));
       assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
       int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
@@ -472,11 +471,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     
     // build source, large, taxonomy
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(srcTaxoDir);
-    int ord = taxoWriter.addCategory(new FacetLabel("A/1/1/1/1/1/1", '/'));
+    int ord = taxoWriter.addCategory(new FacetLabel("A", "1", "1", "1", "1", "1", "1"));
     taxoWriter.close();
     
     taxoWriter = new DirectoryTaxonomyWriter(targetTaxoDir);
-    int ordinal = taxoWriter.addCategory(new FacetLabel("B/1", '/'));
+    int ordinal = taxoWriter.addCategory(new FacetLabel("B", "1"));
     assertEquals(1, taxoWriter.getParent(ordinal)); // call getParent to initialize taxoArrays
     taxoWriter.commit();
     

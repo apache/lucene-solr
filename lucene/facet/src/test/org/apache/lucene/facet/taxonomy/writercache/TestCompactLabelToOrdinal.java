@@ -57,7 +57,8 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
           .onMalformedInput(CodingErrorAction.REPLACE);
       uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       // we cannot have empty path components, so eliminate all prefix as well
-      // as middle consecuive delimiter chars.
+      // as middle consecutive delimiter chars.
+      // nocommit remove
       uniqueValues[i] = uniqueValues[i].replaceAll("/+", "/");
       if (uniqueValues[i].startsWith("/")) {
         uniqueValues[i] = uniqueValues[i].substring(1);
@@ -82,7 +83,13 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
 
       int index = random.nextInt(numUniqueValues);
-      FacetLabel label = new FacetLabel(uniqueValues[index], '/');
+      FacetLabel label;
+      String s = uniqueValues[index];
+      if (s.length() == 0) {
+        label = FacetLabel.EMPTY;
+      } else {
+        label = new FacetLabel(s.split("/"));
+      }
 
       int ord1 = map.getOrdinal(label);
       int ord2 = compact.getOrdinal(label);
@@ -97,7 +104,13 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
     }
 
     for (int i = 0; i < numUniqueValues; i++) {
-      FacetLabel label = new FacetLabel(uniqueValues[i], '/');
+      FacetLabel label;
+      String s = uniqueValues[i];
+      if (s.length() == 0) {
+        label = FacetLabel.EMPTY;
+      } else {
+        label = new FacetLabel(s.split("/"));
+      }
       int ord1 = map.getOrdinal(label);
       int ord2 = compact.getOrdinal(label);
       assertEquals(ord1, ord2);

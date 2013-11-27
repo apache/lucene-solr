@@ -147,7 +147,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     if (path.length==0) {
       return "<empty>";
     }
-    return "<"+path.toString('/')+">";
+    return "<"+path.toString()+">";
   }
 
   /**  Basic tests for TaxonomyWriter. Basically, we test that

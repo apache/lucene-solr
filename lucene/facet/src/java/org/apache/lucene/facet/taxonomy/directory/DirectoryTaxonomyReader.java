@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
@@ -64,8 +65,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private LRUHashMap<Integer, FacetLabel> categoryCache;
 
   private volatile TaxonomyIndexArrays taxoArrays;
-
-  private char delimiter = Consts.DEFAULT_DELIMITER;
 
   /**
    * Called only from {@link #doOpenIfChanged()}. If the taxonomy has been
@@ -270,7 +269,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     // If we're still here, we have a cache miss. We need to fetch the
     // value from disk, and then also put it in the cache:
     int ret = TaxonomyReader.INVALID_ORDINAL;
-    DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, null, Consts.FULL, new BytesRef(cp.toString(delimiter)), 0);
+    DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, null, Consts.FULL, new BytesRef(FacetsConfig.pathToString(cp.components, cp.length)), 0);
     if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       ret = docs.docID();
       
@@ -310,7 +309,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     }
     
     StoredDocument doc = indexReader.document(ordinal);
-    FacetLabel ret = new FacetLabel(doc.get(Consts.FULL), delimiter);
+    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
@@ -343,21 +342,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     }
   }
 
-  /**
-   * setDelimiter changes the character that the taxonomy uses in its
-   * internal storage as a delimiter between category components. Do not
-   * use this method unless you really know what you are doing.
-   * <P>
-   * If you do use this method, make sure you call it before any other
-   * methods that actually queries the taxonomy. Moreover, make sure you
-   * always pass the same delimiter for all LuceneTaxonomyWriter and
-   * LuceneTaxonomyReader objects you create.
-   */
-  public void setDelimiter(char delimiter) {
-    ensureOpen();
-    this.delimiter = delimiter;
-  }
-  
   public String toString(int max) {
     ensureOpen();
     StringBuilder sb = new StringBuilder();

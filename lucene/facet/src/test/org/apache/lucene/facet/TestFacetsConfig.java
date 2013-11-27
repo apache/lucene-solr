@@ -19,7 +19,6 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
-import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestFacetsConfig extends FacetTestCase {
@@ -29,7 +28,14 @@ public class TestFacetsConfig extends FacetTestCase {
       int numParts = _TestUtil.nextInt(random(), 1, 6);
       String[] parts = new String[numParts];
       for(int j=0;j<numParts;j++) {
-        parts[j] = _TestUtil.randomUnicodeString(random());
+        String s;
+        while (true) {
+          s = _TestUtil.randomUnicodeString(random());
+          if (s.length() > 0) {
+            break;
+          }
+        }
+        parts[j] = s;
       }
 
       String s = FacetsConfig.pathToString(parts);

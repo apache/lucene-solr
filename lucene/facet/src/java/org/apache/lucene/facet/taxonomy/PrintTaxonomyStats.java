@@ -64,7 +64,7 @@ public class PrintTaxonomyStats {
         numImmediateChildren++;
       }
       FacetLabel cp = r.getPath(child);
-      out.println("/" + cp + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, child)) + " total categories");
+      out.println("/" + cp.components[0] + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, child)) + " total categories");
       if (printTree) {
         printAllChildren(out, r, child, "  ", 1);
       }

@@ -490,6 +490,9 @@ public class FacetsConfig {
     StringBuilder sb = new StringBuilder();
     for(int i=0;i<length;i++) {
       String s = path[i];
+      if (s.length() == 0) {
+        throw new IllegalArgumentException("each path component must have length > 0 (got: \"\")");
+      }
       int numChars = s.length();
       for(int j=0;j<numChars;j++) {
         char ch = s.charAt(j);
@@ -512,6 +515,9 @@ public class FacetsConfig {
   public static String[] stringToPath(String s) {
     List<String> parts = new ArrayList<String>();
     int length = s.length();
+    if (length == 0) {
+      return new String[0];
+    }
     char[] buffer = new char[length];
 
     int upto = 0;

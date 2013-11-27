@@ -18,9 +18,7 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 import java.util.Arrays;
-import java.util.regex.Pattern;
 
-import org.apache.lucene.facet.FacetsConfig;
 
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
@@ -30,7 +28,6 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
  * 
  * @lucene.experimental
  */
-// nocommit rename to just Label under .facet?
 public class FacetLabel implements Comparable<FacetLabel> {
 
   /*
@@ -79,7 +76,8 @@ public class FacetLabel implements Comparable<FacetLabel> {
   
   /** Construct from the given path components. */
   public FacetLabel(final String... components) {
-    assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
+    // nocommit why so anal?
+    // assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
     long len = 0;
     for (String comp : components) {
       if (comp == null || comp.isEmpty()) {
@@ -105,51 +103,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
     return new FacetLabel(components);
   }
 
-  /** Construct from a given path, separating path components with {@code delimiter}. */
-  public FacetLabel(final String pathString, final char delimiter) {
-    if (pathString.length() > MAX_CATEGORY_PATH_LENGTH) {
-      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
-              + MAX_CATEGORY_PATH_LENGTH + " len=" + pathString.length()
-              + " path=" + pathString.substring(0, 30) + "...");
-    }
-
-    // nocommit
-    String[] comps;
-    if (delimiter == '\u001F') {
-      comps = FacetsConfig.stringToPath(pathString);
-    } else {
-      comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
-    }
-    if (comps.length == 1 && comps[0].isEmpty()) {
-      components = null;
-      length = 0;
-    } else {
-      for (String comp : comps) {
-        if (comp == null || comp.isEmpty()) {
-          throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(comps));
-        }
-      }
-      components = comps;
-      length = components.length;
-    }
-  }
-
-  /**
-   * Returns the number of characters needed to represent the path, including
-   * delimiter characters, for using with
-   * {@link #copyFullPath(char[], int, char)}.
-   */
-  public int fullPathLength() {
-    if (length == 0) return 0;
-    
-    int charsNeeded = 0;
-    for (int i = 0; i < length; i++) {
-      charsNeeded += components[i].length();
-    }
-    charsNeeded += length - 1; // num delimter chars
-    return charsNeeded;
-  }
-
   /**
    * Compares this path with another {@link FacetLabel} for lexicographic
    * order.
@@ -165,48 +118,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
     
     // one is a prefix of the other
     return length - other.length;
-  }
-
-  private void hasDelimiter(String offender, char delimiter) {
-    throw new IllegalArgumentException("delimiter character '" + delimiter + "' (U+" + Integer.toHexString(delimiter) + ") appears in path component \"" + offender + "\"");
-  }
-
-  private void noDelimiter(char[] buf, int offset, int len, char delimiter) {
-    for(int idx=0;idx<len;idx++) {
-      if (buf[offset+idx] == delimiter) {
-        hasDelimiter(new String(buf, offset, len), delimiter);
-      }
-    }
-  }
-
-  /**
-   * Copies the path components to the given {@code char[]}, starting at index
-   * {@code start}. {@code delimiter} is copied between the path components.
-   * Returns the number of chars copied.
-   * 
-   * <p>
-   * <b>NOTE:</b> this method relies on the array being large enough to hold the
-   * components and separators - the amount of needed space can be calculated
-   * with {@link #fullPathLength()}.
-   */
-  public int copyFullPath(char[] buf, int start, char delimiter) {
-    if (length == 0) {
-      return 0;
-    }
-
-    int idx = start;
-    int upto = length - 1;
-    for (int i = 0; i < upto; i++) {
-      int len = components[i].length();
-      components[i].getChars(0, len, buf, idx);
-      noDelimiter(buf, idx, len, delimiter);
-      idx += len;
-      buf[idx++] = delimiter;
-    }
-    components[upto].getChars(0, components[upto].length(), buf, idx);
-    noDelimiter(buf, idx, components[upto].length(), delimiter);
-    
-    return idx + components[upto].length() - start;
   }
 
   @Override
@@ -275,29 +186,11 @@ public class FacetLabel implements Comparable<FacetLabel> {
    */
   @Override
   public String toString() {
-    return toString('/');
-  }
-
-  /**
-   * Returns a string representation of the path, separating components with the
-   * given delimiter.
-   */
-
-  public String toString(char delimiter) {
-    // nocommit
-    if (delimiter == '\u001F') {
-      return FacetsConfig.pathToString(components, length);
-    } else {
-      if (length == 0) return "";
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < length; i++) {
-        if (components[i].indexOf(delimiter) != -1) {
-          hasDelimiter(components[i], delimiter);
-        }
-        sb.append(components[i]).append(delimiter);
-      }
-      sb.setLength(sb.length() - 1); // remove last delimiter
-      return sb.toString();
+    if (length == 0) {
+      return "FacetLabel: []";
     }
+    String[] parts = new String[length];
+    System.arraycopy(components, 0, parts, 0, length);
+    return "FacetLabel: " + Arrays.toString(parts);
   }
 }
