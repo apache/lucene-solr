@@ -47,8 +47,6 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
   static ArrayList<ArrayList<Float>> floatDoubleTestStart; 
   static ArrayList<ArrayList<Float>> floatDateTestStart; 
   
-  static String response;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml","schema-analytics.xml");
@@ -117,7 +115,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
     
     assertU(commit()); 
     
-    response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
 
   @SuppressWarnings("unchecked")
@@ -125,42 +123,36 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
   public void rangeTest() throws Exception {
     
     //Int Long
-    String intLongRange = getFacetXML(response, "ri", "rangeFacets", "long_ld");
-    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "long", "count");
+    ArrayList<Long> intLong = getLongList("ri", "rangeFacets", "long_ld", "long", "count");
     ArrayList<Long> intLongTest = calculateStat(transformLists(intLongTestStart, 5, 30, 5
                                                         , false, true, false, false, false), "count");
-    assertEquals(intLong,intLongTest);
+    assertEquals(getRawResponse(), intLong,intLongTest);
     //Int Double
-    String intDoubleRange = getFacetXML(response, "ri", "rangeFacets", "double_dd");    
-    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDouble = getDoubleList("ri", "rangeFacets", "double_dd", "double", "mean");
     ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
                                                           , false, false, true, false, true), "mean");
-    assertEquals(intDouble,intDoubleTest);
+    assertEquals(getRawResponse(), intDouble,intDoubleTest);
     //Int Date
-    String intDateRange = getFacetXML(response, "ri", "rangeFacets", "date_dtd");
-    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDate = getLongList("ri", "rangeFacets", "date_dtd", "long", "count");
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
                                                       , false, true, false, true, true), "count");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(), intDate,intDateTest);
     
     //Float Long
-    String floatLongRange = getFacetXML(response, "rf", "rangeFacets", "long_ld");
-    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLong = getDoubleList("rf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
                                                           , false, true, true, true, true), "median");
-    assertEquals(floatLong,floatLongTest);
+    assertEquals(getRawResponse(), floatLong,floatLongTest);
     //Float Double
-    String floatDoubleRange = getFacetXML(response, "rf", "rangeFacets", "double_dd");    
-    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDouble = getLongList("rf", "rangeFacets", "double_dd", "long", "count");
     ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
                                                                      , false, false, false, true, false), "count");
-    assertEquals(floatDouble,floatDoubleTest);
+    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
     //Float Date                      
-    String floatDateRange = getFacetXML(response, "rf", "rangeFacets", "date_dtd");
-    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDate = getDoubleList("rf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
     ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
                                                           , false, false, true, true, false), "sumOfSquares");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(), floatDate,floatDateTest);
   }
   
 
@@ -168,84 +160,72 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
   @Test
   public void hardendRangeTest() throws Exception {
     //Int Long
-    String intLongRange = getFacetXML(response, "hi", "rangeFacets", "long_ld");
-    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "double", "sum");
+    ArrayList<Double> intLong = getDoubleList("hi", "rangeFacets", "long_ld", "double", "sum");
     ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, 5
                                                         , true, true, false, false, false), "sum");
-    assertEquals(intLong,intLongTest);
+    assertEquals(getRawResponse(), intLong,intLongTest);
     //Int Double
-    String intDoubleRange = getFacetXML(response, "hi", "rangeFacets", "double_dd");    
-    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDouble = getDoubleList("hi", "rangeFacets", "double_dd", "double", "mean");
     ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, 7
                                                           , true, false, true, false, true), "mean");
-    assertEquals(intDouble,intDoubleTest);
+    assertEquals(getRawResponse(), intDouble,intDoubleTest);
     //Int Date
-    String intDateRange = getFacetXML(response, "hi", "rangeFacets", "date_dtd");
-    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDate = getLongList("hi", "rangeFacets", "date_dtd", "long", "count");
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
                                                       , true, true, false, true, true), "count");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(), intDate,intDateTest);
     
     //Float Long
-    String floatLongRange = getFacetXML(response, "hf", "rangeFacets", "long_ld");
-    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLong = getDoubleList("hf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
                                                           , true, true, true, true, true), "median");
-    assertEquals(floatLong,floatLongTest);
+    assertEquals(getRawResponse(), floatLong,floatLongTest);
     //Float Double
-    String floatDoubleRange = getFacetXML(response, "hf", "rangeFacets", "double_dd");    
-    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDouble = getLongList("hf", "rangeFacets", "double_dd", "long", "count");
     ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, 11
                                                                      , true, false, false, true, false), "count");
-    assertEquals(floatDouble,floatDoubleTest);
+    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
     //Float Date                      
-    String floatDateRange = getFacetXML(response, "hf", "rangeFacets", "date_dtd");
-    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDate = getDoubleList("hf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
     ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, 5
                                                           , true, false, true, true, false), "sumOfSquares");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(), floatDate,floatDateTest);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void multiGapTest() throws Exception {
     //Int Long
-    String intLongRange = getFacetXML(response, "mi", "rangeFacets", "long_ld");
-    ArrayList<Double> intLong = (ArrayList<Double>)xmlToList(intLongRange, "double", "sum");
+    ArrayList<Double> intLong = getDoubleList("mi", "rangeFacets", "long_ld", "double", "sum");
     ArrayList<Double> intLongTest = calculateNumberStat(transformLists(intLongTestStart, 5, 30, "4,2,6,3"
                                                         , false, true, false, false, false), "sum");
-    assertEquals(intLong,intLongTest);
+    assertEquals(getRawResponse(), intLong,intLongTest);
     //Int Double
-    String intDoubleRange = getFacetXML(response, "mi", "rangeFacets", "double_dd");    
-    ArrayList<Double> intDouble = (ArrayList<Double>)xmlToList(intDoubleRange, "double", "mean");
+    ArrayList<Double> intDouble = getDoubleList("mi", "rangeFacets", "double_dd", "double", "mean");
     ArrayList<Double> intDoubleTest = calculateNumberStat(transformLists(intDoubleTestStart, 3, 39, "3,1,7"
                                                           , false, false, true, false, true), "mean");
-    assertEquals(intDouble,intDoubleTest);
+    assertEquals(getRawResponse(), intDouble,intDoubleTest);
     //Int Date
-    String intDateRange = getFacetXML(response, "mi", "rangeFacets", "date_dtd");
-    ArrayList<Long> intDate = (ArrayList<Long>)xmlToList(intDateRange, "long", "count");
+    ArrayList<Long> intDate = getLongList("mi", "rangeFacets", "date_dtd", "long", "count");
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, "2,7"
                                                       , false, true, false, true, true), "count");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(), intDate,intDateTest);
     
     //Float Long
-    String floatLongRange = getFacetXML(response, "mf", "rangeFacets", "long_ld");
-    ArrayList<Double> floatLong = (ArrayList<Double>)xmlToList(floatLongRange, "double", "median");
+    ArrayList<Double> floatLong = getDoubleList("mf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, "1,4"
                                                           , false, true, true, true, true), "median");;
-    assertEquals(floatLong,floatLongTest);
+    assertEquals(getRawResponse(), floatLong,floatLongTest);
     //Float Double
-    String floatDoubleRange = getFacetXML(response, "mf", "rangeFacets", "double_dd");    
-    ArrayList<Long> floatDouble = (ArrayList<Long>)xmlToList(floatDoubleRange, "long", "count");
+    ArrayList<Long> floatDouble = getLongList("mf", "rangeFacets", "double_dd", "long", "count");
     ArrayList<Long> floatDoubleTest = (ArrayList<Long>)calculateStat(transformLists(floatDoubleTestStart, 4, 47, "2,3,11"
                                                           , false, false, false, true, false), "count");
-    assertEquals(floatDouble,floatDoubleTest);
+    assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
     //Float Date                      
-    String floatDateRange = getFacetXML(response, "mf", "rangeFacets", "date_dtd");
-    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateRange, "double", "sumOfSquares");
+    ArrayList<Double> floatDate = getDoubleList("mf", "rangeFacets", "date_dtd", "double", "sumOfSquares");
     ArrayList<Double> floatDateTest = calculateNumberStat(transformLists(floatDateTestStart, 4, 46, "4,5"
                                                           , false, false, true, true, false), "sumOfSquares");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(), floatDate,floatDateTest);
   }
   
   private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, int gap

@@ -85,8 +85,6 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   private static ArrayList<ArrayList<Integer>> multiDateTestStart; 
   private static ArrayList<Long> multiDateTestMissing; 
   
-  static String response;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml","schema-analytics.xml");
@@ -390,533 +388,445 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
     }
     
     assertU(commit()); 
-    response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void sumTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "sum","fieldFacets", "date_dtd");
-    Collection<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "int");
+    Collection<Double> intDate = getDoubleList("sum","fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "sum");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "sum","fieldFacets", "string_sd");
-    Collection<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "int");
+    Collection<Double> intString = getDoubleList("sum","fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "sum");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "sum","fieldFacets", "date_dtd");
-    Collection<Double> longDate = (ArrayList<Double>)xmlToList(longDateFacet, "double", "long");
+    Collection<Double> longDate = getDoubleList("sum","fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "sum");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "sum","fieldFacets", "string_sd");
-    Collection<Double> longString = (ArrayList<Double>)xmlToList(longStringFacet, "double", "long");
+    Collection<Double> longString = getDoubleList("sum","fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "sum");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "sum","fieldFacets", "date_dtd");   
-    Collection<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateFacet, "double", "float");
+    Collection<Double> floatDate = getDoubleList("sum","fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "sum");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "sum","fieldFacets", "string_sd");    
-    Collection<Double> floatString = (ArrayList<Double>)xmlToList(floatStringFacet, "double", "float");
+    Collection<Double> floatString = getDoubleList("sum","fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "sum");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "sum","fieldFacets", "date_dtd");  
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("sum","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "sum");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "sum","fieldFacets", "string_sd");    
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("sum","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "sum");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void meanTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "mean","fieldFacets", "date_dtd");
-    Collection<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "int");
+    Collection<Double> intDate = getDoubleList("mean","fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "mean");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "mean","fieldFacets", "string_sd");
-    Collection<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "int");
+    Collection<Double> intString = getDoubleList("mean","fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "mean","fieldFacets", "date_dtd");
-    Collection<Double> longDate = (ArrayList<Double>)xmlToList(longDateFacet, "double", "long");
+    Collection<Double> longDate = getDoubleList("mean","fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "mean");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "mean","fieldFacets", "string_sd");
-    Collection<Double> longString = (ArrayList<Double>)xmlToList(longStringFacet, "double", "long");
+    Collection<Double> longString = getDoubleList("mean","fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "mean");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "mean","fieldFacets", "date_dtd");   
-    Collection<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateFacet, "double", "float");
+    Collection<Double> floatDate = getDoubleList("mean","fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "mean");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "mean","fieldFacets", "string_sd");    
-    Collection<Double> floatString = (ArrayList<Double>)xmlToList(floatStringFacet, "double", "float");
+    Collection<Double> floatString = getDoubleList("mean","fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "mean");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "mean","fieldFacets", "date_dtd");  
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("mean","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "mean");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "mean","fieldFacets", "string_sd");    
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("mean","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "mean");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void sumOfSquaresFacetAscTest() throws Exception {
     //Int Date
-    String intDateFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "date_dtd");
-    Collection<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "int");
+    Collection<Double> intDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "sumOfSquares");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "string_sd");
-    Collection<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "int");
+    Collection<Double> intString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "sumOfSquares");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "date_dtd");
-    Collection<Double> longDate = (ArrayList<Double>)xmlToList(longDateFacet, "double", "long");
+    Collection<Double> longDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "sumOfSquares");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "string_sd");
-    Collection<Double> longString = (ArrayList<Double>)xmlToList(longStringFacet, "double", "long");
+    Collection<Double> longString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "sumOfSquares");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "date_dtd");   
-    Collection<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateFacet, "double", "float");
+    Collection<Double> floatDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "sumOfSquares");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "string_sd");    
-    Collection<Double> floatString = (ArrayList<Double>)xmlToList(floatStringFacet, "double", "float");
+    Collection<Double> floatString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "sumOfSquares");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "date_dtd");  
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "sumOfSquares");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "sumOfSquares","fieldFacets", "string_sd");    
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "sumOfSquares");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void stddevFacetAscTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "stddev","fieldFacets", "date_dtd");
-    ArrayList<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "int");
+    ArrayList<Double> intDate = getDoubleList("stddev","fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "stddev");
-    assertTrue(checkStddevs(intDate,intDateTest));
+    checkStddevs(intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "stddev","fieldFacets", "string_sd");
-    ArrayList<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "int");
+    ArrayList<Double> intString = getDoubleList("stddev","fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "stddev");
-    assertTrue(checkStddevs(intString,intStringTest));
+    checkStddevs(intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "stddev","fieldFacets", "date_dtd");
-    ArrayList<Double> longDate = (ArrayList<Double>)xmlToList(longDateFacet, "double", "long");
+    ArrayList<Double> longDate = getDoubleList("stddev","fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "stddev");
-    assertTrue(checkStddevs(longDate,longDateTest));
+    checkStddevs(longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "stddev","fieldFacets", "string_sd");
-    ArrayList<Double> longString = (ArrayList<Double>)xmlToList(longStringFacet, "double", "long");
+    ArrayList<Double> longString = getDoubleList("stddev","fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "stddev");
-    assertTrue(checkStddevs(longString,longStringTest));
+    checkStddevs(longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "stddev","fieldFacets", "date_dtd");   
-    ArrayList<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateFacet, "double", "float");
+    ArrayList<Double> floatDate = getDoubleList("stddev","fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "stddev");
-    assertTrue(checkStddevs(floatDate,floatDateTest));
+    checkStddevs(floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "stddev","fieldFacets", "string_sd");    
-    ArrayList<Double> floatString = (ArrayList<Double>)xmlToList(floatStringFacet, "double", "float");
+    ArrayList<Double> floatString = getDoubleList("stddev","fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "stddev");
-    assertTrue(checkStddevs(floatString,floatStringTest));
+    checkStddevs(floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "stddev","fieldFacets", "date_dtd");  
-    ArrayList<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    ArrayList<Double> doubleDate = getDoubleList("stddev","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "stddev");
-    assertTrue(checkStddevs(doubleDate,doubleDateTest));
+    checkStddevs(doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "stddev","fieldFacets", "string_sd");    
-    ArrayList<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    ArrayList<Double> doubleString = getDoubleList("stddev","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "stddev");
-    assertTrue(checkStddevs(doubleString,doubleStringTest));
+    checkStddevs(doubleString,doubleStringTest);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void medianFacetAscTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "median","fieldFacets", "date_dtd");
-    Collection<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "int");
+    Collection<Double> intDate = getDoubleList( "median","fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "median");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "median","fieldFacets", "string_sd");
-    Collection<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "int");
+    Collection<Double> intString = getDoubleList("median","fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "median");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "median","fieldFacets", "date_dtd");
-    Collection<Double> longDate = (ArrayList<Double>)xmlToList(longDateFacet, "double", "long");
+    Collection<Double> longDate = getDoubleList("median","fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "median");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "median","fieldFacets", "string_sd");
-    Collection<Double> longString = (ArrayList<Double>)xmlToList(longStringFacet, "double", "long");
+    Collection<Double> longString = getDoubleList("median","fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "median");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "median","fieldFacets", "date_dtd");   
-    Collection<Double> floatDate = (ArrayList<Double>)xmlToList(floatDateFacet, "double", "float");
+    Collection<Double> floatDate = getDoubleList("median","fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "median");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "median","fieldFacets", "string_sd");    
-    Collection<Double> floatString = (ArrayList<Double>)xmlToList(floatStringFacet, "double", "float");
+    Collection<Double> floatString = getDoubleList("median","fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "median");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "median","fieldFacets", "date_dtd");  
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("median","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "median");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "median","fieldFacets", "string_sd");    
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("median","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "median");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void perc20Test() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "percentile_20n","fieldFacets", "date_dtd"); 
-    Collection<Integer> intDate = (ArrayList<Integer>)xmlToList(intDateFacet, "int", "int");
+    Collection<Integer> intDate = getIntegerList("percentile_20n","fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateStat(intDateTestStart, "perc_20");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "percentile_20n","fieldFacets", "string_sd");    
-    Collection<Integer> intString = (ArrayList<Integer>)xmlToList(intStringFacet, "int", "int");
+    Collection<Integer> intString = getIntegerList("percentile_20n","fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "perc_20");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "percentile_20n","fieldFacets", "date_dtd");    
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("percentile_20n","fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "perc_20");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "percentile_20n","fieldFacets", "string_sd");    
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("percentile_20n","fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "perc_20");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "percentile_20n","fieldFacets", "date_dtd");    
-    Collection<Float> floatDate = (ArrayList<Float>)xmlToList(floatDateFacet, "float", "float");
+    Collection<Float> floatDate = getFloatList("percentile_20n","fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>)calculateStat(floatDateTestStart, "perc_20");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "percentile_20n","fieldFacets", "string_sd");       
-    Collection<Float> floatString = (ArrayList<Float>)xmlToList(floatStringFacet, "float", "float");
+    Collection<Float> floatString = getFloatList("percentile_20n","fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest = (ArrayList<Float>)calculateStat(floatStringTestStart, "perc_20");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "percentile_20n","fieldFacets", "date_dtd");    
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("percentile_20n","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = (ArrayList<Double>)calculateStat(doubleDateTestStart, "perc_20");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "percentile_20n","fieldFacets", "string_sd");      
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("percentile_20n","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = (ArrayList<Double>)calculateStat(doubleStringTestStart, "perc_20");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "percentile_20","fieldFacets", "int_id"); 
-    Collection<String> dateInt = (ArrayList<String>)xmlToList(dateIntFacet, "date", "date");
+    Collection<String> dateInt = getStringList("percentile_20","fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>)calculateStat(dateIntTestStart, "perc_20");
-    assertEquals(dateInt,dateIntTest);
+    assertEquals(getRawResponse(),dateInt,dateIntTest);
     //Date Long
-    String dateStringFacet = getFacetXML(response, "percentile_20","fieldFacets", "long_ld");       
-    Collection<String> dateString = (ArrayList<String>)xmlToList(dateStringFacet, "date", "date");
+    Collection<String> dateString = getStringList("percentile_20","fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>)calculateStat(dateLongTestStart, "perc_20");
-    assertEquals(dateString,dateLongTest);
+    assertEquals(getRawResponse(),dateString,dateLongTest);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "percentile_20","fieldFacets", "int_id");   
-    Collection<String> stringInt = (ArrayList<String>)xmlToList(stringIntFacet, "str", "str");
+    Collection<String> stringInt = getStringList("percentile_20","fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>)calculateStat(stringIntTestStart, "perc_20");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     //String Long
-    String stringLongFacet = getFacetXML(response, "percentile_20","fieldFacets", "long_ld");     
-    Collection<String> stringLong = (ArrayList<String>)xmlToList(stringLongFacet, "str", "str");
+    Collection<String> stringLong = getStringList("percentile_20","fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest = (ArrayList<String>)calculateStat(stringLongTestStart, "perc_20");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void perc60Test() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "percentile_60n","fieldFacets", "date_dtd"); 
-    Collection<Integer> intDate = (ArrayList<Integer>)xmlToList(intDateFacet, "int", "int");
+    Collection<Integer> intDate = getIntegerList("percentile_60n","fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateStat(intDateTestStart, "perc_60");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "percentile_60n","fieldFacets", "string_sd");    
-    Collection<Integer> intString = (ArrayList<Integer>)xmlToList(intStringFacet, "int", "int");
+    Collection<Integer> intString = getIntegerList("percentile_60n","fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "perc_60");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "percentile_60n","fieldFacets", "date_dtd");    
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("percentile_60n","fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "perc_60");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "percentile_60n","fieldFacets", "string_sd");    
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("percentile_60n","fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "perc_60");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "percentile_60n","fieldFacets", "date_dtd");    
-    Collection<Float> floatDate = (ArrayList<Float>)xmlToList(floatDateFacet, "float", "float");
+    Collection<Float> floatDate = getFloatList("percentile_60n","fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>)calculateStat(floatDateTestStart, "perc_60");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "percentile_60n","fieldFacets", "string_sd");       
-    Collection<Float> floatString = (ArrayList<Float>)xmlToList(floatStringFacet, "float", "float");
+    Collection<Float> floatString = getFloatList("percentile_60n","fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest = (ArrayList<Float>)calculateStat(floatStringTestStart, "perc_60");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "percentile_60n","fieldFacets", "date_dtd");    
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("percentile_60n","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = (ArrayList<Double>)calculateStat(doubleDateTestStart, "perc_60");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "percentile_60n","fieldFacets", "string_sd");      
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("percentile_60n","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = (ArrayList<Double>)calculateStat(doubleStringTestStart, "perc_60");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "percentile_60","fieldFacets", "int_id"); 
-    Collection<String> dateInt = (ArrayList<String>)xmlToList(dateIntFacet, "date", "date");
+    Collection<String> dateInt = getStringList("percentile_60","fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>)calculateStat(dateIntTestStart, "perc_60");
-    assertEquals(dateInt,dateIntTest);
+    assertEquals(getRawResponse(),dateInt,dateIntTest);
     //Date Long
-    String dateStringFacet = getFacetXML(response, "percentile_60","fieldFacets", "long_ld");       
-    Collection<String> dateString = (ArrayList<String>)xmlToList(dateStringFacet, "date", "date");
+    Collection<String> dateString = getStringList("percentile_60","fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>)calculateStat(dateLongTestStart, "perc_60");
-    assertEquals(dateString,dateLongTest);
+    assertEquals(getRawResponse(),dateString,dateLongTest);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "percentile_60","fieldFacets", "int_id");   
-    Collection<String> stringInt = (ArrayList<String>)xmlToList(stringIntFacet, "str", "str");
+    Collection<String> stringInt = getStringList("percentile_60","fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>)calculateStat(stringIntTestStart, "perc_60");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     //String Long
-    String stringLongFacet = getFacetXML(response, "percentile_60","fieldFacets", "long_ld");     
-    Collection<String> stringLong = (ArrayList<String>)xmlToList(stringLongFacet, "str", "str");
+    Collection<String> stringLong = getStringList("percentile_60","fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest = (ArrayList<String>)calculateStat(stringLongTestStart, "perc_60");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void minTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "minn","fieldFacets", "date_dtd"); 
-    Collection<Integer> intDate = (ArrayList<Integer>)xmlToList(intDateFacet, "int", "int");
+    Collection<Integer> intDate = getIntegerList("minn","fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateStat(intDateTestStart, "min");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "minn","fieldFacets", "string_sd");    
-    Collection<Integer> intString = (ArrayList<Integer>)xmlToList(intStringFacet, "int", "int");
+    Collection<Integer> intString = getIntegerList("minn","fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "min");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "minn","fieldFacets", "date_dtd");    
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("minn","fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "min");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "minn","fieldFacets", "string_sd");    
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("minn","fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "min");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "minn","fieldFacets", "date_dtd");    
-    Collection<Float> floatDate = (ArrayList<Float>)xmlToList(floatDateFacet, "float", "float");
+    Collection<Float> floatDate = getFloatList("minn","fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>)calculateStat(floatDateTestStart, "min");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "minn","fieldFacets", "string_sd");       
-    Collection<Float> floatString = (ArrayList<Float>)xmlToList(floatStringFacet, "float", "float");
+    Collection<Float> floatString = getFloatList("minn","fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest = (ArrayList<Float>)calculateStat(floatStringTestStart, "min");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "minn","fieldFacets", "date_dtd");    
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("minn","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = (ArrayList<Double>)calculateStat(doubleDateTestStart, "min");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "minn","fieldFacets", "string_sd");      
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("minn","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = (ArrayList<Double>)calculateStat(doubleStringTestStart, "min");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "min","fieldFacets", "int_id"); 
-    Collection<String> dateInt = (ArrayList<String>)xmlToList(dateIntFacet, "date", "date");
+    Collection<String> dateInt = getStringList("min","fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>)calculateStat(dateIntTestStart, "min");
-    assertEquals(dateInt,dateIntTest);
+    assertEquals(getRawResponse(),dateInt,dateIntTest);
     //Date Long
-    String dateStringFacet = getFacetXML(response, "min","fieldFacets", "long_ld");       
-    Collection<String> dateString = (ArrayList<String>)xmlToList(dateStringFacet, "date", "date");
+    Collection<String> dateString = getStringList("min","fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>)calculateStat(dateLongTestStart, "min");
-    assertEquals(dateString,dateLongTest);
+    assertEquals(getRawResponse(),dateString,dateLongTest);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "min","fieldFacets", "int_id");   
-    Collection<String> stringInt = (ArrayList<String>)xmlToList(stringIntFacet, "str", "str");
+    Collection<String> stringInt = getStringList("min","fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>)calculateStat(stringIntTestStart, "min");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     //String Long
-    String stringLongFacet = getFacetXML(response, "min","fieldFacets", "long_ld");     
-    Collection<String> stringLong = (ArrayList<String>)xmlToList(stringLongFacet, "str", "str");
+    Collection<String> stringLong = getStringList("min","fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest = (ArrayList<String>)calculateStat(stringLongTestStart, "min");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void maxTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "maxn","fieldFacets", "date_dtd"); 
-    Collection<Integer> intDate = (ArrayList<Integer>)xmlToList(intDateFacet, "int", "int");
+    Collection<Integer> intDate = getIntegerList("maxn","fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateStat(intDateTestStart, "max");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     
     //Int String
-    String intStringFacet = getFacetXML(response, "maxn","fieldFacets", "string_sd");    
-    Collection<Integer> intString = (ArrayList<Integer>)xmlToList(intStringFacet, "int", "int");
+    Collection<Integer> intString = getIntegerList("maxn","fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "max");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "maxn","fieldFacets", "date_dtd");    
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("maxn","fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "max");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     
     //Long String
-    String longStringFacet = getFacetXML(response, "maxn","fieldFacets", "string_sd");    
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("maxn","fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "max");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "maxn","fieldFacets", "date_dtd");    
-    Collection<Float> floatDate = (ArrayList<Float>)xmlToList(floatDateFacet, "float", "float");
+    Collection<Float> floatDate = getFloatList("maxn","fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>)calculateStat(floatDateTestStart, "max");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     
     //Float String
-    String floatStringFacet = getFacetXML(response, "maxn","fieldFacets", "string_sd");       
-    Collection<Float> floatString = (ArrayList<Float>)xmlToList(floatStringFacet, "float", "float");
+    Collection<Float> floatString = getFloatList("maxn","fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest = (ArrayList<Float>)calculateStat(floatStringTestStart, "max");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "maxn","fieldFacets", "date_dtd");    
-    Collection<Double> doubleDate = (ArrayList<Double>)xmlToList(doubleDateFacet, "double", "double");
+    Collection<Double> doubleDate = getDoubleList("maxn","fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = (ArrayList<Double>)calculateStat(doubleDateTestStart, "max");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     
     //Double String
-    String doubleStringFacet = getFacetXML(response, "maxn","fieldFacets", "string_sd");      
-    Collection<Double> doubleString = (ArrayList<Double>)xmlToList(doubleStringFacet, "double", "double");
+    Collection<Double> doubleString = getDoubleList("maxn","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = (ArrayList<Double>)calculateStat(doubleStringTestStart, "max");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
     
     //String Int
-    String stringIntFacet = getFacetXML(response, "max","fieldFacets", "int_id");   
-    Collection<String> stringInt = (ArrayList<String>)xmlToList(stringIntFacet, "str", "str");
+    Collection<String> stringInt = getStringList("max","fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>)calculateStat(stringIntTestStart, "max");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     
     //String Long
-    String stringLongFacet = getFacetXML(response, "max","fieldFacets", "long_ld");     
-    Collection<String> stringLong = (ArrayList<String>)xmlToList(stringLongFacet, "str", "str");
+    Collection<String> stringLong = getStringList("max","fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest = (ArrayList<String>)calculateStat(stringLongTestStart, "max");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "max","fieldFacets", "int_id"); 
-    Collection<String> dateInt = (ArrayList<String>)xmlToList(dateIntFacet, "date", "date");
+    Collection<String> dateInt = getStringList("max","fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>)calculateStat(dateIntTestStart, "max");
-    assertEquals(dateInt,dateIntTest);
+    assertEquals(getRawResponse(),dateInt,dateIntTest);
     
     //Date Long
-    String dateStringFacet = getFacetXML(response, "max","fieldFacets", "long_ld");       
-    Collection<String> dateString = (ArrayList<String>)xmlToList(dateStringFacet, "date", "date");
+    Collection<String> dateString = getStringList("max","fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>)calculateStat(dateLongTestStart, "max");
-    assertEquals(dateString,dateLongTest);
+    assertEquals(getRawResponse(),dateString,dateLongTest);
 
   }
 
@@ -924,274 +834,237 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   @Test
   public void uniqueTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "uniquen", "fieldFacets", "date_dtd");    
-    Collection<Long> intDate = (ArrayList<Long>)xmlToList(intDateFacet, "long", "int");
+    Collection<Long> intDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "int");
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(intDateTestStart, "unique");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     //Int String
-    String intStringFacet = getFacetXML(response, "uniquen", "fieldFacets", "string_sd");      
-    Collection<Long> intString = (ArrayList<Long>)xmlToList(intStringFacet, "long", "int");
+    Collection<Long> intString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "int");
     ArrayList<Long> intStringTest = (ArrayList<Long>)calculateStat(intStringTestStart, "unique");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "uniquen", "fieldFacets", "date_dtd");      
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "unique");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     //Long String
-    String longStringFacet = getFacetXML(response, "uniquen", "fieldFacets", "string_sd");   
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "unique");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "uniquen", "fieldFacets", "date_dtd");   
-    Collection<Long> floatDate = (ArrayList<Long>)xmlToList(floatDateFacet, "long", "float");
+    Collection<Long> floatDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "float");
     ArrayList<Long> floatDateTest = (ArrayList<Long>)calculateStat(floatDateTestStart, "unique");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     //Float String
-    String floatStringFacet = getFacetXML(response, "uniquen", "fieldFacets", "string_sd");   
-    Collection<Long> floatString = (ArrayList<Long>)xmlToList(floatStringFacet, "long", "float");
+    Collection<Long> floatString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "float");
     ArrayList<Long> floatStringTest = (ArrayList<Long>)calculateStat(floatStringTestStart, "unique");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "uniquen", "fieldFacets", "date_dtd");   
-    Collection<Long> doubleDate = (ArrayList<Long>)xmlToList(doubleDateFacet, "long", "double");
+    Collection<Long> doubleDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "double");
     ArrayList<Long> doubleDateTest = (ArrayList<Long>)calculateStat(doubleDateTestStart, "unique");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     //Double String
-    String doubleStringFacet = getFacetXML(response, "uniquen", "fieldFacets", "string_sd");   
-    Collection<Long> doubleString = (ArrayList<Long>)xmlToList(doubleStringFacet, "long", "double");
+    Collection<Long> doubleString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "double");
     ArrayList<Long> doubleStringTest = (ArrayList<Long>)calculateStat(doubleStringTestStart, "unique");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "unique", "fieldFacets", "int_id");    
-    Collection<Long> dateInt = (ArrayList<Long>)xmlToList(dateIntFacet, "long", "date");
+    Collection<Long> dateInt = getLongList("unique", "fieldFacets", "int_id", "long", "date");
     ArrayList<Long> dateIntTest = (ArrayList<Long>)calculateStat(dateIntTestStart, "unique");
-    assertEquals(dateInt,dateIntTest);
+    assertEquals(getRawResponse(),dateInt,dateIntTest);
     //Date Long
-    String dateStringFacet = getFacetXML(response, "unique", "fieldFacets", "long_ld");     
-    Collection<Long> dateString = (ArrayList<Long>)xmlToList(dateStringFacet, "long", "date");
+    Collection<Long> dateString = getLongList("unique", "fieldFacets", "long_ld", "long", "date");
     ArrayList<Long> dateLongTest = (ArrayList<Long>)calculateStat(dateLongTestStart, "unique");
-    assertEquals(dateString,dateLongTest);
+    assertEquals(getRawResponse(),dateString,dateLongTest);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "unique", "fieldFacets", "int_id");   
-    Collection<Long> stringInt = (ArrayList<Long>)xmlToList(stringIntFacet, "long", "str");
+    Collection<Long> stringInt = getLongList("unique", "fieldFacets", "int_id", "long", "str");
     ArrayList<Long> stringIntTest = (ArrayList<Long>)calculateStat(stringIntTestStart, "unique");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     //String Long
-    String stringLongFacet = getFacetXML(response, "unique", "fieldFacets", "long_ld");    
-    Collection<Long> stringLong = (ArrayList<Long>)xmlToList(stringLongFacet, "long", "str");
+    Collection<Long> stringLong = getLongList("unique", "fieldFacets", "long_ld", "long", "str");
     ArrayList<Long> stringLongTest = (ArrayList<Long>)calculateStat(stringLongTestStart, "unique");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void countTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "countn", "fieldFacets", "date_dtd");    
-    Collection<Long> intDate = (ArrayList<Long>)xmlToList(intDateFacet, "long", "int");
+    Collection<Long> intDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "int");
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(intDateTestStart, "count");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     
     //Int String
-    String intStringFacet = getFacetXML(response, "countn", "fieldFacets", "string_sd");      
-    Collection<Long> intString = (ArrayList<Long>)xmlToList(intStringFacet, "long", "int");
+    Collection<Long> intString = getLongList("countn", "fieldFacets", "string_sd", "long", "int");
     ArrayList<Long> intStringTest = (ArrayList<Long>)calculateStat(intStringTestStart, "count");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(),intString,intStringTest);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "countn", "fieldFacets", "date_dtd");      
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateStat(longDateTestStart, "count");
-    assertEquals(longDate,longDateTest);
+    assertEquals(getRawResponse(),longDate,longDateTest);
     
     //Long String
-    String longStringFacet = getFacetXML(response, "countn", "fieldFacets", "string_sd");   
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
+    Collection<Long> longString = getLongList("countn", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateStat(longStringTestStart, "count");
-    assertEquals(longString,longStringTest);
+    assertEquals(getRawResponse(),longString,longStringTest);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "countn", "fieldFacets", "date_dtd");   
-    Collection<Long> floatDate = (ArrayList<Long>)xmlToList(floatDateFacet, "long", "float");
+    Collection<Long> floatDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "float");
     ArrayList<Long> floatDateTest = (ArrayList<Long>)calculateStat(floatDateTestStart, "count");
-    assertEquals(floatDate,floatDateTest);
+    assertEquals(getRawResponse(),floatDate,floatDateTest);
     
     //Float String
-    String floatStringFacet = getFacetXML(response, "countn", "fieldFacets", "string_sd");   
-    Collection<Long> floatString = (ArrayList<Long>)xmlToList(floatStringFacet, "long", "float");
+    Collection<Long> floatString = getLongList("countn", "fieldFacets", "string_sd", "long", "float");
     ArrayList<Long> floatStringTest = (ArrayList<Long>)calculateStat(floatStringTestStart, "count");
-    assertEquals(floatString,floatStringTest);
+    assertEquals(getRawResponse(),floatString,floatStringTest);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "countn", "fieldFacets", "date_dtd");   
-    Collection<Long> doubleDate = (ArrayList<Long>)xmlToList(doubleDateFacet, "long", "double");
+    Collection<Long> doubleDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "double");
     ArrayList<Long> doubleDateTest = (ArrayList<Long>)calculateStat(doubleDateTestStart, "count");
-    assertEquals(doubleDate,doubleDateTest);
+    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
     
     //Double String
-    String doubleStringFacet = getFacetXML(response, "countn", "fieldFacets", "string_sd");   
-    Collection<Long> doubleString = (ArrayList<Long>)xmlToList(doubleStringFacet, "long", "double");
+    Collection<Long> doubleString = getLongList("countn", "fieldFacets", "string_sd", "long", "double");
     ArrayList<Long> doubleStringTest = (ArrayList<Long>)calculateStat(doubleStringTestStart, "count");
-    assertEquals(doubleString,doubleStringTest);
+    assertEquals(getRawResponse(),doubleString,doubleStringTest);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "count", "fieldFacets", "int_id");    
-    Collection<Long> dateInt = (ArrayList<Long>)xmlToList(dateIntFacet, "long", "date");
+    Collection<Long> dateInt = getLongList("count", "fieldFacets", "int_id", "long", "date");
     ArrayList<Long> dateIntTest = (ArrayList<Long>)calculateStat(dateIntTestStart, "count");
-    assertEquals(dateIntTest,dateInt);
+    assertEquals(getRawResponse(),dateIntTest,dateInt);
     
     //Date Long
-    String dateLongFacet = getFacetXML(response, "count", "fieldFacets", "long_ld");     
-    Collection<Long> dateLong = (ArrayList<Long>)xmlToList(dateLongFacet, "long", "date");
+    Collection<Long> dateLong = getLongList("count", "fieldFacets", "long_ld", "long", "date");
     ArrayList<Long> dateLongTest = (ArrayList<Long>)calculateStat(dateLongTestStart, "count");
-    assertEquals(dateLong,dateLongTest);
+    assertEquals(getRawResponse(),dateLong,dateLongTest);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "count", "fieldFacets", "int_id");   
-    Collection<Long> stringInt = (ArrayList<Long>)xmlToList(stringIntFacet, "long", "str");
+    Collection<Long> stringInt = getLongList("count", "fieldFacets", "int_id", "long", "str");
     ArrayList<Long> stringIntTest = (ArrayList<Long>)calculateStat(stringIntTestStart, "count");
-    assertEquals(stringInt,stringIntTest);
+    assertEquals(getRawResponse(),stringInt,stringIntTest);
     
     //String Long
-    String stringLongFacet = getFacetXML(response, "count", "fieldFacets", "long_ld");    
-    Collection<Long> stringLong = (ArrayList<Long>)xmlToList(stringLongFacet, "long", "str");
+    Collection<Long> stringLong = getLongList("count", "fieldFacets", "long_ld", "long", "str");
     ArrayList<Long> stringLongTest = (ArrayList<Long>)calculateStat(stringLongTestStart, "count");
-    assertEquals(stringLong,stringLongTest);
+    assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void missingTest() throws Exception { 
     //Int Date
-    String intDateFacet = getFacetXML(response, "missingn", "fieldFacets", "date_dtd");    
-    Collection<Long> intDate = (ArrayList<Long>)xmlToList(intDateFacet, "long", "int");
+    Collection<Long> intDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "int");
     setLatestType("int");
-    assertEquals(intDateTestMissing,intDate);
+    assertEquals(getRawResponse(),intDateTestMissing,intDate);
     
     //Int String
-    String intStringFacet = getFacetXML(response, "missingn", "fieldFacets", "string_sd");      
-    Collection<Long> intString = (ArrayList<Long>)xmlToList(intStringFacet, "long", "int");
-    assertEquals(intStringTestMissing,intString);
+    Collection<Long> intString = getLongList("missingn", "fieldFacets", "string_sd", "long", "int");
+    assertEquals(getRawResponse(),intStringTestMissing,intString);
 
     //Long Date
-    String longDateFacet = getFacetXML(response, "missingn", "fieldFacets", "date_dtd");      
-    Collection<Long> longDate = (ArrayList<Long>)xmlToList(longDateFacet, "long", "long");
+    Collection<Long> longDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "long");
     setLatestType("long");
-    assertEquals(longDateTestMissing,longDate);
+    assertEquals(getRawResponse(),longDateTestMissing,longDate);
     
     //Long String
-    String longStringFacet = getFacetXML(response, "missingn", "fieldFacets", "string_sd");   
-    Collection<Long> longString = (ArrayList<Long>)xmlToList(longStringFacet, "long", "long");
-    assertEquals(longStringTestMissing,longString);
+    Collection<Long> longString = getLongList("missingn", "fieldFacets", "string_sd", "long", "long");
+    assertEquals(getRawResponse(),longStringTestMissing,longString);
 
     //Float Date
-    String floatDateFacet = getFacetXML(response, "missingn", "fieldFacets", "date_dtd");   
-    Collection<Long> floatDate = (ArrayList<Long>)xmlToList(floatDateFacet, "long", "float");
+    Collection<Long> floatDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "float");
     setLatestType("float");
-    assertEquals(floatDateTestMissing,floatDate);
+    assertEquals(getRawResponse(),floatDateTestMissing,floatDate);
     
     //Float String
-    String floatStringFacet = getFacetXML(response, "missingn", "fieldFacets", "string_sd");   
-    Collection<Long> floatString = (ArrayList<Long>)xmlToList(floatStringFacet, "long", "float");
-    assertEquals(floatStringTestMissing,floatString);
+    Collection<Long> floatString = getLongList("missingn", "fieldFacets", "string_sd", "long", "float");
+    assertEquals(getRawResponse(),floatStringTestMissing,floatString);
 
     //Double Date
-    String doubleDateFacet = getFacetXML(response, "missingn", "fieldFacets", "date_dtd");   
-    Collection<Long> doubleDate = (ArrayList<Long>)xmlToList(doubleDateFacet, "long", "double");
+    Collection<Long> doubleDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "double");
     setLatestType("double");
-    assertEquals(doubleDateTestMissing,doubleDate);
+    assertEquals(getRawResponse(),doubleDateTestMissing,doubleDate);
     
     //Double String
-    String doubleStringFacet = getFacetXML(response, "missingn", "fieldFacets", "string_sd");   
-    Collection<Long> doubleString = (ArrayList<Long>)xmlToList(doubleStringFacet, "long", "double");
-    assertEquals(doubleStringTestMissing,doubleString);
+    Collection<Long> doubleString = getLongList("missingn", "fieldFacets", "string_sd", "long", "double");
+    assertEquals(getRawResponse(),doubleStringTestMissing,doubleString);
 
     //Date Int
-    String dateIntFacet = getFacetXML(response, "missing", "fieldFacets", "int_id");    
-    Collection<Long> dateInt = (ArrayList<Long>)xmlToList(dateIntFacet, "long", "date");
+    Collection<Long> dateInt = getLongList("missing", "fieldFacets", "int_id", "long", "date");
     setLatestType("date");
-    assertEquals(dateIntTestMissing,dateInt);
+    assertEquals(getRawResponse(),dateIntTestMissing,dateInt);
     
     //Date Long
-    String dateStringFacet = getFacetXML(response, "missing", "fieldFacets", "long_ld");     
-    Collection<Long> dateLong = (ArrayList<Long>)xmlToList(dateStringFacet, "long", "date");
-    assertEquals(dateLongTestMissing,dateLong);
+    Collection<Long> dateLong = getLongList("missing", "fieldFacets", "long_ld", "long", "date");
+    assertEquals(getRawResponse(),dateLongTestMissing,dateLong);
 
     //String Int
-    String stringIntFacet = getFacetXML(response, "missing", "fieldFacets", "int_id");   
-    Collection<Long> stringInt = (ArrayList<Long>)xmlToList(stringIntFacet, "long", "str");
+    Collection<Long> stringInt = getLongList("missing", "fieldFacets", "int_id", "long", "str");
     setLatestType("string");
-    assertEquals(stringIntTestMissing,stringInt);
+    assertEquals(getRawResponse(),stringIntTestMissing,stringInt);
     
     //String Long
-    String stringLongFacet = getFacetXML(response, "missing", "fieldFacets", "long_ld");    
-    Collection<Long> stringLong = (ArrayList<Long>)xmlToList(stringLongFacet, "long", "str");
-    assertEquals(stringLongTestMissing,stringLong);
+    Collection<Long> stringLong = getLongList("missing", "fieldFacets", "long_ld", "long", "str");
+    assertEquals(getRawResponse(),stringLongTestMissing,stringLong);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void multiValueTest() throws Exception { 
     //Long
-    String longFacet = getFacetXML(response, "multivalued", "fieldFacets", "long_ldm");    
-    Collection<Double> lon = (ArrayList<Double>)xmlToList(longFacet, "double", "mean");
+    Collection<Double> lon = getDoubleList("multivalued", "fieldFacets", "long_ldm", "double", "mean");
     ArrayList<Double> longTest = calculateNumberStat(multiLongTestStart, "mean");
-    assertEquals(lon,longTest);
+    assertEquals(getRawResponse(),lon,longTest);
     //Date
-    String dateFacet = getFacetXML(response, "multivalued", "fieldFacets", "date_dtdm");    
-    Collection<Double> date = (ArrayList<Double>)xmlToList(dateFacet, "double", "mean");
+    Collection<Double> date = getDoubleList("multivalued", "fieldFacets", "date_dtdm", "double", "mean");
     ArrayList<Double> dateTest = calculateNumberStat(multiDateTestStart, "mean");
-    assertEquals(date,dateTest);
+    assertEquals(getRawResponse(),date,dateTest);
     //String
-    String stringFacet = getFacetXML(response, "multivalued", "fieldFacets", "string_sdm");    
-    Collection<Double> string = (ArrayList<Double>)xmlToList(stringFacet, "double", "mean");
+    Collection<Double> string = getDoubleList("multivalued", "fieldFacets", "string_sdm", "double", "mean");
     ArrayList<Double> stringTest = calculateNumberStat(multiStringTestStart, "mean");
-    assertEquals(string,stringTest);
+    assertEquals(getRawResponse(),string,stringTest);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void missingFacetTest() throws Exception { 
     //int MultiDate
-    String stringFacet = getFacetXML(response, "missingf", "fieldFacets", "date_dtdm");  
-    assertTrue(stringFacet.contains("<lst name=\"(MISSING)\">"));  
-    ArrayList<Double> string = (ArrayList<Double>)xmlToList(stringFacet, "double", "mean");
+    String xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='date_dtdm']/lst[@name='(MISSING)']";
+    assertNotNull(getRawResponse(), getNode(xPath));
+
+    ArrayList<Double> string = getDoubleList("missingf", "fieldFacets", "date_dtdm", "double", "mean");
     string.remove(0);
     ArrayList<Double> stringTest = calculateNumberStat(multiDateTestStart, "mean");
-    assertEquals(string,stringTest);
+    assertEquals(getRawResponse(), string,stringTest);
     
     //Int String
-    String intStringFacet = getFacetXML(response, "missingf", "fieldFacets", "string_sd"); 
-    assertTrue(intStringFacet.contains("<lst name=\"(MISSING)\">")&&!intStringFacet.contains("<lst name=\"str0\">"));
-    List<Double> intString = (ArrayList<Double>)xmlToList(intStringFacet, "double", "mean");
+    xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='(MISSING)']";
+    assertNotNull(getRawResponse(), getNode(xPath));
+
+    xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='str0']";
+    assertNull(getRawResponse(), getNode(xPath));
+    List<Double> intString = getDoubleList("missingf", "fieldFacets", "string_sd", "double", "mean");
     intString.remove(0);
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
-    assertEquals(intString,intStringTest);
+    assertEquals(getRawResponse(), intString,intStringTest);
     
     //Int Date
-    String intDateFacet = getFacetXML(response, "missingf", "fieldFacets", "date_dtd");    
-    Collection<Double> intDate = (ArrayList<Double>)xmlToList(intDateFacet, "double", "mean");
+    Collection<Double> intDate = getDoubleList("missingf", "fieldFacets", "date_dtd", "double", "mean");
     ArrayList<ArrayList<Double>> intDateMissingTestStart = (ArrayList<ArrayList<Double>>) intDateTestStart.clone();
     ArrayList<Double> intDateTest = calculateNumberStat(intDateMissingTestStart, "mean");
-    assertEquals(intDate,intDateTest);
+    assertEquals(getRawResponse(),intDate,intDateTest);
     
     
   }
 
-  private boolean checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {
+  private void checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {
     for (int i = 0; i<list1.size(); i++) {
       if ((Math.abs(list1.get(i)-list2.get(i))<.00000000001) == false) {
-        return false;
+        assertEquals(getRawResponse(), list1.get(i), list2.get(i), 0.00000000001);
       }
     }
-    return true;
   }
 
 }

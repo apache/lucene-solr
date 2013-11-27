@@ -102,30 +102,26 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
     assertU(commit()); 
     
     //Query ascending tests
-    String response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
     
     //Int One
-    String int1Query = getFacetXML(response, "ir", "queryFacets", "float1");
-    ArrayList<Double> int1 = (ArrayList<Double>)xmlToList(int1Query, "double", "sum");
+    ArrayList<Double> int1 = getDoubleList("ir", "queryFacets", "float1", "double", "sum");
     ArrayList<Double> int1Test = calculateNumberStat(int1TestStart, "sum");
-    assertEquals(int1,int1Test);
+    assertEquals(getRawResponse(), int1, int1Test);
     //Int Two
-    String int2Query = getFacetXML(response, "ir", "queryFacets", "float2");  
-    ArrayList<Integer> int2 = (ArrayList<Integer>)xmlToList(int2Query, "int", "percentile_8");
+    ArrayList<Integer> int2 = getIntegerList("ir", "queryFacets", "float2", "int", "percentile_8");
     ArrayList<Integer> int2Test = (ArrayList<Integer>)calculateStat(int2TestStart, "perc_8");
-    assertEquals(int2,int2Test);
+    assertEquals(getRawResponse(), int2, int2Test);
 
     //Long
-    String long1Query = getFacetXML(response, "lr", "queryFacets", "string");     
-    ArrayList<Double> long1 = (ArrayList<Double>)xmlToList(long1Query, "double", "median");
+    ArrayList<Double> long1 = getDoubleList("lr", "queryFacets", "string", "double", "median");
     ArrayList<Double> long1Test = calculateNumberStat(longTestStart, "median");
-    assertEquals(long1,long1Test);
+    assertEquals(getRawResponse(),long1,long1Test);
 
     //Float
-    String float1Query = getFacetXML(response, "fr", "queryFacets", "lad");  
-    ArrayList<Double> float1 = (ArrayList<Double>)xmlToList(float1Query, "double", "mean");
+    ArrayList<Double> float1 = getDoubleList("fr", "queryFacets", "lad", "double", "mean");
     ArrayList<Double> float1Test = calculateNumberStat(floatTestStart, "mean");
-    assertEquals(float1,float1Test);
+    assertEquals(getRawResponse(), float1, float1Test);
   }
 
 }

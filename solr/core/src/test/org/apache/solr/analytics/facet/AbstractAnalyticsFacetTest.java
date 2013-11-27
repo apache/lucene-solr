@@ -17,8 +17,10 @@
 
 package org.apache.solr.analytics.facet;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +37,18 @@ import org.apache.solr.request.SolrQueryRequest;
 
 import com.google.common.collect.ObjectArrays;
 import org.apache.solr.util.ExternalPaths;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
@@ -42,24 +56,84 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   
   protected String latestType = "";
 
-  public String getFacetXML(String response, String requestName, String facetType, String facet) {
-    String cat = "\n  <lst name=\""+requestName+"\">";
-    String begin = "    <lst name=\""+facetType+"\">\n";
-    String end = "\n    </lst>";
-    int beginInt = response.indexOf(begin, response.indexOf(cat))+begin.length();
-    int endInt = response.indexOf(end, beginInt);
-    String fieldStr = response.substring(beginInt, endInt);
-    begin = "      <lst name=\""+facet+"\">";
-    end = "\n      </lst>";
-    beginInt = fieldStr.indexOf(begin);
-    endInt = fieldStr.indexOf(end, beginInt);
-    String facetStr = "";
-    if (beginInt>=0) {
-      facetStr = fieldStr.substring(beginInt+begin.length(),endInt);
-    }
-    return facetStr+" ";
+  private static Document doc;
+  private static XPathFactory xPathFact =  XPathFactory.newInstance();
+  private static String rawResponse;
+
+  protected static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true); // never forget this!
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("UTF-8"))));
+    xPathFact = XPathFactory.newInstance();
+    rawResponse = response;
   }
-  
+
+  protected String getRawResponse() {
+    return rawResponse;
+  }
+
+  protected Node getNode(String xPath) throws XPathExpressionException {
+    return (Node)xPathFact.newXPath().compile(xPath).evaluate(doc, XPathConstants.NODE);
+  }
+  private NodeList getNodes(String n1, String n2, String n3, String element, String n4) throws XPathExpressionException {
+    // Construct the XPath expression. The form better not change or all these will fail.
+    StringBuilder sb = new StringBuilder("/response/lst[@name='stats']/lst[@name='").append(n1).append("']");
+    sb.append("/lst[@name='").append(n2).append("']");
+    sb.append("/lst[@name='").append(n3).append("']");
+    sb.append("//").append(element).append("[@name='").append(n4).append("']");
+    return (NodeList)xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+
+  }
+  protected ArrayList<String> getStringList(String n1, String n2, String n3, String element, String n4)
+      throws XPathExpressionException {
+    ArrayList<String> ret = new ArrayList<String>();
+    NodeList nodes = getNodes(n1, n2, n3, element, n4);
+    for (int idx = 0; idx < nodes.getLength(); ++idx) {
+      ret.add(nodes.item(idx).getTextContent());
+    }
+    return ret;
+  }
+
+  protected ArrayList<Integer> getIntegerList(String n1, String n2, String n3, String element, String n4)
+      throws XPathExpressionException {
+    ArrayList<Integer> ret = new ArrayList<Integer>();
+    NodeList nodes = getNodes(n1, n2, n3, element, n4);
+    for (int idx = 0; idx < nodes.getLength(); ++idx) {
+      ret.add(Integer.parseInt(nodes.item(idx).getTextContent()));
+    }
+    return ret;
+  }
+  protected ArrayList<Long> getLongList(String n1, String n2, String n3, String element, String n4)
+      throws XPathExpressionException {
+    ArrayList<Long> ret = new ArrayList<Long>();
+    NodeList nodes = getNodes(n1, n2, n3, element, n4);
+    for (int idx = 0; idx < nodes.getLength(); ++idx) {
+      ret.add(Long.parseLong(nodes.item(idx).getTextContent()));
+    }
+    return ret;
+  }
+  protected ArrayList<Float> getFloatList(String n1, String n2, String n3, String element, String n4)
+      throws XPathExpressionException {
+    ArrayList<Float> ret = new ArrayList<Float>();
+    NodeList nodes = getNodes(n1, n2, n3, element, n4);
+    for (int idx = 0; idx < nodes.getLength(); ++idx) {
+      ret.add(Float.parseFloat(nodes.item(idx).getTextContent()));
+    }
+    return ret;
+  }
+
+  protected ArrayList<Double> getDoubleList(String n1, String n2, String n3, String element, String n4)
+      throws XPathExpressionException {
+    ArrayList<Double> ret = new ArrayList<Double>();
+    NodeList nodes = getNodes(n1, n2, n3, element, n4);
+    for (int idx = 0; idx < nodes.getLength(); ++idx) {
+      ret.add(Double.parseDouble(nodes.item(idx).getTextContent()));
+    }
+    return ret;
+  }
+
+
   public static void increment(List<Long> list, int idx){
     Long i = list.remove(idx);
     list.add(idx, i+1);
@@ -82,41 +156,6 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   
   protected void setLatestType(String latestType) {
     this.latestType = latestType;
-  }
-
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public ArrayList xmlToList(String facit, String type, String name) {
-    ArrayList list;
-    if (type.equals("double")) {
-      list = new ArrayList<Double>();
-    } else if (type.equals("int")) {
-      list = new ArrayList<Integer>();
-    } else if (type.equals("long")) {
-      list = new ArrayList<Long>();
-    } else if (type.equals("float")) {
-      list = new ArrayList<Float>();
-    } else {
-      list = new ArrayList<String>();
-    }
-    String find = "<"+type+" name=\""+name+"\">";
-    String endS = "</"+type+">";
-    int findAt = facit.indexOf(find)+find.length();
-    while (findAt>find.length()) {
-      int end = facit.indexOf(endS, findAt);
-      if (type.equals("double")) {
-        list.add(Double.parseDouble(facit.substring(findAt, end)));
-      } else if (type.equals("int")) {
-        list.add(Integer.parseInt(facit.substring(findAt, end)));
-      } else if (type.equals("long")) {
-        list.add(Long.parseLong(facit.substring(findAt, end)));
-      } else if (type.equals("float")) {
-        list.add(Float.parseFloat(facit.substring(findAt, end)));
-      } else {
-        list.add(facit.substring(findAt, end));
-      }
-      findAt = facit.indexOf(find, end)+find.length();
-    }
-    return list;
   }
 
   @SuppressWarnings({ "unchecked", "rawtypes" })

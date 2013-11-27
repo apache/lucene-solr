@@ -45,8 +45,6 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
   static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
   static ArrayList<ArrayList<Integer>> intStringTestStart; 
   
-  static String response;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml","schema-analytics.xml");
@@ -106,85 +104,72 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
     }
     
     assertU(commit()); 
-    response = h.query(request(fileToStringArr(fileName)));
+    setResponse(h.query(request(fileToStringArr(fileName))));
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void limitTest() throws Exception { 
 
-    String longLimit = getFacetXML(response, "lr", "fieldFacets", "long_ld");
-    Collection<Double> lon = (ArrayList<Double>)xmlToList(longLimit, "double", "mean");
-    assertEquals(lon.size(),5);
-    String floatLimit = getFacetXML(response, "lr", "fieldFacets", "float_fd");
-    Collection<Double> flo = (ArrayList<Double>)xmlToList(floatLimit, "double", "median");
-    assertEquals(flo.size(),3);
-    String doubleLimit = getFacetXML(response, "lr", "fieldFacets", "double_dd");
-    Collection<Long> doub = (ArrayList<Long>)xmlToList(doubleLimit, "long", "count");
-    assertEquals(doub.size(),7);
-    String stringLimit = getFacetXML(response, "lr", "fieldFacets", "string_sd");   
-    Collection<Integer> string = (ArrayList<Integer>)xmlToList(stringLimit, "int", "percentile_20");
-    assertEquals(string.size(),1);
+    Collection<Double> lon = getDoubleList("lr", "fieldFacets", "long_ld", "double", "mean");
+    assertEquals(getRawResponse(), lon.size(),5);
+    Collection<Double> flo = getDoubleList("lr", "fieldFacets", "float_fd", "double", "median");
+    assertEquals(getRawResponse(), flo.size(),3);
+    Collection<Long> doub = getLongList("lr", "fieldFacets", "double_dd", "long", "count");
+    assertEquals(getRawResponse(), doub.size(),7);
+    Collection<Integer> string = getIntegerList("lr", "fieldFacets", "string_sd", "int", "percentile_20");
+    assertEquals(getRawResponse(), string.size(),1);
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void offsetTest() throws Exception { 
 
-    String xml;
     Collection<Double> lon;
    
     List<Double> all = new ArrayList<Double>();
-    xml = getFacetXML(response, "off0", "fieldFacets", "long_ld");
-    lon = (ArrayList<Double>)xmlToList(xml, "double", "mean");
-    assertEquals(lon.size(),2);
+    lon = getDoubleList("off0", "fieldFacets", "long_ld", "double", "mean");
+    assertEquals(getRawResponse(), lon.size(),2);
     assertArrayEquals(new Double[]{ 1.5,  2.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
     
-    xml = getFacetXML(response, "off1", "fieldFacets", "long_ld");
-    lon = (ArrayList<Double>)xmlToList(xml, "double", "mean");
-    assertEquals(lon.size(),2);
+    lon = getDoubleList("off1", "fieldFacets", "long_ld", "double", "mean");
+    assertEquals(getRawResponse(), lon.size(),2);
     assertArrayEquals(new Double[]{ 3.0,  4.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
     
-    xml = getFacetXML(response, "off2", "fieldFacets", "long_ld");
-    lon = (ArrayList<Double>)xmlToList(xml, "double", "mean");
-    assertEquals(lon.size(),3);
+    lon = getDoubleList("off2", "fieldFacets", "long_ld", "double", "mean");
+    assertEquals(getRawResponse(), lon.size(),3);
     assertArrayEquals(new Double[]{ 5.0,  5.75, 6.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
     
-    xml = getFacetXML(response, "offAll", "fieldFacets", "long_ld");
-    lon = (ArrayList<Double>)xmlToList(xml, "double", "mean");
-    assertEquals(lon.size(),7);
+    lon = getDoubleList("offAll", "fieldFacets", "long_ld", "double", "mean");
+    assertEquals(getRawResponse(), lon.size(),7);
     assertArrayEquals(all.toArray(new Double[0]), lon.toArray(new Double[0]));
   }
   
   @SuppressWarnings("unchecked")
   @Test
   public void sortTest() throws Exception { 
-    String longSort = getFacetXML(response, "sr", "fieldFacets", "long_ld");
-    Collection<Double> lon = (ArrayList<Double>)xmlToList(longSort, "double", "mean");
+    Collection<Double> lon = getDoubleList("sr", "fieldFacets", "long_ld", "double", "mean");
     ArrayList<Double> longTest = calculateNumberStat(intLongTestStart, "mean");
     Collections.sort(longTest);
-    assertEquals(longTest,lon);
+    assertEquals(getRawResponse(), longTest,lon);
     
-    String floatSort = getFacetXML(response, "sr", "fieldFacets", "float_fd");
-    Collection<Double> flo = (ArrayList<Double>)xmlToList(floatSort, "double", "median");
+    Collection<Double> flo = getDoubleList("sr", "fieldFacets", "float_fd", "double", "median");
     ArrayList<Double> floatTest = calculateNumberStat(intFloatTestStart, "median");
     Collections.sort(floatTest,Collections.reverseOrder());
-    assertEquals(floatTest,flo);
+    assertEquals(getRawResponse(), floatTest,flo);
     
-    String doubleSort = getFacetXML(response, "sr", "fieldFacets", "double_dd");
-    Collection<Long> doub = (ArrayList<Long>)xmlToList(doubleSort, "long", "count");
+    Collection<Long> doub = getLongList("sr", "fieldFacets", "double_dd", "long", "count");
     ArrayList<Long> doubleTest = (ArrayList<Long>)calculateStat(intDoubleTestStart, "count");
     Collections.sort(doubleTest);
-    assertEquals(doubleTest,doub);
+    assertEquals(getRawResponse(), doubleTest,doub);
     
-    String stringSort = getFacetXML(response, "sr", "fieldFacets", "string_sd");   
-    Collection<Integer> string = (ArrayList<Integer>)xmlToList(stringSort, "int", "percentile_20");
+    Collection<Integer> string = getIntegerList("sr", "fieldFacets", "string_sd", "int", "percentile_20");
     ArrayList<Integer> stringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "perc_20");
     Collections.sort(stringTest,Collections.reverseOrder());
-    assertEquals(stringTest,string);
+    assertEquals(getRawResponse(), stringTest,string);
   }
 
 }
