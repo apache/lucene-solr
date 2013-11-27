@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -32,8 +31,7 @@ import org.apache.lucene.util.FixedBitSet;
  *  encoding.
  *
  *  @lucene.experimental */
-public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
-  private final float[] values;
+public class TaxonomyFacetSumFloatAssociations extends FloatTaxonomyFacets {
 
   /** Create {@code TaxonomyFacetSumFloatAssociations} against
    *  the default index field. */
@@ -45,7 +43,6 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
    *  the specified index field. */
   public TaxonomyFacetSumFloatAssociations(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     super(indexFieldName, taxoReader, config);
-    values = new float[taxoReader.getSize()];
     sumValues(fc.getMatchingDocs());
   }
 
@@ -86,71 +83,7 @@ public class TaxonomyFacetSumFloatAssociations extends TaxonomyFacets {
         ++doc;
       }
     }
-  }
 
-  @Override
-  public Number getSpecificValue(String dim, String... path) throws IOException {
-    verifyDim(dim);
-    int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
-    if (ord < 0) {
-      return -1;
-    }
-    return values[ord];
-  }
-
-  @Override
-  public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-    // TODO: can we factor this out?
-    if (topN <= 0) {
-      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
-    }
-    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
-    FacetLabel cp = FacetLabel.create(dim, path);
-    int dimOrd = taxoReader.getOrdinal(cp);
-    if (dimOrd == -1) {
-      //System.out.println("no ord for path=" + path);
-      return null;
-    }
-
-    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(Math.min(taxoReader.getSize(), topN));
-    float bottomValue = 0;
-
-    int ord = children[dimOrd];
-    float sumValue = 0;
-    int childCount = 0;
-    TopOrdAndFloatQueue.OrdAndValue reuse = null;
-    while(ord != TaxonomyReader.INVALID_ORDINAL) {
-      if (values[ord] > 0) {
-        sumValue += values[ord];
-        childCount++;
-        if (values[ord] > bottomValue) {
-          if (reuse == null) {
-            reuse = new TopOrdAndFloatQueue.OrdAndValue();
-          }
-          reuse.ord = ord;
-          reuse.value = values[ord];
-          reuse = q.insertWithOverflow(reuse);
-          if (q.size() == topN) {
-            bottomValue = q.top().value;
-          }
-        }
-      }
-
-      ord = siblings[ord];
-    }
-
-    if (sumValue == 0) {
-      //System.out.println("totCount=0 for path=" + path);
-      return null;
-    }
-
-    LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdAndFloatQueue.OrdAndValue ordAndValue = q.pop();
-      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
-    }
-
-    return new FacetResult(sumValue, labelValues, childCount);
+    rollup();
   }
 }

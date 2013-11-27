@@ -19,10 +19,8 @@ package org.apache.lucene.facet;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.FixedBitSet;
@@ -35,9 +33,8 @@ import org.apache.lucene.util.IntsRef;
  * @lucene.experimental */
 
 // nocommit remove & add specialized Cached variation only?
-public class TaxonomyFacetCounts extends TaxonomyFacets {
+public class TaxonomyFacetCounts extends IntTaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
-  private final int[] counts;
 
   /** Create {@code TaxonomyFacetCounts}, which also
    *  counts all facet labels.  Use this for a non-default
@@ -46,7 +43,6 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
   public TaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
-    counts = new int[taxoReader.getSize()];
     count(fc.getMatchingDocs());
   }
 
@@ -61,115 +57,12 @@ public class TaxonomyFacetCounts extends TaxonomyFacets {
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
         ords.get(doc, scratch);
         for(int i=0;i<scratch.length;i++) {
-          counts[scratch.ints[scratch.offset+i]]++;
+          values[scratch.ints[scratch.offset+i]]++;
         }
         ++doc;
       }
     }
 
-    // nocommit we could do this lazily instead:
-
-    // Rollup any necessary dims:
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
-      String dim = ent.getKey();
-      FacetsConfig.DimConfig ft = ent.getValue();
-      if (ft.hierarchical && ft.multiValued == false) {
-        int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
-        // It can be -1 if this field was declared in the
-        // config but never indexed:
-        if (dimRootOrd > 0) {
-          counts[dimRootOrd] += rollup(children[dimRootOrd]);
-        }
-      }
-    }
-  }
-
-  private int rollup(int ord) {
-    int sum = 0;
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      int childValue = counts[ord] + rollup(children[ord]);
-      counts[ord] = childValue;
-      sum += childValue;
-      ord = siblings[ord];
-    }
-    return sum;
-  }
-
-  @Override
-  public Number getSpecificValue(String dim, String... path) throws IOException {
-    verifyDim(dim);
-    int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
-    if (ord < 0) {
-      return -1;
-    }
-    return counts[ord];
-  }
-
-  @Override
-  public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-    // TODO: can we factor this out?
-    if (topN <= 0) {
-      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
-    }
-    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
-    FacetLabel cp = FacetLabel.create(dim, path);
-    int dimOrd = taxoReader.getOrdinal(cp);
-    if (dimOrd == -1) {
-      //System.out.println("no ord for path=" + path);
-      return null;
-    }
-
-    TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
-    
-    int bottomCount = 0;
-
-    int ord = children[dimOrd];
-    int totCount = 0;
-    int childCount = 0;
-
-    TopOrdAndIntQueue.OrdAndValue reuse = null;
-    while(ord != TaxonomyReader.INVALID_ORDINAL) {
-      if (counts[ord] > 0) {
-        totCount += counts[ord];
-        childCount++;
-        if (counts[ord] > bottomCount) {
-          if (reuse == null) {
-            reuse = new TopOrdAndIntQueue.OrdAndValue();
-          }
-          reuse.ord = ord;
-          reuse.value = counts[ord];
-          reuse = q.insertWithOverflow(reuse);
-          if (q.size() == topN) {
-            bottomCount = q.top().value;
-          }
-        }
-      }
-
-      ord = siblings[ord];
-    }
-
-    if (totCount == 0) {
-      return null;
-    }
-
-    if (dimConfig.multiValued) {
-      if (dimConfig.requireDimCount) {
-        totCount = counts[dimOrd];
-      } else {
-        // Our sum'd count is not correct, in general:
-        totCount = -1;
-      }
-    } else {
-      // Our sum'd dim count is accurate, so we keep it
-    }
-
-    LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
-      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
-    }
-
-    return new FacetResult(totCount, labelValues, childCount);
+    rollup();
   }
 }

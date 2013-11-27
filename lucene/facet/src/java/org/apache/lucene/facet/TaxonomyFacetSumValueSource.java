@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -33,12 +32,11 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
-/** Aggregates sum of values from a {@link ValueSource}, for
- *  each facet label.
+/** Aggregates sum of values from {@link
+ *  ValueSource#doubleValue}, for each facet label.
  *
  *  @lucene.experimental */
-public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
-  private final float[] values;
+public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
 
   /** Aggreggates float facet values from the provided
@@ -58,7 +56,6 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
                                      FacetsConfig config, FacetsCollector fc, ValueSource valueSource) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
-    values = new float[taxoReader.getSize()];
     sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource);
   }
 
@@ -105,107 +102,7 @@ public class TaxonomyFacetSumValueSource extends TaxonomyFacets {
       }
     }
 
-    // nocommit we could do this lazily instead:
-
-    // Rollup any necessary dims:
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
-      String dim = ent.getKey();
-      FacetsConfig.DimConfig ft = ent.getValue();
-      if (ft.hierarchical && ft.multiValued == false) {
-        int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
-        assert dimRootOrd > 0;
-        values[dimRootOrd] += rollup(children[dimRootOrd]);
-      }
-    }
-  }
-
-  private float rollup(int ord) {
-    float sum = 0;
-    while (ord != TaxonomyReader.INVALID_ORDINAL) {
-      float childValue = values[ord] + rollup(children[ord]);
-      values[ord] = childValue;
-      sum += childValue;
-      ord = siblings[ord];
-    }
-    return sum;
-  }
-
-  @Override
-  public Number getSpecificValue(String dim, String... path) throws IOException {
-    verifyDim(dim);
-    int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
-    if (ord < 0) {
-      return -1;
-    }
-    return values[ord];
-  }
-
-  @Override
-  public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-    // TODO: can we factor this out?
-    if (topN <= 0) {
-      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
-    }
-    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
-    FacetLabel cp = FacetLabel.create(dim, path);
-    int dimOrd = taxoReader.getOrdinal(cp);
-    if (dimOrd == -1) {
-      System.out.println("  no dim ord " + dim);
-      return null;
-    }
-
-    TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(Math.min(taxoReader.getSize(), topN));
-    float bottomValue = 0;
-
-    int ord = children[dimOrd];
-    float sumValues = 0;
-    int childCount = 0;
-
-    TopOrdAndFloatQueue.OrdAndValue reuse = null;
-    while(ord != TaxonomyReader.INVALID_ORDINAL) {
-      if (values[ord] > 0) {
-        sumValues += values[ord];
-        childCount++;
-        if (values[ord] > bottomValue) {
-          if (reuse == null) {
-            reuse = new TopOrdAndFloatQueue.OrdAndValue();
-          }
-          reuse.ord = ord;
-          reuse.value = values[ord];
-          reuse = q.insertWithOverflow(reuse);
-          if (q.size() == topN) {
-            bottomValue = q.top().value;
-          }
-        }
-      }
-
-      ord = siblings[ord];
-    }
-
-    if (sumValues == 0) {
-      System.out.println("  no sum");
-      return null;
-    }
-
-    if (dimConfig.multiValued) {
-      if (dimConfig.requireDimCount) {
-        sumValues = values[dimOrd];
-      } else {
-        // Our sum'd count is not correct, in general:
-        sumValues = -1;
-      }
-    } else {
-      // Our sum'd dim count is accurate, so we keep it
-    }
-
-    LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
-      TopOrdAndFloatQueue.OrdAndValue ordAndValue = q.pop();
-      FacetLabel child = taxoReader.getPath(ordAndValue.ord);
-      labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
-    }
-
-    return new FacetResult(sumValues, labelValues, childCount);
+    rollup();
   }
 
   /** {@link ValueSource} that returns the score for each
