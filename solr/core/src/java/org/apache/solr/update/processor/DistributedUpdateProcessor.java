@@ -579,6 +579,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader || isSubShardLeader) {
         params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
+      } else if (log.isDebugEnabled()) {
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
       }
 
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -1008,6 +1011,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader || isSubShardLeader) {
         params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
+      } else if (log.isDebugEnabled()) {
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
       }
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
@@ -1069,6 +1075,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
       outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+      if (log.isDebugEnabled()) {
+        outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+      }
 
       SolrParams params = req.getParams();
       String route = params.get(ShardParams._ROUTE_);
