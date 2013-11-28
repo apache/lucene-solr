@@ -78,13 +78,13 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double sumResult = (Double) getStatResult("ar", "sum", VAL_TYPE.DOUBLE);
     double uniqueResult = ((Long) getStatResult("ar", "unique", VAL_TYPE.LONG)).doubleValue();
     double result = (Double) getStatResult("ar", "su", VAL_TYPE.DOUBLE);
-    assertEquals(sumResult + uniqueResult, result, 0.0);
+    assertEquals(getRawResponse(), sumResult + uniqueResult, result, 0.0);
 
     double meanResult = (Double) getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
     double medianResult = (Double) getStatResult("ar", "median", VAL_TYPE.DOUBLE);
     double countResult = ((Long) getStatResult("ar", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("ar", "mcm", VAL_TYPE.DOUBLE);
-    assertEquals(meanResult + countResult + medianResult, result, 0.0);
+    assertEquals(getRawResponse(), meanResult + countResult + medianResult, result, 0.0);
   }
 
   @Test
@@ -92,13 +92,13 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double sumResult = (Double) getStatResult("mr", "sum", VAL_TYPE.DOUBLE);
     double uniqueResult = ((Long) getStatResult("mr", "unique", VAL_TYPE.LONG)).doubleValue();
     double result = (Double) getStatResult("mr", "su", VAL_TYPE.DOUBLE);
-    assertEquals(sumResult * uniqueResult, result, 0.0);
+    assertEquals(getRawResponse(), sumResult * uniqueResult, result, 0.0);
 
     double meanResult = (Double) getStatResult("mr", "mean", VAL_TYPE.DOUBLE);
     double medianResult = (Double) getStatResult("mr", "median", VAL_TYPE.DOUBLE);
     double countResult = ((Long) getStatResult("mr", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("mr", "mcm", VAL_TYPE.DOUBLE);
-    assertEquals(meanResult * countResult * medianResult, result, 0.0);
+    assertEquals(getRawResponse(), meanResult * countResult * medianResult, result, 0.0);
   }
 
   @Test
@@ -106,12 +106,12 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double sumResult = (Double) getStatResult("dr", "sum", VAL_TYPE.DOUBLE);
     double uniqueResult = ((Long) getStatResult("dr", "unique", VAL_TYPE.LONG)).doubleValue();
     double result = (Double) getStatResult("dr", "su", VAL_TYPE.DOUBLE);
-    assertEquals(sumResult / uniqueResult, result, 0.0);
+    assertEquals(getRawResponse(), sumResult / uniqueResult, result, 0.0);
 
     double meanResult = (Double) getStatResult("dr", "mean", VAL_TYPE.DOUBLE);
     double countResult = ((Long) getStatResult("dr", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("dr", "mc", VAL_TYPE.DOUBLE);
-    assertEquals(meanResult / countResult, result, 0.0);
+    assertEquals(getRawResponse(), meanResult / countResult, result, 0.0);
   }
 
   @Test
@@ -119,43 +119,43 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double sumResult = (Double) getStatResult("pr", "sum", VAL_TYPE.DOUBLE);
     double uniqueResult = ((Long) getStatResult("pr", "unique", VAL_TYPE.LONG)).doubleValue();
     double result = (Double) getStatResult("pr", "su", VAL_TYPE.DOUBLE);
-    assertEquals(Math.pow(sumResult, uniqueResult), result, 0.0);
+    assertEquals(getRawResponse(), Math.pow(sumResult, uniqueResult), result, 0.0);
 
     double meanResult = (Double) getStatResult("pr", "mean", VAL_TYPE.DOUBLE);
     double countResult = ((Long) getStatResult("pr", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("pr", "mc", VAL_TYPE.DOUBLE);
-    assertEquals(Math.pow(meanResult, countResult), result, 0.0);
+    assertEquals(getRawResponse(), Math.pow(meanResult, countResult), result, 0.0);
   }
 
   @Test
   public void negateTest() throws Exception {
     double sumResult = (Double) getStatResult("nr", "sum", VAL_TYPE.DOUBLE);
     double result = (Double) getStatResult("nr", "s", VAL_TYPE.DOUBLE);
-    assertEquals(-1 * sumResult, result, 0.0);
+    assertEquals(getRawResponse(), -1 * sumResult, result, 0.0);
 
     double countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("nr", "c", VAL_TYPE.DOUBLE);
-    assertEquals(-1 * countResult, result, 0.0);
+    assertEquals(getRawResponse(), -1 * countResult, result, 0.0);
   }
 
   @Test
   public void absoluteValueTest() throws Exception {
     double sumResult = (Double) getStatResult("avr", "sum", VAL_TYPE.DOUBLE);
     double result = (Double) getStatResult("avr", "s", VAL_TYPE.DOUBLE);
-    assertEquals(sumResult, result, 0.0);
+    assertEquals(getRawResponse(), sumResult, result, 0.0);
 
     double countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG)).doubleValue();
     result = (Double) getStatResult("avr", "c", VAL_TYPE.DOUBLE);
-    assertEquals(countResult, result, 0.0);
+    assertEquals(getRawResponse(), countResult, result, 0.0);
   }
 
   @Test
   public void constantNumberTest() throws Exception {
     double result = (Double) getStatResult("cnr", "c8", VAL_TYPE.DOUBLE);
-    assertEquals(8, result, 0.0);
+    assertEquals(getRawResponse(), 8, result, 0.0);
 
     result = (Double) getStatResult("cnr", "c10", VAL_TYPE.DOUBLE);
-    assertEquals(10, result, 0.0);
+    assertEquals(getRawResponse(), 10, result, 0.0);
   }
 
   @SuppressWarnings("deprecation")
@@ -165,36 +165,36 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     DateMathParser date = new DateMathParser();
     date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "median", VAL_TYPE.DATE)));
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
-    assertEquals(TrieDateField.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), TrieDateField.parseDate(dateMath), date.parseMath(math));
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     date = new DateMathParser();
     date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "max", VAL_TYPE.DATE)));
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
-    assertEquals(TrieDateField.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), TrieDateField.parseDate(dateMath), date.parseMath(math));
   }
 
   @Test
   public void constantDateTest() throws Exception {
     String date = (String) getStatResult("cdr", "cd1", VAL_TYPE.DATE);
     String str = (String) getStatResult("cdr", "cs1", VAL_TYPE.STRING);
-    assertEquals(date, str);
+    assertEquals(getRawResponse(), date, str);
 
     date = (String) getStatResult("cdr", "cd2", VAL_TYPE.DATE);
     str = (String) getStatResult("cdr", "cs2", VAL_TYPE.STRING);
-    assertEquals(date, str);
+    assertEquals(getRawResponse(), date, str);
   }
 
   @Test
   public void constantStringTest() throws Exception {
     String str = (String) getStatResult("csr", "cs1", VAL_TYPE.STRING);
-    assertEquals(str, "this is the first");
+    assertEquals(getRawResponse(), str, "this is the first");
 
     str = (String) getStatResult("csr", "cs2", VAL_TYPE.STRING);
-    assertEquals(str, "this is the second");
+    assertEquals(getRawResponse(), str, "this is the second");
 
     str = (String) getStatResult("csr", "cs3", VAL_TYPE.STRING);
-    assertEquals(str, "this is the third");
+    assertEquals(getRawResponse(), str, "this is the third");
   }
 
   @Test
@@ -203,13 +203,13 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     builder.append((String) getStatResult("cr", "csmin", VAL_TYPE.STRING));
     builder.append((String) getStatResult("cr", "min", VAL_TYPE.STRING));
     String concat = (String) getStatResult("cr", "ccmin", VAL_TYPE.STRING);
-    assertEquals(concat, builder.toString());
+    assertEquals(getRawResponse(), concat, builder.toString());
 
     builder.setLength(0);
     builder.append((String) getStatResult("cr", "csmax", VAL_TYPE.STRING));
     builder.append((String) getStatResult("cr", "max", VAL_TYPE.STRING));
     concat = (String) getStatResult("cr", "ccmax", VAL_TYPE.STRING);
-    assertEquals(concat, builder.toString());
+    assertEquals(getRawResponse(), concat, builder.toString());
   }
 
   @Test
@@ -217,12 +217,12 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     StringBuilder builder = new StringBuilder();
     builder.append((String) getStatResult("rr", "min", VAL_TYPE.STRING));
     String rev = (String) getStatResult("rr", "rmin", VAL_TYPE.STRING);
-    assertEquals(rev, builder.reverse().toString());
+    assertEquals(getRawResponse(), rev, builder.reverse().toString());
 
     builder.setLength(0);
     builder.append((String) getStatResult("rr", "max", VAL_TYPE.STRING));
     rev = (String) getStatResult("rr", "rmax", VAL_TYPE.STRING);
-    assertEquals(rev, builder.reverse().toString());
+    assertEquals(getRawResponse(), rev, builder.reverse().toString());
   }
 
   public static SolrQueryRequest request(String... args) {

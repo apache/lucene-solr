@@ -76,12 +76,19 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   static private Document doc;
   static private XPathFactory xPathFact =  XPathFactory.newInstance();
 
+  static private String rawResponse;
+
   public static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true); // never forget this!
     DocumentBuilder builder = factory.newDocumentBuilder();
     doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("UTF-8"))));
     xPathFact = XPathFactory.newInstance();
+    rawResponse = response;
+  }
+
+  protected String getRawResponse() {
+    return rawResponse;
   }
 
   public Object getStatResult(String section, String name, VAL_TYPE type) throws XPathExpressionException {
@@ -93,13 +100,17 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
     // VAL_TYPE.DOUBLE, the element in question is <double name="blah">47.0</double>.
     sb.append("/").append(type.toString()).append("[@name='").append(name).append("']");
     String val = xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
-    switch (type) {
-      case INTEGER: return Integer.parseInt(val);
-      case DOUBLE:  return Double.parseDouble(val);
-      case FLOAT:   return Float.parseFloat(val);
-      case LONG:    return Long.parseLong(val);
-      case STRING:  return val;
-      case DATE:    return val;
+    try {
+      switch (type) {
+        case INTEGER: return Integer.parseInt(val);
+        case DOUBLE:  return Double.parseDouble(val);
+        case FLOAT:   return Float.parseFloat(val);
+        case LONG:    return Long.parseLong(val);
+        case STRING:  return val;
+        case DATE:    return val;
+      }
+    } catch (Exception e) {
+      fail("Caught exception in getStatResult, xPath = " + sb.toString() + " \nraw data: " + rawResponse);
     }
     fail("Unknown type used in getStatResult");
     return null; // Really can't get here, but the compiler thinks we can!
