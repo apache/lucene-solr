@@ -197,7 +197,7 @@ public class SolrCmdDistributor {
     
     addCommit(uReq, cmd);
     
-    log.debug("Distrib commit to:" + nodes + " params:" + params);
+    log.debug("Distrib commit to: {} params: {}", nodes, params);
     
     for (Node node : nodes) {
       submit(new Req(cmd.toString(), node, uReq, false));
