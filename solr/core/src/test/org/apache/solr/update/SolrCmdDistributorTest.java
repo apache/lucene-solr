@@ -331,7 +331,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     final AtomicInteger retries = new AtomicInteger();
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient1.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
-    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", "locahost") {
       @Override
       public boolean checkRetry() {
         retries.incrementAndGet();
@@ -367,7 +367,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     final AtomicInteger retries = new AtomicInteger();
     nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
-    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", "locahost") {
       @Override
       public boolean checkRetry() {
         ss.setExp(null);
@@ -413,7 +413,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     final AtomicInteger retries = new AtomicInteger();
     nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
-    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", "locahost") {
       @Override
       public boolean checkRetry() {
         retries.incrementAndGet();
@@ -457,7 +457,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     ArrayList<Node> nodes = new ArrayList<Node>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
-    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", "locahost") {
       @Override
       public boolean checkRetry() {
         ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
