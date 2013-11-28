@@ -99,6 +99,27 @@ public class SortableFloatField extends PrimitiveFieldType implements FloatValue
     String sval = f.stringValue();
     writer.writeFloat(name, NumberUtils.SortableStr2float(sval));
   }
+
+  @Override
+  public Object marshalSortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    CharsRef chars = new CharsRef();
+    UnicodeUtil.UTF8toUTF16((BytesRef)value, chars);
+    return NumberUtils.SortableStr2float(chars.toString());
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    String sortableString = NumberUtils.float2sortableStr(value.toString());
+    BytesRef bytes = new BytesRef();
+    UnicodeUtil.UTF16toUTF8(sortableString, 0, sortableString.length(), bytes);
+    return bytes;
+  }
 }
 
 

@@ -932,4 +932,20 @@ public abstract class FieldType extends FieldProperties {
     }
     return analyzerProps;
   }
+  
+  /** 
+   * Convert a value used by the FieldComparator for this FieldType's SortField
+   * into a marshalable value for distributed sorting.
+   */
+  public Object marshalSortValue(Object value) {
+    return value;
+  }
+  
+  /**
+   * Convert a value marshaled via {@link #marshalSortValue} back 
+   * into a value usable by the FieldComparator for this FieldType's SortField
+   */
+  public Object unmarshalSortValue(Object value) {
+    return value;
+  }
 }

@@ -507,11 +507,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  protected void query(Object... q) throws Exception {
-    query(true, q);
+  /**
+   * Sets distributed params.
+   * Returns the QueryResponse from {@link #queryServer},
+   */
+  protected QueryResponse query(Object... q) throws Exception {
+    return query(true, q);
   }
-  
-  protected void query(boolean setDistribParams, Object[] q) throws Exception {
+
+  /**
+   * Returns the QueryResponse from {@link #queryServer}  
+   */
+  protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -558,6 +565,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         thread.join();
       }
     }
+    return rsp;
   }
   
   public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
