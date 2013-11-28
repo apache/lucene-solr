@@ -47,6 +47,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -1627,6 +1629,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       throw new RuntimeException("XPath is invalid", e2);
     }
   }
+                                                         
+  /**
+   * Fails if the number of documents in the given SolrDocumentList differs
+   * from the given number of expected values, or if any of the values in the
+   * given field don't match the expected values in the same order.
+   */
+  public static void assertFieldValues(SolrDocumentList documents, String fieldName, Object... expectedValues) {
+    if (documents.size() != expectedValues.length) {
+      fail("Number of documents (" + documents.size()
+          + ") is different from number of expected values (" + expectedValues.length);
+    }
+    for (int docNum = 1 ; docNum <= documents.size() ; ++docNum) {
+      SolrDocument doc = documents.get(docNum - 1);
+      Object expected = expectedValues[docNum - 1];
+      Object actual = doc.get(fieldName);
+      if (null != expected && null != actual) {
+        if ( ! expected.equals(actual)) {
+          fail( "Unexpected " + fieldName + " field value in document #" + docNum
+              + ": expected=[" + expected + "], actual=[" + actual + "]");
+        }
+      }
+    }
+  }
+
   public static void copyMinConf(File dstRoot) throws IOException {
     copyMinConf(dstRoot, null);
   }
