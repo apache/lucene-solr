@@ -360,12 +360,14 @@ public class SolrCmdDistributor {
     private ZkStateReader zkStateReader;
     private String collection;
     private String shardId;
+    private String fromAddress;
     
-    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
+    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId, String fromCoreUrl) {
       super(nodeProps);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
       this.shardId = shardId;
+      this.fromAddress = fromCoreUrl;
     }
 
     @Override
@@ -382,7 +384,11 @@ public class SolrCmdDistributor {
         log.warn(null, e);
         return true;
       }
-      
+     
+      if (fromAddress.equals(leaderProps.getCoreUrl())) {
+        // we became the leader
+        return false;
+      }
       this.nodeProps = leaderProps;
       
       return true;
