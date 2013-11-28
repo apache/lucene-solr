@@ -106,6 +106,9 @@ New Features
 * SOLR-5492: Return the replica that actually served the query in shards.info
   response. (shalin)
 
+* SOLR-5506: Support docValues in CollationField and ICUCollationField.
+  (Robert Muir)
+
 Bug Fixes
 ----------------------
 

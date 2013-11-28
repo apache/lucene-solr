@@ -22,6 +22,9 @@ import java.io.InputStream;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -30,7 +33,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocTermOrdsRangeFilter;
+import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
@@ -209,30 +217,62 @@ public class CollationField extends FieldType {
    * its just that all methods are synced), this keeps things 
    * simple (we already have a threadlocal clone in the reused TS)
    */
-  private BytesRef analyzeRangePart(String field, String part) {     
-    try (TokenStream source = analyzer.tokenStream(field, part)) {
+  private BytesRef getCollationKey(String field, String text) {     
+    try (TokenStream source = analyzer.tokenStream(field, text)) {
       source.reset();    
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
 
       // we control the analyzer here: most errors are impossible
       if (!source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
+        throw new IllegalArgumentException("analyzer returned no terms for text: " + text);
       termAtt.fillBytesRef();
       assert !source.incrementToken();
       
       source.end();
       return BytesRef.deepCopyOf(bytes);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to analyze range part: " + part, e);
+      throw new RuntimeException("Unable to analyze text: " + text, e);
     }
   }
   
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     String f = field.getName();
-    BytesRef low = part1 == null ? null : analyzeRangePart(f, part1);
-    BytesRef high = part2 == null ? null : analyzeRangePart(f, part2);
-    return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
+    BytesRef low = part1 == null ? null : getCollationKey(f, part1);
+    BytesRef high = part2 == null ? null : getCollationKey(f, part2);
+    if (!field.indexed() && field.hasDocValues()) {
+      if (field.multiValued()) {
+          return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
+              field.getName(), low, high, minInclusive, maxInclusive));
+        } else {
+          return new ConstantScoreQuery(FieldCacheRangeFilter.newBytesRefRange(
+              field.getName(), low, high, minInclusive, maxInclusive));
+        } 
+    } else {
+      return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
+    }
+  }
+  
+  @Override
+  public void checkSchemaField(SchemaField field) {
+    // no-op
+  }
+
+  @Override
+  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
+    if (field.hasDocValues()) {
+      List<StorableField> fields = new ArrayList<StorableField>();
+      fields.add(createField(field, value, boost));
+      final BytesRef bytes = getCollationKey(field.getName(), value.toString());
+      if (field.multiValued()) {
+        fields.add(new SortedSetDocValuesField(field.getName(), bytes));
+      } else {
+        fields.add(new SortedDocValuesField(field.getName(), bytes));
+      }
+      return fields;
+    } else {
+      return Collections.singletonList(createField(field, value, boost));
+    }
   }
 }
