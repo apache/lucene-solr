@@ -161,7 +161,7 @@ Bug Fixes
   a SolrCore does not exist in core discovery mode. (Mark Miller)
   
 * SOLR-5354: Distributed sort is broken with CUSTOM FieldType. 
-  (Steve Rowe, hossman, Jessica Cheng)  
+  (Steve Rowe, hossman, Robert Muir, Jessica Cheng)  
 
 Optimizations
 ----------------------
