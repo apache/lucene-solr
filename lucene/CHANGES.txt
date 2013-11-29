@@ -31,6 +31,11 @@ Build
 * LUCENE-5347: Upgrade forbidden-apis checker to version 1.4.
   (Uwe Schindler)
 
+Bug fixes
+
+* LUCENE-5285: Improved highlighting of multi-valued fields with
+  FastVectorHighlighter. (Nik Everett via Adrien Grand)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

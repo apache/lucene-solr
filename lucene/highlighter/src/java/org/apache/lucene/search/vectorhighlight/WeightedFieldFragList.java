@@ -44,33 +44,37 @@ public class WeightedFieldFragList extends FieldFragList {
    */ 
   @Override
   public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ) {
-    
-    float totalBoost = 0;
-    
-    List<SubInfo> subInfos = new ArrayList<SubInfo>();
-    
-    HashSet<String> distinctTerms = new HashSet<String>();
-    
+    List<SubInfo> tempSubInfos = new ArrayList<SubInfo>();
+    List<SubInfo> realSubInfos = new ArrayList<SubInfo>();
+    HashSet<String> distinctTerms = new HashSet<String>();   
     int length = 0;
 
     for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
-      
-      subInfos.add( new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum() ) );
-      
+      float phraseTotalBoost = 0;
       for ( TermInfo ti :  phraseInfo.getTermsInfos()) {
         if ( distinctTerms.add( ti.getText() ) )
-          totalBoost += ti.getWeight() * phraseInfo.getBoost();
+          phraseTotalBoost += ti.getWeight() * phraseInfo.getBoost();
         length++;
       }
+      tempSubInfos.add( new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(),
+        phraseInfo.getSeqnum(), phraseTotalBoost ) );
     }
     
     // We want that terms per fragment (length) is included into the weight. Otherwise a one-word-query
     // would cause an equal weight for all fragments regardless of how much words they contain.  
     // To avoid that fragments containing a high number of words possibly "outrank" more relevant fragments
-    // we "bend" the length with a standard-normalization a little bit.  
-    totalBoost *= length * ( 1 / Math.sqrt( length ) );
-    
-    getFragInfos().add( new WeightedFragInfo( startOffset, endOffset, subInfos, totalBoost ) );
+    // we "bend" the length with a standard-normalization a little bit.
+    float norm = length * ( 1 / (float)Math.sqrt( length ) );
+
+    float totalBoost = 0;
+    for ( SubInfo tempSubInfo : tempSubInfos ) {
+      float subInfoBoost = tempSubInfo.getBoost() * norm;
+      realSubInfos.add( new SubInfo( tempSubInfo.getText(), tempSubInfo.getTermsOffsets(),
+        tempSubInfo.getSeqnum(), subInfoBoost ));
+      totalBoost += subInfoBoost;
+    }
+
+    getFragInfos().add( new WeightedFragInfo( startOffset, endOffset, realSubInfos, totalBoost ) );
   }
   
 }

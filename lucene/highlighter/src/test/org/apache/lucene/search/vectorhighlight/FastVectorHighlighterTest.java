@@ -412,6 +412,54 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       clause( "field_der_red", "red" ), clause( "field_der_red", "der" ), clause( "field_exact", "a", "cat" ) );
   }
 
+  public void testMultiValuedSortByScore() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer( random() ) ) );
+    Document doc = new Document();
+    FieldType type = new FieldType( TextField.TYPE_STORED );
+    type.setStoreTermVectorOffsets( true );
+    type.setStoreTermVectorPositions( true );
+    type.setStoreTermVectors( true );
+    type.freeze();
+    doc.add( new Field( "field", "zero if naught", type ) ); // The first two fields contain the best match
+    doc.add( new Field( "field", "hero of legend", type ) ); // but total a lower score (3) than the bottom
+    doc.add( new Field( "field", "naught of hero", type ) ); // two fields (4)
+    doc.add( new Field( "field", "naught of hero", type ) );
+    writer.addDocument(doc);
+
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    
+    ScoreOrderFragmentsBuilder fragmentsBuilder = new ScoreOrderFragmentsBuilder();    
+    fragmentsBuilder.setDiscreteMultiValueHighlighting( true );
+    IndexReader reader = DirectoryReader.open(writer, true );
+    String[] preTags = new String[] { "<b>" };
+    String[] postTags = new String[] { "</b>" };
+    Encoder encoder = new DefaultEncoder();
+    int docId = 0;
+    BooleanQuery query = new BooleanQuery();
+    query.add( clause( "field", "hero" ), Occur.SHOULD);
+    query.add( clause( "field", "of" ), Occur.SHOULD);
+    query.add( clause( "field", "legend" ), Occur.SHOULD);
+    FieldQuery fieldQuery = highlighter.getFieldQuery( query, reader );
+
+    for ( FragListBuilder fragListBuilder : new FragListBuilder[] {
+      new SimpleFragListBuilder(), new WeightedFragListBuilder() } ) {
+      String[] bestFragments = highlighter.getBestFragments( fieldQuery, reader, docId, "field", 20, 1,
+          fragListBuilder, fragmentsBuilder, preTags, postTags, encoder );
+      assertEquals("<b>hero</b> <b>of</b> <b>legend</b>", bestFragments[0]);
+      bestFragments = highlighter.getBestFragments( fieldQuery, reader, docId, "field", 28, 1,
+          fragListBuilder, fragmentsBuilder, preTags, postTags, encoder );
+      assertEquals("<b>hero</b> <b>of</b> <b>legend</b>", bestFragments[0]);
+      bestFragments = highlighter.getBestFragments( fieldQuery, reader, docId, "field", 30000, 1,
+          fragListBuilder, fragmentsBuilder, preTags, postTags, encoder );
+      assertEquals("<b>hero</b> <b>of</b> <b>legend</b>", bestFragments[0]);
+    }
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
   private void matchedFieldsTestCase( String fieldValue, String expected, Query... queryClauses ) throws IOException {
     matchedFieldsTestCase( true, true, fieldValue, expected, queryClauses );
   }
