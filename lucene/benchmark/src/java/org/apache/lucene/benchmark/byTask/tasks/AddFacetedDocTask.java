@@ -66,7 +66,7 @@ public class AddFacetedDocTask extends AddDocTask {
         // nocommit is this called once?  are we adding same
         // facets over and over!?
         FacetSource facetsSource = getRunData().getFacetSource();
-        config = new FacetsConfig(getRunData().getTaxonomyWriter());
+        config = new FacetsConfig();
         facetsSource.getNextFacets(facets);
         facetsSource.configure(config);
       }
@@ -89,7 +89,7 @@ public class AddFacetedDocTask extends AddDocTask {
       for(FacetField ff : facets) {
         doc2.add(ff);
       }
-      IndexDocument doc3 = config.build(doc2);
+      IndexDocument doc3 = config.build(getRunData().getTaxonomyWriter(), doc2);
       for(StorableField field : doc3.storableFields()) {
         doc.add((Field) field);
       }

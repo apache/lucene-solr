@@ -64,5 +64,12 @@ public final class FacetResult {
       Arrays.equals(labelValues, other.labelValues);
   }
 
-  // nocommit hashCode
+  @Override
+  public int hashCode() {
+    int hashCode = value.hashCode() + 31 * childCount;
+    for(LabelAndValue labelValue : labelValues) {
+      hashCode = labelValue.hashCode() + 31 * hashCode;
+    }
+    return hashCode;
+  }
 }

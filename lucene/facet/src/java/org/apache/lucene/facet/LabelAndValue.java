@@ -18,7 +18,7 @@ package org.apache.lucene.facet;
  */
 
 public final class LabelAndValue {
-  // nocommit BytesRef?
+  /** Facet's label. */
   public final String label;
 
   /** Value associated with this label. */

@@ -19,8 +19,6 @@ package org.apache.lucene.facet;
 
 import org.apache.lucene.util.PriorityQueue;
 
-// nocommit make value a double and merge with TopOrdCountValueQueue?
-
 /** Keeps highest results, first by largest float value,
  *  then tie break by smallest ord. */
 class TopOrdAndFloatQueue extends PriorityQueue<TopOrdAndFloatQueue.OrdAndValue> {

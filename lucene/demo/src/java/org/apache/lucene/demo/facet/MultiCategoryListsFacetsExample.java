@@ -49,20 +49,15 @@ public class MultiCategoryListsFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Creates a new instance and populates the catetory list params mapping. */
   public MultiCategoryListsFacetsExample() {
-  }
-
-  /** It's fine if taxoWriter is null (i.e., at search time) */
-  private FacetsConfig getConfig(TaxonomyWriter taxoWriter) {
-    FacetsConfig config = new FacetsConfig(taxoWriter);
     config.setIndexFieldName("Author", "author");
     config.setIndexFieldName("Publish Date", "pubdate");
     config.setHierarchical("Publish Date", true);
-    return config;
   }
-  
+
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
@@ -71,32 +66,30 @@ public class MultiCategoryListsFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    FacetsConfig config = getConfig(taxoWriter);
-
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
     
     indexWriter.close();
     taxoWriter.close();
@@ -107,14 +100,13 @@ public class MultiCategoryListsFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    FacetsConfig config = getConfig(null);
 
     FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
     List<FacetResult> results = new ArrayList<FacetResult>();

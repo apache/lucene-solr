@@ -94,7 +94,7 @@ public class RangeFacetsExample implements Closeable {
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     Facets facets = new RangeFacetCounts("timestamp", fc,
                                          PAST_HOUR,

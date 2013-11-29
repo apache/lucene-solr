@@ -59,9 +59,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
       final int length = hits.bits.length();
       int doc = 0;
       BytesRef scratch = new BytesRef();
-      //System.out.println("count seg=" + hits.context.reader());
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
-        //System.out.println("  doc=" + doc);
         dv.get(doc, scratch);
         byte[] bytes = scratch.bytes;
         int end = scratch.offset + scratch.length;
@@ -72,7 +70,6 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
           byte b = bytes[offset++];
           if (b >= 0) {
             prev = ord = ((ord << 7) | b) + prev;
-            assert ord < values.length: "ord=" + ord + " vs maxOrd=" + values.length;
             ++values[ord];
             ord = 0;
           } else {

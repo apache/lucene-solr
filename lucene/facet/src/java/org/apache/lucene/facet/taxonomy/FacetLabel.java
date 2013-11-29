@@ -76,6 +76,21 @@ public class FacetLabel implements Comparable<FacetLabel> {
   
   /** Construct from the given path components. */
   public FacetLabel(final String... components) {
+    this.components = components;
+    length = components.length;
+    checkComponents();
+  }
+
+  /** Construct from the dimension plus the given path components. */
+  public FacetLabel(String dim, String[] path) {
+    components = new String[1+path.length];
+    components[0] = dim;
+    System.arraycopy(path, 0, components, 1, path.length);
+    length = components.length;
+    checkComponents();
+  }
+
+  private void checkComponents() {
     // nocommit why so anal?
     // assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
     long len = 0;
@@ -91,16 +106,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
           + MAX_CATEGORY_PATH_LENGTH + " len=" + len
           + " path=" + Arrays.toString(components).substring(0, 30) + "...");
     }
-    this.components = components;
-    length = components.length;
-  }
-
-  // nocommit javadocs/rename
-  public static FacetLabel create(String dim, String... path) {
-    String[] components = new String[1+path.length];
-    components[0] = dim;
-    System.arraycopy(path, 0, components, 1, path.length);
-    return new FacetLabel(components);
   }
 
   /**

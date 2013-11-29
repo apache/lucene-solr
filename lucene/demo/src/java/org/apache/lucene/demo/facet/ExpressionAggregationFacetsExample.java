@@ -54,6 +54,7 @@ public class ExpressionAggregationFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
   public ExpressionAggregationFacetsExample() {}
@@ -66,20 +67,17 @@ public class ExpressionAggregationFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetsConfig config = new FacetsConfig(taxoWriter);
-
     Document doc = new Document();
     doc.add(new TextField("c", "foo bar", Store.NO));
     doc.add(new NumericDocValuesField("popularity", 5L));
     doc.add(new FacetField("A", "B"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new TextField("c", "foo foo bar", Store.NO));
     doc.add(new NumericDocValuesField("popularity", 3L));
     doc.add(new FacetField("A", "C"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
     
     indexWriter.close();
     taxoWriter.close();
@@ -90,7 +88,6 @@ public class ExpressionAggregationFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    FacetsConfig config = new FacetsConfig();
 
     // Aggregate categories by an expression that combines the document's score
     // and its popularity field
@@ -105,7 +102,7 @@ public class ExpressionAggregationFacetsExample {
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getValueSource(bindings));

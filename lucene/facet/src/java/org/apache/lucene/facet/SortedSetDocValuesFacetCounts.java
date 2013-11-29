@@ -49,8 +49,9 @@ import org.apache.lucene.util.PriorityQueue;
  *  label) facets, but it uses quite a bit less RAM to do
  *  so.
  *
- *  After creating this class, invoke {@link #getDim} or
- *  {@link #getAllDims} to retrieve facet results. */
+ *  <p><b>NOTE</b>: this class should be instantiated and
+ *  then used from a single thread, because it holds a
+ *  thread-private instance of {@link SortedSetDocValues}. */
 
 public class SortedSetDocValuesFacetCounts extends Facets {
 
@@ -167,8 +168,6 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       
       SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
       if (segValues == null) {
-        // nocommit in trunk this was a "return" which is
-        // wrong; make a failing test
         continue;
       }
 
@@ -176,7 +175,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       assert maxDoc == hits.bits.length();
       //System.out.println("  dv=" + dv);
 
-      // nocommit, yet another option is to count all segs
+      // TODO: yet another option is to count all segs
       // first, only in seg-ord space, and then do a
       // merge-sort-PQ in the end to only "resolve to
       // global" those seg ords that can compete, if we know
@@ -255,8 +254,6 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     if (path.length != 1) {
       throw new IllegalArgumentException("path must be length=1");
     }
-    // nocommit this is not thread safe in general?  add
-    // jdocs that app must instantiate & use from same thread?
     int ord = (int) dv.lookupTerm(new BytesRef(FacetsConfig.pathToString(dim, path)));
     if (ord < 0) {
       return -1;

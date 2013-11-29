@@ -148,12 +148,6 @@ public final class DrillDownQuery extends Query {
     String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = new BooleanQuery(true); // disable coord
-    // nocommit too anal?
-    /*
-    if (path.length == 0) {
-      throw new IllegalArgumentException("must have at least one facet label under dim");
-    }
-    */
     bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
 
     add(dim, bq);

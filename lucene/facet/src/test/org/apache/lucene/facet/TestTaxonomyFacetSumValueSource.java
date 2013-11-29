@@ -63,34 +63,34 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     // Reused across documents, to add the necessary facet
     // fields:
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("Author", "Bob"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new IntField("num", 20, Field.Store.NO));
     doc.add(new FacetField("Author", "Lisa"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new IntField("num", 30, Field.Store.NO));
     doc.add(new FacetField("Author", "Lisa"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new IntField("num", 40, Field.Store.NO));
     doc.add(new FacetField("Author", "Susan"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new IntField("num", 45, Field.Store.NO));
     doc.add(new FacetField("Author", "Frank"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -130,12 +130,12 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -145,7 +145,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     doc.add(new IntField("num", 20, Field.Store.NO));
     doc.add(new FacetField("a", "foo2"));
     doc.add(new FacetField("b", "bar1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -156,7 +156,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     doc.add(new FacetField("a", "foo3"));
     doc.add(new FacetField("b", "bar2"));
     doc.add(new FacetField("c", "baz1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -191,7 +191,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("a", "$facets2");
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -199,7 +199,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Document doc = new Document();
     doc.add(new IntField("num", 10, Field.Store.NO));
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -242,7 +242,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
@@ -250,7 +250,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
         doc.add(new StringField("f", "v", Field.Store.NO));
       }
       doc.add(new FacetField("dim", "a"));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -260,7 +260,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
     csq.setBoost(2.0f);
     
-    TopDocs td = Facets.search(newSearcher(r), csq, 10, fc);
+    TopDocs td = FacetsCollector.search(newSearcher(r), csq, 10, fc);
 
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());
     
@@ -276,12 +276,12 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
       doc.add(new FacetField("a", Integer.toString(i % 2)));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -302,12 +302,12 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
       doc.add(new FacetField("a", Integer.toString(i % 2)));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -339,7 +339,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     TopScoreDocCollector tsdc = TopScoreDocCollector.create(10, true);
     // score documents by their 'price' field - makes asserting the correct counts for the categories easier
     Query q = new FunctionQuery(new LongFieldSource("price"));
-    Facets.search(newSearcher(r), q, 10, fc);
+    FacetsCollector.search(newSearcher(r), q, 10, fc);
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, valueSource);
     
     assertEquals("value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
@@ -353,7 +353,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setHierarchical("a", true);
     //config.setRequireDimCount("a", true);
     
@@ -361,7 +361,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("price", (i+1)));
       doc.add(new FacetField("a", Integer.toString(i % 2), "1"));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -383,7 +383,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("b", "$b");
     
     for(int i = atLeast(30); i > 0; --i) {
@@ -391,14 +391,14 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       doc.add(new StringField("f", "v", Field.Store.NO));
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector fc = new FacetsCollector(true);
-    TopDocs hits = Facets.search(newSearcher(r), new MatchAllDocsQuery(), 10, fc);
+    TopDocs hits = FacetsCollector.search(newSearcher(r), new MatchAllDocsQuery(), 10, fc);
     
     Facets facets1 = getTaxonomyFacetCounts(taxoReader, config, fc);
     Facets facets2 = new TaxonomyFacetSumValueSource(new DocValuesOrdinalsReader("$b"), taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());

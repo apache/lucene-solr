@@ -138,8 +138,8 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     }
   }
 
-  private static FacetsConfig getConfig(TaxonomyWriter taxoWriter) {
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+  private static FacetsConfig getConfig() {
+    FacetsConfig config = new FacetsConfig();
     config.setMultiValued("A", true);
     config.setMultiValued("B", true);
     config.setRequireDimCount("B", true);
@@ -147,10 +147,6 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     return config;
   }
 
-  private static FacetsConfig getConfig() {
-    return getConfig(null);
-  }
-  
   private static void indexDocsNoFacets(IndexWriter indexWriter) throws IOException {
     int numDocs = atLeast(2);
     for (int i = 0; i < numDocs; i++) {
@@ -165,11 +161,11 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
                                                  Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetsConfig config = getConfig(taxoWriter);
+    FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       addFacets(doc, config, false);
-      indexWriter.addDocument(config.build(doc));
+      indexWriter.addDocument(config.build(taxoWriter, doc));
     }
     indexWriter.commit(); // flush a segment
   }
@@ -178,12 +174,12 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
                                                   Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetsConfig config = getConfig(taxoWriter);
+    FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       addFacets(doc, config, true);
       addField(doc);
-      indexWriter.addDocument(config.build(doc));
+      indexWriter.addDocument(config.build(taxoWriter, doc));
     }
     indexWriter.commit(); // flush a segment
   }
@@ -192,7 +188,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
                                                       Map<String,Integer> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetsConfig config = getConfig(taxoWriter);
+    FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       boolean hasContent = random.nextBoolean();
@@ -200,7 +196,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
         addField(doc);
       }
       addFacets(doc, config, hasContent);
-      indexWriter.addDocument(config.build(doc));
+      indexWriter.addDocument(config.build(taxoWriter, doc));
     }
     indexWriter.commit(); // flush a segment
   }

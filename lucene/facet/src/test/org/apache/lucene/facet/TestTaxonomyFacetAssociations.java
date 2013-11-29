@@ -51,7 +51,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     // Cannot mix ints & floats in the same indexed field:
-    config = new FacetsConfig(taxoWriter);
+    config = new FacetsConfig();
     config.setIndexFieldName("int", "$facets.int");
     config.setMultiValued("int", true);
     config.setIndexFieldName("float", "$facets.float");
@@ -72,7 +72,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
           doc.add(new FloatAssociationFacetField(0.2f, "float", "b"));
         }
       }
-      writer.addDocument(config.build(doc));
+      writer.addDocument(config.build(taxoWriter, doc));
     }
     
     taxoWriter.close();
@@ -161,14 +161,14 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     doc.add(new FloatAssociationFacetField(55.0f, "b", "y"));
     try {
-      writer.addDocument(config.build(doc));
+      writer.addDocument(config.build(taxoWriter, doc));
       fail("did not hit expected exception");
     } catch (IllegalArgumentException exc) {
       // expected
@@ -181,14 +181,14 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setHierarchical("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     try {
-      writer.addDocument(config.build(doc));
+      writer.addDocument(config.build(taxoWriter, doc));
       fail("did not hit expected exception");
     } catch (IllegalArgumentException exc) {
       // expected
@@ -201,14 +201,14 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setRequireDimCount("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     try {
-      writer.addDocument(config.build(doc));
+      writer.addDocument(config.build(taxoWriter, doc));
       fail("did not hit expected exception");
     } catch (IllegalArgumentException exc) {
       // expected

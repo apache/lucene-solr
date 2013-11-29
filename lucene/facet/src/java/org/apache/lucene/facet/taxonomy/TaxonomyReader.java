@@ -216,6 +216,13 @@ public abstract class TaxonomyReader implements Closeable {
    *         wasn't foun.
    */
   public abstract int getOrdinal(FacetLabel categoryPath) throws IOException;
+
+  public int getOrdinal(String dim, String[] path) throws IOException {
+    String[] fullPath = new String[path.length+1];
+    fullPath[0] = dim;
+    System.arraycopy(path, 0, fullPath, 1, path.length);
+    return getOrdinal(new FacetLabel(fullPath));
+  }
   
   /** Returns the path name of the category with the given ordinal. */
   public abstract FacetLabel getPath(int ordinal) throws IOException;

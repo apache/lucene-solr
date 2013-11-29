@@ -426,7 +426,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new Cl2oTaxonomyWriterCache(2, 1f, 1));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     
     // Add one huge label:
     String bigs = null;
@@ -435,11 +435,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
     bigs = _TestUtil.randomSimpleString(random(), len, len);
     FacetField ff = new FacetField("dim", bigs);
-    FacetLabel cp = FacetLabel.create("dim", bigs);
+    FacetLabel cp = new FacetLabel("dim", bigs);
     ordinal = taxoWriter.addCategory(cp);
     Document doc = new Document();
     doc.add(ff);
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     // Add tiny ones to cause a re-hash
     for (int i = 0; i < 3; i++) {
@@ -447,7 +447,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
       taxoWriter.addCategory(new FacetLabel("dim", s));
       doc = new Document();
       doc.add(new FacetField("dim", s));
-      indexWriter.addDocument(config.build(doc));
+      indexWriter.addDocument(config.build(taxoWriter, doc));
     }
 
     // when too large components were allowed to be added, this resulted in a new added category

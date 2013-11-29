@@ -58,7 +58,6 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       // we cannot have empty path components, so eliminate all prefix as well
       // as middle consecutive delimiter chars.
-      // nocommit remove
       uniqueValues[i] = uniqueValues[i].replaceAll("/+", "/");
       if (uniqueValues[i].startsWith("/")) {
         uniqueValues[i] = uniqueValues[i].substring(1);

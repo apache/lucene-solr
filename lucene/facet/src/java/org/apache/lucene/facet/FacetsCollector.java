@@ -26,11 +26,29 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 
-// nocommit javadocs
+/** Collects hits for subsequent faceting.  Once you've run
+ *  a search and collect hits into this, instantiate one of
+ *  the {@link Facets} subclasses to do the facet
+ *  counting.  Use the {@code search} utility methods to
+ *  perform an "ordinary" search but also collect into a
+ *  {@link Collector}. */
 public final class FacetsCollector extends Collector {
 
   private AtomicReaderContext context;
@@ -89,8 +107,10 @@ public final class FacetsCollector extends Collector {
     
   @Override
   public final boolean acceptsDocsOutOfOrder() {
-    // nocommit why not true?
-    return false;
+    // If we are keeping scores then we require in-order
+    // because we append each score to the float[] and
+    // expect that they correlate in order to the hits:
+    return keepScores == false;
   }
 
   @Override
@@ -123,5 +143,108 @@ public final class FacetsCollector extends Collector {
       scores = new float[64]; // some initial size
     }
     this.context = context;
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopDocs search(IndexSearcher searcher, Query q, int n, Collector fc) throws IOException {
+    return doSearch(searcher, null, q, null, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Collector fc) throws IOException {
+    return doSearch(searcher, null, q, filter, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, Collector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, doDocScores, doMaxScore, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, Collector fc) throws IOException {
+    return doSearch(searcher, after, q, null, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Collector fc) throws IOException {
+    return doSearch(searcher, after, q, filter, n, null, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, Collector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, false, false, fc);
+  }
+
+  /** Utility method, to search and also collect all hits
+   *  into the provided {@link Collector}. */
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must not be null");
+    }
+    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, doDocScores, doMaxScore, fc);
+  }
+
+  private static TopDocs doSearch(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort,
+                                  boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
+
+    if (filter != null) {
+      q = new FilteredQuery(q, filter);
+    }
+
+    int limit = searcher.getIndexReader().maxDoc();
+    if (limit == 0) {
+      limit = 1;
+    }
+    n = Math.min(n, limit);
+
+    if (after != null && after.doc >= limit) {
+      throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
+                                         + after.doc + " limit=" + limit);
+    }
+
+    TopDocsCollector<?> hitsCollector;
+    if (sort != null) {
+      if (after != null && !(after instanceof FieldDoc)) {
+        // TODO: if we fix type safety of TopFieldDocs we can
+        // remove this
+        throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+      }
+      boolean fillFields = true;
+      hitsCollector = TopFieldCollector.create(sort, n,
+                                               (FieldDoc) after,
+                                               fillFields,
+                                               doDocScores,
+                                               doMaxScore,
+                                               false);
+    } else {
+      // TODO: can we pass the right boolean for
+      // in-order instead of hardwired to false...?  we'd
+      // need access to the protected IS.search methods
+      // taking Weight... could use reflection...
+      hitsCollector = TopScoreDocCollector.create(n, after, false);
+    }
+    searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
+    return hitsCollector.topDocs();
   }
 }

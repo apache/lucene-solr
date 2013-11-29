@@ -62,7 +62,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     verifyDim(dim);
-    int ord = taxoReader.getOrdinal(FacetLabel.create(dim, path));
+    int ord = taxoReader.getOrdinal(new FacetLabel(dim, path));
     if (ord < 0) {
       return -1;
     }
@@ -75,7 +75,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }
     FacetsConfig.DimConfig dimConfig = verifyDim(dim);
-    FacetLabel cp = FacetLabel.create(dim, path);
+    FacetLabel cp = new FacetLabel(dim, path);
     int dimOrd = taxoReader.getOrdinal(cp);
     if (dimOrd == -1) {
       return null;

@@ -180,6 +180,46 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     dir.close();
   }
 
+  public void testSomeSegmentsMissing() throws Exception {
+    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
+    Directory dir = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    FacetsConfig config = new FacetsConfig();
+
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
+    writer.addDocument(config.build(doc));
+    writer.commit();
+
+    doc = new Document();
+    writer.addDocument(config.build(doc));
+    writer.commit();
+
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
+    writer.addDocument(config.build(doc));
+    writer.commit();
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    // Per-top-reader state:
+    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+
+    FacetsCollector c = new FacetsCollector();
+    searcher.search(new MatchAllDocsQuery(), c);    
+    SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
+
+    // Ask for top 10 labels for any dims that have counts:
+    assertEquals("value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+
+    searcher.getIndexReader().close();
+    dir.close();
+  }
+
   // nocommit test different delim char & using the default
   // one in a dim
 

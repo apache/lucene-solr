@@ -40,7 +40,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     Directory taxoDir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
-    final FacetsConfig config = new FacetsConfig(tw);
+    final FacetsConfig config = new FacetsConfig();
     config.setMultiValued("field", true);
     final AtomicBoolean stop = new AtomicBoolean();
 
@@ -76,7 +76,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
                 doc.add(new FacetField("field", path));
               }
               try {
-                w.addDocument(config.build(doc));
+                w.addDocument(config.build(tw, doc));
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }

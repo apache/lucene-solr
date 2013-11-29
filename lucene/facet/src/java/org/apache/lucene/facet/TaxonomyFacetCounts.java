@@ -27,12 +27,10 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
 /** Reads from any {@link OrdinalsReader}; use {@link
- *  FastTaxonomyFacetCounts} if you are just using the
+ *  FastTaxonomyFacetCounts} if you are using the
  *  default encoding from {@link BinaryDocValues}.
  * 
  * @lucene.experimental */
-
-// nocommit remove & add specialized Cached variation only?
 public class TaxonomyFacetCounts extends IntTaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
 

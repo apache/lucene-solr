@@ -40,14 +40,14 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(indexDir, conf);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     
     Document doc = new Document();
     doc.add(new FacetField("A", "1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
     doc = new Document();
     doc.add(new FacetField("A", "2"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
     
     final DirectoryReader reader = DirectoryReader.open(writer, true);
     final CachedOrdinalsReader ordsReader = new CachedOrdinalsReader(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));

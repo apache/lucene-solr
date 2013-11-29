@@ -64,10 +64,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
     new FacetField("Composer", "Bach"),
   };
 
-  private FacetsConfig getConfig(TaxonomyWriter taxoWriter) {
-    FacetsConfig config = new FacetsConfig(taxoWriter);
-    //config.setMultiValued("Author", true);
-    //config.setMultiValued("Band", true);
+  private FacetsConfig getConfig() {
+    FacetsConfig config = new FacetsConfig();
     config.setHierarchical("Band", true);
     return config;
   }
@@ -82,9 +80,9 @@ public class TestMultipleIndexFields extends FacetTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
-    FacetsConfig config = getConfig(tw);
+    FacetsConfig config = getConfig();
 
-    seedIndex(iw, config);
+    seedIndex(tw, iw, config);
 
     IndexReader ir = iw.getReader();
     tw.commit();
@@ -116,9 +114,9 @@ public class TestMultipleIndexFields extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    FacetsConfig config = getConfig(tw);
+    FacetsConfig config = getConfig();
     config.setIndexFieldName("Author", "$author");
-    seedIndex(iw, config);
+    seedIndex(tw, iw, config);
 
     IndexReader ir = iw.getReader();
     tw.commit();
@@ -155,10 +153,10 @@ public class TestMultipleIndexFields extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    FacetsConfig config = getConfig(tw);
+    FacetsConfig config = getConfig();
     config.setIndexFieldName("Band", "$music");
     config.setIndexFieldName("Composer", "$music");
-    seedIndex(iw, config);
+    seedIndex(tw, iw, config);
 
     IndexReader ir = iw.getReader();
     tw.commit();
@@ -208,10 +206,10 @@ public class TestMultipleIndexFields extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    FacetsConfig config = getConfig(tw);
+    FacetsConfig config = getConfig();
     config.setIndexFieldName("Band", "$bands");
     config.setIndexFieldName("Composer", "$composers");
-    seedIndex(iw, config);
+    seedIndex(tw, iw, config);
 
     IndexReader ir = iw.getReader();
     tw.commit();
@@ -249,11 +247,11 @@ public class TestMultipleIndexFields extends FacetTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
-    FacetsConfig config = getConfig(tw);
+    FacetsConfig config = getConfig();
     config.setIndexFieldName("Band", "$music");
     config.setIndexFieldName("Composer", "$music");
     config.setIndexFieldName("Author", "$literature");
-    seedIndex(iw, config);
+    seedIndex(tw, iw, config);
 
     IndexReader ir = iw.getReader();
     tw.commit();
@@ -291,17 +289,17 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
   private FacetsCollector performSearch(TaxonomyReader tr, IndexReader ir, 
       IndexSearcher searcher) throws IOException {
-    FacetsCollector sfc = new FacetsCollector();
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, sfc);
-    return sfc;
+    FacetsCollector fc = new FacetsCollector();
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    return fc;
   }
 
-  private void seedIndex(RandomIndexWriter iw, FacetsConfig config) throws IOException {
+  private void seedIndex(TaxonomyWriter tw, RandomIndexWriter iw, FacetsConfig config) throws IOException {
     for (FacetField ff : CATEGORIES) {
       Document doc = new Document();
       doc.add(ff);
       doc.add(new TextField("content", "alpha", Field.Store.YES));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(tw, doc));
     }
   }
 }

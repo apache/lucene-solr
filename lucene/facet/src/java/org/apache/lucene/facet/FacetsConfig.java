@@ -63,26 +63,23 @@ public class FacetsConfig {
   // int/float/bytes in a single indexed field:
   private final Map<String,String> assocDimTypes = new ConcurrentHashMap<String,String>();
 
-  private final TaxonomyWriter taxoWriter;
-
   /** Holds the configuration for one dimension
    *
    * @lucene.experimental */
-  // nocommit expose this to the user, vs the setters?
   public static final class DimConfig {
     /** True if this dimension is hierarchical. */
-    boolean hierarchical;
+    public boolean hierarchical;
 
     /** True if this dimension is multi-valued. */
-    boolean multiValued;
+    public boolean multiValued;
 
     /** True if the count/aggregate for the entire dimension
      *  is required, which is unusual (default is false). */
-    boolean requireDimCount;
+    public boolean requireDimCount;
 
     /** Actual field where this dimension's facet labels
      *  should be indexed */
-    String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
+    public String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
   }
 
   /** Default per-dimension configuration. */
@@ -90,18 +87,10 @@ public class FacetsConfig {
 
   /** Default constructor. */
   public FacetsConfig() {
-    this(null);
-  }
-
-  /** Use this constructor at index time, with the provided
-   *  {@link TaxonomyWriter}, and then use the {@link
-   *  #build} method to index documents. */
-  public FacetsConfig(TaxonomyWriter taxoWriter) {
-    this.taxoWriter = taxoWriter;
   }
 
   /** Get the current configuration for a dimension. */
-  public DimConfig getDimConfig(String dimName) {
+  public synchronized DimConfig getDimConfig(String dimName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
       ft = DEFAULT_DIM_CONFIG;
@@ -155,7 +144,7 @@ public class FacetsConfig {
     ft.indexFieldName = indexFieldName;
   }
 
-  Map<String,DimConfig> getDimConfigs() {
+  public Map<String,DimConfig> getDimConfigs() {
     return fieldTypes;
   }
 
@@ -167,8 +156,16 @@ public class FacetsConfig {
   }
 
   /** Translates any added {@link FacetField}s into normal
-   *  fields for indexing. */
+   *  fields for indexing; only use this version if you
+   *  did not add any taxonomy-based fields ({@link
+   *  FacetField} or {@link AssociationFacetField}) */
   public IndexDocument build(IndexDocument doc) throws IOException {
+    return build(null, doc);
+  }
+
+  /** Translates any added {@link FacetField}s into normal
+   *  fields for indexing. */
+  public IndexDocument build(TaxonomyWriter taxoWriter, IndexDocument doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
     Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
 
@@ -255,9 +252,9 @@ public class FacetsConfig {
     List<Field> addedIndexedFields = new ArrayList<Field>();
     List<Field> addedStoredFields = new ArrayList<Field>();
 
-    processFacetFields(byField, addedIndexedFields, addedStoredFields);
+    processFacetFields(taxoWriter, byField, addedIndexedFields, addedStoredFields);
     processSSDVFacetFields(dvByField, addedIndexedFields, addedStoredFields);
-    processAssocFacetFields(assocByField, addedIndexedFields, addedStoredFields);
+    processAssocFacetFields(taxoWriter, assocByField, addedIndexedFields, addedStoredFields);
 
     //System.out.println("add stored: " + addedStoredFields);
 
@@ -292,7 +289,7 @@ public class FacetsConfig {
       };
   }
 
-  private void processFacetFields(Map<String,List<FacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
+  private void processFacetFields(TaxonomyWriter taxoWriter, Map<String,List<FacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
 
     for(Map.Entry<String,List<FacetField>> ent : byField.entrySet()) {
 
@@ -307,9 +304,9 @@ public class FacetsConfig {
           throw new IllegalArgumentException("dimension \"" + facetField.dim + "\" is not hierarchical yet has " + facetField.path.length + " components");
         }
       
-        FacetLabel cp = FacetLabel.create(facetField.dim, facetField.path);
+        FacetLabel cp = new FacetLabel(facetField.dim, facetField.path);
 
-        checkTaxoWriter();
+        checkTaxoWriter(taxoWriter);
         int ordinal = taxoWriter.addCategory(cp);
         if (ordinals.length == ordinals.ints.length) {
           ordinals.grow(ordinals.length+1);
@@ -368,7 +365,7 @@ public class FacetsConfig {
     }
   }
 
-  private void processAssocFacetFields(Map<String,List<AssociationFacetField>> byField,
+  private void processAssocFacetFields(TaxonomyWriter taxoWriter, Map<String,List<AssociationFacetField>> byField,
                                        List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
     for(Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
       byte[] bytes = new byte[16];
@@ -379,8 +376,8 @@ public class FacetsConfig {
         // nocommit is that right?  maybe we are supposed to
         // add to taxo writer, and just not index the parent
         // ords?
-        checkTaxoWriter();
-        int ordinal = taxoWriter.addCategory(FacetLabel.create(field.dim, field.path));
+        checkTaxoWriter(taxoWriter);
+        int ordinal = taxoWriter.addCategory(new FacetLabel(field.dim, field.path));
         if (upto + 4 > bytes.length) {
           bytes = ArrayUtil.grow(bytes, upto+4);
         }
@@ -448,9 +445,9 @@ public class FacetsConfig {
     return new BytesRef(bytes, 0, upto);
   }
 
-  private void checkTaxoWriter() {
+  private void checkTaxoWriter(TaxonomyWriter taxoWriter) {
     if (taxoWriter == null) {
-      throw new IllegalStateException("a valid TaxonomyWriter must be provided to the constructor (got null), when using FacetField or AssociationFacetField");
+      throw new IllegalStateException("a non-null TaxonomyWriter must be provided when indexing FacetField or AssociationFacetField");
     }
   }
 
@@ -476,14 +473,6 @@ public class FacetsConfig {
   /** Turns the first {@code} length elements of {@code
    * path} into an encoded string. */
   public static String pathToString(String[] path, int length) {
-    // nocommit .... too anal?  shouldn't we allow drill
-    // down on just dim, to get all docs that have that
-    // dim...?
-    /*
-    if (path.length < 2) {
-      throw new IllegalArgumentException("path length must be > 0 (dim=" + path[0] + ")");
-    }
-    */
     if (length == 0) {
       return "";
     }

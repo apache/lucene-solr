@@ -183,7 +183,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   private IndexDocument newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
     Document doc = new Document();
     doc.add(new FacetField("A", Integer.toString(id, 16)));
-    return config.build(doc);
+    return config.build(publishTaxoWriter, doc);
   }
   
   @Override
@@ -205,7 +205,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     publishIndexWriter = new IndexWriter(publishIndexDir, conf);
     publishTaxoWriter = new SnapshotDirectoryTaxonomyWriter(publishTaxoDir);
-    config = new FacetsConfig(publishTaxoWriter);
+    config = new FacetsConfig();
     config.setHierarchical("A", true);
   }
   

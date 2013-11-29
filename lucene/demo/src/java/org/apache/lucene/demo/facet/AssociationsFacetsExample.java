@@ -49,9 +49,16 @@ public class AssociationsFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config;
 
   /** Empty constructor */
-  public AssociationsFacetsExample() {}
+  public AssociationsFacetsExample() {
+    config = new FacetsConfig();
+    config.setMultiValued("tags", true);
+    config.setIndexFieldName("tags", "$tags");
+    config.setMultiValued("genre", true);
+    config.setIndexFieldName("genre", "$genre");
+  }
   
   /** Build the example index. */
   private void index() throws IOException {
@@ -62,15 +69,12 @@ public class AssociationsFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetsConfig config = getConfig(taxoWriter);
-
     Document doc = new Document();
     // 3 occurrences for tag 'lucene'
     doc.add(new IntAssociationFacetField(3, "tags", "lucene"));
     // 87% confidence level of genre 'computing'
     doc.add(new FloatAssociationFacetField(0.87f, "genre", "computing"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     // 1 occurrence for tag 'lucene'
@@ -81,20 +85,10 @@ public class AssociationsFacetsExample {
     doc.add(new FloatAssociationFacetField(0.75f, "genre", "computing"));
     // 34% confidence level of genre 'software'
     doc.add(new FloatAssociationFacetField(0.34f, "genre", "software"));
-    indexWriter.addDocument(config.build(doc));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
     indexWriter.close();
     taxoWriter.close();
-  }
-
-  /** It's fine if taxoWriter is null (i.e., at search time) */
-  private FacetsConfig getConfig(TaxonomyWriter taxoWriter) {
-    FacetsConfig config = new FacetsConfig(taxoWriter);
-    config.setMultiValued("tags", true);
-    config.setIndexFieldName("tags", "$tags");
-    config.setMultiValued("genre", true);
-    config.setIndexFieldName("genre", "$genre");
-    return config;
   }
 
   /** User runs a query and aggregates facets by summing their association values. */
@@ -102,14 +96,13 @@ public class AssociationsFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    FacetsConfig config = getConfig(null);
     
     FacetsCollector fc = new FacetsCollector();
     
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
     
     Facets tags = new TaxonomyFacetSumIntAssociations("$tags", taxoReader, config, fc);
     Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);

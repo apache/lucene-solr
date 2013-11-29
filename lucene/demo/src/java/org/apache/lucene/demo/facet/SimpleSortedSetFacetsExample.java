@@ -47,19 +47,16 @@ import org.apache.lucene.store.RAMDirectory;
 public class SimpleSortedSetFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
-  public SimpleSortedSetFacetsExample() {}
-  
-  private FacetsConfig getConfig() {
-    return new FacetsConfig();
+  public SimpleSortedSetFacetsExample() {
   }
 
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
-    FacetsConfig config = getConfig();
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("Author", "Bob"));
     doc.add(new SortedSetDocValuesFacetField("Publish Year", "2010"));
@@ -93,7 +90,6 @@ public class SimpleSortedSetFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
-    FacetsConfig config = getConfig();
 
     // Aggregatses the facet counts
     FacetsCollector fc = new FacetsCollector();
@@ -101,7 +97,7 @@ public class SimpleSortedSetFacetsExample {
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    Facets.search(searcher, new MatchAllDocsQuery(), 10, fc);
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
     Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
@@ -119,13 +115,12 @@ public class SimpleSortedSetFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
-    FacetsConfig config = getConfig();
 
     // Now user drills down on Publish Year/2010:
     DrillDownQuery q = new DrillDownQuery(config);
     q.add("Publish Year", "2010");
     FacetsCollector fc = new FacetsCollector();
-    Facets.search(searcher, q, 10, fc);
+    FacetsCollector.search(searcher, q, 10, fc);
 
     // Retrieve results
     Facets facets = new SortedSetDocValuesFacetCounts(state, fc);

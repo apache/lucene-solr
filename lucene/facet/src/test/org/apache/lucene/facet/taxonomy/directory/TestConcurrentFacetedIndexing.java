@@ -86,7 +86,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     final IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, newTaxoWriterCache(numDocs.get()));
     final Thread[] indexThreads = new Thread[atLeast(4)];
-    final FacetsConfig config = new FacetsConfig(tw);
+    final FacetsConfig config = new FacetsConfig();
     for(int i=0;i<10;i++) {
       config.setHierarchical("l1." + i, true);
       config.setMultiValued("l1." + i, true);
@@ -106,7 +106,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
                 FacetField ff = newCategory();
                 doc.add(ff);
 
-                FacetLabel label = FacetLabel.create(ff.dim, ff.path);
+                FacetLabel label = new FacetLabel(ff.dim, ff.path);
                 // add all prefixes to values
                 int level = label.length;
                 while (level > 0) {
@@ -115,7 +115,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
                   --level;
                 }
               }
-              iw.addDocument(config.build(doc));
+              iw.addDocument(config.build(tw, doc));
             } catch (IOException e) {
               throw new RuntimeException(e);
             }

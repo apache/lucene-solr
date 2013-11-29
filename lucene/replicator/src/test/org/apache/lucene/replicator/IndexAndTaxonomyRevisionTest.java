@@ -44,10 +44,10 @@ import org.junit.Test;
 public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   
   private IndexDocument newDocument(TaxonomyWriter taxoWriter) throws IOException {
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     Document doc = new Document();
     doc.add(new FacetField("A", "1"));
-    return config.build(doc);
+    return config.build(taxoWriter, doc);
   }
   
   @Test

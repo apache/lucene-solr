@@ -70,7 +70,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     
     taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    config = new FacetsConfig(taxoWriter);
+    config = new FacetsConfig();
 
     // Randomize the per-dim config:
     config.setHierarchical("a", random().nextBoolean());
@@ -105,7 +105,7 @@ public class TestDrillDownQuery extends FacetTestCase {
       if (i % 5 == 0) { // 20
         doc.add(new FacetField("b", "1"));
       }
-      writer.addDocument(config.build(doc));
+      writer.addDocument(config.build(taxoWriter, doc));
     }
     
     taxoWriter.close();

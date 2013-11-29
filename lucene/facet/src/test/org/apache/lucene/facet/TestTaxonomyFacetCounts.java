@@ -60,7 +60,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setHierarchical("Publish Date", true);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -68,27 +68,27 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Document doc = new Document();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -145,11 +145,11 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -158,7 +158,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     doc = new Document();
     doc.add(new FacetField("a", "foo2"));
     doc.add(new FacetField("b", "bar1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     if (random().nextBoolean()) {
       writer.commit();
@@ -168,7 +168,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     doc.add(new FacetField("a", "foo3"));
     doc.add(new FacetField("b", "bar2"));
     doc.add(new FacetField("c", "baz1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -200,13 +200,13 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     // main index:
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("a", "$facets2");
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
     doc.add(new FacetField("a", "foo1"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -269,12 +269,12 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       });
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     doc.add(new FacetField("a", "path"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
     IOUtils.close(writer, taxoWriter, dir, taxoDir);
   }
 
@@ -282,7 +282,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setHierarchical("a", true);
     config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -291,7 +291,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     doc.add(newTextField("field", "text", Field.Store.NO));
     doc.add(new FacetField("a", "path", "x"));
     doc.add(new FacetField("a", "path", "y"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -321,14 +321,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim", true);
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     doc.add(new FacetField("dim", "test\u001Fone"));
     doc.add(new FacetField("dim", "test\u001Etwo"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -354,7 +354,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim2", true);
     config.setMultiValued("dim3", true);
     config.setHierarchical("dim3", true);
@@ -369,7 +369,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     doc.add(new FacetField("dim2", "b"));
     doc.add(new FacetField("dim3", "a", "b"));
     doc.add(new FacetField("dim3", "a", "c"));
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -397,7 +397,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim", true);
     
     int numLabels = _TestUtil.nextInt(random(), 40000, 100000);
@@ -407,7 +407,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     for (int i = 0; i < numLabels; i++) {
       doc.add(new FacetField("dim", "" + i));
     }
-    writer.addDocument(config.build(doc));
+    writer.addDocument(config.build(taxoWriter, doc));
     
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
@@ -444,13 +444,13 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     doc.add(new FacetField("a", "path", "other"));
     try {
-      config.build(doc);
+      config.build(taxoWriter, doc);
       fail("did not hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -465,14 +465,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
     doc.add(new FacetField("a", "path"));
     doc.add(new FacetField("a", "path2"));
     try {
-      config.build(doc);
+      config.build(taxoWriter, doc);
       fail("did not hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -486,7 +486,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     config.setIndexFieldName("b", "$b");
     
     for(int i = atLeast(30); i > 0; --i) {
@@ -494,7 +494,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       doc.add(new StringField("f", "v", Field.Store.NO));
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -516,12 +516,12 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -544,12 +544,12 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
     doc.add(new FacetField("a", "1"));
     doc.add(new FacetField("b", "1"));
-    iw.addDocument(config.build(doc));
+    iw.addDocument(config.build(taxoWriter, doc));
     
     DirectoryReader r = DirectoryReader.open(iw, true);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
@@ -572,11 +572,11 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    FacetsConfig config = new FacetsConfig(taxoWriter);
+    FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
       doc.add(new FacetField("a", Integer.toString(i)));
-      iw.addDocument(config.build(doc));
+      iw.addDocument(config.build(taxoWriter, doc));
     }
     
     DirectoryReader r = DirectoryReader.open(iw, true);
@@ -591,7 +591,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
   }
 
-  private void indexTwoDocs(IndexWriter indexWriter, FacetsConfig config, boolean withContent) throws Exception {
+  private void indexTwoDocs(TaxonomyWriter taxoWriter, IndexWriter indexWriter, FacetsConfig config, boolean withContent) throws Exception {
     for (int i = 0; i < 2; i++) {
       Document doc = new Document();
       if (withContent) {
@@ -599,7 +599,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       }
       if (config != null) {
         doc.add(new FacetField("A", Integer.toString(i)));
-        indexWriter.addDocument(config.build(doc));
+        indexWriter.addDocument(config.build(taxoWriter, doc));
       } else {
         indexWriter.addDocument(doc);
       }
@@ -618,14 +618,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetsConfig config = new FacetsConfig(taxoWriter);
-    indexTwoDocs(indexWriter, config, false); // 1st segment, no content, with categories
-    indexTwoDocs(indexWriter, null, true);         // 2nd segment, with content, no categories
-    indexTwoDocs(indexWriter, config, true);  // 3rd segment ok
-    indexTwoDocs(indexWriter, null, false);        // 4th segment, no content, or categories
-    indexTwoDocs(indexWriter, null, true);         // 5th segment, with content, no categories
-    indexTwoDocs(indexWriter, config, true);  // 6th segment, with content, with categories
-    indexTwoDocs(indexWriter, null, true);         // 7th segment, with content, no categories
+    FacetsConfig config = new FacetsConfig();
+    indexTwoDocs(taxoWriter, indexWriter, config, false); // 1st segment, no content, with categories
+    indexTwoDocs(taxoWriter, indexWriter, null, true);         // 2nd segment, with content, no categories
+    indexTwoDocs(taxoWriter, indexWriter, config, true);  // 3rd segment ok
+    indexTwoDocs(taxoWriter, indexWriter, null, false);        // 4th segment, no content, or categories
+    indexTwoDocs(taxoWriter, indexWriter, null, true);         // 5th segment, with content, no categories
+    indexTwoDocs(taxoWriter, indexWriter, config, true);  // 6th segment, with content, with categories
+    indexTwoDocs(taxoWriter, indexWriter, null, true);         // 7th segment, with content, no categories
     IOUtils.close(indexWriter, taxoWriter);
 
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
