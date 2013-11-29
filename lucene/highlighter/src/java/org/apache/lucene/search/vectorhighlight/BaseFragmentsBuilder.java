@@ -258,9 +258,8 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
 
         List<SubInfo> subInfos = new ArrayList<SubInfo>();
-        WeightedFragInfo weightedFragInfo = new WeightedFragInfo(fragStart, fragEnd, subInfos, fragInfo.getTotalBoost());
-
         Iterator<SubInfo> subInfoIterator = fragInfo.getSubInfos().iterator();
+        float boost = 0.0f;  //  The boost of the new info will be the sum of the boosts of its SubInfos
         while (subInfoIterator.hasNext()) {
           SubInfo subInfo = subInfoIterator.next();
           List<Toffs> toffsList = new ArrayList<Toffs>();
@@ -268,18 +267,21 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
           while (toffsIterator.hasNext()) {
             Toffs toffs = toffsIterator.next();
             if (toffs.getStartOffset() >= fieldStart && toffs.getEndOffset() <= fieldEnd) {
+
               toffsList.add(toffs);
               toffsIterator.remove();
             }
           }
           if (!toffsList.isEmpty()) {
-            subInfos.add(new SubInfo(subInfo.getText(), toffsList, subInfo.getSeqnum()));
+            subInfos.add(new SubInfo(subInfo.getText(), toffsList, subInfo.getSeqnum(), subInfo.getBoost()));
+            boost += subInfo.getBoost();
           }
 
           if (subInfo.getTermsOffsets().isEmpty()) {
             subInfoIterator.remove();
           }
         }
+        WeightedFragInfo weightedFragInfo = new WeightedFragInfo(fragStart, fragEnd, subInfos, boost);
         fieldNameToFragInfos.get(field.name()).add(weightedFragInfo);
       }
     }
