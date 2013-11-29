@@ -17,6 +17,7 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -26,6 +27,7 @@ import java.nio.ByteBuffer;
 /**
  * Test SortField.CUSTOM sorts
  */
+@SuppressCodecs({"Lucene3x"})
 public class TestCustomSort extends SolrTestCaseJ4 {
 
   @BeforeClass
