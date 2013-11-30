@@ -497,7 +497,7 @@ public class ZkStateReader {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
-    return getLeaderRetry(collection, shard, 2000);
+    return getLeaderRetry(collection, shard, 4000);
   }
 
   /**
