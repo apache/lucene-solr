@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -74,7 +75,11 @@ public class MockStreamingSolrServers extends StreamingSolrServers {
     public NamedList<Object> request(SolrRequest request)
         throws SolrServerException, IOException {
       if (exp != null) {
-        throw exception();
+        if (LuceneTestCase.random().nextBoolean()) {
+          throw exception();
+        } else {
+          throw new SolrServerException(exception());
+        }
       }
       
       return solrServer.request(request);
