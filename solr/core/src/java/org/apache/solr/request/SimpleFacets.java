@@ -566,7 +566,7 @@ public class SimpleFacets {
               throw se;
             } catch (Exception e) {
               throw new SolrException(ErrorCode.SERVER_ERROR,
-                                      "Exception during facet.field: " + workerFacetValue, e.getCause());
+                                      "Exception during facet.field: " + workerFacetValue, e);
             } finally {
               semaphore.release();
             }

@@ -232,9 +232,20 @@ public class DocValuesFacets {
     return res;
   }
   
-  /** accumulates per-segment single-valued facet counts, mapping to global ordinal space */
-  // specialized since the single-valued case is different
+  /** accumulates per-segment single-valued facet counts */
   static void accumSingle(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    if (startTermIndex == -1 && (map == null || si.getValueCount() < disi.cost()*10)) {
+      // no prefixing, not too many unique values wrt matching docs (lucene/facets heuristic): 
+      //   collect separately per-segment, then map to global ords
+      accumSingleSeg(counts, si, disi, subIndex, map);
+    } else {
+      // otherwise: do collect+map on the fly
+      accumSingleGeneric(counts, startTermIndex, si, disi, subIndex, map);
+    }
+  }
+  
+  /** accumulates per-segment single-valued facet counts, mapping to global ordinal space on-the-fly */
+  static void accumSingleGeneric(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term = si.getOrd(doc);
@@ -246,8 +257,41 @@ public class DocValuesFacets {
     }
   }
   
-  /** accumulates per-segment multi-valued facet counts, mapping to global ordinal space */
+  /** "typical" single-valued faceting: not too many unique values, no prefixing. maps to global ordinals as a separate step */
+  static void accumSingleSeg(int counts[], SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    // First count in seg-ord space:
+    final int segCounts[];
+    if (map == null) {
+      segCounts = counts;
+    } else {
+      segCounts = new int[1+si.getValueCount()];
+    }
+    
+    int doc;
+    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      segCounts[1+si.getOrd(doc)]++;
+    }
+    
+    // migrate to global ords (if necessary)
+    if (map != null) {
+      migrateGlobal(counts, segCounts, subIndex, map);
+    }
+  }
+  
+  /** accumulates per-segment multi-valued facet counts */
   static void accumMulti(int counts[], int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    if (startTermIndex == -1 && (map == null || si.getValueCount() < disi.cost()*10)) {
+      // no prefixing, not too many unique values wrt matching docs (lucene/facets heuristic): 
+      //   collect separately per-segment, then map to global ords
+      accumMultiSeg(counts, si, disi, subIndex, map);
+    } else {
+      // otherwise: do collect+map on the fly
+      accumMultiGeneric(counts, startTermIndex, si, disi, subIndex, map);
+    }
+  }
+    
+  /** accumulates per-segment multi-valued facet counts, mapping to global ordinal space on-the-fly */
+  static void accumMultiGeneric(int counts[], int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       si.setDocument(doc);
@@ -267,6 +311,49 @@ public class DocValuesFacets {
         int arrIdx = term-startTermIndex;
         if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
       } while ((term = (int) si.nextOrd()) >= 0);
+    }
+  }
+  
+  /** "typical" multi-valued faceting: not too many unique values, no prefixing. maps to global ordinals as a separate step */
+  static void accumMultiSeg(int counts[], SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+    // First count in seg-ord space:
+    final int segCounts[];
+    if (map == null) {
+      segCounts = counts;
+    } else {
+      segCounts = new int[1+(int)si.getValueCount()];
+    }
+    
+    int doc;
+    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      si.setDocument(doc);
+      int term = (int) si.nextOrd();
+      if (term < 0) {
+        counts[0]++; // missing
+      } else {
+        do {
+          segCounts[1+term]++;
+        } while ((term = (int)si.nextOrd()) >= 0);
+      }
+    }
+    
+    // migrate to global ords (if necessary)
+    if (map != null) {
+      migrateGlobal(counts, segCounts, subIndex, map);
+    }
+  }
+  
+  /** folds counts in segment ordinal space (segCounts) into global ordinal space (counts) */
+  static void migrateGlobal(int counts[], int segCounts[], int subIndex, OrdinalMap map) {
+    // missing count
+    counts[0] += segCounts[0];
+    
+    // migrate actual ordinals
+    for (int ord = 1; ord < segCounts.length; ord++) {
+      int count = segCounts[ord];
+      if (count != 0) {
+        counts[1+(int) map.getGlobalOrd(subIndex, ord-1)] += count;
+      }
     }
   }
 }
