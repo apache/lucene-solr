@@ -138,7 +138,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         ftIndexThread.start();
       }
       
-      chaosMonkey.startTheMonkey(true, true, 10000);
+      chaosMonkey.startTheMonkey(true, 10000);
 
       long runLength;
       if (RUN_LENGTH != -1) {

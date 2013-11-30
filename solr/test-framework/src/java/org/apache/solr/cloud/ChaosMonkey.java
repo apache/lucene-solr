@@ -435,7 +435,7 @@ public class ChaosMonkey {
   
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
-  public void startTheMonkey(boolean killLeaders, final boolean startDeadPool, final int roundPauseUpperLimit) {
+  public void startTheMonkey(boolean killLeaders, final int roundPauseUpperLimit) {
     if (!MONKEY_ENABLED) {
       monkeyLog("The Monkey is disabled and will not start");
       return;
@@ -503,16 +503,6 @@ public class ChaosMonkey {
         monkeyLog("I ran for " + (System.currentTimeMillis() - startTime)/1000.0f + "sec. I stopped " + stops + " and I started " + starts
             + ". I also expired " + expires.get() + " and caused " + connloss
             + " connection losses");
-        if (startDeadPool) {
-          // starting down nodes
-          for (CloudJettyRunner jetty : deadPool) {
-            try {
-              if (jetty.jetty.isStopped()) ChaosMonkey.start(jetty.jetty);
-            } catch (Exception e) {
-              log.error("", e);
-            }
-          }
-        }
       }
     };
     monkeyThread.start();
