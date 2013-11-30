@@ -419,8 +419,11 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   @Override
   protected void updateTypeSpecificStats(NamedList stv) {
-    sum += ((Date) stv.get("sum")).getTime();
-    sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    Date date = (Date) stv.get("sum");
+    if (date != null) {
+      sum += date.getTime();
+      sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    }
   }
 
   /**

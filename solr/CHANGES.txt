@@ -161,7 +161,10 @@ Bug Fixes
   a SolrCore does not exist in core discovery mode. (Mark Miller)
   
 * SOLR-5354: Distributed sort is broken with CUSTOM FieldType. 
-  (Steve Rowe, hossman, Robert Muir, Jessica Cheng)  
+  (Steve Rowe, hossman, Robert Muir, Jessica Cheng)
+
+* SOLR-5515: NPE when getting stats on date field with empty result on
+  SolrCloud. (Alexander Sagen, shalin)
 
 Optimizations
 ----------------------
