@@ -398,6 +398,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Thread.sleep(10000000000L);
 
     FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+
+    del("*:*"); // delete all docs and test stats request
+    commit();
+    try {
+      query("q", "*:*", "stats", "true", "stats.field", "stats_dt", "stats.calcdistinct", "true");
+    } catch (Exception e) {
+      log.error("Exception on distrib stats request on empty index", e);
+      fail("NullPointerException with stats request on empty index");
+    }
   }
   
   protected void queryPartialResults(final List<String> upShards, 
