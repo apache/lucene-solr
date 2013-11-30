@@ -116,7 +116,8 @@ public class SolrCmdDistributor {
             
             SolrException.log(SolrCmdDistributor.log, "forwarding update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + " " + err.req.cmdString + " rsp:" + rspCode, err.e);
+                + err.req.retries + " " + err.req.cmdString + " params:"
+                + err.req.uReq.getParams() + " rsp:" + rspCode, err.e);
             try {
               Thread.sleep(retryPause);
             } catch (InterruptedException e) {
@@ -226,7 +227,11 @@ public class SolrCmdDistributor {
       
       return;
     }
-    
+    if (log.isDebugEnabled()) {
+      log.debug("sending update to "
+          + req.node.getUrl() + " retry:"
+          + req.retries + " " + req.cmdString + " params:" + req.uReq.getParams());
+    }
     try {
       SolrServer solrServer = servers.getSolrServer(req);
       NamedList<Object> rsp = solrServer.request(req.uReq);
