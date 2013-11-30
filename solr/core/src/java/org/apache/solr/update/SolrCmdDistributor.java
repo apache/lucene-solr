@@ -101,24 +101,22 @@ public class SolrCmdDistributor {
           }
           
           // if its a connect exception, lets try again
-          if (err.e instanceof ConnectException) {
-            doRetry = true;
-          } else if (err.e instanceof SolrServerException) {
+          if (err.e instanceof SolrServerException) {
             if (((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
               doRetry = true;
             }
-          } else if (err.e instanceof RemoteSolrException) {
-            Exception cause = (RemoteSolrException) err.e.getCause();
-            if (cause != null && cause instanceof ConnectException) {
-              doRetry = true;
-            }
           }
+          
+          if (err.e instanceof ConnectException) {
+            doRetry = true;
+          }
+          
           if (err.req.retries < maxRetriesOnForward && doRetry) {
             err.req.retries++;
             
             SolrException.log(SolrCmdDistributor.log, "forwarding update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + " " + err.req.cmdString, err.e);
+                + err.req.retries + " " + err.req.cmdString + " rsp:" + rspCode, err.e);
             try {
               Thread.sleep(retryPause);
             } catch (InterruptedException e) {
@@ -360,14 +358,12 @@ public class SolrCmdDistributor {
     private ZkStateReader zkStateReader;
     private String collection;
     private String shardId;
-    private String fromAddress;
     
-    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId, String fromCoreUrl) {
+    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
       super(nodeProps);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
       this.shardId = shardId;
-      this.fromAddress = fromCoreUrl;
     }
 
     @Override
@@ -385,10 +381,6 @@ public class SolrCmdDistributor {
         return true;
       }
      
-      if (fromAddress.equals(leaderProps.getCoreUrl())) {
-        // we became the leader
-        return false;
-      }
       this.nodeProps = leaderProps;
       
       return true;
