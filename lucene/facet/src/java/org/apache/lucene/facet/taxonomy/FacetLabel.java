@@ -26,7 +26,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
  * Holds a sequence of string components, specifying the hierarchical name of a
  * category.
  * 
- * @lucene.experimental
+ * @lucene.internal
  */
 public class FacetLabel implements Comparable<FacetLabel> {
 
@@ -37,8 +37,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
    * be on the safe side.
    */
   /**
-   * The maximum number of characters a {@link FacetLabel} can have. That is
-   * {@link FacetLabel#toString(char)} length must not exceed that limit.
+   * The maximum number of characters a {@link FacetLabel} can have.
    */
   public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
@@ -184,10 +183,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
   }
 
   /**
-   * Returns a string representation of the path, separating components with
-   * '/'.
-   * 
-   * @see #toString(char)
+   * Returns a string representation of the path.
    */
   @Override
   public String toString() {

@@ -33,7 +33,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
 /** Aggregates sum of values from {@link
- *  ValueSource#doubleValue}, for each facet label.
+ *  FunctionValues#doubleVal}, for each facet label.
  *
  *  @lucene.experimental */
 public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {

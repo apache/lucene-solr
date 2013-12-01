@@ -19,8 +19,7 @@ package org.apache.lucene.facet;
 
 import org.apache.lucene.document.DoubleDocValuesField; // javadocs
 
-/** Represents a range over double values indexed as {@link
- *  DoubleDocValuesField}.  */
+/** Represents a range over double values. */
 public final class DoubleRange extends Range {
   private final double minIncl;
   private final double maxIncl;
@@ -62,10 +61,8 @@ public final class DoubleRange extends Range {
     this.maxIncl = max;
   }
 
-  @Override
-  public boolean accept(long value) {
-    double doubleValue = Double.longBitsToDouble(value);
-    return doubleValue >= minIncl && doubleValue <= maxIncl;
+  public boolean accept(double value) {
+    return value >= minIncl && value <= maxIncl;
   }
 }
 

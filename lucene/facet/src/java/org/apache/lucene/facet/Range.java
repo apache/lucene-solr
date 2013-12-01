@@ -17,8 +17,7 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-/** Represents a single labeled range, one facet label in
- *  the facets computed by {@link RangeFacetCounts}.
+/** Base class for a single labeled range.
  *
  *  @lucene.experimental */
 public abstract class Range {
@@ -27,6 +26,4 @@ public abstract class Range {
   protected Range(String label) {
     this.label = label;
   }
-
-  public abstract boolean accept(long value);
 }

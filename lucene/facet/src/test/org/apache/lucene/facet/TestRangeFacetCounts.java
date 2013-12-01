@@ -29,6 +29,9 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.SimpleBindings;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -36,9 +39,11 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
@@ -66,7 +71,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fc);
 
-    RangeFacetCounts facets = new RangeFacetCounts("field", fc,
+    Facets facets = new LongRangeFacetCounts("field", fc,
         new LongRange("less than 10", 0L, true, 10L, false),
         new LongRange("less than or equal to 10", 0L, true, 10L, true),
         new LongRange("over 90", 90L, false, 100L, false),
@@ -134,7 +139,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
           Map<String,Facets> byDim = new HashMap<String,Facets>();
           byDim.put("field",
-                    new RangeFacetCounts("field", fieldFC,
+                    new LongRangeFacetCounts("field", fieldFC,
                           new LongRange("less than 10", 0L, true, 10L, false),
                           new LongRange("less than or equal to 10", 0L, true, 10L, true),
                           new LongRange("over 90", 90L, false, 100L, false),
@@ -198,7 +203,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fc);
-    Facets facets = new RangeFacetCounts("field", fc,
+    Facets facets = new DoubleRangeFacetCounts("field", fc,
         new DoubleRange("less than 10", 0.0, true, 10.0, false),
         new DoubleRange("less than or equal to 10", 0.0, true, 10.0, true),
         new DoubleRange("over 90", 90.0, false, 100.0, false),
@@ -229,12 +234,12 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fc);
 
-    Facets facets = new RangeFacetCounts("field", fc,
-        new FloatRange("less than 10", 0.0f, true, 10.0f, false),
-        new FloatRange("less than or equal to 10", 0.0f, true, 10.0f, true),
-        new FloatRange("over 90", 90.0f, false, 100.0f, false),
-        new FloatRange("90 or above", 90.0f, true, 100.0f, false),
-        new FloatRange("over 1000", 1000.0f, false, Float.POSITIVE_INFINITY, false));
+    Facets facets = new DoubleRangeFacetCounts("field", new FloatFieldSource("field"), fc,
+        new DoubleRange("less than 10", 0.0f, true, 10.0f, false),
+        new DoubleRange("less than or equal to 10", 0.0f, true, 10.0f, true),
+        new DoubleRange("over 90", 90.0f, false, 100.0f, false),
+        new DoubleRange("90 or above", 90.0f, true, 100.0f, false),
+        new DoubleRange("over 1000", 1000.0f, false, Double.POSITIVE_INFINITY, false));
     
     assertEquals("value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
@@ -303,7 +308,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Facets facets = new RangeFacetCounts("field", sfc, ranges);
+      Facets facets = new LongRangeFacetCounts("field", sfc, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
@@ -351,19 +356,19 @@ public class TestRangeFacetCounts extends FacetTestCase {
         System.out.println("TEST: iter=" + iter);
       }
       int numRange = _TestUtil.nextInt(random(), 1, 5);
-      FloatRange[] ranges = new FloatRange[numRange];
+      DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
       for(int rangeID=0;rangeID<numRange;rangeID++) {
-        float min = random().nextFloat();
-        float max = random().nextFloat();
+        double min = random().nextDouble();
+        double max = random().nextDouble();
         if (min > max) {
-          float x = min;
+          double x = min;
           min = max;
           max = x;
         }
         boolean minIncl = random().nextBoolean();
         boolean maxIncl = random().nextBoolean();
-        ranges[rangeID] = new FloatRange("r" + rangeID, min, minIncl, max, maxIncl);
+        ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
 
         // Do "slow but hopefully correct" computation of
         // expected count:
@@ -387,7 +392,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Facets facets = new RangeFacetCounts("field", sfc, ranges);
+      Facets facets = new DoubleRangeFacetCounts("field", new FloatFieldSource("field"), sfc, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
@@ -398,11 +403,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
         assertEquals("r" + rangeID, subNode.label);
         assertEquals(expectedCounts[rangeID], subNode.value.intValue());
 
-        FloatRange range = ranges[rangeID];
+        DoubleRange range = ranges[rangeID];
 
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
-        ddq.add("field", NumericRangeQuery.newFloatRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
+        ddq.add("field", NumericRangeQuery.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
         assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
       }
     }
@@ -471,7 +476,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Facets facets = new RangeFacetCounts("field", sfc, ranges);
+      Facets facets = new DoubleRangeFacetCounts("field", sfc, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
@@ -514,11 +519,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     IndexReader r = w.getReader();
 
-    FacetsCollector sfc = new FacetsCollector();
+    FacetsCollector fc = new FacetsCollector();
 
     IndexSearcher s = newSearcher(r);
-    s.search(new MatchAllDocsQuery(), sfc);
-    Facets facets = new RangeFacetCounts("field", sfc,
+    s.search(new MatchAllDocsQuery(), fc);
+    Facets facets = new LongRangeFacetCounts("field", fc,
         new LongRange("less than 10", 0L, true, 10L, false),
         new LongRange("less than or equal to 10", 0L, true, 10L, true),
         new LongRange("over 90", 90L, false, 100L, false),
@@ -529,5 +534,47 @@ public class TestRangeFacetCounts extends FacetTestCase {
                  facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(w, r, d);
+  }
+
+  public void testDistanceRangeFaceting() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    
+    Document doc = new Document();
+    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
+    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
+    writer.addDocument(doc);
+    
+    Expression distance = JavascriptCompiler.compile("haversin(40.7143528,-74.0059731,latitude,longitude)");
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
+    bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
+
+    FacetsCollector fc = new FacetsCollector();
+
+    IndexReader r = writer.getReader();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new DoubleRangeFacetCounts("field", distance.getValueSource(bindings), fc,
+        new DoubleRange("< 1 km", 0.0, true, 1.0, false),
+        new DoubleRange("< 2 km", 0.0, true, 2.0, false),
+        new DoubleRange("< 5 km", 0.0, true, 5.0, false),
+        new DoubleRange("< 10 km", 0.0, true, 10.0, false),
+        new DoubleRange("< 20 km", 0.0, true, 20.0, false),
+        new DoubleRange("< 50 km", 0.0, true, 50.0, false));
+
+    assertEquals("value=3 childCount=6\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n  < 20 km (3)\n  < 50 km (3)\n", facets.getTopChildren(10, "field").toString());
+    IOUtils.close(r, writer, dir);
   }
 }

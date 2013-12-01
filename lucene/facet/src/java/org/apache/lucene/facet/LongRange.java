@@ -19,8 +19,7 @@ package org.apache.lucene.facet;
 
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
 
-/** Represents a range over long values indexed as {@link
- *  NumericDocValuesField}.  */
+/** Represents a range over long values. */
 public final class LongRange extends Range {
   private final long minIncl;
   private final long maxIncl;
@@ -53,7 +52,6 @@ public final class LongRange extends Range {
     this.maxIncl = max;
   }
 
-  @Override
   public boolean accept(long value) {
     return value >= minIncl && value <= maxIncl;
   }

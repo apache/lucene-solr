@@ -157,7 +157,7 @@ public final class DrillDownQuery extends Query {
    *  when you have a separate way to drill-down on the
    *  dimension than the indexed facet ordinals (for
    *  example, use a {@link NumericRangeQuery} to drill down
-   *  after{@link RangeFacetCounts}. */
+   *  after {@link LongRangeFacetCounts} or {@link DoubleRangeFacetCounts}. */
   public void add(String dim, Query subQuery) {
 
     // TODO: we should use FilteredQuery?
