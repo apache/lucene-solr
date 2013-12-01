@@ -38,6 +38,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() {
+    schemaString = "schema15.xml";      // we need a string id
     SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
       @Override
       public void call(Object... data) {
@@ -53,6 +54,17 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   @AfterClass
   public static void afterSuperClass() {
     SolrCmdDistributor.testing_errorHook = null;
+  }
+  
+  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  
+  protected String[] getFieldNames() {
+    return fieldNames;
+  }
+
+  protected RandVal[] getRandValues() {
+    return randVals;
   }
   
   @Before
@@ -94,7 +106,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(10000 + i*50000, true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
       threads.add(indexThread);
       indexThread.start();
     }
