@@ -185,6 +185,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       // we are going to attempt to be the leader
       // first cancel any current recovery
       core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+      
+      if (weAreReplacement) {
+        // wait a moment for any floating updates to finish
+        try {
+          Thread.sleep(2500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+        }
+      }
+      
       boolean success = false;
       try {
         success = syncStrategy.sync(zkController, core, leaderProps);

@@ -94,13 +94,7 @@ public class SyncStrategy {
         log.error("No UpdateLog found - cannot sync");
         return false;
       }
-      // wait a second for any floating updates to finish
-      try {
-        Thread.sleep(1500);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
-      }
+
       success = syncReplicas(zkController, core, leaderProps);
     } finally {
       SolrRequestInfo.clearRequestInfo();
