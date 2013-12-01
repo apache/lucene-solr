@@ -169,6 +169,9 @@ Bug Fixes
 * SOLR-5515: NPE when getting stats on date field with empty result on
   SolrCloud. (Alexander Sagen, shalin)
 
+* SOLR-5204: StatsComponent and SpellCheckComponent do not support the
+  shards.tolerant=true parameter. (Anca Kopetz, shalin)
+
 Optimizations
 ----------------------
 
