@@ -110,7 +110,7 @@ New Features
   (Robert Muir)
 
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
-  Unload action. (shalin)
+  Unload action. (Lyubov Romanchuk, shalin)
 
 Bug Fixes
 ----------------------
