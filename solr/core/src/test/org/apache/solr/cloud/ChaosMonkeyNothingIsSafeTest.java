@@ -115,8 +115,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
+        // ensure the id start is high enough that threads will not overlap doc ids
         StopableIndexingThread indexThread = new StopableIndexingThread(
-            (i+1) * 50000, true);
+            (i+1) * 25000000, true);
         threads.add(indexThread);
         indexThread.start();
       }
