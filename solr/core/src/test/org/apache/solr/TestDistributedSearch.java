@@ -105,6 +105,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
            t1,"no eggs on wall, lesson learned", 
            oddField, "odd man out");
 
+    indexr(id, "1001", "lowerfilt", "toyota"); // for spellcheck
+
     indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
@@ -227,6 +229,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "fl", "id", "fl",nint, "fl",tint,"sort",i1 + " desc");
     query("q","*:*", "fl",nint, "fl", "id", "fl",tint,"sort",i1 + " desc");
 
+    // basic spellcheck testing
+    query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "spellCheckCompRH_Direct", "shards.qt", "spellCheckCompRH_Direct");
+
     stress=0;  // turn off stress... we want to tex max combos in min time
     for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
       String f = fieldNames[random().nextInt(fieldNames.length)];
@@ -336,7 +341,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     assertNotNull("missing shard info", sinfo);
     assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, cnt, sinfo.size());
-    
+
     // test shards.tolerant=true
     for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
     {
@@ -383,6 +388,22 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           ShardParams.SHARDS_INFO, "true",
           ShardParams.SHARDS_TOLERANT, "true");
 
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "stats", "true",
+          "stats.field", i1,
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
+      queryPartialResults(upShards, upClients,
+          "q", "toyata",
+          "spellcheck", "true",
+          "spellcheck.q", "toyata",
+          "qt", "spellCheckCompRH_Direct",
+          "shards.qt", "spellCheckCompRH_Direct",
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {
         downJetty.start();
@@ -409,7 +430,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
   
-  protected void queryPartialResults(final List<String> upShards, 
+  protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrServer> upClients, 
                                      Object... q) throws Exception {
     

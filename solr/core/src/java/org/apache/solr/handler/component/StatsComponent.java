@@ -102,7 +102,16 @@ public class StatsComponent extends SearchComponent {
     StatsInfo si = rb._statsInfo;
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList stats = (NamedList) srsp.getSolrResponse().getResponse().get("stats");
+      NamedList stats = null;
+      try {
+        stats = (NamedList) srsp.getSolrResponse().getResponse().get("stats");
+      } catch (Exception e) {
+        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+          continue; // looks like a shard did not return anything
+        }
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unable to read stats info for shard: " + srsp.getShard(), e);
+      }
 
       NamedList stats_fields = (NamedList) stats.get("stats_fields");
       if (stats_fields != null) {

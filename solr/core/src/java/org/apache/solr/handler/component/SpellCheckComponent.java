@@ -321,7 +321,16 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (maxResultsForSuggest==null || !isCorrectlySpelled) {
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
-          NamedList nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
+          NamedList nl = null;
+          try {
+            nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
+          } catch (Exception e) {
+            if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+              continue; // looks like a shard did not return anything
+            }
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unable to read spelling info for shard: " + srsp.getShard(), e);
+          }
           LOG.info(srsp.getShard() + " " + nl);
           if (nl != null) {
             mergeData.totalNumberShardResponses++;
