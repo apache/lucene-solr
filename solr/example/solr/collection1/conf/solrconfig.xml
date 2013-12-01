@@ -872,7 +872,15 @@
 
   <!-- realtime get handler, guaranteed to return the latest stored fields of
        any document, without the need to commit or open a new searcher.  The
-       current implementation relies on the updateLog feature being enabled. -->
+       current implementation relies on the updateLog feature being enabled.
+
+       ** WARNING **
+       Do NOT disable the realtime get handler at /get if you are using
+       SolrCloud otherwise any leader election will cause a full sync in ALL
+       replicas for the shard in question. Similarly, a replica recovery will
+       also always fetch the complete index from the leader because a partial
+       sync will not be possible in the absence of this handler.
+  -->
   <requestHandler name="/get" class="solr.RealTimeGetHandler">
      <lst name="defaults">
        <str name="omitHeader">true</str>
