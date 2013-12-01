@@ -26,13 +26,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.LongRange;
-import org.apache.lucene.facet.RangeFacetCounts;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.LongRange;
+import org.apache.lucene.facet.LongRangeFacetCounts;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -96,10 +96,10 @@ public class RangeFacetsExample implements Closeable {
     // you'd use a "normal" query:
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
-    Facets facets = new RangeFacetCounts("timestamp", fc,
-                                         PAST_HOUR,
-                                         PAST_SIX_HOURS,
-                                         PAST_DAY);
+    Facets facets = new LongRangeFacetCounts("timestamp", fc,
+                                             PAST_HOUR,
+                                             PAST_SIX_HOURS,
+                                             PAST_DAY);
     return facets.getTopChildren(10, "timestamp");
   }
   

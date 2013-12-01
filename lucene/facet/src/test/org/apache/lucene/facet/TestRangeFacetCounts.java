@@ -29,16 +29,17 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.expressions.Expression;
-import org.apache.lucene.expressions.SimpleBindings;
-import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -536,45 +537,62 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(w, r, d);
   }
 
-  public void testDistanceRangeFaceting() throws Exception {
+  public void testCustomDoublesValueSource() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
     Document doc = new Document();
-    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
     writer.addDocument(doc);
-    
-    Expression distance = JavascriptCompiler.compile("haversin(40.7143528,-74.0059731,latitude,longitude)");
-    SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
-    bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
 
+    writer.forceMerge(1);
+
+    ValueSource vs = new ValueSource() {
+        @Override
+        public FunctionValues getValues(Map ignored, AtomicReaderContext ignored2) {
+          return new DoubleDocValues(null) {
+            public double doubleVal(int doc) {
+              return doc+1;
+            }
+          };
+        }
+
+        @Override
+        public boolean equals(Object o) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int hashCode() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String description() {
+          throw new UnsupportedOperationException();
+        }
+      };
+    
     FacetsCollector fc = new FacetsCollector();
 
     IndexReader r = writer.getReader();
     IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fc);
 
-    Facets facets = new DoubleRangeFacetCounts("field", distance.getValueSource(bindings), fc,
-        new DoubleRange("< 1 km", 0.0, true, 1.0, false),
-        new DoubleRange("< 2 km", 0.0, true, 2.0, false),
-        new DoubleRange("< 5 km", 0.0, true, 5.0, false),
-        new DoubleRange("< 10 km", 0.0, true, 10.0, false),
-        new DoubleRange("< 20 km", 0.0, true, 20.0, false),
-        new DoubleRange("< 50 km", 0.0, true, 50.0, false));
+    Facets facets = new DoubleRangeFacetCounts("field", vs, fc,
+        new DoubleRange("< 1", 0.0, true, 1.0, false),
+        new DoubleRange("< 2", 0.0, true, 2.0, false),
+        new DoubleRange("< 5", 0.0, true, 5.0, false),
+        new DoubleRange("< 10", 0.0, true, 10.0, false),
+        new DoubleRange("< 20", 0.0, true, 20.0, false),
+        new DoubleRange("< 50", 0.0, true, 50.0, false));
 
-    assertEquals("value=3 childCount=6\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n  < 20 km (3)\n  < 50 km (3)\n", facets.getTopChildren(10, "field").toString());
+    assertEquals("value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n", facets.getTopChildren(10, "field").toString());
     IOUtils.close(r, writer, dir);
   }
 }
