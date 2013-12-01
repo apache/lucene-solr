@@ -17,11 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.Filter;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
@@ -226,6 +229,21 @@ public class ChaosMonkey {
   }
   
   public static void kill(CloudJettyRunner cjetty) throws Exception {
+    FilterHolder filterHolder = cjetty.jetty.getDispatchFilter();
+    if (filterHolder != null) {
+      Filter filter = filterHolder.getFilter();
+      if (filter != null) {
+        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
+        if (cores != null) {
+          int zklocalport = ((InetSocketAddress) cores.getZkController()
+              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+          IpTables.blockPort(zklocalport);
+        }
+      }
+    }
+
+    IpTables.blockPort(cjetty.jetty.getLocalPort());
+    
     JettySolrRunner jetty = cjetty.jetty;
     monkeyLog("kill shard! " + jetty.getLocalPort());
     
@@ -534,7 +552,8 @@ public class ChaosMonkey {
   }
   
   public static boolean start(JettySolrRunner jetty) throws Exception {
-    
+
+    IpTables.unblockPort(jetty.getLocalPort());
     try {
       jetty.start();
     } catch (Exception e) {
@@ -552,6 +571,18 @@ public class ChaosMonkey {
           // we coud not get the port
           jetty.stop();
           return false;
+        }
+      }
+    }
+    FilterHolder filterHolder = jetty.getDispatchFilter();
+    if (filterHolder != null) {
+      Filter filter = filterHolder.getFilter();
+      if (filter != null) {
+        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
+        if (cores != null) {
+          int zklocalport = ((InetSocketAddress) cores.getZkController()
+              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+          IpTables.unblockPort(zklocalport);
         }
       }
     }
