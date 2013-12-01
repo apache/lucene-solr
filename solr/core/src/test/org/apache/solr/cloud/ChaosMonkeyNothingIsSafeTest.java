@@ -51,6 +51,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
   @BeforeClass
   public static void beforeSuperClass() {
+    schemaString = "schema15.xml";      // we need a string id
     SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
       @Override
       public void call(Object... data) {
@@ -66,6 +67,17 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   @AfterClass
   public static void afterSuperClass() {
     SolrCmdDistributor.testing_errorHook = null;
+  }
+  
+  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  
+  protected String[] getFieldNames() {
+    return fieldNames;
+  }
+
+  protected RandVal[] getRandValues() {
+    return randVals;
   }
   
   @Before
@@ -115,9 +127,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
-        // ensure the id start is high enough that threads will not overlap doc ids
-        StopableIndexingThread indexThread = new StopableIndexingThread(
-            (i+1) * 25000000, true);
+        StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
         threads.add(indexThread);
         indexThread.start();
       }
@@ -134,7 +144,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
         FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
-            clients, (i+1) * 50000, true);
+            clients, "ft1", true);
         threads.add(ftIndexThread);
         ftIndexThread.start();
       }
@@ -248,8 +258,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     private List<SolrServer> clients;  
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
-        int startI, boolean doDeletes) {
-      super(startI, doDeletes);
+        String id, boolean doDeletes) {
+      super(id, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
@@ -267,18 +277,19 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     
     @Override
     public void run() {
-      int i = startI;
+      int i = 0;
       int numDeletes = 0;
       int numAdds = 0;
 
       while (true && !stop) {
+        String id = this.id + "-" + i;
         ++i;
         
         if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
-          Integer delete = deletes.remove(0);
+          String delete = deletes.remove(0);
           try {
             numDeletes++;
-            suss.deleteById(Integer.toString(delete));
+            suss.deleteById(delete);
           } catch (Exception e) {
             changeUrlOnError(e);
             //System.err.println("REQUEST FAILED:");
@@ -292,11 +303,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
           if (numAdds > 4000)
             continue;
           SolrInputDocument doc = getDoc(
+              "id",
               id,
-              i,
               i1,
-              50,
-              tlong,
               50,
               t1,
               "Saxon heptarchies that used to rip around so in old times and raise Cain.  My, you ought to seen old Henry the Eight when he was in bloom.  He WAS a blossom.  He used to marry a new wife every day, and chop off her head next morning.  And he would do it just as indifferent as if ");
@@ -309,7 +318,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         }
         
         if (doDeletes && random().nextBoolean()) {
-          deletes.add(i);
+          deletes.add(id);
         }
         
       }
