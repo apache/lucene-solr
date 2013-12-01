@@ -47,6 +47,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.cloud.IpTables;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -143,6 +144,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.clearProperty("tests.shardhandler.randomSeed");
     System.clearProperty("enable.update.log");
     System.clearProperty("useCompoundFile");
+    
+    IpTables.unblockAllPorts();
   }
 
   private static boolean changedFactory = false;
