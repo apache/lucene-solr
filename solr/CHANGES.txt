@@ -112,6 +112,9 @@ New Features
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
   Unload action. (Lyubov Romanchuk, shalin)
 
+* SOLR-1871: The 'map' function query accepts a ValueSource as target and
+  default value. (Chris Harris, shalin)
+
 Bug Fixes
 ----------------------
 

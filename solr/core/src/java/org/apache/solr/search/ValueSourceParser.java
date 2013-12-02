@@ -198,8 +198,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
-        float target = fp.parseFloat();
-        Float def = fp.hasMoreArguments() ? fp.parseFloat() : null;
+        ValueSource target = fp.parseValueSource();
+        ValueSource def = fp.hasMoreArguments() ? fp.parseValueSource() : null;
         return new RangeMapFloatFunction(source, min, max, target, def);
       }
     });

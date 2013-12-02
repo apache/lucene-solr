@@ -73,6 +73,9 @@ New Features
   (missing the term, weight or payload).  (Areek Zillur via
   Mike McCandless)
 
+* SOLR-1871: The RangeMapFloatFunction accepts an arbitrary ValueSource
+  as target and default values. (Chris Harris, shalin)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
