@@ -23,11 +23,18 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.types.Pair;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class MorphlineMapperTest extends MRUnitBase {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
+  }
   
   @Test
   public void testMapper() throws Exception {

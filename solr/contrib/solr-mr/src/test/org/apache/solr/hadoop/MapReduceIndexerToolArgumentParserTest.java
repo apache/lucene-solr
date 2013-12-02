@@ -26,6 +26,7 @@ import java.util.Collections;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.dedup.NoChangeUpdateConflictResolver;
@@ -33,6 +34,7 @@ import org.apache.solr.hadoop.dedup.RetainMostRecentUpdateConflictResolver;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +55,13 @@ public class MapReduceIndexerToolArgumentParserTest extends LuceneTestCase {
   private static final String MORPHLINE_FILE = RESOURCES_DIR + "/test-morphlines/solrCellDocumentTypes.conf";
     
   private static final Logger LOG = LoggerFactory.getLogger(MapReduceIndexerToolArgumentParserTest.class);
-
   
   private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineGoLiveMiniMRTest.class.getName());
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
+  }
   
   @Before
   public void setUp() throws Exception {

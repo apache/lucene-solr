@@ -34,6 +34,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mrunit.mapreduce.ReduceDriver;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -45,6 +46,11 @@ import org.mockito.stubbing.Answer;
 import com.google.common.collect.Lists;
 
 public class MorphlineReducerTest extends MRUnitBase {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
+  }
   
   public static class MySolrReducer extends SolrReducer {
     Context context;
