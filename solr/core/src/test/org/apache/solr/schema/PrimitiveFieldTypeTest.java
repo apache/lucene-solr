@@ -41,9 +41,16 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<String,String>();
     config = new SolrConfig(testConfHome + "solrconfig.xml");
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    System.clearProperty("solr.allow.unsafe.resourceloading");
+    super.tearDown();
   }
 
   @SuppressWarnings("deprecation")

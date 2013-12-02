@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -212,7 +213,7 @@ public class SolrResourceLoader implements ResourceLoader
   }
 
   public String getConfigDir() {
-    return instanceDir + "conf/";
+    return instanceDir + "conf" + File.separator;
   }
   
   public String getDataDir()    {
@@ -250,27 +251,46 @@ public class SolrResourceLoader implements ResourceLoader
   public InputStream openResource(String resource) {
     InputStream is=null;
     try {
-      File f0 = new File(resource);
-      File f = f0;
+      File f0 = new File(resource), f = f0;
       if (!f.isAbsolute()) {
         // try $CWD/$configDir/$resource
-        f = new File(getConfigDir() + resource);
+        f = new File(getConfigDir() + resource).getAbsoluteFile();
       }
-      if (f.isFile() && f.canRead()) {
+      boolean found = f.isFile() && f.canRead();
+      if (!found) { // no success with $CWD/$configDir/$resource
+        f = f0.getAbsoluteFile();
+        found = f.isFile() && f.canRead();
+      }
+      // check that we don't escape instance dir
+      if (found) {
+        if (!Boolean.parseBoolean(System.getProperty("solr.allow.unsafe.resourceloading", "false"))) {
+          final URI instanceURI = new File(getInstanceDir()).getAbsoluteFile().toURI().normalize();
+          final URI fileURI = f.toURI().normalize();
+          if (instanceURI.relativize(fileURI) == fileURI) {
+            // no URI relativize possible, so they don't share same base folder
+            throw new RuntimeException("For security reasons, SolrResourceLoader cannot load files from outside the instance's directory: " + f +
+                "; if you want to override this safety feature and you are sure about the consequences, you can pass the system property "+
+                "-Dsolr.allow.unsafe.resourceloading=true to your JVM");
+          }
+        }
+        // relativize() returned a relative, new URI, so we are fine!
         return new FileInputStream(f);
-      } else if (f != f0) { // no success with $CWD/$configDir/$resource
-        if (f0.isFile() && f0.canRead())
-          return new FileInputStream(f0);
       }
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource);
-      if (is == null)
-        is = classLoader.getResourceAsStream(getConfigDir() + resource);
+      // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
+      // We need a ClassLoader-compatible (forward-slashes) path here!
+      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      // This is a hack just for tests (it is not done in ZKResourceLoader)!
+      // -> the getConfigDir's path must not be absolute!
+      if (is == null && System.getProperty("jetty.testMode") != null && !new File(getConfigDir()).isAbsolute()) {
+        is = classLoader.getResourceAsStream((getConfigDir() + resource).replace(File.separatorChar, '/'));
+      }
+    } catch (RuntimeException re) {
+      throw re; // preserve original Exception
     } catch (Exception e) {
       throw new RuntimeException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
     }
     return is;
   }

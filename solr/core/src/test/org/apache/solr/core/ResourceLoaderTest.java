@@ -19,9 +19,10 @@ package org.apache.solr.core;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.analysis.KeywordTokenizerFactory;
 import org.apache.solr.analysis.NGramFilterFactory;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
@@ -30,12 +31,13 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.List;
 
-public class ResourceLoaderTest extends LuceneTestCase 
+public class ResourceLoaderTest extends SolrTestCaseJ4 
 {
   public void testInstanceDir() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(null);
@@ -47,7 +49,27 @@ public class ResourceLoaderTest extends LuceneTestCase
     assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr" + File.separator) == true);
   }
 
-  public void testAwareCompatibility() 
+  public void testEscapeInstanceDir() throws Exception {
+    File temp = _TestUtil.getTempDir("testEscapeInstanceDir");
+    try {
+      temp.mkdirs();
+      new File(temp, "dummy.txt").createNewFile();
+      File instanceDir = new File(temp, "instance");
+      instanceDir.mkdir();
+      new File(instanceDir, "conf").mkdir();
+      SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
+      try {
+        loader.openResource("../../dummy.txt").close();
+        fail();
+      } catch (RuntimeException re) {
+        assertTrue(re.getMessage().startsWith("For security reasons, SolrResourceLoader"));
+      }
+    } finally {
+      _TestUtil.rmDir(temp);
+    }
+  }
+
+  public void testAwareCompatibility() throws Exception
   {
     SolrResourceLoader loader = new SolrResourceLoader( "." );
     

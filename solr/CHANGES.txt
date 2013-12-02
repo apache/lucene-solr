@@ -27,6 +27,16 @@ Bug Fixes
 * SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
   local params together (koji)
 
+Backported Security Fixes from 4.x branch
+----------------------
+* SOLR-5520, SOLR-4882: SolrResourceLoader was restricted to only allow access
+  to resource files below the instance dir. The reason for this is security
+  related: Some Solr components allow to pass in resource paths via REST
+  parameters (e.g. XSL stylesheets, velocity templates,...) and load them
+  via resource loader. For backwards compatibility, this security feature
+  can be disabled by a new system property:
+  solr.allow.unsafe.resourceloading=true  (Uwe Schindler)
+
 ==================  3.6.2  ==================
 
 Bug Fixes

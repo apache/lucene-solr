@@ -64,7 +64,6 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     } catch (ClassCastException e) {
       // known edge case where QueryResponse's extraction assumes "response" is a SolrDocumentList
       // (AnalysisRequestHandler emits a "response")
-      e.printStackTrace();
       rsp = new SolrResponseBase();
       rsp.setResponse(parsedResponse);
     }
@@ -123,6 +122,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
 
     // TODO: Externalize Velocity properties
     engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
