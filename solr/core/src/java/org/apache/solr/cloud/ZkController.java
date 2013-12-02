@@ -1333,30 +1333,31 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd ) {
 
     String coreNodeName = getCoreNodeName(cd);
-
-    // make sure the node name is set on the descriptor
-    if (cd.getCloudDescriptor().getCoreNodeName() == null) {
-      cd.getCloudDescriptor().setCoreNodeName(coreNodeName);
-    }
-
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
-      if(cd.getCloudDescriptor().getCollectionName() !=null && cd.getCloudDescriptor().getCoreNodeName() != null ) {
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if(cd.getCloudDescriptor().getCollectionName() !=null && cloudDesc.getCoreNodeName() != null ) {
         //we were already registered
-        if(zkStateReader.getClusterState().hasCollection(cd.getCloudDescriptor().getCollectionName())){
-        DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCloudDescriptor().getCollectionName());
+        if(zkStateReader.getClusterState().hasCollection(cloudDesc.getCollectionName())){
+        DocCollection coll = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
          if(!"true".equals(coll.getStr("autoCreated"))){
-           Slice slice = coll.getSlice(cd.getCloudDescriptor().getShardId());
+           Slice slice = coll.getSlice(cloudDesc.getShardId());
            if(slice != null){
-             if(slice.getReplica(cd.getCloudDescriptor().getCoreNodeName()) == null) {
+             if(slice.getReplica(cloudDesc.getCoreNodeName()) == null) {
                log.info("core_removed This core is removed from ZK");
-               throw new SolrException(ErrorCode.NOT_FOUND,coreNodeName +" is removed");
+               throw new SolrException(ErrorCode.NOT_FOUND,cloudDesc.getCoreNodeName() +" is removed");
              }
            }
          }
         }
       }
+
+      // make sure the node name is set on the descriptor
+      if (cloudDesc.getCoreNodeName() == null) {
+        cloudDesc.setCoreNodeName(coreNodeName);
+      }
+
       publish(cd, ZkStateReader.DOWN, false);
     } catch (KeeperException e) {
       log.error("", e);
