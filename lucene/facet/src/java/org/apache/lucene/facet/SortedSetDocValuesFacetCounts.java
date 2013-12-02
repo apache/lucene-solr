@@ -19,17 +19,13 @@ package org.apache.lucene.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.SortedSetDocValuesReaderState.OrdRange;
-import org.apache.lucene.facet.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
@@ -37,7 +33,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PriorityQueue;
 
 /** Compute facets counts from previously
  *  indexed {@link SortedSetDocValuesFacetField},
@@ -51,8 +46,11 @@ import org.apache.lucene.util.PriorityQueue;
  *
  *  <p><b>NOTE</b>: this class should be instantiated and
  *  then used from a single thread, because it holds a
- *  thread-private instance of {@link SortedSetDocValues}. */
-
+ *  thread-private instance of {@link SortedSetDocValues}.
+ * 
+ * <p><b>NOTE:<b/>: tie-break is by unicode sort order
+ *
+ * @lucene.experimental */
 public class SortedSetDocValuesFacetCounts extends Facets {
 
   final SortedSetDocValuesReaderState state;
@@ -136,7 +134,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       labelValues[i] = new LabelAndValue(parts[1], ordAndValue.value);
     }
 
-    return new FacetResult(dimCount, labelValues, childCount);
+    return new FacetResult(dim, new String[0], dimCount, labelValues, childCount);
   }
 
   /** Does all the "real work" of tallying up the counts. */
@@ -283,7 +281,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
                          } else if (b.value.intValue() > a.value.intValue()) {
                            return 1;
                          } else {
-                           return 0;
+                           return a.dim.compareTo(b.dim);
                          }
                        }
                      });

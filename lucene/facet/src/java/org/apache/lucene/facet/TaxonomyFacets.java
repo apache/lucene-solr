@@ -77,11 +77,10 @@ public abstract class TaxonomyFacets extends Facets {
                          } else if (b.value.doubleValue() > a.value.doubleValue()) {
                            return 1;
                          } else {
-                           return 0;
+                           return a.dim.compareTo(b.dim);
                          }
                        }
                      });
-
     return results;
   }
 }

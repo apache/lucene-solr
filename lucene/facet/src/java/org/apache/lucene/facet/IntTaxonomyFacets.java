@@ -135,6 +135,6 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new FacetResult(totValue, labelValues, childCount);
+    return new FacetResult(dim, path, totValue, labelValues, childCount);
   }
 }

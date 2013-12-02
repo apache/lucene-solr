@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -121,12 +120,12 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
-    assertEquals("value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
 
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
-    assertEquals("value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // Same simple case, but no baseQuery (pure browse):
     // drill-down on a single field; in this case the
@@ -139,12 +138,12 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
-    assertEquals("value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
 
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
-    assertEquals("value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // Another simple case: drill-down on on single fields
     // but OR of two values
@@ -155,11 +154,11 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(3, r.hits.totalHits);
     // Publish Date is only drill-down: Lisa and Bob
     // (drill-down) published twice in 2010 and once in 2012:
-    assertEquals("value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
-    assertEquals("value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // More interesting case: drill-down on two fields
     ddq = new DrillDownQuery(config);
@@ -169,10 +168,10 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(1, r.hits.totalHits);
     // Publish Date is drill-sideways + drill-down: Lisa
     // (drill-down) published once in 2010 and once in 2012:
-    assertEquals("value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
     // Author is drill-sideways + drill-down:
     // only Lisa & Bob published (once each) in 2010:
-    assertEquals("value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // Even more interesting case: drill down on two fields,
     // but one of them is OR
@@ -186,10 +185,10 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(2, r.hits.totalHits);
     // Publish Date is both drill-sideways + drill-down:
     // Lisa or Bob published twice in 2010 and once in 2012:
-    assertEquals("value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
     // Author is drill-sideways + drill-down:
     // only Lisa & Bob published (once each) in 2010:
-    assertEquals("value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // Test drilling down on invalid field:
     ddq = new DrillDownQuery(config);
@@ -207,11 +206,11 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
-    assertEquals("value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
-    assertEquals("value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     // LUCENE-4915: test drilling down on a dimension but
     // NOT facet counting it:
@@ -222,7 +221,7 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(2, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
-    assertEquals("value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=2 childCount=2\n  2010 (1)\n  2012 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
 
     // Test main query gets null scorer:
     ddq = new DrillDownQuery(config, new TermQuery(new Term("foobar", "baz")));
@@ -280,11 +279,11 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(1, r.hits.totalHits);
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
-    assertEquals("value=1 childCount=1\n  2010 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
+    assertEquals("dim=Publish Date path=[] value=1 childCount=1\n  2010 (1)\n", r.facets.getTopChildren(10, "Publish Date").toString());
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published once, and Bob
     // published once:
-    assertEquals("value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
+    assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
     IOUtils.close(searcher.getIndexReader(), taxoReader, writer, taxoWriter, dir, taxoDir);
   }
@@ -338,8 +337,8 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSidewaysResult r = new DrillSideways(searcher, config, taxoReader).search(null, ddq, 10);
 
     assertEquals(3, r.hits.totalHits);
-    assertEquals("value=6 childCount=4\n  a (3)\n  b (1)\n  c (1)\n  d (1)\n", r.facets.getTopChildren(10, "dim").toString());
-    assertEquals("value=3 childCount=3\n  x (1)\n  y (1)\n  z (1)\n", r.facets.getTopChildren(10, "dim", "a").toString());
+    assertEquals("dim=dim path=[] value=6 childCount=4\n  a (3)\n  b (1)\n  c (1)\n  d (1)\n", r.facets.getTopChildren(10, "dim").toString());
+    assertEquals("dim=dim path=[a] value=3 childCount=3\n  x (1)\n  y (1)\n  z (1)\n", r.facets.getTopChildren(10, "dim", "a").toString());
 
     IOUtils.close(searcher.getIndexReader(), taxoReader, writer, taxoWriter, dir, taxoDir);
   }

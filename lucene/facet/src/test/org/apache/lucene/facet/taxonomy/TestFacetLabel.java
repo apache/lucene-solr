@@ -27,7 +27,7 @@ public class TestFacetLabel extends FacetTestCase {
   
   @Test 
   public void testBasic() {
-    assertEquals(0, FacetLabel.EMPTY.length);
+    assertEquals(0, new FacetLabel().length);
     assertEquals(1, new FacetLabel("hello").length);
     assertEquals(2, new FacetLabel("hello", "world").length);
   }
@@ -35,7 +35,7 @@ public class TestFacetLabel extends FacetTestCase {
   @Test 
   public void testToString() {
     // When the category is empty, we expect an empty string
-    assertEquals("FacetLabel: []", FacetLabel.EMPTY.toString());
+    assertEquals("FacetLabel: []", new FacetLabel().toString());
     // one category
     assertEquals("FacetLabel: [hello]", new FacetLabel("hello").toString());
     // more than one category
@@ -60,7 +60,7 @@ public class TestFacetLabel extends FacetTestCase {
     // defaults to creating an object with a 0 initial capacity.
     // If we change this default later, we also need to change this
     // test.
-    FacetLabel p = FacetLabel.EMPTY;
+    FacetLabel p = new FacetLabel();
     assertEquals(0, p.length);
     assertEquals("FacetLabel: []", p.toString());
   }
@@ -94,24 +94,17 @@ public class TestFacetLabel extends FacetTestCase {
 
   @Test 
   public void testEquals() {
-    assertEquals(FacetLabel.EMPTY, FacetLabel.EMPTY);
-    assertFalse(FacetLabel.EMPTY.equals(new FacetLabel("hi")));
-    assertFalse(FacetLabel.EMPTY.equals(Integer.valueOf(3)));
+    assertEquals(new FacetLabel(), new FacetLabel());
+    assertFalse(new FacetLabel().equals(new FacetLabel("hi")));
+    assertFalse(new FacetLabel().equals(Integer.valueOf(3)));
     assertEquals(new FacetLabel("hello", "world"), new FacetLabel("hello", "world"));    
   }
   
   @Test 
   public void testHashCode() {
-    assertEquals(FacetLabel.EMPTY.hashCode(), FacetLabel.EMPTY.hashCode());
-    assertFalse(FacetLabel.EMPTY.hashCode() == new FacetLabel("hi").hashCode());
+    assertEquals(new FacetLabel().hashCode(), new FacetLabel().hashCode());
+    assertFalse(new FacetLabel().hashCode() == new FacetLabel("hi").hashCode());
     assertEquals(new FacetLabel("hello", "world").hashCode(), new FacetLabel("hello", "world").hashCode());
-  }
-  
-  @Test 
-  public void testLongHashCode() {
-    assertEquals(FacetLabel.EMPTY.longHashCode(), FacetLabel.EMPTY.longHashCode());
-    assertFalse(FacetLabel.EMPTY.longHashCode() == new FacetLabel("hi").longHashCode());
-    assertEquals(new FacetLabel("hello", "world").longHashCode(), new FacetLabel("hello", "world").longHashCode());
   }
   
   @Test 

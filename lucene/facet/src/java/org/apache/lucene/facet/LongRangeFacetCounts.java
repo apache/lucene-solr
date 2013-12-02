@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -98,13 +97,16 @@ public class LongRangeFacetCounts extends Facets {
     if (dim.equals(field) == false) {
       throw new IllegalArgumentException("invalid dim \"" + dim + "\"; should be \"" + field + "\"");
     }
+    if (path.length != 0) {
+      throw new IllegalArgumentException("path.length should be 0");
+    }
     LabelAndValue[] labelValues = new LabelAndValue[counts.length];
     for(int i=0;i<counts.length;i++) {
       // nocommit can we add the range into this?
       labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
     }
 
-    return new FacetResult(totCount, labelValues, labelValues.length);
+    return new FacetResult(dim, path, totCount, labelValues, labelValues.length);
   }
 
   @Override

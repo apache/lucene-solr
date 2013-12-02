@@ -101,7 +101,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   private void init() {
     labelRepository = new CharBlockArray();
-    CategoryPathUtils.serialize(FacetLabel.EMPTY, labelRepository);
+    CategoryPathUtils.serialize(new FacetLabel(), labelRepository);
 
     int c = this.capacity;
     for (int i = 0; i < this.hashArrays.length; i++) {

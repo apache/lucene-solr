@@ -29,7 +29,7 @@ public class TestAssociationsFacetsExample extends LuceneTestCase {
   public void testExamples() throws Exception {
     List<FacetResult> res = new AssociationsFacetsExample().runSumAssociations();
     assertEquals("Wrong number of results", 2, res.size());
-    assertEquals("value=-1 childCount=2\n  lucene (4)\n  solr (2)\n", res.get(0).toString());
-    assertEquals("value=-1.0 childCount=2\n  computing (1.62)\n  software (0.34)\n", res.get(1).toString());
+    assertEquals("dim=tags path=[] value=-1 childCount=2\n  lucene (4)\n  solr (2)\n", res.get(0).toString());
+    assertEquals("dim=genre path=[] value=-1.0 childCount=2\n  computing (1.62)\n  software (0.34)\n", res.get(1).toString());
   }  
 }

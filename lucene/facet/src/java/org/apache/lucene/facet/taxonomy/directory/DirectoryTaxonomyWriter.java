@@ -231,7 +231,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       cacheIsComplete = true;
       // Make sure that the taxonomy always contain the root category
       // with category id 0.
-      addCategory(FacetLabel.EMPTY);
+      addCategory(new FacetLabel());
     } else {
       // There are some categories on the disk, which we have not yet
       // read into the cache, and therefore the cache is incomplete.

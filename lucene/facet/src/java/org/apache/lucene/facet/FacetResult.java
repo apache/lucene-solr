@@ -18,9 +18,14 @@ package org.apache.lucene.facet;
  */
 
 import java.util.Arrays;
-import java.util.List;
 
 public final class FacetResult {
+
+  /** Dimension that was requested. */
+  public final String dim;
+
+  /** Path whose children were requested. */
+  public final String[] path;
 
   /** Total value for this path (sum of all child counts, or
    *  sum of all child values), even those not included in
@@ -33,7 +38,9 @@ public final class FacetResult {
   /** Child counts. */
   public final LabelAndValue[] labelValues;
 
-  public FacetResult(Number value, LabelAndValue[] labelValues, int childCount) {
+  public FacetResult(String dim, String[] path, Number value, LabelAndValue[] labelValues, int childCount) {
+    this.dim = dim;
+    this.path = path;
     this.value = value;
     this.labelValues = labelValues;
     this.childCount = childCount;
@@ -42,7 +49,11 @@ public final class FacetResult {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("value=");
+    sb.append("dim=");
+    sb.append(dim);
+    sb.append(" path=");
+    sb.append(Arrays.toString(path));
+    sb.append(" value=");
     sb.append(value);
     sb.append(" childCount=");
     sb.append(childCount);

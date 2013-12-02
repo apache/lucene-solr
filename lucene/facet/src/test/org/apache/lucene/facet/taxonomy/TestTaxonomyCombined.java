@@ -304,7 +304,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
-    assertEquals(0, tr.getOrdinal(FacetLabel.EMPTY));
+    assertEquals(0, tr.getOrdinal(new FacetLabel()));
     tr.close();
     indexDir.close();
   }
@@ -323,7 +323,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
-    assertEquals(0, tr.getOrdinal(FacetLabel.EMPTY));
+    assertEquals(0, tr.getOrdinal(new FacetLabel()));
     tw.close();
     tr.close();
     indexDir.close();

@@ -19,7 +19,6 @@ package org.apache.lucene.demo.facet;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -110,8 +109,6 @@ public class RangeFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(getConfig());
 
-    // Use FieldCacheRangeFilter; this will use
-    // NumericDocValues:
     q.add("timestamp", NumericRangeQuery.newLongRange("timestamp", range.min, range.max, range.minInclusive, range.maxInclusive));
 
     return searcher.search(q, 10);

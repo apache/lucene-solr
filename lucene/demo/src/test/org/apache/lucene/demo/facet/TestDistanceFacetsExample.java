@@ -17,7 +17,6 @@ package org.apache.lucene.demo.facet;
  * limitations under the License.
  */
 
-import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.search.TopDocs;
@@ -31,7 +30,15 @@ public class TestDistanceFacetsExample extends LuceneTestCase {
     DistanceFacetsExample example = new DistanceFacetsExample();
     example.index();
     FacetResult result = example.search();
-    assertEquals("value=3 childCount=6\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n  < 20 km (3)\n  < 50 km (3)\n", result.toString());
+    assertEquals("dim=field path=[] value=3 childCount=4\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n", result.toString());
+    example.close();
+  }
+
+  public void testDrillDown() throws Exception {
+    DistanceFacetsExample example = new DistanceFacetsExample();
+    example.index();
+    TopDocs hits = example.drillDown(example.FIVE_KM);
+    assertEquals(2, hits.totalHits);
     example.close();
   }
 }

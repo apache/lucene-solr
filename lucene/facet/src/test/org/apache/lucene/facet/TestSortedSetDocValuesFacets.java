@@ -17,18 +17,24 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
 
 public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
@@ -69,8 +75,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
 
-    assertEquals("value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
-    assertEquals("value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
+    assertEquals("dim=a path=[] value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("dim=b path=[] value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
 
     // DrillDown:
     DrillDownQuery q = new DrillDownQuery(config);
@@ -172,9 +178,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     List<FacetResult> results = facets.getAllDims(10);
 
     assertEquals(3, results.size());
-    assertEquals("value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
-    assertEquals("value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
-    assertEquals("value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
+    assertEquals("dim=a path=[] value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
+    assertEquals("dim=b path=[] value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
+    assertEquals("dim=c path=[] value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
 
     searcher.getIndexReader().close();
     dir.close();
@@ -214,17 +220,11 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
 
     // Ask for top 10 labels for any dims that have counts:
-    assertEquals("value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
     searcher.getIndexReader().close();
     dir.close();
   }
-
-  // nocommit test different delim char & using the default
-  // one in a dim
-
-  // nocommit in the sparse case test that we are really
-  // sorting by the correct dim count
 
   public void testSlowCompositeReaderWrapper() throws Exception {
     assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
@@ -255,8 +255,96 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Facets facets = new SortedSetDocValuesFacetCounts(state, c);
 
     // Ask for top 10 labels for any dims that have counts:
-    assertEquals("value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
     IOUtils.close(writer, searcher.getIndexReader(), dir);
+  }
+
+
+  public void testRandom() throws Exception {
+    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
+    String[] tokens = getRandomTokens(10);
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    RandomIndexWriter w = new RandomIndexWriter(random(), indexDir);
+    FacetsConfig config = new FacetsConfig();
+    int numDocs = atLeast(1000);
+    int numDims = _TestUtil.nextInt(random(), 1, 7);
+    List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
+    for(TestDoc testDoc : testDocs) {
+      Document doc = new Document();
+      doc.add(newStringField("content", testDoc.content, Field.Store.NO));
+      for(int j=0;j<numDims;j++) {
+        if (testDoc.dims[j] != null) {
+          doc.add(new SortedSetDocValuesFacetField("dim" + j, testDoc.dims[j]));
+        }
+      }
+      w.addDocument(config.build(doc));
+    }
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(w.getReader());
+    
+    // Per-top-reader state:
+    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+
+    int iters = atLeast(100);
+    for(int iter=0;iter<iters;iter++) {
+      String searchToken = tokens[random().nextInt(tokens.length)];
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter content=" + searchToken);
+      }
+      FacetsCollector fc = new FacetsCollector();
+      TopDocs hits = FacetsCollector.search(searcher, new TermQuery(new Term("content", searchToken)), 10, fc);
+      Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+
+      // Slow, yet hopefully bug-free, faceting:
+      @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Integer>[] expectedCounts = new HashMap[numDims];
+      for(int i=0;i<numDims;i++) {
+        expectedCounts[i] = new HashMap<String,Integer>();
+      }
+
+      for(TestDoc doc : testDocs) {
+        if (doc.content.equals(searchToken)) {
+          for(int j=0;j<numDims;j++) {
+            if (doc.dims[j] != null) {
+              Integer v = expectedCounts[j].get(doc.dims[j]);
+              if (v == null) {
+                expectedCounts[j].put(doc.dims[j], 1);
+              } else {
+                expectedCounts[j].put(doc.dims[j], v.intValue() + 1);
+              }
+            }
+          }
+        }
+      }
+
+      List<FacetResult> expected = new ArrayList<FacetResult>();
+      for(int i=0;i<numDims;i++) {
+        List<LabelAndValue> labelValues = new ArrayList<LabelAndValue>();
+        int totCount = 0;
+        for(Map.Entry<String,Integer> ent : expectedCounts[i].entrySet()) {
+          labelValues.add(new LabelAndValue(ent.getKey(), ent.getValue()));
+          totCount += ent.getValue();
+        }
+        sortLabelValues(labelValues);
+        if (totCount > 0) {
+          expected.add(new FacetResult("dim" + i, new String[0], totCount, labelValues.toArray(new LabelAndValue[labelValues.size()]), labelValues.size()));
+        }
+      }
+
+      // Sort by highest value, tie break by value:
+      sortFacetResults(expected);
+
+      List<FacetResult> actual = facets.getAllDims(10);
+
+      // Messy: fixup ties
+      //sortTies(actual);
+
+      assertEquals(expected, actual);
+    }
+
+    IOUtils.close(w, searcher.getIndexReader(), indexDir, taxoDir);
   }
 }

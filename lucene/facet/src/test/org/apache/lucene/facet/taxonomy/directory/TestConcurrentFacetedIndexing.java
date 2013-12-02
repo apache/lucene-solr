@@ -135,7 +135,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
       assertTrue("category not found " + cp, tr.getOrdinal(cp) > 0);
       int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      FacetLabel path = FacetLabel.EMPTY;
+      FacetLabel path = new FacetLabel();
       for (int i = 0; i < level; i++) {
         path = cp.subpath(i + 1);
         int ord = tr.getOrdinal(path);

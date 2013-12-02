@@ -85,7 +85,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       FacetLabel label;
       String s = uniqueValues[index];
       if (s.length() == 0) {
-        label = FacetLabel.EMPTY;
+        label = new FacetLabel();
       } else {
         label = new FacetLabel(s.split("/"));
       }
@@ -106,7 +106,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       FacetLabel label;
       String s = uniqueValues[i];
       if (s.length() == 0) {
-        label = FacetLabel.EMPTY;
+        label = new FacetLabel();
       } else {
         label = new FacetLabel(s.split("/"));
       }

@@ -131,6 +131,6 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
     }
 
-    return new FacetResult(sumValues, labelValues, childCount);
+    return new FacetResult(dim, path, sumValues, labelValues, childCount);
   }
 }

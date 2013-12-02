@@ -42,7 +42,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
   public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
   /** An empty {@link FacetLabel} */
-  public static final FacetLabel EMPTY = new FacetLabel();
+  //public static final FacetLabel EMPTY = new FacetLabel();
 
   /**
    * The components of this {@link FacetLabel}. Note that this array may be
@@ -66,7 +66,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
     // while the code which calls this method is safe, at some point a test
     // tripped on AIOOBE in toString, but we failed to reproduce. adding the
     // assert as a safety check.
-    assert prefixLen > 0 && prefixLen <= copyFrom.components.length : 
+    assert prefixLen >= 0 && prefixLen <= copyFrom.components.length : 
       "prefixLen cannot be negative nor larger than the given components' length: prefixLen=" + prefixLen
         + " components.length=" + copyFrom.components.length;
     this.components = copyFrom.components;
@@ -90,8 +90,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
   }
 
   private void checkComponents() {
-    // nocommit why so anal?
-    // assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
     long len = 0;
     for (String comp : components) {
       if (comp == null || comp.isEmpty()) {
@@ -158,25 +156,10 @@ public class FacetLabel implements Comparable<FacetLabel> {
     return hash;
   }
 
-  /** Calculate a 64-bit hash function for this path. */
-  public long longHashCode() {
-    if (length == 0) {
-      return 0;
-    }
-    
-    long hash = length;
-    for (int i = 0; i < length; i++) {
-      hash = hash * 65599 + components[i].hashCode();
-    }
-    return hash;
-  }
-
   /** Returns a sub-path of this path up to {@code length} components. */
   public FacetLabel subpath(final int length) {
     if (length >= this.length || length < 0) {
       return this;
-    } else if (length == 0) {
-      return EMPTY;
     } else {
       return new FacetLabel(this, length);
     }

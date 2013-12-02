@@ -17,7 +17,17 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+
 import org.apache.lucene.document.DoubleDocValuesField; // javadocs
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
 
 /** Represents a range over double values. */
 public final class DoubleRange extends Range {
@@ -63,6 +73,74 @@ public final class DoubleRange extends Range {
 
   public boolean accept(double value) {
     return value >= minIncl && value <= maxIncl;
+  }
+
+  /** Returns a new {@link Filter} accepting only documents
+   *  in this range.  Note that this filter is not
+   *  efficient: it's a linear scan of all docs, testing
+   *  each value.  If the {@link ValueSource} is static,
+   *  e.g. an indexed numeric field, then it's more
+   *  efficient to use {@link NumericRangeFilter}. */
+  public Filter getFilter(final ValueSource valueSource) {
+    return new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+
+        // TODO: this is just like ValueSourceScorer,
+        // ValueSourceFilter (spatial),
+        // ValueSourceRangeFilter (solr); also,
+        // https://issues.apache.org/jira/browse/LUCENE-4251
+
+        final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
+
+        final int maxDoc = context.reader().maxDoc();
+
+        return new DocIdSet() {
+
+          @Override
+          public DocIdSetIterator iterator() {
+            return new DocIdSetIterator() {
+              int doc = -1;
+
+              @Override
+              public int nextDoc() throws IOException {
+                while (true) {
+                  doc++;
+                  if (doc == maxDoc) {
+                    return doc = NO_MORE_DOCS;
+                  }
+                  if (acceptDocs != null && acceptDocs.get(doc) == false) {
+                    continue;
+                  }
+                  double v = values.doubleVal(doc);
+                  if (accept(v)) {
+                    return doc;
+                  }
+                }
+              }
+
+              @Override
+              public int advance(int target) throws IOException {
+                doc = target-1;
+                return nextDoc();
+              }
+
+              @Override
+              public int docID() {
+                return doc;
+              }
+
+              @Override
+              public long cost() {
+                // Since we do a linear scan over all
+                // documents, our cost is O(maxDoc):
+                return maxDoc;
+              }
+            };
+          }
+        };
+      }
+    };
   }
 }
 
