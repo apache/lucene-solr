@@ -286,6 +286,10 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(new RangeMapFloatFunction(new FloatFieldSource("float"),
         5, 6, 1, 0f)),
         new float[] { 1f, 0f });
+    assertHits(new FunctionQuery(new RangeMapFloatFunction(new FloatFieldSource("float"),
+        5, 6, new SumFloatFunction(new ValueSource[] {new ConstValueSource(1f), new ConstValueSource(2f)}),
+        new ConstValueSource(11f))),
+        new float[] { 3f, 11f });
   }
   
   public void testReciprocal() throws Exception {
@@ -364,8 +368,8 @@ public class TestValueSources extends LuceneTestCase {
       expectedDocs[i] = i;
       expected[i] = new ScoreDoc(i, scores[i]);
     }
-    TopDocs docs = searcher.search(q, documents.size(), 
-        new Sort(new SortField("id", SortField.Type.STRING)));
+    TopDocs docs = searcher.search(q, null, documents.size(),
+        new Sort(new SortField("id", SortField.Type.STRING)), true, false);
     CheckHits.checkHits(random(), q, "", searcher, expectedDocs);
     CheckHits.checkHitsQuery(q, expected, docs.scoreDocs, expectedDocs);
     CheckHits.checkExplanations(q, "", searcher);

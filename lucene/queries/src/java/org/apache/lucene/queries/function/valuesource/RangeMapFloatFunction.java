@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * <code>LinearFloatFunction</code> implements a linear function over
- * another {@link org.apache.lucene.queries.function.ValueSource}.
+ * <code>RangeMapFloatFunction</code> implements a map function over
+ * another {@link ValueSource} whose values fall within min and max inclusive to target.
  * <br>
  * Normally Used as an argument to a {@link org.apache.lucene.queries.function.FunctionQuery}
  *
@@ -38,10 +38,14 @@ public class RangeMapFloatFunction extends ValueSource {
   protected final ValueSource source;
   protected final float min;
   protected final float max;
-  protected final float target;
-  protected final Float defaultVal;
+  protected final ValueSource target;
+  protected final ValueSource defaultVal;
 
   public RangeMapFloatFunction(ValueSource source, float min, float max, float target, Float def) {
+    this(source, min, max, new ConstValueSource(target), def == null ? null : new ConstValueSource(def));
+  }
+
+  public RangeMapFloatFunction(ValueSource source, float min, float max, ValueSource target, ValueSource def) {
     this.source = source;
     this.min = min;
     this.max = max;
@@ -51,21 +55,23 @@ public class RangeMapFloatFunction extends ValueSource {
 
   @Override
   public String description() {
-    return "map(" + source.description() + "," + min + "," + max + "," + target + ")";
+    return "map(" + source.description() + "," + min + "," + max + "," + target.description() + ")";
   }
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
+    final FunctionValues targets = target.getValues(context, readerContext);
+    final FunctionValues defaults = (this.defaultVal == null) ? null : defaultVal.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         float val = vals.floatVal(doc);
-        return (val>=min && val<=max) ? target : (defaultVal == null ? val : defaultVal);
+        return (val>=min && val<=max) ? targets.floatVal(doc) : (defaultVal == null ? val : defaults.floatVal(doc));
       }
       @Override
       public String toString(int doc) {
-        return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + target + ")";
+        return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + targets.toString(doc) + ")";
       }
     };
   }
@@ -82,8 +88,7 @@ public class RangeMapFloatFunction extends ValueSource {
     h += Float.floatToIntBits(min);
     h ^= (h << 14) | (h >>> 19);
     h += Float.floatToIntBits(max);
-    h ^= (h << 13) | (h >>> 20);
-    h += Float.floatToIntBits(target);
+    h += target.hashCode();
     if (defaultVal != null)
       h += defaultVal.hashCode();
     return h;
@@ -95,7 +100,7 @@ public class RangeMapFloatFunction extends ValueSource {
     RangeMapFloatFunction other = (RangeMapFloatFunction)o;
     return  this.min == other.min
          && this.max == other.max
-         && this.target == other.target
+         && this.target.equals(other.target)
          && this.source.equals(other.source)
          && (this.defaultVal == other.defaultVal || (this.defaultVal != null && this.defaultVal.equals(other.defaultVal)));
   }
