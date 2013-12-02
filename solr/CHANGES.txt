@@ -44,6 +44,15 @@ Upgrading from Solr 4.x
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
+  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
+  Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
+  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
+  Eric Wong)
+
 Other Changes
 ----------------------
 

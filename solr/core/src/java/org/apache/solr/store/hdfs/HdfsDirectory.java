@@ -54,7 +54,6 @@ public class HdfsDirectory extends BaseDirectory {
   
   public HdfsDirectory(Path hdfsDirPath, Configuration configuration)
       throws IOException {
-    assert hdfsDirPath.toString().startsWith("hdfs:/") : hdfsDirPath.toString();
     setLockFactory(NoLockFactory.getNoLockFactory());
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;

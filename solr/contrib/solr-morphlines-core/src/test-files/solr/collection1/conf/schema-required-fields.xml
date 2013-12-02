@@ -1,0 +1,436 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- The Solr schema file. This file should be named "schema.xml" and
+     should be located where the classloader for the Solr webapp can find it.
+
+     This schema is used for testing, and as such has everything and the 
+     kitchen sink thrown in. See example/solr/conf/schema.xml for a 
+     more concise example.
+
+  -->
+
+<schema name="test" version="1.0">
+  <types>
+
+    <!-- field type definitions... note that the "name" attribute is
+         just a label to be used by field definitions.  The "class"
+         attribute and any other attributes determine the real type and
+         behavior of the fieldtype.
+      -->
+
+    <!-- numeric field types that store and index the text
+         value verbatim (and hence don't sort correctly or support range queries.)
+         These are provided more for backward compatability, allowing one
+         to create a schema that matches an existing lucene index.
+    -->
+    <fieldtype name="integer" class="solr.IntField"/>
+    <fieldtype name="long" class="solr.LongField"/>
+    <fieldtype name="float" class="solr.FloatField"/>
+    <fieldtype name="double" class="solr.DoubleField"/>
+
+    <!-- numeric field types that manipulate the value into
+       a string value that isn't human readable in it's internal form,
+       but sorts correctly and supports range queries.
+
+         If sortMissingLast="true" then a sort on this field will cause documents
+       without the field to come after documents with the field,
+       regardless of the requested sort order.
+         If sortMissingFirst="true" then a sort on this field will cause documents
+       without the field to come before documents with the field,
+       regardless of the requested sort order.
+         If sortMissingLast="false" and sortMissingFirst="false" (the default),
+       then default lucene sorting will be used which places docs without the field
+       first in an ascending sort and last in a descending sort.
+    -->
+    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
+    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
+    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
+    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
+
+    <!-- bcd versions of sortable numeric type may provide smaller
+         storage space and support very large numbers.
+    -->
+    <fieldtype name="bcdint" class="solr.BCDIntField" sortMissingLast="true"/>
+    <fieldtype name="bcdlong" class="solr.BCDLongField" sortMissingLast="true"/>
+    <fieldtype name="bcdstr" class="solr.BCDStrField" sortMissingLast="true"/>
+
+    <!-- Field type demonstrating an Analyzer failure -->
+    <fieldtype name="failtype1" class="solr.TextField">
+      <analyzer type="index">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+
+    <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
+    <fieldtype name="highlittext" class="solr.TextField" compressThreshold="345" />
+
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+
+    <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
+         seconds part (.999) is optional.
+      -->
+    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+
+    <!-- solr.TextField allows the specification of custom
+         text analyzers specified as a tokenizer and a list
+         of token filters.
+      -->
+    <fieldtype name="text" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+
+    <fieldtype name="nametext" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
+    </fieldtype>
+
+    <fieldtype name="teststop" class="solr.TextField">
+       <analyzer>
+        <tokenizer class="solr.LowerCaseTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- fieldtypes in this section isolate tokenizers and tokenfilters for testing -->
+    <fieldtype name="lowertok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.LowerCaseTokenizerFactory"/></analyzer>
+    </fieldtype>
+    <fieldtype name="keywordtok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/></analyzer>
+    </fieldtype>
+    <fieldtype name="standardtok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.StandardTokenizerFactory"/></analyzer>
+    </fieldtype>
+    <fieldtype name="lettertok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.LetterTokenizerFactory"/></analyzer>
+    </fieldtype>
+    <fieldtype name="whitetok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.MockTokenizerFactory"/></analyzer>
+    </fieldtype>
+    <fieldtype name="HTMLstandardtok" class="solr.TextField">
+      <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="HTMLwhitetok" class="solr.TextField">
+      <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="standardtokfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="standardfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="lowerfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="patternreplacefilt" class="solr.TextField">
+      <analyzer type="index">
+        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+        <filter class="solr.PatternReplaceFilterFactory"
+                pattern="([^a-zA-Z])" replacement="_" replace="all"
+        />
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="porterfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <!-- fieldtype name="snowballfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.SnowballPorterFilterFactory"/>
+      </analyzer>
+    </fieldtype -->
+    <fieldtype name="engporterfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="custengporterfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="stopfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="custstopfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
+      </analyzer>
+    </fieldtype>
+    <fieldtype name="lengthfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="5"/>
+      </analyzer>
+    </fieldtype>
+
+    <fieldtype name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
+      <analyzer type="index">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.StopFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.StopFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- more flexible in matching skus, but more chance of a false match -->
+    <fieldtype name="skutype1" class="solr.TextField">
+      <analyzer type="index">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- less flexible in matching skus, but less chance of a false match -->
+    <fieldtype name="skutype2" class="solr.TextField">
+      <analyzer type="index">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- less flexible in matching skus, but less chance of a false match -->
+    <fieldtype name="syn" class="solr.TextField">
+      <analyzer>
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
+      </analyzer>
+    </fieldtype>
+    
+    <!-- Demonstrates How RemoveDuplicatesTokenFilter makes stemmed
+         synonyms "better"
+      -->
+    <fieldtype name="dedup" class="solr.TextField">
+      <analyzer>
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.SynonymFilterFactory"
+                  synonyms="synonyms.txt" expand="true" />
+          <filter class="solr.PorterStemFilterFactory"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory" />
+      </analyzer>
+    </fieldtype>
+
+    <fieldtype  name="unstored" class="solr.StrField" indexed="true" stored="false"/>
+
+
+  <fieldtype name="textgap" class="solr.TextField" multiValued="true" positionIncrementGap="100">
+      <analyzer>
+          <tokenizer class="solr.MockTokenizerFactory"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+  </fieldtype>
+
+ </types>
+
+
+ <fields>
+   <field name="id" type="integer" multiValued="false" indexed="true" stored="true"/> <!-- the uniqueKey is required by default -->
+   <field name="name" type="nametext" indexed="true" stored="true" required="true"/>
+   <field name="text" type="text" indexed="true" stored="false"/>
+   <field name="subject" type="text" indexed="true" stored="true" required="true" default="Stuff"/>
+   <field name="title" type="nametext" indexed="true" stored="true"/>
+   <field name="weight" type="float" indexed="true" stored="true"/>
+   <field name="bday" type="date" indexed="true" stored="true"/>
+
+   <field name="title_stemmed" type="text" indexed="true" stored="false"/>
+   <field name="title_lettertok" type="lettertok" indexed="true" stored="false"/>
+
+   <field name="syn" type="syn" indexed="true" stored="true"/>
+
+   <!-- to test property inheritance and overriding -->
+   <field name="shouldbeunstored" type="unstored" />
+   <field name="shouldbestored" type="unstored" stored="true"/>
+   <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
+
+
+   <!-- test different combinations of indexed and stored -->
+   <field name="bind" type="boolean" indexed="true" stored="false"/>
+   <field name="bsto" type="boolean" indexed="false" stored="true"/>
+   <field name="bindsto" type="boolean" indexed="true" stored="true"/>
+   <field name="isto" type="integer" indexed="false" stored="true"/>
+   <field name="iind" type="integer" indexed="true" stored="false"/>
+   <field name="ssto" type="string" indexed="false" stored="true"/>
+   <field name="sind" type="string" indexed="true" stored="false"/>
+   <field name="sindsto" type="string" indexed="true" stored="true"/>
+
+   <!-- test combinations of term vector settings -->
+   <field name="test_basictv" type="text" termVectors="true"/>
+   <field name="test_notv" type="text" termVectors="false"/>
+   <field name="test_postv" type="text" termVectors="true" termPositions="true"/>
+   <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
+   <field name="test_posofftv" type="text" termVectors="true" 
+     termPositions="true" termOffsets="true"/>
+
+   <!-- test highlit field settings -->
+   <field name="test_hlt" type="highlittext" indexed="true"/>
+   <field name="test_hlt_off" type="highlittext" indexed="true"/>
+
+   <!-- fields to test individual tokenizers and tokenfilters -->
+   <field name="teststop" type="teststop" indexed="true" stored="true"/>
+   <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
+   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
+   <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
+   <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>
+   <field name="lettertok" type="lettertok" indexed="true" stored="true"/>
+   <field name="whitetok" type="whitetok" indexed="true" stored="true"/>
+   <field name="HTMLwhitetok" type="HTMLwhitetok" indexed="true" stored="true"/>
+   <field name="standardtokfilt" type="standardtokfilt" indexed="true" stored="true"/>
+   <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
+   <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>
+   <field name="patternreplacefilt" type="patternreplacefilt" indexed="true" stored="true"/>
+   <field name="porterfilt" type="porterfilt" indexed="true" stored="true"/>
+   <field name="engporterfilt" type="engporterfilt" indexed="true" stored="true"/>
+   <field name="custengporterfilt" type="custengporterfilt" indexed="true" stored="true"/>
+   <field name="stopfilt" type="stopfilt" indexed="true" stored="true"/>
+   <field name="custstopfilt" type="custstopfilt" indexed="true" stored="true"/>
+   <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
+   <field name="dedup" type="dedup" indexed="true" stored="true"/>
+
+   <field name="numberpartfail" type="failtype1" indexed="true" stored="true"/>
+
+   <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true"/>
+
+   <field name="subword" type="subword" indexed="true" stored="true"/>
+   <field name="sku1" type="skutype1" indexed="true" stored="true"/>
+   <field name="sku2" type="skutype2" indexed="true" stored="true"/>
+
+   <field name="textgap" type="textgap" indexed="true" stored="true"/>
+   
+   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
+   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
+   <field name="intDefault" type="sint" indexed="true" stored="true" default="42" multiValued="false"/>
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
+   
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+   
+   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
+        will be used if the name matches any of the patterns.
+        RESTRICTION: the glob-like pattern in the name attribute must have
+        a "*" only at the start or the end.
+        EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
+        Longer patterns will be matched first.  if equal size patterns
+        both match, the first appearing in the schema will be used.
+   -->
+   <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
+   <dynamicField name="*_s1"  type="string"  indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
+   <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
+
+   <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
+   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+   <dynamicField name="t_*"  type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="tv_*"  type="text" indexed="true"  stored="true" 
+      termVectors="true" termPositions="true" termOffsets="true"/>
+   
+
+   <!-- for testing to ensure that longer patterns are matched first -->
+   <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
+   <dynamicField name="*aaa" type="integer" indexed="false" stored="true"/>
+
+
+
+ </fields>
+
+ <defaultSearchField>text</defaultSearchField>
+ <uniqueKey>id</uniqueKey>
+
+  <!-- copyField commands copy one field to another at the time a document
+        is added to the index.  It's used either to index the same field different
+        ways, or to add multiple fields to the same field for easier/faster searching.
+   -->
+   <copyField source="title" dest="title_stemmed"/>
+   <copyField source="title" dest="title_lettertok"/>
+
+   <copyField source="title" dest="text"/>
+   <copyField source="subject" dest="text"/>
+ 
+   <copyField source="*_t" dest="text"/>
+   
+ <!-- Similarity is the scoring routine for each document vs a query.
+      A custom similarity may be specified here, but the default is fine
+      for most applications.
+ -->
+ <!-- <similarity class="org.apache.lucene.search.similarities.DefaultSimilarity"/> -->
+
+</schema>

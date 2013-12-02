@@ -1,0 +1,8 @@
+This product includes software developed by Cloudera, Inc.
+(http://www.cloudera.com/).
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This product includes software developed by
+Saxonica (http://www.saxonica.com/).
