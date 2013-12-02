@@ -22,10 +22,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.parsers.SAXParserFactory;
 
 /**
  * Add documents to solr using the STAX XML parser, transforming it with XSLT first
@@ -41,6 +43,7 @@ public class XsltUpdateRequestHandler extends ContentStreamHandlerBase {
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
   XMLInputFactory inputFactory;
+  SAXParserFactory saxFactory;
   private Integer xsltCacheLifetimeSeconds;
 
   @Override
@@ -48,6 +51,8 @@ public class XsltUpdateRequestHandler extends ContentStreamHandlerBase {
     super.init(args);
 
     inputFactory = XMLInputFactory.newInstance();
+    inputFactory.setXMLReporter(xmllog);
+    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
@@ -62,7 +67,11 @@ public class XsltUpdateRequestHandler extends ContentStreamHandlerBase {
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
     }
-    inputFactory.setXMLReporter(xmllog);
+    
+    // Init SAX parser (for XSL):
+    saxFactory = SAXParserFactory.newInstance();
+    saxFactory.setNamespaceAware(true); // XSL needs this!
+    EmptyEntityResolver.configureSAXParserFactory(saxFactory);
     
     final SolrParams p = SolrParams.toSolrParams(args);
     this.xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
@@ -71,7 +80,7 @@ public class XsltUpdateRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    return new XsltXMLLoader(processor, inputFactory, xsltCacheLifetimeSeconds);
+    return new XsltXMLLoader(processor, inputFactory, saxFactory, xsltCacheLifetimeSeconds);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

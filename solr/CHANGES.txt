@@ -37,6 +37,17 @@ Backported Security Fixes from 4.x branch
   can be disabled by a new system property:
   solr.allow.unsafe.resourceloading=true  (Uwe Schindler)
 
+* SOLR-5520, SOLR-4881: Fix DocumentAnalysisRequestHandler to correctly use
+  EmptyEntityResolver to prevent loading of external entities like
+  UpdateRequestHandler does.  (Hossman, Uwe Schindler)
+
+* SOLR-5520, SOLR-3895: XML and XSLT UpdateRequestHandler should not try to
+  resolve external entities. This improves speed of loading e.g.
+  XSL-transformed XHTML documents.  (Martin Herfurt, uschindler, hossman)
+
+* SOLR-5520, SOLR-3614: Fix XML parsing in XPathEntityProcessor to correctly
+  expand named entities, but ignore external entities.  (uschindler, hossman)
+
 ==================  3.6.2  ==================
 
 Bug Fixes

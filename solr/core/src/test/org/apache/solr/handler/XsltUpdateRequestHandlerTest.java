@@ -90,4 +90,54 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
             , "//int[@name='id'][.='12345']"
     		);  
   }
+  
+  @Test
+  public void testEntities() throws Exception
+  {
+    // use a binary file, so when it's loaded fail with XML eror:
+    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String xml = 
+      "<?xml version=\"1.0\"?>" +
+      "<!DOCTYPE foo [" + 
+      // check that external entities are not resolved!
+      "<!ENTITY bar SYSTEM \""+file+"\">"+
+      // but named entities should be
+      "<!ENTITY wacky \"zzz\">"+
+      "]>" +
+      "<random>" +
+      " &bar;" +
+      " <document>" +
+      "  <node name=\"id\" value=\"12345\"/>" +
+      "  <node name=\"foo_s\" value=\"&wacky;\"/>" +
+      " </document>" +
+      "</random>";
+    Map<String,String> args = new HashMap<String, String>();
+    args.put("tr", "xsl-update-handler-test.xsl");
+      
+    SolrCore core = h.getCore();
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
+    streams.add(new ContentStreamBase.StringStream(xml));
+    req.setContentStreams(streams);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    XsltUpdateRequestHandler handler = new XsltUpdateRequestHandler();
+    handler.init(new NamedList<String>());
+    handler.handleRequestBody(req, rsp);
+    StringWriter sw = new StringWriter(32000);
+    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+    responseWriter.write(sw,req,rsp);
+    req.close();
+    String response = sw.toString();
+    assertU(response);
+    assertU(commit());
+
+    assertQ("test document was correctly committed", req("q","*:*")
+            , "//result[@numFound='1']"
+            , "//int[@name='id'][.='12345']"
+    );  
+    assertQ("test document can be searched by the string defined by the named entity", req("q","foo_s:zzz")
+            , "//result[@numFound='1']"
+            , "//int[@name='id'][.='12345']"
+    );  
+  }
 }

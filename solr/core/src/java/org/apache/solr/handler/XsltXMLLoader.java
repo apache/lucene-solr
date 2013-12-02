@@ -25,10 +25,12 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.util.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.io.IOUtils;
 
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLInputFactory;
@@ -38,6 +40,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.sax.SAXSource;
 import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -50,14 +53,18 @@ import java.util.Map;
  *
  **/
 class XsltXMLLoader extends XMLLoader {
+  public static Logger log = LoggerFactory.getLogger(XsltXMLLoader.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   public static final String TRANSFORM_PARAM = "tr";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
   
+  private final SAXParserFactory saxFactory;
   private final Integer xsltCacheLifetimeSeconds; 
 
-  public XsltXMLLoader(UpdateRequestProcessor processor, XMLInputFactory inputFactory, Integer xsltCacheLifetimeSeconds) {
+  public XsltXMLLoader(UpdateRequestProcessor processor, XMLInputFactory inputFactory, SAXParserFactory saxFactory, Integer xsltCacheLifetimeSeconds) {
     super(processor, inputFactory);
+    this.saxFactory = saxFactory;
     this.xsltCacheLifetimeSeconds = xsltCacheLifetimeSeconds;
   }
 
@@ -74,7 +81,10 @@ class XsltXMLLoader extends XMLLoader {
       final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       final InputSource isrc = new InputSource(is);
       isrc.setEncoding(charset);
-      final SAXSource source = new SAXSource(isrc);
+      final XMLReader xmlr = saxFactory.newSAXParser().getXMLReader();
+      xmlr.setErrorHandler(xmllog);
+      xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
+      final SAXSource source = new SAXSource(xmlr, isrc);
       t.transform(source, result);
     } catch(TransformerException te) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);

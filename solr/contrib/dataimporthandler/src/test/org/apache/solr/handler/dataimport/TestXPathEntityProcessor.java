@@ -87,7 +87,11 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
         break;
       result.add(row);
     }
-    assertEquals(2, ((List)result.get(0).get("a")).size());
+    List l = (List)result.get(0).get("a");
+    assertEquals(3, l.size());
+    assertEquals("1", l.get(0));
+    assertEquals("2", l.get(1));
+    assertEquals("ü", l.get(2));
   }
 
   @Test
@@ -298,7 +302,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
           + "\t\t<price>9.90</price>\n"
           + "\t\t<year>1982</year>\n" + "\t</cd>\n" + "</catalog>\t";
 
-  private static final String testXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><a>1</a><a>2</a></root>";
+  private static final String testXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE root [\n<!ENTITY uuml \"&#252;\" >\n]>\n<root><a>1</a><a>2</a><a>&uuml;</a></root>";
 
   private static final String testXmlFlatten = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><a>1<b>B</b>2</a></root>";
 }

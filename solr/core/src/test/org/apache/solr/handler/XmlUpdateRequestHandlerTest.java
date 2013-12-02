@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -40,7 +41,7 @@ import org.junit.Test;
 
 public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase 
 {
-  private XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+  private XMLInputFactory inputFactory;
   protected XmlUpdateRequestHandler handler;
 
 @Override public String getSchemaFile() { return "schema.xml"; }
@@ -50,6 +51,8 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
   public void setUp() throws Exception {
     super.setUp();
     handler = new XmlUpdateRequestHandler();
+    handler.init(new NamedList<String>());
+    this.inputFactory = handler.inputFactory;
   }
   
   @Override 
@@ -115,6 +118,46 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
     assertEquals(100, add.commitWithin);
     assertEquals(true, add.allowDups);
     req.close();
+  }
+  
+  @Test
+  public void testExternalEntities() throws Exception
+  {
+    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String xml = 
+      "<?xml version=\"1.0\"?>" +
+      // check that external entities are not resolved!
+      "<!DOCTYPE foo [<!ENTITY bar SYSTEM \""+file+"\">]>" +
+      "<add>" +
+      "  &bar;" +
+      "  <doc>" +
+      "    <field name=\"id\">12345</field>" +
+      "    <field name=\"name\">kitten</field>" +
+      "  </doc>" +
+      "</add>";
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    XMLLoader loader = new XMLLoader(p, inputFactory);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml));
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
+    req.close();
+  }
+
+  public void testNamedEntity() throws Exception {
+    assertU("<?xml version=\"1.0\" ?>\n"+
+            "<!DOCTYPE add [\n<!ENTITY wacky \"zzz\" >\n]>"+
+            "<add><doc>"+
+            "<field name=\"id\">1</field>"+
+            "<field name=\"foo_s\">&wacky;</field>" + 
+            "</doc></add>");
+    
+    assertU("<commit/>");
+    assertQ(req("foo_s:zzz"),
+            "//*[@numFound='1']"
+            );
   }
   
   @Test
