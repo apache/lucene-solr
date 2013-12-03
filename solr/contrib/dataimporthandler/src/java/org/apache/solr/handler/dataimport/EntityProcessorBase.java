@@ -153,7 +153,4 @@ public class EntityProcessorBase extends EntityProcessor {
   public static final String CONTINUE = "continue";
 
   public static final String SKIP = "skip";
-
-  public static final String SKIP_DOC = "$skipDoc";
-
 }

@@ -187,6 +187,8 @@ Bug Fixes
 * SOLR-5204: StatsComponent and SpellCheckComponent do not support the
   shards.tolerant=true parameter. (Anca Kopetz, shalin)
 
+* SOLR-5527: DIH logs spurious warning for special commands. (shalin)
+
 Optimizations
 ----------------------
 
