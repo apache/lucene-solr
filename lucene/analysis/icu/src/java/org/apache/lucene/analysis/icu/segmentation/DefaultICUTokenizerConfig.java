@@ -35,12 +35,9 @@ import com.ibm.icu.util.ULocale;
  * ({@link BreakIterator#getWordInstance(ULocale) BreakIterator.getWordInstance(ULocale.ROOT)}), 
  * but with the following tailorings:
  * <ul>
- *   <li>Thai text is broken into words with a 
- *   {@link com.ibm.icu.text.DictionaryBasedBreakIterator}
- *   <li>Lao, Myanmar, and Khmer text is broken into syllables
+ *   <li>Thai, Lao, and CJK text is broken into words with a dictionary. 
+ *   <li>Myanmar, and Khmer text is broken into syllables
  *   based on custom BreakIterator rules.
- *   <li>Hebrew text has custom tailorings to handle special cases
- *   involving punctuation.
  * </ul>
  * @lucene.experimental
  */
@@ -62,34 +59,44 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
    * the default breakiterators in use. these can be expensive to
    * instantiate, cheap to clone.
    */  
-  private static final BreakIterator rootBreakIterator = 
+  // we keep the cjk breaking separate, thats because it cannot be customized (because dictionary
+  // is only triggered when kind = WORD, but kind = LINE by default and we have no non-evil way to change it)
+  private static final BreakIterator cjkBreakIterator = BreakIterator.getWordInstance(ULocale.ROOT);
+  // the same as ROOT, except no dictionary segmentation for cjk
+  private static final BreakIterator defaultBreakIterator = 
     readBreakIterator("Default.brk");
-  private static final BreakIterator thaiBreakIterator = 
-    BreakIterator.getWordInstance(new ULocale("th_TH"));
-  private static final BreakIterator hebrewBreakIterator = 
-    readBreakIterator("Hebrew.brk");
   private static final BreakIterator khmerBreakIterator = 
     readBreakIterator("Khmer.brk");
-  private static final BreakIterator laoBreakIterator = 
-    new LaoBreakIterator(readBreakIterator("Lao.brk"));
   private static final BreakIterator myanmarBreakIterator = 
     readBreakIterator("Myanmar.brk");
+  
+  // TODO: deprecate this boolean? you only care if you are doing super-expert stuff...
+  private final boolean cjkAsWords;
   
   /** 
    * Creates a new config. This object is lightweight, but the first
    * time the class is referenced, breakiterators will be initialized.
+   * @param cjkAsWords true if cjk text should undergo dictionary-based segmentation, 
+   *                   otherwise text will be segmented according to UAX#29 defaults.
+   *                   If this is true, all Han+Hiragana+Katakana words will be tagged as
+   *                   IDEOGRAPHIC.
    */
-  public DefaultICUTokenizerConfig() {}
+  public DefaultICUTokenizerConfig(boolean cjkAsWords) { 
+    this.cjkAsWords = cjkAsWords;
+  }
+  
+  @Override
+  public boolean combineCJ() {
+    return cjkAsWords;
+  }
 
   @Override
   public BreakIterator getBreakIterator(int script) {
     switch(script) {
-      case UScript.THAI: return (BreakIterator)thaiBreakIterator.clone();
-      case UScript.HEBREW: return (BreakIterator)hebrewBreakIterator.clone();
       case UScript.KHMER: return (BreakIterator)khmerBreakIterator.clone();
-      case UScript.LAO: return (BreakIterator)laoBreakIterator.clone();
       case UScript.MYANMAR: return (BreakIterator)myanmarBreakIterator.clone();
-      default: return (BreakIterator)rootBreakIterator.clone();
+      case UScript.JAPANESE: return (BreakIterator)cjkBreakIterator.clone();
+      default: return (BreakIterator)defaultBreakIterator.clone();
     }
   }
 

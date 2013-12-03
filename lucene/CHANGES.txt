@@ -89,6 +89,8 @@ Build
 * LUCENE-5347: Upgrade forbidden-apis checker to version 1.4.
   (Uwe Schindler)
 
+* LUCENE-4381: Upgrade analysis/icu to 52.1. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
