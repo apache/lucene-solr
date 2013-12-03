@@ -189,6 +189,9 @@ Bug Fixes
 
 * SOLR-5527: DIH logs spurious warning for special commands. (shalin)
 
+* SOLR-5502: A "/" in a document id will cause an exception to be thrown
+  when using the composite id router. (Anshum Gupta via Mark Miller)
+  
 Optimizations
 ----------------------
 
@@ -219,9 +222,6 @@ Other Changes
 
 * SOLR-5499: Log a warning if /get is not registered when using SolrCloud.
   (Daniel Collins via shalin)
-
-* SOLR-5517: Return HTTP error on POST requests with no Content-Type.
-  (Ryan Ernst, Uwe Schindler)
 
 ==================  4.6.0 ==================
 

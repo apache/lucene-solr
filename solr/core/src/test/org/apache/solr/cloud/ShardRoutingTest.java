@@ -148,30 +148,33 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doAddDoc("d!doc3");
     doAddDoc("e!doc4");
     doAddDoc("f1!f2!doc5");
+    // Check successful addition of a document with a '/' in the id part.
+    doAddDoc("f1!f2!doc5/5");
 
     doRTG("b!doc1");
     doRTG("c!doc2");
     doRTG("d!doc3");
     doRTG("e!doc4");
     doRTG("f1!f2!doc5");
+    doRTG("f1!f2!doc5/5");
     doRTG("b!doc1,c!doc2");
     doRTG("d!doc3,e!doc4");
 
     commit();
 
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5", "q","*:*");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5", "q","*:*", "shards","shard1,shard2,shard3,shard4");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5", "q","*:*", shardKeys,"b!,c!,d!,e!,f1!f2!");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","shard1,shard2,shard3,shard4");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"b!,c!,d!,e!,f1!f2!");
     doQuery("b!doc1", "q","*:*", shardKeys,"b!");
     doQuery("c!doc2", "q","*:*", shardKeys,"c!");
-    doQuery("d!doc3,f1!f2!doc5", "q","*:*", shardKeys,"d!");
+    doQuery("d!doc3,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"d!");
     doQuery("e!doc4", "q","*:*", shardKeys,"e!");
-    doQuery("f1!f2!doc5,d!doc3", "q","*:*", shardKeys,"f1/8!");
+    doQuery("f1!f2!doc5,d!doc3,f1!f2!doc5/5", "q","*:*", shardKeys,"f1/8!");
 
     // try using shards parameter
     doQuery("b!doc1", "q","*:*", "shards",bucket1);
     doQuery("c!doc2", "q","*:*", "shards",bucket2);
-    doQuery("d!doc3,f1!f2!doc5", "q","*:*", "shards",bucket3);
+    doQuery("d!doc3,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards",bucket3);
     doQuery("e!doc4", "q","*:*", "shards",bucket4);
 
 
@@ -181,16 +184,16 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b,c");     // query shards that would contain *documents* "b" and "c" (i.e. not prefixes).  The upper bits are the same, so the shards should be the same.
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b/1!");   // top bit of hash(b)==1, so shard1 and shard2
-    doQuery("d!doc3,e!doc4,f1!f2!doc5", "q","*:*", shardKeys,"d/1!");   // top bit of hash(b)==0, so shard3 and shard4
+    doQuery("d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"d/1!");   // top bit of hash(b)==0, so shard3 and shard4
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b!,c!");
 
-    doQuery("b!doc1,f1!f2!doc5,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"foo/0!");
+    doQuery("b!doc1,f1!f2!doc5,c!doc2,d!doc3,e!doc4,f1!f2!doc5/5", "q","*:*", shardKeys,"foo/0!");
 
     // test targeting deleteByQuery at only certain shards
     doDBQ("*:*", shardKeys,"b!");
     commit();
-    doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5", "q","*:*");
+    doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
     doAddDoc("b!doc1");
 
     doDBQ("*:*", shardKeys,"f1!");
