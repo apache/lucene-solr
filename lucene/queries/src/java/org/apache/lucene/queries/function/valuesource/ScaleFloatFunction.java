@@ -94,14 +94,14 @@ public class ScaleFloatFunction extends ValueSource {
     ScaleInfo scaleInfo = new ScaleInfo();
     scaleInfo.minVal = minVal;
     scaleInfo.maxVal = maxVal;
-    context.put(this.source, scaleInfo);
+    context.put(ScaleFloatFunction.this, scaleInfo);
     return scaleInfo;
   }
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
-    ScaleInfo scaleInfo = (ScaleInfo)context.get(source);
+    ScaleInfo scaleInfo = (ScaleInfo)context.get(ScaleFloatFunction.this);
     if (scaleInfo == null) {
       scaleInfo = createScaleInfo(context, readerContext);
     }
