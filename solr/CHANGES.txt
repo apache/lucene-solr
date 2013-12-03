@@ -191,6 +191,9 @@ Bug Fixes
 
 * SOLR-5502: A "/" in a document id will cause an exception to be thrown
   when using the composite id router. (Anshum Gupta via Mark Miller)
+
+* SOLR-552: Exception when using Query Function inside Scale Function.
+  (Trey Grainger, yonik)
   
 Optimizations
 ----------------------
