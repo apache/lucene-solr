@@ -339,7 +339,7 @@
       </or>
       <or>
         <equals arg1="${build.java.runtime}" arg2="1.7"/>
-        <equals arg1="${build.java.runtime}" arg2="1.8"/>
+        <!--TODO: reenable once https://bugs.openjdk.java.net/browse/JDK-8027977 is fixed: <equals arg1="${build.java.runtime}" arg2="1.8"/>-->
       </or>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
       <contains string="${os.arch}" substring="64"/>
