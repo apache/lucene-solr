@@ -68,7 +68,7 @@ public final class ICUTokenizer extends Tokenizer {
    * @see DefaultICUTokenizerConfig
    */
   public ICUTokenizer(Reader input) {
-    this(input, new DefaultICUTokenizerConfig());
+    this(input, new DefaultICUTokenizerConfig(true));
   }
 
   /**

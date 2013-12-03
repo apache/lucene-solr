@@ -43,7 +43,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input));
+    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input), new DefaultICUTokenizerConfig(false));
     assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
   
@@ -53,7 +53,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
       sb.append('a');
     }
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input));
+    ICUTokenizer tokenizer = new ICUTokenizer(new StringReader(input), new DefaultICUTokenizerConfig(false));
     char token[] = new char[4096];
     Arrays.fill(token, 'a');
     String expectedToken = new String(token);
@@ -70,7 +70,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      Tokenizer tokenizer = new ICUTokenizer(reader);
+      Tokenizer tokenizer = new ICUTokenizer(reader, new DefaultICUTokenizerConfig(false));
       TokenFilter filter = new ICUNormalizer2Filter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
     }
@@ -119,6 +119,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   public void testLao() throws Exception {
     assertAnalyzesTo(a, "ກວ່າດອກ", new String[] { "ກວ່າ", "ດອກ" });
+    assertAnalyzesTo(a, "ພາສາລາວ", new String[] { "ພາສາ", "ລາວ"}, new String[] { "<ALPHANUM>", "<ALPHANUM>" });
   }
   
   public void testThai() throws Exception {
@@ -137,6 +138,13 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   public void testChinese() throws Exception {
     assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
         new String[] { "我", "是", "中", "国", "人", "1234", "tests"});
+  }
+  
+  public void testHebrew() throws Exception {
+    assertAnalyzesTo(a, "דנקנר תקף את הדו\"ח",
+        new String[] { "דנקנר", "תקף", "את", "הדו\"ח" });
+    assertAnalyzesTo(a, "חברת בת של מודי'ס",
+        new String[] { "חברת", "בת", "של", "מודי'ס" });
   }
   
   public void testEmpty() throws Exception {

@@ -70,7 +70,7 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_icu_custom" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.ICUTokenizerFactory"
+ *     &lt;tokenizer class="solr.ICUTokenizerFactory" cjkAsWords="true"
  *                rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
@@ -79,6 +79,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   static final String RULEFILES = "rulefiles";
   private final Map<Integer,String> tailored;
   private ICUTokenizerConfig config;
+  private final boolean cjkAsWords;
   
   /** Creates a new ICUTokenizerFactory */
   public ICUTokenizerFactory(Map<String,String> args) {
@@ -94,6 +95,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
         tailored.put(UCharacter.getPropertyValueEnum(UProperty.SCRIPT, scriptCode), resourcePath);
       }
     }
+    cjkAsWords = getBoolean(args, "cjkAsWords", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -103,7 +105,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   public void inform(ResourceLoader loader) throws IOException {
     assert tailored != null : "init must be called first!";
     if (tailored.isEmpty()) {
-      config = new DefaultICUTokenizerConfig();
+      config = new DefaultICUTokenizerConfig(cjkAsWords);
     } else {
       final BreakIterator breakers[] = new BreakIterator[UScript.CODE_LIMIT];
       for (Map.Entry<Integer,String> entry : tailored.entrySet()) {
@@ -111,7 +113,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
         String resourcePath = entry.getValue();
         breakers[code] = parseRules(resourcePath, loader);
       }
-      config = new DefaultICUTokenizerConfig() {
+      config = new DefaultICUTokenizerConfig(cjkAsWords) {
         
         @Override
         public BreakIterator getBreakIterator(int script) {
