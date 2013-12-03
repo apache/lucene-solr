@@ -584,7 +584,7 @@ public class SolrRequestParsers
       if (!isFormData(req)) {
         throw new SolrException( ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
       }
-      
+
       final Map<String,String[]> map = new HashMap<String, String[]>();
       
       // also add possible URL parameters and include into the map (parsed using UTF-8):
@@ -600,7 +600,7 @@ public class SolrRequestParsers
         throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content length (" +
           totalLength + " bytes) exceeds upload limit of " + uploadLimitKB + " KB");
       }
-      
+
       // get query String from request body, using the charset given in content-type:
       final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
       final Charset charset = (cs == null) ? IOUtils.CHARSET_UTF_8 : Charset.forName(cs);
@@ -680,7 +680,10 @@ public class SolrRequestParsers
         if (ServletFileUpload.isMultipartContent(req)) {
           return multipart.parseParamsAndFillStreams(req, streams);
         }
-        return raw.parseParamsAndFillStreams(req, streams);
+        if (req.getContentType() != null) {
+          return raw.parseParamsAndFillStreams(req, streams);
+        }
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
       }
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
     }
