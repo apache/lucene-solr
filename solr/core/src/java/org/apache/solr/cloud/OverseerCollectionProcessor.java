@@ -47,7 +47,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -116,7 +115,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
-      MAX_SHARDS_PER_NODE, "1");
+      MAX_SHARDS_PER_NODE, "1",
+      "external",null );
 
 
   // TODO: use from Overseer?
@@ -1392,6 +1392,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
       }
+      String configName = createConfNode(collectionName, message);
 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
@@ -1406,8 +1407,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if (!created)
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully createcollection: " + message.getStr("name"));
 
-
-      String configName = message.getStr(COLL_CONF);
       log.info("going to create cores replicas shardNames {} , repFactor : {}", shardNames, repFactor);
       for (int i = 1; i <= shardNames.size(); i++) {
         String sliceName = shardNames.get(i-1);
@@ -1460,6 +1459,37 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, ex);
     }
+  }
+
+  private String createConfNode(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
+    String configName = message.getStr(OverseerCollectionProcessor.COLL_CONF);
+    if(configName == null){
+      // if there is only one conf, use that
+      List<String> configNames=null;
+      try {
+        configNames = zkStateReader.getZkClient().getChildren(ZkController.CONFIGS_ZKNODE, null, true);
+        if (configNames != null && configNames.size() == 1) {
+          configName = configNames.get(0);
+          // no config set named, but there is only 1 - use it
+          log.info("Only one config set found in zk - using it:" + configName);
+        }
+      } catch (KeeperException.NoNodeException e) {
+
+      }
+
+    }
+
+    if(configName!= null){
+      log.info("creating collections conf node {} ",ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
+      zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
+          ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP,configName)),true );
+
+    } else {
+      String msg = "Could not obtain config name";
+      log.warn(msg);
+    }
+    return configName;
+
   }
 
   private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results, String stateMatcher) {
