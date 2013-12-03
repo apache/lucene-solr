@@ -136,6 +136,10 @@ public class ClusterState implements JSONWriter.Writable {
     return coll.getActiveSlices();
   }
 
+  public DocCollection getCollectionOrNull(String collection) {
+    return collectionStates.get(collection);
+
+  }
   /**
    * Get the named DocCollection object, or throw an exception if it doesn't exist.
    */
@@ -156,6 +160,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * @return Map&lt;collectionName, Map&lt;sliceName,Slice&gt;&gt;
+   * @deprecated
    */
   public Map<String, DocCollection> getCollectionStates() {
     return Collections.unmodifiableMap(collectionStates);

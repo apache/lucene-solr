@@ -440,7 +440,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
   protected int getTotalReplicas(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    DocCollection coll = zkStateReader.getClusterState().getCollectionStates().get(collection);
+    DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
     if (coll == null) return 0;  // support for when collection hasn't been created yet
     int cnt = 0;
     for (Slice slices : coll.getSlices()) {
@@ -1690,10 +1690,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
     int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
     
-      Map<String,DocCollection> collections = clusterState
-          .getCollectionStates();
-      if (collections.containsKey(collectionName)) {
-        Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
+//      Map<String,DocCollection> collections = clusterState
+//          .getCollectionStates();
+      if (clusterState.hasCollection(collectionName)) {
+        Map<String,Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
         // did we find expectedSlices slices/shards?
       if (slices.size() != expectedSlices) {
         return "Found new collection " + collectionName + ", but mismatch on number of slices. Expected: " + expectedSlices + ", actual: " + slices.size();
@@ -1758,7 +1758,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return commondCloudSolrServer;
   }
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
+    Map<String,Slice> slices = clusterState.getCollection(collection).getSlicesMap();
 
     if (slices == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);

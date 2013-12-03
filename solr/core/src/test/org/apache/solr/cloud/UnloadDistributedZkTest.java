@@ -172,7 +172,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     
     zkStateReader.updateClusterState(true);
 
-    int slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").getSlices().size();
+    int slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
     client = clients.get(1);
@@ -187,7 +187,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     server.request(createCmd);
     
     zkStateReader.updateClusterState(true);
-    slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").getSlices().size();
+    slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
