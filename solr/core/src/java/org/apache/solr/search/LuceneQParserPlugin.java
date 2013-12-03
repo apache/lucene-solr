@@ -86,9 +86,9 @@ class OldLuceneQParser extends LuceneQParser {
   public SortSpec getSort(boolean useGlobal) throws SyntaxError {
     SortSpec sort = super.getSort(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
-      Sort oldSort = QueryParsing.parseSort(sortStr, getReq());
-      if( oldSort != null ) {
-        sort.sort = oldSort;
+      SortSpec oldSort = QueryParsing.parseSortSpec(sortStr, getReq());
+      if( oldSort.getSort() != null ) {
+        sort.setSortAndFields(oldSort.getSort(), oldSort.getSchemaFields());
       }
     }
     return sort;
