@@ -667,7 +667,7 @@ public class GetMavenDependenciesTask extends Task {
         dependencyClassifiers.put(dependencyCoordinate, classifiers);
       }
       String conf = dependency.getAttribute("conf");
-      boolean isTestDependency = conf.contains("test");
+      boolean confContainsTest = conf.contains("test");
       boolean isOptional = optionalExternalDependencies.contains(dependencyCoordinate);
       SortedSet<ExternalDependency> deps = allExternalDependencies.get(module);
       if (null == deps) {
@@ -683,6 +683,8 @@ public class GetMavenDependenciesTask extends Task {
           Element artifact = (Element)artifacts.item(artifactNum);
           String type = artifact.getAttribute("type");
           String ext = artifact.getAttribute("ext");
+          // When conf contains BOTH "test" and "compile", and type != "test", this is NOT a test dependency
+          boolean isTestDependency = confContainsTest && (type.equals("test") || ! conf.contains("compile"));
           if ((type.isEmpty() && ext.isEmpty()) || type.equals("jar") || ext.equals("jar")) {
             String classifier = artifact.getAttribute("maven:classifier");
             if (classifier.isEmpty()) {
@@ -696,7 +698,7 @@ public class GetMavenDependenciesTask extends Task {
         }
       } else {
         classifiers.add(null);
-        deps.add(new ExternalDependency(groupId, artifactId, null, isTestDependency, isOptional));
+        deps.add(new ExternalDependency(groupId, artifactId, null, confContainsTest, isOptional));
       }
     }
   }
