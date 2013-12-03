@@ -51,6 +51,11 @@ public class DocBuilder {
   private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
 
   private static final Date EPOCH = new Date(0);
+  public static final String DELETE_DOC_BY_ID = "$deleteDocById";
+  public static final String DELETE_DOC_BY_QUERY = "$deleteDocByQuery";
+  public static final String DOC_BOOST = "$docBoost";
+  public static final String SKIP_DOC = "$skipDoc";
+  public static final String SKIP_ROW = "$skipRow";
 
   DataImporter dataImporter;
 
@@ -568,7 +573,7 @@ public class DocBuilder {
   }
 
   private void handleSpecialCommands(Map<String, Object> arow, DocWrapper doc) {
-    Object value = arow.get("$deleteDocById");
+    Object value = arow.get(DELETE_DOC_BY_ID);
     if (value != null) {
       if (value instanceof Collection) {
         Collection collection = (Collection) value;
@@ -581,7 +586,7 @@ public class DocBuilder {
         importStatistics.deletedDocCount.incrementAndGet();
       }
     }    
-    value = arow.get("$deleteDocByQuery");
+    value = arow.get(DELETE_DOC_BY_QUERY);
     if (value != null) {
       if (value instanceof Collection) {
         Collection collection = (Collection) value;
@@ -594,7 +599,7 @@ public class DocBuilder {
         importStatistics.deletedDocCount.incrementAndGet();
       }
     }
-    value = arow.get("$docBoost");
+    value = arow.get(DOC_BOOST);
     if (value != null) {
       float value1 = 1.0f;
       if (value instanceof Number) {
@@ -605,7 +610,7 @@ public class DocBuilder {
       doc.setDocumentBoost(value1);
     }
 
-    value = arow.get("$skipDoc");
+    value = arow.get(SKIP_DOC);
     if (value != null) {
       if (Boolean.parseBoolean(value.toString())) {
         throw new DataImportHandlerException(DataImportHandlerException.SKIP,
@@ -613,7 +618,7 @@ public class DocBuilder {
       }
     }
 
-    value = arow.get("$skipRow");
+    value = arow.get(SKIP_ROW);
     if (value != null) {
       if (Boolean.parseBoolean(value.toString())) {
         throw new DataImportHandlerException(DataImportHandlerException.SKIP_ROW);
