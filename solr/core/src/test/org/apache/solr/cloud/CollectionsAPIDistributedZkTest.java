@@ -43,7 +43,6 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -195,6 +194,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testSolrJAPICalls();
     testNodesUsedByCreate();
     testCollectionsAPI();
+    testCollectionsAPIAddRemoveStress();
     testErrorHandling();
     deletePartiallyCreatedCollection();
     deleteCollectionRemovesStaleZkCollectionsNode();
@@ -612,11 +612,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // create new collections rapid fire
     Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-    int cnt = random().nextInt(6) + 1;
+    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 3) + 1;
     
     for (int i = 0; i < cnt; i++) {
       int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
-      int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 2;
+      int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 1;
       int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
           .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
@@ -881,6 +881,80 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
     
     checkNoTwoShardsUseTheSameIndexDir();
+  }
+  
+  private void testCollectionsAPIAddRemoveStress() throws Exception {
+    
+    class CollectionThread extends Thread {
+      
+      private String name;
+
+      public CollectionThread(String name) {
+        this.name = name;
+      }
+      
+      public void run() {
+        // create new collections rapid fire
+        Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 3) + 1;
+        
+        for (int i = 0; i < cnt; i++) {
+          String collectionName = "awholynewstresscollection_" + name + "_" + i;
+          int numShards = _TestUtil.nextInt(random(), 0, shardCount * 2) + 1;
+          int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 1;
+          int maxShardsPerNode = (((numShards * 2 * replicationFactor) / getCommonCloudSolrServer()
+              .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+          
+          CloudSolrServer client = null;
+          try {
+            if (i == 0) {
+              client = createCloudClient(null);
+            } else if (i == 1) {
+              client = createCloudClient(collectionName);
+            }
+            
+            createCollection(collectionInfos, collectionName,
+                numShards, replicationFactor, maxShardsPerNode, client, null,
+                "conf1");
+            
+            // remove collection
+            ModifiableSolrParams params = new ModifiableSolrParams();
+            params.set("action", CollectionAction.DELETE.toString());
+            params.set("name", collectionName);
+            QueryRequest request = new QueryRequest(params);
+            request.setPath("/admin/collections");
+            
+            if (client == null) {
+              client = createCloudClient(null);
+            }
+            
+            client.request(request);
+            
+          } catch (SolrServerException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+          } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+          } finally {
+            if (client != null) client.shutdown();
+          }
+        }
+      }
+    }
+    List<Thread> threads = new ArrayList<Thread>();
+    int numThreads = TEST_NIGHTLY ? 6 : 2;
+    for (int i = 0; i < numThreads; i++) {
+      CollectionThread thread = new CollectionThread("collection" + i);
+      threads.add(thread);
+    }
+    
+    for (Thread thread : threads) {
+      thread.start();
+    }
+    for (Thread thread : threads) {
+      thread.join();
+    }
   }
 
   private void checkInstanceDirs(JettySolrRunner jetty) {
