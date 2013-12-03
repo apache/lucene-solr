@@ -35,13 +35,9 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
  *  distance dimension like "< 1 km", "< 2 km", etc.).
  *
  *  @lucene.experimental */
-public class LongRangeFacetCounts extends Facets {
-  private final LongRange[] ranges;
-  private final int[] counts;
-  private final String field;
-  private int totCount;
+public class LongRangeFacetCounts extends RangeFacetCounts {
 
-  /** Create {@code RangeFacetCounts}, using {@link
+  /** Create {@code LongRangeFacetCounts}, using {@link
    *  LongFieldSource} from the specified field. */
   public LongRangeFacetCounts(String field, FacetsCollector hits, LongRange... ranges) throws IOException {
     this(field, new LongFieldSource(field), hits, ranges);
@@ -50,13 +46,21 @@ public class LongRangeFacetCounts extends Facets {
   /** Create {@code RangeFacetCounts}, using the provided
    *  {@link ValueSource}. */
   public LongRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, LongRange... ranges) throws IOException {
-    this.ranges = ranges;
-    this.field = field;
-    counts = new int[ranges.length];
+    super(field, ranges);
     count(valueSource, hits.getMatchingDocs());
   }
 
   private void count(ValueSource valueSource, List<MatchingDocs> matchingDocs) throws IOException {
+
+    LongRange[] ranges = (LongRange[]) this.ranges;
+
+    // Compute min & max over all ranges:
+    long minIncl = Long.MAX_VALUE;
+    long maxIncl = Long.MIN_VALUE;
+    for(LongRange range : ranges) {
+      minIncl = Math.min(minIncl, range.minIncl);
+      maxIncl = Math.max(maxIncl, range.maxIncl);
+    }
 
     // TODO: test if this is faster (in the past it was
     // faster to do MatchingDocs on the inside) ... see
@@ -71,6 +75,10 @@ public class LongRangeFacetCounts extends Facets {
         if (fv.exists(doc)) {
           
           long v = fv.longVal(doc);
+          if (v < minIncl || v > maxIncl) {
+            doc++;
+            continue;
+          }
 
           // TODO: if all ranges are non-overlapping, we
           // should instead do a bin-search up front
@@ -87,36 +95,5 @@ public class LongRangeFacetCounts extends Facets {
         doc++;
       }
     }
-  }
-
-  // nocommit all args are ... unused ... this doesn't "fit"
-  // very well:
-
-  @Override
-  public FacetResult getTopChildren(int topN, String dim, String... path) {
-    if (dim.equals(field) == false) {
-      throw new IllegalArgumentException("invalid dim \"" + dim + "\"; should be \"" + field + "\"");
-    }
-    if (path.length != 0) {
-      throw new IllegalArgumentException("path.length should be 0");
-    }
-    LabelAndValue[] labelValues = new LabelAndValue[counts.length];
-    for(int i=0;i<counts.length;i++) {
-      // nocommit can we add the range into this?
-      labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
-    }
-
-    return new FacetResult(dim, path, totCount, labelValues, labelValues.length);
-  }
-
-  @Override
-  public Number getSpecificValue(String dim, String... path) throws IOException {
-    // nocommit we could impl this?
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public List<FacetResult> getAllDims(int topN) throws IOException {
-    return Collections.singletonList(getTopChildren(topN, null));
   }
 }

@@ -128,14 +128,23 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     for (Thread t : indexThreads) t.join();
     
     DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(tw);
-    assertEquals("mismatch number of categories", values.size() + 1, tr.getSize()); // +1 for root category
+    // +1 for root category
+    if (values.size() + 1 != tr.getSize()) {
+      for(String value : values.keySet()) {
+        FacetLabel label = new FacetLabel(FacetsConfig.stringToPath(value));
+        if (tr.getOrdinal(label) == -1) {
+          System.out.println("FAIL: path=" + label + " not recognized");
+        }
+      }
+      fail("mismatch number of categories");
+    }
     int[] parents = tr.getParallelTaxonomyArrays().parents();
     for (String cat : values.keySet()) {
       FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(cat));
       assertTrue("category not found " + cp, tr.getOrdinal(cp) > 0);
       int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      FacetLabel path = new FacetLabel();
+      FacetLabel path = null;
       for (int i = 0; i < level; i++) {
         path = cp.subpath(i + 1);
         int ord = tr.getOrdinal(path);

@@ -36,12 +36,12 @@ public class NameHashIntCacheLRU extends NameIntCacheLRU {
 
   @Override
   Object key(FacetLabel name) {
-    return new Integer(name.hashCode());
+    return new Long(name.longHashCode());
   }
 
   @Override
   Object key(FacetLabel name, int prefixLen) {
-    return new Integer(name.subpath(prefixLen).hashCode());
+    return new Long(name.subpath(prefixLen).longHashCode());
   }
   
 }

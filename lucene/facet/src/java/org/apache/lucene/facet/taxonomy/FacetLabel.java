@@ -41,9 +41,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
    */
   public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
-  /** An empty {@link FacetLabel} */
-  //public static final FacetLabel EMPTY = new FacetLabel();
-
   /**
    * The components of this {@link FacetLabel}. Note that this array may be
    * shared with other {@link FacetLabel} instances, e.g. as a result of
@@ -114,8 +111,12 @@ public class FacetLabel implements Comparable<FacetLabel> {
     final int len = length < other.length ? length : other.length;
     for (int i = 0, j = 0; i < len; i++, j++) {
       int cmp = components[i].compareTo(other.components[j]);
-      if (cmp < 0) return -1; // this is 'before'
-      if (cmp > 0) return 1; // this is 'after'
+      if (cmp < 0) {
+        return -1; // this is 'before'
+      }
+      if (cmp > 0) {
+        return 1; // this is 'after'
+      }
     }
     
     // one is a prefix of the other
@@ -152,6 +153,23 @@ public class FacetLabel implements Comparable<FacetLabel> {
     int hash = length;
     for (int i = 0; i < length; i++) {
       hash = hash * 31 + components[i].hashCode();
+    }
+    return hash;
+  }
+
+  /** Calculate a 64-bit hash function for this path.  This
+   *  is necessary for {@link NameHashIntCacheLRU} (the
+   *  default cache impl for {@link
+   *  LruTaxonomyWriterCache}) to reduce the chance of
+   *  "silent but deadly" collisions. */
+  public long longHashCode() {
+    if (length == 0) {
+      return 0;
+    }
+    
+    long hash = length;
+    for (int i = 0; i < length; i++) {
+      hash = hash * 65599 + components[i].hashCode();
     }
     return hash;
   }

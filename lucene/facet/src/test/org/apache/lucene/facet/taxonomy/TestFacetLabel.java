@@ -108,6 +108,13 @@ public class TestFacetLabel extends FacetTestCase {
   }
   
   @Test 
+  public void testLongHashCode() {
+    assertEquals(new FacetLabel().longHashCode(), new FacetLabel().longHashCode());
+    assertFalse(new FacetLabel().longHashCode() == new FacetLabel("hi").longHashCode());
+    assertEquals(new FacetLabel("hello", "world").longHashCode(), new FacetLabel("hello", "world").longHashCode());
+  }
+  
+  @Test 
   public void testArrayConstructor() {
     FacetLabel p = new FacetLabel("hello", "world", "yo");
     assertEquals(3, p.length);

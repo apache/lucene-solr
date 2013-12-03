@@ -256,6 +256,9 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
       // this is slower than CL2O, but less memory consuming, and exercises finding categories on disk too.
       cache = new LruTaxonomyWriterCache(ncats / 10);
     }
+    if (VERBOSE) {
+      System.out.println("TEST: use cache=" + cache);
+    }
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, cache);
     Thread[] addThreads = new Thread[atLeast(4)];
     for (int z = 0; z < addThreads.length; z++) {
@@ -291,7 +294,17 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     tw.close();
     
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dir);
-    assertEquals("mismatch number of categories", values.size() + 1, dtr.getSize()); // +1 for root category
+    // +1 for root category
+    if (values.size() + 1 != dtr.getSize()) {
+      for(String value : values.keySet()) {
+        FacetLabel label = new FacetLabel(FacetsConfig.stringToPath(value));
+        if (dtr.getOrdinal(label) == -1) {
+          System.out.println("FAIL: path=" + label + " not recognized");
+        }
+      }
+      fail("mismatch number of categories");
+    }
+
     int[] parents = dtr.getParallelTaxonomyArrays().parents();
     for (String cat : values.keySet()) {
       FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(cat));
@@ -306,9 +319,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
         parentOrd = ord; // next level should have this parent
       }
     }
-    dtr.close();
-    
-    dir.close();
+
+    IOUtils.close(dtr, dir);
   }
 
   private long getEpoch(Directory taxoDir) throws IOException {

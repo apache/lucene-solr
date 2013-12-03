@@ -45,11 +45,7 @@ import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javad
  *  pass just a the field name).
  *
  *  @lucene.experimental */
-public class DoubleRangeFacetCounts extends Facets {
-  private final DoubleRange[] ranges;
-  private final int[] counts;
-  private final String field;
-  private int totCount;
+public class DoubleRangeFacetCounts extends RangeFacetCounts {
 
   /** Create {@code RangeFacetCounts}, using {@link
    *  DoubleFieldSource} from the specified field. */
@@ -60,13 +56,21 @@ public class DoubleRangeFacetCounts extends Facets {
   /** Create {@code RangeFacetCounts}, using the provided
    *  {@link ValueSource}. */
   public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
-    this.ranges = ranges;
-    this.field = field;
-    counts = new int[ranges.length];
+    super(field, ranges);
     count(valueSource, hits.getMatchingDocs());
   }
 
   private void count(ValueSource valueSource, List<MatchingDocs> matchingDocs) throws IOException {
+
+    DoubleRange[] ranges = (DoubleRange[]) this.ranges;
+
+    // Compute min & max over all ranges:
+    double minIncl = Double.POSITIVE_INFINITY;
+    double maxIncl = Double.NEGATIVE_INFINITY;
+    for(DoubleRange range : ranges) {
+      minIncl = Math.min(minIncl, range.minIncl);
+      maxIncl = Math.max(maxIncl, range.maxIncl);
+    }
 
     // TODO: test if this is faster (in the past it was
     // faster to do MatchingDocs on the inside) ... see
@@ -81,6 +85,10 @@ public class DoubleRangeFacetCounts extends Facets {
         if (fv.exists(doc)) {
           
           double v = fv.doubleVal(doc);
+          if (v < minIncl || v > maxIncl) {
+            doc++;
+            continue;
+          }
 
           // TODO: if all ranges are non-overlapping, we
           // should instead do a bin-search up front
@@ -97,36 +105,5 @@ public class DoubleRangeFacetCounts extends Facets {
         doc++;
       }
     }
-  }
-
-  // nocommit all args are ... unused ... this doesn't "fit"
-  // very well:
-
-  @Override
-  public FacetResult getTopChildren(int topN, String dim, String... path) {
-    if (dim.equals(field) == false) {
-      throw new IllegalArgumentException("invalid dim \"" + dim + "\"; should be \"" + field + "\"");
-    }
-    if (path.length != 0) {
-      throw new IllegalArgumentException("path.length should be 0");
-    }
-    LabelAndValue[] labelValues = new LabelAndValue[counts.length];
-    for(int i=0;i<counts.length;i++) {
-      // nocommit can we add the range into this?
-      labelValues[i] = new LabelAndValue(ranges[i].label, counts[i]);
-    }
-
-    return new FacetResult(dim, path, totCount, labelValues, labelValues.length);
-  }
-
-  @Override
-  public Number getSpecificValue(String dim, String... path) throws IOException {
-    // nocommit we could impl this?
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public List<FacetResult> getAllDims(int topN) throws IOException {
-    return Collections.singletonList(getTopChildren(topN, null));
   }
 }

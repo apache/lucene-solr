@@ -31,8 +31,8 @@ import org.apache.lucene.util.Bits;
 
 /** Represents a range over long values. */
 public final class LongRange extends Range {
-  private final long minIncl;
-  private final long maxIncl;
+  final long minIncl;
+  final long maxIncl;
 
   public final long min;
   public final long max;

@@ -31,8 +31,8 @@ import org.apache.lucene.util.Bits;
 
 /** Represents a range over double values. */
 public final class DoubleRange extends Range {
-  private final double minIncl;
-  private final double maxIncl;
+  final double minIncl;
+  final double maxIncl;
 
   public final double min;
   public final double max;
