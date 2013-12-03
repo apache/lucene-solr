@@ -1106,7 +1106,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice, DocCollection targetCollection, Slice targetSlice, String splitKey, int timeout, NamedList results) throws KeeperException, InterruptedException {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
-    if (clusterState.getCollectionStates().containsKey(tempSourceCollectionName)) {
+    if (clusterState.hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
       Map<String, Object> props = ZkNodeProps.makeMap(
           QUEUE_OPERATION, DELETECOLLECTION,

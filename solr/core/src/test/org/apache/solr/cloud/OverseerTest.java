@@ -744,7 +744,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
-      for (DocCollection collection : state.getCollectionStates().values()) {
+      for (String  c : state.getCollections()) {
+        DocCollection collection = state.getCollection(c);
         for (Slice slice : collection.getSlices()) {
           if (slice.getReplicasMap().get("core_node1") != null) {
             numFound++;

@@ -1009,10 +1009,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   private void collectStartTimes(String collectionName,
       Map<String,Long> urlToTime) throws SolrServerException, IOException {
-    Map<String,DocCollection> collections = getCommonCloudSolrServer().getZkStateReader()
-        .getClusterState().getCollectionStates();
-    if (collections.containsKey(collectionName)) {
-      Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
+    ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader()
+        .getClusterState();
+//    Map<String,DocCollection> collections = clusterState.getCollectionStates();
+    if (clusterState.hasCollection(collectionName)) {
+      Map<String,Slice> slices = clusterState.getSlicesMap(collectionName);
 
       Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
       while (it.hasNext()) {
@@ -1036,13 +1037,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       }
     } else {
       throw new IllegalArgumentException("Could not find collection in :"
-          + collections.keySet());
+          + clusterState.getCollections());
     }
   }
 
   private String getUrlFromZk(String collection) {
     ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     
     if (slices == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);
@@ -1097,9 +1098,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     while (System.currentTimeMillis() < timeoutAt) {
       getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
       ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
-      Map<String,DocCollection> collections = clusterState
-          .getCollectionStates();
-      if (!collections.containsKey(collectionName)) {
+//      Map<String,DocCollection> collections = clusterState
+//          .getCollectionStates();
+      if (! clusterState.hasCollection(collectionName)) {
         found = false;
         break;
       }
