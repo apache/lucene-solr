@@ -21,6 +21,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
   private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
@@ -69,26 +71,42 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
       SolrCore core = cc.getCore("core1");
       SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestHandler handler = core.getRequestHandler("/admin/file");
+      SolrRequestHandler handler = core.getRequestHandler("/admin/fileedit");
 
       ModifiableSolrParams params = params("file","schema.xml", "op","write");
       core.execute(handler, new LocalSolrQueryRequest(core, params), rsp);
       assertEquals(rsp.getException().getMessage(), "Input stream list was null for admin file write operation.");
 
-      params = params("op", "write", "stream.body", "Testing rewrite of schema.xml file.");
+      params = params("op", "write");
       core.execute(handler, new LocalSolrQueryRequest(core, params), rsp);
       assertEquals(rsp.getException().getMessage(), "No file name specified for write operation.");
 
+      ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
+      streams.add(new ContentStreamBase.StringStream("Testing rewrite of schema.xml file." ) );
 
       params = params("op", "write", "file", "bogus.txt");
-      core.execute(handler, new LocalSolrQueryRequest(core, params), rsp);
+      LocalSolrQueryRequest locReq = new LocalSolrQueryRequest(core, params);
+      locReq.setContentStreams(streams);
+      core.execute(handler, locReq, rsp);
       assertEquals(rsp.getException().getMessage(), "Can not access: bogus.txt");
 
-      ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
-      streams.add( new ContentStreamBase.StringStream( "Testing rewrite of schema.xml file." ) );
+      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+      String badConf = FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"), "UTF-8").replace("</dataDir>", "");
+
+      params = params("op", "write", "file", "solrconfig.xml");
+      locReq = new LocalSolrQueryRequest(core, params);
+      streams.clear();
+      streams.add(new ContentStreamBase.StringStream(badConf));
+      locReq.setContentStreams(streams);
+      core.execute(handler, locReq, rsp);
+      assertTrue("should have detected an error early!",
+          rsp.getException().getMessage().contains("\"dataDir\""));
+
+      assertTrue("should have detected an error early!",
+          rsp.getException().getMessage().contains("\"</dataDir>\""));
 
       params = params("op", "test", "file", "schema.xml", "stream.body", "Testing rewrite of schema.xml file.");
-      LocalSolrQueryRequest locReq = new LocalSolrQueryRequest(core, params);
+      locReq = new LocalSolrQueryRequest(core, params);
       locReq.setContentStreams(streams);
       core.execute(handler, locReq, rsp);
 
@@ -116,7 +134,8 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       streams.clear();
       params = params();
       locReq = new LocalSolrQueryRequest(core, params);
-      core.execute(handler, locReq, rsp);
+
+      core.execute(core.getRequestHandler("/admin/file"), locReq, rsp);
 
       NamedList<Object> res = rsp.getValues();
 

@@ -117,6 +117,9 @@ New Features
 
 * SOLR-5506: Support docValues in CollationField and ICUCollationField.
   (Robert Muir)
+  
+ * SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
+   solr configuration files.
 
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
   Unload action. (Lyubov Romanchuk, shalin)
