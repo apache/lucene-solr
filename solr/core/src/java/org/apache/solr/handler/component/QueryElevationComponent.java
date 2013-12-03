@@ -419,16 +419,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // insert documents in their proper place 
       SortSpec sortSpec = rb.getSortSpec();
       if (sortSpec.getSort() == null) {
-        sortSpec.setSort(new Sort(new SortField[]{
-            new SortField("_elevate_", comparator, true),
-            new SortField(null, SortField.Type.SCORE, false)
-        }));
+        sortSpec.setSortAndFields(new Sort(new SortField[]{
+              new SortField("_elevate_", comparator, true),
+              new SortField(null, SortField.Type.SCORE, false)
+            }),
+          Arrays.asList(new SchemaField[2]));
       } else {
         // Check if the sort is based on score
-        SortField[] current = sortSpec.getSort().getSort();
-        Sort modified = this.modifySort(current, force, comparator);
-        if(modified != null) {
-          sortSpec.setSort(modified);
+        SortSpec modSortSpec = this.modifySortSpec(sortSpec, force, comparator);
+        if (null != modSortSpec) {
+          rb.setSortSpec(modSortSpec);
         }
       }
 
@@ -470,22 +470,43 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
+    SortSpec tmp = new SortSpec(new Sort(current), Arrays.asList(new SchemaField[current.length]));
+    tmp = modifySortSpec(tmp, force, comparator);
+    return null == tmp ? null : tmp.getSort();
+  }
+
+  private SortSpec modifySortSpec(SortSpec current, boolean force, ElevationComparatorSource comparator) {
     boolean modify = false;
-    ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
+    SortField[] currentSorts = current.getSort().getSort();
+    List<SchemaField> currentFields = current.getSchemaFields();
+
+    ArrayList<SortField> sorts = new ArrayList<SortField>(currentSorts.length + 1);
+    List<SchemaField> fields = new ArrayList<SchemaField>(currentFields.size() + 1);
+
     // Perhaps force it to always sort by score
-    if (force && current[0].getType() != SortField.Type.SCORE) {
+    if (force && currentSorts[0].getType() != SortField.Type.SCORE) {
       sorts.add(new SortField("_elevate_", comparator, true));
+      fields.add(null);
       modify = true;
     }
-    for (SortField sf : current) {
+    for (int i = 0; i < currentSorts.length; i++) {
+      SortField sf = currentSorts[i];
       if (sf.getType() == SortField.Type.SCORE) {
         sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
+        fields.add(null);
         modify = true;
       }
       sorts.add(sf);
+      fields.add(currentFields.get(i));
     }
-
-    return modify ? new Sort(sorts.toArray(new SortField[sorts.size()])) : null;
+    if (modify) {
+      SortSpec newSpec = new SortSpec(new Sort(sorts.toArray(new SortField[sorts.size()])),
+                                      fields);
+      newSpec.setOffset(current.getOffset());
+      newSpec.setCount(current.getCount());
+      return newSpec;
+    }
+    return null;
   }
 
   @Override

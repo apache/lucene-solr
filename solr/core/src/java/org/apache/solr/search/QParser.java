@@ -276,11 +276,11 @@ public abstract class QParser {
     int start = startS != null ? Integer.parseInt(startS) : 0;
     int rows = rowsS != null ? Integer.parseInt(rowsS) : 10;
 
-    Sort sort = null;
-    if( sortStr != null ) {
-      sort = QueryParsing.parseSort(sortStr, req);
-    }
-    return new SortSpec( sort, start, rows );
+    SortSpec sort = QueryParsing.parseSortSpec(sortStr, req);
+
+    sort.setOffset(start);
+    sort.setCount(rows);
+    return sort;
   }
 
   public String[] getDefaultHighlightFields() {

@@ -190,7 +190,7 @@ public class QueryComponent extends SearchComponent
     // groupSort defaults to sort
     String groupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSort(groupSortStr, req));
+    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSortSpec(groupSortStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }
@@ -454,8 +454,6 @@ public class QueryComponent extends SearchComponent
     // take the documents given and re-derive the sort values.
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
-      Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
-      SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
@@ -477,18 +475,22 @@ public class QueryComponent extends SearchComponent
       }
       Arrays.sort(sortedIds);
 
+      SortSpec sortSpec = rb.getSortSpec();
+      Sort sort = searcher.weightSort(sortSpec.getSort());
+      SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
+      List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
-      for (SortField sortField: sortFields) {
+      for (int fld = 0; fld < schemaFields.size(); fld++) {
+        SchemaField schemaField = schemaFields.get(fld);
+        FieldType ft = null == schemaField? null : schemaField.getType();
+        SortField sortField = sortFields[fld];
+
         SortField.Type type = sortField.getType();
+        // :TODO: would be simpler to always serialize every position of SortField[]
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
         FieldComparator comparator = null;
-
-        String fieldname = sortField.getField();
-        FieldType ft = fieldname==null ? null : searcher.getSchema().getFieldTypeNoEx(fieldname);
-
         Object[] vals = new Object[nDocs];
-        
 
         int lastIdx = -1;
         int idx = 0;
@@ -518,7 +520,7 @@ public class QueryComponent extends SearchComponent
           vals[position] = val;
         }
 
-        sortVals.add(fieldname, vals);
+        sortVals.add(sortField.getField(), vals);
       }
 
       rsp.add("sort_values", sortVals);
@@ -865,7 +867,7 @@ public class QueryComponent extends SearchComponent
             }
           }
 
-          shardDoc.sortFieldValues = unmarshalSortValues(sortFieldValues, schema);
+          shardDoc.sortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
@@ -907,22 +909,43 @@ public class QueryComponent extends SearchComponent
       }
   }
 
-  private NamedList unmarshalSortValues(NamedList sortFieldValues, IndexSchema schema) {
+  private NamedList unmarshalSortValues(SortSpec sortSpec, 
+                                        NamedList sortFieldValues, 
+                                        IndexSchema schema) {
     NamedList unmarshalledSortValsPerField = new NamedList();
-    for (int fieldNum = 0 ; fieldNum < sortFieldValues.size() ; ++fieldNum) {
-      String fieldName = sortFieldValues.getName(fieldNum);
-      SchemaField field = schema.getFieldOrNull(fieldName);
-      List sortVals = (List)sortFieldValues.getVal(fieldNum);
-      if (null == field) {
-        unmarshalledSortValsPerField.add(fieldName, sortVals);
+
+    if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
+    
+    List<SchemaField> schemaFields = sortSpec.getSchemaFields();
+    SortField[] sortFields = sortSpec.getSort().getSort();
+
+    int marshalledFieldNum = 0;
+    for (int sortFieldNum = 0; sortFieldNum < sortFields.length; sortFieldNum++) {
+      final SortField sortField = sortFields[sortFieldNum];
+      final SortField.Type type = sortField.getType();
+
+      // :TODO: would be simpler to always serialize every position of SortField[]
+      if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
+
+      final String sortFieldName = sortField.getField();
+      final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
+      assert sortFieldName.equals(valueFieldName)
+        : "sortFieldValues name key does not match expected SortField.getField";
+
+      List sortVals = (List)sortFieldValues.getVal(marshalledFieldNum);
+
+      final SchemaField schemaField = schemaFields.get(sortFieldNum);
+      if (null == schemaField) {
+        unmarshalledSortValsPerField.add(sortField.getField(), sortVals);
       } else {
-        FieldType fieldType = field.getType();
+        FieldType fieldType = schemaField.getType();
         List unmarshalledSortVals = new ArrayList();
         for (Object sortVal : sortVals) {
           unmarshalledSortVals.add(fieldType.unmarshalSortValue(sortVal));
         }
-        unmarshalledSortValsPerField.add(fieldName, unmarshalledSortVals);
+        unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
       }
+      marshalledFieldNum++;
     }
     return unmarshalledSortValsPerField;
   }

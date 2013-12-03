@@ -47,7 +47,9 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
   public void doTest() throws Exception {
     del("*:*");
 
-    index(id, "1", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }));                    //  2 
+    index(id, "1", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 
+          // quick check to prove "*" dynamicField hasn't been broken by somebody mucking with schema
+          "asdfasdf_field_should_match_catchall_dynamic_field_adsfasdf", "value");
     index(id, "2", "text", "b", "payload", ByteBuffer.wrap(new byte[] { 0x25, 0x21, 0x16 }));                    //  5 
     index(id, "3", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x35, 0x32, 0x58 }));                    //  8 
     index(id, "4", "text", "b", "payload", ByteBuffer.wrap(new byte[] { 0x25, 0x21, 0x15 }));                    //  4 
@@ -90,6 +92,10 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     rsp = query("q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 11, 13, 12);
 
+    // sanity check function sorting
+    rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
+                "sort", "abs(sub(5,id)) asc, id desc");
+    assertFieldValues(rsp.getResults(), id, 5 , 6,4 , 7,3 , 8,2 , 9,1 , 10 );
 
     // Add two more docs with same payload as in doc #4 
     index(id, "14", "text", "b", "payload", ByteBuffer.wrap(new byte[] { 0x25, 0x21, 0x15 })); 

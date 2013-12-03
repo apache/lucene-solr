@@ -36,6 +36,9 @@
     <field name="payload" type="sortable_binary" indexed="false" 
            stored="true"  multiValued="false"    docValues="true" required="true"/>
     <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+
+    <!-- catchall wildcard to help ensure we aren't breaking function sorting -->
+    <dynamicField name="*" type="string"  indexed="true" stored="true"/>
   </fields>
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
