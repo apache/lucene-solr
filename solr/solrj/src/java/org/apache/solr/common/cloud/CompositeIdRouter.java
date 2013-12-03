@@ -202,15 +202,16 @@ public class CompositeIdRouter extends HashBasedRouter {
       } else {
         numBits[0] = 16;
         triLevel = false;
-
       }
 
       for (int i = 0; i < parts.length; i++) {
-        int commaIdx = parts[i].indexOf(bitsSeparator);
+        if (i < pieces - 1) {
+          int commaIdx = parts[i].indexOf(bitsSeparator);
 
-        if (commaIdx > 0) {
-          numBits[i] = getNumBits(parts[i], commaIdx);
-          parts[i] = parts[i].substring(0, commaIdx);
+          if (commaIdx > 0) {
+            numBits[i] = getNumBits(parts[i], commaIdx);
+            parts[i] = parts[i].substring(0, commaIdx);
+          }
         }
         hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
       }

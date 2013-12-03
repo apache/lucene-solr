@@ -153,6 +153,9 @@ Bug Fixes
 
 * SOLR-5527: DIH logs spurious warning for special commands. (shalin)
 
+* SOLR-5502: A "/" in a document id will cause an exception to be thrown
+  when using the composite id router. (Anshum Gupta via Mark Miller)
+  
 Optimizations
 ----------------------
 

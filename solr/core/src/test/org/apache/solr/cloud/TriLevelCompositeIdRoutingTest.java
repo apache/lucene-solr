@@ -143,7 +143,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
   Set<String> doQueryGetUniqueIdKeys(String... queryParams) throws Exception {
     QueryResponse rsp = cloudClient.query(params(queryParams));
     Set<String> obtainedIdKeys = new HashSet<String>();
-    Set<String> obtainedIdKeys2 = new HashSet<String>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIdKeys.add(getKey((String) doc.get("id")));
     }
