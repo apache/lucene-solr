@@ -86,6 +86,11 @@ New Features
 * SOLR-1871: The 'map' function query accepts a ValueSource as target and
   default value. (Chris Harris, shalin)
 
+* SOLR-5518: Make the EditFileRequestHandler it's own handler to allow
+  some security (Erick Erickson)
+
+* SOLR-5522: Remove EditFileRequestHandler from 4x (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
