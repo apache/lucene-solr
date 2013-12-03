@@ -218,6 +218,9 @@ Other Changes
 * SOLR-5499: Log a warning if /get is not registered when using SolrCloud.
   (Daniel Collins via shalin)
 
+* SOLR-5517: Return HTTP error on POST requests with no Content-Type.
+  (Ryan Ernst, Uwe Schindler)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
