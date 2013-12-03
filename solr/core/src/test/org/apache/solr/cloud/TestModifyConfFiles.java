@@ -16,12 +16,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+
+import java.io.File;
 
 public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
@@ -38,7 +42,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     params.set("op", "write");
     params.set("file", "schema.xml");
     QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/file");
+    request.setPath("/admin/fileedit");
     try {
       client.request(request);
       fail("Should have caught exception");
@@ -50,7 +54,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     params.set("stream.body", "Testing rewrite of schema.xml file.");
     params.set("op", "test");
     request = new QueryRequest(params);
-    request.setPath("/admin/file");
+    request.setPath("/admin/fileedit");
     try {
       client.request(request);
       fail("Should have caught exception");
@@ -61,7 +65,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     params.set("op", "write");
     params.set("file", "bogus.txt");
     request = new QueryRequest(params);
-    request.setPath("/admin/file");
+    request.setPath("/admin/fileedit");
     try {
       client.request(request);
       fail("Should have caught exception");
@@ -69,16 +73,29 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       assertEquals(e.getMessage(), "Can not access: bogus.txt");
     }
 
+    try {
+      params.set("file", "schema.xml");
+      request = new QueryRequest(params);
+      request.setPath("/admin/fileedit");
+      client.request(request);
+      fail("Should have caught exception since it's mal-formed XML");
+    } catch (Exception e) {
+      assertTrue("Should have a sax parser exception here!",
+          e.getMessage().contains("Invalid XML file: org.xml.sax.SAXParseException"));
+    }
+
+    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    params.set("stream.body", FileUtils.readFileToString(new File(top, "schema-tiny.xml"), "UTF-8"));
     params.set("file", "schema.xml");
     request = new QueryRequest(params);
-    request.setPath("/admin/file");
+    request.setPath("/admin/fileedit");
 
     client.request(request);
 
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
     String contents = new String(zkClient.getData("/configs/conf1/schema.xml", null, null, true), "UTF-8");
 
-    assertTrue("Schema contents should have changed!", "Testing rewrite of schema.xml file.".equals(contents));
+    assertTrue("Schema contents should have changed!", contents.contains("<schema name=\"tiny\" version=\"1.1\">"));
 
     // Create a velocity/whatever node. Put a bit of data in it. See if you can change it.
     zkClient.makePath("/configs/conf1/velocity/test.vm", false, true);
@@ -86,7 +103,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     params.set("stream.body", "Some bogus stuff for a test.");
     params.set("file", "velocity/test.vm");
     request = new QueryRequest(params);
-    request.setPath("/admin/file");
+    request.setPath("/admin/fileedit");
 
     client.request(request);
 
