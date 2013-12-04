@@ -91,11 +91,13 @@
   <target name="-check-after-regeneration" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
     <svn-checker failonmodifications="true"/>
   </target>
+  
+  <property name="svnkit.version" value="1.7.8"/>
 
   <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
     <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
     <sequential>
-    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.8"
+    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="${svnkit.version}"
       inline="true" conf="default" transitive="true" pathid="svnkit.classpath"/>
     <local name="svn.checkprops.failed"/>
     <local name="svn.unversioned.failed"/>
