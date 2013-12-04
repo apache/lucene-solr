@@ -50,7 +50,7 @@ public final class SanitizeUnknownSolrFieldsBuilder implements CommandBuilder {
 
   @Override
   public Command build(Config config, Command parent, Command child, MorphlineContext context) {
-    return new SanitizeUnknownSolrFields(config, parent, child, context);
+    return new SanitizeUnknownSolrFields(this, config, parent, child, context);
   }
   
   
@@ -62,8 +62,8 @@ public final class SanitizeUnknownSolrFieldsBuilder implements CommandBuilder {
     private final IndexSchema schema;
     private final String renameToPrefix;
         
-    public SanitizeUnknownSolrFields(Config config, Command parent, Command child, MorphlineContext context) {
-      super(config, parent, child, context);      
+    public SanitizeUnknownSolrFields(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
+      super(builder, config, parent, child, context);      
       
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);

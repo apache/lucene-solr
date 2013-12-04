@@ -31,6 +31,7 @@ import com.cloudera.cdk.morphline.api.MorphlineContext;
 import com.cloudera.cdk.morphline.api.MorphlineRuntimeException;
 import com.cloudera.cdk.morphline.api.Record;
 import com.cloudera.cdk.morphline.base.AbstractCommand;
+import com.cloudera.cdk.morphline.base.Configs;
 import com.cloudera.cdk.morphline.base.Metrics;
 import com.cloudera.cdk.morphline.base.Notifications;
 import com.codahale.metrics.Timer;
@@ -49,7 +50,7 @@ public final class LoadSolrBuilder implements CommandBuilder {
 
   @Override
   public Command build(Config config, Command parent, Command child, MorphlineContext context) {
-    return new LoadSolr(config, parent, child, context);
+    return new LoadSolr(this, config, parent, child, context);
   }
   
   
@@ -62,14 +63,14 @@ public final class LoadSolrBuilder implements CommandBuilder {
     private final Map<String, Float> boosts = new HashMap();
     private final Timer elapsedTime;    
     
-    public LoadSolr(Config config, Command parent, Command child, MorphlineContext context) {
-      super(config, parent, child, context);
+    public LoadSolr(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
+      super(builder, config, parent, child, context);
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
       LOG.debug("solrLocator: {}", locator);
       this.loader = locator.getLoader();
       Config boostsConfig = getConfigs().getConfig(config, "boosts", ConfigFactory.empty());
-      for (Map.Entry<String, Object> entry : boostsConfig.root().unwrapped().entrySet()) {
+      for (Map.Entry<String, Object> entry : new Configs().getEntrySet(boostsConfig)) {
         String fieldName = entry.getKey();        
         float boost = Float.parseFloat(entry.getValue().toString().trim());
         boosts.put(fieldName, boost);

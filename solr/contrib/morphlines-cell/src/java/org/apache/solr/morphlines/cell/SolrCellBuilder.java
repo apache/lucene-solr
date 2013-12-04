@@ -61,6 +61,7 @@ import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
 import com.cloudera.cdk.morphline.api.MorphlineContext;
 import com.cloudera.cdk.morphline.api.MorphlineRuntimeException;
 import com.cloudera.cdk.morphline.api.Record;
+import com.cloudera.cdk.morphline.base.Configs;
 import com.cloudera.cdk.morphline.base.Fields;
 import com.cloudera.cdk.morphline.stdio.AbstractParser;
 import com.google.common.base.Joiner;
@@ -87,7 +88,7 @@ public final class SolrCellBuilder implements CommandBuilder {
 
   @Override
   public Command build(Config config, Command parent, Command child, MorphlineContext context) {
-    return new SolrCell(config, parent, child, context);
+    return new SolrCell(this, config, parent, child, context);
   }
   
   
@@ -109,8 +110,8 @@ public final class SolrCellBuilder implements CommandBuilder {
         
     public static final String ADDITIONAL_SUPPORTED_MIME_TYPES = "additionalSupportedMimeTypes";
     
-    public SolrCell(Config config, Command parent, Command child, MorphlineContext context) {
-      super(config, parent, child, context);
+    public SolrCell(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
+      super(builder, config, parent, child, context);
       
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
@@ -129,7 +130,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       }
       Config fmapConfig = getConfigs().getConfig(config, "fmap", null);
       if (fmapConfig != null) {
-        for (Map.Entry<String, Object> entry : fmapConfig.root().unwrapped().entrySet()) {
+        for (Map.Entry<String, Object> entry : new Configs().getEntrySet(fmapConfig)) {
           cellParams.put(ExtractingParams.MAP_PREFIX + entry.getKey(), entry.getValue().toString());
         }
       }
