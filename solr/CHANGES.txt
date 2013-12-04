@@ -189,9 +189,6 @@ Bug Fixes
 
 * SOLR-5527: DIH logs spurious warning for special commands. (shalin)
 
-* SOLR-5502: A "/" in a document id will cause an exception to be thrown
-  when using the composite id router. (Anshum Gupta via Mark Miller)
-
 * SOLR-5524: Exception when using Query Function inside Scale Function.
   (Trey Grainger, yonik)
   
@@ -228,6 +225,9 @@ Other Changes
 
 * SOLR-5517: Return HTTP error on POST requests with no Content-Type.
   (Ryan Ernst, Uwe Schindler)
+
+* SOLR-5502: Added a test for tri-level compositeId routing with documents
+  having a "/" in a document id. (Anshum Gupta via Mark Miller)
 
 ==================  4.6.0 ==================
 
