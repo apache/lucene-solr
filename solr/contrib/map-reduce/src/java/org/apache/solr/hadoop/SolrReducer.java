@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import com.cloudera.cdk.morphline.api.ExceptionHandler;
 import com.cloudera.cdk.morphline.base.FaultTolerance;
+import com.google.common.base.Preconditions;
 
 /**
  * This class loads the mapper's SolrInputDocuments into one EmbeddedSolrServer
@@ -54,6 +55,7 @@ public class SolrReducer extends Reducer<Text, SolrInputDocumentWritable, Text, 
   
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
+    verifyPartitionAssignment(context);    
     SolrRecordWriter.addReducerContext(context);
     Class<? extends UpdateConflictResolver> resolverClass = context.getConfiguration().getClass(
         UPDATE_CONFLICT_RESOLVER, RetainMostRecentUpdateConflictResolver.class, UpdateConflictResolver.class);
@@ -107,6 +109,24 @@ public class SolrReducer extends Reducer<Text, SolrInputDocumentWritable, Text, 
     super.cleanup(context);
   }
 
+  /*
+   * Verify that if a mappers's partitioner sends an item to partition X it implies that said item
+   * is sent to the reducer with taskID == X. This invariant is currently required for Solr
+   * documents to end up in the right Solr shard.
+   */
+  private void verifyPartitionAssignment(Context context) {
+    if ("true".equals(System.getProperty("verifyPartitionAssignment", "true"))) {
+      String partitionStr = context.getConfiguration().get("mapred.task.partition");
+      if (partitionStr == null) {
+        partitionStr = context.getConfiguration().get("mapreduce.task.partition");
+      }
+      int partition = Integer.parseInt(partitionStr);
+      int taskId = context.getTaskAttemptID().getTaskID().getId();
+      Preconditions.checkArgument(partition == taskId, 
+          "mapred.task.partition: " + partition + " not equal to reducer taskId: " + taskId);      
+    }
+  }
+  
   
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:

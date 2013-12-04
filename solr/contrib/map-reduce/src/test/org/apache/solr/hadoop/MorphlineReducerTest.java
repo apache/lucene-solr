@@ -34,6 +34,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mrunit.mapreduce.ReduceDriver;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -44,10 +45,17 @@ import com.google.common.collect.Lists;
 public class MorphlineReducerTest extends MRUnitBase {
   
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass2() {
     assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+    
+    System.setProperty("verifyPartitionAssignment", "false");
+  }
+  
+  @AfterClass
+  public static void afterClass2() {
+    System.clearProperty("verifyPartitionAssignment");
   }
   
   public static class MySolrReducer extends SolrReducer {
@@ -89,28 +97,35 @@ public class MorphlineReducerTest extends MRUnitBase {
   @Test
   public void testReducer() throws Exception {
     MySolrReducer myReducer = new MySolrReducer();
-    ReduceDriver<Text, SolrInputDocumentWritable, Text, SolrInputDocumentWritable> reduceDriver = ReduceDriver.newReduceDriver(myReducer);
-
-    Configuration config = reduceDriver.getConfiguration();
-    setupHadoopConfig(config);
-
-    List<SolrInputDocumentWritable> values = new ArrayList<SolrInputDocumentWritable>();
-    SolrInputDocument sid = new SolrInputDocument();
-    String id = "myid1";
-    sid.addField("id", id);
-    sid.addField("text", "some unique text");
-    SolrInputDocumentWritable sidw = new SolrInputDocumentWritable(sid);
-    values.add(sidw);
-    reduceDriver.withInput(new Text(id), values);
-
-    reduceDriver.withCacheArchive(solrHomeZip.getAbsolutePath());
-    
-    reduceDriver.withOutputFormat(SolrOutputFormat.class, NullInputFormat.class);
-
-    reduceDriver.run();
-
-    assertEquals("Expected 1 counter increment", 1, reduceDriver.getCounters()
-        .findCounter(SolrCounters.class.getName(), SolrCounters.DOCUMENTS_WRITTEN.toString()).getValue());
+    try {
+      ReduceDriver<Text,SolrInputDocumentWritable,Text,SolrInputDocumentWritable> reduceDriver = ReduceDriver
+          .newReduceDriver(myReducer);
+      
+      Configuration config = reduceDriver.getConfiguration();
+      setupHadoopConfig(config);
+      
+      List<SolrInputDocumentWritable> values = new ArrayList<SolrInputDocumentWritable>();
+      SolrInputDocument sid = new SolrInputDocument();
+      String id = "myid1";
+      sid.addField("id", id);
+      sid.addField("text", "some unique text");
+      SolrInputDocumentWritable sidw = new SolrInputDocumentWritable(sid);
+      values.add(sidw);
+      reduceDriver.withInput(new Text(id), values);
+      
+      reduceDriver.withCacheArchive(solrHomeZip.getAbsolutePath());
+      
+      reduceDriver.withOutputFormat(SolrOutputFormat.class,
+          NullInputFormat.class);
+      
+      reduceDriver.run();
+      
+      assertEquals("Expected 1 counter increment", 1,
+          reduceDriver.getCounters().findCounter(SolrCounters.class.getName(),
+                  SolrCounters.DOCUMENTS_WRITTEN.toString()).getValue());
+    } finally {
+      myReducer.cleanup(myReducer.context);
+    }
   }
 
 }

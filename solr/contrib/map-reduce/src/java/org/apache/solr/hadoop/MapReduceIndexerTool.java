@@ -33,10 +33,13 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -80,6 +83,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudera.cdk.morphline.base.Fields;
+import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
+import com.google.common.io.ByteStreams;
 
 
 /**
@@ -107,6 +113,10 @@ public class MapReduceIndexerTool extends Configured implements Tool {
    */
   static final class MyArgumentParser {
     
+    private static final String SHOW_NON_SOLR_CLOUD = "--show-non-solr-cloud";
+
+    private boolean showNonSolrCloud = false;
+
     /**
      * Parses the given command line arguments.
      * 
@@ -122,6 +132,8 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       if (args.length == 0) {
         args = new String[] { "--help" };
       }
+      
+      showNonSolrCloud = Arrays.asList(args).contains(SHOW_NON_SOLR_CLOUD); // intercept it first
       
       ArgumentParser parser = ArgumentParsers
         .newArgumentParser("hadoop [GenericOptions]... jar search-mr-*-job.jar " + MapReduceIndexerTool.class.getName(), false)
@@ -297,7 +309,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "specified by --morphline-file. If the --morphline-id option is ommitted the first (i.e. " +
               "top-most) morphline within the config file is used. Example: morphline1");
             
-      Argument solrHomeDirArg = parser.addArgument("--solr-home-dir")
+      Argument solrHomeDirArg = nonSolrCloud(parser.addArgument("--solr-home-dir")
         .metavar("DIR")
         .type(new FileArgumentType() {
           @Override
@@ -312,7 +324,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .required(false)
         .help("Relative or absolute path to a local dir containing Solr conf/ dir and in particular " +
               "conf/solrconfig.xml and optionally also lib/ dir. This directory will be uploaded to each MR task. " +
-              "Example: src/test/resources/solr/minimr");
+              "Example: src/test/resources/solr/minimr"));
         
       Argument updateConflictResolverArg = parser.addArgument("--update-conflict-resolver")
         .metavar("FQCN")
@@ -404,25 +416,20 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .action(Arguments.storeTrue())
         .help("Turn on verbose output.");
   
+      parser.addArgument(SHOW_NON_SOLR_CLOUD)
+        .action(Arguments.storeTrue())
+        .help("Also show options for Non-SolrCloud mode as part of --help.");
+      
       ArgumentGroup clusterInfoGroup = parser
           .addArgumentGroup("Cluster arguments")
           .description(
               "Arguments that provide information about your Solr cluster. "
-                  + "If you are not using --go-live, pass the --shards argument. If you are building shards for "
-                  + "a Non-SolrCloud cluster, pass the --shard-url argument one or more times. To build indexes for"
-                  + " a replicated cluster with --shard-url, pass replica urls consecutively and also pass --shards. " 
-                  + "If you are building shards for a SolrCloud cluster, pass the --zk-host argument. "
-                  + "Using --go-live requires either --shard-url or --zk-host.");
+            + nonSolrCloud("If you are building shards for a SolrCloud cluster, pass the --zk-host argument. "
+            + "If you are building shards for "
+            + "a Non-SolrCloud cluster, pass the --shard-url argument one or more times. To build indexes for "
+            + "a replicated Non-SolrCloud cluster with --shard-url, pass replica urls consecutively and also pass --shards. "
+            + "Using --go-live requires either --zk-host or --shard-url."));
 
-      Argument shardUrlsArg = clusterInfoGroup.addArgument("--shard-url")
-        .metavar("URL")
-        .type(String.class)
-        .action(Arguments.append())
-        .help("Solr URL to merge resulting shard into if using --go-live. " +
-              "Example: http://solr001.mycompany.com:8983/solr/collection1. " + 
-              "Multiple --shard-url arguments can be specified, one for each desired shard. " +
-              "If you are merging shards into a SolrCloud cluster, use --zk-host instead.");
-      
       Argument zkHostArg = clusterInfoGroup.addArgument("--zk-host")
         .metavar("STRING")
         .type(String.class)
@@ -444,15 +451,24 @@ public class MapReduceIndexerTool extends Configured implements Tool {
             + "would be relative to this root - i.e. getting/setting/etc... "
             + "'/foo/bar' would result in operations being run on "
             + "'/solr/foo/bar' (from the server perspective).\n"
-            + "\n"
+            + nonSolrCloud("\n"
             + "If --solr-home-dir is not specified, the Solr home directory for the collection "
-            + "will be downloaded from this ZooKeeper ensemble.");
+            + "will be downloaded from this ZooKeeper ensemble."));
 
-      Argument shardsArg = clusterInfoGroup.addArgument("--shards")
+      Argument shardUrlsArg = nonSolrCloud(clusterInfoGroup.addArgument("--shard-url")
+        .metavar("URL")
+        .type(String.class)
+        .action(Arguments.append())
+        .help("Solr URL to merge resulting shard into if using --go-live. " +
+              "Example: http://solr001.mycompany.com:8983/solr/collection1. " + 
+              "Multiple --shard-url arguments can be specified, one for each desired shard. " +
+              "If you are merging shards into a SolrCloud cluster, use --zk-host instead."));
+      
+      Argument shardsArg = nonSolrCloud(clusterInfoGroup.addArgument("--shards")
         .metavar("INTEGER")
         .type(Integer.class)
         .choices(new RangeArgumentChoice(1, Integer.MAX_VALUE))
-        .help("Number of output shards to generate.");
+        .help("Number of output shards to generate."));
       
       ArgumentGroup goLiveGroup = parser.addArgumentGroup("Go live arguments")
         .description("Arguments for merging the shards that are built into a live Solr cluster. " +
@@ -462,8 +478,8 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .action(Arguments.storeTrue())
         .help("Allows you to optionally merge the final index shards into a live Solr cluster after they are built. " +
               "You can pass the ZooKeeper address with --zk-host and the relevant cluster information will be auto detected. " +
-              "If you are not using a SolrCloud cluster, --shard-url arguments can be used to specify each SolrCore to merge " +
-              "each shard into.");
+              nonSolrCloud("If you are not using a SolrCloud cluster, --shard-url arguments can be used to specify each SolrCore to merge " +
+              "each shard into."));
 
       Argument collectionArg = goLiveGroup.addArgument("--collection")
         .metavar("STRING")
@@ -536,6 +552,15 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         return 0; // nothing to process
       }
       return null;     
+    }
+
+    // make it a "hidden" option, i.e. the option is functional and enabled but not shown in --help output
+    private Argument nonSolrCloud(Argument arg) {
+        return showNonSolrCloud ? arg : arg.help(FeatureControl.SUPPRESS); 
+    }
+
+    private String nonSolrCloud(String msg) {
+        return showNonSolrCloud ? msg : "";
     }
 
     /** Marker trick to prevent processing of any remaining arguments once --help option has been parsed */
@@ -785,7 +810,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     job.setOutputValueClass(SolrInputDocumentWritable.class);
     LOG.info("Indexing {} files using {} real mappers into {} reducers", new Object[] {numFiles, realMappers, reducers});
     startTime = System.currentTimeMillis();
-    if (!waitForCompletion(job, true)) {
+    if (!waitForCompletion(job, options.isVerbose)) {
       return -1; // job failed
     }
 
@@ -825,6 +850,9 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       startTime = System.currentTimeMillis();
       if (!waitForCompletion(job, options.isVerbose)) {
         return -1; // job failed
+      }
+      if (!renameTreeMergeShardDirs(outputTreeMergeStep, job, fs)) {
+        return -1;
       }
       secs = (System.currentTimeMillis() - startTime) / 1000.0f;
       LOG.info("MTree merge iteration {}/{}: Done. Merging {} shards into {} shards using fanout {} took {} secs",
@@ -1182,8 +1210,100 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         throw new IllegalStateException("Not a directory: " + dir.getPath());
       }
     }
-    Arrays.sort(dirs); // FIXME: handle more than 99999 shards (need numeric sort rather than lexicographical sort)
+    
+    // use alphanumeric sort (rather than lexicographical sort) to properly handle more than 99999 shards
+    Arrays.sort(dirs, new Comparator<FileStatus>() {
+      @Override
+      public int compare(FileStatus f1, FileStatus f2) {
+        return new AlphaNumericComparator().compare(f1.getPath().getName(), f2.getPath().getName());
+      }
+    });
+
     return dirs;
+  }
+
+  /*
+   * You can run MapReduceIndexerTool in Solrcloud mode, and once the MR job completes, you can use
+   * the standard solrj Solrcloud API to send doc updates and deletes to SolrCloud, and those updates
+   * and deletes will go to the right Solr shards, and it will work just fine.
+   * 
+   * The MapReduce framework doesn't guarantee that input split N goes to the map task with the
+   * taskId = N. The job tracker and Yarn schedule and assign tasks, considering data locality
+   * aspects, but without regard of the input split# withing the overall list of input splits. In
+   * other words, split# != taskId can be true.
+   * 
+   * To deal with this issue, our mapper tasks write a little auxiliary metadata file (per task)
+   * that tells the job driver which taskId processed which split#. Once the mapper-only job is
+   * completed, the job driver renames the output dirs such that the dir name contains the true solr
+   * shard id, based on these auxiliary files.
+   * 
+   * This way each doc gets assigned to the right Solr shard even with #reducers > #solrshards
+   * 
+   * Example for a merge with two shards:
+   * 
+   * part-m-00000 and part-m-00001 goes to outputShardNum = 0 and will end up in merged part-m-00000
+   * part-m-00002 and part-m-00003 goes to outputShardNum = 1 and will end up in merged part-m-00001
+   * part-m-00004 and part-m-00005 goes to outputShardNum = 2 and will end up in merged part-m-00002
+   * ... and so on
+   * 
+   * Also see run() method above where it uses NLineInputFormat.setNumLinesPerSplit(job,
+   * options.fanout)
+   * 
+   * Also see TreeMergeOutputFormat.TreeMergeRecordWriter.writeShardNumberFile()
+   */
+  private boolean renameTreeMergeShardDirs(Path outputTreeMergeStep, Job job, FileSystem fs) throws IOException {
+    final String dirPrefix = SolrOutputFormat.getOutputName(job);
+    FileStatus[] dirs = fs.listStatus(outputTreeMergeStep, new PathFilter() {      
+      @Override
+      public boolean accept(Path path) {
+        return path.getName().startsWith(dirPrefix);
+      }
+    });
+    
+    for (FileStatus dir : dirs) {
+      if (!dir.isDirectory()) {
+        throw new IllegalStateException("Not a directory: " + dir.getPath());
+      }
+    }
+
+    // Example: rename part-m-00004 to _part-m-00004
+    for (FileStatus dir : dirs) {
+      Path path = dir.getPath();
+      Path renamedPath = new Path(path.getParent(), "_" + path.getName());
+      if (!rename(path, renamedPath, fs)) {
+        return false;
+      }
+    }
+    
+    // Example: rename _part-m-00004 to part-m-00002
+    for (FileStatus dir : dirs) {
+      Path path = dir.getPath();
+      Path renamedPath = new Path(path.getParent(), "_" + path.getName());
+      
+      // read auxiliary metadata file (per task) that tells which taskId 
+      // processed which split# aka solrShard
+      Path solrShardNumberFile = new Path(renamedPath, TreeMergeMapper.SOLR_SHARD_NUMBER);
+      InputStream in = fs.open(solrShardNumberFile);
+      byte[] bytes = ByteStreams.toByteArray(in);
+      in.close();
+      Preconditions.checkArgument(bytes.length > 0);
+      int solrShard = Integer.parseInt(new String(bytes, Charsets.UTF_8));
+      if (!delete(solrShardNumberFile, false, fs)) {
+        return false;
+      }
+      
+      // same as FileOutputFormat.NUMBER_FORMAT
+      NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
+      numberFormat.setMinimumIntegerDigits(5);
+      numberFormat.setGroupingUsed(false);
+      Path finalPath = new Path(renamedPath.getParent(), dirPrefix + "-m-" + numberFormat.format(solrShard));
+      
+      LOG.info("MTree merge renaming solr shard: " + solrShard + " from dir: " + dir.getPath() + " to dir: " + finalPath);
+      if (!rename(renamedPath, finalPath, fs)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static void verifyGoLiveArgs(Options opts, ArgumentParser parser) throws ArgumentParserException {

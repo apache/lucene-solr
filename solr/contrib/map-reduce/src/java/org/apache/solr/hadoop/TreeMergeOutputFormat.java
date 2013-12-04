@@ -17,6 +17,9 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +41,9 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 
 /**
  * See {@link IndexMergeTool}.
@@ -84,13 +90,15 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
     
     @Override
     public void close(TaskAttemptContext context) throws IOException {
-      LOG.debug("Merging into dstDir: " + workDir + ", srcDirs: {}", shards);
+      LOG.debug("Task " + context.getTaskAttemptID() + " merging into dstDir: " + workDir + ", srcDirs: " + shards);
+      writeShardNumberFile(context);      
       heartBeater.needHeartBeat();
       try {
         Directory mergedIndex = new HdfsDirectory(workDir, context.getConfiguration());
         
+        // TODO: shouldn't we pull the Version from the solrconfig.xml?
         IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_CURRENT, null)
-            .setOpenMode(OpenMode.CREATE)
+            .setOpenMode(OpenMode.CREATE).setUseCompoundFile(false)
             //.setMergePolicy(mergePolicy) // TODO: grab tuned MergePolicy from solrconfig.xml?
             //.setMergeScheduler(...) // TODO: grab tuned MergeScheduler from solrconfig.xml?
             ;
@@ -162,6 +170,27 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
         heartBeater.cancelHeartBeat();
         heartBeater.close();
       }
+    }
+
+    /*
+     * For background see MapReduceIndexerTool.renameTreeMergeShardDirs()
+     * 
+     * Also see MapReduceIndexerTool.run() method where it uses
+     * NLineInputFormat.setNumLinesPerSplit(job, options.fanout)
+     */
+    private void writeShardNumberFile(TaskAttemptContext context) throws IOException {
+      Preconditions.checkArgument(shards.size() > 0);
+      String shard = shards.get(0).getParent().getParent().getName(); // move up from "data/index"
+      String taskId = shard.substring("part-m-".length(), shard.length()); // e.g. part-m-00001
+      int taskNum = Integer.parseInt(taskId);
+      int outputShardNum = taskNum / shards.size();
+      LOG.debug("Merging into outputShardNum: " + outputShardNum + " from taskId: " + taskId);
+      Path shardNumberFile = new Path(workDir.getParent().getParent(), TreeMergeMapper.SOLR_SHARD_NUMBER);
+      OutputStream out = shardNumberFile.getFileSystem(context.getConfiguration()).create(shardNumberFile);
+      Writer writer = new OutputStreamWriter(out, Charsets.UTF_8);
+      writer.write(String.valueOf(outputShardNum));
+      writer.flush();
+      writer.close();
     }    
   }
 }

@@ -54,6 +54,7 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
     setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes");
     
     config.set(MorphlineMapRunner.MORPHLINE_FILE_PARAM, tempDir + "/test-morphlines/solrCellDocumentTypes.conf");
+    config.set(SolrOutputFormat.ZIP_NAME, solrHomeZip.getName());
   }
   
   public static void setupMorphline(String tempDir, String file) throws IOException {
