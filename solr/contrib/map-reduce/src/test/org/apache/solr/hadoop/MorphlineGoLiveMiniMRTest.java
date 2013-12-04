@@ -67,7 +67,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.hadoop.hack.MiniMRClientCluster;
 import org.apache.solr.hadoop.hack.MiniMRClientClusterFactory;
-import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -367,7 +366,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     jobConf.setMaxMapAttempts(1);
     jobConf.setMaxReduceAttempts(1);
     jobConf.setJar(SEARCH_ARCHIVES_JAR);
-    jobConf.setBoolean(ExtractingParams.IGNORE_TIKA_EXCEPTION, false);
 
     MapReduceIndexerTool tool;
     int res;
