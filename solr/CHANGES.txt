@@ -229,6 +229,8 @@ Other Changes
 * SOLR-5502: Added a test for tri-level compositeId routing with documents
   having a "/" in a document id. (Anshum Gupta via Mark Miller)
 
+* SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components

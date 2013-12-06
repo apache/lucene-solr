@@ -22,24 +22,6 @@ limitations under the License.
 
       <div id="tree" class="tree">#tree</div>
 
-      <div id="new-file-holder">
-
-        <button><span>Create new file</span></button>
-
-        <form method="get">
-
-          <p class="note">Enter filename, on the next page you can input content or upload a file.</p>
-
-          <input type="text" name="file" placeholder="sample.xml">
-
-          <div class="buttons clearfix">
-            <button type="submit">Next ›</button>
-          </div>
-
-        </form>
-
-      </div>
-
     </div>
     <div id="file-content" class="clearfix">
 
@@ -47,44 +29,11 @@ limitations under the License.
 
         <a id="url" class="address-bar" href="#"></a>
 
-        <div class="buttons">
-
-          <button class="modify-file"><span>View file</span></button>
-          <button class="view-file"><span>Modify file</span></button> 
-
-        </div>
-
       </div>
 
       <div class="view-file">
 
         <div class="response">Loading …</div>
-
-      </div>
-
-      <div class="modify-file">
-
-        <p id="new-file-note">The requested file does (not yet) exist. <strong>Save file</strong> or <strong>Upload new file</strong> will create it.</p>
-
-        <form method="post" class="modify">
-        
-          <textarea name="stream.body"></textarea>
-
-          <div class="buttons clearfix">
-            <button type="submit"><span>Save file</span></button>
-          </div>
-
-        </form>
-
-        <form method="post" class="upload">
-
-          <input type="file" name="fileupload">
-
-          <div class="buttons clearfix">
-            <button><span data-new-title="Upload new file" data-existing-title="Replace current file">Replace current file</span></button>
-          </div>
-
-        </form>
 
       </div>
 

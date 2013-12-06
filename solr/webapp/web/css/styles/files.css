@@ -23,52 +23,9 @@ limitations under the License.
   width: 20%;
 }
 
-#content #files #new-file-holder
-{
-  margin-top: 20px;
-  padding-bottom: 10px;
-}
-
-#content #files #new-file-holder button span
-{
-  background-image: url( ../../img/ico/plus-button.png );
-}
-
-#content #files #new-file-holder form
-{
-  box-shadow: 5px 5px 10px #c0c0c0;
-  -moz-box-shadow: 5px 5px 10px #c0c0c0;
-  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
-  display: none;
-  padding: 10px;
-}
-
-#content #files #new-file-holder form input
-{
-  margin-bottom: 3px;
-  width: 98%;
-}
-
-#content #files #new-file-holder .note
-{
-  color: #c0c0c0;
-  margin-bottom: 5px;
-}
-
 #content #files form .buttons button
 {
   float: right;
-}
-
-#content #files .modify-file,
-#content #files .modify-file .view-file
-{
-  display: none;
-}
-
-#content #files .modify-file .modify-file
-{
-  display: block;
 }
 
 #content #files #file-content
@@ -80,84 +37,13 @@ limitations under the License.
   min-height: 100px
 }
 
-#content #files .top #url
-{
-  float: left;
-  width: 80%;
-}
-
-#content #files .top .buttons
-{
-  float: right;
-  width: 15%;
-}
-
-#content #files .top .buttons button
-{
-  float: right;
-}
-
-#content #files .top .buttons button.view-file span
-{
-  background-image: url( ../../img/ico/pencil.png );
-}
-
-#content #files .top .buttons button.modify-file span
-{
-  background-image: url( ../../img/ico/document-text.png  );
-}
-
 #content #files .show #file-content
 {
   display: block;
-}
-
-#content #files #new-file-note
-{
-  background-color: #ffa662;
-  background-image: url( ../../img/ico/exclamation-button.png );
-  background-position: 10px 50%;
-  display: none;
-  margin-bottom: 10px;
-  padding: 10px;
-  padding-left: 31px;
 }
 
 #content #files #file-content .response
 {
   border: 1px solid transparent;
   padding: 2px;
-}
-
-#content #files #file-content textarea
-{
-  display: block;
-  font-family: monospace;
-  height: 500px;
-  margin-bottom: 10px;
-  width: 99%;
-}
-
-#content #files #file-content form button span
-{
-  background-image: url( ../../img/ico/disk-black.png );
-}
-
-#content #files #file-content form.upload
-{
-  border-top: 1px solid #c0c0c0;
-  margin-top: 20px;
-  padding-top: 20px;
-  padding-bottom: 20px;
-}
-
-#content #files #file-content .upload input
-{
-  border: 0;
-  float: left;
-}
-
-#content #files #file-content .upload button span
-{
-  background-image: url( ../../img/ico/drive-upload.png );
 }
