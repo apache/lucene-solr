@@ -192,8 +192,12 @@ Bug Fixes
 * SOLR-5524: Exception when using Query Function inside Scale Function.
   (Trey Grainger, yonik)
 
-* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory if 
-  necessary. (Mark Miller)
+* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory 
+  if necessary. (Mark Miller)
+
+* SOLR-5532: SolrJ Content-Type validation is too strict for some
+  webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
+  Mark Miller)
   
 Optimizations
 ----------------------
