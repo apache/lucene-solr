@@ -234,6 +234,9 @@ Other Changes
 
 * SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
 
+* SOLR-5533: Improve out of the box support for running Solr on hdfs with 
+  SolrCloud. (Mark Miller)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
