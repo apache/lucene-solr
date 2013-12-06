@@ -476,7 +476,7 @@
     <available property="jflex.present" classname="jflex.anttask.JFlexTask">
       <classpath refid="jflex.classpath"/>
     </available>
-    <fail unless="jflex.present">
+    <fail unless="jflex.present">&#xA0;
       ##################################################################
       JFlex not found.
       JFlex Home: ${jflex.home}
@@ -484,14 +484,14 @@
       Please install the jFlex 1.5 version (currently not released)
       from its SVN repository:
 
-       svn co -r 623 http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
+       svn co -r 722 https://svn.code.sf.net/p/jflex/code/trunk jflex
        cd jflex
        mvn install
 
       Then, create a build.properties file either in your home
       directory, or within the Lucene directory and set the jflex.home
       property to the path where the JFlex trunk checkout is located
-      (in the above example its the directory called "jflex").
+      (in the above example it's the directory called "jflex").
 
       ##################################################################
     </fail>

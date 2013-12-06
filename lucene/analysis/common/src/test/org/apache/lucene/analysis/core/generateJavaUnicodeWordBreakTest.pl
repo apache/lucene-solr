@@ -78,9 +78,10 @@ import org.junit.Ignore;
  *    \\p{Script = Hiragana}
  *    \\p{LineBreak = Complex_Context} (From $line_break_url)
  *    \\p{WordBreak = ALetter}         (From $word_break_url)
+ *    \\p{WordBreak = Hebrew_Letter}
  *    \\p{WordBreak = Katakana}
  *    \\p{WordBreak = Numeric}         (Excludes full-width Arabic digits)
- *    [\\uFF10-\\uFF19]                 (Full-width Arabic digits)
+ *    [\\uFF10-\\uFF19]                (Full-width Arabic digits)
  */
 \@Ignore
 public class ${class_name} extends BaseTokenStreamTestCase {
@@ -97,7 +98,7 @@ parse_Unicode_data_file($line_break_url, $codepoints, {'sa' => 1});
 parse_Unicode_data_file($scripts_url, $codepoints, 
                         {'han' => 1, 'hiragana' => 1});
 parse_Unicode_data_file($word_break_url, $codepoints,
-                        {'aletter' => 1, 'katakana' => 1, 'numeric' => 1});
+                        {'aletter' => 1, 'hebrew_letter' => 1, 'katakana' => 1, 'numeric' => 1});
 my @tests = split /\r?\n/, get_URL_content($word_break_test_url);
 
 my $output_path = File::Spec->catpath($volume, $directory, $output_filename);
@@ -109,25 +110,33 @@ print STDERR "Writing '$output_path'...";
 print OUT $header;
 
 for my $line (@tests) {
-  next if ($line =~ /^\s*\#/);
-  # ÷ 0001 × 0300 ÷  #  ÷ [0.2] <START OF HEADING> (Other) × [4.0] COMBINING GRAVE ACCENT (Extend_FE) ÷ [0.3]
+  next if ($line =~ /^\s*(?:|\#.*)$/); # Skip blank or comment-only lines
+  # Example line: ÷ 0001 × 0300 ÷  #  ÷ [0.2] <START OF HEADING> (Other) × [4.0] COMBINING GRAVE ACCENT (Extend_FE) ÷ [0.3]
   my ($sequence) = $line =~ /^(.*?)\s*\#/;
+  $line =~ s/\t/  /g; # Convert tabs to two spaces (no tabs allowed in Lucene source)
   print OUT "    // $line\n";
   $sequence =~ s/\s*÷\s*$//; # Trim trailing break character
   my $test_string = $sequence;
   $test_string =~ s/\s*÷\s*/\\u/g;
   $test_string =~ s/\s*×\s*/\\u/g;
+  $test_string =~ s/\\u([0-9A-F]{5,})/join('', map { "\\u$_" } above_BMP_char_to_surrogates($1))/ge;
   $test_string =~ s/\\u000A/\\n/g;
   $test_string =~ s/\\u000D/\\r/g;
+  $test_string =~ s/\\u0022/\\\"/g;
   $sequence =~ s/^\s*÷\s*//; # Trim leading break character
   my @tokens = ();
   for my $candidate (split /\s*÷\s*/, $sequence) {
     my @chars = ();
     my $has_wanted_char = 0;
     while ($candidate =~ /([0-9A-F]+)/gi) {
-      push @chars, $1;
+      my $hexchar = $1;
+      if (4 == length($hexchar)) {
+        push @chars, $hexchar;
+      } else {
+        push @chars, above_BMP_char_to_surrogates($hexchar);
+      }
       unless ($has_wanted_char) {
-        $has_wanted_char = 1 if (defined($codepoints->[hex($1)]));
+        $has_wanted_char = 1 if (defined($codepoints->[hex($hexchar)]));
       }
     }
     if ($has_wanted_char) {
@@ -142,6 +151,21 @@ for my $line (@tests) {
 print OUT "  }\n}\n";
 close OUT;
 print STDERR "done.\n";
+
+
+# sub above_BMP_char_to_surrogates
+#
+# Converts hex references to chars above the BMP (i.e., greater than 0xFFFF)
+# to the corresponding UTF-16 surrogate pair
+#
+# Assumption: input string is a sequence more than four hex digits
+#
+sub above_BMP_char_to_surrogates {
+  my $ch = hex(shift);
+  my $high_surrogate = 0xD800 + (($ch - 0x10000) >> 10);
+  my $low_surrogate  = 0xDC00 + ($ch & 0x3FF);
+  return map { sprintf("%04X", $_) } ($high_surrogate, $low_surrogate);
+}
 
 
 # sub parse_Unicode_data_file

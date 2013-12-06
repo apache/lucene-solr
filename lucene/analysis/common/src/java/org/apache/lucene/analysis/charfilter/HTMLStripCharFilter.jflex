@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
  */
 %%
 
-%unicode 6.1
+%unicode 6.3
 %apiprivate
 %type int
 %final

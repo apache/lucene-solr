@@ -91,6 +91,11 @@ Build
 
 * LUCENE-4381: Upgrade analysis/icu to 52.1. (Robert Muir)
 
+* LUCENE-5357: Upgrade StandardTokenizer and UAX29URLEmailTokenizer to
+  Unicode 6.3; update UAX29URLEmailTokenizer's recognized top level
+  domains in URLs and Emails from the IANA Root Zone Database.
+  (Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with

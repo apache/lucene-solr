@@ -116,8 +116,6 @@ LETTER     = !(![:letter:]|{CJ})
 // Chinese and Japanese (but NOT Korean, which is included in [:letter:])
 CJ         = [\u3100-\u312f\u3040-\u309F\u30A0-\u30FF\u31F0-\u31FF\u3300-\u337f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff65-\uff9f]
 
-WHITESPACE = \r\n | [ \r\n\t\f]
-
 %%
 
 {ALPHANUM}                                                     { return ALPHANUM; }
@@ -131,4 +129,4 @@ WHITESPACE = \r\n | [ \r\n\t\f]
 {ACRONYM_DEP}                                                  { return ACRONYM_DEP; }
 
 /** Ignore the rest */
-. | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+[^]                                                            { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }

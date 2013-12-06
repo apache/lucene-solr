@@ -212,7 +212,7 @@ DOUBLE_EQUALS = "="{2}
   {DOUBLE_BRACE} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);/* Break so we don't hit fall-through warning: */ break;}
   {CITATION} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);/* Break so we don't hit fall-through warning: */ break;}
 //ignore
-  . | {WHITESPACE} |{INFOBOX}                                               {numWikiTokensSeen = 0;  positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
+  [^] |{INFOBOX}                                               {numWikiTokensSeen = 0;  positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 
 <INTERNAL_LINK_STATE>{
@@ -221,7 +221,7 @@ DOUBLE_EQUALS = "="{2}
   {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); numWikiTokensSeen++; return currentTokType;}
   {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
+  [^]                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 
 <EXTERNAL_LINK_STATE>{
@@ -236,7 +236,7 @@ DOUBLE_EQUALS = "="{2}
   {ALPHANUM} {yybegin(CATEGORY_STATE); numWikiTokensSeen++; return currentTokType;}
   {DOUBLE_BRACKET_CLOSE} {yybegin(YYINITIAL);/* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
+  [^]                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 //italics
 <TWO_SINGLE_QUOTES_STATE>{
@@ -249,7 +249,7 @@ DOUBLE_EQUALS = "="{2}
    {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+   [^]                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 //bold
 <THREE_SINGLE_QUOTES_STATE>{
@@ -260,7 +260,7 @@ DOUBLE_EQUALS = "="{2}
    {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+   [^]                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 
 }
 //bold italics
@@ -272,7 +272,7 @@ DOUBLE_EQUALS = "="{2}
    {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+   [^]                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <DOUBLE_EQUALS_STATE>{
@@ -280,15 +280,15 @@ DOUBLE_EQUALS = "="{2}
  {ALPHANUM} {currentTokType = HEADING; yybegin(DOUBLE_EQUALS_STATE); numWikiTokensSeen++; return currentTokType;}
  {DOUBLE_EQUALS} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+  [^]                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <DOUBLE_BRACE_STATE>{
   {ALPHANUM} {yybegin(DOUBLE_BRACE_STATE); numWikiTokensSeen = 0; return currentTokType;}
   {DOUBLE_BRACE_CLOSE} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
   {CITATION_CLOSE} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
-   //ignore
-  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+  //ignore
+  [^]                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <STRING> {
@@ -305,7 +305,7 @@ DOUBLE_EQUALS = "="{2}
 
   {PIPE} {yybegin(STRING); return currentTokType;/*pipe*/}
 
-  .|{WHITESPACE}                                              { /* Break so we don't hit fall-through warning: */ break;/* ignore STRING */ }
+  [^]                                              { /* Break so we don't hit fall-through warning: */ break;/* ignore STRING */ }
 }
 
 
@@ -327,7 +327,7 @@ DOUBLE_EQUALS = "="{2}
 //end wikipedia
 
 /** Ignore the rest */
-. | {WHITESPACE}|{TAGS}                                                { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
+[^] | {TAGS}                                          { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 
 
 //INTERNAL_LINK = "["{2}({ALPHANUM}+{WHITESPACE}*)+"]"{2}
