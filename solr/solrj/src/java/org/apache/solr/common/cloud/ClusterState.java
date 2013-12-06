@@ -60,11 +60,11 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
-   * @deprecated
+   * @deprecated prefer another constructor
    */
   public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
                       Map<String, DocCollection> collectionStates) {
-    this(zkClusterStateVersion, liveNodes, collectionStates,null);
+    this(zkClusterStateVersion, liveNodes, collectionStates, null);
 
   }
   
@@ -362,8 +362,8 @@ public class ClusterState implements JSONWriter.Writable {
     return true;
   }
 
-  /**Internal API used only by ZkStateReader
-   * @param liveNodes
+  /**
+   * Internal API used only by ZkStateReader
    */
   void setLiveNodes(Set<String> liveNodes){
     this.liveNodes = liveNodes;
