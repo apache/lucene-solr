@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -142,8 +143,8 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     closeThread(updaterThread);
     
     ClusterState clusterState = container1.getZkController().getClusterState();
-    Map<String, DocCollection> collectionStates =
-        new LinkedHashMap<String, DocCollection>(clusterState.getCollectionStates());
+//    Map<String, DocCollection> collectionStates =
+//        new LinkedHashMap<String, DocCollection>(clusterState.getCollectionStates());
 
     Map<String, Slice> slicesMap = clusterState.getSlicesMap("collection1");
     Map<String, Object> props = new HashMap<String, Object>(1);
@@ -155,11 +156,11 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", ImplicitDocRouter.NAME));
 
     DocCollection coll = new DocCollection("collection1", slicesMap, props, DocRouter.DEFAULT);
-    collectionStates.put("collection1", coll);
+//    collectionStates.put("collection1", coll);
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
 
-    ClusterState newState = new ClusterState(clusterState.getLiveNodes(), collectionStates);
+    ClusterState newState = clusterState.copyWith(Collections.singletonMap(coll.getName(), coll) );
     zkClient.setData(ZkStateReader.CLUSTER_STATE,
         ZkStateReader.toJSON(newState), true);
     zkClient.close();
