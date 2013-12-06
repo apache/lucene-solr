@@ -45,7 +45,6 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   }
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
-    config.set(SolrOutputFormat.ZIP_NAME, solrHomeZip.getName());
     
     String tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();

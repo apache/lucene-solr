@@ -36,6 +36,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -95,6 +96,7 @@ public class MorphlineReducerTest extends MRUnitBase {
   }
 
   @Test
+  @Ignore("This test cannot currently work because it uses a local filesystem output path for the indexes and Solr requires hdfs output paths")
   public void testReducer() throws Exception {
     MySolrReducer myReducer = new MySolrReducer();
     try {
