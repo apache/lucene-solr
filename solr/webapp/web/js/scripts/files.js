@@ -27,7 +27,6 @@ sammy.get
     var content_element = $( '#content' );
 
     var file_endpoint = core_basepath + '/admin/file';
-    var file_exists = null;
 
     var path = context.path.split( '?' );
     var selected_file = null;
@@ -144,34 +143,6 @@ sammy.get
         };
         load_tree();
 
-        var new_file_form = $( '#new-file-holder form' );
-
-        $( '#new-file-holder > button' )
-          .on
-          (
-            'click',
-            function( event )
-            {
-              new_file_form.toggle();
-              return false;
-            }
-          );
-
-        new_file_form
-          .on
-          (
-            'submit',
-            function( event )
-            {
-              $( 'body' )
-                .animate( { scrollTop: 0 }, 500 );
-
-              window.location.href = '#/' + current_core + '/files?file=' + $( 'input', this ).val();
-
-              return false;
-            }
-          );
-
         if( selected_file )
         {
           $( '#new-file-holder input' )
@@ -200,57 +171,6 @@ sammy.get
             .text( public_url )
             .attr( 'href', public_url );
 
-          var form = $( 'form.modify', frame_element );
-
-          form
-            .attr( 'action', file_endpoint + '?wt=json&op=write&file=' + selected_file )
-            .ajaxForm
-            (
-              {
-                context : form,
-                beforeSubmit: function( arr, form, options )
-                {
-                  $( 'button span', form )
-                    .addClass( 'loader' );
-                },
-                success : function( response, status, xhr )
-                {
-                  $( 'button span', this )
-                    .removeClass( 'loader' );
-
-                  var button = $( 'button', this );
-
-                  button
-                    .addClass( 'success' );
-
-                  load_file( !file_exists );
-
-                  window.setTimeout
-                  (
-                    function()
-                    {
-                      button
-                        .removeClass( 'success' );
-                    },
-                    1000
-                  );
-                }
-              }
-            );
-
-          var change_button_label = function( form, label )
-          {
-            $( 'span[data-' + label + ']', form )
-              .each
-              (
-                function( index, element )
-                {
-                  var self = $( this );
-                  self.text( self.data( label ) );
-                }
-              );
-          }
-
           var load_file = function( load_tree )
           {
             if( load_tree )
@@ -277,8 +197,6 @@ sammy.get
                 },
                 success : function( response, text_status, xhr )
                 {
-                  change_button_label( this, 'existing-title' );
-
                   var content_type = xhr.getResponseHeader( 'Content-Type' ) || '';
                   var highlight = null;
 
@@ -310,86 +228,16 @@ sammy.get
                 },
                 error : function( xhr, text_status, error_thrown)
                 {
-                  change_button_label( this, 'new-title' );
+                  $( '.view-file .response', this )
+                    .text( 'No such file exists.' );
                 },
                 complete : function( xhr, text_status )
                 {
-                  file_exists = 200 === xhr.status;
-                  $( '#new-file-note' )
-                    .toggle( !file_exists );
                 }
               }
             );
           }
           load_file();
-
-          $( '.top button', frame_element )
-            .on
-            (
-              'click',
-              function( event )
-              {
-                $( '#file-content', frame_element )
-                  .toggleClass( 'modify-file' );
-
-                return false;
-              }
-            );
-
-          $( 'form.upload', frame_element )
-            .on
-            (
-              'submit',
-              function( event )
-              {
-                $( 'form input', frame_element )
-                  .ajaxfileupload
-                  (
-                    {
-                      action: endpoint + '&op=write&wt=json',
-                      validate_extensions: false,
-                      upload_now: true,
-                      onStart: function ()
-                      {
-                        $( 'form.upload button span', frame_element )
-                          .addClass( 'loader' );
-                      },
-                      onCancel: function ()
-                      {
-                        $( 'form.upload button span', frame_element )
-                          .removeClass( 'loader' );
-                      },
-                      onComplete: function( response )
-                      {
-                        $( 'form.upload button span', frame_element )
-                          .removeClass( 'loader' );
-
-                        var button = $( 'form.upload button', frame_element );
-
-                        button
-                          .addClass( 'success' );
-
-                        load_file( !file_exists );
-
-                        $( 'body' )
-                          .animate( { scrollTop: 0 }, 500 );
-
-                        window.setTimeout
-                        (
-                          function()
-                          {
-                            button
-                              .removeClass( 'success' );
-                          },
-                          1000
-                        );
-                      }
-                    }
-                  );
-
-                return false;
-              }
-            );
         }
       }
     );
