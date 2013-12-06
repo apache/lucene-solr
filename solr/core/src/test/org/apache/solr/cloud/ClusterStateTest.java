@@ -58,7 +58,7 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = ZkStateReader.toJSON(clusterState);
     // System.out.println("#################### " + new String(bytes));
-    ClusterState loadedClusterState = ClusterState.load(null, bytes, liveNodes);
+    ClusterState loadedClusterState = ClusterState.load(null, bytes, liveNodes,null);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
@@ -66,13 +66,13 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     assertEquals("Poperties not copied properly", replica.getStr("prop1"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop1"));
     assertEquals("Poperties not copied properly", replica.getStr("prop2"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop2"));
 
-    loadedClusterState = ClusterState.load(null, new byte[0], liveNodes);
+    loadedClusterState = ClusterState.load(null, new byte[0], liveNodes,null);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
     assertEquals("Should not have collections", 0, loadedClusterState.getCollections().size());
 
-    loadedClusterState = ClusterState.load(null, (byte[])null, liveNodes);
+    loadedClusterState = ClusterState.load(null, (byte[])null, liveNodes,null);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());

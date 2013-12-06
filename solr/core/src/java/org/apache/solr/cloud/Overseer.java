@@ -46,6 +46,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
+
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
  */
@@ -611,11 +613,11 @@ public class Overseer {
 
         List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
 
-        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
+//        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
 
 
         Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
-        newCollections.putAll(state.getCollectionStates());
+//        newCollections.putAll(state.getCollectionStates());
         for (int i = 0; i < shards.size(); i++) {
           String sliceName = shards.get(i);
         /*}
@@ -643,9 +645,10 @@ public class Overseer {
         if(message.getStr("fromApi") == null) collectionProps.put("autoCreated","true");
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 
-        newCollections.put(collectionName, newCollection);
-        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newCollections);
-        return newClusterState;
+//        newCollections.put(collectionName, newCollection);
+          return state.copyWith(singletonMap(newCollection.getName(), newCollection));
+//        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newCollections);
+//        return newClusterState;
       }
 
       /*
@@ -771,6 +774,9 @@ public class Overseer {
         newCollections.put(collectionName, newCollection);
         return new ClusterState(state.getLiveNodes(), newCollections);
       }
+    private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
+      return state.copyWith(colls);
+    }
 
       /*
        * Remove collection from cloudstate
@@ -779,11 +785,11 @@ public class Overseer {
 
         final String collection = message.getStr("name");
 
-        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
-        newCollections.remove(collection);
+//        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+//        newCollections.remove(collection);
 
-        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
-        return newState;
+//        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
+        return clusterState.copyWith(singletonMap(collection, (DocCollection)null));
       }
 
     /*
@@ -795,16 +801,17 @@ public class Overseer {
 
       log.info("Removing collection: " + collection + " shard: " + sliceId + " from clusterstate");
 
-      final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
-      DocCollection coll = newCollections.get(collection);
+//      final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+      DocCollection coll = clusterState.getCollection(collection);
 
       Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>(coll.getSlicesMap());
       newSlices.remove(sliceId);
 
       DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
-      newCollections.put(newCollection.getName(), newCollection);
+//      newCollections.put(newCollection.getName(), newCollection);
+      return newState(clusterState, singletonMap(collection,newCollection));
 
-      return new ClusterState(clusterState.getLiveNodes(), newCollections);
+//     return new ClusterState(clusterState.getLiveNodes(), newCollections);
     }
 
     /*
@@ -816,8 +823,9 @@ public class Overseer {
 
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
-        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
-        DocCollection coll = newCollections.get(collection);
+//        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+//        DocCollection coll = newCollections.get(collection);
+        DocCollection coll = clusterState.getCollectionOrNull(collection) ;
         if (coll == null) {
           // TODO: log/error that we didn't find it?
           // just in case, remove the zk collection node
@@ -866,7 +874,7 @@ public class Overseer {
 
         // if there are no slices left in the collection, remove it?
         if (newSlices.size() == 0) {
-          newCollections.remove(coll.getName());
+//          newCollections.remove(coll.getName());
 
           // TODO: it might be better logically to have this in ZkController
           // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
@@ -879,15 +887,18 @@ public class Overseer {
           } catch (KeeperException e) {
             SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
           }
+          return newState(clusterState,singletonMap(collection, (DocCollection) null));
+
 
 
         } else {
           DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
-          newCollections.put(newCollection.getName(), newCollection);
+           return newState(clusterState,singletonMap(collection,newCollection));
+//          newCollections.put(newCollection.getName(), newCollection);
         }
 
-        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
-        return newState;
+//        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
+//        return newState;
      }
 
       @Override

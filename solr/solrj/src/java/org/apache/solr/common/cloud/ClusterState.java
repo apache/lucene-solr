@@ -45,7 +45,9 @@ public class ClusterState implements JSONWriter.Writable {
   private Integer zkClusterStateVersion;
   
   private final Map<String, DocCollection> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
-  private final Set<String> liveNodes;
+  private Set<String> liveNodes;
+  private final ZkStateReader stateReader;
+
 
   /**
    * Use this constr when ClusterState is meant for publication.
@@ -54,19 +56,43 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public ClusterState(Set<String> liveNodes,
       Map<String, DocCollection> collectionStates) {
-    this(null, liveNodes, collectionStates);
+    this(null, liveNodes, collectionStates, null);
+  }
+
+  /**
+   * @deprecated
+   */
+  public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
+                      Map<String, DocCollection> collectionStates) {
+    this(zkClusterStateVersion, liveNodes, collectionStates,null);
+
   }
   
   /**
    * Use this constr when ClusterState is meant for consumption.
    */
   public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
-      Map<String, DocCollection> collectionStates) {
+      Map<String, DocCollection> collectionStates, ZkStateReader stateReader) {
     this.zkClusterStateVersion = zkClusterStateVersion;
     this.liveNodes = new HashSet<String>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
-    this.collectionStates = new HashMap<String, DocCollection>(collectionStates.size());
+    this.collectionStates = new LinkedHashMap<String, DocCollection>(collectionStates.size());
     this.collectionStates.putAll(collectionStates);
+    this.stateReader = stateReader;
+
+  }
+
+  public ClusterState copyWith(Map<String,DocCollection> modified){
+    ClusterState result = new ClusterState(zkClusterStateVersion, liveNodes,collectionStates,stateReader);
+    for (Entry<String, DocCollection> e : modified.entrySet()) {
+      DocCollection c = e.getValue();
+      if(c == null) {
+        result.collectionStates.remove(e.getKey());
+        continue;
+      }
+      result.collectionStates.put(c.getName(), c);
+    }
+    return result;
   }
 
 
@@ -208,29 +234,28 @@ public class ClusterState implements JSONWriter.Writable {
   /**
    * Create ClusterState by reading the current state from zookeeper. 
    */
-  public static ClusterState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
+  public static ClusterState load(SolrZkClient zkClient, Set<String> liveNodes, ZkStateReader stateReader) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, stat, true);
-    return load(stat.getVersion(), state, liveNodes);
+    return load(stat.getVersion(), state, liveNodes, stateReader);
   }
   
  
   /**
    * Create ClusterState from json string that is typically stored in zookeeper.
    * 
-   * Use {@link ClusterState#load(SolrZkClient, Set)} instead, unless you want to
+   * Use {@link ClusterState#load(SolrZkClient, Set, ZkStateReader)} instead, unless you want to
    * do something more when getting the data - such as get the stat, set watch, etc.
-   * 
    * @param version zk version of the clusterstate.json file (bytes)
    * @param bytes clusterstate.json as a byte array
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes) {
+  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, ZkStateReader stateReader) {
     // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
+      return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap(),stateReader);
     }
     Map<String, Object> stateMap = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
     Map<String,DocCollection> collections = new LinkedHashMap<String,DocCollection>(stateMap.size());
@@ -337,7 +362,11 @@ public class ClusterState implements JSONWriter.Writable {
     return true;
   }
 
-
-
+  /**Internal API used only by ZkStateReader
+   * @param liveNodes
+   */
+  void setLiveNodes(Set<String> liveNodes){
+    this.liveNodes = liveNodes;
+  }
 
 }
