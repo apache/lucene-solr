@@ -68,7 +68,7 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws IOException {
     URI uri = dfsCluster.getURI();
-    Path lockPath = new Path(uri.toString(), "/lock");
+    Path lockPath = new Path(uri.toString(), "/basedir/lock");
     HdfsLockFactory lockFactory = new HdfsLockFactory(lockPath, new Configuration());
     Lock lock = lockFactory.makeLock("testlock");
     boolean success = lock.obtain();
