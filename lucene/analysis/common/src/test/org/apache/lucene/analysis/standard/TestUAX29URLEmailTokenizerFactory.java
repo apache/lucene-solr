@@ -77,7 +77,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
         + " samba Halta gamba "
         + "ftp://119.220.152.185/JgJgdZ/31aW5c/viWlfQSTs5/1c8U5T/ih5rXx/YfUJ/xBW1uHrQo6.R\n"
         + "M19nq.0URV4A.Me.CC/mj0kgt6hue/dRXv8YVLOw9v/CIOqb\n"
-        + "Https://yu7v33rbt.vC6U3.XN--JXALPDLP/y%4fMSzkGFlm/wbDF4m"
+        + "Https://yu7v33rbt.vC6U3.XN--KPRW13D/y%4fMSzkGFlm/wbDF4m"
         + " inter Locutio "
         + "[c2d4::]/%471j5l/j3KFN%AAAn/Fip-NisKH/\n"
         + "file:///aXvSZS34is/eIgM8s~U5dU4Ifd%c7"
@@ -93,7 +93,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
           "samba", "Halta", "gamba",
           "ftp://119.220.152.185/JgJgdZ/31aW5c/viWlfQSTs5/1c8U5T/ih5rXx/YfUJ/xBW1uHrQo6.R",
           "M19nq.0URV4A.Me.CC/mj0kgt6hue/dRXv8YVLOw9v/CIOqb",
-          "Https://yu7v33rbt.vC6U3.XN--JXALPDLP/y%4fMSzkGFlm/wbDF4m",
+          "Https://yu7v33rbt.vC6U3.XN--KPRW13D/y%4fMSzkGFlm/wbDF4m",
           "inter", "Locutio",
           "[c2d4::]/%471j5l/j3KFN%AAAn/Fip-NisKH/",
           "file:///aXvSZS34is/eIgM8s~U5dU4Ifd%c7",

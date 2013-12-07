@@ -36,40 +36,45 @@ public class GenerateJFlexSupplementaryMacros {
   static {
     DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
-  
-  private static final String APACHE_LICENSE 
-    = "/*" + NL
-      + " * Copyright 2010 The Apache Software Foundation." + NL
+
+  private static final String APACHE_LICENSE
+      = "/*" + NL
+      + " * Licensed to the Apache Software Foundation (ASF) under one or more" + NL
+      + " * contributor license agreements.  See the NOTICE file distributed with" + NL
+      + " * this work for additional information regarding copyright ownership." + NL
+      + " * The ASF licenses this file to You under the Apache License, Version 2.0" + NL
+      + " * (the \"License\"); you may not use this file except in compliance with" + NL
+      + " * the License.  You may obtain a copy of the License at" + NL
       + " *" + NL
-      + " * Licensed under the Apache License, Version 2.0 (the \"License\");" + NL
-      + " * you may not use this file except in compliance with the License." + NL
-      + " * You may obtain a copy of the License at" + NL
-      + " *" + NL
-      + " *      http://www.apache.org/licenses/LICENSE-2.0" + NL
+      + " *     http://www.apache.org/licenses/LICENSE-2.0" + NL
       + " *" + NL
       + " * Unless required by applicable law or agreed to in writing, software" + NL
       + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
       + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
       + " * See the License for the specific language governing permissions and" + NL
       + " * limitations under the License." + NL
-      + " */" + NL + NL;
+      + " */" + NL;
     
   
   public static void main(String args[]) {
     outputHeader();
-    outputMacro("ALetterSupp",         "[:WordBreak=ALetter:]");
-    outputMacro("FormatSupp",          "[:WordBreak=Format:]");
-    outputMacro("ExtendSupp",          "[:WordBreak=Extend:]");
-    outputMacro("NumericSupp",         "[:WordBreak=Numeric:]");
-    outputMacro("KatakanaSupp",        "[:WordBreak=Katakana:]");
-    outputMacro("MidLetterSupp",       "[:WordBreak=MidLetter:]");
-    outputMacro("MidNumSupp",          "[:WordBreak=MidNum:]");
-    outputMacro("MidNumLetSupp",       "[:WordBreak=MidNumLet:]");
-    outputMacro("ExtendNumLetSupp",    "[:WordBreak=ExtendNumLet:]");
-    outputMacro("ExtendNumLetSupp",    "[:WordBreak=ExtendNumLet:]");
-    outputMacro("ComplexContextSupp",  "[:LineBreak=Complex_Context:]");
-    outputMacro("HanSupp",             "[:Script=Han:]");
-    outputMacro("HiraganaSupp",        "[:Script=Hiragana:]");
+    outputMacro("ALetterSupp",           "[:WordBreak=ALetter:]");
+    outputMacro("FormatSupp",            "[:WordBreak=Format:]");
+    outputMacro("NumericSupp",           "[:WordBreak=Numeric:]");
+    outputMacro("ExtendSupp",            "[:WordBreak=Extend:]");
+    outputMacro("KatakanaSupp",          "[:WordBreak=Katakana:]");
+    outputMacro("MidLetterSupp",         "[:WordBreak=MidLetter:]");
+    outputMacro("MidNumSupp",            "[:WordBreak=MidNum:]");
+    outputMacro("MidNumLetSupp",         "[:WordBreak=MidNumLet:]");
+    outputMacro("ExtendNumLetSupp",      "[:WordBreak=ExtendNumLet:]");
+    outputMacro("ExtendNumLetSupp",      "[:WordBreak=ExtendNumLet:]");
+    outputMacro("ComplexContextSupp",    "[:LineBreak=Complex_Context:]");
+    outputMacro("HanSupp",               "[:Script=Han:]");
+    outputMacro("HiraganaSupp",          "[:Script=Hiragana:]");
+    outputMacro("SingleQuoteSupp",       "[:WordBreak=Single_Quote:]");
+    outputMacro("DoubleQuoteSupp",       "[:WordBreak=Double_Quote:]");
+    outputMacro("HebrewLetterSupp",      "[:WordBreak=Hebrew_Letter:]");
+    outputMacro("RegionalIndicatorSupp", "[:WordBreak=Regional_Indicator:]");
   }
   
   static void outputHeader() {

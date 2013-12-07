@@ -424,7 +424,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_6_1_0 wordBreakTest = new WordBreakTestUnicode_6_1_0();
+    WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
     wordBreakTest.test(a);
   }
   
@@ -497,6 +497,22 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       }
     };
     assertAnalyzesTo(a, "this is just a t\u08E6st lucene@apache.org", // new combining mark in 6.1
+        new String[] { "this", "is", "just", "a", "t", "st", "lucene@apache.org" });
+  };
+
+  /** @deprecated uses older unicode (6.1). simple test to make sure its basically working */
+  @Deprecated
+  public void testVersion40() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_40, reader);
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+    // U+061C is a new combining mark in 6.3, found using "[[\p{WB:Format}\p{WB:Extend}]&[^\p{Age:6.2}]]"
+    // on the online UnicodeSet utility: <http://unicode.org/cldr/utility/list-unicodeset.jsp>
+    assertAnalyzesTo(a, "this is just a t\u061Cst lucene@apache.org",
         new String[] { "this", "is", "just", "a", "t", "st", "lucene@apache.org" });
   };
 
