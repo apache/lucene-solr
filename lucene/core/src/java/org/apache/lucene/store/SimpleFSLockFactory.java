@@ -25,7 +25,7 @@ import java.io.IOException;
  * File#createNewFile()}.</p>
  *
  * <p><b>NOTE:</b> the <a target="_top"
- * href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">javadocs
+ * href="http://docs.oracle.com/javase/7/docs/api/java/io/File.html#createNewFile()">javadocs
  * for <code>File.createNewFile</code></a> contain a vague
  * yet spooky warning about not using the API for file
  * locking.  This warning was added due to <a target="_top"
