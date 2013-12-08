@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.SegmentReader.CoreClosedListener;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -146,7 +147,13 @@ final class SegmentCoreReaders {
   }
   
   void incRef() {
-    ref.incrementAndGet();
+    int count;
+    while ((count = ref.get()) > 0) {
+      if (ref.compareAndSet(count, count+1)) {
+        return;
+      }
+    }
+    throw new AlreadyClosedException("SegmentCoreReaders is already closed");
   }
 
   NumericDocValues getNormValues(FieldInfo fi) throws IOException {
