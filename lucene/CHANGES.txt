@@ -101,6 +101,12 @@ Bug fixes
 * LUCENE-5285: Improved highlighting of multi-valued fields with
   FastVectorHighlighter. (Nik Everett via Adrien Grand)
 
+Changes in Runtime Behavior
+
+* LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
+  AlreadyClosedException if the refCount in incremented but
+  is less that 1. (Simon Willnauer) 
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
