@@ -280,10 +280,7 @@ public class KStemmer {
     DictEntry defaultEntry;
     DictEntry entry;
 
-    CharArrayMap<DictEntry> d = new CharArrayMap<DictEntry>(
-        Version.LUCENE_31, 1000, false);
-    
-    d = new CharArrayMap<DictEntry>(Version.LUCENE_31, 1000, false);
+    CharArrayMap<DictEntry> d = new CharArrayMap<DictEntry>(Version.LUCENE_CURRENT, 1000, false);
     for (int i = 0; i < exceptionWords.length; i++) {
       if (!d.containsKey(exceptionWords[i])) {
         entry = new DictEntry(exceptionWords[i], true);

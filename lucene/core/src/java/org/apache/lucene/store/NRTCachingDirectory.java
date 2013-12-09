@@ -30,6 +30,7 @@ import org.apache.lucene.util.IOUtils;
 //   - let subclass dictate policy...?
 //   - rename to MergeCacheingDir?  NRTCachingDir
 
+// :Post-Release-Update-Version.LUCENE_XY: (in <pre> block in javadoc below)
 /**
  * Wraps a {@link RAMDirectory}
  * around any provided delegate directory, to
@@ -50,7 +51,7 @@ import org.apache.lucene.util.IOUtils;
  * <pre class="prettyprint">
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
- *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
+ *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_47, analyzer);
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
  * </pre>
  *

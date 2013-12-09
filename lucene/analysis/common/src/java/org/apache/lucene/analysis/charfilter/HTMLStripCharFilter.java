@@ -30673,7 +30673,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
     upperCaseVariantsAccepted.put("amp", "AMP");
   }
   private static final CharArrayMap<Character> entityValues
-      = new CharArrayMap<Character>(Version.LUCENE_40, 253, false);
+      = new CharArrayMap<Character>(Version.LUCENE_CURRENT, 253, false);
   static {
     String[] entities = {
       "AElig", "\u00C6", "Aacute", "\u00C1", "Acirc", "\u00C2",
@@ -30812,7 +30812,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
           escapeSTYLE = true;
         } else {
           if (null == this.escapedTags) {
-            this.escapedTags = new CharArraySet(Version.LUCENE_40, 16, true);
+            this.escapedTags = new CharArraySet(Version.LUCENE_CURRENT, 16, true);
           }
           this.escapedTags.add(tag);
         }

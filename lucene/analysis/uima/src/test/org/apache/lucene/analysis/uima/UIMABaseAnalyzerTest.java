@@ -68,7 +68,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void baseUIMAAnalyzerIntegrationTest() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     // add the first doc
     Document doc = new Document();
     String dummyTitle = "this is a dummy title ";

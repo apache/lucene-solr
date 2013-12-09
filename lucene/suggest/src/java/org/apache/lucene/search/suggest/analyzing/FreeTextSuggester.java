@@ -301,7 +301,7 @@ public class FreeTextSuggester extends Lookup {
 
     Directory dir = FSDirectory.open(tempIndexPath);
 
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_46, indexAnalyzer);
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, indexAnalyzer);
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     iwc.setRAMBufferSizeMB(ramBufferSizeMB);
     IndexWriter writer = new IndexWriter(dir, iwc);

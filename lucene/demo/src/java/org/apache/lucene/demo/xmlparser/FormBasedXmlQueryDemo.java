@@ -132,7 +132,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
   private void openExampleIndex() throws IOException {
     //Create a RAM-based index from our test data file
     RAMDirectory rd = new RAMDirectory();
-    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
     IndexWriter writer = new IndexWriter(rd, iwConfig);
     InputStream dataIn = getServletContext().getResourceAsStream("/WEB-INF/data.tsv");
     BufferedReader br = new BufferedReader(new InputStreamReader(dataIn, IOUtils.CHARSET_UTF_8));

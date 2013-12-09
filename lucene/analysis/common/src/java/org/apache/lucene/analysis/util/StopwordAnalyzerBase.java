@@ -98,7 +98,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
     Reader reader = null;
     try {
       reader = IOUtils.getDecodingReader(aClass.getResourceAsStream(resource), IOUtils.CHARSET_UTF_8);
-      return WordlistLoader.getWordSet(reader, comment, new CharArraySet(Version.LUCENE_31, 16, ignoreCase));
+      return WordlistLoader.getWordSet(reader, comment, new CharArraySet(Version.LUCENE_CURRENT, 16, ignoreCase));
     } finally {
       IOUtils.close(reader);
     }

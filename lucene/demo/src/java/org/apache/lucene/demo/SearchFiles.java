@@ -89,7 +89,8 @@ public class SearchFiles {
     
     IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(index)));
     IndexSearcher searcher = new IndexSearcher(reader);
-    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
+    // :Post-Release-Update-Version.LUCENE_XY:
+    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_47);
 
     BufferedReader in = null;
     if (queries != null) {
@@ -97,7 +98,8 @@ public class SearchFiles {
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
     }
-    QueryParser parser = new QueryParser(Version.LUCENE_40, field, analyzer);
+    // :Post-Release-Update-Version.LUCENE_XY:
+    QueryParser parser = new QueryParser(Version.LUCENE_47, field, analyzer);
     while (true) {
       if (queries == null && queryString == null) {                        // prompt the user
         System.out.println("Enter query: ");

@@ -100,7 +100,7 @@ public class TestStressLucene extends TestRTGBase {
 
 
     // RAMDirectory dir = new RAMDirectory();
-    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_40, new WhitespaceAnalyzer(Version.LUCENE_40)));
+    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Directory dir = newDirectory();
 

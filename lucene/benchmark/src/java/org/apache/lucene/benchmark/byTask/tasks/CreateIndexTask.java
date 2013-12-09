@@ -97,7 +97,8 @@ public class CreateIndexTask extends PerfTask {
   }
   
   public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
-    Version version = Version.valueOf(config.get("writer.version", Version.LUCENE_40.toString()));
+    // :Post-Release-Update-Version.LUCENE_XY:
+    Version version = Version.valueOf(config.get("writer.version", Version.LUCENE_47.toString()));
     IndexWriterConfig iwConf = new IndexWriterConfig(version, runData.getAnalyzer());
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);

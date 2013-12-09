@@ -34,7 +34,7 @@ public class HunspellStemmer {
   private final int recursionCap;
   private final HunspellDictionary dictionary;
   private final StringBuilder segment = new StringBuilder();
-  private CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_40);
+  private CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_CURRENT);
 
   /**
    * Constructs a new HunspellStemmer which will use the provided HunspellDictionary to create its stems. Uses the 
@@ -324,7 +324,8 @@ public class HunspellStemmer {
     InputStream affixInputStream = new FileInputStream(args[offset++]);
     InputStream dicInputStream = new FileInputStream(args[offset++]);
 
-    HunspellDictionary dictionary = new HunspellDictionary(affixInputStream, dicInputStream, Version.LUCENE_40, ignoreCase);
+    // :Post-Release-Update-Version.LUCENE_XY:
+    HunspellDictionary dictionary = new HunspellDictionary(affixInputStream, dicInputStream, Version.LUCENE_47, ignoreCase);
 
     affixInputStream.close();
     dicInputStream.close();

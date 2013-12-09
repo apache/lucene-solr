@@ -69,9 +69,9 @@ public class DatasetSplitter {
                     Analyzer analyzer, String... fieldNames) throws IOException {
 
     // create IWs for train / test / cv IDXs
-    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
-    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
-    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
+    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
+    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
+    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
 
     try {
       int size = originalIndex.maxDoc();

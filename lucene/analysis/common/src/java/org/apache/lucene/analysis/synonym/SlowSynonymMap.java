@@ -57,7 +57,7 @@ class SlowSynonymMap {
       if (currMap.submap==null) {
         // for now hardcode at 4.0, as its what the old code did.
         // would be nice to fix, but shouldn't store a version in each submap!!!
-        currMap.submap = new CharArrayMap<SlowSynonymMap>(Version.LUCENE_40, 1, ignoreCase());
+        currMap.submap = new CharArrayMap<SlowSynonymMap>(Version.LUCENE_CURRENT, 1, ignoreCase());
       }
 
       SlowSynonymMap map = currMap.submap.get(str);

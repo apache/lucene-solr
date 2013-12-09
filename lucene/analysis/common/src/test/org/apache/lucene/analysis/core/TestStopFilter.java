@@ -103,7 +103,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   // LUCENE-3849: make sure after .end() we see the "ending" posInc
   public void testEndStopword() throws Exception {
     CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
-    StopFilter stpf = new StopFilter(Version.LUCENE_40, new MockTokenizer(new StringReader("test of"), MockTokenizer.WHITESPACE, false), stopSet);
+    StopFilter stpf = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(new StringReader("test of"), MockTokenizer.WHITESPACE, false), stopSet);
     assertTokenStreamContents(stpf, new String[] { "test" },
                               new int[] {0},
                               new int[] {4},

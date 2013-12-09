@@ -95,8 +95,8 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
     Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_43, reader) : factory.create(reader);
-        TokenStream stream = ignoreCase ? new LowerCaseFilter(Version.LUCENE_43, tokenizer) : tokenizer;
+        Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader) : factory.create(reader);
+        TokenStream stream = ignoreCase ? new LowerCaseFilter(Version.LUCENE_CURRENT, tokenizer) : tokenizer;
         return new TokenStreamComponents(tokenizer, stream);
       }
     };
