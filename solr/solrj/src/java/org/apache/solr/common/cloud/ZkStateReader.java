@@ -583,6 +583,9 @@ public class ZkStateReader {
   public SolrZkClient getZkClient() {
     return zkClient;
   }
+  public Set<String> getAllCollections(){
+    return clusterState.getCollections();
+  }
 
   public void updateAliases() throws KeeperException, InterruptedException {
     byte[] data = zkClient.getData(ALIASES, null, null, true);
