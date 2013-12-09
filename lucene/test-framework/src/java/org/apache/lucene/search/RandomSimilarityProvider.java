@@ -103,7 +103,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
     assert field != null;
     Similarity sim = previousMappings.get(field);
     if (sim == null) {
-      sim = knownSims.get(Math.abs(perFieldSeed ^ field.hashCode()) % knownSims.size());
+      sim = knownSims.get(Math.max(0, Math.abs(perFieldSeed ^ field.hashCode())) % knownSims.size());
       previousMappings.put(field, sim);
     }
     return sim;
