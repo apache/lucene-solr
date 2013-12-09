@@ -187,8 +187,7 @@ public class ICUCollationField extends FieldType {
       rbc.setVariableTop(variableTop);
     }
 
-    // we use 4.0 because it ensures we just encode the pure byte[] keys.
-    analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
+    analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_CURRENT, collator);
   }
   
   /**

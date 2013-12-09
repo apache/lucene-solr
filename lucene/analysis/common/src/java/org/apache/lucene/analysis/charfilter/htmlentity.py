@@ -61,7 +61,7 @@ def main():
   print '    upperCaseVariantsAccepted.put("amp", "AMP");'
   print '  }'
   print '  private static final CharArrayMap<Character> entityValues'
-  print '      = new CharArrayMap<Character>(Version.LUCENE_40, %i, false);' % len(keys)
+  print '      = new CharArrayMap<Character>(Version.LUCENE_CURRENT, %i, false);' % len(keys)
   print '  static {'
   print '    String[] entities = {'
   output_line = '     '

@@ -147,8 +147,7 @@ public class CollationField extends FieldType {
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
-    // we use 4.0 because it ensures we just encode the pure byte[] keys.
-    analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
+    analyzer = new CollationKeyAnalyzer(Version.LUCENE_CURRENT, collator);
   }
   
   /**

@@ -299,7 +299,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
     // TODO: should we use a more optimized Codec, e.g. Pulsing (or write custom)?
     // The taxonomy has a unique structure, where each term is associated with one document
- 
+
+    // :Post-Release-Update-Version.LUCENE_XY:
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
     return new IndexWriterConfig(Version.LUCENE_50, null).setOpenMode(openMode).setMergePolicy(
