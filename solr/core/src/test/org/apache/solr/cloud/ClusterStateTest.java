@@ -96,6 +96,7 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
         return collections;
       }
     }).anyTimes();
+    EasyMock.replay(mock);
 
     return mock;
   }
