@@ -396,13 +396,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 for (DocRouter.Range range : ranges) {
                   if (range.includes(hash)) {
                     if (nodes == null) nodes = new ArrayList<Node>();
-                    Collection<Slice> activeSlices = cstate.getActiveSlices(rule.getTargetCollectionName());
+                    DocCollection targetColl = cstate.getCollection(rule.getTargetCollectionName());
+                    Collection<Slice> activeSlices = targetColl.getRouter().getSearchSlicesSingle(id, null, targetColl);
                     if (activeSlices == null || activeSlices.isEmpty()) {
                       throw new SolrException(ErrorCode.SERVER_ERROR,
-                          "No active slices found for target collection: " + rule.getTargetCollectionName());
+                          "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
-                    // it doesn't matter where we forward it so just choose the first one
-                    // todo this can be optimized
                     Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
