@@ -53,6 +53,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1145,7 +1146,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         Overseer.QUEUE_OPERATION, Overseer.ADD_ROUTING_RULE,
         COLLECTION_PROP, sourceCollection.getName(),
         SHARD_ID_PROP, sourceSlice.getName(),
-        "routeKey", splitKey,
+        "routeKey", SolrIndexSplitter.getRouteKey(splitKey) + "!",
         "range", splitRange.toString(),
         "targetCollection", targetCollection.getName(),
         "expireAt", String.valueOf(System.currentTimeMillis() + timeout));
@@ -1161,7 +1162,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Thread.sleep(100);
       Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
       if (rules != null) {
-        RoutingRule rule = rules.get(splitKey);
+        RoutingRule rule = rules.get(SolrIndexSplitter.getRouteKey(splitKey) + "!");
         if (rule != null && rule.getRouteRanges().contains(splitRange)) {
           added = true;
           break;
