@@ -191,6 +191,42 @@
     </delete>
   </target>
 
+  <target name="netbeans" depends="resolve" description="Setup Netbeans configuration">
+    <pathconvert property="netbeans.fileset.sourcefolders" pathsep="|" dirsep="/">
+      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/examples" excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/examples" excludes="build/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <pathconvert property="netbeans.fileset.testfolders" pathsep="|" dirsep="/">
+      <dirset dir="${basedir}/lucene" includes="**/src/test" excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/test" excludes="build/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <pathconvert property="netbeans.fileset.resourcefolders" pathsep="|" dirsep="/">
+      <dirset dir="${basedir}/lucene" includes="**/src/resources" excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/resources" excludes="build/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <pathconvert property="netbeans.fileset.libs" pathsep="|" dirsep="/">
+      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <mkdir dir="nbproject"/>
+    <xslt in="${ant.file}" out="nbproject/project.xml" style="dev-tools/netbeans/nb-project.xsl" force="true">
+      <outputproperty name="indent" value="yes"/>
+      <param name="netbeans.fileset.sourcefolders" expression="${netbeans.fileset.sourcefolders}"/>
+      <param name="netbeans.fileset.testfolders" expression="${netbeans.fileset.testfolders}"/>
+      <param name="netbeans.fileset.resourcefolders" expression="${netbeans.fileset.resourcefolders}"/>
+      <param name="netbeans.fileset.libs" expression="${netbeans.fileset.libs}"/>
+    </xslt>
+  </target>
+
+  <target name="clean-netbeans" description="Removes all Netbeans configuration files">
+    <delete dir="nbproject" failonerror="true"/>
+    <delete dir="nb-build" failonerror="true"/>
+  </target>
+
   <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
     <basename file="${basedir}" property="eclipseprojectname"/>
       <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false" encoding="UTF-8">
