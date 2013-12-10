@@ -232,7 +232,7 @@
                             </xsl:for-each>
                         </classpath>
                         <built-to>nb-build/classes</built-to>
-                        <source-level>1.7</source-level>
+                        <source-level>1.6</source-level>
                     </compilation-unit>
                     <compilation-unit>
                         <xsl:for-each select="str:split($netbeans.fileset.testfolders,'|')">
@@ -271,7 +271,7 @@
                             </xsl:for-each>
                         </classpath>
                         <built-to>nb-build/test-classes</built-to>
-                        <source-level>1.7</source-level>
+                        <source-level>1.6</source-level>
                     </compilation-unit>
                 </java-data>
             </configuration>
