@@ -39,7 +39,7 @@ public class SolrVelocityResourceLoader extends ResourceLoader {
 
   @Override
   public InputStream getResourceStream(String template_name) throws ResourceNotFoundException {
-    return loader.openResource(template_name);
+    return loader.openResource("velocity/" + template_name);
   }
 
   @Override
