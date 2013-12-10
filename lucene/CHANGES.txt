@@ -40,6 +40,9 @@ Build
   Unicode 6.3; update UAX29URLEmailTokenizer's recognized top level
   domains in URLs and Emails from the IANA Root Zone Database.
   (Steve Rowe)
+  
+* LUCENE-5360: Add support for developing in Netbeans IDE.
+  (Michal Hlavac via Steve Rowe)
 
 Bug fixes
 
