@@ -193,32 +193,29 @@
 
   <target name="netbeans" depends="resolve" description="Setup Netbeans configuration">
     <pathconvert property="netbeans.fileset.sourcefolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/examples" excludes="tools/**, build/**, backwards/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/examples" excludes="build/**" />
+      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
+              excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
+              excludes="build/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
-    <pathconvert property="netbeans.fileset.testfolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/test" excludes="tools/**, build/**, backwards/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/test" excludes="build/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <pathconvert property="netbeans.fileset.resourcefolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/resources" excludes="tools/**, build/**, backwards/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/resources" excludes="build/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <pathconvert property="netbeans.fileset.libs" pathsep="|" dirsep="/">
-      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
-      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
+    <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
+    <pathconvert property="netbeans.path.libs" pathsep=":" dirsep="/">
+      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
+               excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
+               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, example/solr-webapp/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <mkdir dir="nbproject"/>
+    <copy todir="nbproject" overwrite="true">
+      <fileset dir="dev-tools/netbeans/nbproject"/>
+    </copy>
     <xslt in="${ant.file}" out="nbproject/project.xml" style="dev-tools/netbeans/nb-project.xsl" force="true">
       <outputproperty name="indent" value="yes"/>
       <param name="netbeans.fileset.sourcefolders" expression="${netbeans.fileset.sourcefolders}"/>
-      <param name="netbeans.fileset.testfolders" expression="${netbeans.fileset.testfolders}"/>
-      <param name="netbeans.fileset.resourcefolders" expression="${netbeans.fileset.resourcefolders}"/>
-      <param name="netbeans.fileset.libs" expression="${netbeans.fileset.libs}"/>
+      <param name="netbeans.path.libs" expression="${netbeans.path.libs}"/>
+      <param name="netbeans.source-level" expression="1.7"/>
     </xslt>
   </target>
 
