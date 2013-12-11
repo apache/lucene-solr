@@ -92,7 +92,9 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
           if (srsp.getSolrResponse() != null) {
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
           }
-
+          if (srsp.getShardAddress() != null) {
+            nl.add("shardAddress", srsp.getShardAddress());
+          }
           shardInfo.add(srsp.getShard(), nl);
         }
         if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
