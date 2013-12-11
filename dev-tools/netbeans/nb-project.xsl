@@ -18,263 +18,148 @@
 <xsl:stylesheet version="1.0" 
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:str="http://exslt.org/strings"
-                extension-element-prefixes="str">
-    <xsl:param name="netbeans.fileset.sourcefolders"/>
-    <xsl:param name="netbeans.fileset.testfolders"/>
-    <xsl:param name="netbeans.fileset.resourcefolders"/>
-    <xsl:param name="netbeans.fileset.libs"/>
+                xmlns:common="http://exslt.org/common"
+                extension-element-prefixes="str common">
+  <xsl:param name="netbeans.fileset.sourcefolders"/>
+  <xsl:param name="netbeans.path.libs"/>
+  <xsl:param name="netbeans.source-level"/>
   
+  <xsl:variable name="netbeans.fileset.sourcefolders.sortedfrag">
+    <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
+      <!-- hack to sort **/src/java before **/src/test before **/src/resources : contains() returns "true" which sorts before "false" if descending: -->
+      <xsl:sort select="string(contains(text(), '/src/java'))" order="descending" lang="en"/>
+      <xsl:sort select="string(contains(text(), '/src/test'))" order="descending" lang="en"/>
+      <xsl:sort select="string(contains(text(), '/src/resources'))" order="descending" lang="en"/>
+      <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
+      <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
+      <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
+      <!-- all others in one group above are sorted by path name: -->
+      <xsl:sort select="text()" order="ascending" lang="en"/>
+      <xsl:copy-of select="."/>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:variable name="netbeans.fileset.sourcefolders.sorted" select="common:node-set($netbeans.fileset.sourcefolders.sortedfrag)/*"/>
+  
+  <xsl:variable name="netbeans.full.classpath.frag">
+    <classpath mode="compile" xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
+      <xsl:value-of select="$netbeans.path.libs"/>
+      <xsl:for-each select="$netbeans.fileset.sourcefolders.sorted[contains(text(), '/src/java')]">
+        <xsl:text>:</xsl:text>
+        <xsl:value-of select="."/>
+      </xsl:for-each>
+    </classpath>
+  </xsl:variable>
 
-    <!--
+  <!--
       NOTE: This template matches the root element of any given input XML document!
       The XSL input file is ignored completely.
     --> 
-    <xsl:template match="/">
-        <project xmlns="http://www.netbeans.org/ns/project/1">
-            <type>org.netbeans.modules.ant.freeform</type>
-            <configuration>
-                <general-data xmlns="http://www.netbeans.org/ns/freeform-project/1">
-                    <name>lucene</name>
-                    <properties/>
-                    <folders>
-                        <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
-                            <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                            <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                            <!-- all others in one group above are sorted by path name: -->
-                            <xsl:sort select="text()" order="ascending" lang="en"/>
-                            <source-folder>
-                                <label>
-                                    <xsl:value-of select="."/>
-                                </label>
-                                <type>java</type>
-                                <location>
-                                    <xsl:value-of select="."/>
-                                </location>
-                            </source-folder>
-                        </xsl:for-each>
-                        <xsl:for-each select="str:split($netbeans.fileset.testfolders,'|')">
-                            <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                            <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                            <!-- all others in one group above are sorted by path name: -->
-                            <xsl:sort select="text()" order="ascending" lang="en"/>
-                            <source-folder>
-                                <label>
-                                    <xsl:value-of select="."/>
-                                </label>
-                                <type>java</type>
-                                <location>
-                                    <xsl:value-of select="."/>
-                                </location>
-                            </source-folder>
-                        </xsl:for-each>
-                        <xsl:for-each select="str:split($netbeans.fileset.resourcefolders,'|')">
-                            <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                            <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                            <!-- all others in one group above are sorted by path name: -->
-                            <xsl:sort select="text()" order="ascending" lang="en"/>
-                            <source-folder>
-                                <label>
-                                    <xsl:value-of select="."/>
-                                </label>
-                                <location>
-                                    <xsl:value-of select="."/>
-                                </location>
-                            </source-folder>
-                        </xsl:for-each>
-                    </folders>
-                    <ide-actions>
-                        <action name="build">
-                            <target>compile</target>
-                        </action>
-                        <action name="clean">
-                            <target>clean</target>
-                        </action>
-                        <action name="javadoc">
-                            <target>documentation</target>
-                        </action>
-                        <action name="test">
-                            <target>test</target>
-                        </action>
-                        <action name="rebuild">
-                            <target>clean</target>
-                            <target>compile</target>
-                        </action>
-                    </ide-actions>
-                    <view>
-                        <items>
-                            <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
-                                <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                                <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                                <!-- all others in one group above are sorted by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <source-folder style="packages">
-                                    <label>
-                                        <xsl:value-of select="."/>
-                                    </label>
-                                    <location>
-                                        <xsl:value-of select="."/>
-                                    </location>
-                                </source-folder>
-                            </xsl:for-each>
-                            <xsl:for-each select="str:split($netbeans.fileset.testfolders,'|')">
-                                <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                                <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                                <!-- all others in one group above are sorted by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <source-folder style="packages">
-                                    <label>
-                                        <xsl:value-of select="."/>
-                                    </label>
-                                    <location>
-                                        <xsl:value-of select="."/>
-                                    </location>
-                                </source-folder>
-                            </xsl:for-each>
-                            <xsl:for-each select="str:split($netbeans.fileset.resourcefolders,'|')">
-                                <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                                <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                                <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                                <!-- all others in one group above are sorted by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <source-folder style="tree">
-                                    <label>
-                                        <xsl:value-of select="."/>
-                                    </label>
-                                    <location>
-                                        <xsl:value-of select="."/>
-                                    </location>
-                                </source-folder>
-                            </xsl:for-each>
-                            <source-file>
-                                <label>Project Build Script</label>
-                                <location>build.xml</location>
-                            </source-file>
-                        </items>
-                        <context-menu>
-                            <ide-action name="build"/>
-                            <ide-action name="rebuild"/>
-                            <ide-action name="clean"/>
-                            <ide-action name="javadoc"/>
-                            <ide-action name="test"/>
-                        </context-menu>
-                    </view>
-                    <subprojects/>
-                </general-data>
-                <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
-                    <compilation-unit>
-                        <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
-                            <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                            <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                            <!-- all others in one group above are sorted by path name: -->
-                            <xsl:sort select="text()" order="ascending" lang="en"/>
-                            <package-root>
-                                <xsl:value-of select="."/>
-                            </package-root>
-                        </xsl:for-each>
-                        <classpath mode="compile">
-                            <xsl:for-each select="str:split($netbeans.fileset.libs,'|')">
-                                <!-- sort the jars by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <xsl:value-of select="."/>
-                                <xsl:if test="not(position() = last())">
-                                    <xsl:text>:</xsl:text>
-                                </xsl:if>
-                            </xsl:for-each>
-                            <xsl:text>:</xsl:text>
-                            <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
-                                <!-- sort the jars by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <xsl:value-of select="."/>
-                                <xsl:if test="not(position() = last())">
-                                    <xsl:text>:</xsl:text>
-                                </xsl:if>
-                            </xsl:for-each>
-                        </classpath>
-                        <built-to>nb-build/classes</built-to>
-                        <source-level>1.6</source-level>
-                    </compilation-unit>
-                    <compilation-unit>
-                        <xsl:for-each select="str:split($netbeans.fileset.testfolders,'|')">
-                            <!-- hack to sort the list, starts-with() returns "true" which sorts before "false" if descending: -->
-                            <xsl:sort select="string(starts-with(text(), 'lucene/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
-                            <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
-                            <!-- all others in one group above are sorted by path name: -->
-                            <xsl:sort select="text()" order="ascending" lang="en"/>
-                            <package-root>
-                                <xsl:value-of select="."/>
-                            </package-root>
-                        </xsl:for-each>
-                        <unit-tests/>
-                        <classpath mode="compile">
-                            <xsl:for-each select="str:split($netbeans.fileset.libs,'|')">
-                                <!-- sort the jars by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <xsl:value-of select="."/>
-                                <xsl:if test="not(position() = last())">
-                                    <xsl:text>:</xsl:text>
-                                </xsl:if>
-                            </xsl:for-each>
-                            <xsl:text>:</xsl:text>
-                            <xsl:for-each select="str:split($netbeans.fileset.sourcefolders,'|')">
-                                <!-- sort the jars by path name: -->
-                                <xsl:sort select="text()" order="ascending" lang="en"/>
-                                <xsl:value-of select="."/>
-                                <xsl:if test="not(position() = last())">
-                                    <xsl:text>:</xsl:text>
-                                </xsl:if>
-                            </xsl:for-each>
-                        </classpath>
-                        <built-to>nb-build/test-classes</built-to>
-                        <source-level>1.6</source-level>
-                    </compilation-unit>
-                </java-data>
-            </configuration>
-        </project>
-    </xsl:template>
+  <xsl:template match="/">
+    <project xmlns="http://www.netbeans.org/ns/project/1">
+      <type>org.netbeans.modules.ant.freeform</type>
+      <configuration>
+        <general-data xmlns="http://www.netbeans.org/ns/freeform-project/1">
+          <name>lucene</name>
+          <properties/>
+          <folders>
+            <xsl:for-each select="$netbeans.fileset.sourcefolders.sorted">
+              <source-folder>
+                <label>
+                  <xsl:value-of select="."/>
+                </label>
+                <xsl:if test="contains(text(), '/src/java') or contains(text(), '/src/test')">
+                  <type>java</type>
+                </xsl:if>
+                <location>
+                  <xsl:value-of select="."/>
+                </location>
+              </source-folder>
+            </xsl:for-each>
+          </folders>
+          <ide-actions>
+            <action name="build">
+              <target>compile</target>
+            </action>
+            <action name="clean">
+              <target>clean</target>
+            </action>
+            <action name="javadoc">
+              <target>documentation</target>
+            </action>
+            <action name="test">
+              <target>test</target>
+            </action>
+            <action name="rebuild">
+              <target>clean</target>
+              <target>compile</target>
+            </action>
+          </ide-actions>
+          <view>
+            <items>
+              <xsl:for-each select="$netbeans.fileset.sourcefolders.sorted">
+                <source-folder>
+                  <xsl:attribute name="style">
+                    <xsl:choose>
+                      <xsl:when test="contains(text(), '/src/java') or contains(text(), '/src/test')">packages</xsl:when>
+                      <xsl:otherwise>tree</xsl:otherwise>
+                    </xsl:choose>
+                  </xsl:attribute>
+                  <label>
+                    <xsl:value-of select="."/>
+                  </label>
+                  <location>
+                    <xsl:value-of select="."/>
+                  </location>
+                </source-folder>
+              </xsl:for-each>
+              <source-file>
+                <label>Project Build Script</label>
+                <location>build.xml</location>
+              </source-file>
+            </items>
+            <context-menu>
+              <ide-action name="build"/>
+              <ide-action name="rebuild"/>
+              <ide-action name="clean"/>
+              <ide-action name="javadoc"/>
+              <ide-action name="test"/>
+            </context-menu>
+          </view>
+          <subprojects/>
+        </general-data>
+        <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
+          <compilation-unit>
+            <xsl:for-each select="$netbeans.fileset.sourcefolders.sorted[contains(text(), '/src/java')]">
+              <package-root>
+                <xsl:value-of select="."/>
+              </package-root>
+            </xsl:for-each>
+            <xsl:copy-of select="$netbeans.full.classpath.frag"/>
+            <built-to>nb-build/classes</built-to>
+            <source-level>
+              <xsl:value-of select="$netbeans.source-level"/>
+            </source-level>
+          </compilation-unit>
+          <compilation-unit>
+            <xsl:for-each select="$netbeans.fileset.sourcefolders.sorted[contains(text(), '/src/test')]">
+              <package-root>
+                <xsl:value-of select="."/>
+              </package-root>
+            </xsl:for-each>
+            <unit-tests/>
+            <xsl:copy-of select="$netbeans.full.classpath.frag"/>
+            <built-to>nb-build/test-classes</built-to>
+            <source-level>
+              <xsl:value-of select="$netbeans.source-level"/>
+            </source-level>
+          </compilation-unit>
+        </java-data>
+      </configuration>
+    </project>
+  </xsl:template>
 </xsl:stylesheet>

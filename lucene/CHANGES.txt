@@ -42,7 +42,7 @@ Build
   (Steve Rowe)
   
 * LUCENE-5360: Add support for developing in Netbeans IDE.
-  (Michal Hlavac via Steve Rowe)
+  (Michal Hlavac, Uwe Schindler, Steve Rowe)
 
 Bug fixes
 
