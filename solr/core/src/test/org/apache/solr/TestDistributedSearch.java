@@ -507,6 +507,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           // make sure that it responded if it's up
           if (upShards.contains(s)) {
             assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
+            assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
           }
           else {
             assertTrue("Expected to find error in the down shard info",info.get("error") != null);
