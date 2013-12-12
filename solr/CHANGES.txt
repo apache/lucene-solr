@@ -241,6 +241,9 @@ Other Changes
 * SOLR-5533: Improve out of the box support for running Solr on hdfs with 
   SolrCloud. (Mark Miller)
 
+* SOLR-5548: Give DistributedSearchTestCase / JettySolrRunner the ability to 
+  specify extra filters. (Greg Chanan via Mark Miller)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
