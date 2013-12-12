@@ -368,7 +368,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     boolean stopAtShutdown = true;
     JettySolrRunner jetty = new JettySolrRunner
-        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown, getExtraServlets());
+        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown,
+          getExtraServlets(), null, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     if (explicitCoreNodeName) {
@@ -383,7 +384,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public SortedMap<ServletHolder,String> getExtraServlets() {
     return null;
   }
-  
+
+  /** Override this method to insert extra filters into the JettySolrRunners that are created using createJetty() */
+  public SortedMap<Class,String> getExtraRequestFilters() {
+    return null;
+  }
+
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...

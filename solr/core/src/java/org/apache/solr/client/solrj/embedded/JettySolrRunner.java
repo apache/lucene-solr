@@ -93,6 +93,8 @@ public class JettySolrRunner {
 
   /** Maps servlet holders (i.e. factories: class + init params) to path specs */
   private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
+  private SortedMap<Class,String> extraRequestFilters;
+  private LinkedList<FilterHolder> extraFilters;
 
   private SSLConfig sslConfig;
 
@@ -167,16 +169,30 @@ public class JettySolrRunner {
   public JettySolrRunner(String solrHome, String context, int port,
       String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
       SortedMap<ServletHolder,String> extraServlets) {
-    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
-    this.init(solrHome, context, port, stopAtShutdown);
-    this.solrConfigFilename = solrConfigFilename;
-    this.schemaFilename = schemaFileName;
+    this (solrHome, context, port, solrConfigFilename, schemaFileName,
+      stopAtShutdown, extraServlets, null, null);
   }
   
   public JettySolrRunner(String solrHome, String context, int port,
       String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
       SortedMap<ServletHolder,String> extraServlets, SSLConfig sslConfig) {
+    this (solrHome, context, port, solrConfigFilename, schemaFileName,
+      stopAtShutdown, extraServlets, sslConfig, null);
+  }
+
+  /**
+   * Constructor taking an ordered list of additional (filter holder -> path spec) mappings.
+   * Filters are placed after the DebugFilter but before the SolrDispatchFilter.
+   */
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets, SSLConfig sslConfig,
+      SortedMap<Class,String> extraRequestFilters) {
     if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
+    if (null != extraRequestFilters) {
+      this.extraRequestFilters = new TreeMap<Class,String>(extraRequestFilters.comparator());
+      this.extraRequestFilters.putAll(extraRequestFilters);
+    }
     this.init(solrHome, context, port, stopAtShutdown);
     this.solrConfigFilename = solrConfigFilename;
     this.schemaFilename = schemaFileName;
@@ -309,6 +325,13 @@ public class JettySolrRunner {
 //        SolrDispatchFilter filter = new SolrDispatchFilter();
 //        FilterHolder fh = new FilterHolder(filter);
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        if (extraRequestFilters != null) {
+          extraFilters = new LinkedList<FilterHolder>();
+          for (Class filterClass : extraRequestFilters.keySet()) {
+            extraFilters.add(root.addFilter(filterClass, extraRequestFilters.get(filterClass),
+              EnumSet.of(DispatcherType.REQUEST)));
+          }
+        }
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         for (ServletHolder servletHolder : extraServlets.keySet()) {
           String pathSpec = extraServlets.get(servletHolder);
@@ -445,6 +468,11 @@ public class JettySolrRunner {
     //server.destroy();
     if (server.getState().equals(Server.FAILED)) {
       filter.destroy();
+      if (extraFilters != null) {
+        for (FilterHolder f : extraFilters) {
+          f.getFilter().destroy();
+        }
+      }
     }
     
     server.join();
