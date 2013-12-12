@@ -198,6 +198,10 @@ Bug Fixes
 * SOLR-5532: SolrJ Content-Type validation is too strict for some
   webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
   Mark Miller)
+
+* SOLR-5547: Creating a collection alias using SolrJ's CollectionAdminRequest
+  sets the alias name and the collections to alias to the same value.
+  (Aaron Schram, Mark Miller)
   
 Optimizations
 ----------------------
