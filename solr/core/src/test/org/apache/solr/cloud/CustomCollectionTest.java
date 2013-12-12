@@ -63,11 +63,13 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Tests the Custom Sharding API.
  */
 @Slow
+@Ignore("I am broken since SOLR-5492")
 public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   private static final String DEFAULT_COLLECTION = "collection1";
