@@ -779,6 +779,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("concat", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new ConcatenateFunction(fp.parseValueSourceList());
+      }
+    });
+
   }
 
   private static TInfo parseTerm(FunctionQParser fp) throws SyntaxError {

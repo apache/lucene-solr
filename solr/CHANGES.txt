@@ -91,6 +91,9 @@ New Features
 
 * SOLR-5522: Remove EditFileRequestHandler from 4x (Erick Erickson)
 
+* SOLR-3702: A 'concat' function query to support concatenation of Strings.
+  (Ted Strauss, Andrey Kudryavtsev via shalin)
+
 Bug Fixes
 ----------------------
 
