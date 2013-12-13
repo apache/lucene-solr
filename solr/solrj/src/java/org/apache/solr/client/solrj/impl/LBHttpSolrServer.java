@@ -192,14 +192,12 @@ public class LBHttpSolrServer extends SolrServer {
   }
   
   /** The provided httpClient should use a multi-threaded connection manager */ 
-  public LBHttpSolrServer(HttpClient httpClient, String... solrServerUrl)
-          throws MalformedURLException {
+  public LBHttpSolrServer(HttpClient httpClient, String... solrServerUrl) {
     this(httpClient, new BinaryResponseParser(), solrServerUrl);
   }
 
   /** The provided httpClient should use a multi-threaded connection manager */  
-  public LBHttpSolrServer(HttpClient httpClient, ResponseParser parser, String... solrServerUrl)
-          throws MalformedURLException {
+  public LBHttpSolrServer(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     clientIsInternal = (httpClient == null);
     this.parser = parser;
     if (httpClient == null) {
@@ -234,7 +232,7 @@ public class LBHttpSolrServer extends SolrServer {
     return server;
   }
 
-  protected HttpSolrServer makeServer(String server) throws MalformedURLException {
+  protected HttpSolrServer makeServer(String server) {
     HttpSolrServer s = new HttpSolrServer(server, httpClient, parser);
     if (requestWriter != null) {
       s.setRequestWriter(requestWriter);
