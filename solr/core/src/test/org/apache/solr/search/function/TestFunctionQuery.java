@@ -754,4 +754,24 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     }
   }
 
+  public void testConcatFunction() {
+    clearIndex();
+
+    assertU(adoc("id", "1", "field1_t", "buzz", "field2_t", "word"));
+    assertU(adoc("id", "2", "field1_t", "1", "field2_t", "2","field4_t", "4"));
+    assertU(commit());
+
+    assertQ(req("q","id:1",
+        "fl","field:concat(field1_t,field2_t)"),
+        " //str[@name='field']='buzzword'");
+
+    assertQ(req("q","id:2",
+        "fl","field:concat(field1_t,field2_t, field3_t, field4_t)"),
+        " //str[@name='field']='124'");
+
+    assertQ(req("q","id:1",
+        "fl","field:def(concat(field3_t, field4_t), 'defValue')"),
+        " //str[@name='field']='defValue'");
+  }
+
 }
