@@ -127,9 +127,6 @@ New Features
 * SOLR-1871: The 'map' function query accepts a ValueSource as target and
   default value. (Chris Harris, shalin)
 
-* SOLR-3702: A 'concat' function query to support concatenation of Strings.
-  (Ted Strauss, Andrey Kudryavtsev via shalin)
-
 Bug Fixes
 ----------------------
 
