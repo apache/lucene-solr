@@ -73,7 +73,9 @@ Apache ZooKeeper 3.4.5
 
 Upgrading from Solr 4.6.0
 ----------------------
-                      
+
+* CloudSolrServer and LBHttpSolrServer no longer declare MalfurmedURLException
+  as thrown from their constructors.  
                       
 Detailed Change List
 ----------------------
@@ -247,6 +249,9 @@ Other Changes
 
 * SOLR-5548: Give DistributedSearchTestCase / JettySolrRunner the ability to 
   specify extra filters. (Greg Chanan via Mark Miller)
+
+* SOLR-5555: LBHttpSolrServer and CloudSolrServer constructors don't need to
+  declare MalformedURLExceptions (Sushil Bajracharya, Alan Woodward)
 
 ==================  4.6.0 ==================
 

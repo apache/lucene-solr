@@ -119,7 +119,7 @@ public class CloudSolrServer extends SolrServer {
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
    * in the form HOST:PORT.
    */
-  public CloudSolrServer(String zkHost) throws MalformedURLException {
+  public CloudSolrServer(String zkHost) {
       this.zkHost = zkHost;
       this.myClient = HttpClientUtil.createClient(null);
       this.lbServer = new LBHttpSolrServer(myClient);

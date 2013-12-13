@@ -16,12 +16,15 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
+import com.cloudera.cdk.morphline.api.MorphlineContext;
+import com.cloudera.cdk.morphline.api.MorphlineRuntimeException;
+import com.cloudera.cdk.morphline.base.Configs;
+import com.google.common.base.Preconditions;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
+import com.typesafe.config.ConfigUtil;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -35,15 +38,9 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
-import com.cloudera.cdk.morphline.api.MorphlineContext;
-import com.cloudera.cdk.morphline.api.MorphlineRuntimeException;
-import com.cloudera.cdk.morphline.base.Configs;
-import com.google.common.base.Preconditions;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigRenderOptions;
-import com.typesafe.config.ConfigUtil;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Set of configuration parameters that identify the location and schema of a Solr server or
@@ -94,14 +91,10 @@ public class SolrLocator {
       if (collectionName == null || collectionName.length() == 0) {
         throw new MorphlineCompilationException("Parameter 'zkHost' requires that you also pass parameter 'collection'", config);
       }
-      try {
-        CloudSolrServer cloudSolrServer = new CloudSolrServer(zkHost);
-        cloudSolrServer.setDefaultCollection(collectionName);
-        cloudSolrServer.connect();
-        return new SolrServerDocumentLoader(cloudSolrServer, batchSize);
-      } catch (MalformedURLException e) {
-        throw new MorphlineRuntimeException(e);
-      }
+      CloudSolrServer cloudSolrServer = new CloudSolrServer(zkHost);
+      cloudSolrServer.setDefaultCollection(collectionName);
+      cloudSolrServer.connect();
+      return new SolrServerDocumentLoader(cloudSolrServer, batchSize);
     } else {
       if (solrUrl == null || solrUrl.length() == 0) {
         throw new MorphlineCompilationException("Missing parameter 'solrUrl'", config);
