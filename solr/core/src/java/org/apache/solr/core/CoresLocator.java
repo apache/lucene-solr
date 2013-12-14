@@ -56,6 +56,14 @@ public interface CoresLocator {
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD);
 
   /**
+   * Swap two core definitions
+   * @param cc  the CoreContainer
+   * @param cd1 the core descriptor of the first core, after swapping
+   * @param cd2 the core descriptor of the second core, after swapping
+   */
+  public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2);
+
+  /**
    * Load all the CoreDescriptors from persistence store
    * @param cc the CoreContainer
    * @return a list of all CoreDescriptors found

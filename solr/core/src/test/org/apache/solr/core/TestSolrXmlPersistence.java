@@ -48,6 +48,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.core.Is.is;
+
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
@@ -186,8 +188,24 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     doTestSwap("SystemVars2", "SystemVars1");
   }
 
+  /*
+  Count the number of times substring appears in target
+   */
+  private int countOccurrences(String target, String substring) {
+    int pos = -1, count = 0;
+    while ((pos = target.indexOf(substring, pos + 1)) != -1) {
+      count++;
+    }
+    return count;
+  }
+
   private void doTestSwap(String from, String to) throws Exception {
     CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2");
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cc.getCoresLocator();
+
+    int coreCount = countOccurrences(locator.xml, "<core ");
+
     try {
       final CoreAdminHandler admin = new CoreAdminHandler(cc);
       SolrQueryResponse resp = new SolrQueryResponse();
@@ -198,6 +216,9 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               CoreAdminParams.OTHER, to),
               resp);
       assertNull("Exception on swap", resp.getException());
+
+      assertThat("Swapping cores should leave the same number of cores as before",
+          countOccurrences(locator.xml, "<core "), is(coreCount));
 
       String[] persistList = getAllNodes();
       String[] expressions = new String[persistList.length];

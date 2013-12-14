@@ -74,7 +74,7 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.6.0
 ----------------------
 
-* CloudSolrServer and LBHttpSolrServer no longer declare MalfurmedURLException
+* CloudSolrServer and LBHttpSolrServer no longer declare MalformedURLException
   as thrown from their constructors.  
                       
 Detailed Change List
@@ -204,6 +204,9 @@ Bug Fixes
 * SOLR-5547: Creating a collection alias using SolrJ's CollectionAdminRequest
   sets the alias name and the collections to alias to the same value.
   (Aaron Schram, Mark Miller)
+
+* SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when 
+  using solr.xml persistence. (Bill Bell, Alan Woodward)
   
 Optimizations
 ----------------------
