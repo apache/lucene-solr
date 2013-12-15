@@ -21,7 +21,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -39,6 +38,8 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.util.ArrayList;
+
+import static org.junit.internal.matchers.StringContains.containsString;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
   private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
@@ -99,11 +100,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       streams.add(new ContentStreamBase.StringStream(badConf));
       locReq.setContentStreams(streams);
       core.execute(handler, locReq, rsp);
-      assertTrue("should have detected an error early!",
-          rsp.getException().getMessage().contains("\"dataDir\""));
-
-      assertTrue("should have detected an error early!",
-          rsp.getException().getMessage().contains("\"</dataDir>\""));
+      assertThat("should have detected an error early!", rsp.getException().getMessage(), containsString("\"</dataDir>\""));
 
       params = params("op", "test", "file", "schema.xml", "stream.body", "Testing rewrite of schema.xml file.");
       locReq = new LocalSolrQueryRequest(core, params);
