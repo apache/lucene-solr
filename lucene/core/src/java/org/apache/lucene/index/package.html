@@ -94,7 +94,7 @@ and methods to access the term's <a href="#documents">documents</a> and
 <a href="#positions">positions</a>.
 <pre class="prettyprint">
 // seek to a specific term
-boolean found = termsEnum.seekExact(new BytesRef("foobar"), true);
+boolean found = termsEnum.seekExact(new BytesRef("foobar"));
 if (found) {
   // get the document frequency
   System.out.println(termsEnum.docFreq());
