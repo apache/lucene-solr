@@ -109,7 +109,7 @@ New Features
   set of distinct values and their count. This can also be specified per field
   e.g. 'f.field.stats.calcdistinct'. (Elran Dvir via shalin)
 
-* SOLR-5378: A new SuggestComponent that fully utilizes the Lucene suggester
+* SOLR-5378, SOLR-5528: A new SuggestComponent that fully utilizes the Lucene suggester
   module and adds pluggable dictionaries, payloads and better distributed support.
   This is intended to eventually replace the Suggester support through the
   SpellCheckComponent. (Areek Zillur, Varun Thacker via shalin)
