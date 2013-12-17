@@ -36,9 +36,9 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.handler.component.SuggestComponent
  */
 @Slow
-public class DistributedSuggesterComponentTest extends BaseDistributedSearchTestCase {
+public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCase {
   
-  public DistributedSuggesterComponentTest() {
+  public DistributedSuggestComponentTest() {
     //Helpful for debugging
     //fixShardCount=true;
     //shardCount=2;
@@ -68,9 +68,7 @@ public class DistributedSuggesterComponentTest extends BaseDistributedSearchTest
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> sc = (NamedList<Object>) nl.get("suggest");
-    @SuppressWarnings("unchecked")
-    NamedList<Object> sug = (NamedList<Object>) sc.get("suggestions");
-    if(sug.size()==0) {
+    if(sc.size()==0) {
       Assert.fail("Control data did not return any suggestions.");
     }
   } 

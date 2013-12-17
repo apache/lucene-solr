@@ -47,28 +47,28 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4  {
     
  // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(req("qt", REQUEST_URI, "q", "chagn", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chagn']/int[@name='numFound'][.='2']",
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chagn']/lst[@name='suggestion'][1]/str[@name='term'][.='chance']",
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chagn']/lst[@name='suggestion'][2]/str[@name='term'][.='change']"
+      "//lst[@name='suggest']/lst[@name='chagn']/int[@name='numFound'][.='2']",
+      "//lst[@name='suggest']/lst[@name='chagn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
+      "//lst[@name='suggest']/lst[@name='chagn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
       );
     
     assertQ(req("qt", REQUEST_URI, "q", "chacn", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chacn']/int[@name='numFound'][.='2']",
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chacn']/lst[@name='suggestion'][1]/str[@name='term'][.='chance']",
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chacn']/lst[@name='suggestion'][2]/str[@name='term'][.='change']"
+      "//lst[@name='suggest']/lst[@name='chacn']/int[@name='numFound'][.='2']",
+      "//lst[@name='suggest']/lst[@name='chacn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
+      "//lst[@name='suggest']/lst[@name='chacn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
       );
     
     assertQ(req("qt", REQUEST_URI, "q", "chagr", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chagr']/int[@name='numFound'][.='1']",
-      "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chagr']/lst[@name='suggestion'][1]/str[@name='term'][.='charge']"
+      "//lst[@name='suggest']/lst[@name='chagr']/int[@name='numFound'][.='1']",
+      "//lst[@name='suggest']/lst[@name='chagr']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='charge']"
       );
     
     assertQ(req("qt", REQUEST_URI, "q", "chanr", SuggesterParams.SUGGEST_COUNT, "3"),
-    "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='chanr']/int[@name='numFound'][.='3']"
+    "//lst[@name='suggest']/lst[@name='chanr']/int[@name='numFound'][.='3']"
     );
     
     assertQ(req("qt", REQUEST_URI, "q", "cyhnce", SuggesterParams.SUGGEST_COUNT, "3"),
-    "//lst[@name='suggest']/lst[@name='suggestions']/lst[@name='cyhnce']/int[@name='numFound'][.='0']"
+    "//lst[@name='suggest']/lst[@name='cyhnce']/int[@name='numFound'][.='0']"
     );
   }
 }
