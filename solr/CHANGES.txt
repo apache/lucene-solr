@@ -129,6 +129,9 @@ New Features
 * SOLR-1871: The 'map' function query accepts a ValueSource as target and
   default value. (Chris Harris, shalin)
 
+* SOLR-5556: Allow class of CollectionsHandler and InfoHandler to be specified
+  in solr.xml. (Gregory Chanan, Alan Woodward)
+
 Bug Fixes
 ----------------------
 

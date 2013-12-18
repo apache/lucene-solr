@@ -21,6 +21,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,6 +39,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -287,4 +293,48 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   private static final String EMPTY_SOLR_XML2 ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>\n" +
       "</solr>";
+
+  private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>" +
+      " <str name=\"collectionsHandler\">" + CustomCollectionsHandler.class.getName() + "</str>" +
+      " <str name=\"infoHandler\">" + CustomInfoHandler.class.getName() + "</str>" +
+      " <str name=\"adminHandler\">" + CustomCoreAdminHandler.class.getName() + "</str>" +
+      "</solr>";
+
+  public static class CustomCollectionsHandler extends CollectionsHandler {
+    public CustomCollectionsHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  public static class CustomInfoHandler extends InfoHandler {
+    public CustomInfoHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  public static class CustomCoreAdminHandler extends CoreAdminHandler {
+    public CustomCoreAdminHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  @Test
+  public void testCustomHandlers() throws Exception {
+
+    ConfigSolr config = ConfigSolr.fromString(CUSTOM_HANDLERS_SOLR_XML);
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+
+    CoreContainer cc = new CoreContainer(loader, config);
+    try {
+      cc.load();
+      assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
+      assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
+      assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
+    }
+    finally {
+      cc.shutdown();
+    }
+
+  }
 }

@@ -17,8 +17,10 @@
 
 <solr>
   <str name="adminHandler">testAdminHandler</str>
+  <str name="collectionsHandler">testCollectionsHandler</str>
   <int name="coreLoadThreads">11</int>
   <str name="coreRootDirectory">${coreRootDirectory:testCoreRootDirectory}</str>
+  <str name="infoHandler">testInfoHandler</str>
   <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
   <str name="shareSchema">${shareSchema:testShareSchema}</str>
