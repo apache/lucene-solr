@@ -68,6 +68,11 @@ New Features
 * LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
   (Jack Conradson via Robert Muir)
 
+* LUCENE-5371: Speed up Lucene range faceting from O(N) per hit to
+  O(log(N)) per hit using segment trees; this only really starts to
+  matter in practice if the number of ranges is over 10 or so.  (Mike
+  McCandless)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable

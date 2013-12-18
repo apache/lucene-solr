@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 
 /** Represents a range over double values. */
 public final class DoubleRange extends Range {
@@ -40,10 +41,10 @@ public final class DoubleRange extends Range {
   public final boolean maxInclusive;
 
   /** Create a DoubleRange. */
-  public DoubleRange(String label, double min, boolean minInclusive, double max, boolean maxInclusive) {
+  public DoubleRange(String label, double minIn, boolean minInclusive, double maxIn, boolean maxInclusive) {
     super(label);
-    this.min = min;
-    this.max = max;
+    this.min = minIn;
+    this.max = maxIn;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
 
@@ -56,7 +57,7 @@ public final class DoubleRange extends Range {
       throw new IllegalArgumentException("min cannot be NaN");
     }
     if (!minInclusive) {
-      min = Math.nextUp(min);
+      minIn = Math.nextUp(minIn);
     }
 
     if (Double.isNaN(max)) {
@@ -64,15 +65,30 @@ public final class DoubleRange extends Range {
     }
     if (!maxInclusive) {
       // Why no Math.nextDown?
-      max = Math.nextAfter(max, Double.NEGATIVE_INFINITY);
+      maxIn = Math.nextAfter(maxIn, Double.NEGATIVE_INFINITY);
     }
 
-    this.minIncl = min;
-    this.maxIncl = max;
+    if (minIn > maxIn) {
+      failNoMatch();
+    }
+
+    this.minIncl = minIn;
+    this.maxIncl = maxIn;
   }
 
   public boolean accept(double value) {
     return value >= minIncl && value <= maxIncl;
+  }
+
+  LongRange toLongRange() {
+    return new LongRange(label,
+                         NumericUtils.doubleToSortableLong(minIncl), true,
+                         NumericUtils.doubleToSortableLong(maxIncl), true);
+  }
+
+  @Override
+  public String toString() {
+    return "DoubleRange(" + minIncl + " to " + maxIncl + ")";
   }
 
   /** Returns a new {@link Filter} accepting only documents

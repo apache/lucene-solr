@@ -31,8 +31,9 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
  *  using {@link FunctionValues#longVal}.  Use
  *  this for dimensions that change in real-time (e.g. a
  *  relative time based dimension like "Past day", "Past 2
- *  days", etc.) or that change for each user (e.g. a
- *  distance dimension like "< 1 km", "< 2 km", etc.).
+ *  days", etc.) or that change for each request (e.g. 
+ *  distance from the user's location, "< 1 km", "< 2 km",
+ *  etc.).
  *
  *  @lucene.experimental */
 public class LongRangeFacetCounts extends RangeFacetCounts {
@@ -62,9 +63,9 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
       maxIncl = Math.max(maxIncl, range.maxIncl);
     }
 
-    // TODO: test if this is faster (in the past it was
-    // faster to do MatchingDocs on the inside) ... see
-    // patches on LUCENE-4965):
+    LongRangeCounter counter = new LongRangeCounter(ranges);
+
+    int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
       final int length = hits.bits.length();
@@ -73,27 +74,20 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
       while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
         // Skip missing docs:
         if (fv.exists(doc)) {
-          
-          long v = fv.longVal(doc);
-          if (v < minIncl || v > maxIncl) {
-            doc++;
-            continue;
-          }
-
-          // TODO: if all ranges are non-overlapping, we
-          // should instead do a bin-search up front
-          // (really, a specialized case of the interval
-          // tree)
-          // TODO: use interval tree instead of linear search:
-          for (int j = 0; j < ranges.length; j++) {
-            if (ranges[j].accept(v)) {
-              counts[j]++;
-            }
-          }
+          counter.add(fv.longVal(doc));
+        } else {
+          missingCount++;
         }
 
         doc++;
       }
     }
+    
+    int x = counter.fillCounts(counts);
+
+    missingCount += x;
+
+    //System.out.println("totCount " + totCount + " missingCount " + counter.missingCount);
+    totCount -= missingCount;
   }
 }

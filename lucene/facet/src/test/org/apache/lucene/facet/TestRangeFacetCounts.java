@@ -62,6 +62,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
       field.setLongValue(l);
       w.addDocument(doc);
     }
+
+    // Also add Long.MAX_VALUE
     field.setLongValue(Long.MAX_VALUE);
     w.addDocument(doc);
 
@@ -78,9 +80,107 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new LongRange("over 90", 90L, false, 100L, false),
         new LongRange("90 or above", 90L, true, 100L, false),
         new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals("dim=field path=[] value=22 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+                 result.toString());
+    
+    r.close();
+    d.close();
+  }
+
+  public void testUselessRange() {
+    try {
+      new LongRange("useless", 7, true, 6, true);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      new LongRange("useless", 7, true, 7, false);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      new DoubleRange("useless", 7.0, true, 6.0, true);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      new DoubleRange("useless", 7.0, true, 7.0, false);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  public void testLongMinMax() throws Exception {
+
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
+    doc.add(field);
+    field.setLongValue(Long.MIN_VALUE);
+    w.addDocument(doc);
+    field.setLongValue(0);
+    w.addDocument(doc);
+    field.setLongValue(Long.MAX_VALUE);
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new LongRangeFacetCounts("field", fc,
+        new LongRange("min", Long.MIN_VALUE, true, Long.MIN_VALUE, true),
+        new LongRange("max", Long.MAX_VALUE, true, Long.MAX_VALUE, true),
+        new LongRange("all0", Long.MIN_VALUE, true, Long.MAX_VALUE, true),
+        new LongRange("all1", Long.MIN_VALUE, false, Long.MAX_VALUE, true),
+        new LongRange("all2", Long.MIN_VALUE, true, Long.MAX_VALUE, false),
+        new LongRange("all3", Long.MIN_VALUE, false, Long.MAX_VALUE, false));
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals("dim=field path=[] value=3 childCount=6\n  min (1)\n  max (1)\n  all0 (3)\n  all1 (2)\n  all2 (2)\n  all3 (1)\n",
+                 result.toString());
+    
+    r.close();
+    d.close();
+  }
+
+  public void testOverlappedEndStart() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
+    doc.add(field);
+    for(long l=0;l<100;l++) {
+      field.setLongValue(l);
+      w.addDocument(doc);
+    }
+    field.setLongValue(Long.MAX_VALUE);
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new LongRangeFacetCounts("field", fc,
+        new LongRange("0-10", 0L, true, 10L, true),
+        new LongRange("10-20", 10L, true, 20L, true),
+        new LongRange("20-30", 20L, true, 30L, true),
+        new LongRange("30-40", 30L, true, 40L, true));
     
     FacetResult result = facets.getTopChildren(10, "field");
-    assertEquals("dim=field path=[] value=101 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+    assertEquals("dim=field path=[] value=41 childCount=4\n  0-10 (11)\n  10-20 (11)\n  20-30 (11)\n  30-40 (11)\n",
                  result.toString());
     
     r.close();
@@ -162,7 +262,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     assertEquals(100, dsr.hits.totalHits);
     assertEquals("dim=dim path=[] value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("dim=field path=[] value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
     // Second search, drill down on dim=b:
@@ -172,7 +272,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     assertEquals(75, dsr.hits.totalHits);
     assertEquals("dim=dim path=[] value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("dim=field path=[] value=75 childCount=5\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=16 childCount=5\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
     // Third search, drill down on "less than or equal to 10":
@@ -182,7 +282,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     assertEquals(11, dsr.hits.totalHits);
     assertEquals("dim=dim path=[] value=11 childCount=2\n  b (8)\n  a (3)\n", dsr.facets.getTopChildren(10, "dim").toString());
-    assertEquals("dim=field path=[] value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
     IOUtils.close(tw, tr, td, w, r, d);
   }
@@ -211,7 +311,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new DoubleRange("90 or above", 90.0, true, 100.0, false),
         new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false));
                                          
-    assertEquals("dim=field path=[] value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(w, r, d);
@@ -242,7 +342,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new DoubleRange("90 or above", 90.0f, true, 100.0f, false),
         new DoubleRange("over 1000", 1000.0f, false, Double.POSITIVE_INFINITY, false));
     
-    assertEquals("dim=field path=[] value=100 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
     
     IOUtils.close(w, r, d);
@@ -253,6 +353,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     int numDocs = atLeast(1000);
+    if (VERBOSE) {
+      System.out.println("TEST: numDocs=" + numDocs);
+    }
     long[] values = new long[numDocs];
     for(int i=0;i<numDocs;i++) {
       Document doc = new Document();
@@ -272,20 +375,53 @@ public class TestRangeFacetCounts extends FacetTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
-      int numRange = _TestUtil.nextInt(random(), 1, 5);
+      int numRange = _TestUtil.nextInt(random(), 1, 100);
       LongRange[] ranges = new LongRange[numRange];
       int[] expectedCounts = new int[numRange];
       for(int rangeID=0;rangeID<numRange;rangeID++) {
-        long min = random().nextLong();
-        long max = random().nextLong();
+        long min;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          LongRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            min = prevRange.min;
+          } else {
+            min = prevRange.max;
+          }
+        } else {
+          min = random().nextLong();
+        }
+        long max;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          LongRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            max = prevRange.min;
+          } else {
+            max = prevRange.max;
+          }
+        } else {
+          max = random().nextLong();
+        }
+
         if (min > max) {
           long x = min;
           min = max;
           max = x;
         }
-        boolean minIncl = random().nextBoolean();
-        boolean maxIncl = random().nextBoolean();
+        boolean minIncl;
+        boolean maxIncl;
+        if (min == max) {
+          minIncl = true;
+          maxIncl = true;
+        } else {
+          minIncl = random().nextBoolean();
+          maxIncl = random().nextBoolean();
+        }
         ranges[rangeID] = new LongRange("r" + rangeID, min, minIncl, max, maxIncl);
+        if (VERBOSE) {
+          System.out.println("  range " + rangeID + ": " + ranges[rangeID]);      
+        }
 
         // Do "slow but hopefully correct" computation of
         // expected count:
@@ -360,15 +496,46 @@ public class TestRangeFacetCounts extends FacetTestCase {
       DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
       for(int rangeID=0;rangeID<numRange;rangeID++) {
-        double min = random().nextDouble();
-        double max = random().nextDouble();
+        double min;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            min = prevRange.min;
+          } else {
+            min = prevRange.max;
+          }
+        } else {
+          min = random().nextDouble();
+        }
+        double max;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            max = prevRange.min;
+          } else {
+            max = prevRange.max;
+          }
+        } else {
+          max = random().nextDouble();
+        }
+
         if (min > max) {
           double x = min;
           min = max;
           max = x;
         }
-        boolean minIncl = random().nextBoolean();
-        boolean maxIncl = random().nextBoolean();
+
+        boolean minIncl;
+        boolean maxIncl;
+        if (min == max) {
+          minIncl = true;
+          maxIncl = true;
+        } else {
+          minIncl = random().nextBoolean();
+          maxIncl = random().nextBoolean();
+        }
         ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
 
         // Do "slow but hopefully correct" computation of
@@ -444,15 +611,46 @@ public class TestRangeFacetCounts extends FacetTestCase {
       DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
       for(int rangeID=0;rangeID<numRange;rangeID++) {
-        double min = random().nextDouble();
-        double max = random().nextDouble();
+        double min;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            min = prevRange.min;
+          } else {
+            min = prevRange.max;
+          }
+        } else {
+          min = random().nextDouble();
+        }
+        double max;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            max = prevRange.min;
+          } else {
+            max = prevRange.max;
+          }
+        } else {
+          max = random().nextDouble();
+        }
+
         if (min > max) {
           double x = min;
           min = max;
           max = x;
         }
-        boolean minIncl = random().nextBoolean();
-        boolean maxIncl = random().nextBoolean();
+
+        boolean minIncl;
+        boolean maxIncl;
+        if (min == max) {
+          minIncl = true;
+          maxIncl = true;
+        } else {
+          minIncl = random().nextBoolean();
+          maxIncl = random().nextBoolean();
+        }
         ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
 
         // Do "slow but hopefully correct" computation of
@@ -531,7 +729,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new LongRange("90 or above", 90L, true, 100L, false),
         new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false));
     
-    assertEquals("dim=field path=[] value=100 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
+    assertEquals("dim=field path=[] value=16 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(w, r, d);

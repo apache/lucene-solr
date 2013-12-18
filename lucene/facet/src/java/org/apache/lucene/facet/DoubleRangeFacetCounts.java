@@ -28,14 +28,16 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
+import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic double ranges from a provided {@link
  *  ValueSource}, using {@link FunctionValues#doubleVal}.  Use
  *  this for dimensions that change in real-time (e.g. a
  *  relative time based dimension like "Past day", "Past 2
- *  days", etc.) or that change for each user (e.g. a
- *  distance dimension like "< 1 km", "< 2 km", etc.).
+ *  days", etc.) or that change for each request (e.g.
+ *  distance from the user's location, "< 1 km", "< 2 km",
+ *  etc.).
  *
  *  <p> If you had indexed your field using {@link
  *  FloatDocValuesField} then pass {@link FloatFieldSource}
@@ -64,6 +66,16 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
 
     DoubleRange[] ranges = (DoubleRange[]) this.ranges;
 
+    LongRange[] longRanges = new LongRange[ranges.length];
+    for(int i=0;i<ranges.length;i++) {
+      DoubleRange range = ranges[i];
+      longRanges[i] =  new LongRange(range.label,
+                                     NumericUtils.doubleToSortableLong(range.minIncl), true,
+                                     NumericUtils.doubleToSortableLong(range.maxIncl), true);
+    }
+
+    LongRangeCounter counter = new LongRangeCounter(longRanges);
+
     // Compute min & max over all ranges:
     double minIncl = Double.POSITIVE_INFINITY;
     double maxIncl = Double.NEGATIVE_INFINITY;
@@ -72,9 +84,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
       maxIncl = Math.max(maxIncl, range.maxIncl);
     }
 
-    // TODO: test if this is faster (in the past it was
-    // faster to do MatchingDocs on the inside) ... see
-    // patches on LUCENE-4965):
+    int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
       final int length = hits.bits.length();
@@ -83,27 +93,15 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
       while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
         // Skip missing docs:
         if (fv.exists(doc)) {
-          
-          double v = fv.doubleVal(doc);
-          if (v < minIncl || v > maxIncl) {
-            doc++;
-            continue;
-          }
-
-          // TODO: if all ranges are non-overlapping, we
-          // should instead do a bin-search up front
-          // (really, a specialized case of the interval
-          // tree)
-          // TODO: use interval tree instead of linear search:
-          for (int j = 0; j < ranges.length; j++) {
-            if (ranges[j].accept(v)) {
-              counts[j]++;
-            }
-          }
+          counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
+        } else {
+          missingCount++;
         }
-
         doc++;
       }
     }
+
+    missingCount += counter.fillCounts(counts);
+    totCount -= missingCount;
   }
 }

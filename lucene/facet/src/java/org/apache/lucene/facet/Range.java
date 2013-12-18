@@ -24,6 +24,13 @@ public abstract class Range {
   public final String label;
 
   protected Range(String label) {
+    if (label == null) {
+      throw new NullPointerException("label cannot be null");
+    }
     this.label = label;
+  }
+
+  protected void failNoMatch() {
+    throw new IllegalArgumentException("range \"" + label + "\" matches nothing");
   }
 }

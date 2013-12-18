@@ -43,27 +43,44 @@ public final class LongRange extends Range {
   // Double/FloatRange too)
 
   /** Create a LongRange. */
-  public LongRange(String label, long min, boolean minInclusive, long max, boolean maxInclusive) {
+  public LongRange(String label, long minIn, boolean minInclusive, long maxIn, boolean maxInclusive) {
     super(label);
-    this.min = min;
-    this.max = max;
+    this.min = minIn;
+    this.max = maxIn;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
 
-    if (!minInclusive && min != Long.MAX_VALUE) {
-      min++;
+    if (!minInclusive) {
+      if (minIn != Long.MAX_VALUE) {
+        minIn++;
+      } else {
+        failNoMatch();
+      }
     }
 
-    if (!maxInclusive && max != Long.MIN_VALUE) {
-      max--;
+    if (!maxInclusive) {
+      if (maxIn != Long.MIN_VALUE) {
+        maxIn--;
+      } else {
+        failNoMatch();
+      }
     }
 
-    this.minIncl = min;
-    this.maxIncl = max;
+    if (minIn > maxIn) {
+      failNoMatch();
+    }
+
+    this.minIncl = minIn;
+    this.maxIncl = maxIn;
   }
 
   public boolean accept(long value) {
     return value >= minIncl && value <= maxIncl;
+  }
+
+  @Override
+  public String toString() {
+    return "LongRange(" + minIncl + " to " + maxIncl + ")";
   }
 
   /** Returns a new {@link Filter} accepting only documents

@@ -39,9 +39,6 @@ abstract class RangeFacetCounts extends Facets {
     counts = new int[ranges.length];
   }
 
-  // nocommit all args are ... unused ... this doesn't "fit"
-  // very well:
-
   @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) {
     if (dim.equals(field) == false) {
