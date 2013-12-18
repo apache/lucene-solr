@@ -191,6 +191,14 @@ public abstract class ConfigSolr {
     return get(CfgProp.SOLR_ADMINHANDLER, "org.apache.solr.handler.admin.CoreAdminHandler");
   }
 
+  public String getCollectionsHandlerClass() {
+    return get(CfgProp.SOLR_COLLECTIONSHANDLER, "org.apache.solr.handler.admin.CollectionsHandler");
+  }
+
+  public String getInfoHandlerClass() {
+    return get(CfgProp.SOLR_INFOHANDLER, "org.apache.solr.handler.admin.InfoHandler");
+  }
+
   public boolean hasSchemaCache() {
     return getBool(ConfigSolr.CfgProp.SOLR_SHARESCHEMA, false);
   }
@@ -215,6 +223,7 @@ public abstract class ConfigSolr {
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
   protected static enum CfgProp {
     SOLR_ADMINHANDLER,
+    SOLR_COLLECTIONSHANDLER,
     SOLR_CORELOADTHREADS,
     SOLR_COREROOTDIRECTORY,
     SOLR_DISTRIBUPDATECONNTIMEOUT,
@@ -224,6 +233,7 @@ public abstract class ConfigSolr {
     SOLR_HOST,
     SOLR_HOSTCONTEXT,
     SOLR_HOSTPORT,
+    SOLR_INFOHANDLER,
     SOLR_LEADERVOTEWAIT,
     SOLR_LOGGING_CLASS,
     SOLR_LOGGING_ENABLED,

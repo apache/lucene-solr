@@ -47,6 +47,8 @@ public class TestSolrXml extends SolrTestCaseJ4 {
       ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
 
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_ADMINHANDLER, null), "testAdminHandler");
+      assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_COLLECTIONSHANDLER, null), "testCollectionsHandler");
+      assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_INFOHANDLER, null), "testInfoHandler");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, 0), 11);
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_COREROOTDIRECTORY, null), "testCoreRootDirectory");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0), 22);

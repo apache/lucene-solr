@@ -139,6 +139,8 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
     propMap.put(CfgProp.SOLR_ADMINHANDLER,
         config.getVal("solr/cores/@adminHandler", false));
+    propMap.put(CfgProp.SOLR_COLLECTIONSHANDLER, config.getVal("solr/cores/@collectionsHandler", false));
+    propMap.put(CfgProp.SOLR_INFOHANDLER, config.getVal("solr/cores/@infoHandler", false));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT,
         config.getVal("solr/cores/@distribUpdateConnTimeout", false));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT,

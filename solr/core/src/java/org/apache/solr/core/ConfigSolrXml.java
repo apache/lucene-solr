@@ -103,6 +103,8 @@ public class ConfigSolrXml extends ConfigSolr {
   
   private void fillPropMap() {
     propMap.put(CfgProp.SOLR_ADMINHANDLER, doSub("solr/str[@name='adminHandler']"));
+    propMap.put(CfgProp.SOLR_COLLECTIONSHANDLER, doSub("solr/str[@name='collectionsHandler']"));
+    propMap.put(CfgProp.SOLR_INFOHANDLER, doSub("solr/str[@name='infoHandler']"));
     propMap.put(CfgProp.SOLR_CORELOADTHREADS, doSub("solr/int[@name='coreLoadThreads']"));
     propMap.put(CfgProp.SOLR_COREROOTDIRECTORY, doSub("solr/str[@name='coreRootDirectory']"));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, doSub("solr/solrcloud/int[@name='distribUpdateConnTimeout']"));

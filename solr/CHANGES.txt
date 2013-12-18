@@ -93,6 +93,9 @@ New Features
 
 * SOLR-5522: Remove EditFileRequestHandler from 4x (Erick Erickson)
 
+* SOLR-5556: Allow class of CollectionsHandler and InfoHandler to be specified
+  in solr.xml. (Gregory Chanan, Alan Woodward)
+
 Bug Fixes
 ----------------------
 
