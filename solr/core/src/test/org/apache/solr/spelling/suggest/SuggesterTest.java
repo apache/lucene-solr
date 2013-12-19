@@ -116,6 +116,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   public void testAnalyzer() throws Exception {
     Suggester suggester = new Suggester();
     NamedList params = new NamedList();
+    params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
     suggester.init(params, h.getCore());
     assertTrue(suggester.getQueryAnalyzer() != null);

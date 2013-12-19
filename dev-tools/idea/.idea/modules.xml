@@ -49,6 +49,9 @@
       <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/dataimporthandler.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/morphlines-cell/morphlines-cell.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/morphlines-core/morphlines-core.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/map-reduce/map-reduce.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
       <module filepath="$PROJECT_DIR$/solr/solrj/src/java/solrj.iml" />

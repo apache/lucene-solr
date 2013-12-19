@@ -75,7 +75,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         type = stream.getContentType();
       }
       if( type == null ) { // Normal requests will not get here.
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Missing ContentType");
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
       }
       int idx = type.indexOf(';');
       if(idx>0) {
@@ -83,7 +83,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       }
       ContentStreamLoader loader = loaders.get(type);
       if(loader==null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported ContentType: "
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported ContentType: "
             +type+ "  Not in: "+loaders.keySet());
       }
       if(loader.getDefaultWT()!=null) {

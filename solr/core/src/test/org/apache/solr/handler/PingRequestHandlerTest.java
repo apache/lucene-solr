@@ -100,7 +100,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     makeRequest(handler, req("action", "enable"));
 
     assertTrue(healthcheckFile.exists());
-    assertNotNull(FileUtils.readFileToString(healthcheckFile), "UTF-8");
+    assertNotNull(FileUtils.readFileToString(healthcheckFile, "UTF-8"));
 
     // now verify that the handler response with success
 

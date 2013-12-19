@@ -36,6 +36,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 
@@ -114,13 +115,18 @@ public class TestSort extends SolrTestCaseJ4 {
       }
       input.deleteCharAt(input.length()-1);
       SortField[] sorts = null;
+      List<SchemaField> fields = null;
       try {
-        sorts = QueryParsing.parseSort(input.toString(), req).getSort();
+        SortSpec spec = QueryParsing.parseSortSpec(input.toString(), req);
+        sorts = spec.getSort().getSort();
+        fields = spec.getSchemaFields();
       } catch (RuntimeException e) {
         throw new RuntimeException("Failed to parse sort: " + input, e);
       }
       assertEquals("parsed sorts had unexpected size", 
                    names.length, sorts.length);
+      assertEquals("parsed sort schema fields had unexpected size", 
+                   names.length, fields.size());
       for (int j = 0; j < names.length; j++) {
         assertEquals("sorts["+j+"] had unexpected reverse: " + input,
                      reverse[j], sorts[j].getReverse());
@@ -144,6 +150,9 @@ public class TestSort extends SolrTestCaseJ4 {
           assertEquals("sorts["+j+"] ("+type.toString()+
                        ") had unexpected field in: " + input,
                        names[j], sorts[j].getField());
+          assertEquals("fields["+j+"] ("+type.toString()+
+                       ") had unexpected name in: " + input,
+                       names[j], fields.get(j).getName());
         }
       }
     }

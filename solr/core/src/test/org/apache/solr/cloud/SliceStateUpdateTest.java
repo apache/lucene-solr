@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.Overseer.OverseerThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -58,8 +60,6 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
   private File dataDir1;
 
   private File dataDir2;
-
-  private File dataDir3;
 
   @BeforeClass
   public static void beforeClass() {
@@ -105,9 +105,6 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     dataDir2 = new File(dataDir + File.separator + "data2");
     dataDir2.mkdirs();
 
-    dataDir3 = new File(dataDir + File.separator + "data3");
-    dataDir3.mkdirs();
-
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
@@ -116,21 +113,19 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     System.setProperty("hostPort", "1661");
     System.setProperty("solr.data.dir", SliceStateUpdateTest.this.dataDir1.getAbsolutePath());
     container1 = new CoreContainer();
-
+    container1.load();
     System.clearProperty("hostPort");
 
     System.setProperty("hostPort", "1662");
     System.setProperty("solr.data.dir", SliceStateUpdateTest.this.dataDir2.getAbsolutePath());
     container2 = new CoreContainer();
+    container2.load();
     System.clearProperty("hostPort");
 
     System.clearProperty("solr.solr.home");
 
-    container1.load();
-    container2.load();
 
     log.info("####SETUP_END " + getTestName());
-
   }
 
 
@@ -139,10 +134,17 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     System.setProperty("solrcloud.update.delay", "1");
     
     /* Get ClusterState, update slice state and publish it to Zookeeper */
-
+    container1.getZkController().getZkStateReader().updateClusterState(true);
+    
+    // we don't want to race with legit overseer updates
+    OverseerThread updaterThread = container1.getZkController().getOverseer().getUpdaterThread();
+    closeThread(updaterThread);
+    updaterThread = container2.getZkController().getOverseer().getUpdaterThread();
+    closeThread(updaterThread);
+    
     ClusterState clusterState = container1.getZkController().getClusterState();
-    Map<String, DocCollection> collectionStates =
-        new LinkedHashMap<String, DocCollection>(clusterState.getCollectionStates());
+//    Map<String, DocCollection> collectionStates =
+//        new LinkedHashMap<String, DocCollection>(clusterState.getCollectionStates());
 
     Map<String, Slice> slicesMap = clusterState.getSlicesMap("collection1");
     Map<String, Object> props = new HashMap<String, Object>(1);
@@ -154,11 +156,11 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", ImplicitDocRouter.NAME));
 
     DocCollection coll = new DocCollection("collection1", slicesMap, props, DocRouter.DEFAULT);
-    collectionStates.put("collection1", coll);
+//    collectionStates.put("collection1", coll);
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
 
-    ClusterState newState = new ClusterState(clusterState.getLiveNodes(), collectionStates);
+    ClusterState newState = clusterState.copyWith(Collections.singletonMap(coll.getName(), coll) );
     zkClient.setData(ZkStateReader.CLUSTER_STATE,
         ZkStateReader.toJSON(newState), true);
     zkClient.close();
@@ -167,7 +169,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
     ZkController zkController2 = container2.getZkController();
     ClusterState clusterState2 = null;
     Map<String, Slice> slices = null;
-    for (int i = 100; i > 0; i--) {
+    for (int i = 60; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
       slices = clusterState2.getSlicesMap("collection1");
       if (slices != null && slices.containsKey("shard1")
@@ -181,6 +183,20 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
 
     assertEquals("shard1", slices.get("shard1").getName());
     assertEquals("inactive", slices.get("shard1").getState());
+
+    container1.getZkController().getOverseerElector().getContext().cancelElection();
+    container2.getZkController().getOverseerElector().getContext().cancelElection();
+  }
+
+  private void closeThread(OverseerThread updaterThread) {
+    if (updaterThread != null) {
+      try {
+        updaterThread.close();
+        updaterThread.interrupt();
+      } catch (Throwable t) {
+        log.error("Error closing updaterThread", t);
+      }
+    }
   }
 
   @Override

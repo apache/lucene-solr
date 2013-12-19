@@ -373,6 +373,10 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return compressionMode;
   }
 
+  int getChunkSize() {
+    return chunkSize;
+  }
+
   ChunkIterator chunkIterator(int startDocID) throws IOException {
     ensureOpen();
     fieldsStream.seek(indexReader.getStartPointer(startDocID));

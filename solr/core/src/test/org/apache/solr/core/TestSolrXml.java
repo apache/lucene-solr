@@ -47,10 +47,14 @@ public class TestSolrXml extends SolrTestCaseJ4 {
       ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
 
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_ADMINHANDLER, null), "testAdminHandler");
+      assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_COLLECTIONSHANDLER, null), "testCollectionsHandler");
+      assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_INFOHANDLER, null), "testInfoHandler");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, 0), 11);
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_COREROOTDIRECTORY, null), "testCoreRootDirectory");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0), 22);
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0), 33);
+      assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_MAXUPDATECONNECTIONS, 0), 3);
+      assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, 0), 37);
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_HOST, null), "testHost");
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_HOSTCONTEXT, null), "testHostContext");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_HOSTPORT, 0), 44);

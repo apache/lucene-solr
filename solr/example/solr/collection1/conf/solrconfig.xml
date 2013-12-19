@@ -117,7 +117,20 @@
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/> 
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
+    
+         
+    <!-- These will be used if you are using the solr.HdfsDirectoryFactory,
+         otherwise they will be ignored. If you don't plan on using hdfs,
+         you can safely remove this section. -->      
+    <!-- The root directory that collection data should be written to. -->     
+    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
+    <!-- The hadoop configuration files to use for the hdfs client. -->    
+    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
+    <!-- Enable/Disable the hdfs cache. -->    
+    <str name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</str>
+    
+  </directoryFactory> 
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -872,7 +885,15 @@
 
   <!-- realtime get handler, guaranteed to return the latest stored fields of
        any document, without the need to commit or open a new searcher.  The
-       current implementation relies on the updateLog feature being enabled. -->
+       current implementation relies on the updateLog feature being enabled.
+
+       ** WARNING **
+       Do NOT disable the realtime get handler at /get if you are using
+       SolrCloud otherwise any leader election will cause a full sync in ALL
+       replicas for the shard in question. Similarly, a replica recovery will
+       also always fetch the complete index from the leader because a partial
+       sync will not be possible in the absence of this handler.
+  -->
   <requestHandler name="/get" class="solr.RealTimeGetHandler">
      <lst name="defaults">
        <str name="omitHeader">true</str>
@@ -1011,12 +1032,12 @@
   </requestHandler>
 
   <!-- for back compat with clients using /update/json and /update/csv -->  
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="defaults">
          <str name="stream.contentType">application/json</str>
        </lst>
   </requestHandler>
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler">
+  <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
         <lst name="defaults">
          <str name="stream.contentType">application/csv</str>
        </lst>
@@ -1116,7 +1137,9 @@
      <requestHandler name="/admin/file"       class="solr.admin.ShowFileRequestHandler" >
     -->
   <!-- If you wish to hide files under ${solr.home}/conf, explicitly
-       register the ShowFileRequestHandler using: 
+       register the ShowFileRequestHandler using the definition below. 
+       NOTE: The glob pattern ('*') is the only pattern supported at present, *.xml will
+             not exclude all files ending in '.xml'. Use it to exclude _all_ updates
     -->
   <!--
      <requestHandler name="/admin/file" 
@@ -1124,10 +1147,24 @@
        <lst name="invariants">
          <str name="hidden">synonyms.txt</str> 
          <str name="hidden">anotherfile.txt</str> 
+         <str name="hidden">*</str> 
        </lst>
      </requestHandler>
     -->
 
+  <!--
+    Enabling this request handler (which is NOT a default part of the admin handler) will allow the Solr UI to edit
+    all the config files. This is intended for secure/development use ONLY! Leaving available and publically
+    accessible is a security vulnerability and should be done with extreme caution!
+  -->
+  <!--
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+         <str name="hidden">synonyms.txt</str>
+         <str name="hidden">anotherfile.txt</str>
+    </lst>
+  </requestHandler>
+  -->
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
     <lst name="invariants">
@@ -1317,7 +1354,7 @@
        </lst>
       -->
   </searchComponent>
-
+  
   <!-- A request handler for demonstrating the spellcheck component.  
 
        NOTE: This is purely as an example.  The whole purpose of the
@@ -1355,6 +1392,26 @@
     </arr>
   </requestHandler>
 
+  <searchComponent name="suggest" class="solr.SuggestComponent">
+  	<lst name="suggester">
+      <str name="name">mySuggester</str>
+      <str name="lookupImpl">FuzzyLookupFactory</str>      <!-- org.apache.solr.spelling.suggest.fst -->
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>     <!-- org.apache.solr.spelling.suggest.HighFrequencyDictionaryFactory --> 
+      <str name="field">cat</str>
+      <str name="weightField">price</str>
+      <str name="suggestAnalyzerFieldType">string</str>
+    </lst>
+  </searchComponent>
+
+  <requestHandler name="/suggest" class="solr.SearchHandler" startup="lazy">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+      <str name="suggest.count">10</str>
+    </lst>
+    <arr name="components">
+      <str>suggest</str>
+    </arr>
+  </requestHandler>
   <!-- Term Vector Component
 
        http://wiki.apache.org/solr/TermVectorComponent

@@ -27,8 +27,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -241,23 +243,38 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     assertTrue(sawException);
   }
 
-  private void createAlias(String alias, String collections) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("collections", collections);
-    params.set("name", alias);
-    params.set("action", CollectionAction.CREATEALIAS.toString());
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    NamedList<Object> result = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+  private void createAlias(String alias, String collections)
+      throws SolrServerException, IOException {
+    if (random().nextBoolean()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("collections", collections);
+      params.set("name", alias);
+      params.set("action", CollectionAction.CREATEALIAS.toString());
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      NamedList<Object> result = createNewSolrServer("",
+          getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+    } else {
+      CollectionAdminResponse resp = CollectionAdminRequest.CreateAlias
+          .createAlias(alias, collections, createNewSolrServer("",
+              getBaseUrl((HttpSolrServer) clients.get(0))));
+    }
   }
   
-  private void deleteAlias(String alias) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("name", alias);
-    params.set("action", CollectionAction.DELETEALIAS.toString());
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    NamedList<Object> result = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+  private void deleteAlias(String alias) throws SolrServerException,
+      IOException {
+    if (random().nextBoolean()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("name", alias);
+      params.set("action", CollectionAction.DELETEALIAS.toString());
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      NamedList<Object> result = createNewSolrServer("",
+          getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+    } else {
+      CollectionAdminResponse resp = CollectionAdminRequest.deleteAlias(alias,
+          createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))));
+    }
   }
   
   protected void indexDoc(List<CloudJettyRunner> skipServers, Object... fields) throws IOException,

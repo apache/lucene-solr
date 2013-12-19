@@ -74,6 +74,9 @@ public class ZkStateReader {
   public static final String ACTIVE = "active";
   public static final String DOWN = "down";
   public static final String SYNC = "sync";
+
+  public static final String CONFIGS_ZKNODE = "/configs";
+  public final static String CONFIGNAME_PROP="configName";
   
   private volatile ClusterState clusterState;
 
@@ -113,6 +116,36 @@ public class ZkStateReader {
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
+  }
+
+  /**
+   * Returns config set name for collection.
+   * 
+   * @param collection to return config set name for
+   */
+  public String readConfigName(String collection) throws KeeperException,
+      InterruptedException {
+
+    String configName = null;
+
+    String path = COLLECTIONS_ZKNODE + "/" + collection;
+    if (log.isInfoEnabled()) {
+      log.info("Load collection config from:" + path);
+    }
+    byte[] data = zkClient.getData(path, null, null, true);
+
+    if(data != null) {
+      ZkNodeProps props = ZkNodeProps.load(data);
+      configName = props.getStr(CONFIGNAME_PROP);
+    }
+
+    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
+      log.error("Specified config does not exist in ZooKeeper:" + configName);
+      throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
+          "Specified config does not exist in ZooKeeper:" + configName);
+    }
+
+    return configName;
   }
 
 
@@ -221,7 +254,7 @@ public class ZkStateReader {
               byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
               Set<String> ln = ZkStateReader.this.clusterState.getLiveNodes();
-              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln);
+              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln,ZkStateReader.this);
               // update volatile
               ZkStateReader.this.clusterState = clusterState;
             }
@@ -293,7 +326,7 @@ public class ZkStateReader {
     
       Set<String> liveNodeSet = new HashSet<String>();
       liveNodeSet.addAll(liveNodes);
-      ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet);
+      ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet, ZkStateReader.this);
       this.clusterState = clusterState;
       
       zkClient.exists(ALIASES,
@@ -360,12 +393,14 @@ public class ZkStateReader {
         if (!onlyLiveNodes) {
           log.info("Updating cloud state from ZooKeeper... ");
           
-          clusterState = ClusterState.load(zkClient, liveNodesSet);
+          clusterState = ClusterState.load(zkClient, liveNodesSet,this);
         } else {
           log.info("Updating live nodes from ZooKeeper... ({})", liveNodesSet.size());
-          clusterState = new ClusterState(
+          clusterState = this.clusterState;
+          clusterState.setLiveNodes(liveNodesSet);
+          /*clusterState = new ClusterState(
               ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet,
-              ZkStateReader.this.clusterState.getCollectionStates());
+              ZkStateReader.this.clusterState.getCollectionStates());*/
         }
         this.clusterState = clusterState;
       }
@@ -394,7 +429,7 @@ public class ZkStateReader {
               if (!onlyLiveNodes) {
                 log.info("Updating cloud state from ZooKeeper... ");
                 
-                clusterState = ClusterState.load(zkClient, liveNodesSet);
+                clusterState = ClusterState.load(zkClient, liveNodesSet,ZkStateReader.this);
               } else {
                 log.info("Updating live nodes from ZooKeeper... ");
                 clusterState = new ClusterState(ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet, ZkStateReader.this.clusterState.getCollectionStates());
@@ -464,7 +499,7 @@ public class ZkStateReader {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
-    return getLeaderRetry(collection, shard, 1000);
+    return getLeaderRetry(collection, shard, 4000);
   }
 
   /**
@@ -547,6 +582,9 @@ public class ZkStateReader {
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+  public Set<String> getAllCollections(){
+    return clusterState.getCollections();
   }
 
   public void updateAliases() throws KeeperException, InterruptedException {

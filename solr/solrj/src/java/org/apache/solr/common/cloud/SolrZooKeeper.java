@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -43,6 +44,10 @@ public class SolrZooKeeper extends ZooKeeper {
   
   public ClientCnxn getConnection() {
     return cnxn;
+  }
+  
+  public SocketAddress getSocketAddress() {
+    return testableLocalSocketAddress();
   }
   
   /**

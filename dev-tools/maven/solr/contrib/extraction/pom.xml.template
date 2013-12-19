@@ -58,10 +58,10 @@
       <artifactId>solr-test-framework</artifactId>
       <scope>test</scope>
     </dependency>
-@solr-extraction.internal.dependencies@
-@solr-extraction.external.dependencies@
-@solr-extraction.internal.test.dependencies@
-@solr-extraction.external.test.dependencies@
+@solr-cell.internal.dependencies@
+@solr-cell.external.dependencies@
+@solr-cell.internal.test.dependencies@
+@solr-cell.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>

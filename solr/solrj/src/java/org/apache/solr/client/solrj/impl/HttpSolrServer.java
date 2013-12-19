@@ -22,9 +22,12 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -39,6 +42,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -71,6 +75,7 @@ public class HttpSolrServer extends SolrServer {
   private static final String UTF_8 = "UTF-8";
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
+  
   /**
    * User-Agent String.
    */
@@ -117,7 +122,8 @@ public class HttpSolrServer extends SolrServer {
   private boolean useMultiPartPost;
   private final boolean internalClient;
 
-  
+  private Set<String> queryParams = Collections.emptySet();
+
   /**
    * @param baseURL
    *          The URL of the Solr server. For example, "
@@ -156,6 +162,18 @@ public class HttpSolrServer extends SolrServer {
     }
     
     this.parser = parser;
+  }
+  
+  public Set<String> getQueryParams() {
+    return queryParams;
+  }
+
+  /**
+   * Expert Method.
+   * @param queryParams set of param keys to only send via the query string
+   */
+  public void setQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
   }
   
   /**
@@ -207,7 +225,6 @@ public class HttpSolrServer extends SolrServer {
     if (invariantParams != null) {
       wparams.add(invariantParams);
     }
-    params = wparams;
     
     int tries = maxRetries + 1;
     try {
@@ -221,7 +238,7 @@ public class HttpSolrServer extends SolrServer {
             if( streams != null ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" );
             }
-            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( params, false ) );
+            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( wparams, false ) );
           }
           else if( SolrRequest.METHOD.POST == request.getMethod() ) {
 
@@ -236,10 +253,22 @@ public class HttpSolrServer extends SolrServer {
               }
             }
             boolean isMultipart = (this.useMultiPartPost || ( streams != null && streams.size() > 1 )) && !hasNullStreamName;
-
+            
+            // only send this list of params as query string params
+            ModifiableSolrParams queryParams = new ModifiableSolrParams();
+            for (String param : this.queryParams) {
+              String[] value = wparams.getParams(param) ;
+              if (value != null) {
+                for (String v : value) {
+                  queryParams.add(param, v);
+                }
+                wparams.remove(param);
+              }
+            }
+            
             LinkedList<NameValuePair> postParams = new LinkedList<NameValuePair>();
             if (streams == null || isMultipart) {
-              HttpPost post = new HttpPost(url);
+              HttpPost post = new HttpPost(url + ClientUtils.toQueryString( queryParams, false ));
               post.setHeader("Content-Charset", "UTF-8");
               if (!isMultipart) {
                 post.addHeader("Content-Type",
@@ -247,10 +276,10 @@ public class HttpSolrServer extends SolrServer {
               }
 
               List<FormBodyPart> parts = new LinkedList<FormBodyPart>();
-              Iterator<String> iter = params.getParameterNamesIterator();
+              Iterator<String> iter = wparams.getParameterNamesIterator();
               while (iter.hasNext()) {
                 String p = iter.next();
-                String[] vals = params.getParams(p);
+                String[] vals = wparams.getParams(p);
                 if (vals != null) {
                   for (String v : vals) {
                     if (isMultipart) {
@@ -295,7 +324,7 @@ public class HttpSolrServer extends SolrServer {
             }
             // It is has one stream, it is the post body, put the params in the URL
             else {
-              String pstr = ClientUtils.toQueryString(params, false);
+              String pstr = ClientUtils.toQueryString(wparams, false);
               HttpPost post = new HttpPost(url + pstr);
 
               // Single stream as body
@@ -410,9 +439,11 @@ public class HttpSolrServer extends SolrServer {
       
       String procCt = processor.getContentType();
       if (procCt != null) {
-        if (!contentType.equals(procCt)) {
-          // unexpected content type
-          String msg = "Expected content type " + procCt + " but got " + contentType + ".";
+        String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
+        String mimeType = ContentType.parse(contentType).getMimeType().trim().toLowerCase(Locale.ROOT);
+        if (!procMimeType.equals(mimeType)) {
+          // unexpected mime type
+          String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
           Header encodingHeader = response.getEntity().getContentEncoding();
           String encoding;
           if (encodingHeader != null) {

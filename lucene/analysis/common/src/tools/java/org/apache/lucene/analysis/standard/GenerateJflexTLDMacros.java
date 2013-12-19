@@ -60,20 +60,21 @@ public class GenerateJflexTLDMacros {
   
   private static final String APACHE_LICENSE 
     = "/*" + NL
-      + " * Copyright 2001-2005 The Apache Software Foundation." + NL
-      + " *" + NL
-      + " * Licensed under the Apache License, Version 2.0 (the \"License\");" + NL
-      + " * you may not use this file except in compliance with the License." + NL
-      + " * You may obtain a copy of the License at" + NL
-      + " *" + NL
-      + " *      http://www.apache.org/licenses/LICENSE-2.0" + NL
-      + " *" + NL
-      + " * Unless required by applicable law or agreed to in writing, software" + NL
-      + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
-      + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
-      + " * See the License for the specific language governing permissions and" + NL
-      + " * limitations under the License." + NL
-      + " */" + NL + NL;
+    + " * Licensed to the Apache Software Foundation (ASF) under one or more" + NL
+    + " * contributor license agreements.  See the NOTICE file distributed with" + NL
+    + " * this work for additional information regarding copyright ownership." + NL
+    + " * The ASF licenses this file to You under the Apache License, Version 2.0" + NL
+    + " * (the \"License\"); you may not use this file except in compliance with" + NL
+    + " * the License.  You may obtain a copy of the License at" + NL
+    + " *" + NL
+    + " *     http://www.apache.org/licenses/LICENSE-2.0" + NL
+    + " *" + NL
+    + " * Unless required by applicable law or agreed to in writing, software" + NL
+    + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
+    + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
+    + " * See the License for the specific language governing permissions and" + NL
+    + " * limitations under the License." + NL
+    + " */" + NL;
     
   private static final Pattern TLD_PATTERN_1 
     = Pattern.compile("([-A-Za-z0-9]+)\\.\\s+NS\\s+.*");

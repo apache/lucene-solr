@@ -596,6 +596,15 @@ public class CoreAdminHandler extends RequestHandlerBase {
             "No such core exists '" + cname + "'");
       } else {
         if (coreContainer.getZkController() != null) {
+          // we are unloading, cancel any ongoing recovery
+          // so there are no races to publish state
+          // we will try to cancel again later before close
+          if (core != null) {
+            if (coreContainer.getZkController() != null) {
+              core.getSolrCoreState().cancelRecovery();
+            }
+          }
+          
           log.info("Unregistering core " + core.getName() + " from cloudstate.");
           try {
             coreContainer.getZkController().unregister(cname,
@@ -796,7 +805,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
-        syncStrategy = new SyncStrategy();
+        syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler());
         
         Map<String,Object> props = new HashMap<String,Object>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());

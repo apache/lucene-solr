@@ -9388,7 +9388,8 @@ jQuery.extend({
 					return this;
 				},
 
-				url : s.url
+				url : s.url,
+				data : s.data
 			};
 
 		// Callback for when everything is done

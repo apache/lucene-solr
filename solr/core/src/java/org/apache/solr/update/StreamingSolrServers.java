@@ -20,8 +20,10 @@ package org.apache.solr.update;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.http.client.HttpClient;
@@ -33,28 +35,30 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.Error;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StreamingSolrServers {
   public static Logger log = LoggerFactory.getLogger(StreamingSolrServers.class);
   
-  private static HttpClient httpClient;
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    httpClient = HttpClientUtil.createClient(params);
-  }
+  private HttpClient httpClient;
   
   private Map<String,ConcurrentUpdateSolrServer> solrServers = new HashMap<String,ConcurrentUpdateSolrServer>();
   private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
 
   private ExecutorService updateExecutor;
 
-  public StreamingSolrServers(ExecutorService updateExecutor) {
-    this.updateExecutor = updateExecutor;
+  public StreamingSolrServers(UpdateShardHandler updateShardHandler) {
+    this.updateExecutor = updateShardHandler.getUpdateExecutor();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    
+    httpClient = updateShardHandler.getHttpClient();
   }
 
   public List<Error> getErrors() {
@@ -69,7 +73,7 @@ public class StreamingSolrServers {
     String url = getFullUrl(req.node.getUrl());
     ConcurrentUpdateSolrServer server = solrServers.get(url);
     if (server == null) {
-      server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor) {
+      server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {
           log.error("error", ex);
@@ -85,6 +89,10 @@ public class StreamingSolrServers {
       server.setParser(new BinaryResponseParser());
       server.setRequestWriter(new BinaryRequestWriter());
       server.setPollQueueTime(0);
+      Set<String> queryParams = new HashSet<String>(2);
+      queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
+      queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
+      server.setQueryParams(queryParams);
       solrServers.put(url, server);
     }
 

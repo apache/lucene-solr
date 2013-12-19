@@ -108,7 +108,9 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         if (srsp.getSolrResponse() != null) {
           individualShardInfo.add("time", srsp.getSolrResponse().getElapsedTime());
         }
-
+        if (srsp.getShardAddress() != null) {
+          individualShardInfo.add("shardAddress", srsp.getShardAddress());
+        }
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
       if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {

@@ -156,6 +156,14 @@ public abstract class ConfigSolr {
   public int getDistributedSocketTimeout() {
     return getInt(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
   }
+  
+  public int getMaxUpdateConnections() {
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONS, 10000);
+  }
+
+  public int getMaxUpdateConnectionsPerHost() {
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, 100);
+  }
 
   public int getCoreLoadThreadCount() {
     return getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, DEFAULT_CORE_LOAD_THREADS);
@@ -177,6 +185,14 @@ public abstract class ConfigSolr {
 
   public String getCoreAdminHandlerClass() {
     return get(CfgProp.SOLR_ADMINHANDLER, "org.apache.solr.handler.admin.CoreAdminHandler");
+  }
+
+  public String getCollectionsHandlerClass() {
+    return get(CfgProp.SOLR_COLLECTIONSHANDLER, "org.apache.solr.handler.admin.CollectionsHandler");
+  }
+
+  public String getInfoHandlerClass() {
+    return get(CfgProp.SOLR_INFOHANDLER, "org.apache.solr.handler.admin.InfoHandler");
   }
 
   public boolean hasSchemaCache() {
@@ -203,13 +219,17 @@ public abstract class ConfigSolr {
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
   protected static enum CfgProp {
     SOLR_ADMINHANDLER,
+    SOLR_COLLECTIONSHANDLER,
     SOLR_CORELOADTHREADS,
     SOLR_COREROOTDIRECTORY,
     SOLR_DISTRIBUPDATECONNTIMEOUT,
     SOLR_DISTRIBUPDATESOTIMEOUT,
+    SOLR_MAXUPDATECONNECTIONS,
+    SOLR_MAXUPDATECONNECTIONSPERHOST,
     SOLR_HOST,
     SOLR_HOSTCONTEXT,
     SOLR_HOSTPORT,
+    SOLR_INFOHANDLER,
     SOLR_LEADERVOTEWAIT,
     SOLR_LOGGING_CLASS,
     SOLR_LOGGING_ENABLED,

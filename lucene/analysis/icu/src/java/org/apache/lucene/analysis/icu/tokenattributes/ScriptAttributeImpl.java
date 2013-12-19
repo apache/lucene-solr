@@ -84,6 +84,10 @@ public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribut
 
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(ScriptAttribute.class, "script", getName());
+    // when wordbreaking CJK, we use the 15924 code Japanese (Han+Hiragana+Katakana) to 
+    // mark runs of Chinese/Japanese. our use is correct (as for chinese Han is a subset), 
+    // but this is just to help prevent confusion.
+    String name = code == UScript.JAPANESE ? "Chinese/Japanese" : getName();
+    reflector.reflect(ScriptAttribute.class, "script", name);
   }
 }

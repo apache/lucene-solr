@@ -202,7 +202,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_6_1_0 wordBreakTest = new WordBreakTestUnicode_6_1_0();
+    WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
     wordBreakTest.test(a);
   }
   
@@ -230,6 +230,8 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "壹゙", "壹゙"); // ideographic
     checkOneTerm(a, "아゙",  "아゙"); // hangul
   }
+  
+  
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {

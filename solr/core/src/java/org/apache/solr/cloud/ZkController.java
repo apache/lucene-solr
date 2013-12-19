@@ -23,10 +23,10 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -172,11 +172,9 @@ public final class ZkController {
   private int clientTimeout;
 
   private volatile boolean isClosed;
-  
-  private UpdateShardHandler updateShardHandler;
 
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, int leaderVoteWait, boolean genericCoreNodeNames, int distribUpdateConnTimeout, int distribUpdateSoTimeout, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, int leaderVoteWait, boolean genericCoreNodeNames, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
@@ -186,8 +184,6 @@ public final class ZkController {
     // solr.xml to indicate the root context, instead of hostContext="" 
     // which means the default of "solr"
     localHostContext = trimLeadingAndTrailingSlashes(localHostContext);
-    
-    updateShardHandler = new UpdateShardHandler(distribUpdateConnTimeout, distribUpdateSoTimeout);
     
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
@@ -203,46 +199,53 @@ public final class ZkController {
 
     this.leaderVoteWait = leaderVoteWait;
     this.clientTimeout = zkClientTimeout;
-    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
+    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout,
+        zkClientConnectTimeout, new DefaultConnectionStrategy(),
         // on reconnect, reload cloud info
         new OnReconnect() {
-
+          
           @Override
           public void command() {
             try {
               markAllAsNotLeader(registerOnReconnect);
               
-              // this is troublesome - we dont want to kill anything the old leader accepted
-              // though I guess sync will likely get those updates back? But only if
+              // this is troublesome - we dont want to kill anything the old
+              // leader accepted
+              // though I guess sync will likely get those updates back? But
+              // only if
               // he is involved in the sync, and he certainly may not be
-            //  ExecutorUtil.shutdownAndAwaitTermination(cc.getCmdDistribExecutor());
+              // ExecutorUtil.shutdownAndAwaitTermination(cc.getCmdDistribExecutor());
               // we need to create all of our lost watches
               
               // seems we dont need to do this again...
-              //Overseer.createClientNodes(zkClient, getNodeName());
+              // Overseer.createClientNodes(zkClient, getNodeName());
               ShardHandler shardHandler;
               String adminPath;
               shardHandler = cc.getShardHandlerFactory().getShardHandler();
               adminPath = cc.getAdminPath();
-
+              
               cc.cancelCoreRecoveries();
               
               registerAllCoresAsDown(registerOnReconnect, false);
-
-              ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
-              ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+              
+              ElectionContext context = new OverseerElectionContext(zkClient,
+                  overseer, getNodeName());
+              
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
               
-              List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+              List<CoreDescriptor> descriptors = registerOnReconnect
+                  .getCurrentDescriptors();
               // re register all descriptors
-              if (descriptors  != null) {
+              if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
-                  // TODO: we need to think carefully about what happens when it was
-                  // a leader that was expired - as well as what to do about leaders/overseers
+                  // TODO: we need to think carefully about what happens when it
+                  // was
+                  // a leader that was expired - as well as what to do about
+                  // leaders/overseers
                   // with connection loss
                   try {
                     register(descriptor.getName(), descriptor, true, true);
@@ -251,7 +254,7 @@ public final class ZkController {
                   }
                 }
               }
-  
+              
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
@@ -262,10 +265,18 @@ public final class ZkController {
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
             }
-
           }
-
- 
+          
+        }, new BeforeReconnect() {
+          
+          @Override
+          public void command() {
+            try {
+              ZkController.this.overseer.close();
+            } catch (Exception e) {
+              log.error("Error trying to stop any Overseer threads", e);
+            }
+          }
         });
     
     this.overseerJobQueue = Overseer.getInQueue(zkClient);
@@ -396,13 +407,6 @@ public final class ZkController {
       log.error("Error closing zkClient", t);
     } 
     
-    if (updateShardHandler != null) {
-      try {
-        updateShardHandler.close();
-      } catch(Throwable t) {
-        log.error("Error closing updateShardHandler", t);
-      }
-    }
   }
 
   /**
@@ -717,35 +721,6 @@ public final class ZkController {
       InterruptedException {
     return zkClient.exists(path, true);
   }
-
-  /**
-   * Returns config value
-   */
-  public String readConfigName(String collection) throws KeeperException,
-      InterruptedException {
-
-    String configName = null;
-
-    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
-    if (log.isInfoEnabled()) {
-      log.info("Load collection config from:" + path);
-    }
-    byte[] data = zkClient.getData(path, null, null, true);
-    
-    if(data != null) {
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-    }
-    
-    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-      log.error("Specified config does not exist in ZooKeeper:" + configName);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Specified config does not exist in ZooKeeper:" + configName);
-    }
-
-    return configName;
-  }
-
 
 
   /**
@@ -1358,30 +1333,31 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd ) {
 
     String coreNodeName = getCoreNodeName(cd);
-
-    // make sure the node name is set on the descriptor
-    if (cd.getCloudDescriptor().getCoreNodeName() == null) {
-      cd.getCloudDescriptor().setCoreNodeName(coreNodeName);
-    }
-
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
-      if(cd.getCloudDescriptor().getCollectionName() !=null && cd.getCloudDescriptor().getCoreNodeName() != null ) {
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if(cd.getCloudDescriptor().getCollectionName() !=null && cloudDesc.getCoreNodeName() != null ) {
         //we were already registered
-        if(zkStateReader.getClusterState().hasCollection(cd.getCloudDescriptor().getCollectionName())){
-        DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCloudDescriptor().getCollectionName());
+        if(zkStateReader.getClusterState().hasCollection(cloudDesc.getCollectionName())){
+        DocCollection coll = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
          if(!"true".equals(coll.getStr("autoCreated"))){
-           Slice slice = coll.getSlice(cd.getCloudDescriptor().getShardId());
+           Slice slice = coll.getSlice(cloudDesc.getShardId());
            if(slice != null){
-             if(slice.getReplica(cd.getCloudDescriptor().getCoreNodeName()) == null) {
+             if(slice.getReplica(cloudDesc.getCoreNodeName()) == null) {
                log.info("core_removed This core is removed from ZK");
-               throw new SolrException(ErrorCode.NOT_FOUND,coreNodeName +" is removed");
+               throw new SolrException(ErrorCode.NOT_FOUND,cloudDesc.getCoreNodeName() +" is removed");
              }
            }
          }
         }
       }
+
+      // make sure the node name is set on the descriptor
+      if (cloudDesc.getCoreNodeName() == null) {
+        cloudDesc.setCoreNodeName(coreNodeName);
+      }
+
       publish(cd, ZkStateReader.DOWN, false);
     } catch (KeeperException e) {
       log.error("", e);
@@ -1562,11 +1538,14 @@ public final class ZkController {
     return clientTimeout;
   }
 
-  // may return null if not in zk mode
-  public UpdateShardHandler getUpdateShardHandler() {
-    return updateShardHandler;
+  public Overseer getOverseer() {
+    return overseer;
   }
 
+  public LeaderElector getOverseerElector() {
+    return overseerElector;
+  }
+  
   /**
    * Returns the nodeName that should be used based on the specified properties.
    *

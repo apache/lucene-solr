@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -32,11 +31,9 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -187,6 +184,11 @@ public class SolrXMLCoresLocator implements CoresLocator {
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
     // we don't need those params, we just write out the current cc state
+    this.persist(cc);
+  }
+
+  @Override
+  public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
     this.persist(cc);
   }
 

@@ -17,10 +17,29 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -57,26 +76,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -211,7 +210,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   @AfterClass
-  public static void afterClass() {
+  public static void afterClass() throws Exception {
     System.clearProperty("solrcloud.update.delay");
     System.clearProperty("genericCoreNodeNames");
   }
@@ -255,9 +254,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
-    server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
+        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 15000);
     return server;
   }
   
@@ -443,7 +440,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
   protected int getTotalReplicas(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    DocCollection coll = zkStateReader.getClusterState().getCollectionStates().get(collection);
+    DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
     if (coll == null) return 0;  // support for when collection hasn't been created yet
     int cnt = 0;
     for (Slice slices : coll.getSlices()) {
@@ -456,7 +453,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String solrConfigOverride) throws Exception {
     
     JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
-        solrConfigOverride, null, false, getExtraServlets());
+        solrConfigOverride, null, false, getExtraServlets(), null, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -470,7 +467,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       solrHome = getRelativeSolrHomePath(solrHome);
     }
     
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets());
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets(), null, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -616,7 +613,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @Override
   protected void indexDoc(SolrInputDocument doc) throws IOException,
       SolrServerException {
-    controlClient.add(doc);
+    
+    UpdateRequest req = new UpdateRequest();
+    req.add(doc);
+    req.setParam("CONTROL", "TRUE");
+    req.process(controlClient);
     
     // if we wanted to randomly pick a client - but sometimes they may be
     // down...
@@ -846,23 +847,23 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected void indexAbunchOfDocs() throws Exception {
-    indexr(id, 2, i1, 50, tlong, 50, t1, "to come to the aid of their country.");
-    indexr(id, 3, i1, 2, tlong, 2, t1, "how now brown cow");
-    indexr(id, 4, i1, -100, tlong, 101, t1,
+    indexr(id, 2, i1, 50, t1, "to come to the aid of their country.");
+    indexr(id, 3, i1,  2, t1, "how now brown cow");
+    indexr(id, 4, i1, -100, t1,
         "the quick fox jumped over the lazy dog");
-    indexr(id, 5, i1, 500, tlong, 500, t1,
+    indexr(id, 5, i1, 500, t1,
         "the quick fox jumped way over the lazy dog");
-    indexr(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
-    indexr(id, 7, i1, 123, tlong, 123, t1, "humpty dumpy had a great fall");
-    indexr(id, 8, i1, 876, tlong, 876, t1,
+    indexr(id, 6, i1, -600, t1, "humpty dumpy sat on a wall");
+    indexr(id, 7, i1, 123, t1, "humpty dumpy had a great fall");
+    indexr(id, 8, i1, 876, t1,
         "all the kings horses and all the kings men");
-    indexr(id, 9, i1, 7, tlong, 7, t1, "couldn't put humpty together again");
-    indexr(id, 10, i1, 4321, tlong, 4321, t1, "this too shall pass");
-    indexr(id, 11, i1, -987, tlong, 987, t1,
+    indexr(id, 9, i1, 7, t1, "couldn't put humpty together again");
+    indexr(id, 10, i1, 4321, t1, "this too shall pass");
+    indexr(id, 11, i1, -987, t1,
         "An eye for eye only ends up making the whole world blind.");
-    indexr(id, 12, i1, 379, tlong, 379, t1,
+    indexr(id, 12, i1, 379, t1,
         "Great works are performed, not by strength, but by perseverance.");
-    indexr(id, 13, i1, 232, tlong, 232, t1, "no eggs on wall, lesson learned",
+    indexr(id, 13, i1, 232, t1, "no eggs on wall, lesson learned",
         oddField, "odd man out");
     
     indexr(id, 14, "SubjectTerms_mfacet", new String[] {"mathematical models",
@@ -1334,19 +1335,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   class StopableIndexingThread extends StopableThread {
     private volatile boolean stop = false;
-    protected final int startI;
-    protected final List<Integer> deletes = new ArrayList<Integer>();
+    protected final String id;
+    protected final List<String> deletes = new ArrayList<String>();
     protected final AtomicInteger fails = new AtomicInteger();
     protected boolean doDeletes;
     private int numCycles;
     
-    public StopableIndexingThread(int startI, boolean doDeletes) {
-      this(startI, doDeletes, -1);
+    public StopableIndexingThread(String id, boolean doDeletes) {
+      this(id, doDeletes, -1);
     }
     
-    public StopableIndexingThread(int startI, boolean doDeletes, int numCycles) {
+    public StopableIndexingThread(String id, boolean doDeletes, int numCycles) {
       super("StopableIndexingThread");
-      this.startI = startI;
+      this.id = id;
       this.doDeletes = doDeletes;
       this.numCycles = numCycles;
       setDaemon(true);
@@ -1354,7 +1355,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     @Override
     public void run() {
-      int i = startI;
+      int i = 0;
       int numDone = 0;
       int numDeletes = 0;
       int numAdds = 0;
@@ -1366,15 +1367,20 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           }
         }
         ++numDone;
+        String id = this.id + "-" + i;
         ++i;
         boolean addFailed = false;
         
         if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
-          Integer delete = deletes.remove(0);
+          String delete = deletes.remove(0);
           try {
             numDeletes++;
-            controlClient.deleteById(Integer.toString(delete));
-            cloudClient.deleteById(Integer.toString(delete));
+            UpdateRequest req = new UpdateRequest();
+            req.deleteById(delete);
+            req.setParam("CONTROL", "TRUE");
+            req.process(controlClient);
+            
+            cloudClient.deleteById(delete);
           } catch (Exception e) {
             System.err.println("REQUEST FAILED:");
             e.printStackTrace();
@@ -1388,7 +1394,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         
         try {
           numAdds++;
-          indexr(id, i, i1, 50, tlong, 50, t1,
+          indexr("id", id, i1, 50, t1,
               "to come to the aid of their country.");
         } catch (Exception e) {
           addFailed = true;
@@ -1402,7 +1408,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
         
         if (!addFailed && doDeletes && random().nextBoolean()) {
-          deletes.add(i);
+          deletes.add(id);
         }
         
         try {
@@ -1684,10 +1690,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
     int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
     
-      Map<String,DocCollection> collections = clusterState
-          .getCollectionStates();
-      if (collections.containsKey(collectionName)) {
-        Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
+//      Map<String,DocCollection> collections = clusterState
+//          .getCollectionStates();
+      if (clusterState.hasCollection(collectionName)) {
+        Map<String,Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
         // did we find expectedSlices slices/shards?
       if (slices.size() != expectedSlices) {
         return "Found new collection " + collectionName + ", but mismatch on number of slices. Expected: " + expectedSlices + ", actual: " + slices.size();
@@ -1732,12 +1738,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
-  volatile CloudSolrServer commondCloudSolrServer;
+  private CloudSolrServer commondCloudSolrServer;
+  
   protected CloudSolrServer getCommonCloudSolrServer() {
-    if (commondCloudSolrServer == null) {
-      synchronized(this) {
+    synchronized (this) {
+      if (commondCloudSolrServer == null) {
         try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
+          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
+              random().nextBoolean());
+          commondCloudSolrServer.getLbServer().setConnectionTimeout(30000);
           commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.connect();
@@ -1749,7 +1758,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return commondCloudSolrServer;
   }
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
+    Map<String,Slice> slices = clusterState.getCollection(collection).getSlicesMap();
 
     if (slices == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);

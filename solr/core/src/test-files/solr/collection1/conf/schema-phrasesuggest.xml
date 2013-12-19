@@ -53,6 +53,7 @@
   <fields>
     <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="text" type="text" indexed="true" stored="false"/>
+    <field name="stext" type="text" indexed="true" stored="true"/>
   </fields>
 
   <defaultSearchField>text</defaultSearchField>

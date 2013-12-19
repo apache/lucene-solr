@@ -69,6 +69,9 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
       throw new IllegalArgumentException("Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");
     }
     FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
+    if (ft == null) {
+      throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
+    }
     Analyzer indexAnalyzer = ft.getAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     

@@ -47,13 +47,13 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,11 +111,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String COLL_CONF = "collection.configName";
 
+  public static final String COLL_PROP_PREFIX = "property.";
 
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
-      MAX_SHARDS_PER_NODE, "1");
+      MAX_SHARDS_PER_NODE, "1",
+      "external",null );
 
 
   // TODO: use from Overseer?
@@ -286,36 +288,34 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-    //assume the core exists and try to unload it
-    if (!Slice.ACTIVE.equals(replica.getStr(Slice.STATE))) {
-      deleteCoreNode(collectionName, replicaName, replica, core);
-      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
-    } else {
-    Map m = ZkNodeProps.makeMap("qt", adminPath,
-        CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString(),
-        CoreAdminParams.CORE, core) ;
-
-      ShardRequest sreq = new ShardRequest();
-      sreq.purpose = 1;
-      if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
-      sreq.shards = new String[]{baseUrl};
-      sreq.actualShards = sreq.shards;
-      sreq.params = new ModifiableSolrParams(new MapSolrParams(m) );
-      try {
-        shardHandler.submit(sreq, baseUrl, sreq.params);
-      } catch (Exception e) {
-        log.info("Exception trying to unload core "+sreq,e);
-      }
-      if (waitForCoreNodeGone(collectionName, shard, replicaName)) return;//check if the core unload removed the corenode zk enry
-      deleteCoreNode(collectionName, replicaName, replica, core); // this could be because the core is gone but not updated in ZK yet (race condition)
-      if(waitForCoreNodeGone(collectionName, shard, replicaName)) return;
-
+    
+    // assume the core exists and try to unload it
+    Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
+        CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core);
+    
+    ShardRequest sreq = new ShardRequest();
+    sreq.purpose = 1;
+    if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
+    sreq.shards = new String[] {baseUrl};
+    sreq.actualShards = sreq.shards;
+    sreq.params = new ModifiableSolrParams(new MapSolrParams(m));
+    try {
+      shardHandler.submit(sreq, baseUrl, sreq.params);
+    } catch (Exception e) {
+      log.warn("Exception trying to unload core " + sreq, e);
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not  remove replica : "+collectionName+"/"+shard+"/"+replicaName);
+    
+    collectShardResponses(!Slice.ACTIVE.equals(replica.getStr(Slice.STATE)) ? new NamedList() : results, false, null);
+    
+    if (waitForCoreNodeGone(collectionName, shard, replicaName, 5000)) return;//check if the core unload removed the corenode zk enry
+    deleteCoreNode(collectionName, replicaName, replica, core); // try and ensure core info is removed from clusterstate
+    if(waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return;
+
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not  remove replica : " + collectionName + "/" + shard+"/" + replicaName);
   }
 
-  private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName) throws InterruptedException {
-    long waitUntil = System.currentTimeMillis() + 30000;
+  private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
+    long waitUntil = System.currentTimeMillis() + timeoutms;
     boolean deleted = false;
     while (System.currentTimeMillis() < waitUntil) {
       Thread.sleep(100);
@@ -545,6 +545,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       params.set(CoreAdminParams.COLLECTION, collectionName);
       params.set(CoreAdminParams.SHARD, sliceName);
       params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+      addPropertyParams(message, params);
 
       ShardRequest sreq = new ShardRequest();
       params.set("qt", adminPath);
@@ -739,7 +740,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
         params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
         params.set(CoreAdminParams.SHARD_PARENT, parentSlice.getName());
-
+        addPropertyParams(message, params);
         sendShardRequest(nodeName, params);
       }
 
@@ -849,6 +850,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.NAME, shardName);
           params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
+          addPropertyParams(message, params);
           // TODO:  Figure the config used by the parent shard and use it.
           //params.set("collection.configName", configName);
           
@@ -1105,7 +1107,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice, DocCollection targetCollection, Slice targetSlice, String splitKey, int timeout, NamedList results) throws KeeperException, InterruptedException {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
-    if (clusterState.getCollectionStates().containsKey(tempSourceCollectionName)) {
+    if (clusterState.hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
       Map<String, Object> props = ZkNodeProps.makeMap(
           QUEUE_OPERATION, DELETECOLLECTION,
@@ -1144,7 +1146,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         Overseer.QUEUE_OPERATION, Overseer.ADD_ROUTING_RULE,
         COLLECTION_PROP, sourceCollection.getName(),
         SHARD_ID_PROP, sourceSlice.getName(),
-        "routeKey", splitKey,
+        "routeKey", SolrIndexSplitter.getRouteKey(splitKey) + "!",
         "range", splitRange.toString(),
         "targetCollection", targetCollection.getName(),
         "expireAt", String.valueOf(System.currentTimeMillis() + timeout));
@@ -1160,8 +1162,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Thread.sleep(100);
       Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
       if (rules != null) {
-        RoutingRule rule = rules.get(splitKey);
-        if (rule.getRouteRanges().contains(splitRange)) {
+        RoutingRule rule = rules.get(SolrIndexSplitter.getRouteKey(splitKey) + "!");
+        if (rule != null && rule.getRouteRanges().contains(splitRange)) {
           added = true;
           break;
         }
@@ -1177,13 +1179,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     Replica sourceLeader = sourceSlice.getLeader();
 
     // create a temporary collection with just one node on the shard leader
-    String sourceLeaderUrl = zkStateReader.getZkClient().getBaseUrlForNodeName(sourceLeader.getNodeName());
-    if (sourceLeaderUrl.startsWith("http://")) sourceLeaderUrl = sourceLeaderUrl.substring(7);
+    String configName = zkStateReader.readConfigName(sourceCollection.getName());
     Map<String, Object> props = ZkNodeProps.makeMap(
         QUEUE_OPERATION, CREATECOLLECTION,
         "name", tempSourceCollectionName,
         REPLICATION_FACTOR, 1,
         NUM_SLICES, 1,
+        COLL_CONF, configName,
         CREATE_NODE_SET, sourceLeader.getNodeName());
     log.info("Creating temporary collection: " + props);
     createCollection(clusterState, new ZkNodeProps(props), results);
@@ -1191,6 +1193,23 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     clusterState = zkStateReader.getClusterState();
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
     Replica tempSourceLeader = clusterState.getLeader(tempSourceCollectionName, tempSourceSlice.getName());
+
+    String tempCollectionReplica1 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica1";
+    String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
+        zkStateReader.getZkClient().getBaseUrlForNodeName(sourceLeader.getNodeName()), tempCollectionReplica1);
+    // wait for the replicas to be seen as active on temp source leader
+    log.info("Asking source leader to wait for: " + tempCollectionReplica1 + " to be alive on: " + sourceLeader.getNodeName());
+    CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+    cmd.setCoreName(tempCollectionReplica1);
+    cmd.setNodeName(sourceLeader.getNodeName());
+    cmd.setCoreNodeName(coreNodeName);
+    cmd.setState(ZkStateReader.ACTIVE);
+    cmd.setCheckLive(true);
+    cmd.setOnlyIfLeader(true);
+    sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()));
+
+    collectShardResponses(results, true,
+        "MIGRATE failed to create temp collection leader or timed out waiting for it to come up");
 
     log.info("Asking source leader to split index");
     params = new ModifiableSolrParams();
@@ -1213,11 +1232,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     params.set(CoreAdminParams.SHARD, tempSourceSlice.getName());
     sendShardRequest(targetLeader.getNodeName(), params);
 
-    String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
+    coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
         zkStateReader.getZkClient().getBaseUrlForNodeName(targetLeader.getNodeName()), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     log.info("Asking temp source leader to wait for: " + tempCollectionReplica2 + " to be alive on: " + targetLeader.getNodeName());
-    CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+    cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempSourceLeader.getStr("core"));
     cmd.setNodeName(targetLeader.getNodeName());
     cmd.setCoreNodeName(coreNodeName);
@@ -1287,6 +1306,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
+  private void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
+    // Now add the property.key=value pairs
+    for (String key : message.keySet()) {
+      if (key.startsWith(COLL_PROP_PREFIX)) {
+        params.set(key, message.getStr(key));
+      }
+    }
+  }
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
@@ -1317,7 +1344,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than or equal to 0");
+        throw new SolrException(ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than 0");
       }
       
       if (numSlices <= 0) {
@@ -1366,6 +1393,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
       }
+      String configName = createConfNode(collectionName, message);
 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
@@ -1380,8 +1408,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if (!created)
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully createcollection: " + message.getStr("name"));
 
-
-      String configName = message.getStr(COLL_CONF);
       log.info("going to create cores replicas shardNames {} , repFactor : {}", shardNames, repFactor);
       for (int i = 1; i <= shardNames.size(); i++) {
         String sliceName = shardNames.get(i-1);
@@ -1401,6 +1427,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+          addPropertyParams(message, params);
 
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
@@ -1433,6 +1460,37 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, ex);
     }
+  }
+
+  private String createConfNode(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
+    String configName = message.getStr(OverseerCollectionProcessor.COLL_CONF);
+    if(configName == null){
+      // if there is only one conf, use that
+      List<String> configNames=null;
+      try {
+        configNames = zkStateReader.getZkClient().getChildren(ZkController.CONFIGS_ZKNODE, null, true);
+        if (configNames != null && configNames.size() == 1) {
+          configName = configNames.get(0);
+          // no config set named, but there is only 1 - use it
+          log.info("Only one config set found in zk - using it:" + configName);
+        }
+      } catch (KeeperException.NoNodeException e) {
+
+      }
+
+    }
+
+    if(configName!= null){
+      log.info("creating collections conf node {} ",ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
+      zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
+          ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP,configName)),true );
+
+    } else {
+      String msg = "Could not obtain config name";
+      log.warn(msg);
+    }
+    return configName;
+
   }
 
   private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results, String stateMatcher) {

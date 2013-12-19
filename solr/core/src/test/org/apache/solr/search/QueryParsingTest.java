@@ -20,10 +20,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.List;
 
 /**
  *
@@ -72,10 +76,17 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
   @Test
   public void testSort() throws Exception {
     Sort sort;
+    SortSpec spec;
     SolrQueryRequest req = req();
 
     sort = QueryParsing.parseSort("score desc", req);
     assertNull("sort", sort);//only 1 thing in the list, no Sort specified
+
+    spec = QueryParsing.parseSortSpec("score desc", req);
+    assertNotNull("spec", spec);
+    assertNull(spec.getSort());
+    assertNotNull(spec.getSchemaFields());
+    assertEquals(0, spec.getSchemaFields().size());
 
     // SOLR-4458 - using different case variations of asc and desc
     sort = QueryParsing.parseSort("score aSc", req);
@@ -83,11 +94,30 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[0].getType(), SortField.Type.SCORE);
     assertTrue(flds[0].getReverse());
 
+    spec = QueryParsing.parseSortSpec("score aSc", req);
+    flds = spec.getSort().getSort();
+    assertEquals(1, flds.length);
+    assertEquals(flds[0].getType(), SortField.Type.SCORE);
+    assertTrue(flds[0].getReverse());
+    assertEquals(1, spec.getSchemaFields().size());
+    assertNull(spec.getSchemaFields().get(0));
+
     sort = QueryParsing.parseSort("weight dEsC", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
+
+    spec = QueryParsing.parseSortSpec("weight dEsC", req);
+    flds = spec.getSort().getSort();
+    assertEquals(1, flds.length);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
+    assertEquals(flds[0].getField(), "weight");
+    assertEquals(flds[0].getReverse(), true);
+    assertEquals(1, spec.getSchemaFields().size());
+    assertNotNull(spec.getSchemaFields().get(0));
+    assertEquals("weight", spec.getSchemaFields().get(0).getName());
+
     sort = QueryParsing.parseSort("weight desc,bday ASC", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
@@ -147,20 +177,29 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+                 
 
+    spec = QueryParsing.parseSortSpec("pow(weight, 2.0) desc, weight    desc,   bday    asc", req);
+    flds = spec.getSort().getSort();
+    List<SchemaField> schemaFlds = spec.getSchemaFields();
+    assertEquals(3, flds.length);
+    assertEquals(3, schemaFlds.size());
 
-    sort = QueryParsing.parseSort("pow(weight, 2.0) desc, weight    desc,   bday    asc", req);
-    flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
-
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+    assertNull(schemaFlds.get(0));
 
     assertEquals(flds[1].getType(), SortField.Type.FLOAT);
     assertEquals(flds[1].getField(), "weight");
+    assertNotNull(schemaFlds.get(1));
+    assertEquals("weight", schemaFlds.get(1).getName());
+
     assertEquals(flds[2].getField(), "bday");
     assertEquals(flds[2].getType(), SortField.Type.LONG);
+    assertNotNull(schemaFlds.get(2));
+    assertEquals("bday", schemaFlds.get(2).getName());
     
     //handles trailing commas
     sort = QueryParsing.parseSort("weight desc,", req);
@@ -177,6 +216,10 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
 
     sort = QueryParsing.parseSort("", req);
     assertNull(sort);
+
+    spec = QueryParsing.parseSortSpec("", req);
+    assertNotNull(spec);
+    assertNull(spec.getSort());
 
     req.close();
   }

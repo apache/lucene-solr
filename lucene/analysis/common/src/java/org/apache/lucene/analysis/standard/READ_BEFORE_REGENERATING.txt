@@ -18,4 +18,4 @@
 
 WARNING: if you change StandardTokenizerImpl*.jflex or UAX29URLEmailTokenizer
       and need to regenerate the tokenizer, only use the trunk version
-      of JFlex 1.5 (with a minimum SVN revision 607) at the moment!
+      of JFlex 1.5 (with a minimum SVN revision 722) at the moment!

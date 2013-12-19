@@ -368,7 +368,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     boolean stopAtShutdown = true;
     JettySolrRunner jetty = new JettySolrRunner
-        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown, getExtraServlets());
+        (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown,
+          getExtraServlets(), null, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     if (explicitCoreNodeName) {
@@ -383,7 +384,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public SortedMap<ServletHolder,String> getExtraServlets() {
     return null;
   }
-  
+
+  /** Override this method to insert extra filters into the JettySolrRunners that are created using createJetty() */
+  public SortedMap<Class,String> getExtraRequestFilters() {
+    return null;
+  }
+
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
@@ -507,11 +513,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  protected void query(Object... q) throws Exception {
-    query(true, q);
+  /**
+   * Sets distributed params.
+   * Returns the QueryResponse from {@link #queryServer},
+   */
+  protected QueryResponse query(Object... q) throws Exception {
+    return query(true, q);
   }
-  
-  protected void query(boolean setDistribParams, Object[] q) throws Exception {
+
+  /**
+   * Returns the QueryResponse from {@link #queryServer}  
+   */
+  protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -558,6 +571,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         thread.join();
       }
     }
+    return rsp;
   }
   
   public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {

@@ -1002,13 +1002,13 @@
   </requestHandler>
 
   <!-- for back compat with clients using /update/json and /update/csv -->
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
     <lst name="defaults">
       <str name="stream.contentType">application/json</str>
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
   </requestHandler>
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler">
+  <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
     <lst name="defaults">
       <str name="stream.contentType">application/csv</str>
       <str name="update.chain">add-unknown-fields-to-the-schema</str>

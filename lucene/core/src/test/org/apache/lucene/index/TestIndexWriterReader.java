@@ -1103,7 +1103,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
    *  writer, we don't see merge starvation. */
   public void testTooManySegments() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    // Don't use newIndexWriterConfig, because we need a
+    // "sane" mergePolicy:
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {

@@ -1,11 +1,12 @@
 /*
- * Copyright 2010 The Apache Software Foundation.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// Generated using ICU4J 49.1.0.0
+// Generated using ICU4J 52.1.0.0
 // by org.apache.lucene.analysis.icu.GenerateJFlexSupplementaryMacros
 
 
@@ -39,6 +39,12 @@ FormatSupp = (
 	| ([\ud834][\uDD73-\uDD7A])
 	| ([\udb40][\uDC01\uDC20-\uDC7F])
 )
+NumericSupp = (
+	  ([\ud805][\uDEC0-\uDEC9])
+	| ([\ud804][\uDC66-\uDC6F\uDCF0-\uDCF9\uDD36-\uDD3F\uDDD0-\uDDD9])
+	| ([\ud835][\uDFCE-\uDFFF])
+	| ([\ud801][\uDCA0-\uDCA9])
+)
 ExtendSupp = (
 	  ([\ud81b][\uDF51-\uDF7E\uDF8F-\uDF92])
 	| ([\ud805][\uDEAB-\uDEB7])
@@ -47,12 +53,6 @@ ExtendSupp = (
 	| ([\ud800][\uDDFD])
 	| ([\udb40][\uDD00-\uDDEF])
 	| ([\ud802][\uDE01-\uDE03\uDE05\uDE06\uDE0C-\uDE0F\uDE38-\uDE3A\uDE3F])
-)
-NumericSupp = (
-	  ([\ud805][\uDEC0-\uDEC9])
-	| ([\ud804][\uDC66-\uDC6F\uDCF0-\uDCF9\uDD36-\uDD3F\uDDD0-\uDDD9])
-	| ([\ud835][\uDFCE-\uDFFF])
-	| ([\ud801][\uDCA0-\uDCA9])
 )
 KatakanaSupp = (
 	  ([\ud82c][\uDC00])
@@ -128,4 +128,16 @@ HanSupp = (
 HiraganaSupp = (
 	  ([\ud83c][\uDE00])
 	| ([\ud82c][\uDC01])
+)
+SingleQuoteSupp = (
+	  []
+)
+DoubleQuoteSupp = (
+	  []
+)
+HebrewLetterSupp = (
+	  []
+)
+RegionalIndicatorSupp = (
+	  ([\ud83c][\uDDE6-\uDDFF])
 )

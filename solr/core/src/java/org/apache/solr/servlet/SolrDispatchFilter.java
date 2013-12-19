@@ -52,6 +52,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,6 +94,9 @@ import java.util.WeakHashMap;
  */
 public class SolrDispatchFilter implements Filter
 {
+  private static final String CONNECTION_HEADER = "Connection";
+  private static final String TRANSFER_ENCODING_HEADER = "Transfer-Encoding";
+
   final Logger log;
 
   protected volatile CoreContainer cores;
@@ -309,8 +314,12 @@ public class SolrDispatchFilter implements Filter
           // if we couldn't find it locally, look on other nodes
           if (core == null && idx > 0) {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
-            if (coreUrl != null) {
-              path = path.substring( idx );
+            // don't proxy for internal update requests
+            SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
+            if (coreUrl != null
+                && queryParams
+                    .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
+              path = path.substring(idx);
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
             } else {
@@ -493,10 +502,14 @@ public class SolrDispatchFilter implements Filter
       con.setRequestMethod(req.getMethod());
       con.setUseCaches(false);
       
-      con.setDoOutput(true);
+      boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
+      
+      if (isPostOrPutRequest) {
+        con.setDoOutput(true);
+      }
       con.setDoInput(true);
-      for (Enumeration e = req.getHeaderNames(); e.hasMoreElements();) {
-        String headerName = e.nextElement().toString();
+      for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements();) {
+        String headerName = e.nextElement();
         con.setRequestProperty(headerName, req.getHeader(headerName));
       }
       try {
@@ -504,7 +517,7 @@ public class SolrDispatchFilter implements Filter
 
         InputStream is;
         OutputStream os;
-        if ("POST".equals(req.getMethod())) {
+        if (isPostOrPutRequest) {
           is = req.getInputStream();
           os = con.getOutputStream(); // side effect: method is switched to POST
           try {
@@ -518,11 +531,18 @@ public class SolrDispatchFilter implements Filter
         
         resp.setStatus(con.getResponseCode());
         
-        for (Iterator i = con.getHeaderFields().entrySet().iterator(); i
-            .hasNext();) {
-          Map.Entry mapEntry = (Map.Entry) i.next();
-          if (mapEntry.getKey() != null) resp.setHeader(mapEntry.getKey()
-              .toString(), ((List) mapEntry.getValue()).get(0).toString());
+        for (Iterator<Entry<String,List<String>>> i = con.getHeaderFields().entrySet().iterator(); i.hasNext();) {
+          Map.Entry<String,List<String>> mapEntry = i.next();
+          String header = mapEntry.getKey();
+          
+          // We pull out these two headers below because they can cause chunked
+          // encoding issues with Tomcat and certain clients
+          if (header != null && !header.equals(TRANSFER_ENCODING_HEADER)
+              && !header.equals(CONNECTION_HEADER)) {
+            for (String value : mapEntry.getValue()) {
+              resp.addHeader(mapEntry.getKey(), value);
+            }
+          }
         }
         
         resp.setCharacterEncoding(con.getContentEncoding());
@@ -552,13 +572,14 @@ public class SolrDispatchFilter implements Filter
     ClusterState clusterState = cores.getZkController().getClusterState();
     Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
     boolean byCoreName = false;
+    
     if (slices == null) {
+      slices = new ArrayList<Slice>();
       // look by core name
       byCoreName = true;
-      Set<String> collections = clusterState.getCollections();
-      for (String collection : collections) {
-        slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getActiveSlices(collection));
+      slices = getSlicesForCollections(clusterState, slices, true);
+      if (slices == null || slices.size() == 0) {
+        slices = getSlicesForCollections(clusterState, slices, false);
       }
     }
     
@@ -566,6 +587,21 @@ public class SolrDispatchFilter implements Filter
       return null;
     }
     
+    String coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+        slices, byCoreName, true);
+    
+    if (coreUrl == null) {
+      coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+          slices, byCoreName, false);
+    }
+    
+    return coreUrl;
+  }
+
+  private String getCoreUrl(CoreContainer cores, String collectionName,
+      String origCorename, ClusterState clusterState, Collection<Slice> slices,
+      boolean byCoreName, boolean activeReplicas) {
+    String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
     Iterator<Slice> it = slices.iterator();
     while (it.hasNext()) {
@@ -573,8 +609,9 @@ public class SolrDispatchFilter implements Filter
       Map<String,Replica> sliceShards = slice.getReplicasMap();
       for (ZkNodeProps nodeProps : sliceShards.values()) {
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        if (liveNodes.contains(coreNodeProps.getNodeName())
-            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) {
+        if (!activeReplicas || (liveNodes.contains(coreNodeProps.getNodeName())
+            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE))) {
+
           if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
             // if it's by core name, make sure they match
             continue;
@@ -583,7 +620,7 @@ public class SolrDispatchFilter implements Filter
             // don't count a local core
             continue;
           }
-          String coreUrl;
+
           if (origCorename != null) {
             coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
           } else {
@@ -598,6 +635,19 @@ public class SolrDispatchFilter implements Filter
       }
     }
     return null;
+  }
+
+  private Collection<Slice> getSlicesForCollections(ClusterState clusterState,
+      Collection<Slice> slices, boolean activeSlices) {
+    Set<String> collections = clusterState.getCollections();
+    for (String collection : collections) {
+      if (activeSlices) {
+        slices.addAll(clusterState.getActiveSlices(collection));
+      } else {
+        slices.addAll(clusterState.getSlices(collection));
+      }
+    }
+    return slices;
   }
   
   private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
@@ -708,6 +758,7 @@ public class SolrDispatchFilter implements Filter
       ServletRequest request, 
       HttpServletResponse response, 
       Throwable ex) throws IOException {
+    SolrCore localCore = null;
     try {
       SolrQueryResponse solrResp = new SolrQueryResponse();
       if(ex instanceof Exception) {
@@ -717,7 +768,9 @@ public class SolrDispatchFilter implements Filter
         solrResp.setException(new RuntimeException(ex));
       }
       if(core==null) {
-        core = cores.getCore(""); // default core
+        localCore = cores.getCore(""); // default core
+      } else {
+        localCore = core;
       }
       if(req==null) {
         final SolrParams solrParams;
@@ -737,6 +790,10 @@ public class SolrDispatchFilter implements Filter
       SimpleOrderedMap info = new SimpleOrderedMap();
       int code = ResponseUtils.getErrorInfo(ex, info, log);
       response.sendError( code, info.toString() );
+    } finally {
+      if (core == null && localCore != null) {
+        localCore.close();
+      }
     }
   }
 

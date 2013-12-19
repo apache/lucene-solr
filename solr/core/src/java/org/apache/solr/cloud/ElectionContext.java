@@ -71,6 +71,10 @@ public abstract class ElectionContext {
   }
 
   abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
+
+  public void checkIfIamLeaderFired() {}
+
+  public void joinedElectionFired() {}
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
@@ -114,9 +118,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContext.class);
   
-  private ZkController zkController;
-  private CoreContainer cc;
-  private SyncStrategy syncStrategy = new SyncStrategy();
+  private final ZkController zkController;
+  private final CoreContainer cc;
+  private final SyncStrategy syncStrategy;
 
   private volatile boolean isClosed = false;
   
@@ -127,6 +131,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.getZkStateReader());
     this.zkController = zkController;
     this.cc = cc;
+    syncStrategy = new SyncStrategy(cc.getUpdateShardHandler());
   }
   
   @Override
@@ -180,6 +185,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       // we are going to attempt to be the leader
       // first cancel any current recovery
       core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+      
+      if (weAreReplacement) {
+        // wait a moment for any floating updates to finish
+        try {
+          Thread.sleep(2500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+        }
+      }
+      
       boolean success = false;
       try {
         success = syncStrategy.sync(zkController, core, leaderProps);
@@ -436,6 +452,17 @@ final class OverseerElectionContext extends ElectionContext {
         CreateMode.EPHEMERAL, true);
     
     overseer.start(id);
+  }
+  
+  @Override
+  public void joinedElectionFired() {
+    overseer.close();
+  }
+  
+  @Override
+  public void checkIfIamLeaderFired() {
+    // leader changed - close the overseer
+    overseer.close();
   }
   
 }

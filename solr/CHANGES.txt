@@ -44,6 +44,15 @@ Upgrading from Solr 4.x
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
+  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
+  Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
+  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
+  Eric Wong)
+
 Other Changes
 ----------------------
 
@@ -64,7 +73,9 @@ Apache ZooKeeper 3.4.5
 
 Upgrading from Solr 4.6.0
 ----------------------
-                      
+
+* CloudSolrServer and LBHttpSolrServer no longer declare MalformedURLException
+  as thrown from their constructors.  
                       
 Detailed Change List
 ----------------------
@@ -78,11 +89,140 @@ New Features
 * SOLR-5441: Expose number of transaction log files and their size via JMX.
   (Rafał Kuć via shalin)
 
+* SOLR-5320: Added support for tri-level compositeId routing.
+  (Anshum Gupta via shalin)
+  
+* SOLR-5287: You can edit files in the conf directory from the admin UI 
+  (Erick Erickson, Stefan Matheis)
+
+* SOLR-5447, SOLR-5490: Add a QParserPlugin for Lucene's SimpleQueryParser.
+  (Jack Conradson via shalin)
+
+* SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)
+
+* SOLR-5456: Admin UI - Allow creating new Files (steffkes)
+
+* SOLR-5208: Support for the setting of core.properties key/values at create-time on 
+  Collections API (Erick Erickson)
+
+* SOLR-5428: New 'stats.calcdistinct' parameter in StatsComponent returns
+  set of distinct values and their count. This can also be specified per field
+  e.g. 'f.field.stats.calcdistinct'. (Elran Dvir via shalin)
+
+* SOLR-5378, SOLR-5528: A new SuggestComponent that fully utilizes the Lucene suggester
+  module and adds pluggable dictionaries, payloads and better distributed support.
+  This is intended to eventually replace the Suggester support through the
+  SpellCheckComponent. (Areek Zillur, Varun Thacker via shalin)
+
+* SOLR-5492: Return the replica that actually served the query in shards.info
+  response. (shalin)
+
+* SOLR-5506: Support docValues in CollationField and ICUCollationField.
+  (Robert Muir)
+  
+ * SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
+   solr configuration files.
+
+* SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
+  Unload action. (Lyubov Romanchuk, shalin)
+
+* SOLR-1871: The 'map' function query accepts a ValueSource as target and
+  default value. (Chris Harris, shalin)
+
+* SOLR-5556: Allow class of CollectionsHandler and InfoHandler to be specified
+  in solr.xml. (Gregory Chanan, Alan Woodward)
+
 Bug Fixes
 ----------------------
 
 * SOLR-5438: DebugComponent throws NPE when used with grouping.
   (Tomás Fernández Löbbe via shalin)
+
+* SOLR-5442: Python client cannot parse proxied response when served by Tomcat.
+  (Patrick Hunt, Gregory Chanan, Vamsee Yarlagadda, Romain Rigaux, Mark Miller)
+
+* SOLR-5445: Proxied responses should propagate all headers rather than the 
+  first one for each key. (Patrick Hunt, Mark Miller) 
+
+* SOLR-4612: Admin UI - Analysis Screen contains empty table-columns (steffkes)
+
+* SOLR-5451: SyncStrategy closes it's http connection manager before the
+  executor that uses it in it's close method. (Mark Miller)
+
+* SOLR-5460: SolrDispatchFilter#sendError can get a SolrCore that it does not 
+  close. (Mark Miller)
+
+* SOLR-5461: Request proxying should only set con.setDoOutput(true) if the
+  request is a post. (Mark Miller)
+
+* SOLR-5479: SolrCmdDistributor retry logic stops if a leader for the request 
+  cannot be found in 1 second. (Mark Miller)
+
+* SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
+  retries. (Mark Miller)
+
+* SOLR-4709: The core reload after replication if config files have changed
+  can fail due to a race condition. (Mark Miller, Hossman))
+
+* LUCENE-5347: Fixed Solr's Zookeeper Client to copy files to Zookeeper using
+  binary transfer. Previously data was read with default encoding and stored
+  in zookeeper as UTF-8. This bug was found after upgrading to forbidden-apis
+  1.4.  (Uwe Schindler)
+
+* SOLR-4376: DataImportHandler uses wrong date format for last_index_time if
+  a delta-import is run first before any full-imports.
+  (Sebastien Lorber, Arcadius Ahouansou via shalin)
+
+* SOLR-5496: We should share an http connection manager across non search 
+  HttpClients and ensure all http connection managers get shutdown.
+  (Mark Miller)
+
+* SOLR-5503: Retry 'forward to leader' requests less aggressively - rather 
+  than on IOException and status 500, ConnectException. (Mark Miller)
+
+* SOLR-5494: CoreContainer#remove throws NPE rather than returning null when
+  a SolrCore does not exist in core discovery mode. (Mark Miller)
+  
+* SOLR-5354: Distributed sort is broken with CUSTOM FieldType. 
+  (Steve Rowe, hossman, Robert Muir, Jessica Cheng)
+
+* SOLR-5515: NPE when getting stats on date field with empty result on
+  SolrCloud. (Alexander Sagen, shalin)
+
+* SOLR-5204: StatsComponent and SpellCheckComponent do not support the
+  shards.tolerant=true parameter. (Anca Kopetz, shalin)
+
+* SOLR-5527: DIH logs spurious warning for special commands. (shalin)
+
+* SOLR-5524: Exception when using Query Function inside Scale Function.
+  (Trey Grainger, yonik)
+
+* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory 
+  if necessary. (Mark Miller)
+
+* SOLR-5532: SolrJ Content-Type validation is too strict for some
+  webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
+  Mark Miller)
+
+* SOLR-5547: Creating a collection alias using SolrJ's CollectionAdminRequest
+  sets the alias name and the collections to alias to the same value.
+  (Aaron Schram, Mark Miller)
+
+* SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when 
+  using solr.xml persistence. (Bill Bell, Alan Woodward)
+  
+Optimizations
+----------------------
+
+* SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
+
+* SOLR-5436: Eliminate the 1500ms wait in overseer loop as well as
+  polling the ZK distributed queue. (Noble Paul, Mark Miller)
+
+* SOLR-5189: Solr 4.x Web UI Log Viewer does not display 'date' column from 
+  logs (steffkes)
+
+* SOLR-5512: Optimize DocValuesFacets. (Robert Muir)
 
 Other Changes
 ---------------------
@@ -90,6 +230,34 @@ Other Changes
 * SOLR-5399: Add distributed request tracking information to DebugComponent
   (Tomás Fernández Löbbe via Ryan Ernst)
 
+* SOLR-5421: Remove double set of distrib.from param in processAdd method of
+  DistributedUpdateProcessor. (Anshum Gupta via shalin)
+
+* SOLR-5404: The example config references deprecated classes.
+  (Uwe Schindler, Rafał Kuć  via Mark Miller)
+
+* SOLR-5487: Replication factor error message doesn't match constraint.
+  (Patrick Hunt via shalin)
+
+* SOLR-5499: Log a warning if /get is not registered when using SolrCloud.
+  (Daniel Collins via shalin)
+
+* SOLR-5517: Return HTTP error on POST requests with no Content-Type.
+  (Ryan Ernst, Uwe Schindler)
+
+* SOLR-5502: Added a test for tri-level compositeId routing with documents
+  having a "/" in a document id. (Anshum Gupta via Mark Miller)
+
+* SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
+
+* SOLR-5533: Improve out of the box support for running Solr on hdfs with 
+  SolrCloud. (Mark Miller)
+
+* SOLR-5548: Give DistributedSearchTestCase / JettySolrRunner the ability to 
+  specify extra filters. (Greg Chanan via Mark Miller)
+
+* SOLR-5555: LBHttpSolrServer and CloudSolrServer constructors don't need to
+  declare MalformedURLExceptions (Sushil Bajracharya, Alan Woodward)
 
 ==================  4.6.0 ==================
 
@@ -163,6 +331,9 @@ New Features
    
 * SOLR-5084: new field type EnumField. (Elran Dvir via Erick Erickson)
 
+* SOLR-5464: Add option to ConcurrentSolrServer to stream pure delete 
+   requests. (Mark Miller)
+
 Bug Fixes
 ----------------------
   
@@ -198,6 +369,15 @@ Bug Fixes
 * SOLR-5388: Creating a new core via the HTTP API that results in a transient being
   unloaded results in a " Too many close [count:-1]" error.
   (Olivier Soyez via Erick Erickson)
+
+* SOLR-5453: Raise recovery socket read timeouts. (Mark Miller)
+
+* SOLR-5397: Replication can fail silently in some cases. (Mark Miller)
+
+* SOLR-5465: SolrCmdDistributor retry logic has a concurrency race bug. 
+  (Mark Miller)
+  
+* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)  
 
 Optimizations
 ----------------------  

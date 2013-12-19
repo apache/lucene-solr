@@ -842,8 +842,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     lst.add("cumulative_deletesById", deleteByIdCommandsCumulative.get());
     lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.get());
     lst.add("cumulative_errors", numErrorsCumulative.get());
-    lst.add("transaction_logs_total_size", ulog.getTotalLogsSize());
-    lst.add("transaction_logs_total_number", ulog.getTotalLogsNumber());
+    if (this.ulog != null) {
+      lst.add("transaction_logs_total_size", ulog.getTotalLogsSize());
+      lst.add("transaction_logs_total_number", ulog.getTotalLogsNumber());
+    }
     return lst;
   }
 

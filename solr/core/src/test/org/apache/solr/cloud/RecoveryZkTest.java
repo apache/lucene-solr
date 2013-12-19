@@ -40,8 +40,20 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     super();
     sliceCount = 1;
     shardCount = 2;
+    schemaString = "schema15.xml";      // we need a string id
   }
   
+  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  
+  protected String[] getFieldNames() {
+    return fieldNames;
+  }
+
+  protected RandVal[] getRandValues() {
+    return randVals;
+  }
+
   @Override
   public void doTest() throws Exception {
     handle.clear();
@@ -54,10 +66,10 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
     
-    indexThread = new StopableIndexingThread(0, true, maxDoc);
+    indexThread = new StopableIndexingThread("1", true, maxDoc);
     indexThread.start();
     
-    indexThread2 = new StopableIndexingThread(10000, true, maxDoc);
+    indexThread2 = new StopableIndexingThread("2", true, maxDoc);
     
     indexThread2.start();
 

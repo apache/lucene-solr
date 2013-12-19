@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.handler.dataimport.DataImporter;
+import org.apache.solr.handler.dataimport.DocBuilder;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class DIHConfiguration {
     for (Map.Entry<String,EntityField> entry : fields.entrySet()) {
       EntityField fld = entry.getValue();
       SchemaField field = getSchemaField(fld.getName());
-      if (field == null) {
+      if (field == null && !isSpecialCommand(fld.getName())) {
         LOG.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
       }
     }
@@ -177,5 +178,14 @@ public class DIHConfiguration {
 
   public IndexSchema getSchema() {
     return schema;
+  }
+
+  public static boolean isSpecialCommand(String fld) {
+    return DocBuilder.DELETE_DOC_BY_ID.equals(fld) ||
+        DocBuilder.DELETE_DOC_BY_QUERY.equals(fld) ||
+        DocBuilder.DOC_BOOST.equals(fld) ||
+        DocBuilder.SKIP_DOC.equals(fld) ||
+        DocBuilder.SKIP_ROW.equals(fld);
+
   }
 }

@@ -244,12 +244,6 @@ limitations under the License.
 
 /* tree */
 
-#content #cloud .tree a.active
-{
-  background-color: #f0f0f0;
-  color: #00f;
-}
-
 #content #cloud #legend
 {
   border: 1px solid #f0f0f0;

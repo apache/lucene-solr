@@ -23,6 +23,8 @@
 /bin
 /bin.*
 /pom.xml
+/nbproject
+/nb-build
 
 
 # ./lucene

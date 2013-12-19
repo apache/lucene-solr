@@ -17,13 +17,13 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.spell.Dictionary;
@@ -32,14 +32,24 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
+ * <p>
  * Dictionary with terms, weights and optionally payload information 
- * taken from stored fields in a Lucene index.
- * 
- * <b>NOTE: </b> 
+ * taken from stored/indexed fields in a Lucene index.
+ * </p>
+ * <b>NOTE:</b> 
  *  <ul>
  *    <li>
- *      The term, weight and (optionally) payload fields supplied
- *      are required for ALL documents and has to be stored
+ *      The term and (optionally) payload fields have to be
+ *      stored
+ *    </li>
+ *    <li>
+ *      The weight field can be stored or can be a {@link NumericDocValues}.
+ *      If the weight field is not defined, the value of the weight is <code>0</code>
+ *    </li>
+ *    <li>
+ *      if any of the term or (optionally) payload fields supplied
+ *      do not have a value for a document, then the document is 
+ *      skipped by the dictionary
  *    </li>
  *  </ul>
  */
@@ -59,10 +69,7 @@ public class DocumentDictionary implements Dictionary {
    * the corresponding terms.
    */
   public DocumentDictionary(IndexReader reader, String field, String weightField) {
-    this.reader = reader;
-    this.field = field;
-    this.weightField = weightField;
-    this.payloadField = null;
+    this(reader, field, weightField, null);
   }
   
   /**
@@ -85,14 +92,16 @@ public class DocumentDictionary implements Dictionary {
 
   /** Implements {@link InputIterator} from stored fields. */
   protected class DocumentInputIterator implements InputIterator {
+
     private final int docCount;
     private final Set<String> relevantFields;
     private final boolean hasPayloads;
     private final Bits liveDocs;
     private int currentDocId = -1;
-    private long currentWeight;
-    private BytesRef currentPayload;
-    private StoredDocument doc;
+    private long currentWeight = 0;
+    private BytesRef currentPayload = null;
+    private final NumericDocValues weightValues;
+    
     
     /**
      * Creates an iterator over term, weight and payload fields from the lucene
@@ -100,11 +109,11 @@ public class DocumentDictionary implements Dictionary {
      * over only term and weight.
      */
     public DocumentInputIterator(boolean hasPayloads) throws IOException {
-      docCount = reader.maxDoc() - 1;
       this.hasPayloads = hasPayloads;
-      currentPayload = null;
-      liveDocs = MultiFields.getLiveDocs(reader);
-      this.relevantFields = getRelevantFields(new String [] {field, weightField, payloadField});
+      docCount = reader.maxDoc() - 1;
+      weightValues = (weightField != null) ? MultiDocValues.getNumericValues(reader, weightField) : null;
+      liveDocs = (reader.leaves().size() > 0) ? MultiFields.getLiveDocs(reader) : null;
+      relevantFields = getRelevantFields(new String [] {field, weightField, payloadField});
     }
 
     @Override
@@ -120,28 +129,29 @@ public class DocumentDictionary implements Dictionary {
           continue;
         }
 
-        doc = reader.document(currentDocId, relevantFields);
+        StoredDocument doc = reader.document(currentDocId, relevantFields);
+        
+        BytesRef tempPayload = null;
+        BytesRef tempTerm = null;
         
         if (hasPayloads) {
           StorableField payload = doc.getField(payloadField);
-          if (payload == null) {
-            throw new IllegalArgumentException(payloadField + " does not exist");
-          } else if (payload.binaryValue() == null) {
-            throw new IllegalArgumentException(payloadField + " does not have binary value");
+          if (payload == null || (payload.binaryValue() == null && payload.stringValue() == null)) {
+            continue;
           }
-          currentPayload = payload.binaryValue();
+          tempPayload = (payload.binaryValue() != null) ? payload.binaryValue() : new BytesRef(payload.stringValue());
         }
-        
-        currentWeight = getWeight(currentDocId);
         
         StorableField fieldVal = doc.getField(field);
-        if (fieldVal == null) {
-          throw new IllegalArgumentException(field + " does not exist");
-        } else if(fieldVal.stringValue() == null) {
-          throw new IllegalArgumentException(field + " does not have string value");
+        if (fieldVal == null || (fieldVal.binaryValue() == null && fieldVal.stringValue() == null)) {
+          continue;
         }
+        tempTerm = (fieldVal.stringValue() != null) ? new BytesRef(fieldVal.stringValue()) : fieldVal.binaryValue();
         
-        return new BytesRef(fieldVal.stringValue());
+        currentPayload = tempPayload;
+        currentWeight = getWeight(doc, currentDocId);
+
+        return tempTerm;
       }
       return null;
     }
@@ -156,15 +166,21 @@ public class DocumentDictionary implements Dictionary {
       return hasPayloads;
     }
 
-    /** Return the suggestion weight for this document */
-    protected long getWeight(int docId) {
+    /** 
+     * Returns the value of the <code>weightField</code> for the current document.
+     * Retrieves the value for the <code>weightField</code> if its stored (using <code>doc</code>)
+     * or if its indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
+     * If no value is found, then the weight is 0.
+     */
+    protected long getWeight(StoredDocument doc, int docId) {
       StorableField weight = doc.getField(weightField);
-      if (weight == null) {
-        throw new IllegalArgumentException(weightField + " does not exist");
-      } else if (weight.numericValue() == null) {
-        throw new IllegalArgumentException(weightField + " does not have numeric value");
+      if (weight != null) { // found weight as stored
+        return (weight.numericValue() != null) ? weight.numericValue().longValue() : 0;
+      } else if (weightValues != null) {  // found weight as NumericDocValue
+        return weightValues.get(docId);
+      } else { // fall back
+        return 0;
       }
-      return weight.numericValue().longValue();
     }
     
     private Set<String> getRelevantFields(String... fields) {

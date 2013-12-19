@@ -635,7 +635,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     int charUpto = 0;
     final StringBuilder sb = new StringBuilder();
     while (charUpto < s.length()) {
-      final int c = s.codePointAt(charUpto);
+      final int c = s.charAt(charUpto);
       if (c == 0xa) {
         // Strangely, you cannot put \ u000A into Java
         // sources (not in a comment nor a string
@@ -655,7 +655,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         // don't escape...
         sb.append(String.format(Locale.ROOT, "\\u%04x", c));
       }
-      charUpto += Character.charCount(c);
+      charUpto++;
     }
     return sb.toString();
   }

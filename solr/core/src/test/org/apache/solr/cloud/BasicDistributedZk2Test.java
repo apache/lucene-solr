@@ -29,12 +29,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -55,11 +55,13 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
+  private static final String SHARD2 = "shard2";
+  private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
+
   }
   
   public BasicDistributedZk2Test() {
@@ -144,14 +146,15 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       index_specific(client, "id", docId + 1, t1, "what happens here?");
       
       // expire a session...
-      CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
+      CloudJettyRunner cloudJetty = shardToJetty.get(SHARD1).get(0);
       chaosMonkey.expireSession(cloudJetty.jetty);
       
       indexr("id", docId + 1, t1, "slip this doc in");
       
       waitForRecoveriesToFinish(false);
       
-      checkShardConsistency("shard1");
+      checkShardConsistency(SHARD1);
+      checkShardConsistency(SHARD2);
       
       testFinished = true;
     } finally {
@@ -167,8 +170,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     try {
       final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
       HttpSolrServer server = new HttpSolrServer(baseUrl);
-      server.setConnectionTimeout(15000);
-      server.setSoTimeout(60000);
+      server.setConnectionTimeout(30000);
       Create createCmd = new Create();
       createCmd.setRoles("none");
       createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
@@ -185,34 +187,47 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     waitForCollection(cloudClient.getZkStateReader(), ONE_NODE_COLLECTION, 1);
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     
-    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, "shard1", 30000);
+    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
     
-    final String baseUrl2 = getBaseUrl((HttpSolrServer) clients.get(1));
-    HttpSolrServer qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection" + "core");
+    int docs = 2;
+    for (SolrServer client : clients) {
+      final String baseUrl = getBaseUrl((HttpSolrServer) client);
+      addAndQueryDocs(baseUrl, docs);
+      docs += 2;
+    }
+  }
+
+  // 2 docs added every call
+  private void addAndQueryDocs(final String baseUrl, int docs)
+      throws Exception {
+    HttpSolrServer qclient = new HttpSolrServer(baseUrl + "/onenodecollection" + "core");
+    
+    // it might take a moment for the proxy node to see us in their cloud state
+    waitForNon403or404or503(qclient);
     
     // add a doc
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "1");
+    doc.addField("id", docs);
     qclient.add(doc);
     qclient.commit();
     
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse results = qclient.query(query);
-    assertEquals(1, results.getResults().getNumFound());
+    assertEquals(docs - 1, results.getResults().getNumFound());
     
-    qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection");
+    qclient = new HttpSolrServer(baseUrl + "/onenodecollection");
     results = qclient.query(query);
-    assertEquals(1, results.getResults().getNumFound());
+    assertEquals(docs - 1, results.getResults().getNumFound());
     
     doc = new SolrInputDocument();
-    doc.addField("id", "2");
+    doc.addField("id", docs + 1);
     qclient.add(doc);
     qclient.commit();
     
     query = new SolrQuery("*:*");
     query.set("rows", 0);
     results = qclient.query(query);
-    assertEquals(2, results.getResults().getNumFound());
+    assertEquals(docs, results.getResults().getNumFound());
   }
   
   private long testUpdateAndDelete() throws Exception {
@@ -502,12 +517,17 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     // new server should be part of first shard
     // how many docs are on the new shard?
-    for (CloudJettyRunner cjetty : shardToJetty.get("shard1")) {
-      if (VERBOSE) System.err.println("total:"
+    for (CloudJettyRunner cjetty : shardToJetty.get(SHARD1)) {
+      if (VERBOSE) System.err.println("shard1 total:"
+          + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+    for (CloudJettyRunner cjetty : shardToJetty.get(SHARD2)) {
+      if (VERBOSE) System.err.println("shard2 total:"
           + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
-    checkShardConsistency("shard1");
+    checkShardConsistency(SHARD1);
+    checkShardConsistency(SHARD2);
     
     assertDocCounts(VERBOSE);
   }

@@ -17,10 +17,24 @@ package org.apache.solr.update.processor;
  * limitations under the License.
  */
 
-import org.apache.http.client.HttpClient;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -51,10 +65,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.RealTimeGetComponent;
-import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -78,25 +89,13 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+  public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
+  public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";
+  public static final String DISTRIB_FROM_PARENT = "distrib.from.parent";
+  public static final String DISTRIB_FROM = "distrib.from";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
 
@@ -121,17 +120,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
            DISTRIB_UPDATE_PARAM + ": " + param, e);
       }
     }
-  }
-  
-  private final HttpClient client;
-  {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 15000);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 60000);
-    params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    client = HttpClientUtil.createClient(params);
   }
 
   public static final String COMMIT_END_POINT = "commit_end_point";
@@ -197,7 +185,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
     zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
     if (zkEnabled) {
-      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateExecutor());
+      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 
@@ -268,7 +256,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // if request is coming from another collection then we want it to be sent to all replicas
         // even if it's phase is FROMLEADER
-        String fromCollection = updateCommand.getReq().getParams().get("distrib.from.collection");
+        String fromCollection = updateCommand.getReq().getParams().get(DISTRIB_FROM_COLLECTION);
 
         if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && fromCollection == null) {
           // we are coming from the leader, just go local - add no urls
@@ -408,13 +396,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 for (DocRouter.Range range : ranges) {
                   if (range.includes(hash)) {
                     if (nodes == null) nodes = new ArrayList<Node>();
-                    Collection<Slice> activeSlices = cstate.getActiveSlices(rule.getTargetCollectionName());
+                    DocCollection targetColl = cstate.getCollection(rule.getTargetCollectionName());
+                    Collection<Slice> activeSlices = targetColl.getRouter().getSearchSlicesSingle(id, null, targetColl);
                     if (activeSlices == null || activeSlices.isEmpty()) {
                       throw new SolrException(ErrorCode.SERVER_ERROR,
-                          "No active slices found for target collection: " + rule.getTargetCollectionName());
+                          "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
-                    // it doesn't matter where we forward it so just choose the first one
-                    // todo this can be optimized
                     Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
@@ -459,13 +446,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean isReplayOrPeersync = (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     if (isReplayOrPeersync) return;
 
-    String from = req.getParams().get("distrib.from");
+    String from = req.getParams().get(DISTRIB_FROM);
     ClusterState clusterState = zkController.getClusterState();
     CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
     Slice mySlice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
     boolean localIsLeader = cloudDescriptor.isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
-      String fromShard = req.getParams().get("distrib.from.parent");
+      String fromShard = req.getParams().get(DISTRIB_FROM_PARENT);
       if (fromShard != null) {
         if (Slice.ACTIVE.equals(mySlice.getState()))  {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
@@ -480,7 +467,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               "Request says it is coming from parent shard leader but parent hash range is not superset of my range");
         }
       } else {
-        String fromCollection = req.getParams().get("distrib.from.collection"); // is it because of a routing rule?
+        String fromCollection = req.getParams().get(DISTRIB_FROM_COLLECTION); // is it because of a routing rule?
         if (fromCollection == null)  {
           log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
@@ -559,9 +546,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
-        params.set("distrib.from.parent", req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
+        params.set(DISTRIB_FROM_PARENT, req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
         for (Node subShardLeader : subShardLeaders) {
           cmdDistrib.distribAdd(cmd, Collections.singletonList(subShardLeader), params, true);
         }
@@ -570,10 +557,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
-        params.set("distrib.from.collection", req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
-        params.set("distrib.from.shard", req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
+        params.set(DISTRIB_FROM_COLLECTION, req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
+        params.set(DISTRIB_FROM_SHARD, req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
         for (Node nodesByRoutingRule : nodesByRoutingRules) {
           cmdDistrib.distribAdd(cmd, Collections.singletonList(nodesByRoutingRule), params, true);
         }
@@ -588,13 +575,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                  (isLeader || isSubShardLeader ?
                   DistribPhase.FROMLEADER.toString() :
                   DistribPhase.TOLEADER.toString()));
-      if (isLeader || isSubShardLeader) {
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-      }
-
-      params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
+
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
@@ -681,7 +664,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
       };
-      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateExecutor();
+      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
       executor.execute(thread);
       
     }
@@ -745,7 +728,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
-    boolean forwardedFromCollection = cmd.getReq().getParams().get("distrib.from.collection") != null;
+    boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -990,9 +973,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
-        params.set("distrib.from.parent", cloudDesc.getShardId());
+        params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
       }
 
@@ -1000,10 +983,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
-        params.set("distrib.from.collection", req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
-        params.set("distrib.from.shard", req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
+        params.set(DISTRIB_FROM_COLLECTION, req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
+        params.set(DISTRIB_FROM_SHARD, req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
         for (Node nodesByRoutingRule : nodesByRoutingRules) {
           cmdDistrib.distribDelete(cmd, Collections.singletonList(nodesByRoutingRule), params, true);
         }
@@ -1016,13 +999,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
-                 (isLeader || isSubShardLeader ?
-                  DistribPhase.FROMLEADER.toString() :
-                  DistribPhase.TOLEADER.toString()));
-      if (isLeader || isSubShardLeader) {
-        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-      }
+          (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString()
+              : DistribPhase.TOLEADER.toString()));
+      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+          zkController.getBaseUrl(), req.getCore().getName()));
+
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
 
@@ -1083,6 +1064,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
       outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+      outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+          zkController.getBaseUrl(), req.getCore().getName()));
 
       SolrParams params = req.getParams();
       String route = params.get(ShardParams._ROUTE_);
@@ -1198,7 +1181,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-      params.set("update.from", ZkCoreNodeProps.getCoreUrl(
+      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
 
       boolean someReplicas = false;
@@ -1235,10 +1218,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
           params = new ModifiableSolrParams(filterParams(req.getParams()));
           params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-          params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+          params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
               zkController.getBaseUrl(), req.getCore().getName()));
-          params.set("distrib.from.collection", req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
-          params.set("distrib.from.shard", req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
+          params.set(DISTRIB_FROM_COLLECTION, req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
+          params.set(DISTRIB_FROM_SHARD, req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
           cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true);
         }
         if (replicas != null) {
@@ -1333,7 +1316,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
-    boolean forwardedFromCollection = cmd.getReq().getParams().get("distrib.from.collection") != null;
+    boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     if (!leaderLogic && versionOnUpdate==0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
@@ -1438,7 +1421,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
-
+        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
         if (nodes != null) {
           cmdDistrib.distribCommit(cmd, nodes, params);
           finish();

@@ -235,6 +235,27 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="Solr morphlines-cell contrib" type="JUnit" factoryName="JUnit">
+      <module name="morphlines-cell" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-cell" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="Solr morphlines-core contrib" type="JUnit" factoryName="JUnit">
+      <module name="morphlines-core" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-core" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="Solr mr (map-reduce) contrib" type="JUnit" factoryName="JUnit">
+      <module name="map-reduce" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/map-reduce" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="Solr uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="package" />
@@ -249,7 +270,7 @@
       <option name="VM_PARAMETERS" value="-ea" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="35">
+    <list size="38">
       <item index="0" class="java.lang.String" itemvalue="JUnit.Lucene core" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.Module analyzers-common" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.Module analyzers-icu" />
@@ -281,10 +302,13 @@
       <item index="28" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
       <item index="29" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
       <item index="30" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
-      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
-      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
-      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
-      <item index="34" class="java.lang.String" itemvalue="JUnit.Solrj" />
+      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
+      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
+      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr mr (map-reduce) contrib" />
+      <item index="34" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
+      <item index="35" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
+      <item index="36" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
+      <item index="37" class="java.lang.String" itemvalue="JUnit.Solrj" />
     </list>
   </component>
 </project>

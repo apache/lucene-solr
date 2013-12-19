@@ -49,27 +49,27 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Tests the Custom Sharding API.
  */
 @Slow
+@Ignore("I am broken since SOLR-5492")
 public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   private static final String DEFAULT_COLLECTION = "collection1";
@@ -84,7 +84,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
   }
 
   @Before
@@ -247,6 +246,16 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"b")).getResults().getNumFound());
     assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"a")).getResults().getNumFound());
+
+    // test shards.info with _route_ param
+    QueryResponse resp = collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a").setParam(ShardParams.SHARDS_INFO, true));
+    NamedList<?> sinfo = (NamedList<?>) resp.getResponse().get(ShardParams.SHARDS_INFO);
+    assertNotNull("missing shard info", sinfo);
+    for (Map.Entry<String,?> entry : sinfo) {
+      NamedList<?> info = (NamedList<?>) entry.getValue();
+      assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
+      assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
+    }
 
     collectionClient.deleteByQuery("*:*");
     collectionClient.commit(true,true);

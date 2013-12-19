@@ -63,10 +63,18 @@ public  class LeaderElector {
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
-  
+
+  // for tests
+  private volatile ElectionContext context;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     zkCmdExecutor = new ZkCmdExecutor((int) (zkClient.getZkClientTimeout()/1000.0 + 3000));
+  }
+  
+  // for tests
+  public ElectionContext getContext() {
+    return context;
   }
   
   /**
@@ -79,6 +87,7 @@ public  class LeaderElector {
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
+    context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
@@ -208,6 +217,8 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
+    context.joinedElectionFired();
+    
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -273,6 +284,7 @@ public  class LeaderElector {
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
+    this.context = context;
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     zkCmdExecutor.ensureExists(electZKPath, zkClient);

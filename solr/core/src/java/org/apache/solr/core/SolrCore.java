@@ -17,9 +17,42 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
@@ -40,6 +73,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
+import org.apache.solr.handler.component.AnalyticsComponent;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -92,39 +126,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -769,7 +770,7 @@ public final class SolrCore implements SolrInfoMBean {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      
+
       // Handle things that should eventually go away
       initDeprecatedSupport();
       
@@ -853,13 +854,21 @@ public final class SolrCore implements SolrInfoMBean {
     
     CoreContainer cc = cd.getCoreContainer();
 
-    if (cc != null && cc.isZooKeeperAware() && Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
-      // set update log to buffer before publishing the core
-      getUpdateHandler().getUpdateLog().bufferUpdates();
-      
-      cd.getCloudDescriptor().setShardState(null);
-      cd.getCloudDescriptor().setShardRange(null);
-      cd.getCloudDescriptor().setShardParent(null);
+    if (cc != null && cc.isZooKeeperAware()) {
+      SolrRequestHandler realtimeGetHandler = reqHandlers.get("/get");
+      if (realtimeGetHandler == null) {
+        log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
+            "SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
+      }
+
+      if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
+        // set update log to buffer before publishing the core
+        getUpdateHandler().getUpdateLog().bufferUpdates();
+
+        cd.getCloudDescriptor().setShardState(null);
+        cd.getCloudDescriptor().setShardRange(null);
+        cd.getCloudDescriptor().setShardParent(null);
+      }
     }
     // For debugging   
 //    numOpens.incrementAndGet();
@@ -1197,6 +1206,7 @@ public final class SolrCore implements SolrInfoMBean {
     addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
     addIfNotPresent(components,RealTimeGetComponent.COMPONENT_NAME,RealTimeGetComponent.class);
+    addIfNotPresent(components,AnalyticsComponent.COMPONENT_NAME,AnalyticsComponent.class);
     return components;
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){

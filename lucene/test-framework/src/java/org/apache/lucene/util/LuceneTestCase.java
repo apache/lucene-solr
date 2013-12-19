@@ -228,6 +228,7 @@ public abstract class LuceneTestCase extends Assert {
   // for all suites ever since.
   // -----------------------------------------------------------------
 
+  // :Post-Release-Update-Version.LUCENE_XY:
   /** 
    * Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:

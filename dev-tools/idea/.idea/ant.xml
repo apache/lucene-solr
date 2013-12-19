@@ -45,6 +45,9 @@
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/langid/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/morphlines-cell/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/morphlines-core/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/map-reduce/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/uima/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/velocity/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/solrj/build.xml" />

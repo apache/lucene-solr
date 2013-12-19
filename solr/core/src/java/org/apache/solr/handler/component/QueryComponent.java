@@ -34,7 +34,6 @@ import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -47,6 +46,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -190,7 +190,7 @@ public class QueryComponent extends SearchComponent
     // groupSort defaults to sort
     String groupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSort(groupSortStr, req));
+    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSortSpec(groupSortStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }
@@ -449,16 +449,12 @@ public class QueryComponent extends SearchComponent
   {
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
-    final CharsRef spare = new CharsRef();
     // The query cache doesn't currently store sort field values, and SolrIndexSearcher doesn't
     // currently have an option to return sort field values.  Because of this, we
     // take the documents given and re-derive the sort values.
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
-      Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
-      SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
-      Field field = new StringField("dummy", "", Field.Store.NO); // a dummy Field
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       AtomicReaderContext currentLeaf = null;
@@ -479,18 +475,22 @@ public class QueryComponent extends SearchComponent
       }
       Arrays.sort(sortedIds);
 
+      SortSpec sortSpec = rb.getSortSpec();
+      Sort sort = searcher.weightSort(sortSpec.getSort());
+      SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
+      List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
-      for (SortField sortField: sortFields) {
+      for (int fld = 0; fld < schemaFields.size(); fld++) {
+        SchemaField schemaField = schemaFields.get(fld);
+        FieldType ft = null == schemaField? null : schemaField.getType();
+        SortField sortField = sortFields[fld];
+
         SortField.Type type = sortField.getType();
+        // :TODO: would be simpler to always serialize every position of SortField[]
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
         FieldComparator comparator = null;
-
-        String fieldname = sortField.getField();
-        FieldType ft = fieldname==null ? null : searcher.getSchema().getFieldTypeNoEx(fieldname);
-
         Object[] vals = new Object[nDocs];
-        
 
         int lastIdx = -1;
         int idx = 0;
@@ -516,31 +516,11 @@ public class QueryComponent extends SearchComponent
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
           comparator.copy(0, doc);
           Object val = comparator.value(0);
-
-          // Sortable float, double, int, long types all just use a string
-          // comparator. For these, we need to put the type into a readable
-          // format.  One reason for this is that XML can't represent all
-          // string values (or even all unicode code points).
-          // indexedToReadable() should be a no-op and should
-          // thus be harmless anyway (for all current ways anyway)
-          if (val instanceof String) {
-            field.setStringValue((String)val);
-            val = ft.toObject(field);
-          }
-
-          // Must do the same conversion when sorting by a
-          // String field in Lucene, which returns the terms
-          // data as BytesRef:
-          if (val instanceof BytesRef) {
-            UnicodeUtil.UTF8toUTF16((BytesRef)val, spare);
-            field.setStringValue(spare.toString());
-            val = ft.toObject(field);
-          }
-
+          if (null != ft) val = ft.marshalSortValue(val); 
           vals[position] = val;
         }
 
-        sortVals.add(fieldname, vals);
+        sortVals.add(sortField.getField(), vals);
       }
 
       rsp.add("sort_values", sortVals);
@@ -778,7 +758,8 @@ public class QueryComponent extends SearchComponent
         sortFields = new SortField[]{SortField.FIELD_SCORE};
       }
  
-      SchemaField uniqueKeyField = rb.req.getSchema().getUniqueKeyField();
+      IndexSchema schema = rb.req.getSchema();
+      SchemaField uniqueKeyField = schema.getUniqueKeyField();
 
 
       // id to shard mapping, to eliminate any accidental dups
@@ -787,7 +768,7 @@ public class QueryComponent extends SearchComponent
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
       ShardFieldSortedHitQueue queue;
-      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount());
+      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -813,11 +794,15 @@ public class QueryComponent extends SearchComponent
             StringWriter trace = new StringWriter();
             t.printStackTrace(new PrintWriter(trace));
             nl.add("trace", trace.toString() );
+            if (srsp.getShardAddress() != null) {
+              nl.add("shardAddress", srsp.getShardAddress());
+            }
           }
           else {
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
+            nl.add("shardAddress", srsp.getShardAddress());
           }
           if(srsp.getSolrResponse()!=null) {
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
@@ -882,7 +867,7 @@ public class QueryComponent extends SearchComponent
             }
           }
 
-          shardDoc.sortFieldValues = sortFieldValues;
+          shardDoc.sortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
@@ -922,6 +907,47 @@ public class QueryComponent extends SearchComponent
       if (partialResults) {
         rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
       }
+  }
+
+  private NamedList unmarshalSortValues(SortSpec sortSpec, 
+                                        NamedList sortFieldValues, 
+                                        IndexSchema schema) {
+    NamedList unmarshalledSortValsPerField = new NamedList();
+
+    if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
+    
+    List<SchemaField> schemaFields = sortSpec.getSchemaFields();
+    SortField[] sortFields = sortSpec.getSort().getSort();
+
+    int marshalledFieldNum = 0;
+    for (int sortFieldNum = 0; sortFieldNum < sortFields.length; sortFieldNum++) {
+      final SortField sortField = sortFields[sortFieldNum];
+      final SortField.Type type = sortField.getType();
+
+      // :TODO: would be simpler to always serialize every position of SortField[]
+      if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
+
+      final String sortFieldName = sortField.getField();
+      final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
+      assert sortFieldName.equals(valueFieldName)
+        : "sortFieldValues name key does not match expected SortField.getField";
+
+      List sortVals = (List)sortFieldValues.getVal(marshalledFieldNum);
+
+      final SchemaField schemaField = schemaFields.get(sortFieldNum);
+      if (null == schemaField) {
+        unmarshalledSortValsPerField.add(sortField.getField(), sortVals);
+      } else {
+        FieldType fieldType = schemaField.getType();
+        List unmarshalledSortVals = new ArrayList();
+        for (Object sortVal : sortVals) {
+          unmarshalledSortVals.add(fieldType.unmarshalSortValue(sortVal));
+        }
+        unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
+      }
+      marshalledFieldNum++;
+    }
+    return unmarshalledSortValsPerField;
   }
 
   private void createRetrieveDocs(ResponseBuilder rb) {

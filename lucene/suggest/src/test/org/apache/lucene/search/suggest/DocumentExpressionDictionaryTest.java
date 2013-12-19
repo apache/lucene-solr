@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
@@ -72,12 +73,37 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
   }
   
   @Test
+  public void testEmptyReader() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    // Make sure the index is created?
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    writer.commit();
+    writer.close();
+    IndexReader ir = DirectoryReader.open(dir);
+    Set<SortField> sortFields = new HashSet<SortField>(); 
+    sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
+    sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
+    sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
+    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "((w1 + w2) - w3)", sortFields, PAYLOAD_FIELD_NAME);
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+
+    assertNull(inputIterator.next());
+    assertEquals(inputIterator.weight(), 0);
+    assertNull(inputIterator.payload());
+
+    ir.close();
+    dir.close();
+  }
+  
+  @Test
   public void testBasic() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(10));
+    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -90,16 +116,16 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
     Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "((w1 + w2) - w3)", sortFields, PAYLOAD_FIELD_NAME);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), (w1 + w2) - w3);
-      assertTrue(tfp.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+      assertEquals(inputIterator.weight(), (w1 + w2) - w3);
+      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
     ir.close();
@@ -112,7 +138,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(10));
+    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -125,16 +151,16 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
     Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "w1 + (0.2 * w2) - (w3 - w1)/2", sortFields);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), (long)(w1 + (0.2 * w2) - (w3 - w1)/2));
-      assertEquals(tfp.payload(), null);
+      assertEquals(inputIterator.weight(), (long)(w1 + (0.2 * w2) - (w3 - w1)/2));
+      assertEquals(inputIterator.payload(), null);
     }
     assertTrue(docs.isEmpty());
     ir.close();
@@ -147,11 +173,11 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(10));
+    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
-      if(rand.nextBoolean()) {
+      if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
         termsToDel.add(doc.get(FIELD_NAME));
       }
       writer.addDocument(doc);
@@ -174,20 +200,50 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     }
     
     IndexReader ir = DirectoryReader.open(dir);
+    assertTrue("NumDocs should be > 0 but was " + ir.numDocs(), ir.numDocs() > 0);
     assertEquals(ir.numDocs(), docs.size());
     Set<SortField> sortFields = new HashSet<SortField>(); 
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
     sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
     Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "w2-w1", sortFields, PAYLOAD_FIELD_NAME);
-    InputIterator tfp = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
-    while((f = tfp.next())!=null) {
+    while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(tfp.weight(), w2-w1);
-      assertTrue(tfp.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+      assertEquals(inputIterator.weight(), w2-w1);
+      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+    }
+    assertTrue(docs.isEmpty());
+    ir.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testWithValueSource() throws IOException {
+    
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    for(Document doc: docs.values()) {
+      writer.addDocument(doc);
+    }
+    writer.commit();
+    writer.close();
+
+    IndexReader ir = DirectoryReader.open(dir);
+    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
+    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    BytesRef f;
+    while((f = inputIterator.next())!=null) {
+      Document doc = docs.remove(f.utf8ToString());
+      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertEquals(inputIterator.weight(), 10);
+      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
     ir.close();

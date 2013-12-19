@@ -41,12 +41,13 @@ final class CompositeBreakIterator {
   private final BreakIteratorWrapper wordBreakers[] = new BreakIteratorWrapper[UScript.CODE_LIMIT];
 
   private BreakIteratorWrapper rbbi;
-  private final ScriptIterator scriptIterator = new ScriptIterator();
+  private final ScriptIterator scriptIterator;
 
   private char text[];
 
   CompositeBreakIterator(ICUTokenizerConfig config) {
     this.config = config;
+    this.scriptIterator = new ScriptIterator(config.combineCJ());
   }
 
   /**

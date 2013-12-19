@@ -91,7 +91,11 @@ public class CorePropertiesLocator implements CoresLocator {
 
   @Override
   public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {
+    if (coreDescriptors == null) {
+      return;
+    }
     for (CoreDescriptor cd : coreDescriptors) {
+      if (cd == null) continue;
       File instanceDir = new File(cd.getInstanceDir());
       File propertiesFile = new File(instanceDir, PROPERTIES_FILENAME);
       propertiesFile.renameTo(new File(instanceDir, PROPERTIES_FILENAME + ".unloaded"));
@@ -104,6 +108,11 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
     persist(cc, newCD);
+  }
+
+  @Override
+  public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
+    persist(cc, cd1, cd2);
   }
 
   @Override

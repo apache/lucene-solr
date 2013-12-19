@@ -379,4 +379,21 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     assertEquals("10.0.0.1", ((HttpServletRequest)solrReq.getContext().get("httpRequest")).getHeaders("X-Forwarded-For").nextElement());
     
   }
+
+  public void testPostMissingContentType() throws Exception {
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("POST").anyTimes();
+    expect(request.getContentType()).andReturn(null).anyTimes();
+    expect(request.getQueryString()).andReturn(null).anyTimes();
+    replay(request);
+
+    SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
+    try {
+      parsers.parse(h.getCore(), "/select", request);
+      fail("should throw SolrException");
+    } catch (SolrException e) {
+      assertTrue(e.getMessage().startsWith("Must specify a Content-Type header with POST requests"));
+      assertEquals(415, e.code());
+    }
+  }
 }

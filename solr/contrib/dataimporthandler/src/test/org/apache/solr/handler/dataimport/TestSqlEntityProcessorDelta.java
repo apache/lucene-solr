@@ -23,7 +23,7 @@ import org.junit.Test;
  */
 
 /**
- * Test with various combinations of parameters, child entites, transformers.
+ * Test with various combinations of parameters, child entities, transformers.
  */
 public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
   private boolean delta = false;
@@ -48,6 +48,21 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     singleEntity(c);
     validateChanges();
   }
+  
+  @Test
+  public void testDeltaImportWithoutInitialFullImport() throws Exception {
+    log.debug("testDeltaImportWithoutInitialFullImport delta-import...");
+    countryEntity = false;
+    delta = true;
+    /*
+     * We need to add 2 in total: 
+     * +1 for deltaQuery i.e identifying id of items to update, 
+     * +1 for deletedPkQuery i.e delete query
+     */
+    singleEntity(totalPeople() + 2);
+    validateChanges();
+  }
+
   @Test
   public void testWithSimpleTransformer() throws Exception {
     log.debug("testWithSimpleTransformer full-import...");    

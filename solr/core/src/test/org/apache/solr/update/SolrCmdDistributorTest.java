@@ -18,17 +18,19 @@ package org.apache.solr.update;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -37,22 +39,27 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.MockStreamingSolrServers.Exp;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
+import org.xml.sax.SAXException;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
+  
+  private AtomicInteger id = new AtomicInteger();
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
 
@@ -60,10 +67,26 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // being able to call optimize to have all deletes expunged.
     System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
   }
-  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
-      new SolrjNamedThreadFactory("updateExecutor"));
+  private UpdateShardHandler updateShardHandler;
   
-  public SolrCmdDistributorTest() {
+  public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
+    updateShardHandler = new UpdateShardHandler(new ConfigSolr() {
+
+      @Override
+      public CoresLocator getCoresLocator() {
+        return null;
+      }
+
+      @Override
+      protected String getShardHandlerFactoryConfigPath() {
+        return null;
+      }
+
+      @Override
+      public boolean isPersistent() {
+        return false;
+      }});
+    
     fixShardCount = true;
     shardCount = 4;
     stress = 0;
@@ -107,7 +130,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -121,7 +144,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // add one doc to controlClient
     
     AddUpdateCommand cmd = new AddUpdateCommand(null);
-    cmd.solrDoc = sdoc("id", 1);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
     params = new ModifiableSolrParams();
 
     cmdDistrib.distribAdd(cmd, nodes, params);
@@ -147,21 +170,22 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
-    cmd.solrDoc = sdoc("id", 2);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
+    int id2 = id.incrementAndGet();
     AddUpdateCommand cmd2 = new AddUpdateCommand(null);
-    cmd2.solrDoc = sdoc("id", 3);
+    cmd2.solrDoc = sdoc("id", id2);
 
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribAdd(cmd2, nodes, params);
     
     AddUpdateCommand cmd3 = new AddUpdateCommand(null);
-    cmd3.solrDoc = sdoc("id", 4);
+    cmd3.solrDoc = sdoc("id", id.incrementAndGet());
     
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -186,11 +210,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // now delete doc 2 which is on both control and client1
     
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
-    dcmd.id = "2";
-    
+    dcmd.id = Integer.toString(id2);
     
 
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -221,9 +244,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       //System.out.println(clients.get(0).request(new LukeRequest()));
     }
     
-    int id = 5;
-    
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     int cnt = atLeast(303);
     for (int i = 0; i < cnt; i++) {
@@ -239,7 +260,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       }
       AddUpdateCommand c = new AddUpdateCommand(null);
-      c.solrDoc = sdoc("id", id++);
+      c.solrDoc = sdoc("id", id.incrementAndGet());
       if (nodes.size() > 0) {
         params = new ModifiableSolrParams();
         cmdDistrib.distribAdd(c, nodes, params);
@@ -294,15 +315,148 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           ((NamedList<Object>) resp.get("index")).get("maxDoc"));
     }
     
+    
+    testMaxRetries();
+    testOneRetry();
+    testRetryNodeAgainstBadAddress();
+    testRetryNodeWontRetrySocketError();
+  }
+
+  private void testMaxRetries() throws IOException {
+    final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
+    ss.setExp(Exp.CONNECT_EXCEPTION);
+    ArrayList<Node> nodes = new ArrayList<Node>();
+    final HttpSolrServer solrclient1 = (HttpSolrServer) clients.get(0);
+    
+    final AtomicInteger retries = new AtomicInteger();
+    ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient1.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+      @Override
+      public boolean checkRetry() {
+        retries.incrementAndGet();
+        return true;
+      }
+    };
+    
+    nodes.add(retryNode);
+    
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    cmdDistrib.distribAdd(cmd, nodes, params);
+    cmdDistrib.finish();
+    
+    assertEquals(6, retries.get());
+    
+    assertEquals(1, cmdDistrib.getErrors().size());
+  }
+  
+  private void testOneRetry() throws Exception {
+    final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
+    long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
+    ss.setExp(Exp.CONNECT_EXCEPTION);
+    ArrayList<Node> nodes = new ArrayList<Node>();
+
+    ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
+        ZkStateReader.CORE_NAME_PROP, "");
+
+    final AtomicInteger retries = new AtomicInteger();
+    nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+      @Override
+      public boolean checkRetry() {
+        ss.setExp(null);
+        retries.incrementAndGet();
+        return true;
+      }
+    };
+    
+
+    nodes.add(retryNode);
+    
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
+    cmdDistrib.distribAdd(cmd, nodes, params);
+    cmdDistrib.distribCommit(ccmd, nodes, params);
+    cmdDistrib.finish();
+    
+    assertEquals(1, retries.get());
+    
+    
+    long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    
+    // we will get java.net.ConnectException which we retry on
+    assertEquals(numFoundBefore + 1, numFoundAfter);
+    assertEquals(0, cmdDistrib.getErrors().size());
+  }
+
+  private void testRetryNodeWontRetrySocketError() throws Exception {
+    final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
+    long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
+    ss.setExp(Exp.SOCKET_EXCEPTION);
+    ArrayList<Node> nodes = new ArrayList<Node>();
+
+    ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
+        ZkStateReader.CORE_NAME_PROP, "");
+
+    final AtomicInteger retries = new AtomicInteger();
+    nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+    RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
+      @Override
+      public boolean checkRetry() {
+        retries.incrementAndGet();
+        return true;
+      }
+    };
+    
+
+    nodes.add(retryNode);
+    
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
+    cmdDistrib.distribAdd(cmd, nodes, params);
+    
+    ss.setExp(null);
+    cmdDistrib.distribCommit(ccmd, nodes, params);
+    cmdDistrib.finish();
+    
+    // it will checkRetry, but not actually do it...
+    assertEquals(1, retries.get());
+    
+    
+    long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    
+    // we will get java.net.SocketException: Network is unreachable, which we don't retry on
+    assertEquals(numFoundBefore, numFoundAfter);
+    assertEquals(1, cmdDistrib.getErrors().size());
+  }
+
+  private void testRetryNodeAgainstBadAddress() throws SolrServerException, IOException {
     // Test RetryNode
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<Node>();
 
-    nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
+    ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
     RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {
       @Override
       public boolean checkRetry() {
@@ -318,13 +472,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(retryNode);
     
     
-    cmd = new AddUpdateCommand(null);
-    cmd.solrDoc = sdoc("id", 1111111);
-    params = new ModifiableSolrParams();
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = sdoc("id", id.incrementAndGet());
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
     cmdDistrib.distribAdd(cmd, nodes, params);
     
-    ccmd = new CommitUpdateCommand(null, false);
+    CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribCommit(ccmd, nodes, params);
@@ -333,7 +487,17 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    assertEquals(numFoundBefore + 1, numFoundAfter);
+    // different OS's will throw different exceptions for the bad address above
+    if (numFoundBefore != numFoundAfter) {
+      assertEquals(0, cmdDistrib.getErrors().size());
+      assertEquals(numFoundBefore + 1, numFoundAfter);
+    } else {
+      // we will get java.net.SocketException: Network is unreachable and not retry
+      assertEquals(numFoundBefore, numFoundAfter);
+      
+      assertEquals(1, cmdDistrib.getErrors().size());
+    }
+    
   }
   
   @Override
@@ -343,7 +507,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    ExecutorUtil.shutdownNowAndAwaitTermination(updateExecutor);
+    updateShardHandler.close();
     super.tearDown();
   }
 }

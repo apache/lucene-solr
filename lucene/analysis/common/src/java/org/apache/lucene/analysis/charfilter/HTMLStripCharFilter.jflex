@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
  */
 %%
 
-%unicode 6.1
+%unicode 6.3
 %apiprivate
 %type int
 %final
@@ -197,7 +197,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
           escapeSTYLE = true;
         } else {
           if (null == this.escapedTags) {
-            this.escapedTags = new CharArraySet(Version.LUCENE_40, 16, true);
+            this.escapedTags = new CharArraySet(Version.LUCENE_CURRENT, 16, true);
           }
           this.escapedTags.add(tag);
         }
