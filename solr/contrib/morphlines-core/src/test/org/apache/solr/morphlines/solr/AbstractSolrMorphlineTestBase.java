@@ -19,6 +19,7 @@ package org.apache.solr.morphlines.solr;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +29,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -41,9 +41,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.kitesdk.morphline.api.Collector;
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.MorphlineContext;
@@ -53,6 +50,9 @@ import org.kitesdk.morphline.base.FaultTolerance;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
 import org.kitesdk.morphline.stdlib.PipeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
@@ -72,6 +72,8 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   protected static final String DEFAULT_BASE_DIR = "solr";
   protected static final AtomicInteger SEQ_NUM = new AtomicInteger();
   protected static final AtomicInteger SEQ_NUM2 = new AtomicInteger();
+  
+  protected static final Object NON_EMPTY_FIELD = new Object();
   
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSolrMorphlineTestBase.class);
   
@@ -113,7 +115,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     testServer = new SolrServerDocumentLoader(solrServer, batchSize);
     deleteAllDocuments();
     
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    tempDir = new File(TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis()).getAbsolutePath();
     new File(tempDir).mkdirs();
   }
   
@@ -124,7 +126,11 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  protected void testDocumentTypesInternal(String[] files, Map<String,Integer> expectedRecords) throws Exception {
+  protected void testDocumentTypesInternal(
+      String[] files, 
+      Map<String,Integer> expectedRecords, 
+      Map<String, Map<String, Object>> expectedRecordContents) throws Exception {
+    
     deleteAllDocuments();
     int numDocs = 0;    
     for (int i = 0; i < 1; i++) {
@@ -137,6 +143,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
         event.getFields().put(Fields.ATTACHMENT_BODY, new ByteArrayInputStream(body));
         event.getFields().put(Fields.ATTACHMENT_NAME, f.getName());
         event.getFields().put(Fields.BASE_ID, f.getName());        
+        collector.reset();
         load(event);
         Integer count = expectedRecords.get(file);
         if (count != null) {
@@ -145,6 +152,20 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
           numDocs++;
         }
         assertEquals("unexpected results in " + file, numDocs, queryResultSetSize("*:*"));
+        Map<String, Object> expectedContents = expectedRecordContents.get(file);
+        if (expectedContents != null) {
+          Record actual = collector.getFirstRecord();
+          for (Map.Entry<String, Object> entry : expectedContents.entrySet()) {
+            if (entry.getValue() == NON_EMPTY_FIELD) {
+              assertNotNull(entry.getKey());
+              assertTrue(actual.getFirstValue(entry.getKey()).toString().length() > 0);
+            } else if (entry.getValue() == null) {
+              assertEquals("key:" + entry.getKey(), 0, actual.get(entry.getKey()).size());
+            } else {
+              assertEquals("key:" + entry.getKey(), Arrays.asList(entry.getValue()), actual.get(entry.getKey()));
+            }
+          }
+        }
       }
     }
     assertEquals(numDocs, queryResultSetSize("*:*"));
@@ -180,17 +201,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     s.commit();
   }
 
-  
-  public static void setupMorphline(String tempDir, String file) throws IOException {
-    String morphlineText = FileUtils.readFileToString(new File(RESOURCES_DIR + "/" + file + ".conf"), "UTF-8");
-    morphlineText = morphlineText.replace("RESOURCES_DIR", StringEscapeUtils.escapeJavaScript(new File(tempDir).getAbsolutePath()));
-    
-    FileUtils.writeStringToFile(new File(tempDir + "/" + file + ".conf"), morphlineText, "UTF-8");
-  }
-  
   protected Command createMorphline(String file) throws IOException {
-    setupMorphline(tempDir, file);
-    
     return new PipeBuilder().build(parse(file), null, collector, createMorphlineContext());
   }
 
@@ -206,7 +217,13 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   private Config parse(String file) throws IOException {
     SolrLocator locator = new SolrLocator(createMorphlineContext());
     locator.setSolrHomeDir(testSolrHome + "/collection1");
-    Config config = new Compiler().parse(new File(tempDir + "/" + file + ".conf"), locator.toConfig("SOLR_LOCATOR"));
+    File morphlineFile;
+    if (new File(file).isAbsolute()) {
+      morphlineFile = new File(file + ".conf");
+    } else {
+      morphlineFile = new File(RESOURCES_DIR + "/" + file + ".conf");
+    }
+    Config config = new Compiler().parse(morphlineFile, locator.toConfig("SOLR_LOCATOR"));
     config = config.getConfigList("morphlines").get(0);
     return config;
   }
@@ -265,5 +282,16 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     }
     public HashSet<String> getFieldValues() { return fieldValues; }
     public CompareType getCompareType() { return compareType; }
+  }
+  
+  public static void setupMorphline(String tempDir, String file, boolean replaceSolrLocator) throws IOException {
+    String morphlineText = FileUtils.readFileToString(new File(RESOURCES_DIR + "/" + file + ".conf"), "UTF-8");
+    morphlineText = morphlineText.replaceAll("RESOURCES_DIR", new File(tempDir).getAbsolutePath());
+    if (replaceSolrLocator) {
+      morphlineText = morphlineText.replaceAll("\\$\\{SOLR_LOCATOR\\}",
+          "{ collection : collection1 }");
+    }
+    new File(tempDir + "/" + file + ".conf").getParentFile().mkdirs();
+    FileUtils.writeStringToFile(new File(tempDir + "/" + file + ".conf"), morphlineText, "UTF-8");
   }
 }

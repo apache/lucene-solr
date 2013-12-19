@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
+import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,17 +51,10 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
-    setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes");
+    AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);
     
     config.set(MorphlineMapRunner.MORPHLINE_FILE_PARAM, tempDir + "/test-morphlines/solrCellDocumentTypes.conf");
     config.set(SolrOutputFormat.ZIP_NAME, solrHomeZip.getName());
   }
   
-  public static void setupMorphline(String tempDir, String file) throws IOException {
-    String morphlineText = FileUtils.readFileToString(new File(RESOURCES_DIR + "/" + file + ".conf"), "UTF-8");
-    morphlineText = morphlineText.replaceAll("RESOURCES_DIR", new File(tempDir).getAbsolutePath());
-    morphlineText = morphlineText.replaceAll("\\$\\{SOLR_LOCATOR\\}",  "{ collection : collection1 }");
-    
-    FileUtils.writeStringToFile(new File(tempDir + "/" + file + ".conf"), morphlineText, "UTF-8");
-  }
 }

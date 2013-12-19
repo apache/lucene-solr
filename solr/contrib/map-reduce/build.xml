@@ -92,6 +92,7 @@
   <path id="test.classpath">
     <path refid="solr.test.base.classpath"/>
     <path refid="classpath.additions"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/test"/>
     <fileset dir="${common-solr.dir}/contrib/morphlines-core/test-lib" excludes="${common.classpath.excludes}"/>
   </path>
 
