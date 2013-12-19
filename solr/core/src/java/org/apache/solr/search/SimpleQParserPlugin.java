@@ -152,7 +152,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
       String[] operations = opParam.split(",");
 
       for (String operation : operations) {
-        Integer enabledOp = OPERATORS.get(operation.trim().toUpperCase(Locale.getDefault()));
+        Integer enabledOp = OPERATORS.get(operation.trim().toUpperCase(Locale.ROOT));
 
         if (enabledOp != null) {
           enabledOps |= enabledOp;
