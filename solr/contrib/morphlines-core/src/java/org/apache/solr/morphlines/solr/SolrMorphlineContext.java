@@ -18,7 +18,7 @@ package org.apache.solr.morphlines.solr;
 
 import org.apache.solr.schema.IndexSchema;
 
-import com.cloudera.cdk.morphline.api.MorphlineContext;
+import org.kitesdk.morphline.api.MorphlineContext;
 
 /**
  * A context that is specific to Solr.

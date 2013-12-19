@@ -16,10 +16,10 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
-import com.cloudera.cdk.morphline.api.MorphlineContext;
-import com.cloudera.cdk.morphline.api.MorphlineRuntimeException;
-import com.cloudera.cdk.morphline.base.Configs;
+import org.kitesdk.morphline.api.MorphlineCompilationException;
+import org.kitesdk.morphline.api.MorphlineContext;
+import org.kitesdk.morphline.api.MorphlineRuntimeException;
+import org.kitesdk.morphline.base.Configs;
 import com.google.common.base.Preconditions;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;

@@ -22,9 +22,9 @@ import org.apache.lucene.util.Constants;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.cloudera.cdk.morphline.api.Record;
-import com.cloudera.cdk.morphline.base.Fields;
-import com.cloudera.cdk.morphline.base.Notifications;
+import org.kitesdk.morphline.api.Record;
+import org.kitesdk.morphline.base.Fields;
+import org.kitesdk.morphline.base.Notifications;
 
 public class SolrMorphlineTest extends AbstractSolrMorphlineTestBase {
 

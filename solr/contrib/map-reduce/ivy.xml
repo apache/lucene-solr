@@ -27,10 +27,10 @@
   <dependencies>
     <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-core" rev="${/org.apache.hadoop/hadoop-mapreduce-client-core}" conf="compile->*" />
     <dependency org="net.sourceforge.argparse4j" name="argparse4j" rev="${/net.sourceforge.argparse4j/argparse4j}" conf="compile->*" />
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-saxon" rev="${/com.cloudera.cdk/cdk-morphlines-saxon}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-saxon" rev="${/org.kitesdk/kite-morphlines-saxon}" conf="compile->*" />
     <dependency org="net.sf.saxon" name="Saxon-HE" rev="${/net.sf.saxon/Saxon-HE}" conf="compile->*" />
     
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-hadoop-sequencefile" rev="${/com.cloudera.cdk/cdk-morphlines-hadoop-sequencefile}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-hadoop-sequencefile" rev="${/org.kitesdk/kite-morphlines-hadoop-sequencefile}" conf="compile->*" />
     
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
   </dependencies>

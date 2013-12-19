@@ -33,9 +33,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
-import com.cloudera.cdk.morphline.api.Record;
-import com.cloudera.cdk.morphline.base.Fields;
-import com.cloudera.cdk.morphline.base.Notifications;
+import org.kitesdk.morphline.api.Record;
+import org.kitesdk.morphline.base.Fields;
+import org.kitesdk.morphline.base.Notifications;
 
 @ThreadLeakAction({Action.WARN})
 @ThreadLeakLingering(linger = 0)

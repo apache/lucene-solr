@@ -30,8 +30,8 @@ import org.apache.solr.hadoop.dedup.UpdateConflictResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.cloudera.cdk.morphline.api.ExceptionHandler;
-import com.cloudera.cdk.morphline.base.FaultTolerance;
+import org.kitesdk.morphline.api.ExceptionHandler;
+import org.kitesdk.morphline.base.FaultTolerance;
 import com.google.common.base.Preconditions;
 
 /**
