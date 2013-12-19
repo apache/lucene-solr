@@ -143,7 +143,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
     MultiDocValues.OrdinalMap ordinalMap;
 
-    // nocommit not quite right?  really, we need a way to
+    // TODO: is this right?  really, we need a way to
     // verify that this ordinalMap "matches" the leaves in
     // matchingDocs...
     if (dv instanceof MultiSortedSetDocValues && matchingDocs.size() > 1) {

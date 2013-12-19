@@ -294,7 +294,7 @@ public class FacetsConfig {
     for(Map.Entry<String,List<FacetField>> ent : byField.entrySet()) {
 
       String indexFieldName = ent.getKey();
-      //System.out.println("  fields=" + ent.getValue());
+      //System.out.println("  indexFieldName=" + indexFieldName + " fields=" + ent.getValue());
 
       IntsRef ordinals = new IntsRef(32);
       for(FacetField facetField : ent.getValue()) {
@@ -312,9 +312,11 @@ public class FacetsConfig {
           ordinals.grow(ordinals.length+1);
         }
         ordinals.ints[ordinals.length++] = ordinal;
+        //System.out.println("ords[" + (ordinals.length-1) + "]=" + ordinal);
         //System.out.println("  add cp=" + cp);
 
         if (ft.multiValued && (ft.hierarchical || ft.requireDimCount)) {
+          //System.out.println("  add parents");
           // Add all parents too:
           int parent = taxoWriter.getParent(ordinal);
           while (parent > 0) {
@@ -373,9 +375,6 @@ public class FacetsConfig {
       String indexFieldName = ent.getKey();
       for(AssociationFacetField field : ent.getValue()) {
         // NOTE: we don't add parents for associations
-        // nocommit is that right?  maybe we are supposed to
-        // add to taxo writer, and just not index the parent
-        // ords?
         checkTaxoWriter(taxoWriter);
         int ordinal = taxoWriter.addCategory(new FacetLabel(field.dim, field.path));
         if (upto + 4 > bytes.length) {

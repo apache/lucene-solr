@@ -59,8 +59,7 @@ public class MultiFacets extends Facets {
   }
 
   public List<FacetResult> getAllDims(int topN) throws IOException {
-    // nocommit can/should we impl this?  ie, sparse
-    // faceting after drill sideways
+    // TODO
     throw new UnsupportedOperationException();
   }
 }

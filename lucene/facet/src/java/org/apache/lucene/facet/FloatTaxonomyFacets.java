@@ -20,6 +20,7 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -37,9 +38,9 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
   
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
-    for(Map.Entry<String,FacetsConfig.DimConfig> ent : config.getDimConfigs().entrySet()) {
+    for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
-      FacetsConfig.DimConfig ft = ent.getValue();
+      DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
         int dimRootOrd = taxoReader.getOrdinal(new FacetLabel(dim));
         assert dimRootOrd > 0;
@@ -61,7 +62,16 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
 
   @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
-    verifyDim(dim);
+    DimConfig dimConfig = verifyDim(dim);
+    if (path.length == 0) {
+      if (dimConfig.hierarchical && dimConfig.multiValued == false) {
+        // ok: rolled up at search time
+      } else if (dimConfig.requireDimCount && dimConfig.multiValued) {
+        // ok: we indexed all ords at index time
+      } else {
+        throw new IllegalArgumentException("cannot return dimension-level value alone; use getTopChildren instead");
+      }
+    }
     int ord = taxoReader.getOrdinal(new FacetLabel(dim, path));
     if (ord < 0) {
       return -1;
@@ -74,7 +84,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
     if (topN <= 0) {
       throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
     }
-    FacetsConfig.DimConfig dimConfig = verifyDim(dim);
+    DimConfig dimConfig = verifyDim(dim);
     FacetLabel cp = new FacetLabel(dim, path);
     int dimOrd = taxoReader.getOrdinal(cp);
     if (dimOrd == -1) {

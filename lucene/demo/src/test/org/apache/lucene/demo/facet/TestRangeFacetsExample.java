@@ -33,7 +33,7 @@ public class TestRangeFacetsExample extends LuceneTestCase {
     RangeFacetsExample example = new RangeFacetsExample();
     example.index();
     FacetResult result = example.search();
-    assertEquals("dim=timestamp path=[] value=100 childCount=3\n  Past hour (4)\n  Past six hours (22)\n  Past day (87)\n", result.toString());
+    assertEquals("dim=timestamp path=[] value=87 childCount=3\n  Past hour (4)\n  Past six hours (22)\n  Past day (87)\n", result.toString());
     example.close();
   }
 

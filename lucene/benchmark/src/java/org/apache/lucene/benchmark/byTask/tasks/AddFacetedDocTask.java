@@ -50,7 +50,6 @@ import org.apache.lucene.index.StorableField;
  */
 public class AddFacetedDocTask extends AddDocTask {
 
-  private final List<FacetField> facets = new ArrayList<FacetField>();
   private FacetsConfig config;
   
   public AddFacetedDocTask(PerfRunData runData) {
@@ -63,11 +62,8 @@ public class AddFacetedDocTask extends AddDocTask {
     if (config == null) {
       boolean withFacets = getRunData().getConfig().get("with.facets", true);
       if (withFacets) {
-        // nocommit is this called once?  are we adding same
-        // facets over and over!?
         FacetSource facetsSource = getRunData().getFacetSource();
         config = new FacetsConfig();
-        facetsSource.getNextFacets(facets);
         facetsSource.configure(config);
       }
     }
@@ -84,19 +80,12 @@ public class AddFacetedDocTask extends AddDocTask {
   @Override
   public int doLogic() throws Exception {
     if (config != null) {
-      // nocommit hokey:
-      Document doc2 = new Document();
+      List<FacetField> facets = new ArrayList<FacetField>();
+      getRunData().getFacetSource().getNextFacets(facets);
       for(FacetField ff : facets) {
-        doc2.add(ff);
+        ((Document) doc).add(ff);
       }
-      IndexDocument doc3 = config.build(getRunData().getTaxonomyWriter(), doc2);
-      for(StorableField field : doc3.storableFields()) {
-        doc.add((Field) field);
-      }
-      for(IndexableField field : doc3.indexableFields()) {
-        doc.add((Field) field);
-      }
-      
+      doc = config.build(getRunData().getTaxonomyWriter(), doc);
     }
     return super.doLogic();
   }

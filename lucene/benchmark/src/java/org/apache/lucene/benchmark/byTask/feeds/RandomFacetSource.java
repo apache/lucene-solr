@@ -56,7 +56,12 @@ public class RandomFacetSource extends FacetSource {
     facets.clear();
     int numFacets = 1 + random.nextInt(maxDocFacets); // at least one facet to each doc
     for (int i = 0; i < numFacets; i++) {
-      int depth = 1 + random.nextInt(maxFacetDepth); // depth 0 is not useful
+      int depth;
+      if (maxFacetDepth == 2) {
+        depth = 2;
+      } else {
+        depth = 2 + random.nextInt(maxFacetDepth-2); // depth < 2 is not useful
+      }
 
       String dim = Integer.toString(random.nextInt(maxDims));
       String[] components = new String[depth-1];
@@ -90,6 +95,9 @@ public class RandomFacetSource extends FacetSource {
     maxDocFacets = config.get("max.doc.facets", 10);
     maxDims = config.get("max.doc.facets.dims", 5);
     maxFacetDepth = config.get("max.facet.depth", 3);
+    if (maxFacetDepth < 2) {
+      throw new IllegalArgumentException("max.facet.depth must be at least 2; got: " + maxFacetDepth);
+    }
     maxValue = maxDocFacets * maxFacetDepth;
   }
 }

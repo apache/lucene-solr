@@ -61,7 +61,7 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
       //System.out.println("count seg=" + hits.context.reader());
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
         //System.out.println("  doc=" + doc);
-        // nocommit use OrdinalsReader?  but, add a
+        // TODO: use OrdinalsReader?  we'd need to add a
         // BytesRef getAssociation()?
         dv.get(doc, scratch);
         byte[] bytes = scratch.bytes;

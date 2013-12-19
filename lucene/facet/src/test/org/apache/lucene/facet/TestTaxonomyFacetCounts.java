@@ -309,6 +309,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     // wrap collecting the "normal" hits and also facets:
     searcher.search(new MatchAllDocsQuery(), c);
     Facets facets = getTaxonomyFacetCounts(taxoReader, config, c);
+
+    try {
+      facets.getSpecificValue("a");
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
     FacetResult result = facets.getTopChildren(10, "a");
     assertEquals(1, result.labelValues.length);
     assertEquals(1, result.labelValues[0].value.intValue());
@@ -356,11 +364,13 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
 
     FacetsConfig config = new FacetsConfig();
+    config.setRequireDimCount("dim", true);
+
     config.setMultiValued("dim2", true);
+    config.setRequireDimCount("dim2", true);
+
     config.setMultiValued("dim3", true);
     config.setHierarchical("dim3", true);
-    config.setRequireDimCount("dim", true);
-    config.setRequireDimCount("dim2", true);
     config.setRequireDimCount("dim3", true);
 
     Document doc = new Document();
@@ -385,6 +395,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     assertEquals(1, facets.getTopChildren(10, "dim").value);
     assertEquals(1, facets.getTopChildren(10, "dim2").value);
     assertEquals(1, facets.getTopChildren(10, "dim3").value);
+    try {
+      assertEquals(1, facets.getSpecificValue("dim"));
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    assertEquals(1, facets.getSpecificValue("dim2"));
+    assertEquals(1, facets.getSpecificValue("dim3"));
     IOUtils.close(writer, taxoWriter, searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 

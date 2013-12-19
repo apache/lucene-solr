@@ -222,9 +222,6 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
         @Override
         protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        
-          // nocommit this is awkward... can we improve?
-          // nocommit is drillDowns allowed to be null?
-          // should it?
           FacetsCollector dimFC = drillDowns;
           FacetsCollector fieldFC = drillDowns;
           if (drillSideways != null) {
