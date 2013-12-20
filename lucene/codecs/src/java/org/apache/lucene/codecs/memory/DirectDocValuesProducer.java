@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.memory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -62,6 +63,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<Integer,Bits>();
   
   private final int maxDoc;
+  private final AtomicLong ramBytesUsed;
   
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
@@ -76,6 +78,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
+    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     boolean success = false;
     final int version;
     try {
@@ -178,8 +181,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public long ramBytesUsed() {
-    // TODO: optimize me
-    return RamUsageEstimator.sizeOf(this);
+    return ramBytesUsed.get();
   }
   
   @Override
@@ -199,9 +201,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     case 1:
       {
         final byte[] values = new byte[entry.count];
-        for(int i=0;i<entry.count;i++) {
-          values[i] = data.readByte();
-        }
+        data.readBytes(values, 0, entry.count);
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
         return new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -216,6 +217,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readShort();
         }
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
         return new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -230,6 +232,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readInt();
         }
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
         return new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -244,6 +247,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         for(int i=0;i<entry.count;i++) {
           values[i] = data.readLong();
         }
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
         return new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -279,6 +283,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
       address[i] = data.readInt();
     }
     address[entry.count] = data.readInt();
+
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes) + RamUsageEstimator.sizeOf(address));
 
     return new BinaryDocValues() {
       @Override

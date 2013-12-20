@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -55,19 +56,22 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   private static final String segmentSuffix = "dv";
 
   // ram instances we have already loaded
-  private final Map<Integer,NumericDocValues> numericInstances = 
+  private final Map<Integer,NumericDocValues> numericInstances =
       new HashMap<Integer,NumericDocValues>();
-  private final Map<Integer,BinaryDocValues> binaryInstances = 
+  private final Map<Integer,BinaryDocValues> binaryInstances =
       new HashMap<Integer,BinaryDocValues>();
-  private final Map<Integer,SortedDocValues> sortedInstances = 
+  private final Map<Integer,SortedDocValues> sortedInstances =
       new HashMap<Integer,SortedDocValues>();
-  
+
+  private final AtomicLong ramBytesUsed;
+
   Lucene40DocValuesReader(SegmentReadState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
     this.dir = new CompoundFileDirectory(state.directory, filename, state.context, false);
+    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOf(getClass()));
   }
-  
+
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericDocValues instance = numericInstances.get(field.number);
@@ -98,7 +102,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
           case FLOAT_64:
             instance = loadDoubleField(field, input);
             break;
-          default: 
+          default:
             throw new AssertionError();
         }
         if (input.getFilePointer() != input.length()) {
@@ -116,10 +120,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     }
     return instance;
   }
-  
+
   private NumericDocValues loadVarIntsField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.VAR_INTS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.VAR_INTS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.VAR_INTS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.VAR_INTS_VERSION_START,
                                  Lucene40DocValuesFormat.VAR_INTS_VERSION_CURRENT);
     byte header = input.readByte();
     if (header == Lucene40DocValuesFormat.VAR_INTS_FIXED_64) {
@@ -128,6 +132,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       for (int i = 0; i < values.length; i++) {
         values[i] = input.readLong();
       }
+      ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -138,6 +143,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final long minValue = input.readLong();
       final long defaultValue = input.readLong();
       final PackedInts.Reader reader = PackedInts.getReader(input);
+      ramBytesUsed.addAndGet(reader.ramBytesUsed());
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -153,10 +159,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       throw new CorruptIndexException("invalid VAR_INTS header byte: " + header + " (resource=" + input + ")");
     }
   }
-  
+
   private NumericDocValues loadByteField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.INTS_VERSION_START,
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 1) {
@@ -165,6 +171,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     int maxDoc = state.segmentInfo.getDocCount();
     final byte values[] = new byte[maxDoc];
     input.readBytes(values, 0, values.length);
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -172,10 +179,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   private NumericDocValues loadShortField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.INTS_VERSION_START,
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 2) {
@@ -186,6 +193,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readShort();
     }
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -193,10 +201,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   private NumericDocValues loadIntField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.INTS_VERSION_START,
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 4) {
@@ -207,6 +215,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readInt();
     }
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -214,10 +223,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   private NumericDocValues loadLongField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.INTS_VERSION_START,
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 8) {
@@ -228,6 +237,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readLong();
     }
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -235,10 +245,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   private NumericDocValues loadFloatField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.FLOATS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_START,
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 4) {
@@ -249,6 +259,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readInt();
     }
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -256,10 +267,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   private NumericDocValues loadDoubleField(FieldInfo field, IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
-                                 Lucene40DocValuesFormat.FLOATS_VERSION_START, 
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME,
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_START,
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
     int valueSize = input.readInt();
     if (valueSize != 8) {
@@ -270,6 +281,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readLong();
     }
+    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(values));
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -302,14 +314,14 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     }
     return instance;
   }
-  
+
   private BinaryDocValues loadBytesFixedStraight(FieldInfo field) throws IOException {
     String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     IndexInput input = dir.openInput(fileName, state.context);
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_START, 
+      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_CODEC_NAME,
+                                   Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_START,
                                    Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_CURRENT);
       final int fixedLength = input.readInt();
       PagedBytes bytes = new PagedBytes(16);
@@ -319,6 +331,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       success = true;
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -333,7 +346,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     }
   }
-  
+
   private BinaryDocValues loadBytesVarStraight(FieldInfo field) throws IOException {
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
@@ -342,12 +355,12 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     boolean success = false;
     try {
       data = dir.openInput(dataName, state.context);
-      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_DAT, 
-                                  Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START, 
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_DAT,
+                                  Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START,
                                   Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
       index = dir.openInput(indexName, state.context);
-      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX, 
-                                   Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START, 
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX,
+                                   Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START,
                                    Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
       long totalBytes = index.readVLong();
       PagedBytes bytes = new PagedBytes(16);
@@ -361,6 +374,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
       }
       success = true;
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -377,7 +391,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     }
   }
-  
+
   private BinaryDocValues loadBytesFixedDeref(FieldInfo field) throws IOException {
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
@@ -386,14 +400,14 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     boolean success = false;
     try {
       data = dir.openInput(dataName, state.context);
-      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_DAT, 
-                                  Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START, 
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_DAT,
+                                  Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START,
                                   Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
       index = dir.openInput(indexName, state.context);
-      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_IDX, 
-                                   Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START, 
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_IDX,
+                                   Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START,
                                    Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
-      
+
       final int fixedLength = data.readInt();
       final int valueCount = index.readInt();
       PagedBytes bytes = new PagedBytes(16);
@@ -406,6 +420,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       if (index.getFilePointer() != index.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
       }
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -422,7 +437,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     }
   }
-  
+
   private BinaryDocValues loadBytesVarDeref(FieldInfo field) throws IOException {
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
@@ -431,14 +446,14 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     boolean success = false;
     try {
       data = dir.openInput(dataName, state.context);
-      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_DAT, 
-                                  Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START, 
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_DAT,
+                                  Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START,
                                   Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
       index = dir.openInput(indexName, state.context);
-      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_IDX, 
-                                   Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START, 
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_IDX,
+                                   Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START,
                                    Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
-      
+
       final long totalBytes = index.readLong();
       final PagedBytes bytes = new PagedBytes(16);
       bytes.copy(data, totalBytes);
@@ -450,6 +465,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       if (index.getFilePointer() != index.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
       }
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -517,23 +533,24 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     }
     return instance;
   }
-  
+
   private SortedDocValues loadBytesFixedSorted(FieldInfo field, IndexInput data, IndexInput index) throws IOException {
-    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_DAT, 
-                                Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START, 
+    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_DAT,
+                                Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START,
                                 Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
-    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_IDX, 
-                                 Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START, 
+    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_IDX,
+                                 Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START,
                                  Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
-    
+
     final int fixedLength = data.readInt();
     final int valueCount = index.readInt();
-    
+
     PagedBytes bytes = new PagedBytes(16);
     bytes.copy(data, fixedLength * (long) valueCount);
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader reader = PackedInts.getReader(index);
-    
+    ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
+
     return correctBuggyOrds(new SortedDocValues() {
       @Override
       public int getOrd(int docID) {
@@ -551,24 +568,25 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     });
   }
-  
+
   private SortedDocValues loadBytesVarSorted(FieldInfo field, IndexInput data, IndexInput index) throws IOException {
-    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_DAT, 
-                                Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START, 
+    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_DAT,
+                                Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START,
                                 Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
-    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_IDX, 
-                                 Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START, 
+    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_IDX,
+                                 Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START,
                                  Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
-  
+
     long maxAddress = index.readLong();
     PagedBytes bytes = new PagedBytes(16);
     bytes.copy(data, maxAddress);
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader addressReader = PackedInts.getReader(index);
     final PackedInts.Reader ordsReader = PackedInts.getReader(index);
-    
+
     final int valueCount = addressReader.size() - 1;
-    
+    ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addressReader.ramBytesUsed() + ordsReader.ramBytesUsed());
+
     return correctBuggyOrds(new SortedDocValues() {
       @Override
       public int getOrd(int docID) {
@@ -588,7 +606,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     });
   }
-  
+
   // detects and corrects LUCENE-4717 in old indexes
   private SortedDocValues correctBuggyOrds(final SortedDocValues in) {
     final int maxDoc = state.segmentInfo.getDocCount();
@@ -597,7 +615,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         return in; // ok
       }
     }
-    
+
     // we had ord holes, return an ord-shifting-impl that corrects the bug
     return new SortedDocValues() {
       @Override
@@ -616,7 +634,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
+
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     throw new IllegalStateException("Lucene 4.0 does not support SortedSet: how did you pull this off?");
@@ -634,6 +652,6 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(this);
+    return ramBytesUsed.get();
   }
 }

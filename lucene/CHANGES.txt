@@ -3,6 +3,14 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.6.1 =======================
+
+Bug fixes
+
+* LUCENE-5373: Memory usage of
+  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
+  (Shay Banon, Adrien Grand, Robert Muir)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
