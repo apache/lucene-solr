@@ -104,6 +104,10 @@ Bug fixes
 * LUCENE-5285: Improved highlighting of multi-valued fields with
   FastVectorHighlighter. (Nik Everett via Adrien Grand)
 
+* LUCENE-5373: Memory usage of
+  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
+  (Shay Banon, Adrien Grand, Robert Muir)
+
 * LUCENE-5374: IndexWriter processes internal events after the it
   closed itself internally. This rare condition can happen if an
   IndexWriter has internal changes that were not fully applied yet
