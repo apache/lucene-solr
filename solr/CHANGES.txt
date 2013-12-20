@@ -262,6 +262,9 @@ Other Changes
 * SOLR-5555: LBHttpSolrServer and CloudSolrServer constructors don't need to
   declare MalformedURLExceptions (Sushil Bajracharya, Alan Woodward)
 
+* SOLR-5565: Raise default ZooKeeper session timeout to 30 seconds from 15
+  seconds. (Mark Miller)
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
