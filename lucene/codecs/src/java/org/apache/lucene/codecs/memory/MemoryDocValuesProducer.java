@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -76,7 +77,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<Integer,Bits>();
   
   private final int maxDoc;
-  
+  private final AtomicLong ramBytesUsed;
   
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
@@ -108,7 +109,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
       readFields(in, state.fieldInfos);
-
+      ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
       success = true;
     } finally {
       if (success) {
@@ -205,8 +206,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   
   @Override
   public long ramBytesUsed() {
-    // TODO: optimize me
-    return RamUsageEstimator.sizeOf(this);
+    return ramBytesUsed.get();
   }
   
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
@@ -225,6 +225,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -234,10 +235,12 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       case DELTA_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
+        ramBytesUsed.addAndGet(reader.ramBytesUsed());
         return reader;
       case UNCOMPRESSED:
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -249,6 +252,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         final long mult = data.readLong();
         final int quotientBlockSize = data.readVInt();
         final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
+        ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -278,6 +282,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     if (entry.minLength == entry.maxLength) {
       final int fixedLength = entry.minLength;
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -287,6 +292,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     } else {
       data.seek(data.getFilePointer() + entry.missingBytes);
       final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addresses.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -310,6 +316,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
     }
@@ -384,6 +391,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
     }
