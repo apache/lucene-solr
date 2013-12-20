@@ -101,7 +101,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   
   public ConcurrentUpdateSolrServer(String solrServerUrl,
       HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, null, queueSize, threadCount, Executors.newCachedThreadPool(
+    this(solrServerUrl, client, queueSize, threadCount, Executors.newCachedThreadPool(
         new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
     shutdownExecutor = true;
   }

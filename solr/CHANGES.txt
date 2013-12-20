@@ -210,6 +210,9 @@ Bug Fixes
 
 * SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when 
   using solr.xml persistence. (Bill Bell, Alan Woodward)
+
+* SOLR-5562: ConcurrentUpdateSolrServer constructor ignores supplied httpclient.
+  (Kyle Halliday via Mark Miller)
   
 Optimizations
 ----------------------
