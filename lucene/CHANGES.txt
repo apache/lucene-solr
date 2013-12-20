@@ -104,6 +104,12 @@ Bug fixes
 * LUCENE-5285: Improved highlighting of multi-valued fields with
   FastVectorHighlighter. (Nik Everett via Adrien Grand)
 
+* LUCENE-5374: IndexWriter processes internal events after the it
+  closed itself internally. This rare condition can happen if an
+  IndexWriter has internal changes that were not fully applied yet
+  like when index / flush requests happen concurrently to the close or
+  rollback call. (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
