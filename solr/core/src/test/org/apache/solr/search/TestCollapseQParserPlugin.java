@@ -47,24 +47,54 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   public void testCollapseQueries() throws Exception {
     String[] doc = {"id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
     assertU(adoc(doc));
+    assertU(commit());
     String[] doc1 = {"id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
     assertU(adoc(doc1));
 
+
+
     String[] doc2 = {"id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"};
     assertU(adoc(doc2));
-
+    assertU(commit());
     String[] doc3 = {"id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"};
     assertU(adoc(doc3));
 
+
+    String[] doc4 = {"id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {"id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc5));
     assertU(commit());
 
-    //Test collapse by score
+
+
+    //Test collapse by score and following sort by score
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_ti)");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='50']");
+    assertQ(req(params), "*[count(//doc)=2]",
+                       "//result/doc[1]/float[@name='id'][.='2.0']",
+                       "//result/doc[2]/float[@name='id'][.='6.0']"
+        );
+
+
+    // SOLR-5544 test ordering with empty sort param
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s nullPolicy=expand min=test_tf}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("sort","");
+    assertQ(req(params), "*[count(//doc)=4]",
+        "//result/doc[1]/float[@name='id'][.='3.0']",
+        "//result/doc[2]/float[@name='id'][.='4.0']",
+        "//result/doc[3]/float[@name='id'][.='2.0']",
+        "//result/doc[4]/float[@name='id'][.='6.0']"
+    );
+
 
     //Test collapse by score with elevation
 
@@ -75,54 +105,152 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("bf", "field(test_ti)");
     params.add("qf", "term_s");
     params.add("qt", "/elevate");
-    assertQ(req(params), "*[count(//doc)=3]", "//doc[./int[1][@name='test_ti']='5']");
+    assertQ(req(params), "*[count(//doc)=4]",
+                         "//result/doc[1]/float[@name='id'][.='1.0']");
 
-    //Test collapse by min int field
+
+
+
+    //Test collapse by min int field and sort
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s min=test_ti}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='5']");
+    params.add("sort", "id desc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                           "//result/doc[1]/float[@name='id'][.='5.0']",
+                           "//result/doc[2]/float[@name='id'][.='1.0']");
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s min=test_ti}");
+    params.add("sort", "id asc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='1.0']",
+                         "//result/doc[2]/float[@name='id'][.='5.0']");
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s min=test_ti}");
+    params.add("sort", "test_tl asc,id desc");
+    assertQ(req(params), "*[count(//doc)=2]",
+        "//result/doc[1]/float[@name='id'][.='5.0']",
+        "//result/doc[2]/float[@name='id'][.='1.0']");
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s min=test_ti}");
+    params.add("sort", "score desc,id asc");
+    params.add("defType", "edismax");
+    params.add("bf", "field(id)");
+    assertQ(req(params), "*[count(//doc)=2]",
+                          "//result/doc[1]/float[@name='id'][.='5.0']",
+                          "//result/doc[2]/float[@name='id'][.='1.0']");
+
+
+
 
     //Test collapse by max int field
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s max=test_ti}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='50']");
+    params.add("sort", "test_ti asc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='6.0']",
+                         "//result/doc[2]/float[@name='id'][.='2.0']"
+        );
+
+
 
     //Test collapse by min long field
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s min=test_tl}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='5']");
+    params.add("sort", "test_ti desc");
+    assertQ(req(params), "*[count(//doc)=2]",
+        "//result/doc[1]/float[@name='id'][.='1.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']");
+
 
     //Test collapse by max long field
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s max=test_tl}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='50']");
+    params.add("sort", "test_ti desc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='2.0']",
+                         "//result/doc[2]/float[@name='id'][.='6.0']");
+
 
     //Test collapse by min float field
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s min=test_tf}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='50']");
+    params.add("sort", "test_ti desc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='2.0']",
+                         "//result/doc[2]/float[@name='id'][.='6.0']");
+
+
+
 
     //Test collapse by min float field
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s max=test_tf}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='5']");
+    params.add("sort", "test_ti asc");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='5.0']",
+                         "//result/doc[2]/float[@name='id'][.='1.0']");
+
+    //Test collapse by min float field sort by score
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s max=test_tf}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(id)");
+    params.add("fl", "score, id");
+    params.add("facet","true");
+    params.add("fq", "{!tag=test}term_s:YYYY");
+    params.add("facet.field", "{!ex=test}term_s");
+
+    assertQ(req(params), "*[count(//doc)=2]",
+        "//result/doc[1]/float[@name='id'][.='5.0']",
+        "//result/doc[2]/float[@name='id'][.='1.0']");
+
 
     //Test nullPolicy expand
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s max=test_tf nullPolicy=expand}");
-    assertQ(req(params), "*[count(//doc)=3]");
+    params.add("sort", "id desc");
+    assertQ(req(params), "*[count(//doc)=4]",
+        "//result/doc[1]/float[@name='id'][.='5.0']",
+        "//result/doc[2]/float[@name='id'][.='4.0']",
+        "//result/doc[3]/float[@name='id'][.='3.0']",
+        "//result/doc[4]/float[@name='id'][.='1.0']");
 
     //Test nullPolicy collapse
+
     params = new ModifiableSolrParams();
-    params.add("q", "test_ti:(500 5000)");
+    params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s max=test_tf nullPolicy=collapse}");
-    assertQ(req(params), "*[count(//doc)=1]", "//doc[./int[@name='test_ti']='500']");
+    params.add("sort", "id desc");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='5.0']",
+        "//result/doc[2]/float[@name='id'][.='4.0']",
+        "//result/doc[3]/float[@name='id'][.='1.0']");
+
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("fq","{!tag=test_ti}id:5");
+    params.add("facet","true");
+    params.add("facet.field","{!ex=test_ti}test_ti");
+    params.add("facet.mincount", "1");
+    assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_ti']/int)=2]");
+
   }
 }

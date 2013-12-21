@@ -862,6 +862,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
   };
 
+  private DocSet getDocSetScore(List<Query> queries) throws IOException {
+    Query main = queries.remove(0);
+    ProcessedFilter pf = getProcessedFilter(null, queries);
+    DocSetCollector setCollector = new DocSetCollector(maxDoc()>>6, maxDoc());
+    Collector collector = setCollector;
+    if (pf.postFilter != null) {
+      pf.postFilter.setLastDelegate(collector);
+      collector = pf.postFilter;
+    }
+
+    search(main, pf.filter, collector);
+
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
+    }
+
+    DocSet docSet = setCollector.getDocSet();
+    return docSet;
+  }
 
   /**
    * Returns the set of document ids matching all queries.
@@ -872,6 +891,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(List<Query> queries) throws IOException {
+
+    if(queries != null) {
+      for(Query q : queries) {
+        if(q instanceof ScoreFilter) {
+          return getDocSetScore(queries);
+        }
+      }
+    }
+
     ProcessedFilter pf = getProcessedFilter(null, queries);
     if (pf.answer != null) return pf.answer;
 
