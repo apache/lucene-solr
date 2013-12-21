@@ -317,6 +317,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private class DummyScorer extends Scorer {
 
     public float score;
+    public int docId;
 
     public DummyScorer() {
       super(null);
@@ -339,7 +340,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public int docID() {
-      return 0;
+      return docId;
     }
 
     public long cost() {
@@ -474,6 +475,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
 
         int contextDoc = docId-currentDocBase;
+        dummy.docId = contextDoc;
         delegate.collect(contextDoc);
       }
 
@@ -587,6 +589,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
 
         int contextDoc = docId-currentDocBase;
+        dummy.docId = contextDoc;
         delegate.collect(contextDoc);
       }
 
