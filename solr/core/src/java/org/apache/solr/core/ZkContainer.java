@@ -24,8 +24,10 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -38,6 +40,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 public class ZkContainer {
@@ -45,12 +49,9 @@ public class ZkContainer {
   
   protected ZkController zkController;
   private SolrZkServer zkServer;
-  private int zkClientTimeout;
-  private String hostPort;
-  private String hostContext;
-  private String host;
-  private int leaderVoteWait;
-  private Boolean genericCoreNodeNames;
+
+  private ExecutorService coreZkRegister = Executors.newFixedThreadPool(Integer.MAX_VALUE,
+      new DefaultSolrThreadFactory("coreZkRegister") );
   
   public ZkContainer() {
     
@@ -81,13 +82,6 @@ public class ZkContainer {
     }
 
     String zkRun = System.getProperty("zkRun");
-    
-    this.zkClientTimeout = zkClientTimeout;
-    this.hostPort = hostPort;
-    this.hostContext = hostContext;
-    this.host = host;
-    this.leaderVoteWait = leaderVoteWait;
-    this.genericCoreNodeNames = genericCoreNodeNames;
     
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
@@ -239,34 +233,36 @@ public class ZkContainer {
     }
   }
   
-  public void registerInZk(SolrCore core) {
-    if (zkController != null) {
-      try {
-        zkController.register(core.getName(), core.getCoreDescriptor());
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (Exception e) {
-        // if register fails, this is really bad - close the zkController to
-        // minimize any damage we can cause
-        try {
-          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
-        } catch (KeeperException e1) {
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        } catch (InterruptedException e1) {
-          Thread.currentThread().interrupt();
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
+  public void registerInZk(final SolrCore core, boolean background) {
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+          try {
+            zkController.register(core.getName(), core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+            // Restore the interrupted status
+            Thread.currentThread().interrupt();
+            SolrException.log(log, "", e);
+          } catch (Exception e) {
+            try {
+              zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+            } catch (InterruptedException e1) {
+              Thread.currentThread().interrupt();
+              log.error("", e1);
+            } catch (Exception e1) {
+              log.error("", e1);
+            }
+            SolrException.log(log, "", e);
+          }
         }
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
+      
+    };
+    
+    if (zkController != null) {
+      if (background) {
+        coreZkRegister.execute(thread);
+      } else {
+        thread.run();
       }
     }
   }
@@ -309,12 +305,20 @@ public class ZkContainer {
   }
 
   public void close() {
-    if (zkController != null) {
-      zkController.close();
+    
+    try {
+      if (zkController != null) {
+        zkController.close();
+      }
+    } finally {
+      try {
+        if (zkServer != null) {
+          zkServer.stop();
+        }
+      } finally {
+        ExecutorUtil.shutdownNowAndAwaitTermination(coreZkRegister);
+      }
     }
     
-    if (zkServer != null) {
-      zkServer.stop();
-    }
   }
 }
