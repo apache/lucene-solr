@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -39,6 +40,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * limitations under the License.
  */
 
+@SuppressCodecs("Direct")
 public class TestBugInSomething extends BaseTokenStreamTestCase {
   public void test() throws Exception {
     final CharArraySet cas = new CharArraySet(TEST_VERSION_CURRENT, 3, false);
