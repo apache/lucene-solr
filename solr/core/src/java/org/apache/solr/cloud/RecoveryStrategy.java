@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -205,7 +206,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
   }
 
-  private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName)
+  private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     try {
@@ -217,7 +218,9 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       prepCmd.setState(ZkStateReader.RECOVERING);
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
-      
+      if (!Slice.CONSTRUCTION.equals(slice.getState())) {
+        prepCmd.setOnlyIfLeaderActive(true);
+      }
       server.request(prepCmd);
     } finally {
       server.shutdown();
@@ -364,7 +367,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
         
         
-        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
+        Slice slice = zkStateReader.getClusterState().getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
+        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName, slice);
         
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state 

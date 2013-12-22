@@ -864,6 +864,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String waitForState = params.get("state");
     Boolean checkLive = params.getBool("checkLive");
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
+    Boolean onlyIfLeaderActive = params.getBool("onlyIfLeaderActive");
 
     log.info("Going to wait for coreNodeName: " + coreNodeName + ", state: " + waitForState
         + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader);
@@ -906,6 +907,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
             if (nodeProps != null) {
               state = nodeProps.getStr(ZkStateReader.STATE_PROP);
               live = clusterState.liveNodesContain(nodeName);
+              
+              String localState = cloudDescriptor.getLastPublished();
+              if (onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE))) {
+                continue;
+              }
               if (nodeProps != null && state.equals(waitForState)) {
                 if (checkLive == null) {
                   break;

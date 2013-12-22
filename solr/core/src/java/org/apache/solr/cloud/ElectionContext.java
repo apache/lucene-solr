@@ -226,20 +226,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           success = true;
         }
       }
-
-
-      // if !success but no one else is in active mode,
-      // we are the leader anyway
-      // TODO: should we also be leader if there is only one other active?
-      // if we couldn't sync with it, it shouldn't be able to sync with us
-      // TODO: this needs to be moved to the election context - the logic does
-      // not belong here.
-      if (!success
-          && !areAnyOtherReplicasActive(zkController, leaderProps, collection,
-              shardId)) {
-        log.info("Sync was not a success but no one else is active! I am the leader");
-        success = true;
-      }
       
       // solrcloud_debug
       if (log.isDebugEnabled()) {
