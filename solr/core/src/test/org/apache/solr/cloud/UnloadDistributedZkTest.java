@@ -138,7 +138,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     //printLayout();
     // the collection should be gone
     timeoutAt = System.currentTimeMillis() + 30000;
-    while (getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollections().contains(collection)) {
+    while (getCommonCloudSolrServer().getZkStateReader().getClusterState().hasCollection(collection)) {
       if (System.currentTimeMillis() > timeoutAt) {
         printLayout();
         fail("Still found collection");

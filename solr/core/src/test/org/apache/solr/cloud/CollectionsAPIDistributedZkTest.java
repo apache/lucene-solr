@@ -387,8 +387,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createNewSolrServer("", baseUrl).request(request);
     
     cloudClient.getZkStateReader().updateClusterState(true);
-    assertFalse(cloudClient.getZkStateReader().getClusterState()
-        .getCollections().contains("halfdeletedcollection2"));
+    assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
     
   }
 

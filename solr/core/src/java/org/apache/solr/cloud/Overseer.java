@@ -262,7 +262,7 @@ public class Overseer {
     private ClusterState buildCollection(ClusterState clusterState, ZkNodeProps message) {
       String collection = message.getStr("name");
       log.info("building a new collection: " + collection);
-      if(clusterState.getCollections().contains(collection) ){
+      if(clusterState.hasCollection(collection) ){
         log.warn("Collection {} already exists. exit" ,collection);
         return clusterState;
       }
