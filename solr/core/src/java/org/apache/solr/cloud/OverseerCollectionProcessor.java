@@ -366,8 +366,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       boolean removed = false;
       while (System.currentTimeMillis() < timeout) {
         Thread.sleep(100);
-        removed = !zkStateReader.getClusterState().getCollections()
-            .contains(message.getStr("name"));
+        removed = !zkStateReader.getClusterState().hasCollection(message.getStr(collection));
         if (removed) {
           Thread.sleep(100); // just a bit of time so it's more likely other
                              // readers see on return
@@ -609,7 +608,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     if (parentSlice == null) {
-      if(clusterState.getCollections().contains(collectionName)) {
+      if(clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collectionName);
@@ -1003,7 +1002,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     Slice slice = clusterState.getSlice(collection, sliceId);
     
     if (slice == null) {
-      if(clusterState.getCollections().contains(collection)) {
+      if(clusterState.hasCollection(collection)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "No shard with the specified name exists: " + slice);
       } else {
@@ -1316,7 +1315,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collectionName = message.getStr("name");
-    if (clusterState.getCollections().contains(collectionName)) {
+    if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
     

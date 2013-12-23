@@ -146,4 +146,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return propMap.containsKey(key);
   }
 
+  public boolean getBool(String key, boolean b) {
+    Object o = propMap.get(key);
+    if(o==null) return b;
+    return Boolean.parseBoolean(o.toString());
+  }
 }
