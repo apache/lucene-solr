@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.slf4j.Logger;
@@ -459,6 +460,13 @@ public class ChaosMonkey {
       return;
     }
     monkeyLog("starting");
+    
+    
+    if (LuceneTestCase.random().nextBoolean()) {
+      monkeyLog("Jetty will not commit on shutdown");
+      DirectUpdateHandler2.commitOnClose = false;
+    }
+    
     this.aggressivelyKillLeaders = killLeaders;
     startTime = System.currentTimeMillis();
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
@@ -537,6 +545,9 @@ public class ChaosMonkey {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+    
+    DirectUpdateHandler2.commitOnClose = true;
+    
     float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
     if (runtime > 20 && stops.get() == 0) {
       LuceneTestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");

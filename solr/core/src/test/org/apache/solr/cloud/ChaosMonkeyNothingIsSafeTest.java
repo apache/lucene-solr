@@ -150,16 +150,16 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       }
       
       chaosMonkey.startTheMonkey(true, 10000);
-
-      long runLength;
-      if (RUN_LENGTH != -1) {
-        runLength = RUN_LENGTH;
-      } else {
-        int[] runTimes = new int[] {5000,6000,10000,15000,25000,30000,30000,45000,90000,120000};
-        runLength = runTimes[random().nextInt(runTimes.length - 1)];
-      }
-      
       try {
+        long runLength;
+        if (RUN_LENGTH != -1) {
+          runLength = RUN_LENGTH;
+        } else {
+          int[] runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
+              30000, 45000, 90000, 120000};
+          runLength = runTimes[random().nextInt(runTimes.length - 1)];
+        }
+        
         Thread.sleep(runLength);
       } finally {
         chaosMonkey.stopTheMonkey();
