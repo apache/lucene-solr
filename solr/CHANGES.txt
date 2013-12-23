@@ -227,6 +227,9 @@ Optimizations
 
 * SOLR-5512: Optimize DocValuesFacets. (Robert Muir)
 
+* SOLR-5576: Improve concurrency when registering and waiting for all 
+  SolrCore's to register a DOWN state. (Christine Poerschke via Mark Miller)
+
 Other Changes
 ---------------------
 
