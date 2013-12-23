@@ -909,10 +909,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
               live = clusterState.liveNodesContain(nodeName);
               
               String localState = cloudDescriptor.getLastPublished();
-              if (onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE))) {
-                continue;
-              }
-              if (nodeProps != null && state.equals(waitForState)) {
+              
+              boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE));
+
+              if (!onlyIfActiveCheckResult && nodeProps != null && state.equals(waitForState)) {
                 if (checkLive == null) {
                   break;
                 } else if (checkLive && live) {
