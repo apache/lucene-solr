@@ -357,21 +357,11 @@ public class CoreContainer {
     log.info("Shutting down CoreContainer instance="
         + System.identityHashCode(this));
     
-    if (isZooKeeperAware()) {
-      try {
-        zkSys.getZkController().publishAndWaitForDownStates();
-      } catch (KeeperException e) {
-        log.error("", e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.warn("", e);
-      }
-    }
     isShutDown = true;
-
+    
     if (isZooKeeperAware()) {
-      zkSys.publishCoresAsDown(solrCores.getCores());
       cancelCoreRecoveries();
+      zkSys.publishCoresAsDown(solrCores.getCores());
     }
 
     try {

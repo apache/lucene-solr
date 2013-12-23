@@ -265,6 +265,9 @@ Other Changes
 * SOLR-5565: Raise default ZooKeeper session timeout to 30 seconds from 15
   seconds. (Mark Miller)
 
+* SOLR-5574: CoreContainer shutdown publishes all nodes as down and waits to
+  see that and then again publishes all nodes as down. (Mark Miller)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
