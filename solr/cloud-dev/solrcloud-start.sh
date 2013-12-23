@@ -1,12 +1,27 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+numServers=$1
+numShards=$2
+
+baseJettyPort=7572
+baseStopPort=6572
+
+zkaddress = localhost:2181/solr
+
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+[ "$#" -eq 2 ] || die "2 arguments required, $# provided, usage: solrcloud-start.sh {numServers} {numShards}"
 
 cd ..
 
-rm -r -f example2
-rm -r -f example3
-rm -r -f example4
-rm -r -f example5
-rm -r -f example6
+for (( i=1; i <= $numServers; i++ ))
+do
+ rm -r -f example$i
+done
+
 
 rm -r -f dist
 rm -r -f build
@@ -19,28 +34,30 @@ ant example dist
 rm -r example/solr-webapp/*
 unzip example/webapps/solr.war -d example/solr-webapp/webapp
 
-cp -r -f example example2
-cp -r -f example example3
-cp -r -f example example4
-cp -r -f example example5
-cp -r -f example example6
+for (( i=1; i <= $numServers; i++ ))
+do
+ echo "create example$i"
+ cp -r -f example example$i
+done
 
-java -classpath "example/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example/solr -runzk 8983
 
-cd example
-java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &
+java -classpath "example1/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example1/solr -runzk 8983
 
-cd ../example2
-java -Djetty.port=7574 -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
+echo "starting example1"
 
-cd ../example3
-java -Djetty.port=7575 -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6575 -DSTOP.KEY=key -jar start.jar 1>example3.log 2>&1 &
+cd example1
+java -Xmx1g -DzkRun -DnumShards=$numShards -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example1.log 2>&1 &
 
-cd ../example4
-java -Djetty.port=7576 -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6576 -DSTOP.KEY=key -jar start.jar 1>example4.log 2>&1 &
 
-cd ../example5
-java -Djetty.port=7577 -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6577 -DSTOP.KEY=key -jar start.jar 1>example5.log 2>&1 &
 
-cd ../example6
-java -Djetty.port=7578 -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6578 -DSTOP.KEY=key -jar start.jar 1>example6.log 2>&1 &
+for (( i=2; i <= $numServers; i++ ))
+do
+  echo "starting example$i"
+  cd ../example$i
+  stopPort=`expr $baseStopPort + $i`
+  jettyPort=`expr $baseJettyPort + $i`
+  java -Xmx1g -Djetty.port=$jettyPort -DzkHost=localhost:9983 -DnumShards=1 -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>example$i.log 2>&1 &
+done
+
+
+
