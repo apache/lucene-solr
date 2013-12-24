@@ -18,8 +18,10 @@ package org.apache.lucene.server;
  */
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 
+import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -27,6 +29,8 @@ import net.minidev.json.JSONObject;
 
 public class TestSuggest extends ServerBaseTestCase {
 
+  static File tempFile;
+  
   @BeforeClass
   public static void initClass() throws Exception {
     clearDir();
@@ -34,16 +38,20 @@ public class TestSuggest extends ServerBaseTestCase {
     createAndStartIndex();
     //registerFields();
     commit();
+    File tempDir = _TestUtil.getTempDir("TestSuggest");
+    tempDir.mkdirs();
+    tempFile = new File(tempDir, "suggest.in");
   }
 
   @AfterClass
   public static void fini() throws Exception {
     shutdownServer();
     System.clearProperty("sun.nio.ch.bugLevel"); // hack WTF
+    tempFile = null;
   }
 
   public void testAnalyzingSuggest() throws Exception {
-    FileWriter fstream = new FileWriter("/tmp/suggest.in");
+    FileWriter fstream = new FileWriter(tempFile);
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("5\u001flucene\u001ffoobar\n");
     out.write("10\u001flucifer\u001ffoobar\n");
@@ -52,7 +60,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("5\u001fthe time is now\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '/tmp/suggest.in', class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
     assertEquals(5, result.get("count"));
     commit();
 
@@ -93,12 +101,12 @@ public class TestSuggest extends ServerBaseTestCase {
   }
 
   public void testInfixSuggest() throws Exception {
-    FileWriter fstream = new FileWriter("/tmp/suggest.in");
+    FileWriter fstream = new FileWriter(tempFile);
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '/tmp/suggest.in', class: 'InfixSuggester', suggestName: 'suggest2', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'InfixSuggester', suggestName: 'suggest2', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     commit();
 
@@ -131,12 +139,12 @@ public class TestSuggest extends ServerBaseTestCase {
   }
 
   public void testFuzzySuggest() throws Exception {
-    FileWriter fstream = new FileWriter("/tmp/suggest.in");
+    FileWriter fstream = new FileWriter(tempFile);
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '/tmp/suggest.in', class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     commit();
 
