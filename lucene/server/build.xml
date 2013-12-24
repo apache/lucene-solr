@@ -22,6 +22,14 @@
   <description>
     Demo Server
   </description>
+
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/server/GlobalState.class
+    org/apache/lucene/server/IndexState.class
+    org/apache/lucene/server/Server.class
+    org/apache/lucene/server/http/HttpStaticFileServerHandler.class
+    org/apache/lucene/server/http/HttpStaticFileServerHandler$1.class
+  "/>
         
   <import file="../module-build.xml"/>
 
