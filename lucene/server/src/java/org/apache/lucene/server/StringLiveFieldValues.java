@@ -23,6 +23,7 @@ import java.util.Collections;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LiveFieldValues;
@@ -53,7 +54,7 @@ public class StringLiveFieldValues extends LiveFieldValues<SearcherAndTaxonomy,S
     } else if (hits.totalHits > 1) {
       throw new IllegalStateException("field \"" + idFieldName + "\"=\"" + id + "\" matches more than one document");
     } else {
-      Document doc = s.searcher.doc(hits.scoreDocs[0].doc, Collections.singleton(liveFieldName));
+      StoredDocument doc = s.searcher.doc(hits.scoreDocs[0].doc, Collections.singleton(liveFieldName));
       return doc.get(liveFieldName);
     }
   }

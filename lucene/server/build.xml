@@ -27,9 +27,11 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${analyzers-icu.jar}"/>
     <pathelement path="${facet.jar}"/>
     <pathelement path="${grouping.jar}"/>
     <pathelement path="${highlighter.jar}"/>
+    <pathelement path="${join.jar}"/>
     <pathelement path="${misc.jar}"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${queryparser.jar}"/>
@@ -38,7 +40,7 @@
     <path refid="base.classpath"/>
   </path>
 
-
+  <!-- TODO: only the ones with actual javadocs links -->
   <target name="javadocs" depends="javadocs-analyzers-common,javadocs-facet,javadocs-grouping,javadocs-highlighter,javadocs-misc,javadocs-queries,javadocs-queryparser,javadocs-suggest,compile-core">
     <invoke-module-javadoc>
       <links>
@@ -54,6 +56,6 @@
     </invoke-module-javadoc>
   </target>
 
-  <target name="compile-core" depends="jar-analyzers-common, jar-facet, jar-grouping, jar-highlighter, jar-misc, jar-queries, jar-queryparser, jar-suggest, common.compile-core" />
+  <target name="compile-core" depends="jar-analyzers-common, jar-analyzers-icu, jar-facet, jar-grouping, jar-highlighter, jar-join, jar-misc, jar-queries, jar-queryparser, jar-suggest, common.compile-core" />
 
 </project>

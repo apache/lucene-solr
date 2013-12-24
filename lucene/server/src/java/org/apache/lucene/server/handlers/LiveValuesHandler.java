@@ -28,10 +28,9 @@ import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.StringLiveFieldValues;
 import org.apache.lucene.server.params.ListType;
 import org.apache.lucene.server.params.Param;
-import org.apache.lucene.server.params.Request;;
+import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
-import org.apache.lucene.server.params.Type;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 

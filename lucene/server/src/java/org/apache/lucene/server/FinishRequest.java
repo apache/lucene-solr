@@ -17,7 +17,9 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
-/** Returned from {@link Handler#finish} to make actual
+// nocommit: javadocs seem outdated
+
+/** Returned from {@code Handler#finish} to make actual
  *  changes from the request.  We do this two-step
  *  process so that we can fail if there are unhandled
  *  params, without having made any changes to the index. */

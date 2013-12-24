@@ -19,8 +19,10 @@ package org.apache.lucene.server;
 
 import org.apache.lucene.server.params.Request;
 
+// nocommit: outdated javadocs?
+
 /** A callback that can modify a request before the main
- *  {@link Handler} sees it.  Plugins can use this to
+ *  {@code Handler} sees it.  Plugins can use this to
  *  pre-process requests. */
 
 public interface PreHandle {

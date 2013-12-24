@@ -732,7 +732,8 @@ public class RegisterFieldHandler extends Handler {
         breakers = null;
       }
 
-      ICUTokenizerConfig config = new DefaultICUTokenizerConfig() {
+      // nocommit: what is this doing, just passing true...
+      ICUTokenizerConfig config = new DefaultICUTokenizerConfig(true) {
         
         @Override
         public BreakIterator getBreakIterator(int script) {

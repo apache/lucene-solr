@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Comparator;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
@@ -86,11 +85,6 @@ public class FromFileTermFreqIterator implements InputIterator, Closeable {
   @Override
   public long weight() {
     return weight;
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
   @Override

@@ -58,6 +58,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.CommonTermsQuery;
@@ -417,7 +418,7 @@ public class SearchHandler extends Handler {
         // Load & cache all stored fields:
         doc = new HashMap<String,Object>();
         docsCache.put(docID, doc);
-        for(IndexableField field : searcher.doc(docID)) {
+        for(StorableField field : searcher.doc(docID)) {
           String name = field.name();
           FieldDef fd = state.getField(name);
           Object value = field.numericValue();

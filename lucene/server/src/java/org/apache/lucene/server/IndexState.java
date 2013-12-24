@@ -75,6 +75,7 @@ import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.PersistentSnapshotDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TrackingIndexWriter;
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -470,7 +471,7 @@ public class IndexState implements Closeable {
 
         if (!liveFieldValues.isEmpty()) {
           // TODO: wasteful!
-          for(IndexableField f : doc.doc.getFields()) {
+          for(StorableField f : doc.doc.getFields()) {
             FieldDef fd = getField(f.name());
             if (fd.liveValuesIDField != null) {
               // TODO: O(N):
@@ -663,7 +664,7 @@ public class IndexState implements Closeable {
         if (!liveFieldValues.isEmpty()) {
           for(Document doc : justDocs) {
             // TODO: wasteful!
-            for(IndexableField f : doc.getFields()) {
+            for(StorableField f : doc.getFields()) {
               FieldDef fd = getField(f.name());
               if (fd.liveValuesIDField != null) {
                 // TODO: O(N):
