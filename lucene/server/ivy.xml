@@ -1,15 +1,14 @@
 <ivy-module version="2.0">
   <info organisation="org.apache.lucene" module="lucene-server"/>
   <dependencies>
-    <dependency org="io.netty" name="netty" rev="3.5.11.Final"/>
-    <!--<dependency org="com.google.code" name="gson" rev="2.2.2"/>-->
+    <dependency org="io.netty" name="netty" rev="${/io.netty/netty}" transitive="false"/>
     <!-- only for Base64 encode/decode I think: -->
-    <dependency org="commons-codec" name="commons-codec" rev="1.7"/>
+    <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" transitive="false"/>
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
 
-    <dependency org="net.minidev" name="json-smart" rev="1.1.1"/>
-    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.9.12"/>
-    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.9.12"/>
+    <dependency org="net.minidev" name="json-smart" rev="1.1.1" transitive="false"/>
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" transitive="false"/>
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" transitive="false"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>
