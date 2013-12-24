@@ -19,7 +19,9 @@ package org.apache.lucene.server;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
@@ -51,7 +53,7 @@ public class TestSuggest extends ServerBaseTestCase {
   }
 
   public void testAnalyzingSuggest() throws Exception {
-    FileWriter fstream = new FileWriter(tempFile);
+    Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("5\u001flucene\u001ffoobar\n");
     out.write("10\u001flucifer\u001ffoobar\n");
@@ -101,7 +103,7 @@ public class TestSuggest extends ServerBaseTestCase {
   }
 
   public void testInfixSuggest() throws Exception {
-    FileWriter fstream = new FileWriter(tempFile);
+    Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
@@ -139,7 +141,7 @@ public class TestSuggest extends ServerBaseTestCase {
   }
 
   public void testFuzzySuggest() throws Exception {
-    FileWriter fstream = new FileWriter(tempFile);
+    Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
     BufferedWriter out = new BufferedWriter(fstream);
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();

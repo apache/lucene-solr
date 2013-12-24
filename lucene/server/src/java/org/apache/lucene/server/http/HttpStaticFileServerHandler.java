@@ -275,9 +275,10 @@ public class HttpStaticFileServerHandler extends SimpleChannelUpstreamHandler {
    */
   private static void setDateHeader(HttpResponse response) {
     SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-    dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+    TimeZone tz = TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE);
+    dateFormatter.setTimeZone(tz);
 
-    Calendar time = new GregorianCalendar();
+    Calendar time = new GregorianCalendar(tz, Locale.US);
     response.setHeader(DATE, dateFormatter.format(time.getTime()));
   }
 
@@ -291,10 +292,11 @@ public class HttpStaticFileServerHandler extends SimpleChannelUpstreamHandler {
    */
   private static void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
     SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-    dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+    TimeZone tz = TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE);
+    dateFormatter.setTimeZone(tz);
 
     // Date header
-    Calendar time = new GregorianCalendar();
+    Calendar time = new GregorianCalendar(tz, Locale.US);
     response.setHeader(DATE, dateFormatter.format(time.getTime()));
 
     // Add cache headers

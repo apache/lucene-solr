@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -265,7 +266,7 @@ public class Server {
 
         // nocommit do we need to check this per-chunk?
         String s = request.getHeader("Connection");
-        if (s != null && s.toLowerCase().equals(HttpHeaders.Values.CLOSE)) {
+        if (s != null && s.toLowerCase(Locale.ROOT).equals(HttpHeaders.Values.CLOSE)) {
           doKeepAlive = false;
         }
 

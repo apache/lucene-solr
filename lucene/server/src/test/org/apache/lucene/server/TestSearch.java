@@ -165,7 +165,7 @@ public class TestSearch extends ServerBaseTestCase {
     for(String type : new String[] {"int", "long", "float", "double"}) {
       send("createIndex", "{indexName: nrq, rootDir: nrq}");
       send("startIndex", "{indexName: nrq}");
-      send("registerFields", String.format("{indexName: nrq, fields: {nf: {type: %s, index: true}}}", type));
+      send("registerFields", String.format(Locale.ROOT, "{indexName: nrq, fields: {nf: {type: %s, index: true}}}", type));
       send("addDocument", "{indexName: nrq, fields: {nf: 5}}");
       send("addDocument", "{indexName: nrq, fields: {nf: 10}}");
       long gen = getLong(send("addDocument", "{indexName: nrq, fields: {nf: 17}}"), "indexGen");

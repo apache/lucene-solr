@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -313,7 +314,7 @@ public class GlobalState implements Closeable {
         Properties pluginProps = new Properties();
         InputStream is = pluginURL.openStream();
         try {
-          pluginProps.load(is);
+          pluginProps.load(new InputStreamReader(is, "UTF-8"));
         } catch (Exception e) {
           throw new IllegalStateException("property file \"" + pluginURL + "\" could not be loaded", e);
         } finally {
