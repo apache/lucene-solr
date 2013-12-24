@@ -18,14 +18,11 @@ package org.apache.lucene.server.handlers;
  */
 
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
-import org.apache.lucene.server.IndexState.DocumentAndFacets;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import net.minidev.json.JSONArray;

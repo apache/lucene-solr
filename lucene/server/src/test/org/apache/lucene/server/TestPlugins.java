@@ -18,21 +18,15 @@ package org.apache.lucene.server;
  */
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
-@Ignore("where is the zip...?")
-//nocommit
+@Ignore("not yet")
+//nocommit: hackishly build the zip...?
 public class TestPlugins extends ServerBaseTestCase {
 
   @BeforeClass

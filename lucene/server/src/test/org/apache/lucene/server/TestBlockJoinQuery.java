@@ -17,8 +17,6 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
-import java.util.Locale;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;

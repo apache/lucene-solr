@@ -20,7 +20,6 @@ package org.apache.lucene.server.handlers;
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;

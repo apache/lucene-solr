@@ -17,13 +17,8 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 public class TestBooleanFieldType extends ServerBaseTestCase {

@@ -20,14 +20,11 @@ package org.apache.lucene.server;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LiveFieldValues;
-import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 

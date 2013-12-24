@@ -28,7 +28,6 @@ import org.apache.lucene.server.params.Param;
 import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
-import org.apache.lucene.server.params.Type;
 
 public class StopIndexHandler extends Handler {
   private static StructType TYPE = new StructType(

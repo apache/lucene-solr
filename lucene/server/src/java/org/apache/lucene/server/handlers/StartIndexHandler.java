@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
@@ -31,7 +30,6 @@ import org.apache.lucene.server.params.Param;
 import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
-import org.apache.lucene.server.params.Type;
 import net.minidev.json.JSONObject;
 
 public class StartIndexHandler extends Handler {

@@ -19,10 +19,8 @@ package org.apache.lucene.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Locale;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

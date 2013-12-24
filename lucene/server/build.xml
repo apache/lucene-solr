@@ -40,17 +40,11 @@
     <path refid="base.classpath"/>
   </path>
 
-  <!-- TODO: only the ones with actual javadocs links -->
-  <target name="javadocs" depends="javadocs-analyzers-common,javadocs-facet,javadocs-grouping,javadocs-highlighter,javadocs-misc,javadocs-queries,javadocs-queryparser,javadocs-suggest,compile-core">
+  <target name="javadocs" depends="javadocs-facet,javadocs-highlighter,javadocs-suggest,compile-core">
     <invoke-module-javadoc>
       <links>
-        <link href="../analyzers-common"/>
         <link href="../facet"/>
-        <link href="../grouping"/>
         <link href="../highlighter"/>
-        <link href="../misc"/>
-        <link href="../queries"/>
-        <link href="../queryparser"/>
         <link href="../suggest"/>
       </links>
     </invoke-module-javadoc>

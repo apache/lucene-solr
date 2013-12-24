@@ -20,7 +20,6 @@ package org.apache.lucene.server;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;

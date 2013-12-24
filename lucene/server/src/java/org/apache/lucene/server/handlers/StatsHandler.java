@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,7 +34,6 @@ import org.apache.lucene.server.params.Param;
 import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
-import org.apache.lucene.server.params.Type;
 import org.apache.lucene.util.RamUsageEstimator;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
