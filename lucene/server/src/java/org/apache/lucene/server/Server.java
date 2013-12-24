@@ -41,6 +41,7 @@ import org.apache.lucene.server.handlers.*;
 import org.apache.lucene.server.http.HttpStaticFileServerHandler;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;

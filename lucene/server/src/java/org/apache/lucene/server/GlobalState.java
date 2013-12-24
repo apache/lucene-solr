@@ -44,6 +44,8 @@ import org.apache.lucene.server.handlers.DocHandler;
 import org.apache.lucene.server.handlers.Handler;
 import org.apache.lucene.server.plugins.Plugin;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.NamedThreadFactory;
+
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
