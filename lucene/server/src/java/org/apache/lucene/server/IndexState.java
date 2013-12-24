@@ -534,7 +534,7 @@ public class IndexState implements Closeable {
     long result;
     synchronized(saveLoadState) {
       long nextGen = saveLoadState.getNextWriteGen();
-      System.out.println("state nextGen=" + nextGen);
+      //System.out.println("state nextGen=" + nextGen);
       if (nextGen == 0) {
         throw new IllegalStateException("no commit exists");
       }
