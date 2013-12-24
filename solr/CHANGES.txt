@@ -230,6 +230,9 @@ Optimizations
 * SOLR-5576: Improve concurrency when registering and waiting for all 
   SolrCore's to register a DOWN state. (Christine Poerschke via Mark Miller)
 
+* SOLR-2960: fix DIH XPathEntityProcessor to add the correct number of "null"
+  placeholders for multi-valued fields (Michael Watts via James Dyer)
+
 Other Changes
 ---------------------
 
