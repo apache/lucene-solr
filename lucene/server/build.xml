@@ -1,95 +1,59 @@
-<project name="luceneserver" default="jar" basedir="."
-         xmlns:ivy="antlib:org.apache.ivy.ant"
-         xmlns:junit4="antlib:com.carrotsearch.junit4">
+<?xml version="1.0"?>
 
-  <path id="compile.path">
-    <path refid="dependencies.path"/>
-  </path>
-
-  <path id="test.path">
-    <pathelement location="build/classes/java"/>
-    <path refid="compile.path"/>
-  </path>
-
-  <target name="resolve">
-    <!-- override: just for safety, should be unnecessary -->
-    <ivy:configure file="ivy-settings.xml" override="true"/>
-    <ivy:cachepath pathid="dependencies.path" log="download-only" type="bundle,jar"/>
-    <taskdef resource="com/carrotsearch/junit4/antlib.xml" uri="antlib:com.carrotsearch.junit4" classpathref="dependencies.path"/>
-  </target>
-
-  <target name="clean">
-    <delete dir="build"/>
-  </target>
-
-  <target name="compile" depends="resolve">
-    <compile src="src/java" dest="build/classes/java" classpathref="compile.path"/>
-  </target>
-
-  <target name="compile-test" depends="compile">
-    <compile src="src/test" dest="build/classes/test" classpathref="test.path"/>
-  </target>
-
-  <target name="jar" depends="compile">
-    <jar destfile="build/luceneserver.jar" basedir="build/classes/java"/>
-  </target>
-
-  <macrodef name="compile">
-      <attribute name="src"/>
-      <attribute name="dest"/>
-      <attribute name="classpathref"/>
-    <sequential>
-      <mkdir dir="@{dest}"/>
-      <javac srcdir="@{src}"
-             destdir="@{dest}"
-             classpathref="@{classpathref}"
-             includeantruntime="false"
-             source="1.6"
-             target="1.6"
-	     debug="on"
-             encoding="UTF-8">
-        <compilerarg line="-Xlint -Xlint:-serial"/>
-      </javac>
-    </sequential>
-  </macrodef>
-
-  <condition property="tests.class" value="*.${testcase}">
-    <isset property="testcase"/>
-  </condition>
-
-  <condition property="tests.method" value="*.${testmethod}">
-    <isset property="testmethod"/>
-  </condition>
-
-  <property name="tests.jvms" value="auto" />
-
-  <target name="test" depends="compile-test">
-    <sequential>
-      <mkdir dir="build/test"/>
-      <junit4:pickseed property="tests.seed"/>
-      <junit4:junit4 dir="build/test"
-                     tempdir="build/test"
-                     parallelism="${tests.jvms}">
-         <assertions>
-           <enable/>
-         </assertions>
-         <classpath location="build/classes/test"/>
-         <classpath refid="test.path"/>
-         <fileset dir="build/classes/test">
-           <include name="**/Test*.class"/>
-           <exclude name="**/*$*" />
-         </fileset>
-         <listeners>
-           <junit4:report-text showThrowable="true" showStackTraces="true" showOutput="always" showStatusOk="false"/>
-         </listeners>
-      </junit4:junit4>
-
-      <!-- nocommit is this "right"? -->
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="plugins/BinaryDocument" includes="build.xml" />
-      </subant>
-
-    </sequential>
-  </target>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
  
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="server" default="default">
+
+  <description>
+    Demo Server
+  </description>
+        
+  <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${facet.jar}"/>
+    <pathelement path="${grouping.jar}"/>
+    <pathelement path="${highlighter.jar}"/>
+    <pathelement path="${misc.jar}"/>
+    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queryparser.jar}"/>
+    <pathelement path="${suggest.jar}"/>
+    <fileset dir="lib"/>
+    <path refid="base.classpath"/>
+  </path>
+
+
+  <target name="javadocs" depends="javadocs-analyzers-common,javadocs-facet,javadocs-grouping,javadocs-highlighter,javadocs-misc,javadocs-queries,javadocs-queryparser,javadocs-suggest,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../analyzers-common"/>
+        <link href="../facet"/>
+        <link href="../grouping"/>
+        <link href="../highlighter"/>
+        <link href="../misc"/>
+        <link href="../queries"/>
+        <link href="../queryparser"/>
+        <link href="../suggest"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
+  <target name="compile-core" depends="jar-analyzers-common, jar-facet, jar-grouping, jar-highlighter, jar-misc, jar-queries, jar-queryparser, jar-suggest, common.compile-core" />
+
 </project>
