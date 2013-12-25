@@ -18,22 +18,45 @@ package org.apache.lucene.server;
  */
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 import net.minidev.json.JSONObject;
 
-@Ignore("not yet")
-//nocommit: hackishly build the zip...?
 public class TestPlugins extends ServerBaseTestCase {
 
   @BeforeClass
   public static void init() throws Exception {
     clearDir();
-    installPlugin(new File("../MockPlugin-0.1.zip"));
+    File tmpDir = _TestUtil.getTempDir("TestPlugins");
+    tmpDir.mkdirs();
+    File zipFile = new File(tmpDir, "MockPlugin-0.1.zip");
+    ZipOutputStream os = new ZipOutputStream(new FileOutputStream(zipFile));
+    addToZip(os, "Mock/org/apache/lucene/server/MockPlugin.class", "MockPlugin.class");
+    addToZip(os, "Mock/lucene-server-plugin.properties", "MockPlugin-lucene-server-plugin.properties");
+    addToZip(os, "Mock/site/hello.txt", "MockPlugin-hello.txt");
+    os.close();
+    installPlugin(zipFile);
     startServer();
+  }
+  
+  static void addToZip(ZipOutputStream dest, String zipName, String resourcePath) throws Exception {
+    ZipEntry file = new ZipEntry(zipName);
+    dest.putNextEntry(file);
+    try (InputStream input = TestPlugins.class.getResourceAsStream(resourcePath)) {
+      byte buf[] = new byte[1024];
+      int numRead;
+      while ((numRead = input.read(buf)) >= 0) {
+        dest.write(buf, 0, numRead);
+      }
+    }
+    dest.closeEntry();
   }
 
   @AfterClass
