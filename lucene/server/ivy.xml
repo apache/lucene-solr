@@ -24,7 +24,7 @@
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" transitive="false"/>
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" transitive="false"/>
 
-    <dependency org="net.minidev" name="json-smart" rev="1.1.1" transitive="false"/>
+    <dependency org="net.minidev" name="json-smart" rev="1.2" transitive="false"/>
     <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" transitive="false"/>
     <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" transitive="false"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>

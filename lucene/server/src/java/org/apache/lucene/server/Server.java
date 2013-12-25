@@ -42,9 +42,6 @@ import org.apache.lucene.server.http.HttpStaticFileServerHandler;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -76,6 +73,7 @@ import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
 import net.minidev.json.JSONObject;
+import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.parser.ContainerFactory;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
@@ -199,10 +197,7 @@ public class Server {
         }
 
         // Pretty print the leftover (unhandled) params:
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readValue(requestData.toString(), JsonNode.class);
-        ObjectWriter writer = mapper.writer().withDefaultPrettyPrinter();
-        String pretty = writer.writeValueAsString(rootNode);
+        String pretty = requestData.toJSONString(new JSONStyleIdent());
         String s = "unrecognized parameters:\n" + pretty;
         String details = findFirstWrongParam(handler.getType(), fullRequest, requestData, new ArrayList<String>());
         if (details != null) {

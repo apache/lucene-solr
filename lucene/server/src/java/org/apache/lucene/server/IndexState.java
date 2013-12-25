@@ -102,10 +102,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
 import net.minidev.json.JSONObject;
+import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
@@ -236,12 +234,7 @@ public class IndexState implements Closeable {
     @Override
     protected void saveOne(IndexOutput out, JSONObject state) throws IOException {
       // Pretty print:
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode rootNode = mapper.readValue(state.toString(), JsonNode.class);
-      //ObjectWriter writer = mapper.defaultPrettyPrintingWriter();
-      // ***IMPORTANT!!!*** for Jackson 2.x use the line below instead of the one above: 
-      ObjectWriter writer = mapper.writer().withDefaultPrettyPrinter();
-      String pretty = writer.writeValueAsString(rootNode);
+      String pretty = state.toJSONString(new JSONStyleIdent());
       byte[] bytes = IndexState.toUTF8(pretty.toString());
       out.writeBytes(bytes, 0, bytes.length);
     }
