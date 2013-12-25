@@ -22,7 +22,15 @@ import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+/** From a multi-valued field (indexed with the values
+ *  joined with INFO_SEP), highlight each value entirely. */
 public class WholeMVJSONPassageFormatter extends PassageFormatter {
+
+  private final int offsetGap;
+
+  public WholeMVJSONPassageFormatter(int offsetGap) {
+    this.offsetGap = offsetGap;
+  }
 
   @Override
   public String format(Passage passages[], String content) {
@@ -38,6 +46,8 @@ public class WholeMVJSONPassageFormatter extends PassageFormatter {
    *  JSONArray so that each original field value is
    *  separated and highlighted. */
   private JSONArray wholeMultiValued(Passage[] passages, String content) {
+
+    // Caller must use WholeBreakIterator:
     assert passages.length == 1;
     Passage passage = passages[0];
 
@@ -72,8 +82,9 @@ public class WholeMVJSONPassageFormatter extends PassageFormatter {
         pos = chunk.length();
       }
 
-      // nocommit if analyzer has different offsetGap then
-      // we need to use that instead of +1!
+      // nocommit we always join w/ INFO_SEP ... so it
+      //should just be 1?
+      //charOffset += chunk.length()+offsetGap;
       charOffset += chunk.length()+1;
     }
 

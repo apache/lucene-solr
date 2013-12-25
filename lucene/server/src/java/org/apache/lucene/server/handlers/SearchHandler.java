@@ -481,7 +481,9 @@ public class SearchHandler extends Handler {
     protected PassageFormatter getFormatter(String fieldName) {
       FieldHighlightConfig perField = perFieldConfig.get(fieldName);
       if (!perField.singleValued && perField.mode.equals("whole")) {
-        return new WholeMVJSONPassageFormatter();
+        FieldDef fd = state.getField(fieldName);
+        assert fd.indexAnalyzer != null;
+        return new WholeMVJSONPassageFormatter(fd.indexAnalyzer.getOffsetGap(fieldName));
       } else {
         return new SVJSONPassageFormatter(maxSnippetLength);
       }

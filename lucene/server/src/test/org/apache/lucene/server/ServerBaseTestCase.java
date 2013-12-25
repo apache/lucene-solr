@@ -343,6 +343,10 @@ public class ServerBaseTestCase extends LuceneTestCase {
     return (JSONArray) get(o, path);
   }
 
+  protected JSONArray getArray(JSONArray o, int index) {
+    return (JSONArray) o.get(index);
+  }
+
   /** Renders one hilited field (multiple passages) value
    * with <b>...</b> tags, and ... separating the passages. */ 
   protected String renderHighlight(JSONArray hit) {

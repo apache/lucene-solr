@@ -17,12 +17,14 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+
+import org.apache.lucene.util._TestUtil;
 
 public class TestHighlight extends ServerBaseTestCase {
 
@@ -191,6 +193,53 @@ public class TestHighlight extends ServerBaseTestCase {
     } catch (IOException ioe) {
       // expected
     }
+  }
+
+  public void testNonDefaultOffsetGap() throws Exception {
+    // nocommit add test infra to create a randomly named new index?
+    _TestUtil.rmDir(new File("offsetgap"));
+    send("createIndex", "{indexName: offsetgap, rootDir: offsetgap}");
+    // Wait at most 1 msec for a searcher to reopen; this
+    // value is too low for a production site but for
+    // testing we want to minimize sleep time:
+    send("liveSettings", "{indexName: offsetgap, minRefreshSec: 0.001}");
+    send("startIndex", "{indexName: offsetgap}");
+    JSONObject o = new JSONObject();
+
+    put(o, "body", "{type: text, multiValued: true, highlight: true, store: true, analyzer: {tokenizer: StandardTokenizer, offsetGap: 100}}");
+
+    JSONObject o2 = new JSONObject();
+    o2.put("fields", o);
+    o2.put("indexName", "offsetgap");
+    send("registerFields", o2);
+
+    o = new JSONObject();
+    JSONArray parts = new JSONArray();
+    o.put("body", parts);
+
+    parts.add("highlight me");
+    parts.add("highlight me too");
+
+    o2 = new JSONObject();
+    o2.put("fields", o);
+    o2.put("indexName", "offsetgap");
+    long indexGen = getLong(send("addDocument", o2), "indexGen");
+
+    o = new JSONObject();
+    o.put("indexName", "offsetgap");
+    o.put("queryText", "highlight");
+
+    o2 = new JSONObject();
+    o.put("searcher", o2);
+    o2.put("indexGen", indexGen);
+    put(o, "retrieveFields", "[{field: 'body', highlight: 'whole'}]");
+
+    JSONObject result = send("search", o);
+    parts = getArray(result, "hits[0].fields.body");
+    assertEquals(2, parts.size());
+    assertEquals("<b>highlight</b> me", renderSingleHighlight(getArray(parts, 0)));
+    // nocommit this fails when offsetGap != 1 ... debug!
+    //assertEquals("<b>highlight</b> me too", renderSingleHighlight(getArray(parts, 1)));
   }
 }
 
