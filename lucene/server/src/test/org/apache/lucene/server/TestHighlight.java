@@ -17,20 +17,16 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
-import org.apache.lucene.util._TestUtil;
-
 public class TestHighlight extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();

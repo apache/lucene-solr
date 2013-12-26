@@ -40,6 +40,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -50,18 +51,23 @@ import net.minidev.json.parser.ParseException;
 public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   private static Thread serverThread;
-
   static int port;
+  
+  protected static File TEST_DIR;
+  protected static File STATE_DIR;
+  
+  @BeforeClass
+  public static void beforeClassServerBase() throws Exception {
+    File dir = _TestUtil.getTempDir("ServerBase");
+    TEST_DIR = new File(dir, "test");
+    STATE_DIR = new File(dir, "state");
+  }
   
   @AfterClass
   public static void afterClassServerBase() throws Exception {
     // who sets this? netty? what a piece of crap
     System.clearProperty("sun.nio.ch.bugLevel");
-  }
-
-  protected static void clearDir() throws IOException {
-    _TestUtil.rmDir(new File("test"));
-    _TestUtil.rmDir(new File("state"));
+    TEST_DIR = STATE_DIR = null;
   }
 
   protected long addDocument(String json) throws Exception {
@@ -74,7 +80,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-    File pluginsDir = new File("state/plugins");
+    File pluginsDir = new File(STATE_DIR, "plugins");
     if (!pluginsDir.exists()) {
       pluginsDir.mkdirs();
     }
@@ -119,7 +125,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
         @Override
         public void run() {
           try {
-            Server s = new Server(new File("state"));
+            Server s = new Server(STATE_DIR);
             theServer.set(s);
             s.run(0, 1, ready);
           } catch (Exception e) {
@@ -139,7 +145,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void createAndStartIndex() throws Exception {
-    send("createIndex", "{indexName: index, rootDir: test}");
+    send("createIndex", "{indexName: index, rootDir: " + TEST_DIR.getAbsolutePath() + "}");
     // Wait at most 1 msec for a searcher to reopen; this
     // value is too low for a production site but for
     // testing we want to minimize sleep time:

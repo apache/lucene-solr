@@ -29,11 +29,10 @@ public class TestAddDocuments extends ServerBaseTestCase {
   
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();
-    send("commit", "{indexName: index}");
+    commit();
   }
 
   @AfterClass

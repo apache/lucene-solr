@@ -29,7 +29,6 @@ public class TestServer extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();

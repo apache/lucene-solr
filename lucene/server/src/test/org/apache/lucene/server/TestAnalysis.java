@@ -30,7 +30,6 @@ public class TestAnalysis extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
   }

@@ -30,7 +30,6 @@ import net.minidev.json.JSONObject;
 public class TestIndexing extends ServerBaseTestCase {
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();

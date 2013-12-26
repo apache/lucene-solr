@@ -25,7 +25,6 @@ public class TestBooleanFieldType extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();

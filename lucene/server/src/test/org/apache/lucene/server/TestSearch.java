@@ -31,7 +31,6 @@ public class TestSearch extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    clearDir();
     startServer();
     createAndStartIndex();
     registerFields();
@@ -277,8 +276,8 @@ public class TestSearch extends ServerBaseTestCase {
   }
 
   public void testRecencyBlendedSort() throws Exception {
-    _TestUtil.rmDir(new File("recency"));
-    send("createIndex", "{indexName: recency, rootDir: recency}");
+    File dir = new File(_TestUtil.getTempDir("recency"), "root");
+    send("createIndex", "{indexName: recency, rootDir: " + dir.getAbsolutePath() + "}");
     send("startIndex", "{indexName: recency}");
     send("registerFields", "{indexName: recency, fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}, blend: {type: virtual, recencyScoreBlend: {timeStampField: timestamp, maxBoost: 2.0, range: 30}}}}");
 
