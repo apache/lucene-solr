@@ -45,16 +45,21 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
+/** Handles {@code addDocument}, by delegating the single
+ *  document to {@link BulkAddDocumentHandler}. */
 public class AddDocumentHandler extends Handler {
 
+  /** Type for a document. */
   public final static StructType DOCUMENT_TYPE = new StructType(
                                        new Param("fields", "Fields to index into one document",
                                            new StructType(
                                                           new Param("anyFieldName", "A name/value pair for this document.  Multiple name/values can be specified, but each field name must already have been registered via @registerFields.  The type of the value must match how the field was registered.", new AnyType()))));
 
+  /** Parmeter type. */
   final StructType TYPE = new StructType(
                                      new Param("indexName", "Index name", new StringType()));
 
+  /** Sole constructor. */
   public AddDocumentHandler(GlobalState state) {
     super(state);
     TYPE.params.putAll(DOCUMENT_TYPE.params);
@@ -77,6 +82,7 @@ public class AddDocumentHandler extends Handler {
     }
   }
 
+  /** Parses value for one field. */
   // NOTE: only used by BinaryDocumentPlugin
   @SuppressWarnings({"unchecked"})
   public static void parseOneValue(FieldDef fd, DocumentAndFacets doc, Object o, float boost) {
@@ -201,17 +207,23 @@ public class AddDocumentHandler extends Handler {
     }
   }
 
+  /** Used by plugins to process a document after it was
+   *  created from the JSON request. */
   public interface PostHandle {
-    public void invoke(IndexState state, Request r, DocumentAndFacets doc) throws IOException;
+    // nocommit unused?
+    //public void invoke(IndexState state, Request r, DocumentAndFacets doc) throws IOException;
+    /** Invoke the handler. */
     public boolean invoke(IndexState state, String fieldName, JsonParser p, DocumentAndFacets doc) throws IOException;
   }
 
   final List<PostHandle> postHandlers = new CopyOnWriteArrayList<PostHandle>();
-
+  
+  /** Record a new {@link PostHandle}. */
   public void addPostHandle(PostHandle handler) {
     postHandlers.add(handler);
   }
 
+  /** Parses the string value to the appropriate type. */
   public static Object fixType(FieldDef fd, String value) {
     Object o;
     if (fd.valueType.equals("int")) {

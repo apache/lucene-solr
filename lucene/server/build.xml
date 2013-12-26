@@ -48,7 +48,7 @@
     <path refid="base.classpath"/>
   </path>
 
-  <target name="javadocs" depends="javadocs-facet,javadocs-highlighter,javadocs-suggest,compile-core">
+  <target name="javadocs" depends="javadocs-facet,javadocs-highlighter,javadocs-suggest,javadocs-analyzers-common,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../facet"/>

@@ -30,6 +30,8 @@ import org.apache.lucene.server.params.*;
 
 // nocommit needs ChannelHandlerContext too?
 
+/** Handles one method. */
+
 public abstract class Handler {
 
   /** Processes request into a FinishRequest, which is then
@@ -37,27 +39,47 @@ public abstract class Handler {
    *  process so that we can fail if there are unhandled
    *  params, without having made any changes to the index. */
   public abstract FinishRequest handle(IndexState state, Request request, Map<String,List<String>> params) throws Exception;
+
+  /** Returns the {@link StructType} describing the
+   *  parameters this method accepts. */
   public abstract StructType getType();
+
+  /** Returns the brief summary documentation for this
+   *  method. */
   public abstract String getTopDoc();
 
+  /** The {@link GlobalState} instance. */
   protected final GlobalState globalState;
-  
+
+  /** True if this handler requires indexName. */
   public boolean requiresIndexName = true;
 
+  // nocommit nuke this; the handlers can get globalState
+  // via IndexState?  hmm, except for those handlers that
+  // don't take an indexName (e.g. createIndex).
+
+  /** Sole constructor. */
   protected Handler(GlobalState globalState) {
     this.globalState = globalState;
   }
 
+  /** True if this handler uses streaming (e.g. the bulk
+   *  indexing APIs). */
   public boolean doStream() {
     return false;
   }
 
+  /** Invoked for handlers that use streaming. */
   public String handleStreamed(Reader reader, Map<String,List<String>> params) throws Exception {
     throw new UnsupportedOperationException();
   }
 
+  /** For plugins: list of {@link PreHandle}rs, so a plugin
+   *  can modify the request before the default handler
+   *  sees it. */
   public final List<PreHandle> preHandlers = new CopyOnWriteArrayList<PreHandle>();
 
+  /** Add a pre-handler for this method. */
   public synchronized void addPreHandle(PreHandle h) {
     preHandlers.add(h);
   }

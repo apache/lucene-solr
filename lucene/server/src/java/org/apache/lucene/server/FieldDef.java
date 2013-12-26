@@ -21,24 +21,59 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.similarities.Similarity;
 
+/** Defines the type of one field. */
 public class FieldDef {
+  /** Field name. */
   public final String name;
+  /** {@link FieldType}, used during indexing. */
   public final FieldType fieldType;
+
+  // nocommit why do we have this...
+  /** {@link FieldType} minus doc values, used during indexing. */
   public final FieldType fieldTypeNoDV;
+
+  // nocommit use enum:
+  /** Value type (atom, text, boolean, etc.). */
   public final String valueType;
+
+  // nocommit use enum:
+  /** Facet type (no, flat, hierarchical). */
   public final String faceted;
+
+  /** Postings format (codec). */
   public final String postingsFormat;
+
+  /** Doc values format (codec). */
   public final String docValuesFormat;
+
+  /** True if the field is single valued. */
   public final boolean singleValued;
+
+  /** {@link Similarity} to use during indexing searching. */
   public final Similarity sim;
+
+  /** Index-time {@link Analyzer}. */
   public final Analyzer indexAnalyzer;
+
+  /** Search-time {@link Analyzer}. */
   public final Analyzer searchAnalyzer;
+
+  /** True if the field will be highlighted. */
   public final boolean highlighted;
+
+  /** Field name to use as the ID field for live-values. */
   public final String liveValuesIDField;
+
+  /** Time-stamp field name for recency-blended sorting. */
   public final String blendFieldName;
+
+  /** Maximum boost from recency. */
   public final float blendMaxBoost;
+
+  /** Maximum age for recency boosting to have an effect (seconds). */
   public final long blendRange;
 
+  /** Sole constructor. */
   public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean singleValued,
                   Similarity sim, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean highlighted, String liveValuesIDField,
                   String blendFieldName, float blendMaxBoost, long blendRange) {

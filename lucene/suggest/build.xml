@@ -38,7 +38,7 @@
   </path>
 
 
-  <target name="javadocs" depends="javadocs-queries,compile-core">
+  <target name="javadocs" depends="javadocs-queries,javadocs-analyzers-common,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>

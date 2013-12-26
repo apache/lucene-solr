@@ -34,6 +34,7 @@ import org.apache.lucene.server.params.StructType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code liveValues}. */
 public class LiveValuesHandler extends Handler {
   private final static StructType TYPE = new StructType (
                                              new Param("indexName", "Index name", new StringType()),
@@ -49,6 +50,7 @@ public class LiveValuesHandler extends Handler {
     return TYPE;
   }
 
+  /** Sole constructor. */
   public LiveValuesHandler(GlobalState state) {
     super(state);
   }

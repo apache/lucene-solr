@@ -87,16 +87,18 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 // nocommit move under http
 
+/** Main entry point for the HTTP server. */
 public class Server {
 
   final GlobalState globalState;
 
   final SimpleChannelUpstreamHandler staticFileHandler;
 
-  // The actual port server bound to (only interesting if
-  // you passed port=0 to let the OS assign one):
+  /** The actual port server bound to (only interesting if
+   *  you passed port=0 to let the OS assign one). */
   public int actualPort;
 
+  /** Handles the incoming request. */
   private class Dispatcher extends SimpleChannelUpstreamHandler {
 
     private Writer pipedWriter;
@@ -546,17 +548,19 @@ public class Server {
     System.out.println("\nUsage: java -cp <stuff> org.apache.lucene.server.Server [-port port] [-maxHTTPThreadCount count] [-stateDir /path/to/dir]\n\n");
   }
 
-  public Server(File stateDir) throws IOException {
-    globalState = new GlobalState(stateDir);
+  /** Sole constructor. */
+  public Server(File globalStateDir) throws IOException {
+    globalState = new GlobalState(globalStateDir);
     staticFileHandler = new HttpStaticFileServerHandler(new File(globalState.stateDir, "plugins"));
   }
 
+  /** Runs the server. */
   public void run(int port, int maxHTTPThreadCount, CountDownLatch ready) throws Exception {
 
     globalState.loadIndexNames();
 
     // nocommit use fixed thread pools, so we don't cycle
-    // threads through the CloseableThreadLocals!
+    // threads through Lucene's CloseableThreadLocals!
     ExecutorService bossThreads = new ThreadPoolExecutor(0, maxHTTPThreadCount, 60L,
                                                          TimeUnit.SECONDS,
                                                          new SynchronousQueue<Runnable>(),
@@ -652,6 +656,7 @@ public class Server {
     }
   }
 
+  /** Command-line entry. */
   public static void main(String[] args) throws Exception {
     File stateDir = null;
 

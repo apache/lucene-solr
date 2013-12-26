@@ -40,6 +40,9 @@ import org.apache.lucene.server.params.WrapType;
 
 // TODO: use some ... standard markup language/processor!
 
+/** Handles generating live documentation, accessible via
+ *  http://localhost:4000/doc", from all registered
+ *  handlers. */
 public class DocHandler {
 
   // nocommit this is wasteful ... use Apache commons?
@@ -92,6 +95,9 @@ public class DocHandler {
     return sb.toString();
   }
 
+  /** Generates documentation for the provided handlers.  If
+   *  params is non-empty, generates documentation for a
+   *  specific method. */
   public String handle(Map<String,List<String>> params, Map<String,Handler> handlers) {
     StringBuilder sb = new StringBuilder();
     sb.append("<html>");

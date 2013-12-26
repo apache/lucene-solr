@@ -29,6 +29,7 @@ import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 
+/** Handles {@code createIndex}. */
 public class CreateIndexHandler extends Handler {
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()),
@@ -36,6 +37,7 @@ public class CreateIndexHandler extends Handler {
                                        // nocommit should we only allow rootDir "under" the globalRoot?
                                        new Param("rootDir", "Filesystem path where all state is stored", new StringType()));
 
+  /** Sole constructor. */
   public CreateIndexHandler(GlobalState state) {
     super(state);
     requiresIndexName = false;

@@ -29,6 +29,7 @@ import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 
+/** Handles {@code deleteIndex}. */
 public class DeleteIndexHandler extends Handler {
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()));
@@ -43,6 +44,7 @@ public class DeleteIndexHandler extends Handler {
     return "Delete an index";
   }
 
+  /** Sole constructor. */
   public DeleteIndexHandler(GlobalState state) {
     super(state);
   }

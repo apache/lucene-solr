@@ -32,6 +32,7 @@ import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code deleteDocuments}. */
 public class DeleteDocumentsHandler extends Handler {
   // TODO: support delete by query too:
   // TODO: support bulk api?
@@ -50,6 +51,7 @@ public class DeleteDocumentsHandler extends Handler {
     return "Delete documents.  Returns the index generation (indexGen) that reflext the deletion.";
   }
 
+  /** Sole constructor. */
   public DeleteDocumentsHandler(GlobalState state) {
     super(state);
   }

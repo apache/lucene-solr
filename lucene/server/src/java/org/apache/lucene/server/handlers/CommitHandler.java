@@ -26,11 +26,13 @@ import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 
+/** Handles {@code commit}. */
 public class CommitHandler extends Handler {
 
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()));
 
+  /** Sole constructor. */
   public CommitHandler(GlobalState state) {
     super(state);
   }

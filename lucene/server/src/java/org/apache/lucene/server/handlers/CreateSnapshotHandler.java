@@ -39,6 +39,7 @@ import org.apache.lucene.server.params.StructType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code createSnapshot}. */
 public class CreateSnapshotHandler extends Handler {
 
   final static StructType TYPE = new StructType(
@@ -55,6 +56,7 @@ public class CreateSnapshotHandler extends Handler {
     return TYPE;
   }
 
+  /** Sole constructor. */
   public CreateSnapshotHandler(GlobalState state) {
     super(state);
   }

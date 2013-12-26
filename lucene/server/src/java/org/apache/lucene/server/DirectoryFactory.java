@@ -28,9 +28,14 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
+/** A factory to open a {@link Directory} from a provided
+ *  filesystem path. */
 public abstract class DirectoryFactory {
   public abstract Directory open(File path) throws IOException;
 
+  /** Returns an instance, using the specified
+   *  implementation {FSDirectory, MMapDirectory,
+   *  NIOFSDirectory, SimpleFSDirectory or RAMDirectory}. */
   public static DirectoryFactory get(String dirImpl) {
     if (dirImpl.equals("FSDirectory")) {
       return new DirectoryFactory() {

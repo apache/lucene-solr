@@ -27,6 +27,7 @@ import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code deleteAllDocuments}. */
 public class DeleteAllDocumentsHandler extends Handler {
 
   private final static StructType TYPE =
@@ -42,6 +43,7 @@ public class DeleteAllDocumentsHandler extends Handler {
     return "Removes all documents in the index, but keeps all registered fields, settings and any built suggesters.";
   }
 
+  /** Sole constructor. */
   public DeleteAllDocumentsHandler(GlobalState state) {
     super(state);
   }

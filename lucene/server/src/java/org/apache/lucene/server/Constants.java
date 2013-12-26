@@ -19,10 +19,15 @@ package org.apache.lucene.server;
 
 import java.util.regex.Pattern;
 
+/** Static constants. */
 public class Constants {
   private Constants() {
   }
 
+  // nocommit can we nuke this hack now?
+  /** Used to join multi-valued fields. */
   public static final char INFORMATION_SEP = '\u001f';
+
+  /** Regexp version of {@link INFORMATION_SEP}. */
   public static final String INFORMATION_SEP_REGEX = Pattern.quote(Character.toString(INFORMATION_SEP));
 }

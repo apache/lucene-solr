@@ -49,6 +49,7 @@ import net.minidev.json.parser.ParseException;
 
 import static org.apache.lucene.server.handlers.RegisterFieldHandler.ANALYZER_TYPE;
 
+/** Handles {@code buildSuggest}. */
 public class BuildSuggestHandler extends Handler {
 
   private final static StructType TYPE =
@@ -88,6 +89,7 @@ public class BuildSuggestHandler extends Handler {
         new Param("suggestName", "Unique name for this suggest build.", new StringType())
                    );
 
+  /** Sole constructor. */
   public BuildSuggestHandler(GlobalState state) {
     super(state);
   }
@@ -102,6 +104,7 @@ public class BuildSuggestHandler extends Handler {
     return "Builds a new auto-suggester, loading suggestions via the provided local file path.";
   }
 
+  /** Load all previously built suggesters. */
   public void load(IndexState state, JSONObject saveState) throws IOException {
     for(Map.Entry<String,Object> ent : saveState.entrySet()) {
       String suggestName = ent.getKey();

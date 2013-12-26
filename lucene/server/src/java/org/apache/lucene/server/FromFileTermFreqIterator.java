@@ -27,6 +27,8 @@ import java.io.InputStreamReader;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 
+/** An {@link InputIterator} that pulls from a line file,
+ *  using \u001f to join the suggestion, weight and payload. */
 public class FromFileTermFreqIterator implements InputIterator, Closeable {
   private final BufferedReader reader;
   private long weight;
@@ -34,6 +36,7 @@ public class FromFileTermFreqIterator implements InputIterator, Closeable {
   public int suggestCount;
   private BytesRef extra;
 
+  /** Sole constructor. */
   public FromFileTermFreqIterator(File sourceFile) throws IOException {
     reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile), "UTF-8"), 65536);
   }

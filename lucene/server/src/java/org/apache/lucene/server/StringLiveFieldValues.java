@@ -31,10 +31,13 @@ import org.apache.lucene.search.TopDocs;
 // TODO: if there are more than one live field we could
 // "bundle" them so we only do one stored doc lookup
 // TODO: also be able to lookup from doc values
+
+/** Implements live field values, for string values. */
 public class StringLiveFieldValues extends LiveFieldValues<SearcherAndTaxonomy,String> {
   private final String idFieldName;
   private final String liveFieldName;
 
+  /** Sole constructor. */
   public StringLiveFieldValues(SearcherTaxonomyManager mgr, String idFieldName, String liveFieldName) {
     super(mgr, "");
     this.idFieldName = idFieldName;

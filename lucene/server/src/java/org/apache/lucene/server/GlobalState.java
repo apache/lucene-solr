@@ -27,6 +27,7 @@ import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +51,8 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
+/** Holds all global state for the server.  Per-index state
+ *  is held in {@link IndexState}. */
 public class GlobalState implements Closeable {
 
   private static final String PLUGIN_PROPERTIES_FILE = "lucene-server-plugin.properties";
@@ -69,14 +72,17 @@ public class GlobalState implements Closeable {
 
   final BlockingQueue<Runnable> docsToIndex = new ArrayBlockingQueue<Runnable>(MAX_BUFFERED_DOCS, true);
 
+  /** Common thread pool to index documents. */
   public final ExecutorService indexService = new BlockingThreadPoolExecutor(MAX_BUFFERED_DOCS,
                                                                              MAX_INDEXING_THREADS,
                                                                              MAX_INDEXING_THREADS,
                                                                              60, TimeUnit.SECONDS,
                                                                              docsToIndex,
                                                                              new NamedThreadFactory("LuceneIndexing"));
+  /** Server shuts down once this latch is decremented. */
   public final CountDownLatch shutdownNow = new CountDownLatch(1);
 
+  /** Current indices. */
   final Map<String,IndexState> indices = new ConcurrentHashMap<String,IndexState>();
 
   final File stateDir;
@@ -87,6 +93,7 @@ public class GlobalState implements Closeable {
   
   private long lastIndicesGen;
 
+  /** Sole constructor. */
   public GlobalState(File stateDir) {
     this.stateDir = stateDir;
     if (!stateDir.exists()) {
@@ -94,6 +101,8 @@ public class GlobalState implements Closeable {
     }
   }
 
+  /** Record a new handler, by methode name (search,
+   *  addDocument, etc.). */
   public void addHandler(String name, Handler handler) {
     if (handlers.containsKey(name)) {
       throw new IllegalArgumentException("handler \"" + name + "\" is already defined");
@@ -101,6 +110,8 @@ public class GlobalState implements Closeable {
     handlers.put(name, handler);
   }
 
+  /** Retrieve a handler by method name (search,
+   * addDocument, etc.). */
   public Handler getHandler(String name) {
     Handler h = handlers.get(name);
     if (h == null) {
@@ -109,11 +120,12 @@ public class GlobalState implements Closeable {
     return h;
   }
 
+  /** Get all handlers. */
   public Map<String,Handler> getHandlers() {
-    // nocommit immutable:
-    return handlers;
+    return Collections.unmodifiableMap(handlers);
   }
 
+  /** Get the {@link IndexState} by index name. */
   public IndexState get(String name) throws Exception {
     synchronized(indices) {
       IndexState state = indices.get(name);
@@ -130,12 +142,14 @@ public class GlobalState implements Closeable {
     }
   }
 
+  /** Remove the specified index. */
   public void deleteIndex(String name) {
     synchronized(indices) {
       indexNames.remove(name);
     }
   }
 
+  /** Create a new index. */
   public IndexState createIndex(String name, File rootDir) throws Exception {
     synchronized (indices) {
       if (rootDir.exists()) {
@@ -152,6 +166,7 @@ public class GlobalState implements Closeable {
     }
   }
 
+  /** Close all indices. */
   public void closeAll() throws IOException {
     IOUtils.close(indices.values());
   }
@@ -197,10 +212,13 @@ public class GlobalState implements Closeable {
     }
   }
 
+  @Override
   public void close() throws IOException {
+    // nocommit move closeAll into here?
     indexService.shutdown();
   }
 
+  /** Load any plugins. */
   @SuppressWarnings({"unchecked"})
   public void loadPlugins() throws Exception {
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

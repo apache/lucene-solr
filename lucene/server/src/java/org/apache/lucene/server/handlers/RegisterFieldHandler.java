@@ -94,6 +94,7 @@ import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 
+/** Handles {@code registerFields}. */
 public class RegisterFieldHandler extends Handler {
 
   private final static List<Object> DEFAULT_ENGLISH_STOP_WORDS = new ArrayList<Object>();
@@ -162,11 +163,16 @@ public class RegisterFieldHandler extends Handler {
   // Breaks the recursion:
   private final static WrapType ANALYZER_TYPE_WRAP = new WrapType();
 
+  /** Type to accept lucene versions. */
   public final static Param MATCH_VERSION_PARAM = new Param("matchVersion", "Lucene version to match.", new EnumType("LUCENE_40", "LUCENE_40",
                                                                                                                      "LUCENE_41", "LUCENE_41",
                                                                                                                      "LUCENE_42", "LUCENE_42",
-                                                                                                                     "LUCENE_43", "LUCENE_43"));
+                                                                                                                     "LUCENE_43", "LUCENE_43",
+                                                                                                                     "LUCENE_44", "LUCENE_44",
+                                                                                                                     "LUCENE_45", "LUCENE_45",
+                                                                                                                     "LUCENE_46", "LUCENE_46"));
 
+  /** Analyzer type. */
   final static Type ANALYZER_TYPE =
     new StructType(
                    // nocommit cutover to PolyType
@@ -350,6 +356,7 @@ public class RegisterFieldHandler extends Handler {
                                            "DefaultSimilarity")))
                    );
 
+  /** Method type. */
   public final static StructType TYPE =
     new StructType(
         new Param("indexName", "Index name", new StringType()),

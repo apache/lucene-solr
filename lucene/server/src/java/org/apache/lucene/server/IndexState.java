@@ -111,6 +111,7 @@ import net.minidev.json.parser.ParseException;
 
 public class IndexState implements Closeable {
   // nocommit settingsHandler should set this
+  /** Default {@link Version} for {@code matchVersion}. */
   public Version matchVersion = Version.LUCENE_46;
 
   /** Creates directories */
@@ -142,6 +143,7 @@ public class IndexState implements Closeable {
 
   private final GlobalState globalState;
 
+  /** All live values fields. */
   public final Map<String,StringLiveFieldValues> liveFieldValues = new ConcurrentHashMap<String,StringLiveFieldValues>();
 
   /** Maps gen -> version */
@@ -150,6 +152,7 @@ public class IndexState implements Closeable {
   /** Built suggest implementations */
   public final Map<String,Lookup> suggesters = new ConcurrentHashMap<String,Lookup>();
 
+  /** All cached filters. */
   public final Map<String,CachingWrapperFilter> cachedFilters = new ConcurrentHashMap<String,CachingWrapperFilter>();
 
   /** Holds pending save state, written to state.N file on
@@ -268,6 +271,7 @@ public class IndexState implements Closeable {
 
   final SaveLoadState saveLoadState;
 
+  /** Facet indexing params. */
   public FacetIndexingParams facetIndexingParams = new FacetIndexingParams(clp);
 
   /** Enables lookup of previously used searchers, so
@@ -279,6 +283,8 @@ public class IndexState implements Closeable {
   /** Indexes changes, and provides the live searcher,
    *  possibly searching a specific generation. */
   public SearcherTaxonomyManager manager;
+
+  /** Thread to periodically reopen the index. */
   public ControlledRealTimeReopenThread<SearcherAndTaxonomy> reopenThread;
 
   /** Periodically wakes up and prunes old searchers from
@@ -290,6 +296,7 @@ public class IndexState implements Closeable {
 
   private static final Analyzer keywordAnalyzer = new KeywordAnalyzer();
 
+  /** Index-time analyzer. */
   public final Analyzer indexAnalyzer = new AnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
         @Override
         public Analyzer getWrappedAnalyzer(String name) {
@@ -313,6 +320,7 @@ public class IndexState implements Closeable {
         }
       };
 
+  /** Search-time analyzer. */
   public final Analyzer searchAnalyzer = new AnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
         @Override
         public Analyzer getWrappedAnalyzer(String name) {
@@ -352,21 +360,24 @@ public class IndexState implements Closeable {
     };
 
   /** When a search is waiting on a specific generation, we
-   *  will wait at most this many seconds before reopening */
+   *  will wait at most this many seconds before reopening
+   *  (default 50 msec). */
   volatile double minRefreshSec = .05f;
 
   /** When no searcher is waiting on a specific generation, we
    *  will wait at most this many seconds before proactively
-   * reopening */
+   *  reopening (default 1 sec). */
   volatile double maxRefreshSec = 1.0f;
 
   /** Once a searcher becomes stale (i.e., a new searcher is
-   *  opened), we will close it after this many seconds.  If
-   *  this is too small, it means that old searches returning
-   *  for a follow-on query may find their searcher pruned
-   *  (lease expired). */
+   *  opened), we will close it after this much time
+   *  (default: 60 seconds).  If this is too small, it means
+   *  that old searches returning for a follow-on query may
+   *  find their searcher pruned (lease expired). */
   volatile double maxSearcherAgeSec = 60;
 
+  /** RAM buffer size passed to {@link
+   *  IndexWriter#setRAMBufferSizeMB}. */
   volatile double indexRAMBufferSizeMB = 16;
 
   /** Holds the persistent snapshots */
@@ -375,10 +386,12 @@ public class IndexState implements Closeable {
   /** Holds the persistent taxonomy snapshots */
   public PersistentSnapshotDeletionPolicy taxoSnapshots;
 
+  /** Name of this index. */
   public final String name;
 
   private final boolean isNew;
 
+  /** Sole constructor. */
   public IndexState(GlobalState globalState, String name, File rootDir) throws Exception {
     this.globalState = globalState;
     this.name = name;
@@ -410,11 +423,19 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Context to hold state for a single indexing request. */
   public static class AddDocumentContext {
+
+    /** How many documents were added. */
     public final AtomicInteger addCount = new AtomicInteger();
+
+    /** Any indexing errors that occurred. */
     public final List<String> errors = new ArrayList<String>();
+
+    /** Which document index hit each error. */
     public final List<Integer> errorIndex = new ArrayList<Integer>();
 
+    /** Record an exception. */
     public synchronized void addException(int index, Exception e) {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw);
@@ -425,6 +446,7 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Holds state for a single document add/update. */
   class AddDocumentJob implements Callable<Long> {
     private final Term updateTerm;
     private final DocumentAndFacets doc;
@@ -433,6 +455,7 @@ public class IndexState implements Closeable {
     // Position of this document in the bulk request:
     private final int index;
 
+    /** Sole constructor. */
     public AddDocumentJob(int index, Term updateTerm, DocumentAndFacets doc, AddDocumentContext ctx) {
       this.updateTerm = updateTerm;
       this.doc = doc;
@@ -478,6 +501,10 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Retrieve the field's type.
+   *
+   *  @throws IllegalArgumentException if the field was not
+   *     registered. */
   public FieldDef getField(String fieldName) {
     FieldDef fd = fields.get(fieldName);
     if (fd == null) {
@@ -487,6 +514,12 @@ public class IndexState implements Closeable {
     return fd;
   }
 
+  /** Lookup the value of {@code paramName} in the {@link
+   *  Request} and then passes that field name to {@link
+   *  getField(String)}.
+   *
+   *  @throws IllegalArgumentException if the field was not
+   *     registered. */
   public FieldDef getField(Request r, String paramName) {
     String fieldName = r.getString(paramName);
     FieldDef fd = fields.get(fieldName);
@@ -498,6 +531,7 @@ public class IndexState implements Closeable {
     return fd;
   }
 
+  /** Returns all field names that are indexed and analyzed. */
   public List<String> getIndexedAnalyzedFields() {
     List<String> result = new ArrayList<String>();
     for(FieldDef fd : fields.values()) {
@@ -510,6 +544,7 @@ public class IndexState implements Closeable {
     return result;
   }
 
+  /** True if this index has at least one commit. */
   public boolean hasCommit() throws IOException {
     return saveLoadState.getNextWriteGen() != 0;
   }
@@ -562,6 +597,8 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** True if this generation is still referenced by at
+   *  least one snapshot. */
   public boolean hasRef(long gen) {
     synchronized(genRefCounts) {
       Integer rc = genRefCounts.get(gen);
@@ -574,6 +611,7 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Records a new field in the internal {@code fields} state. */
   public void addField(FieldDef fd, JSONObject json) {
     synchronized(fields) {
       if (fields.containsKey(fd.name)) {
@@ -588,30 +626,35 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Returns JSON representation of all registered fields. */
   public String getAllFieldsJSON() {
     synchronized(fieldsSaveState) {
       return fieldsSaveState.toString();
     }
   }
 
+  /** Returns JSON representation of all settings. */
   public String getSettingsJSON() {
     synchronized(settingsSaveState) {
       return settingsSaveState.toString();
     }
   }
 
+  /** Returns JSON representation of all live settings. */
   public String getLiveSettingsJSON() {
     synchronized(liveSettingsSaveState) {
       return liveSettingsSaveState.toString();
     }
   }
 
+  /** Records a new suggestor state. */
   public void addSuggest(String name, JSONObject o) {
     synchronized(suggestSaveState) {
       suggestSaveState.put(name, o);
     }
   }
 
+  /** Job for a single block addDocuments call. */
   class AddDocumentsJob implements Callable<Long> {
     private final Term updateTerm;
     private final Iterable<DocumentAndFacets> docs;
@@ -620,6 +663,7 @@ public class IndexState implements Closeable {
     // Position of this document in the bulk request:
     private final int index;
 
+    /** Sole constructor. */
     public AddDocumentsJob(int index, Term updateTerm, Iterable<DocumentAndFacets> docs, AddDocumentContext ctx) {
       this.updateTerm = updateTerm;
       this.docs = docs;
@@ -673,19 +717,24 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Holds a document and its facets. */
   public static class DocumentAndFacets {
     public final Document doc = new Document();
     public List<CategoryPath> facets;
   }
 
+  /** Create a new {@link AddDocumentJob}. */
   public Callable<Long> getAddDocumentJob(int index, Term term, DocumentAndFacets doc, AddDocumentContext ctx) {
     return new AddDocumentJob(index, term, doc, ctx);
   }
 
+  /** Create a new {@link AddDocumentsJob}. */
   public Callable<Long> getAddDocumentsJob(int index, Term term, Iterable<DocumentAndFacets> docs, AddDocumentContext ctx) {
     return new AddDocumentsJob(index, term, docs, ctx);
   }
 
+  /** Restarts the reopen thread (called when the live
+   *  settings have changed). */
   public void restartReopenThread() {
     // nocommit sync
     if (manager == null) {
@@ -699,6 +748,8 @@ public class IndexState implements Closeable {
     reopenThread.start();
   }
 
+  /** Fold in new settings from the incoming request into
+   *  the stored settings. */
   public synchronized void mergeSimpleSettings(Request r) {
     if (writer != null) {
       throw new IllegalStateException("index \"" + name + "\" was already started (cannot change non-live settings)");
@@ -762,10 +813,14 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** True if this index is started. */
   public boolean started() {
     return writer != null;
   }
 
+  /** Set the mininum refresh time (seconds), which is the
+   *  longest amount of time a client may wait for a
+   *  searcher to reopen. */
   public void setMinRefreshSec(double min) {
     minRefreshSec = min;
     synchronized(liveSettingsSaveState) {
@@ -774,6 +829,9 @@ public class IndexState implements Closeable {
     restartReopenThread();
   }
 
+  /** Set the maximum refresh time (seconds), which is the
+   *  amount of time before we reopen the searcher
+   *  proactively (when no search client is waiting). */
   public void setMaxRefreshSec(double max) {
     maxRefreshSec = max;
     synchronized(liveSettingsSaveState) {
@@ -782,6 +840,8 @@ public class IndexState implements Closeable {
     restartReopenThread();
   }
 
+  /** Once a searcher becomes stale, we will close it after
+   *  this many seconds. */
   public void setMaxSearcherAgeSec(double d) {
     maxSearcherAgeSec = d;
     synchronized(liveSettingsSaveState) {
@@ -789,6 +849,9 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** How much RAM to use for buffered documents during
+   *  indexing (passed to {@link
+   *  IndexWriter#setRAMBufferSizeMB}. */
   public void setIndexRAMBufferSizeMB(double d) {
     indexRAMBufferSizeMB = d;
     synchronized(liveSettingsSaveState) {
@@ -799,6 +862,8 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Record the {@link DirectoryFactory} to use for this
+   *  index. */
   public void setDirectoryFactory(DirectoryFactory df, Object saveState) {
     synchronized(settingsSaveState) {
       if (writer != null) {
@@ -811,7 +876,8 @@ public class IndexState implements Closeable {
       // two!?
     }
   }
-  
+
+  /** Get the current save state. */
   public synchronized JSONObject getSaveState() throws IOException {
     JSONObject o = new JSONObject();
     o.put("settings", settingsSaveState);
@@ -821,6 +887,7 @@ public class IndexState implements Closeable {
     return o;
   }
 
+  /** Commit all state. */
   public synchronized void commit() throws IOException {
     if (writer == null) {
       throw new IllegalStateException("index \"" + name + "\" isn't started: cannot commit");
@@ -835,6 +902,7 @@ public class IndexState implements Closeable {
     //System.out.println("DONE saveLoadState.save: " + Arrays.toString(new File(rootDir, "state").listFiles()));
   }
 
+  /** Load all previously saved state. */
   public synchronized void load(JSONObject o) throws Exception {
     // Global settings:
     JSONObject settingsState = (JSONObject) o.get("settings");
@@ -869,9 +937,11 @@ public class IndexState implements Closeable {
     ((BuildSuggestHandler) globalState.getHandler("buildSuggest")).load(this, (JSONObject) o.get("suggest"));
   }
 
+  /** Prunes stale searchers. */
   private class SearcherPruningThread extends Thread {
     private final CountDownLatch shutdownNow;
 
+    /** Sole constructor. */
     public SearcherPruningThread(CountDownLatch shutdownNow) {
       this.shutdownNow = shutdownNow;
     }
@@ -942,6 +1012,7 @@ public class IndexState implements Closeable {
     return (Boolean) o;
   }
 
+  /** Start this index. */
   public synchronized void start() throws IOException {
     if (writer != null) {
       // throw new IllegalStateException("index \"" + name + "\" was already started");
@@ -1093,12 +1164,14 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Start the searcher pruning thread. */
   public void startSearcherPruningThread(CountDownLatch shutdownNow) {
     searcherPruningThread = new SearcherPruningThread(shutdownNow);
     searcherPruningThread.setName("LuceneSearcherPruning-" + name);
     searcherPruningThread.start();
   }
 
+  /** String -> UTF8 byte[]. */
   public static byte[] toUTF8(String s) {
     CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
     // Make sure we catch any invalid UTF16:
@@ -1115,6 +1188,7 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** UTF8 byte[] -> String. */
   public static String fromUTF8(byte[] bytes) {
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
     // Make sure we catch any invalid UTF8:
@@ -1127,6 +1201,7 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** UTF8 byte[], offset, length -> char[]. */
   public static char[] utf8ToCharArray(byte[] bytes, int offset, int length) {
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
     // Make sure we catch any invalid UTF8:
@@ -1145,10 +1220,14 @@ public class IndexState implements Closeable {
 
   private final static Pattern reSimpleName = Pattern.compile("^[a-zA-Z_][a-zA-Z_0-9]*$");
 
+  /** Verifies this name doesn't use any "exotic"
+   *  characters. */
   public static boolean isSimpleName(String name) {
     return reSimpleName.matcher(name).matches();
   }
 
+  /** Find the most recent generation in the directory for
+   *  this prefix. */
   public static long getLastGen(File dir, String prefix) {
     assert isSimpleName(prefix);
     prefix += '.';
@@ -1187,17 +1266,29 @@ public class IndexState implements Closeable {
     }
   }
 
+  /** Delete this index. */
   public void deleteIndex() throws IOException {
     deleteAllFiles(rootDir);
     globalState.deleteIndex(name);
   }
 
+  /** Holds metadata for one snapshot, including its id, and
+   *  the index, taxonomy and state generations. */
   public static class Gens {
+
+    /** Index generation. */
     public final long indexGen;
+
+    /** Taxonomy index generation. */
     public final long taxoGen;
+
+    /** State generation. */
     public final long stateGen;
+
+    /** Snapshot id. */
     public final String id;
 
+    /** Sole constructor. */
     public Gens(Request r, String param) {
       id = r.getString(param);
       final String[] gens = id.split(":");

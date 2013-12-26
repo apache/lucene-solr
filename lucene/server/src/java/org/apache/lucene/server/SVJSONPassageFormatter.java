@@ -25,10 +25,16 @@ import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+// nocommit move something like this to Lucene?
+
+/** Formats highlight hits for single-valued fields,
+ *  trimming snippets that are too large at word
+ *  boundaries. */
 public class SVJSONPassageFormatter extends PassageFormatter {
   private final int maxSnippetLength;
   private final BreakIterator wordBI = BreakIterator.getWordInstance(Locale.ROOT);
 
+  /** Sole constructor. */
   public SVJSONPassageFormatter(int maxSnippetLength) {
     this.maxSnippetLength = maxSnippetLength;
   }

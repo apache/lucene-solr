@@ -38,8 +38,10 @@ import net.minidev.json.JSONObject;
 import static org.apache.lucene.server.IndexState.AddDocumentContext;
 import static org.apache.lucene.server.IndexState.DocumentAndFacets;
 
+/** Handles {@code bulkUpdateDocument}. */
 public class BulkUpdateDocumentHandler extends Handler {
 
+  /** {@link StructType} for update document. */
   public final static StructType UPDATE_DOCUMENT_TYPE =  new StructType(
                                                  new Param("term", "Identifies which document to replace", 
                                                      new StructType(
@@ -55,6 +57,7 @@ public class BulkUpdateDocumentHandler extends Handler {
                                      new Param("documents", "List of documents",
                                          new ListType(UPDATE_DOCUMENT_TYPE)));
 
+  /** Sole constructor. */
   public BulkUpdateDocumentHandler(GlobalState state) {
     super(state);
   }
@@ -71,7 +74,7 @@ public class BulkUpdateDocumentHandler extends Handler {
 
   @Override
   public String getTopDoc() {
-    return "Update more than one document in a single connection.  Each document should be its own JSON struct, matching @updateDocument, and then there must one whitespace character separating each document.  Returns the index generation (indexGen) that contains all updated documents.";
+    return "Update more than one document in a single HTTP connection.  Each document should be its own JSON struct, matching @updateDocument, and then there must one whitespace character separating each document.  Returns the index generation (indexGen) that contains all updated documents.";
   }
 
   @Override

@@ -29,6 +29,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
+/** Handles {@code addDocuments}. */
 public class AddDocumentsHandler extends Handler {
 
   final static StructType TYPE = new StructType(
@@ -48,6 +49,7 @@ public class AddDocumentsHandler extends Handler {
     return "Adds one document block (= single parent and multiple children) to the index.  This can be used for block grouping and block joins.  Returns the index generation (indexGen) that contains this added document block.";
   }
 
+  /** Sole constructor. */
   public AddDocumentsHandler(GlobalState state) {
     super(state);
   }

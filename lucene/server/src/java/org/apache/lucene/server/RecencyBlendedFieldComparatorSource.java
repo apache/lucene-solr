@@ -24,8 +24,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 
-/** Sorts by score blended with recency, by looking at a
- *  separate timestamp field. */
+/** Sorts by score blended with recency, pulling values from
+ *  a separate numeric doc values timestamp field. */
 
 public class RecencyBlendedFieldComparatorSource extends FieldComparatorSource {
   final String timeStampFieldName;

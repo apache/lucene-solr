@@ -24,15 +24,25 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 
+/** Extends {@link IndexSearcher}, adding state and public
+ *  methods. */
 public class MyIndexSearcher extends IndexSearcher {
 
+  /** Cache to hold top-level (pure browse) facet counts. */
   public final TopFacetsCache topFacetsCache;
 
+  /** Sole constructor. */
   public MyIndexSearcher(IndexReader r) {
     super(r);
     topFacetsCache = new TopFacetsCache();
   }
 
+  // nocommit ugly that we need to do this, to handle the
+  // in order vs out of order chicken/egg issue:
+
+  /** Runs a search, from a provided {@link Weight} and
+   *  {@link Collector}; this method is not public in
+   *  {@link IndexSearcher}. */
   public void search(Weight w, Collector c) throws IOException {
     super.search(getIndexReader().leaves(), w, c);
   }
