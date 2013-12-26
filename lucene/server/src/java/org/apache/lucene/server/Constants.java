@@ -28,6 +28,6 @@ public class Constants {
   /** Used to join multi-valued fields. */
   public static final char INFORMATION_SEP = '\u001f';
 
-  /** Regexp version of {@link INFORMATION_SEP}. */
+  /** Regexp version of {@link #INFORMATION_SEP}. */
   public static final String INFORMATION_SEP_REGEX = Pattern.quote(Character.toString(INFORMATION_SEP));
 }

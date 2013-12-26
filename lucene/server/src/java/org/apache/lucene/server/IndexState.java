@@ -377,7 +377,7 @@ public class IndexState implements Closeable {
   volatile double maxSearcherAgeSec = 60;
 
   /** RAM buffer size passed to {@link
-   *  IndexWriter#setRAMBufferSizeMB}. */
+   *  IndexWriterConfig#setRAMBufferSizeMB}. */
   volatile double indexRAMBufferSizeMB = 16;
 
   /** Holds the persistent snapshots */
@@ -516,7 +516,7 @@ public class IndexState implements Closeable {
 
   /** Lookup the value of {@code paramName} in the {@link
    *  Request} and then passes that field name to {@link
-   *  getField(String)}.
+   *  #getField(String)}.
    *
    *  @throws IllegalArgumentException if the field was not
    *     registered. */
@@ -723,12 +723,12 @@ public class IndexState implements Closeable {
     public List<CategoryPath> facets;
   }
 
-  /** Create a new {@link AddDocumentJob}. */
+  /** Create a new {@code AddDocumentJob}. */
   public Callable<Long> getAddDocumentJob(int index, Term term, DocumentAndFacets doc, AddDocumentContext ctx) {
     return new AddDocumentJob(index, term, doc, ctx);
   }
 
-  /** Create a new {@link AddDocumentsJob}. */
+  /** Create a new {@code AddDocumentsJob}. */
   public Callable<Long> getAddDocumentsJob(int index, Term term, Iterable<DocumentAndFacets> docs, AddDocumentContext ctx) {
     return new AddDocumentsJob(index, term, docs, ctx);
   }
@@ -851,7 +851,7 @@ public class IndexState implements Closeable {
 
   /** How much RAM to use for buffered documents during
    *  indexing (passed to {@link
-   *  IndexWriter#setRAMBufferSizeMB}. */
+   *  IndexWriterConfig#setRAMBufferSizeMB}. */
   public void setIndexRAMBufferSizeMB(double d) {
     indexRAMBufferSizeMB = d;
     synchronized(liveSettingsSaveState) {
