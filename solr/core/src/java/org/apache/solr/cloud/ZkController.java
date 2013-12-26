@@ -477,10 +477,7 @@ public final class ZkController {
       host = "http://" + hostaddress;
     } else {
       Matcher m = URL_PREFIX.matcher(host);
-      if (m.matches()) {
-        String prefix = m.group(1);
-        host = prefix + host;
-      } else {
+      if (!m.matches()) {
         host = "http://" + host;
       }
     }

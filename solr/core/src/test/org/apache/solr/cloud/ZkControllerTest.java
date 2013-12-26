@@ -32,9 +32,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 @Slow
 public class ZkControllerTest extends SolrTestCaseJ4 {
@@ -253,6 +255,46 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
 
+  }
+
+  @Test
+  public void testGetHostName() throws Exception {
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+    CoreContainer cc = null;
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      cc = getCoreContainer();
+      ZkController zkController = null;
+
+      try {
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
+            "http://127.0.0.1", "8983", "solr", 0, true, new CurrentCoreDescriptorProvider() {
+
+          @Override
+          public List<CoreDescriptor> getCurrentDescriptors() {
+            // do nothing
+            return null;
+          }
+        });
+      } catch (IllegalArgumentException e) {
+        fail("ZkController did not normalize host name correctly");
+      } finally {
+        if (zkController != null)
+          zkController.close();
+      }
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+      server.shutdown();
+    }
   }
 
   private CoreContainer getCoreContainer() {
