@@ -213,6 +213,9 @@ Bug Fixes
 
 * SOLR-5562: ConcurrentUpdateSolrServer constructor ignores supplied httpclient.
   (Kyle Halliday via Mark Miller)
+
+* SOLR-5567: ZkController getHostAddress duplicates url prefix.
+  (Kyle Halliday, Alexey Serba, shalin)
   
 Optimizations
 ----------------------
