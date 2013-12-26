@@ -62,7 +62,6 @@ public class TestPlugins extends ServerBaseTestCase {
   @AfterClass
   public static void fini() throws Exception {
     shutdownServer();
-    System.clearProperty("sun.nio.ch.bugLevel"); // hack WTF
   }
 
 

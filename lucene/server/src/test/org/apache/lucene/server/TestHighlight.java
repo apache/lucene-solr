@@ -40,7 +40,6 @@ public class TestHighlight extends ServerBaseTestCase {
   @AfterClass
   public static void fini() throws Exception {
     shutdownServer();
-    System.clearProperty("sun.nio.ch.bugLevel"); // hack WTF
   }
 
   private static void registerFields() throws Exception {

@@ -39,17 +39,25 @@ import org.apache.lucene.util._TestUtil;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
+import org.junit.AfterClass;
+
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyle;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
-public class ServerBaseTestCase extends LuceneTestCase {
+public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   private static Thread serverThread;
 
   static int port;
+  
+  @AfterClass
+  public static void afterClassServerBase() throws Exception {
+    // who sets this? netty? what a piece of crap
+    System.clearProperty("sun.nio.ch.bugLevel");
+  }
 
   protected static void clearDir() throws IOException {
     _TestUtil.rmDir(new File("test"));
