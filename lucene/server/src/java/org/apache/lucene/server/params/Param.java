@@ -17,12 +17,22 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Represents one paramater to a method. */
 public class Param {
+
+  /** Name. */
   public final String name;
+
+  /** Description (English). */
   public final String desc;
+
+  /** Type description. */
   public final Type type;
+
+  /** Default value; if null the parameter is required. */
   public final Object defaultValue;
 
+  /** Creates this, with a default value. */
   public Param(String name, String desc, Type type, Object defaultValue) {
     this.name = name;
     this.desc = desc;
@@ -33,6 +43,7 @@ public class Param {
     }
   }
 
+  /** Creates this, with no default value. */
   public Param(String name, String desc, Type type) {
     this(name, desc, type, null);
   }

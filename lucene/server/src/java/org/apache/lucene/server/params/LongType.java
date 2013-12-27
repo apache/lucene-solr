@@ -17,6 +17,7 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Type for a long. */
 public class LongType extends Type {
 
   @Override

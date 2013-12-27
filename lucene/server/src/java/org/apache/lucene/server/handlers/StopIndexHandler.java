@@ -29,6 +29,7 @@ import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 
+/** Handles {@code stopIndex}. */
 public class StopIndexHandler extends Handler {
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()));
@@ -43,6 +44,7 @@ public class StopIndexHandler extends Handler {
     return "Stops an index";
   }
 
+  /** Sole constructor. */
   public StopIndexHandler(GlobalState state) {
     super(state);
   }

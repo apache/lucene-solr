@@ -32,6 +32,7 @@ import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code startIndex}. */
 public class StartIndexHandler extends Handler {
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()));
@@ -46,6 +47,7 @@ public class StartIndexHandler extends Handler {
     return "Starts an index";
   }
 
+  /** Sole constructor. */
   public StartIndexHandler(GlobalState state) {
     super(state);
   }

@@ -29,6 +29,7 @@ import org.apache.lucene.server.params.Request;
 import org.apache.lucene.server.params.StringType; 
 import org.apache.lucene.server.params.StructType; 
 
+/** Handles {@code releaseSnapshot}. */
 public class ReleaseSnapshotHandler extends Handler {
 
   final static StructType TYPE = new StructType(  
@@ -45,6 +46,7 @@ public class ReleaseSnapshotHandler extends Handler {
     return TYPE;
   }
 
+  /** Sole constructor. */
   public ReleaseSnapshotHandler(GlobalState state) {
     super(state);
   }

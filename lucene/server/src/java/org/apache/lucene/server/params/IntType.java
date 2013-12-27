@@ -17,6 +17,7 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Type for an integer. */
 public class IntType extends Type {
 
   @Override

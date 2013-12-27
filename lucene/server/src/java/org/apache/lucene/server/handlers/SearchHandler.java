@@ -126,6 +126,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
+/** Handles {@code search}. */
 public class SearchHandler extends Handler {
 
   /** If a browse-only facet request asks for more than this
@@ -393,6 +394,7 @@ public class SearchHandler extends Handler {
     return TYPE;
   }
 
+  /** Sole constructor. */
   public SearchHandler(GlobalState state) {
     super(state);
   }
@@ -867,6 +869,7 @@ public class SearchHandler extends Handler {
     return sorted;
   }
 
+  /** Records configuration for a block join query. */
   static class BlockJoinQueryChild {
     public Sort sort;
     public int maxChildren;
@@ -1244,10 +1247,19 @@ public class SearchHandler extends Handler {
     }
   }
 
+  /** Highlight configuration. */
   static class FieldHighlightConfig {
+    /** Number of passages. */
     public int maxPassages = -1;
+
+    // nocommit use enum:
+    /** Snippet or whole. */
     public String mode;
+
+    /** True if field is single valued. */
     public boolean singleValued;
+
+    /** {@link BreakIterator} to use. */
     public BreakIterator breakIterator;
   }
 
@@ -2413,6 +2425,7 @@ public class SearchHandler extends Handler {
     };
   }
 
+  /** Parses the {@link Request} into a {@link Locale}. */
   public static Locale getLocale(Request r) {
     Locale locale;
     if (!r.hasParam("variant")) {

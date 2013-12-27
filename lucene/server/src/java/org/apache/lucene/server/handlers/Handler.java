@@ -34,10 +34,13 @@ import org.apache.lucene.server.params.*;
 
 public abstract class Handler {
 
-  /** Processes request into a FinishRequest, which is then
+  /** Processes request into a {@link FinishRequest}, which is then
    *  invoked to actually make changes.  We do this two-step
    *  process so that we can fail if there are unhandled
-   *  params, without having made any changes to the index. */
+   *  params, without having made any changes to the
+   *  index.  When this returns, it must have retrieved all
+   *  parameters it needs to use from the provided {@link
+   *  Request}. */
   public abstract FinishRequest handle(IndexState state, Request request, Map<String,List<String>> params) throws Exception;
 
   /** Returns the {@link StructType} describing the
@@ -45,7 +48,7 @@ public abstract class Handler {
   public abstract StructType getType();
 
   /** Returns the brief summary documentation for this
-   *  method. */
+   *  method (English). */
   public abstract String getTopDoc();
 
   /** The {@link GlobalState} instance. */

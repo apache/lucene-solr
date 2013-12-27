@@ -32,6 +32,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
+/** Handles {@code updateDocument}. */
 public class UpdateDocumentHandler extends Handler {
   final StructType TYPE = new StructType(
                                new Param("indexName", "Index Name", new StringType()),
@@ -50,6 +51,7 @@ public class UpdateDocumentHandler extends Handler {
     return "Replaces one document in the index.  Returns the index generation (indexGen) that contains this added document.";
   }
 
+  /** Sole constructor. */
   public UpdateDocumentHandler(GlobalState state) {
     super(state);
     TYPE.params.putAll(AddDocumentHandler.DOCUMENT_TYPE.params);

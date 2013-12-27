@@ -17,6 +17,7 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Type for booleans. */
 public class BooleanType extends Type {
 
   @Override

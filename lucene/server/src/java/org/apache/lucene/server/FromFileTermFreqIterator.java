@@ -28,7 +28,7 @@ import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 
 /** An {@link InputIterator} that pulls from a line file,
- *  using \u001f to join the suggestion, weight and payload. */
+ *  using U+001f to join the suggestion, weight and payload. */
 public class FromFileTermFreqIterator implements InputIterator, Closeable {
   private final BufferedReader reader;
   private long weight;

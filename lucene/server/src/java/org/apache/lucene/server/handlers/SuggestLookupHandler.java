@@ -32,6 +32,7 @@ import org.apache.lucene.server.params.*;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code suggestLookup}. */
 public class SuggestLookupHandler extends Handler {
 
   private final static StructType TYPE =
@@ -54,6 +55,7 @@ public class SuggestLookupHandler extends Handler {
     return "Perform an auto-suggest lookup.";
   }
 
+  /** Sole constructor. */
   public SuggestLookupHandler(GlobalState state) {
     super(state);
   }

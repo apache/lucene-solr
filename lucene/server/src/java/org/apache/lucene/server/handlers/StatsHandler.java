@@ -38,6 +38,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+/** Handles {@code stats}. */
 public class StatsHandler extends Handler {
 
   StructType TYPE = new StructType(new Param("indexName", "Index name", new StringType()));
@@ -52,6 +53,7 @@ public class StatsHandler extends Handler {
     return TYPE;
   }
 
+  /** Sole constructor. */
   public StatsHandler(GlobalState state) {
     super(state);
   }

@@ -19,11 +19,16 @@ package org.apache.lucene.server.params;
 
 import java.util.Arrays;
 
+/** Type for an enumeration. */
 public class EnumType extends Type {
-  // value, desc, value, desc, ...:
+  /** Enum labels. */
   final String[] values;
+
+  /** Enum descriptions (English). */
   final String[] descriptions;
 
+  /** Sole constructor, values is alternating label1,
+   *  desc1, label2, desc2, ... */
   public EnumType(String ... values) {
     if ((values.length & 1) != 0) {
       throw new IllegalArgumentException("input must be value/desc pairs");
@@ -41,6 +46,7 @@ public class EnumType extends Type {
     if (!(o instanceof String)) {
       throw new IllegalArgumentException("expected String but got " + o.getClass());
     }
+    // nocommit use Set?
     for(int i=0;i<values.length;i++) {
       if (o.equals(values[i])) {
         return;

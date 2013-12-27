@@ -17,9 +17,11 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Type that accepts any of the provided list of types. */
 public class OrType extends Type {
   public final Type[] types;
 
+  /** Sole constructor. */
   public OrType(Type... types) {
     this.types = types;
   }

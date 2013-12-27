@@ -719,7 +719,10 @@ public class IndexState implements Closeable {
 
   /** Holds a document and its facets. */
   public static class DocumentAndFacets {
+    /** Document. */
     public final Document doc = new Document();
+
+    /** Facets. */
     public List<CategoryPath> facets;
   }
 
@@ -857,7 +860,11 @@ public class IndexState implements Closeable {
     synchronized(liveSettingsSaveState) {
       liveSettingsSaveState.put("indexRAMBufferSizeMB", d);
     }
+
+    // nocommit sync: what if closeIndex is happening in
+    // another thread:
     if (writer != null) {
+      // Propogate the change to the open IndexWriter
       writer.getIndexWriter().getConfig().setRAMBufferSizeMB(d);
     }
   }
@@ -879,6 +886,8 @@ public class IndexState implements Closeable {
 
   /** Get the current save state. */
   public synchronized JSONObject getSaveState() throws IOException {
+    // nocommit this is the wrong sync (the setters all sync
+    // on each individually)
     JSONObject o = new JSONObject();
     o.put("settings", settingsSaveState);
     o.put("liveSettings", liveSettingsSaveState);
@@ -892,9 +901,10 @@ public class IndexState implements Closeable {
     if (writer == null) {
       throw new IllegalStateException("index \"" + name + "\" isn't started: cannot commit");
     }
-    // hmm: two phase commit?
-    writer.getIndexWriter().commit();
+
+    // nocommit: two phase commit?
     taxoWriter.commit();
+    writer.getIndexWriter().commit();
 
     JSONObject saveState = new JSONObject();
     saveState.put("state", getSaveState());

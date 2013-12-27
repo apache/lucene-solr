@@ -21,33 +21,43 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Allows one parameter in a struct (usually named class)
- *  to define/refine the type of the struct (like
- *  polymorphism). For example, this is used for a generic
- *  "similarity": the "class" param will specify a concrete
- *  class (DefaultSim, BM25Sim, etc.), and switch the struct
- *  to other types (because each sim impl takes different
- *  params) based on that.  */
+ *  to define/refine the type of the struct.  For example,
+ *  this is used for a generic "similarity": the "class"
+ *  param will specify a concrete class (DefaultSim,
+ *  BM25Sim, etc.), and switch the struct to other types
+ *  (because each sim impl takes different params) based on
+ *  that. */
 
 @SuppressWarnings("rawtypes")
 public class PolyType extends Type {
 
+  /** Maps parameter name to the {@link PolyEntry}
+   *  describing the sub type. */
   public final Map<String,PolyEntry> types = new HashMap<String,PolyEntry>();
 
-  // NOTE: not yet used but ... could be used in the future
-  // to allow custom (plugin) classes to be accepted
+  /** Not yet used but ... could be used in the future
+   *  to allow custom (plugin) classes to be accepted. */
   public final Class baseClass;
 
+  /** Describes one sub type. */
   public static class PolyEntry {
+
+    /** Name of the sub-type, e.g. BM25Similarity. */
     public final String name;
+
+    /** Defines the sub type. */
     public final StructType type;
+
+    /** Description of this entry (English). */
     public final String desc;
 
+    /** Creates this, folding the provided params into a
+     *  new {@link StructType}. */
     public PolyEntry(String name, String desc, Param... params) {
-      this.name = name;
-      this.desc = desc;
-      this.type = new StructType(params);
+      this(name, desc, new StructType(params));
     }
 
+    /** Creates this. */
     public PolyEntry(String name, String desc, StructType type) {
       this.name = name;
       this.desc = desc;
@@ -59,6 +69,7 @@ public class PolyType extends Type {
   public void validate(Object o) {
   }
 
+  /** Sole constructor. */
   public PolyType(Class baseClass, PolyEntry... entries) {
     this.baseClass = baseClass;
     for(PolyEntry e : entries) {

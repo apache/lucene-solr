@@ -17,6 +17,7 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Accepts any object. */
 public class AnyType extends Type {
 
   @Override

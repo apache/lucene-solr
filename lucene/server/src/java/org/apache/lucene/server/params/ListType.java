@@ -19,9 +19,11 @@ package org.apache.lucene.server.params;
 
 import java.util.List;
 
+/** Type for a list of items of fixed subType. */
 public class ListType extends Type {
   public final Type subType;
 
+  /** Sole constructor. */
   public ListType(Type subType) {
     this.subType = subType;
   }
@@ -36,6 +38,7 @@ public class ListType extends Type {
     }
   }
 
+  /** Returns item subType. */
   public Type getSubType() {
     return subType;
   }

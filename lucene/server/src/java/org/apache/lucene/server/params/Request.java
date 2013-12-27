@@ -26,18 +26,35 @@ import org.apache.lucene.server.params.PolyType.PolyEntry;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
-/** Just pairs up the actual request with its type. */
+// nocommit instead of removing as we getXXX, we could do a
+// Set<String> seen?
+
+/** Pairs up the actual parameters with its type.  For
+ *  complex requests, e.g. {@code search}, this is used
+ *  recursively.  For example, the top-most Request is
+ *  created, but then when a sub-struct parameter is
+ *  retrieved with {@link #getStruct}, that returns another
+ *  {@code Request} wrapping that value. */
+
 public class Request {
 
-  // Type describing the expected object
+  /** Type describing the expected object. */
   private final StructType type;
 
-  // A particular request:
+  /** The actual request parameters. */
   private final JSONObject params;
 
+  /** Parent, if this is a sub Request, else null for the
+   *  top-level request.  This is used for back-trace for
+   *  error reporting. */
   private final Request parent;
+
+  /** Our parameter name from our parent, or null if we are
+   *  a top request.  This is used for back-trace for error
+   *  reporting. */
   private final String name;
 
+  /** Sole constructor. */
   public Request(Request parent, String name, JSONObject params, StructType type) {
     this.params = params;
     this.type = type;
@@ -45,41 +62,48 @@ public class Request {
     this.name = name;
   }
 
+  /** Clears all parameters. */
   public void clearParams() {
     params.clear();
   }
 
+  /** Clear a specific parameter. */
   public void clearParam(String param) {
     params.remove(param);
   }
 
+  /** Get the type for this request. */
   public StructType getType() {
     return type;
   }
 
-  // nocommit remove after full cutover to PolyType
-  public Request newType(StructType otherType) {
-    return new Request(parent, name, params, otherType);
-  }
-
+  /** True if this param was specified. */
   public boolean hasParam(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
     return params.containsKey(name);
   }
 
+  /** Returns an iterator over all parameters and their
+   *  values. */
   public Iterator<Map.Entry<String,Object>> getParams() {
     return params.entrySet().iterator();
   }
 
+  /** Returns the parameters. */
   public JSONObject getRawParams() {
     return params;
   }
 
+  @Override
   public String toString() {
     return params.toString();
   }
 
+  /** Returns the raw (un type cast) value for this
+   *  parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter.*/
   public Object getAny(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -103,6 +127,9 @@ public class Request {
     }
   }
 
+  /** Retrieve a boolean parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public boolean getBoolean(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -130,6 +157,9 @@ public class Request {
     }
   }
 
+  /** Retrieve a float parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public float getFloat(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -157,6 +187,9 @@ public class Request {
     }
   }
 
+  /** Retrieve an int parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public int getInt(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -183,6 +216,9 @@ public class Request {
     }
   }
 
+  /** Retrieve a long parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public long getLong(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -209,10 +245,10 @@ public class Request {
     }
   }
 
+  /** True if the parameter is a string value. */
   public boolean isString(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
-    //assert p.type instanceof StringType: "name \"" + name + "\" is not StringType: got " + p.type;
     Object v = params.get(name);
     return v instanceof String;
   }
@@ -221,6 +257,9 @@ public class Request {
   // here ... maybe we need isEnumValue(name, X)?  having
   // else/if chain in the code can hide a sneaky bug
 
+  /** Retrieve a string parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public String getString(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -247,7 +286,14 @@ public class Request {
     }
   }
 
+  /** Retrieve an enum parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public String getEnum(String name) {
+    // nocommit bad that enum values is not strongly typed
+    // here ... maybe we need isEnumValue(name, X)?  having
+    // else/if chain in the code can hide a sneaky bug
+
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
     assert p.type instanceof EnumType: "name \"" + name + "\" is not EnumType: got " + p.type;
@@ -274,16 +320,24 @@ public class Request {
     }
   }
 
+  /** A result returned from {@link #getPoly}. */
   public static class PolyResult {
+    /** The name of the poly parameter. */
     public final String name;
+
+    /** The new request, cast to the poly sub type */
     public final Request r;
 
+    /** Sole constructor. */
     PolyResult(String name, Request r) {
       this.name = name;
       this.r = r;
     }
   }
 
+  /** Retrieve a poly typed parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
   public PolyResult getPoly(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
@@ -305,14 +359,19 @@ public class Request {
         fail(name, "unrecognized value \"" + value + "\"; must be one of: " + pt.types.keySet());
       }
       params.remove(name);
-      return new PolyResult((String) v, newType(sub.type));
+      return new PolyResult((String) v, new Request(parent, name, params, sub.type));
     }
   }
 
+  /** Retrieve the raw object for a parameter, or null if
+   *  the parameter was not specified.  This can be called
+   *  multiple types for a given parameter. */
   public Object getRaw(String name) {
     return params.get(name);
   }
 
+  /** Retrieve a struct parameter.  This can be called
+   *  multiple times for a given parameter name. */
   public Request getStruct(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter; valid params=" + type.params.keySet() + "; path=" + getPath();
@@ -346,6 +405,9 @@ public class Request {
       if (!(v instanceof JSONObject)) {
         fail(name, "expected Object but got " + v.getClass());
       }
+
+      // nocommit does this mean we fail to detect when a
+      // whole extra struct was specified
 
       // Don't remove, so that we can recurse and make sure
       // all structs had all their params visited too

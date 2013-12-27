@@ -26,8 +26,10 @@ import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 
+/** Handles {@code shutdown}. */
 public class ShutdownHandler extends Handler {
 
+  /** Sole constructor. */
   public ShutdownHandler(GlobalState globalState) {
     super(globalState);
     requiresIndexName = false;

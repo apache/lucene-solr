@@ -17,10 +17,15 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Base class for al types. */
 public abstract class Type {
 
+  /** Sole constructor. */
   protected Type() {
   }
 
+  /** Confirms that the object is a valid item matching the
+   *  type; if it is not, throw {@code
+   *  IllegalArgumentException}. */
   public abstract void validate(Object o);
 }
