@@ -105,13 +105,8 @@ public class SolrIndexSplitter {
     // - need to worry about if IW.addIndexes does a sync or not...
     // - would be more efficient on the read side, but prob less efficient merging
 
-    IndexReader[] subReaders = new IndexReader[leaves.size()];
     for (int partitionNumber=0; partitionNumber<numPieces; partitionNumber++) {
-      log.info("SolrIndexSplitter: partition #" + partitionNumber + (ranges != null ? " range=" + ranges.get(partitionNumber) : ""));
-
-      for (int segmentNumber = 0; segmentNumber<subReaders.length; segmentNumber++) {
-        subReaders[segmentNumber] = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
-      }
+      log.info("SolrIndexSplitter: partition #" + partitionNumber + " partitionCount=" + numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : ""));
 
       boolean success = false;
 
@@ -130,8 +125,12 @@ public class SolrIndexSplitter {
       }
 
       try {
-        // This merges the subreaders and will thus remove deletions (i.e. no optimize needed)
-        iw.addIndexes(subReaders);
+        // This removes deletions but optimize might still be needed because sub-shards will have the same number of segments as the parent shard.
+        for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
+          log.info("SolrIndexSplitter: partition #" + partitionNumber + " partitionCount=" + numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "") + " segment #"+segmentNumber + " segmentCount=" + leaves.size());
+          IndexReader subReader = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
+          iw.addIndexes(subReader);
+        }
         success = true;
       } finally {
         if (iwRef != null) {
