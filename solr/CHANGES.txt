@@ -236,6 +236,9 @@ Optimizations
 * SOLR-2960: fix DIH XPathEntityProcessor to add the correct number of "null"
   placeholders for multi-valued fields (Michael Watts via James Dyer)
 
+* SOLR-5214: Reduce memory usage for shard splitting by merging segments one
+  at a time. (Christine Poerschke via shalin)
+
 Other Changes
 ---------------------
 
