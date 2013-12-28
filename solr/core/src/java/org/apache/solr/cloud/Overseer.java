@@ -442,18 +442,10 @@ public class Overseer {
             // if coreNodeName is null, auto assign one
             coreNodeName = Assign.assignNode(collection, state);
           }
-          message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
-        } else {
-          //probably, this core was removed explicitly
-          if (sliceName !=null && collectionExists &&  !"true".equals(state.getCollection(collection).getStr("autoCreated"))) {
-            Slice slice = state.getSlice(collection, sliceName);
-            if (slice.getReplica(coreNodeName) == null) {
-              log.info("core_deleted . Just return");
-              return state;
-            }
-          }
-
+          message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
+              coreNodeName);
         }
+
         // use the provided non null shardId
         if (sliceName == null) {
           //get shardId from ClusterState

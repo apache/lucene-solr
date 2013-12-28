@@ -302,6 +302,9 @@ Bug Fixes
   webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
   Mark Miller)
 
+* SOLR-5580: NPE when creating a core with both explicit shard and coreNodeName.
+  (YouPeng Yang, Mark Miller)
+
 Optimizations
 ----------------------
 
