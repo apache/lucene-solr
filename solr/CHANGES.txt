@@ -149,9 +149,6 @@ Bug Fixes
 * SOLR-5461: Request proxying should only set con.setDoOutput(true) if the
   request is a post. (Mark Miller)
 
-* SOLR-5479: SolrCmdDistributor retry logic stops if a leader for the request 
-  cannot be found in 1 second. (Mark Miller)
-
 * SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
   retries. (Mark Miller)
 
@@ -305,6 +302,9 @@ Bug Fixes
 * SOLR-5445: Proxied responses should propagate all headers rather than the 
   first one for each key. (Patrick Hunt, Mark Miller) 
 
+* SOLR-5479: SolrCmdDistributor retry logic stops if a leader for the request 
+  cannot be found in 1 second. (Mark Miller)
+  
 ==================  4.6.0 ==================
 
 Versions of Major Components
