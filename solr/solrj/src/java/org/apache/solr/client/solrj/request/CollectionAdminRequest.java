@@ -197,7 +197,7 @@ public class CollectionAdminRequest extends SolrRequest
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set( "collections", collection );
+      params.set( "collections", aliasedCollections );
       return params;
     }
 
