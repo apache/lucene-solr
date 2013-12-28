@@ -290,7 +290,6 @@ public final class ZkController {
       // before registering as live, make sure everyone is in a
       // down state
       for (CoreDescriptor descriptor : descriptors) {
-        final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
         try {
           descriptor.getCloudDescriptor().setLeader(false);
           publish(descriptor, ZkStateReader.DOWN, updateLastPublished);
@@ -310,7 +309,9 @@ public final class ZkController {
             continue;
           }
         }
+      }
         
+      for (CoreDescriptor descriptor : descriptors) {
         // if it looks like we are going to be the leader, we don't
         // want to wait for the following stuff
         CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
@@ -324,19 +325,23 @@ public final class ZkController {
                   ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
                       + "/leader_elect/" + slice + "/election", null, true).size();
           if (children == 0) {
-            return;
+            log.debug("looks like we are going to be the leader for collection {} shard {}", collection, slice);
+            continue;
           }
 
         } catch (NoNodeException e) {
-         return;
+          log.debug("looks like we are going to be the leader for collection {} shard {}", collection, slice);
+          continue;
         } catch (InterruptedException e2) {
           Thread.currentThread().interrupt();
         } catch (KeeperException e) {
           log.warn("", e);
           Thread.currentThread().interrupt();
         }
-        
+
+        final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
         try {
+          log.debug("calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}", new Object[] {coreZkNodeName,  collection, slice});
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
           SolrException.log(log, "", e);
