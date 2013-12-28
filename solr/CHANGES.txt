@@ -138,12 +138,6 @@ Bug Fixes
 * SOLR-5438: DebugComponent throws NPE when used with grouping.
   (Tomás Fernández Löbbe via shalin)
 
-* SOLR-5442: Python client cannot parse proxied response when served by Tomcat.
-  (Patrick Hunt, Gregory Chanan, Vamsee Yarlagadda, Romain Rigaux, Mark Miller)
-
-* SOLR-5445: Proxied responses should propagate all headers rather than the 
-  first one for each key. (Patrick Hunt, Mark Miller) 
-
 * SOLR-4612: Admin UI - Analysis Screen contains empty table-columns (steffkes)
 
 * SOLR-5451: SyncStrategy closes it's http connection manager before the
@@ -305,6 +299,11 @@ Bug Fixes
 
 * SOLR-5416: CollapsingQParserPlugin breaks Tag/Exclude Faceting (David Boychuck, Joel Bernstein)
 
+* SOLR-5442: Python client cannot parse proxied response when served by Tomcat.
+  (Patrick Hunt, Gregory Chanan, Vamsee Yarlagadda, Romain Rigaux, Mark Miller)
+
+* SOLR-5445: Proxied responses should propagate all headers rather than the 
+  first one for each key. (Patrick Hunt, Mark Miller) 
 
 ==================  4.6.0 ==================
 

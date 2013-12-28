@@ -175,6 +175,7 @@ public class ConnectionManager implements Watcher {
   // to avoid deadlock on shutdown
   public void close() {
     this.isClosed = true;
+    this.likelyExpired = true;
     if (this.disconnectedTimer != null) {
       this.disconnectedTimer.cancel();
       this.disconnectedTimer = null;
