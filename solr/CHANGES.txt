@@ -191,10 +191,6 @@ Bug Fixes
 * SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory 
   if necessary. (Mark Miller)
 
-* SOLR-5532: SolrJ Content-Type validation is too strict for some
-  webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
-  Mark Miller)
-
 * SOLR-5547: Creating a collection alias using SolrJ's CollectionAdminRequest
   sets the alias name and the collections to alias to the same value.
   (Aaron Schram, Mark Miller)
@@ -304,6 +300,10 @@ Bug Fixes
 
 * SOLR-5479: SolrCmdDistributor retry logic stops if a leader for the request 
   cannot be found in 1 second. (Mark Miller)
+
+* SOLR-5532: SolrJ Content-Type validation is too strict for some
+  webcontainers / proxies. (Jakob Furrer, hossman, Shawn Heisey, Uwe Schindler,
+  Mark Miller)
   
 ==================  4.6.0 ==================
 
