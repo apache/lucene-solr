@@ -305,6 +305,16 @@ Bug Fixes
 * SOLR-5580: NPE when creating a core with both explicit shard and coreNodeName.
   (YouPeng Yang, Mark Miller)
 
+* SOLR-5552: Leader recovery process can select the wrong leader if all replicas 
+  for a shard are down and trying to recover as well as lose updates that should 
+  have been recovered. (Timothy Potter, Mark Miller)
+  
+* SOLR-5569 A replica should not try and recover from a leader until it has 
+  published that it is ACTIVE. (Mark Miller)
+  
+* SOLR-5568 A SolrCore cannot decide to be the leader just because the cluster
+  state says no other SolrCore's are active. (Mark Miller)
+
 Optimizations
 ----------------------
 
