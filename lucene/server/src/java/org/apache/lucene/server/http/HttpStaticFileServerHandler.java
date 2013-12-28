@@ -108,12 +108,18 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.*;
  */
 public class HttpStaticFileServerHandler extends SimpleChannelUpstreamHandler {
 
+  /** HTTP header format. */
   public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
+
+  /** HTTP header timezone. */
   public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+
+  /** How long the client should cache a static file. */
   public static final int HTTP_CACHE_SECONDS = 60;
 
   private final File rootDir;
 
+  /** Sole constructor. */
   public HttpStaticFileServerHandler(File rootDir) throws IOException {
     this.rootDir = rootDir.getCanonicalFile();
   }

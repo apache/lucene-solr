@@ -22,9 +22,13 @@ import java.util.Map;
 
 import net.minidev.json.JSONObject;
 
+/** Type for a structure containing named typed parameters. */
 public class StructType extends Type {
+
+  /** Parameters contained in this struct. */
   public final Map<String,Param> params = new HashMap<String,Param>();
 
+  /** Sole constructor. */
   public StructType(Param... params) {
     boolean sawPoly = false;
     for(Param p : params) {
@@ -41,6 +45,7 @@ public class StructType extends Type {
     }
   }
 
+  /** Add another parameter. */
   public void addParam(Param param) {
     if (params.containsKey(param.name)) {
       throw new IllegalArgumentException("param name \"" + param.name + "\" already exists");
@@ -48,6 +53,7 @@ public class StructType extends Type {
     params.put(param.name, param);
   }
 
+  @Override
   public void validate(Object _o) {
     if (!(_o instanceof JSONObject)) {
       throw new IllegalArgumentException("expected struct but got " + _o.getClass());

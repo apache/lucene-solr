@@ -363,6 +363,7 @@ public class RegisterFieldHandler extends Handler {
         new Param("fields", "New fields to register",
             new StructType(new Param("*", "Register this field name with the provided type.  Note that the field name must be of the form [a-zA-Z_][a-zA-Z_0-9]*.  You can register multiple fields in one request.", FIELD_TYPE))));
 
+  /** Sole constructor. */
   public RegisterFieldHandler(GlobalState state) {
     super(state);
   }
@@ -990,6 +991,7 @@ public class RegisterFieldHandler extends Handler {
     return analyzer;
   }
 
+  /** Parses a Lucene version constant. */
   @SuppressWarnings("deprecation")
   public static Version getVersion(String v) {
     if (v.equals("LUCENE_40")) {
@@ -1000,6 +1002,12 @@ public class RegisterFieldHandler extends Handler {
       return Version.LUCENE_42;
     } else if (v.equals("LUCENE_43")) {
       return Version.LUCENE_43;
+    } else if (v.equals("LUCENE_44")) {
+      return Version.LUCENE_44;
+    } else if (v.equals("LUCENE_45")) {
+      return Version.LUCENE_45;
+    } else if (v.equals("LUCENE_46")) {
+      return Version.LUCENE_46;
     } else {
       throw new IllegalArgumentException("unhandled version " + v);
     }

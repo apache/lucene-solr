@@ -34,11 +34,19 @@ public class TopFacetsCache {
   // caching ...:
   private final Map<FacetRequest,FacetResult> cache = new ConcurrentHashMap<FacetRequest,FacetResult>();
 
+  /** Sole constructor. */
+  public TopFacetsCache() {
+  }
+
+  /** Returns a {@link FacetResult} from the cache, or null
+   *  if the request was not previously cached. */
   public FacetResult get(FacetRequest request) {
     // System.out.println("GET: " + cache.size() + " entries");
     return cache.get(request);
   }
 
+  /** Add an entry to the cache if it's not already
+   *  present. */
   public void add(FacetRequest request, FacetResult result) {
     if (!cache.containsKey(request)) {
       cache.put(request, result);

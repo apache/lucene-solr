@@ -21,6 +21,11 @@ package org.apache.lucene.server.params;
 public class WrapType extends Type {
   private Type other;
 
+  /** Sole constructor. */
+  public WrapType() {
+  }
+
+  /** Set our wrapped type. */
   public void set(Type other) {
     if (this.other != null) {
       throw new IllegalStateException("already set");
@@ -34,6 +39,7 @@ public class WrapType extends Type {
     other.validate(o);
   }
 
+  /** Return the type we wrap. */
   public Type getWrappedType() {
     return other;
   }

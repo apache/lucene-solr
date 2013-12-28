@@ -31,6 +31,12 @@ import org.apache.lucene.store.SimpleFSDirectory;
 /** A factory to open a {@link Directory} from a provided
  *  filesystem path. */
 public abstract class DirectoryFactory {
+
+  /** Sole constructor. */
+  public DirectoryFactory() {
+  }
+
+  /** Open a new {@link Directory} at the specified path. */
   public abstract Directory open(File path) throws IOException;
 
   /** Returns an instance, using the specified

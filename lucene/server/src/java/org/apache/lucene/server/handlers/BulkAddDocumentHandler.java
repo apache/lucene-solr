@@ -44,6 +44,7 @@ public class BulkAddDocumentHandler extends Handler {
                                      new Param("indexName", "Index name", new StringType()),
                                      new Param("documents", "List of documents", new ListType(AddDocumentHandler.DOCUMENT_TYPE)));
 
+  /** Sole constructor. */
   public BulkAddDocumentHandler(GlobalState state) {
     super(state);
   }

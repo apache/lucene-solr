@@ -17,7 +17,12 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+/** Type for a string. */
 public class StringType extends Type {
+
+  /** Sole constructor. */
+  public StringType() {
+  }
 
   @Override
   public void validate(Object o) {

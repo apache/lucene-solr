@@ -22,6 +22,10 @@ import java.math.BigDecimal;
 /** Type for any number that could be a double. */
 public class FloatType extends Type {
 
+  /** Sole constructor. */
+  public FloatType() {
+  }
+
   @Override
   public void validate(Object o) {
     // nocommit messy:

@@ -17,7 +17,16 @@ package org.apache.lucene.server.plugins;
  * limitations under the License.
  */
 
+/** Base class for all plugins. */
 public abstract class Plugin {
+
+  /** Sole constructor. */
+  public Plugin() {
+  }
+
+  /** Name of this plugin. */
   public abstract String getName();
+
+  /** Documentation for this plugin (English). */
   public abstract String getTopDoc();
 }

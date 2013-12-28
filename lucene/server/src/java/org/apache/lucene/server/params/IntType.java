@@ -20,6 +20,10 @@ package org.apache.lucene.server.params;
 /** Type for an integer. */
 public class IntType extends Type {
 
+  /** Sole constructor. */
+  public IntType() {
+  }
+
   @Override
   public void validate(Object o) {
     if (!(o instanceof Integer)) {

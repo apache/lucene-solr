@@ -20,6 +20,10 @@ package org.apache.lucene.server.params;
 /** Type for a long. */
 public class LongType extends Type {
 
+  /** Sole constructor. */
+  public LongType() {
+  }
+
   @Override
   public void validate(Object o) {
     if (!(o instanceof Long) && !(o instanceof Integer)) {

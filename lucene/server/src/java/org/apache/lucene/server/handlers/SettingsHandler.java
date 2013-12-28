@@ -39,6 +39,7 @@ public class SettingsHandler extends Handler {
   // TODO: add "includeDefaults" bool ... if true then we
   // return ALL settings (incl default ones)
 
+  /** Parameters accepted by this handler. */
   public static final StructType TYPE =
     new StructType(
         new Param("indexName", "Index name", new StringType()),
@@ -67,6 +68,7 @@ public class SettingsHandler extends Handler {
     return "Change global offline settings for this index.  This returns the currently set settings; pass no settings changes to retrieve current settings.";
   }
 
+  /** Sole constructor. */
   public SettingsHandler(GlobalState state) {
     super(state);
   }

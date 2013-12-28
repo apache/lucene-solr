@@ -26,5 +26,7 @@ import org.apache.lucene.server.params.Request;
  *  pre-process requests. */
 
 public interface PreHandle {
+
+  /** Invoked before the selected handler runs. */
   public void invoke(Request request) throws Exception;
 }

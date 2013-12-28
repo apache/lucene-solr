@@ -21,6 +21,8 @@ import java.util.List;
 
 /** Type for a list of items of fixed subType. */
 public class ListType extends Type {
+
+  /** Type of our elements. */
   public final Type subType;
 
   /** Sole constructor. */

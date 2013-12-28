@@ -33,7 +33,10 @@ public class FromFileTermFreqIterator implements InputIterator, Closeable {
   private final BufferedReader reader;
   private long weight;
   private int lineCount;
+
+  /** How many suggestions were found. */
   public int suggestCount;
+
   private BytesRef extra;
 
   /** Sole constructor. */

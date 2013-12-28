@@ -33,6 +33,7 @@ public class RecencyBlendedFieldComparatorSource extends FieldComparatorSource {
   final long range;
   final long currentTime;
 
+  /** Sole constructor. */
   public RecencyBlendedFieldComparatorSource(String timeStampFieldName, float maxBoost, long currentTime, long range) {
     this.timeStampFieldName = timeStampFieldName;
     this.maxBoost = maxBoost;

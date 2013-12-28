@@ -17,12 +17,27 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+// nocommit rename to InvalidRequestExc?
+
+/** Exception thrown on an invalid request. */
 public class RequestFailedException extends IllegalArgumentException {
+
+  /** The request that contains the failure. */
   public final Request request;
+
+  /** Which parameter led to the failure, if any (can be
+   * null). */
   public final String param;
+
+  /** The full path leading to the parameter (e.g.,
+   *  sort.fields[0].field). */
   public final String path;
+
+  /** The specific reason for the failure (e.g., "expected
+   *  int but got string"). */
   public final String reason;
 
+  /** Creates this. */
   public RequestFailedException(Request r, String param, String path, String reason) {
     super(path + ": " + reason);
     this.request = r;
@@ -31,6 +46,8 @@ public class RequestFailedException extends IllegalArgumentException {
     this.reason = reason;
   }
 
+  /** Creates this from another {@code
+   *  RequestFailedException}, adding further details. */
   public RequestFailedException(RequestFailedException other, String details) {
     super(other.reason + ": " + details);
     this.reason = other.reason + ": " + details;

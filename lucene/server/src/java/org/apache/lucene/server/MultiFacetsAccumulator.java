@@ -40,10 +40,12 @@ public class MultiFacetsAccumulator extends FacetsAccumulator {
   private final RangeAccumulator ra;
   private final FacetSearchParams fspOrig;
 
+  /** Create this, using default FacetArrays. */
   public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
     return create(fsp, indexReader, taxoReader, new FacetArrays(taxoReader.getSize()));
   }
 
+  /** Create this, using the provided FacetArrays. */
   public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader, FacetArrays arrays) {
     List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
     List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();

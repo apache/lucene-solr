@@ -31,7 +31,7 @@ import org.apache.lucene.util.IOUtils;
 // TODO: move to Lucene (eg PSDP could use this)
 
 /** Helper class for write-once save/load of state to a
- *  Directory, ie foo_0, foo_1, ... */
+ *  {@link Directory}, ie foo.0, foo.1, ... */
 public abstract class GenFileUtil<T> {
 
   private final String prefix;
@@ -39,15 +39,18 @@ public abstract class GenFileUtil<T> {
 
   private long nextWriteGen;
 
+  /** Sole constructor. */
   protected GenFileUtil(Directory dir, String prefix) {
     this.dir = dir;
     this.prefix = prefix + ".";
   }
 
+  /** Next generation to write. */
   public long getNextWriteGen() {
     return nextWriteGen;
   }
 
+  /** Loads the most recent generation file. */
   protected synchronized T load() throws IOException {
     long genLoaded = -1;
     IOException ioe = null;
@@ -108,10 +111,13 @@ public abstract class GenFileUtil<T> {
     return loaded;
   }
 
+  /** True if this generation is no longer in use; subclass
+   *  can override this to implement a "deletion policy". */
   protected boolean canDelete(long gen) {
     return true;
   }
 
+  /** Save the object to the next write generation. */
   public synchronized void save(T o) throws IOException {
 
     String fileName = prefix + nextWriteGen;
@@ -145,7 +151,9 @@ public abstract class GenFileUtil<T> {
     nextWriteGen++;
   }
 
+  /** Load the object from the provided {@link IndexInput}. */
   protected abstract T loadOne(IndexInput in) throws IOException;
 
+  /** Save the object to the provided {@link IndexOutput}. */
   protected abstract void saveOne(IndexOutput out, T obj) throws IOException;
 }

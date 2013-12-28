@@ -52,7 +52,37 @@ import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
 /** Holds all global state for the server.  Per-index state
- *  is held in {@link IndexState}. */
+ *  is held in {@link IndexState}.
+ *
+ * <p> Filesystem state ($stateDir is the "global state
+ * dir", passed to GlobalState on init):
+ *
+ * <ul>
+ *   <li> $stateDir/indices.gen: holds map of indexName to
+ *     root filesystem path for that index
+ *   <li> $stateDir/plugins: a directory with one
+ *     sub-directory per plugin
+ * </ul>
+ *
+ * Each plugin sub-directory ($stateDir/plugins/foo/)
+ * defines one plugin, and contains:
+ * <ul>
+ *   <li> lucene-server-plugin.properties:
+ *     file with the properties for plugin {@code foo};
+ *     alternatively, the properties file can be inside a
+ *     *.zip or *.jar in the plugin directory.  This must
+ *     define the property "class" with the fully qualified
+ *     path to the Plugin class to instantiate
+ *   <li> $stateDir/plugins/foo/lib/*: optional, contains
+ *     *.jar to add to the classpath while loading the
+ *     plugin
+ *   <li> $stateDir/plugins/*.zip or *.jar contains the
+ *     plugins class files and optionally the properties
+ *     file
+ * </ul>
+
+ * Each index has its own indexDir, specified when the index
+ * is created; see {@link IndexState} for details. */
 public class GlobalState implements Closeable {
 
   private static final String PLUGIN_PROPERTIES_FILE = "lucene-server-plugin.properties";
@@ -102,7 +132,9 @@ public class GlobalState implements Closeable {
   }
 
   /** Record a new handler, by methode name (search,
-   *  addDocument, etc.). */
+   *  addDocument, etc.).  The server registers all builtin
+   *  handlers on startup, but plugins can also register
+   *  their own handlers when they are instantiated. */
   public void addHandler(String name, Handler handler) {
     if (handlers.containsKey(name)) {
       throw new IllegalArgumentException("handler \"" + name + "\" is already defined");
@@ -111,7 +143,7 @@ public class GlobalState implements Closeable {
   }
 
   /** Retrieve a handler by method name (search,
-   * addDocument, etc.). */
+   *  addDocument, etc.). */
   public Handler getHandler(String name) {
     Handler h = handlers.get(name);
     if (h == null) {
@@ -299,9 +331,10 @@ public class GlobalState implements Closeable {
 
           System.out.println("Start plugin " + pluginDir.getAbsolutePath());
 
-          // add the root
+          // Add the plugin's root
           addURL.invoke(classLoader, pluginDir.toURI().toURL());
 
+          // Add any .jar/.zip in the plugin's root directory:
           for(File pluginFile : pluginFiles) {
             if (pluginFile.getName().endsWith(".jar") || 
                 pluginFile.getName().endsWith(".zip")) {
@@ -309,6 +342,8 @@ public class GlobalState implements Closeable {
             }
           }
 
+          // Add any .jar files in the plugin's lib sub
+          // directory, if it exists:
           File pluginLibDir = new File(pluginDir, "lib");
           if (pluginLibDir.exists()) {
             File[] pluginLibFiles = pluginLibDir.listFiles();

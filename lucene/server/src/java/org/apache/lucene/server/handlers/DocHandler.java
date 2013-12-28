@@ -45,6 +45,10 @@ import org.apache.lucene.server.params.WrapType;
  *  handlers. */
 public class DocHandler {
 
+  /** Sole constructor. */
+  public DocHandler() {
+  }
+
   // nocommit this is wasteful ... use Apache commons?
   private static String escapeHTML(String s) {
     s = s.replaceAll("&", "&amp;");

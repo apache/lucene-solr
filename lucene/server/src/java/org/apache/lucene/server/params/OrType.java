@@ -19,6 +19,8 @@ package org.apache.lucene.server.params;
 
 /** Type that accepts any of the provided list of types. */
 public class OrType extends Type {
+
+  /** Allowed sub-types. */
   public final Type[] types;
 
   /** Sole constructor. */

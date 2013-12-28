@@ -44,6 +44,7 @@ public class AnalysisHandler extends Handler {
                                                         new Param("text", "Text to analyze", new StringType()),
                                                         new Param("analyzer", "Analyzer", RegisterFieldHandler.ANALYZER_TYPE));
 
+  /** Sole constructor. */
   public AnalysisHandler(GlobalState state) {
     super(state);
   }

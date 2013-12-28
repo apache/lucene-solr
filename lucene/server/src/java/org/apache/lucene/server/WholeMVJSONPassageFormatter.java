@@ -28,6 +28,7 @@ public class WholeMVJSONPassageFormatter extends PassageFormatter {
 
   private final int offsetGap;
 
+  /** Create this, with the specified offsetGap. */
   public WholeMVJSONPassageFormatter(int offsetGap) {
     this.offsetGap = offsetGap;
   }

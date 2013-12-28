@@ -24,5 +24,7 @@ package org.apache.lucene.server;
  *  process so that we can fail if there are unhandled
  *  params, without having made any changes to the index. */
 public interface FinishRequest {
+
+  /** Perform the actual work of the request. */
   public String finish() throws Exception;
 }

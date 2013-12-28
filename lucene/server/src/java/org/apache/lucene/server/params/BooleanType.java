@@ -20,6 +20,10 @@ package org.apache.lucene.server.params;
 /** Type for booleans. */
 public class BooleanType extends Type {
 
+  /** Sole constructor. */
+  public BooleanType() {
+  }
+
   @Override
   public void validate(Object o) {
     if (!(o instanceof Boolean)) {

@@ -399,15 +399,24 @@ public class SearchHandler extends Handler {
     super(state);
   }
 
+  /** Holds the state for a single {@link
+   *  PostingsHighlighter} instance. */
   public final class HighlighterConfig {
     PostingsHighlighter highlighter;
     int maxPassages;
     String config;
 
-    // Holds field values for all documents we loaded for
-    // this request:
+    /** Sole constructor. */
+    public HighlighterConfig() {
+    }
+
+    /** Holds field values for all documents we loaded for
+     * this request. */
     Map<Integer,Map<String,Object>> docsCache = new HashMap<Integer,Map<String,Object>>();
 
+    /** Load the fiels for a single document, using the
+     *  cache so we only ever load a document once from
+     *  Lucene. */
     @SuppressWarnings("unchecked")
     public Map<String,Object> getDocument(IndexState state, IndexSearcher searcher, int docID) throws IOException {
       Map<String,Object> doc = docsCache.get(docID);

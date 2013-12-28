@@ -107,7 +107,26 @@ import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
-/** Holds all state associated with one index. */
+/** Holds all state associated with one index.  On startup
+ *  and on creating a new index, the index loads its state
+ *  but does not start itself.  At this point, setting can
+ *  be changed, and then the index must be {@link start}ed
+ *  before it can be used for indexing and searching, at
+ *  which point only live settings may be changed.
+ *
+ *  Filesystem state: each index has its own rootDir,
+ *  specified when the index is created.  Under each
+ *  rootDir:
+ *  <ul>
+ *    <li> {@code index} has the Lucene index
+ *    <li> {@code taxonomy} has the taxonomy index (empty if
+ *     no facets are indexed)
+ *   <li> {@code state} has all current settings
+ *   <li> {@code state/state.N} gen files holds all settings
+ *   <li> {@code state/saveLoadRefCounts.N} gen files holds
+ *     all reference counts from live snapshots
+ *  </ul>
+ */
 
 public class IndexState implements Closeable {
   // nocommit settingsHandler should set this
@@ -146,7 +165,7 @@ public class IndexState implements Closeable {
   /** All live values fields. */
   public final Map<String,StringLiveFieldValues> liveFieldValues = new ConcurrentHashMap<String,StringLiveFieldValues>();
 
-  /** Maps gen -> version */
+  /** Maps snapshot gen -> version. */
   public final Map<Long,Long> snapshotGenToVersion = new ConcurrentHashMap<Long,Long>();
 
   /** Built suggest implementations */
@@ -191,6 +210,7 @@ public class IndexState implements Closeable {
       }
     };
 
+  /** Tracks snapshot references to generations. */
   private static class SaveLoadRefCounts extends GenFileUtil<Map<Long,Integer>> {
 
     public SaveLoadRefCounts(Directory dir) {
@@ -391,7 +411,9 @@ public class IndexState implements Closeable {
 
   private final boolean isNew;
 
-  /** Sole constructor. */
+  /** Sole constructor; creates a new index or loads an
+   *  existing one if it exists, but does not start the
+   *  index. */
   public IndexState(GlobalState globalState, String name, File rootDir) throws Exception {
     this.globalState = globalState;
     this.name = name;
@@ -434,6 +456,10 @@ public class IndexState implements Closeable {
 
     /** Which document index hit each error. */
     public final List<Integer> errorIndex = new ArrayList<Integer>();
+
+    /** Sole constructor. */
+    public AddDocumentContext() {
+    }
 
     /** Record an exception. */
     public synchronized void addException(int index, Exception e) {
@@ -724,6 +750,10 @@ public class IndexState implements Closeable {
 
     /** Facets. */
     public List<CategoryPath> facets;
+
+    /** Sole constructor. */
+    public DocumentAndFacets() {
+    }
   }
 
   /** Create a new {@code AddDocumentJob}. */

@@ -51,6 +51,7 @@ public class BulkAddDocumentsHandler extends Handler {
                                                  new Param("children", "List of child documents.",
                                                            new ListType(AddDocumentHandler.DOCUMENT_TYPE))))));
 
+  /** Sole constructor. */
   public BulkAddDocumentsHandler(GlobalState state) {
     super(state);
   }

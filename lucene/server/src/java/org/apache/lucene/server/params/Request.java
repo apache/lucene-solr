@@ -436,6 +436,9 @@ public class Request {
     return null;
   }
 
+  /** Retrieve a list parameter.  Once this is called for a
+   *  given parameter it cannot be called again on that
+   *  parameter. */
   @SuppressWarnings("unchecked")
   public List<Object> getList(String name) {
     Param p = type.params.get(name);
@@ -506,6 +509,8 @@ public class Request {
     }
   }
 
+  /** True if this request has any bindings, excluding
+   *  empty containers. */
   public static boolean anythingLeft(JSONObject obj) {
     Iterator<Map.Entry<String,Object>> it = obj.entrySet().iterator();
     boolean anything = false;
@@ -560,14 +565,20 @@ public class Request {
     return sb.toString();
   }
 
+  /** Throws a {@link RequestFailedException} with the
+   *  provided message. */
   public void fail(String message) {
     fail(null, message, null);
   }
 
+  /** Throws a {@link RequestFailedException} with the
+   *  provided parameter and message. */
   public void fail(String param, String message) {
     fail(param, message, null);
   }
 
+  /** Throws a {@link RequestFailedException} with the
+   *  provided parameter and message and original cause. */
   public void fail(String param, String reason, Throwable cause) {
     StringBuilder sb = new StringBuilder();
     buildPath(sb);

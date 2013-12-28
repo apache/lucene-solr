@@ -29,6 +29,7 @@ import org.apache.lucene.server.params.*;
  *  the index is running. */
 public class LiveSettingsHandler extends Handler {
 
+  /** The parameters this handler accepts. */
   public final static StructType TYPE =
     new StructType(
         new Param("indexName", "The index", new StringType()),
@@ -47,6 +48,7 @@ public class LiveSettingsHandler extends Handler {
     return "Change global offline or online settings for this index.";
   }
 
+  /** Sole constructor. */
   public LiveSettingsHandler(GlobalState state) {
     super(state);
   }

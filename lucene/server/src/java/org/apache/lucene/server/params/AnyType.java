@@ -20,6 +20,10 @@ package org.apache.lucene.server.params;
 /** Accepts any object. */
 public class AnyType extends Type {
 
+  /** Sole constructor. */
+  public AnyType() {
+  }
+
   @Override
   public void validate(Object o) {
   }
