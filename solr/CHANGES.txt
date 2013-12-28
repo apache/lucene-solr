@@ -216,6 +216,10 @@ Bug Fixes
 
 * SOLR-5567: ZkController getHostAddress duplicates url prefix.
   (Kyle Halliday, Alexey Serba, shalin)
+
+* SOLR-5577: Likely ZooKeeper expiration should not slow down updates a given
+  amount, but instead cut off updates after a given time. 
+  (Mark Miller, Christine Poerschke)
   
 Optimizations
 ----------------------

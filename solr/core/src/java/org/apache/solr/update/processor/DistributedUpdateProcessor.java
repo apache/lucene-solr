@@ -1271,22 +1271,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    if (zkController.isConnected()) {
+    if (!zkController.getZkClient().getConnectionManager().isLikelyExpired()) {
       return;
     }
     
-    long timeoutAt = System.currentTimeMillis() + zkController.getClientTimeout();
-    while (System.currentTimeMillis() < timeoutAt) {
-      if (zkController.isConnected()) {
-        return;
-      }
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        break;
-      }
-    }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
   }
 
