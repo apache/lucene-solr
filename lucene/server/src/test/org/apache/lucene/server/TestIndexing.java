@@ -232,6 +232,8 @@ public class TestIndexing extends ServerBaseTestCase {
   }
 
   public void testBoost() throws Exception {
+    // nocommit make test infra class that is for one index
+    // and auto-inserts indexName: xxx into each request
     _TestUtil.rmDir(new File("boost"));
     send("createIndex", "{indexName: boost, rootDir: boost}");
     send("settings", "{indexName: boost, directory: RAMDirectory, matchVersion: LUCENE_40}");

@@ -83,50 +83,57 @@ public class AddDocumentHandler extends Handler {
   }
 
   /** Parses value for one field. */
-  // NOTE: only used by BinaryDocumentPlugin
   @SuppressWarnings({"unchecked"})
-  public static void parseOneValue(FieldDef fd, DocumentAndFacets doc, Object o, float boost) {
+  private static void parseOneNativeValue(FieldDef fd, DocumentAndFacets doc, Object o, float boost) {
 
+    assert o != null;
     assert fd != null;
     
     if (fd.fieldType.stored() || fd.fieldType.indexed() || fd.fieldType.docValueType() != null) {
       if (fd.valueType.equals("text") || fd.valueType.equals("atom")) {
         if (!(o instanceof String)) {
-          fail(fd.name, "expected String value but got " + (o == null ? "null" : o.getClass().toString()));
+          fail(fd.name, "expected String value but got " + o);
         }
       } else if (fd.valueType.equals("boolean")) {
         if (!(o instanceof Boolean)) {
           fail(fd.name, "expected Boolean value but got " + o.getClass());
         }
-      } else {
-        // nocommit tighten this?  ie should be Float/Double
-        // if valueType is float/double:
+        // Turn boolean -> int now
+        if (o == Boolean.TRUE) {
+          o = Integer.valueOf(1);
+        } else {
+          o = Integer.valueOf(0);
+        }
+      } else if (fd.valueType.equals("float") || fd.valueType.equals("double")) {
         if (!(o instanceof Number)) {
-          fail(fd.name, "expected Number value but got " + o);
+          fail(fd.name, "for float or double field, expected Number value but got " + o);
+        }
+      } else {
+        // int or long
+        if (!(o instanceof Integer) && !(o instanceof Long)) {
+          fail(fd.name, "for int or long field, expected Integer or Long value but got " + o);
         }
       }
     }
 
     if (fd.faceted.equals("flat")) {
       if (o instanceof JSONArray) {
+        // nocommit dead code?
+        assert false;
         fail(fd.name, "value should be String when facet=flat; got array");
       }
-      if (doc.facets == null) {
-        doc.facets = new ArrayList<CategoryPath>();
-      }
-      doc.facets.add(new CategoryPath(fd.name, o.toString()));
+      doc.addFacet(new CategoryPath(fd.name, o.toString()));
     } else if (fd.faceted.equals("hierarchy")) {
-      if (doc.facets == null) {
-        doc.facets = new ArrayList<CategoryPath>();
-      }
       if (o instanceof JSONArray) {
+        // nocommit this is dead code?
+        assert false;
         JSONArray arr = (JSONArray) o;
         String[] values = new String[1+arr.size()];
         values[0] = fd.name;
         for(int idx=0;idx<values.length-1;idx++) {
           values[idx+1] = arr.get(idx).toString();
         }
-        doc.facets.add(new CategoryPath(values));
+        doc.addFacet(new CategoryPath(values));
       } else if (o instanceof List) { 
         List<String> values = (List<String>) o;
         CategoryPath cp = null;
@@ -135,17 +142,15 @@ public class AddDocumentHandler extends Handler {
         } catch (IllegalArgumentException iae) {
           fail(fd.name, "unable to create facet path: " + iae.getMessage());
         }
-        doc.facets.add(cp);
+        doc.addFacet(cp);
       } else {
-        doc.facets.add(new CategoryPath(fd.name, o.toString()));
+        doc.addFacet(new CategoryPath(fd.name, o.toString()));
       }
     }
 
     if (fd.highlighted) {
-      if (!(o instanceof String)) {
-        fail(fd.name, "can only highlight text or atom fields");
-      }
-      if (!fd.singleValued && (((String) o).indexOf(Constants.INFORMATION_SEP) != -1)) {
+      assert o instanceof String;
+      if (fd.singleValued == false && (((String) o).indexOf(Constants.INFORMATION_SEP) != -1)) {
         // TODO: we could remove this restriction if it
         // ever matters ... we can highlight multi-valued
         // fields at search time without stealing a
@@ -154,65 +159,45 @@ public class AddDocumentHandler extends Handler {
       }
     }
 
-    if (o instanceof String &&
-        (fd.fieldType.docValueType() == DocValuesType.BINARY ||
-         fd.fieldType.docValueType() == DocValuesType.SORTED)) {
+    // Separately index doc values:
+    if (fd.fieldType.docValueType() == DocValuesType.BINARY ||
+        fd.fieldType.docValueType() == DocValuesType.SORTED) {
+      assert o instanceof String;
       BytesRef br = new BytesRef((String) o);
       if (fd.fieldType.docValueType() == DocValuesType.BINARY) {
         doc.doc.add(new BinaryDocValuesField(fd.name, br));
       } else {
         doc.doc.add(new SortedDocValuesField(fd.name, br));
       }
-    }
-
-    if (fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
+    } else if (fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
       if (fd.valueType.equals("float")) {
-        //o = new Long(Float.floatToRawIntBits(((Number) o).floatValue()));
         doc.doc.add(new NumericDocValuesField(fd.name, Float.floatToRawIntBits(((Number) o).floatValue())));
       } else if (fd.valueType.equals("double")) {
-        //o = new Long(Double.doubleToRawLongBits(((Number) o).floatValue()));
         doc.doc.add(new NumericDocValuesField(fd.name, Double.doubleToRawLongBits(((Number) o).doubleValue())));
       } else if (fd.valueType.equals("int")) {
-        //o = new Long(((Integer) o).intValue());
         doc.doc.add(new NumericDocValuesField(fd.name, ((Number) o).intValue()));
       } else if (fd.valueType.equals("long")) {
         doc.doc.add(new NumericDocValuesField(fd.name, ((Number) o).longValue()));
-      } else if (fd.valueType.equals("boolean")) {
-        if (o == Boolean.TRUE) {
-          //o = Long.valueOf(1);
-          doc.doc.add(new NumericDocValuesField(fd.name, 1L));
-        } else {
-          //o = Long.valueOf(0);
-          doc.doc.add(new NumericDocValuesField(fd.name, 0L));
-        }
-      } else if (fd.valueType.equals("boolean")) {
-        fail(fd.name, "invalid type " + fd.valueType + " for numeric doc values");
+      } else {
+        assert fd.valueType.equals("boolean");
+        doc.doc.add(new NumericDocValuesField(fd.name, ((Integer) o).intValue()));
       }
     }
 
-    // nocommit if field is ONLY for faceting don't add to
-    // doc ...
     if (fd.fieldType.stored() || fd.fieldType.indexed()) {
-      // nocommit this is a mess:
-      if (o == Boolean.TRUE) {
-        o = "true";
-      } else if (o == Boolean.FALSE) {
-        o = "false";
-      }
       Field f = new MyField(fd.name, fd.fieldTypeNoDV, o);
       f.setBoost(boost);
       doc.doc.add(f);
-    } else {
-      // nocommit assert / real check here!?
     }
   }
 
   /** Used by plugins to process a document after it was
    *  created from the JSON request. */
   public interface PostHandle {
-    // nocommit unused?
-    //public void invoke(IndexState state, Request r, DocumentAndFacets doc) throws IOException;
-    /** Invoke the handler. */
+    // nocommit need test coverage:
+    /** Invoke the handler, non-streaming. */
+    public void invoke(IndexState state, Request r, DocumentAndFacets doc) throws IOException;
+    /** Invoke the handler, streaming. */
     public boolean invoke(IndexState state, String fieldName, JsonParser p, DocumentAndFacets doc) throws IOException;
   }
 
@@ -224,6 +209,7 @@ public class AddDocumentHandler extends Handler {
   }
 
   /** Parses the string value to the appropriate type. */
+  /*
   public static Object fixType(FieldDef fd, String value) {
     Object o;
     if (fd.valueType.equals("int")) {
@@ -239,11 +225,14 @@ public class AddDocumentHandler extends Handler {
     }
     return o;
   }
+  */
 
   static void fail(String fieldName, String message) {
     throw new IllegalArgumentException("field=" + fieldName + ": " + message);
   }
 
+  /** Parses the fields, which should look like {field1:
+   *  ..., field2: ..., ...} */
   void parseFields(IndexState state, DocumentAndFacets doc, JsonParser p) throws IOException {
     JsonToken token = p.nextToken();
     if (token != JsonToken.START_OBJECT) {
@@ -259,7 +248,9 @@ public class AddDocumentHandler extends Handler {
     }
   }
 
-  /** Parses using Jackson's streaming parser API. */
+  /** Parse a Document using Jackson's streaming parser
+   * API.  The document should look like {indexName: 'foo',
+   * fields: {..., ...}} */
   DocumentAndFacets parseDocument(IndexState state, JsonParser p) throws IOException {
     //System.out.println("parseDocument: " + r);
     JsonToken token = p.nextToken();
@@ -282,6 +273,7 @@ public class AddDocumentHandler extends Handler {
       if (fieldName.equals("fields")) {
         parseFields(state, doc, p);
       } else {
+        // Let a plugin handle it:
         boolean handled = false;
         for(PostHandle postHandle : postHandlers) {
           if (postHandle.invoke(state, fieldName, p, doc)) {
@@ -294,18 +286,25 @@ public class AddDocumentHandler extends Handler {
           throw new IllegalArgumentException("unrecognized field " + p.getText());
         }
       }
+
       // nocommit need test that same field name can't
-      // appear more than once?
+      // appear more than once?  app must put all values for
+      // a given field into an array (for a multi-valued
+      // field) 
     }
 
     return doc;
   }
 
+  /** Parses a field's value, which is an array in the
+   * multi-valued case, or an object of the appropriate type
+   * in the single-valued case. */
   private static void parseOneField(JsonParser p, IndexState state, DocumentAndFacets doc, String name) throws IOException {
 
     FieldDef fd = state.getField(name);
 
     if (!fd.singleValued) {
+      // Field is mutli-valued; parse an array
       JsonToken token = p.nextToken();
       if (token != JsonToken.START_ARRAY) {
         fail(name, "field is multiValued; expected array but got " + token);
@@ -320,12 +319,63 @@ public class AddDocumentHandler extends Handler {
     }
   }
 
+  /** Parses the current json token into the corresponding
+   *  java object. */
+  private static Object getNativeValue(FieldDef fd, JsonToken token, JsonParser p) throws IOException {
+    Object o;
+    if (token == JsonToken.VALUE_STRING) {
+      o = p.getText();
+    } else if (token == JsonToken.VALUE_NUMBER_INT) {
+      o = Long.valueOf(p.getLongValue());
+    } else if (token == JsonToken.VALUE_NUMBER_FLOAT) {
+      o = Double.valueOf(p.getDoubleValue());
+    } else if (token == JsonToken.VALUE_TRUE) {
+      o = Boolean.TRUE;
+    } else if (token == JsonToken.VALUE_FALSE) {
+      o = Boolean.FALSE;
+    } else if (fd.faceted.equals("hierarchy") && token == JsonToken.START_ARRAY) {
+      List<String> values = new ArrayList<String>();
+      values.add(fd.name);
+      while (true) {
+        token = p.nextToken();
+        if (token == JsonToken.END_ARRAY) {
+          break;
+        } else if (token != JsonToken.VALUE_STRING) {
+          if (token == JsonToken.START_ARRAY) {
+            fail(fd.name, "expected array of strings, but saw array inside array");
+          } else {
+            fail(fd.name, "expected array of strings, but saw " + token + " inside array");
+          }
+        }
+        values.add(p.getText());
+      }
+      o = values;
+    } else {
+      String message;
+      if (token == JsonToken.VALUE_NULL) {
+        message = "null field value not supported; just omit this field from the document instead";
+      } else {
+        message = "value in inner object field value should be string, int/long, float/double or boolean; got " + token;
+      }
+
+      fail(fd.name, message);
+
+      // Dead code but compiler disagrees:
+      o = null;
+    }
+    return o;
+  }
+  
+  /** Parse one value for a field, which is either an
+   *  object matching the type of the field, or a {boost:
+   *  ..., value: ...}. */
   private static boolean parseOneValue(FieldDef fd, JsonParser p, DocumentAndFacets doc) throws IOException {
 
     Object o = null;
 
     JsonToken token = p.nextToken();
     if (token == JsonToken.END_ARRAY) {
+      assert fd.singleValued == false;
       return false;
     }
 
@@ -338,71 +388,29 @@ public class AddDocumentHandler extends Handler {
           break;
         }
         assert token == JsonToken.FIELD_NAME;
-        String fName = p.getText();
-        if (fName.equals("boost")) {
-          token = p.nextToken();
-          if (token == JsonToken.VALUE_NUMBER_INT | token == JsonToken.VALUE_NUMBER_FLOAT) {
+        String key = p.getText();
+        if (key.equals("boost")) {
+          token = p.nextToken(); 
+          if (token == JsonToken.VALUE_NUMBER_INT || token == JsonToken.VALUE_NUMBER_FLOAT) {
             boost = p.getFloatValue();
           } else {
-            fail(fd.name, "boost in inner object field value must have float value");
+            fail(fd.name, "boost in inner object field value must have float or int value; got: " + token);
           }
-        } else if (fName.equals("value")) {
-          token = p.nextToken();
-          if (token == JsonToken.VALUE_STRING) {
-            o = p.getText();
-          } else if (token == JsonToken.VALUE_NUMBER_INT) {
-            o = Long.valueOf(p.getLongValue());
-          } else if (token == JsonToken.VALUE_NUMBER_FLOAT) {
-            o = Double.valueOf(p.getDoubleValue());
-          } else {
-            fail(fd.name, "value in inner object field value should be string or int or float; got " + o);
-          }
+        } else if (key.equals("value")) {
+          o = getNativeValue(fd, p.nextToken(), p);
         } else {
-          fail(fd.name, "unrecognized field \"" + fName + "\" in inner object field value; must be boost or value");
+          fail(fd.name, "unrecognized json key \"" + key + "\" in inner object field value; must be boost or value");
         }
       }
       if (o == null) {
-        fail(fd.name, "value in inner object field value must have value member");
+        fail(fd.name, "missing 'value' key");
       }
     } else {
-      // Parse a single value:
-      if (token == JsonToken.VALUE_STRING) {
-        o = p.getText();
-      } else if (token == JsonToken.VALUE_NUMBER_INT) {
-        o = Long.valueOf(p.getLongValue());
-      } else if (token == JsonToken.VALUE_NUMBER_FLOAT) {
-        o = Double.valueOf(p.getDoubleValue());
-      } else if (token == JsonToken.VALUE_NULL) {
-        fail(fd.name, "null field value not supported; just omit this field from the document instead");
-      } else if (token == JsonToken.VALUE_TRUE) {
-        o = Boolean.TRUE;
-      } else if (token == JsonToken.VALUE_FALSE) {
-        o = Boolean.FALSE;
-      }
+      // Parse a native value:
+      o = getNativeValue(fd, token, p);
     }
 
-    if (fd.faceted.equals("hierarchy") && o == null) {
-      if (token == JsonToken.START_ARRAY) {
-        List<String> values = new ArrayList<String>();
-        values.add(fd.name);
-        while (true) {
-          token = p.nextToken();
-          if (token == JsonToken.END_ARRAY) {
-            break;
-          } else if (token != JsonToken.VALUE_STRING) {
-            if (token == JsonToken.START_ARRAY) {
-              fail(fd.name, "expected string but saw array");
-            } else {
-              fail(fd.name, "expected string but saw " + token);
-            }
-          }
-          values.add(p.getText());
-        }
-        o = values;
-      }          
-    }
-
-    parseOneValue(fd, doc, o, boost);
+    parseOneNativeValue(fd, doc, o, boost);
     return true;
   }
 

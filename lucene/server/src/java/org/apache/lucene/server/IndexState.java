@@ -736,6 +736,13 @@ public class IndexState implements Closeable {
     /** Sole constructor. */
     public DocumentAndFacets() {
     }
+
+    public void addFacet(CategoryPath cp) {
+      if (facets == null) {
+        facets = new ArrayList<CategoryPath>();
+      }
+      facets.add(cp);
+    }
   }
 
   /** Create a new {@code AddDocumentJob}. */

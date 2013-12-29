@@ -496,7 +496,11 @@ public class RegisterFieldHandler extends Handler {
       f.fail("analyzer", "no analyzer allowed when indexed is false");
     }
 
-    // TODO: multi-valued fields
+    // nocommit hierarchical facet field cannot be indexed &
+    // stored; make test & check that here
+
+    // nocommit make sure a useless field (not indexed,
+    // stored, dv'd nor faceted) is detected!
 
     if (type.equals("text") || type.equals("atom")) {
 

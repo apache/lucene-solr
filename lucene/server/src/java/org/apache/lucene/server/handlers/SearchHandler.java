@@ -689,10 +689,10 @@ public class SearchHandler extends Handler {
 
   private static Object convertType(FieldDef fd, Object o) {
     if (fd.valueType.equals("boolean")) {
-      if (o.equals("true")) {
+      if (((Integer) o).intValue() == 1) {
         return Boolean.TRUE;
       } else {
-        assert o.equals("false");
+        assert ((Integer) o).intValue() == 0;
         return Boolean.FALSE;
       }
       //} else if (fd.valueType.equals("float") && fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
@@ -811,7 +811,7 @@ public class SearchHandler extends Handler {
       if (!fd.valueType.equals("boolean")) {
         pr.r.fail("field", "field \"" + fd.name + "\" is not a boolean field");
       }
-      f = new QueryWrapperFilter(new TermQuery(new Term(fd.name, "true")));
+      f = new QueryWrapperFilter(new TermQuery(new Term(fd.name, "1")));
     } else if (pr.name.equals("QueryWrapperFilter")) {
       return new QueryWrapperFilter(parseQuery(timeStamp, topRequest, state, pr.r.getStruct("query"), null, null));
     } else if (pr.name.equals("BooleanFilter")) {
