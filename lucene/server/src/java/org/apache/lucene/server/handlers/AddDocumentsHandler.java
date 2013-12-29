@@ -29,7 +29,8 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
-/** Handles {@code addDocuments}. */
+/** Handles {@code addDocuments}, by delegating the single
+ *  document to {@link BulkAddDocumentsHandler} */
 public class AddDocumentsHandler extends Handler {
 
   final static StructType TYPE = new StructType(

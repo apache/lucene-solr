@@ -110,7 +110,7 @@ import net.minidev.json.parser.ParseException;
 /** Holds all state associated with one index.  On startup
  *  and on creating a new index, the index loads its state
  *  but does not start itself.  At this point, setting can
- *  be changed, and then the index must be {@link start}ed
+ *  be changed, and then the index must be {@link #start}ed
  *  before it can be used for indexing and searching, at
  *  which point only live settings may be changed.
  *

@@ -32,7 +32,8 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
-/** Handles {@code updateDocument}. */
+/** Handles {@code updateDocument}, by delegating the single
+ *  document to {@link BulkUpdateDocumentHandler}. */
 public class UpdateDocumentHandler extends Handler {
   final StructType TYPE = new StructType(
                                new Param("indexName", "Index Name", new StringType()),
