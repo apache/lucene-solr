@@ -315,6 +315,9 @@ Bug Fixes
   HttpClients and ensure all http connection managers get shutdown.
   (Mark Miller)
 
+* SOLR-5583: ConcurrentUpdateSolrServer#blockUntilFinished may wait forever if
+  the executor service is shutdown. (Mark Miller)
+
 Optimizations
 ----------------------
 
