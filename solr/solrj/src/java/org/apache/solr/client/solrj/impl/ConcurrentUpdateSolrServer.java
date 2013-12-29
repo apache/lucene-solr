@@ -384,7 +384,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
         synchronized (runners) {
           runner = runners.peek();
         }
-        if (runner == null)
+        if (runner == null || scheduler.isTerminated())
           break;
         runner.runnerLock.lock();
         runner.runnerLock.unlock();
