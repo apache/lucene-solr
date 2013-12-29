@@ -164,10 +164,6 @@ Bug Fixes
   a delta-import is run first before any full-imports.
   (Sebastien Lorber, Arcadius Ahouansou via shalin)
 
-* SOLR-5496: We should share an http connection manager across non search 
-  HttpClients and ensure all http connection managers get shutdown.
-  (Mark Miller)
-
 * SOLR-5503: Retry 'forward to leader' requests less aggressively - rather 
   than on IOException and status 500, ConnectException. (Mark Miller)
 
@@ -314,6 +310,10 @@ Bug Fixes
   
 * SOLR-5568 A SolrCore cannot decide to be the leader just because the cluster
   state says no other SolrCore's are active. (Mark Miller)
+
+* SOLR-5496: We should share an http connection manager across non search 
+  HttpClients and ensure all http connection managers get shutdown.
+  (Mark Miller)
 
 Optimizations
 ----------------------
