@@ -128,7 +128,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         }
         
         c.query(new SolrQuery("id:" + i));
-        c.setSoTimeout(60000);
         c.setConnectionTimeout(30000);
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
