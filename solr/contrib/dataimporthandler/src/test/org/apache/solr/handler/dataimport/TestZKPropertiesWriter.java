@@ -17,18 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,10 +26,25 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
   protected static ZkTestServer zkServer;
 
   protected static String zkDir;
+
+  private static CoreContainer cc;
 
   private String dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS";
 
@@ -61,13 +64,12 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
-    createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
+    cc = createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
   }
 
   @Before
   public void beforeDihZKTest() throws Exception {
-    clearIndex();
-    assertU(commit());
+
   }
 
   @After
@@ -78,13 +80,12 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @AfterClass
   public static void dihZk_afterClass() throws Exception {
+    cc.shutdown();
+    
     zkServer.shutdown();
 
     zkServer = null;
     zkDir = null;
-
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   @Test
