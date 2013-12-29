@@ -27,6 +27,8 @@
   <solrcloud>
     <int name="distribUpdateConnTimeout">22</int>
     <int name="distribUpdateSoTimeout">33</int>
+    <int name="maxUpdateConnections">3</int>
+    <int name="maxUpdateConnectionsPerHost">37</int>
     <int name="leaderVoteWait">55</int>
     <str name="host">testHost</str>
     <str name="hostContext">testHostContext</str>

@@ -17,27 +17,6 @@
 
 package org.apache.solr.core;
 
-import com.google.common.collect.Maps;
-
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
@@ -74,6 +53,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
@@ -108,8 +88,7 @@ public class CoreContainer {
   protected ZkContainer zkSys = new ZkContainer();
   private ShardHandlerFactory shardHandlerFactory;
   
-  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
-      new SolrjNamedThreadFactory("updateExecutor"));
+  private UpdateShardHandler updateShardHandler;
 
   protected LogWatcher logging = null;
 
@@ -120,6 +99,7 @@ public class CoreContainer {
   protected final String solrHome;
 
   protected final CoresLocator coresLocator;
+  
 
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
@@ -214,6 +194,8 @@ public class CoreContainer {
     }
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
+    
+    updateShardHandler = new UpdateShardHandler(cfg);
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
@@ -387,7 +369,6 @@ public class CoreContainer {
       cancelCoreRecoveries();
     }
 
-
     try {
       // First wake up the closer thread, it'll terminate almost immediately since it checks isShutDown.
       synchronized (solrCores.getModifyLock()) {
@@ -413,16 +394,20 @@ public class CoreContainer {
       }
 
     } finally {
-      if (shardHandlerFactory != null) {
-        shardHandlerFactory.close();
+      try {
+        if (shardHandlerFactory != null) {
+          shardHandlerFactory.close();
+        }
+      } finally {
+        try {
+          if (updateShardHandler != null) {
+            updateShardHandler.close();
+          }
+        } finally {
+          // we want to close zk stuff last
+          zkSys.close();
+        }
       }
-      
-      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
-      
-      // we want to close zk stuff last
-
-      zkSys.close();
-
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
@@ -903,7 +888,7 @@ public class CoreContainer {
   public InfoHandler getInfoHandler() {
     return infoHandler;
   }
-  
+
   /**
    * the default core name, or null if there is no default core name
    */
@@ -985,8 +970,12 @@ public class CoreContainer {
     return shardHandlerFactory;
   }
   
+  public UpdateShardHandler getUpdateShardHandler() {
+    return updateShardHandler;
+  }
+  
   public ExecutorService getUpdateExecutor() {
-    return updateExecutor;
+    return updateShardHandler.getUpdateExecutor();
   }
   
   // Just to tidy up the code where it did this in-line.
@@ -1002,8 +991,6 @@ public class CoreContainer {
   String getCoreToOrigName(SolrCore core) {
     return solrCores.getCoreToOrigName(core);
   }
-  
-
 }
 
 class CloserThread extends Thread {

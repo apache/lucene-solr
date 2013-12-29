@@ -18,12 +18,13 @@ package org.apache.solr.update;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -37,10 +38,10 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -51,6 +52,7 @@ import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
+import org.xml.sax.SAXException;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @BeforeClass
@@ -60,10 +62,26 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // being able to call optimize to have all deletes expunged.
     System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
   }
-  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
-      new SolrjNamedThreadFactory("updateExecutor"));
+  private UpdateShardHandler updateShardHandler;
   
-  public SolrCmdDistributorTest() {
+  public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
+    updateShardHandler = new UpdateShardHandler(new ConfigSolr() {
+
+      @Override
+      public CoresLocator getCoresLocator() {
+        return null;
+      }
+
+      @Override
+      protected String getShardHandlerFactoryConfigPath() {
+        return null;
+      }
+
+      @Override
+      public boolean isPersistent() {
+        return false;
+      }});
+    
     fixShardCount = true;
     shardCount = 4;
     stress = 0;
@@ -107,7 +125,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -147,7 +165,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     cmd.solrDoc = sdoc("id", 2);
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -190,7 +208,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     
 
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -223,7 +241,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     int id = 5;
     
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     
     int cnt = atLeast(303);
     for (int i = 0; i < cnt; i++) {
@@ -295,7 +313,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     }
     
     // Test RetryNode
-    cmdDistrib = new SolrCmdDistributor(updateExecutor);
+    cmdDistrib = new SolrCmdDistributor(updateShardHandler);
     final HttpSolrServer solrclient = (HttpSolrServer) clients.get(0);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
@@ -343,7 +361,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    ExecutorUtil.shutdownNowAndAwaitTermination(updateExecutor);
+    updateShardHandler.close();
     super.tearDown();
   }
 }

@@ -143,6 +143,10 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@distribUpdateConnTimeout", false));
     propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT,
         config.getVal("solr/cores/@distribUpdateSoTimeout", false));
+    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONS,
+        config.getVal("solr/cores/@maxUpdateConnections", false));
+    propMap.put(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST,
+        config.getVal("solr/cores/@maxUpdateConnectionsPerHost", false));
     propMap.put(CfgProp.SOLR_HOST, config.getVal("solr/cores/@host", false));
     propMap.put(CfgProp.SOLR_HOSTCONTEXT,
         config.getVal("solr/cores/@hostContext", false));
