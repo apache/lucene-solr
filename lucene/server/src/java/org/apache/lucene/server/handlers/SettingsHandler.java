@@ -47,7 +47,7 @@ public class SettingsHandler extends Handler {
         new Param("nrtCachingDirectory.maxMergeSizeMB", "Largest merged segment size to cache in RAMDirectory", new FloatType(), 5.0),
         new Param("nrtCachingDirectory.maxSizeMB", "Largest overall size for all files cached in NRTCachingDirectory; set to 0 to disable NRTCachingDirectory", new FloatType(), 60.0),
         new Param("concurrentMergeScheduler.maxThreadCount", "How many merge threads to allow at once", new IntType(), 1),
-        new Param("concurrentMergeScheduler.maxMergeCount", "Maximum backlog of pending merges before indexing threads are paused", new IntType(), 2),
+        new Param("concurrentMergeScheduler.maxMergeCount", "Maximum backlog of pending merges before indexing threads are stalled", new IntType(), 2),
         new Param("index.verbose", "Turn on IndexWriter's infoStream (to stdout)", new BooleanType(), false),
         new Param("directory", "Directory implementation to use",
             new PolyType(Directory.class,

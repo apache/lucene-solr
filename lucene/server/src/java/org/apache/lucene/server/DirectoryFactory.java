@@ -92,7 +92,7 @@ public abstract class DirectoryFactory {
           }
       };
     } else {
-      throw new IllegalArgumentException("unknown directory impl \"" + dirImpl + "\"");
+      throw new IllegalArgumentException("unknown directory implementation \"" + dirImpl + "\"");
     }
   }
 }

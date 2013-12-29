@@ -472,7 +472,8 @@ public class IndexState implements Closeable {
     }
   }
 
-  /** Holds state for a single document add/update. */
+  /** Holds state for a single document add/update; not
+   *  static because it uses this.writer. */
   class AddDocumentJob implements Callable<Long> {
     private final Term updateTerm;
     private final DocumentAndFacets doc;
@@ -577,107 +578,88 @@ public class IndexState implements Closeable {
 
   /** Record that this snapshot id refers to the current
    *  generation, returning it. */
-  public long incRefLastCommitGen() throws IOException {
+  public synchronized long incRefLastCommitGen() throws IOException {
     long result;
-    synchronized(saveLoadState) {
-      long nextGen = saveLoadState.getNextWriteGen();
-      //System.out.println("state nextGen=" + nextGen);
-      if (nextGen == 0) {
-        throw new IllegalStateException("no commit exists");
-      }
-      result = nextGen-1;
-      if (result != -1) {
-        incRef(result);
-      }
+    long nextGen = saveLoadState.getNextWriteGen();
+    //System.out.println("state nextGen=" + nextGen);
+    if (nextGen == 0) {
+      throw new IllegalStateException("no commit exists");
     }
-
+    result = nextGen-1;
+    if (result != -1) {
+      incRef(result);
+    }
     return result;
   }
 
-  private void incRef(long stateGen) throws IOException {
-    synchronized(saveLoadGenRefCounts) {
-      Integer rc = genRefCounts.get(stateGen);
-      if (rc == null) {
-        genRefCounts.put(stateGen, 1);
-      } else {
-        genRefCounts.put(stateGen, 1+rc.intValue());
-      }
-      saveLoadGenRefCounts.save(genRefCounts);
+  private synchronized void incRef(long stateGen) throws IOException {
+    Integer rc = genRefCounts.get(stateGen);
+    if (rc == null) {
+      genRefCounts.put(stateGen, 1);
+    } else {
+      genRefCounts.put(stateGen, 1+rc.intValue());
     }
+    saveLoadGenRefCounts.save(genRefCounts);
   }
 
   /** Drop this snapshot from the references. */
-  public void decRef(long stateGen) throws IOException {
-    synchronized(saveLoadGenRefCounts) {
-      Integer rc = genRefCounts.get(stateGen);
-      if (rc == null) {
-        throw new IllegalArgumentException("stateGen=" + stateGen + " is not held by a snapshot");
-      }
-      assert rc.intValue() > 0;
-      if (rc.intValue() == 1) {
-        genRefCounts.remove(stateGen);
-      } else {
-        genRefCounts.put(stateGen, rc.intValue()-1);
-      }
-      saveLoadGenRefCounts.save(genRefCounts);
+  public synchronized void decRef(long stateGen) throws IOException {
+    Integer rc = genRefCounts.get(stateGen);
+    if (rc == null) {
+      throw new IllegalArgumentException("stateGen=" + stateGen + " is not held by a snapshot");
     }
+    assert rc.intValue() > 0;
+    if (rc.intValue() == 1) {
+      genRefCounts.remove(stateGen);
+    } else {
+      genRefCounts.put(stateGen, rc.intValue()-1);
+    }
+    saveLoadGenRefCounts.save(genRefCounts);
   }
 
   /** True if this generation is still referenced by at
    *  least one snapshot. */
-  public boolean hasRef(long gen) {
-    synchronized(genRefCounts) {
-      Integer rc = genRefCounts.get(gen);
-      if (rc == null) {
-        return false;
-      } else {
-        assert rc.intValue() > 0;
-        return true;
-      }
+  public synchronized boolean hasRef(long gen) {
+    Integer rc = genRefCounts.get(gen);
+    if (rc == null) {
+      return false;
+    } else {
+      assert rc.intValue() > 0;
+      return true;
     }
   }
 
   /** Records a new field in the internal {@code fields} state. */
-  public void addField(FieldDef fd, JSONObject json) {
-    synchronized(fields) {
-      if (fields.containsKey(fd.name)) {
-        throw new IllegalArgumentException("field \"" + fd.name + "\" was already registered");
-      }
-      fields.put(fd.name, fd);
-      if (fd.liveValuesIDField != null) {
-        liveFieldValues.put(fd.name, new StringLiveFieldValues(manager, fd.liveValuesIDField, fd.name));
-      }
-      assert !fieldsSaveState.containsKey(fd.name);
-      fieldsSaveState.put(fd.name, json);
+  public synchronized void addField(FieldDef fd, JSONObject json) {
+    if (fields.containsKey(fd.name)) {
+      throw new IllegalArgumentException("field \"" + fd.name + "\" was already registered");
     }
+    fields.put(fd.name, fd);
+    if (fd.liveValuesIDField != null) {
+      liveFieldValues.put(fd.name, new StringLiveFieldValues(manager, fd.liveValuesIDField, fd.name));
+    }
+    assert !fieldsSaveState.containsKey(fd.name);
+    fieldsSaveState.put(fd.name, json);
   }
 
   /** Returns JSON representation of all registered fields. */
-  public String getAllFieldsJSON() {
-    synchronized(fieldsSaveState) {
-      return fieldsSaveState.toString();
-    }
+  public synchronized String getAllFieldsJSON() {
+    return fieldsSaveState.toString();
   }
 
   /** Returns JSON representation of all settings. */
-  public String getSettingsJSON() {
-    synchronized(settingsSaveState) {
-      return settingsSaveState.toString();
-    }
+  public synchronized String getSettingsJSON() {
+    return settingsSaveState.toString();
   }
 
   /** Returns JSON representation of all live settings. */
-  public String getLiveSettingsJSON() {
-    synchronized(liveSettingsSaveState) {
-      return liveSettingsSaveState.toString();
-    }
+  public synchronized String getLiveSettingsJSON() {
+    return liveSettingsSaveState.toString();
   }
 
   /** Records a new suggestor state. */
-  public void addSuggest(String name, JSONObject o) {
-    synchronized(suggestSaveState) {
-      suggestSaveState.put(name, o);
-    }
+  public synchronized void addSuggest(String name, JSONObject o) {
+    suggestSaveState.put(name, o);
   }
 
   /** Job for a single block addDocuments call. */
@@ -781,7 +763,7 @@ public class IndexState implements Closeable {
     reopenThread.start();
   }
 
-  /** Fold in new settings from the incoming request into
+  /** Fold in new non-live settings from the incoming request into
    *  the stored settings. */
   public synchronized void mergeSimpleSettings(Request r) {
     if (writer != null) {
@@ -840,9 +822,7 @@ public class IndexState implements Closeable {
       writer = null;
       // nocommit this is dangerous .. eg Server iterates
       // all IS.indices and closes ...:
-      synchronized(globalState.indices) {
-        globalState.indices.remove(name);
-      }
+      globalState.indices.remove(name);
     }
   }
 
@@ -851,45 +831,37 @@ public class IndexState implements Closeable {
     return writer != null;
   }
 
-  /** Set the mininum refresh time (seconds), which is the
+  /** Live setting: et the mininum refresh time (seconds), which is the
    *  longest amount of time a client may wait for a
    *  searcher to reopen. */
-  public void setMinRefreshSec(double min) {
+  public synchronized void setMinRefreshSec(double min) {
     minRefreshSec = min;
-    synchronized(liveSettingsSaveState) {
-      liveSettingsSaveState.put("minRefreshSec", min);
-    }
+    liveSettingsSaveState.put("minRefreshSec", min);
     restartReopenThread();
   }
 
-  /** Set the maximum refresh time (seconds), which is the
+  /** Live setting: set the maximum refresh time (seconds), which is the
    *  amount of time before we reopen the searcher
    *  proactively (when no search client is waiting). */
-  public void setMaxRefreshSec(double max) {
+  public synchronized void setMaxRefreshSec(double max) {
     maxRefreshSec = max;
-    synchronized(liveSettingsSaveState) {
-      liveSettingsSaveState.put("maxRefreshSec", max);
-    }
+    liveSettingsSaveState.put("maxRefreshSec", max);
     restartReopenThread();
   }
 
-  /** Once a searcher becomes stale, we will close it after
+  /** Live setting: nce a searcher becomes stale, we will close it after
    *  this many seconds. */
-  public void setMaxSearcherAgeSec(double d) {
+  public synchronized void setMaxSearcherAgeSec(double d) {
     maxSearcherAgeSec = d;
-    synchronized(liveSettingsSaveState) {
-      liveSettingsSaveState.put("maxSearcherAgeSec", d);
-    }
+    liveSettingsSaveState.put("maxSearcherAgeSec", d);
   }
 
-  /** How much RAM to use for buffered documents during
+  /** Live setting: how much RAM to use for buffered documents during
    *  indexing (passed to {@link
    *  IndexWriterConfig#setRAMBufferSizeMB}. */
-  public void setIndexRAMBufferSizeMB(double d) {
+  public synchronized void setIndexRAMBufferSizeMB(double d) {
     indexRAMBufferSizeMB = d;
-    synchronized(liveSettingsSaveState) {
-      liveSettingsSaveState.put("indexRAMBufferSizeMB", d);
-    }
+    liveSettingsSaveState.put("indexRAMBufferSizeMB", d);
 
     // nocommit sync: what if closeIndex is happening in
     // another thread:
@@ -901,23 +873,16 @@ public class IndexState implements Closeable {
 
   /** Record the {@link DirectoryFactory} to use for this
    *  index. */
-  public void setDirectoryFactory(DirectoryFactory df, Object saveState) {
-    synchronized(settingsSaveState) {
-      if (writer != null) {
-        throw new IllegalStateException("index \"" + name + "\": cannot change Directory when the index is running");
-      }
-      settingsSaveState.put("directory", saveState);
-      this.df = df;
-      // nocommit run through & verify no other indices have
-      // this same rootDir!?  or share a prefix between the
-      // two!?
+  public synchronized void setDirectoryFactory(DirectoryFactory df, Object saveState) {
+    if (writer != null) {
+      throw new IllegalStateException("index \"" + name + "\": cannot change Directory when the index is running");
     }
+    settingsSaveState.put("directory", saveState);
+    this.df = df;
   }
 
   /** Get the current save state. */
   public synchronized JSONObject getSaveState() throws IOException {
-    // nocommit this is the wrong sync (the setters all sync
-    // on each individually)
     JSONObject o = new JSONObject();
     o.put("settings", settingsSaveState);
     o.put("liveSettings", liveSettingsSaveState);
@@ -944,6 +909,12 @@ public class IndexState implements Closeable {
 
   /** Load all previously saved state. */
   public synchronized void load(JSONObject o) throws Exception {
+
+    // To load, we invoke each handler from the save state,
+    // as if the app had just done so from a fresh index,
+    // except for suggesters which uses a dedicated load
+    // method:
+
     // Global settings:
     JSONObject settingsState = (JSONObject) o.get("settings");
     //System.out.println("load: state=" + o);

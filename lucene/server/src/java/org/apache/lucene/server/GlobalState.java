@@ -198,6 +198,12 @@ public class GlobalState implements Closeable {
     }
   }
 
+  void removeIndex(String name) {
+    synchronized(indices) {
+      indices.remove(name);
+    }
+  }
+
   /** Close all indices. */
   public void closeAll() throws IOException {
     IOUtils.close(indices.values());
