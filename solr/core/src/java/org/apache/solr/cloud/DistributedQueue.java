@@ -56,7 +56,7 @@ public class DistributedQueue {
   public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl) {
     this.dir = dir;
     
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(30);
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
     try {
       cmdExecutor.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {

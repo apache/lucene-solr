@@ -282,6 +282,9 @@ Bug Fixes
 * SOLR-5583: ConcurrentUpdateSolrServer#blockUntilFinished may wait forever if
   the executor service is shutdown. (Mark Miller)
 
+* SOLR-5586: All ZkCmdExecutor's should be initialized with the zk client
+  timeout. (Mark Miller)
+
 Optimizations
 ----------------------
 
