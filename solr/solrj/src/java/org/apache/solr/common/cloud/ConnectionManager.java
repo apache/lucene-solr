@@ -82,18 +82,19 @@ public class ConnectionManager implements Watcher {
       disconnectedTimer.cancel();
       disconnectedTimer = null;
     }
-    
-    disconnectedTimer = new Timer();
-    disconnectedTimer.schedule(new TimerTask() {
-      
-      @Override
-      public void run() {
-        synchronized (ConnectionManager.this) {
-          likelyExpired = true;
+    if (!isClosed) {
+      disconnectedTimer = new Timer();
+      disconnectedTimer.schedule(new TimerTask() {
+        
+        @Override
+        public void run() {
+          synchronized (ConnectionManager.this) {
+            likelyExpired = true;
+          }
         }
-      }
-      
-    }, (long) (client.getZkClientTimeout() * 0.90));
+        
+      }, (long) (client.getZkClientTimeout() * 0.90));
+    }
     connected = false;
   }
 
