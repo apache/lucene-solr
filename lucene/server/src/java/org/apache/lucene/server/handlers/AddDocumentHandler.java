@@ -150,7 +150,7 @@ public class AddDocumentHandler extends Handler {
 
     if (fd.highlighted) {
       assert o instanceof String;
-      if (fd.singleValued == false && (((String) o).indexOf(Constants.INFORMATION_SEP) != -1)) {
+      if (fd.multiValued && (((String) o).indexOf(Constants.INFORMATION_SEP) != -1)) {
         // TODO: we could remove this restriction if it
         // ever matters ... we can highlight multi-valued
         // fields at search time without stealing a
@@ -303,7 +303,7 @@ public class AddDocumentHandler extends Handler {
 
     FieldDef fd = state.getField(name);
 
-    if (!fd.singleValued) {
+    if (fd.multiValued) {
       // Field is mutli-valued; parse an array
       JsonToken token = p.nextToken();
       if (token != JsonToken.START_ARRAY) {
@@ -375,7 +375,7 @@ public class AddDocumentHandler extends Handler {
 
     JsonToken token = p.nextToken();
     if (token == JsonToken.END_ARRAY) {
-      assert fd.singleValued == false;
+      assert fd.multiValued;
       return false;
     }
 

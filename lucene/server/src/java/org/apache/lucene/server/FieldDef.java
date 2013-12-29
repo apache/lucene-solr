@@ -46,8 +46,8 @@ public class FieldDef {
   /** Doc values format (codec). */
   public final String docValuesFormat;
 
-  /** True if the field is single valued. */
-  public final boolean singleValued;
+  /** True if the field is multi valued. */
+  public final boolean multiValued;
 
   /** {@link Similarity} to use during indexing searching. */
   public final Similarity sim;
@@ -74,7 +74,7 @@ public class FieldDef {
   public final long blendRange;
 
   /** Sole constructor. */
-  public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean singleValued,
+  public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean multiValued,
                   Similarity sim, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean highlighted, String liveValuesIDField,
                   String blendFieldName, float blendMaxBoost, long blendRange) {
     this.name = name;
@@ -86,7 +86,7 @@ public class FieldDef {
     this.faceted = faceted;
     this.postingsFormat = postingsFormat;
     this.docValuesFormat = docValuesFormat;
-    this.singleValued = singleValued;
+    this.multiValued = multiValued;
     this.sim = sim;
     this.indexAnalyzer = indexAnalyzer;
     this.searchAnalyzer = searchAnalyzer;

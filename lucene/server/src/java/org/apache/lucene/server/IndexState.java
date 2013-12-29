@@ -198,7 +198,7 @@ public class IndexState implements Closeable {
           // Don't do NO_PARENTS, so we avoid the
           // [pointless] rollup cost:
           return OrdinalPolicy.ALL_BUT_DIMENSION;
-        } else if (fd.singleValued) {
+        } else if (fd.multiValued == false) {
           // Index only the exact ord, and do rollup in the
           // end:
           return OrdinalPolicy.NO_PARENTS;

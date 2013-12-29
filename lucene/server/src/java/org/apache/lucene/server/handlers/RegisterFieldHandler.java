@@ -399,10 +399,10 @@ public class RegisterFieldHandler extends Handler {
   }
 
   private FieldDef parseOneFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
+
+    // This way f.fail reports which field name was problematic:
     Request f = new Request(r, name, o, FIELD_TYPE);
 
-    // TODO: need to somehow get the field name into here so
-    // error messages tell me which field is wrong
     String type = f.getEnum("type");
     if (type.equals("virtual")) {
       return parseOneVirtualFieldType(f, state, pendingFieldDefs, name, o);
@@ -418,17 +418,19 @@ public class RegisterFieldHandler extends Handler {
     // may index offsets into postings, or term vectors...
     boolean highlighted = f.getBoolean("highlight");
 
-    if (highlighted && !type.equals("text") && !type.equals("atom")) {
-      f.fail("highlighted", "only type=text or type=atom fields can be highlighted");
+    if (highlighted) {
+      if (type.equals("text") == false && type.equals("atom") == false) {
+        f.fail("highlighted", "only type=text or type=atom fields can be highlighted");
+      }
     }
 
-    boolean singleValued = !f.getBoolean("multiValued");
-    if (!singleValued) {
+    boolean multiValued = f.getBoolean("multiValued");
+    if (multiValued) {
       if (sorted) {
-        f.fail("multiValued", "field \"" + name + "\": cannot sort on multiValued fields");
+        f.fail("multiValued", "cannot sort on multiValued fields");
       }
       if (grouped) {
-        f.fail("multiValued", "field \"" + name + "\": cannot group on multiValued fields");
+        f.fail("multiValued", "cannot group on multiValued fields");
       }
     }      
 
@@ -628,7 +630,7 @@ public class RegisterFieldHandler extends Handler {
       if (!type.equals("atom") && !type.equals("atom")) {
         f.fail("liveValues", "only type=atom or type=text fields may have liveValues enabled");
       }
-      if (!singleValued) {
+      if (multiValued) {
         f.fail("liveValues", "liveValues fields must not be multiValued");
       }
       if (!ft.stored()) {
@@ -637,7 +639,7 @@ public class RegisterFieldHandler extends Handler {
       if (!idField.fieldType.stored()) {
         f.fail("liveValues", "id field \"" + liveValuesIDField + "\" is not stored");
       }
-      if (!idField.singleValued) {
+      if (idField.multiValued) {
         f.fail("liveValues", "id field \"" + liveValuesIDField + "\" must not be multiValued");
       }
       if (!idField.valueType.equals("atom") && !idField.valueType.equals("text")) {
@@ -670,7 +672,7 @@ public class RegisterFieldHandler extends Handler {
 
     ft.freeze();
 
-    return new FieldDef(name, ft, type, facet, pf, dvf, singleValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l);
+    return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l);
   }
 
   /** Messy: we need this for indexed-but-not-tokenized

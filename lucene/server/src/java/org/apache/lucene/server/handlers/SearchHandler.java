@@ -433,7 +433,7 @@ public class SearchHandler extends Handler {
           }
           Object o = doc.get(name);
           if (o == null) {
-            if (!fd.singleValued) {
+            if (fd.multiValued) {
               List<Object> l = new ArrayList<Object>();
               l.add(value);
               value = l;
@@ -491,7 +491,7 @@ public class SearchHandler extends Handler {
     @Override
     protected PassageFormatter getFormatter(String fieldName) {
       FieldHighlightConfig perField = perFieldConfig.get(fieldName);
-      if (!perField.singleValued && perField.mode.equals("whole")) {
+      if (perField.multiValued && perField.mode.equals("whole")) {
         FieldDef fd = state.getField(fieldName);
         assert fd.indexAnalyzer != null;
         return new WholeMVJSONPassageFormatter(fd.indexAnalyzer.getOffsetGap(fieldName));
@@ -729,7 +729,7 @@ public class SearchHandler extends Handler {
           // We caught same field name above:
           assert !result.containsKey(name);
 
-          if (fd.singleValued) {
+          if (fd.multiValued == false) {
             result.put(name, convertType(fd, v));
           } else {
             JSONArray arr = new JSONArray();
@@ -1266,7 +1266,7 @@ public class SearchHandler extends Handler {
     public String mode;
 
     /** True if field is single valued. */
-    public boolean singleValued;
+    public boolean multiValued;
 
     /** {@link BreakIterator} to use. */
     public BreakIterator breakIterator;
@@ -1507,8 +1507,8 @@ public class SearchHandler extends Handler {
           fd = null;
         }
         if (perField != null) {
-          perField.singleValued = fd.singleValued;
-          if (fd.singleValued && perField.mode.equals("joinedSnippets")) {
+          perField.multiValued = fd.multiValued;
+          if (fd.multiValued == false && perField.mode.equals("joinedSnippets")) {
             ((Request) o).fail("highlight", "joinedSnippets can only be used with multi-valued fields");
           }
         }
