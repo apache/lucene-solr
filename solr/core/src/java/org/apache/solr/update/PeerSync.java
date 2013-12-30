@@ -291,7 +291,8 @@ public class PeerSync  {
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
-        if (solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
+        boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
+        if (connectTimeoutExceptionInChain || solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
             || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
           log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
 
@@ -308,6 +309,10 @@ public class PeerSync  {
         log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success");
         return true;
       }
+      
+      // TODO: we should return the above information so that when we can request a recovery through zookeeper, we do
+      // that for these nodes
+      
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
      
@@ -323,6 +328,23 @@ public class PeerSync  {
     }
   }
   
+  // sometimes the root exception is a SocketTimeoutException, but ConnectTimeoutException
+  // is in the chain
+  private boolean connectTimeoutExceptionInChain(Throwable exception) {
+    Throwable t = exception;
+    while (true) {
+      if (t instanceof ConnectTimeoutException) {
+        return true;
+      }
+      Throwable cause = t.getCause();
+      if (cause != null) {
+        t = cause;
+      } else {
+        return false;
+      }
+    }
+  }
+
   private boolean handleVersions(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
     List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
