@@ -152,9 +152,6 @@ Bug Fixes
 * SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
   retries. (Mark Miller)
 
-* SOLR-4709: The core reload after replication if config files have changed
-  can fail due to a race condition. (Mark Miller, Hossman))
-
 * LUCENE-5347: Fixed Solr's Zookeeper Client to copy files to Zookeeper using
   binary transfer. Previously data was read with default encoding and stored
   in zookeeper as UTF-8. This bug was found after upgrading to forbidden-apis
@@ -325,6 +322,9 @@ Bug Fixes
   ZkCmdExecutor#ensureExists to ensure their election paths are properly
   created. (Mark Miller)
 
+* SOLR-4709: The core reload after replication if config files have changed
+  can fail due to a race condition. (Mark Miller, Hossman))
+  
 Optimizations
 ----------------------
 
