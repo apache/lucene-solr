@@ -96,6 +96,8 @@ New Features
 * SOLR-5556: Allow class of CollectionsHandler and InfoHandler to be specified
   in solr.xml. (Gregory Chanan, Alan Woodward)
 
+* SOLR-5581: Give ZkCLI the ability to get files. (Gregory Chanan via Mark Miller)
+
 Bug Fixes
 ----------------------
 
