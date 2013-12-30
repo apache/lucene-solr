@@ -135,7 +135,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     // we only set the connect timeout, not so timeout
-    baseServer.setConnectionTimeout(15000);
+    baseServer.setConnectionTimeout(30000);
     baseServer.request(request);
     
     waitForThingsToLevelOut(15);
@@ -165,7 +165,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     Thread.sleep(2000);
     
-    waitForThingsToLevelOut(90);
+    waitForThingsToLevelOut(120);
     
     Thread.sleep(1000);
     
@@ -228,7 +228,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(3000);
     
-    waitForThingsToLevelOut(90);
+    waitForThingsToLevelOut(120);
     
     Thread.sleep(2000);
     
