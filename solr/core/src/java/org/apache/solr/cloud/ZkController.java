@@ -1334,21 +1334,7 @@ public final class ZkController {
     // this also gets us our assigned shard id if it was not specified
     try {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-      if(cd.getCloudDescriptor().getCollectionName() !=null && cloudDesc.getCoreNodeName() != null ) {
-        //we were already registered
-        if(zkStateReader.getClusterState().hasCollection(cloudDesc.getCollectionName())){
-        DocCollection coll = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
-         if(!"true".equals(coll.getStr("autoCreated"))){
-           Slice slice = coll.getSlice(cloudDesc.getShardId());
-           if(slice != null){
-             if(slice.getReplica(cloudDesc.getCoreNodeName()) == null) {
-               log.info("core_removed This core is removed from ZK");
-               throw new SolrException(ErrorCode.NOT_FOUND,cloudDesc.getCoreNodeName() +" is removed");
-             }
-           }
-         }
-        }
-      }
+
 
       // make sure the node name is set on the descriptor
       if (cloudDesc.getCoreNodeName() == null) {
