@@ -614,6 +614,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // if one node is a RetryNode, this was a forward request
       if (errors.get(0).req.node instanceof RetryNode) {
         rsp.setException(errors.get(0).e);
+      } else {
+        if (log.isWarnEnabled()) {
+          for (Error error : errors) {
+            log.warn("Error sending update", error.e);
+          }
+        }
       }
       // else
       // for now we don't error - we assume if it was added locally, we
@@ -625,7 +631,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // recover - the doc was already added locally, so it should have been
     // legit
 
-    // TODO: we should do this in the background it would seem
     for (final SolrCmdDistributor.Error error : errors) {
       if (error.req.node instanceof RetryNode) {
         // we don't try to force a leader to recover
