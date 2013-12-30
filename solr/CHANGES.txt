@@ -324,6 +324,9 @@ Bug Fixes
 
 * SOLR-5503: Retry 'forward to leader' requests less aggressively - rather 
   than on IOException and status 500, ConnectException. (Mark Miller)
+
+* SOLR-5588: PeerSync doesn't count all connect failures as success.
+  (Mark Miller)
     
 Optimizations
 ----------------------
