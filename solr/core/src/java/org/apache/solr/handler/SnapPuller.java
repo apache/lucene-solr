@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -409,6 +410,9 @@ public class SnapPuller {
           solrCore.getUpdateHandler().getSolrCoreState()
           .closeIndexWriter(core, true);
         }
+        
+        boolean reloadCore = false;
+        
         try {
           LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
               + isFullCopyNeeded);
@@ -443,7 +447,7 @@ public class SnapPuller {
               logReplicationTimeAndConfFiles(modifiedConfFiles,
                   successfulInstall);// write to a file time of replication and
                                      // conf files.
-              reloadCore();
+              reloadCore = true;
             }
           } else {
             terminateAndWaitFsyncService();
@@ -462,6 +466,11 @@ public class SnapPuller {
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(core);
           }
+        }
+        
+        // we must reload the core after we open the IW back up
+        if (reloadCore) {
+          reloadCore();
         }
 
         if (successfulInstall) {
@@ -692,6 +701,7 @@ public class SnapPuller {
   }
 
   private void reloadCore() {
+    final CountDownLatch latch = new CountDownLatch(1);
     new Thread() {
       @Override
       public void run() {
@@ -699,9 +709,17 @@ public class SnapPuller {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
         } catch (Exception e) {
           LOG.error("Could not reload core ", e);
+        } finally {
+          latch.countDown();
         }
       }
     }.start();
+    try {
+      latch.await();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while waiting for core reload to finish", e);
+    }
   }
 
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
