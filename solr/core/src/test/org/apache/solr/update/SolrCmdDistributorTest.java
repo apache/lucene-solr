@@ -351,7 +351,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    assertEquals(numFoundBefore + 1, numFoundAfter);
+    // we will get java.net.SocketException: Network is unreachable, which we don't retry on
+    assertEquals(numFoundBefore, numFoundAfter);
+    assertEquals(1, cmdDistrib.getErrors().size());
   }
   
   @Override
