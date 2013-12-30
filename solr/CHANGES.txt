@@ -81,6 +81,10 @@ Bug Fixes
 * SOLR-5586: All ZkCmdExecutor's should be initialized with the zk client
   timeout. (Mark Miller)
 
+* SOLR-5587: ElectionContext implementations should use 
+  ZkCmdExecutor#ensureExists to ensure their election paths are properly
+  created. (Mark Miller)
+
 Optimizations
 ----------------------  
 
