@@ -10,6 +10,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -93,6 +94,15 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
+    
+    try {
+      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout()).ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, zkClient);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   @Override
@@ -424,6 +434,14 @@ final class OverseerElectionContext extends ElectionContext {
     super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
+    try {
+      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists("/overseer_elect", zkClient);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   @Override
