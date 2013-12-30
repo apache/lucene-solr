@@ -34,7 +34,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
+@Ignore("Not currently valid see SOLR-5580")
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
   private CloudSolrServer client;
 
