@@ -66,7 +66,7 @@ public  class LeaderElector {
   
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor((int) (zkClient.getZkClientTimeout()/1000.0 + 3000));
+    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
   
   /**

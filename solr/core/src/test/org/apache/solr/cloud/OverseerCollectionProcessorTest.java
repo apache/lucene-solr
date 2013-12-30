@@ -218,6 +218,24 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }).anyTimes();
       
     }
+    
+    solrZkClientMock.getZkClientTimeout();
+    expectLastCall().andAnswer(new IAnswer<Object>() {
+      @Override
+      public Object answer() throws Throwable {
+        return 30000;
+      }
+    }).anyTimes();
+    
+    clusterStateMock.hasCollection(anyObject(String.class));
+    expectLastCall().andAnswer(new IAnswer<Boolean>() {
+      @Override
+      public Boolean answer() throws Throwable {
+        String key = (String) getCurrentArguments()[0];
+        return collectionsSet.contains(key);
+      }
+    } ).anyTimes();
+
     clusterStateMock.getLiveNodes();
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
