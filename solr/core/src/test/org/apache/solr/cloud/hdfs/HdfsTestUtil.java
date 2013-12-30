@@ -56,6 +56,8 @@ public class HdfsTestUtil {
     System.setProperty("test.cache.data", dir.getAbsolutePath() + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", "hdfs");
     
+    System.setProperty("solr.hdfs.home", "/solr_hdfs_home");
+    
     MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
@@ -68,6 +70,7 @@ public class HdfsTestUtil {
     System.clearProperty("solr.lock.type");
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
+    System.clearProperty("solr.hdfs.home");
     if (dfsCluster != null) {
       dfsCluster.shutdown();
     }
