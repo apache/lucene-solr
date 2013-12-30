@@ -60,7 +60,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("5\u001fthe time is now\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
     assertEquals(5, result.get("count"));
     commit();
 
@@ -106,7 +106,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'InfixSuggester', suggestName: 'suggest2', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "}', class: 'InfixSuggester', suggestName: 'suggest2', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     commit();
 
@@ -144,7 +144,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, localFile: '" + tempFile.getAbsolutePath() + "', class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "}', class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     commit();
 
@@ -159,6 +159,42 @@ public class TestSuggest extends ServerBaseTestCase {
       shutdownServer();
       startServer();
       send("startIndex", "{indexName: index}");
+    }
+  }
+
+  /** Build a suggest, pulling suggestions/weights/payloads from stored fields. */
+  public void testFromStoredFields() throws Exception {
+
+    _TestUtil.rmDir(new File("storedsuggest"));
+    send("createIndex", "{indexName: storedsuggest, rootDir: storedsuggest}");
+    send("settings", "{indexName: storedsuggest, directory: FSDirectory, matchVersion: LUCENE_46}");
+    send("startIndex", "{indexName: storedsuggest}");
+    send("registerFields",
+         "{indexName: storedsuggest, " +
+         "fields: {text: {type: text, store: true, index: false}," + 
+                  "weight: {type: float, store: true, index: false}," +
+                  "payload: {type: text, store: true, index: false}}}");
+    send("addDocument", "{indexName: storedsuggest, fields: {text: 'the cat meows', weight: 1, payload: 'payload1'}}");
+    long indexGen = getLong(send("addDocument", "{indexName: storedsuggest, fields: {text: 'the dog barks', weight: 2, payload: 'payload2'}}"), "indexGen");
+
+    JSONObject result = send("buildSuggest", "{indexName: storedsuggest, source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightField: weight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    // nocommit count isn't returned for stored fields source:
+    //assertEquals(2, result.get("count"));
+    commit();
+
+    for(int i=0;i<2;i++) {
+      result = send("suggestLookup", "{indexName: storedsuggest, text: the, suggestName: suggest}");
+      assertEquals(2, getInt(result, "results[0].weight"));
+      assertEquals("the dog barks", get(result, "results[0].key"));
+      assertEquals("payload2", get(result, "results[0].payload"));
+      assertEquals(1, getInt(result, "results[1].weight"));
+      assertEquals("the cat meows", get(result, "results[1].key"));
+      assertEquals("payload1", get(result, "results[1].payload"));
+
+      // Make sure suggest survives server restart:    
+      shutdownServer();
+      startServer();
+      send("startIndex", "{indexName: storedsuggest}");
     }
   }
 }

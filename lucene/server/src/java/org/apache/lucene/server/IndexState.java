@@ -737,6 +737,7 @@ public class IndexState implements Closeable {
     public DocumentAndFacets() {
     }
 
+    /** Add another facet. */
     public void addFacet(CategoryPath cp) {
       if (facets == null) {
         facets = new ArrayList<CategoryPath>();

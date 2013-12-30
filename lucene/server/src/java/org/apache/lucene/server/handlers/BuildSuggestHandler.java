@@ -17,6 +17,7 @@ package org.apache.lucene.server.handlers;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -32,7 +33,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.DocumentDictionary;
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
@@ -83,9 +88,17 @@ public class BuildSuggestHandler extends Handler {
                              new Param("indexAnalyzer", "Index analyzer", ANALYZER_TYPE),
                              new Param("queryAnalyzer", "Query analyzer", ANALYZER_TYPE))),
                   "AnalyzingSuggester"),
-        // nocommit break out separate TYPEs for each impl
         // nocommit option to stream suggestions in over the wire too
-        new Param("localFile", "File to read suggestions + weights from; format is weight:suggestion, one per line, with suggestion UTF-8 encoded.", new StringType()),
+        new Param("source", "Where to get suggestions from",
+            new StructType(
+                  new Param("localFile", "File to read suggestions + weights from; format is weight U+001F suggestion U+001F payload, one per line, with suggestion UTF-8 encoded.", new StringType()),
+                  new Param("searcher", "Specific searcher version to use for searching.  There are three different ways to specify a searcher version.",
+                            new StructType(
+                                           new Param("indexGen", "Search a generation previously returned by an indexing operation such as #addDocument.  Use this to search a non-committed (near-real-time) view of the index.", new LongType()),
+                                           new Param("snapshot", "Search a snapshot previously created with #createSnapshot", new StringType()))),
+                  new Param("suggestField", "Field (from stored documents) containing the suggestion text", new StringType()),
+                  new Param("weightField", "Numeric field (from stored documents) containing the weight", new StringType()),
+                  new Param("payloadField", "Optional binary or string field (from stored documents) containing the payload", new StringType()))),
         new Param("suggestName", "Unique name for this suggest build.", new StringType())
                    );
 
@@ -114,7 +127,22 @@ public class BuildSuggestHandler extends Handler {
       // Must consume these up front since getSuggester
       // won't:
       r.getString("suggestName");
-      r.getString("localFile");
+      Request source = r.getStruct("source");
+      if (source.hasParam("localFile")) {
+        r.getString("localFile");
+      } else {
+        Request searcher = source.getStruct("searcher");
+        if (searcher.hasParam("indexGen")) {
+          searcher.getLong("indexGen");
+        } else {        
+          searcher.getString("snapshot");
+        }
+        source.getString("suggestField");
+        source.getString("weightField");
+        if (source.hasParam("payloadField")) {
+          source.getString("payloadField");
+        }
+      }
       Lookup suggester = getSuggester(state, suggestName, r);
       assert !Request.anythingLeft(params);
 
@@ -254,6 +282,8 @@ public class BuildSuggestHandler extends Handler {
 
           @Override
           protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
+            // nocommit what the heck is this doing and can
+            // it be moved to Lucene?
             TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
             CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
             OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -336,38 +366,88 @@ public class BuildSuggestHandler extends Handler {
       r.fail("suggestName", "invalid suggestName \"" + suggestName + "\": must be [a-zA-Z_][a-zA-Z0-9]*");
     }
 
-    final File localFile = new File(r.getString("localFile"));
-    if (!localFile.exists()) {
-      r.fail("localFile", "file does not exist");
-    }
-    if (!localFile.canRead()) {
-      r.fail("localFile", "cannot read file");
-    }
-
     final Lookup suggester = getSuggester(state, suggestName, r);
 
-    FromFileTermFreqIterator iterator = null;
-    try {
-      iterator = new FromFileTermFreqIterator(localFile);
-    } catch (IOException ioe) {
-      r.fail("localFile", "cannot open file", ioe);
+    Request source = r.getStruct("source");
+
+    InputIterator iterator0 = null;
+    final SearcherAndTaxonomy searcher;
+
+    if (source.hasParam("localFile")) {
+      final File localFile = new File(r.getString("localFile"));
+      if (!localFile.exists()) {
+        r.fail("localFile", "file does not exist");
+      }
+      if (!localFile.canRead()) {
+        r.fail("localFile", "cannot read file");
+      }
+      searcher = null;
+      // Pull suggestions from local file:
+      try {
+        iterator0 = new FromFileTermFreqIterator(localFile);
+      } catch (IOException ioe) {
+        r.fail("localFile", "cannot open file", ioe);
+      }
+    } else {
+      // Pull suggestions from stored docs:
+      if (source.hasParam("searcher")) {
+        long searcherVersion;
+        IndexState.Gens searcherSnapshot;
+
+        Request s = source.getStruct("searcher");
+        if (s.hasParam("indexGen")) {
+          long indexGen = s.getLong("indexGen");
+          state.reopenThread.waitForGeneration(indexGen);
+          searcherVersion = -1;
+          searcherSnapshot = null;
+        } else {
+          searcherSnapshot = new IndexState.Gens(s, "snapshot");
+          Long v = state.snapshotGenToVersion.get(searcherSnapshot.indexGen);
+          if (v == null) {
+            s.fail("snapshot", "unrecognized snapshot \"" + searcherSnapshot.id + "\"");
+          }
+          searcherVersion = v.longValue();
+        }
+        searcher = SearchHandler.getSearcherAndTaxonomy(s, state, searcherVersion, searcherSnapshot, null);
+      } else {
+        searcher = state.manager.acquire();
+      }
+      String suggestField = source.getString("suggestField");
+      String weightField = source.getString("weightField");
+      String payloadField;
+      if (source.hasParam("payloadField")) {
+        payloadField = source.getString("payloadField");
+      } else {
+        payloadField = null;
+      }
+      DocumentDictionary dict = new DocumentDictionary(searcher.searcher.getIndexReader(),
+                                      suggestField,
+                                      weightField,
+                                      payloadField);
+      // nocommit weird that I have to cast this...?
+      iterator0 = (InputIterator) dict.getWordsIterator();
     }
+
+    final InputIterator iterator = iterator0;
 
     // nocommit return error if suggester already exists?
 
     // nocommit need a DeleteSuggestHandler
-
-    final FromFileTermFreqIterator finalIterator = iterator;    
-
+    
     return new FinishRequest() {
 
       @Override
       public String finish() throws IOException {
 
         try {
-          suggester.build(finalIterator);
+          suggester.build(iterator);
         } finally {
-          finalIterator.close();
+          if (iterator instanceof Closeable) {
+            ((Closeable) iterator).close();
+          }
+          if (searcher != null) {
+            state.manager.release(searcher);
+          }
         }
 
         File outFile = new File(state.rootDir, "suggest." + suggestName);
@@ -395,7 +475,16 @@ public class BuildSuggestHandler extends Handler {
         if (suggester instanceof AnalyzingSuggester) {
           ret.put("sizeInBytes", ((AnalyzingSuggester) suggester).sizeInBytes());
         }
-        ret.put("count", finalIterator.suggestCount);
+
+        int count;
+        if (iterator instanceof FromFileTermFreqIterator) {
+          count = ((FromFileTermFreqIterator) iterator).suggestCount;
+        } else {
+          // nocommit how to get count "in general"...?  or
+          // stop returning it?
+          count = 0;
+        }
+        ret.put("count", count);
         return ret.toString();
       }
     };
