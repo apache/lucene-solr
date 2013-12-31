@@ -20,24 +20,11 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
-
 /** Common base class for all facets implementations.
  *
  *  @lucene.experimental */
 public abstract class Facets {
+
   /** Returns the topN child labels under the specified
    *  path.  Returns null if the specified path doesn't
    *  exist or if this dimension was never seen. */

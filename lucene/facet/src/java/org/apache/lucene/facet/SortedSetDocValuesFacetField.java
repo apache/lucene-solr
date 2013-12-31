@@ -17,8 +17,6 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 

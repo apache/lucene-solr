@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  *  @lucene.experimental */
 public class AssociationFacetField extends Field {
+  
   static final FieldType TYPE = new FieldType();
   static {
     TYPE.setIndexed(true);
@@ -55,15 +56,15 @@ public class AssociationFacetField extends Field {
     this.path = path;
   }
 
-  private static BytesRef intToBytesRef(int v) {
-    byte[] bytes = new byte[4];
-    // big-endian:
-    bytes[0] = (byte) (v >> 24);
-    bytes[1] = (byte) (v >> 16);
-    bytes[2] = (byte) (v >> 8);
-    bytes[3] = (byte) v;
-    return new BytesRef(bytes);
-  }
+//  private static BytesRef intToBytesRef(int v) {
+//    byte[] bytes = new byte[4];
+//    // big-endian:
+//    bytes[0] = (byte) (v >> 24);
+//    bytes[1] = (byte) (v >> 16);
+//    bytes[2] = (byte) (v >> 8);
+//    bytes[3] = (byte) v;
+//    return new BytesRef(bytes);
+//  }
 
   @Override
   public String toString() {

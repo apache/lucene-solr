@@ -17,10 +17,12 @@ package org.apache.lucene.facet.taxonomy;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.util.Arrays;
 
-
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.NameHashIntCacheLRU;
 
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a
@@ -31,7 +33,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 public class FacetLabel implements Comparable<FacetLabel> {
 
   /*
-   * copied from DocumentWriterPerThread -- if a CategoryPath is resolved to a
+   * copied from DocumentWriterPerThread -- if a FacetLabel is resolved to a
    * drill-down term which is encoded to a larger term than that length, it is
    * silently dropped! Therefore we limit the number of characters to MAX/4 to
    * be on the safe side.
@@ -51,12 +53,6 @@ public class FacetLabel implements Comparable<FacetLabel> {
 
   /** The number of components of this {@link FacetLabel}. */
   public final int length;
-
-  // Used by singleton EMPTY
-  private FacetLabel() {
-    components = null;
-    length = 0;
-  }
 
   // Used by subpath
   private FacetLabel(final FacetLabel copyFrom, final int prefixLen) {

@@ -18,13 +18,8 @@ package org.apache.lucene.facet;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
@@ -161,10 +156,8 @@ public class DrillSideways {
     }
 
     FacetsCollector[] drillSidewaysCollectors = new FacetsCollector[drillDownDims.size()];
-
-    int idx = 0;
-    for(String dim : drillDownDims.keySet()) {
-      drillSidewaysCollectors[idx++] = new FacetsCollector();
+    for (int i = 0; i < drillSidewaysCollectors.length; i++) {
+      drillSidewaysCollectors[i] = new FacetsCollector();
     }
 
     boolean useCollectorMethod = scoreSubDocsAtOnce();

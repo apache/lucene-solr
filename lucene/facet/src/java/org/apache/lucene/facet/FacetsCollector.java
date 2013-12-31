@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
@@ -193,7 +190,7 @@ public final class FacetsCollector extends Collector {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, false, false, fc);
+    return doSearch(searcher, after, q, filter, n, sort, false, false, fc);
   }
 
   /** Utility method, to search and also collect all hits
@@ -202,7 +199,7 @@ public final class FacetsCollector extends Collector {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return (TopFieldDocs) doSearch(searcher, after, q, filter, n, sort, doDocScores, doMaxScore, fc);
+    return doSearch(searcher, after, q, filter, n, sort, doDocScores, doMaxScore, fc);
   }
 
   private static TopDocs doSearch(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort,

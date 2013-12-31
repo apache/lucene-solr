@@ -469,7 +469,7 @@ public class FacetsConfig {
     return pathToString(path, path.length);
   }
 
-  /** Turns the first {@code} length elements of {@code
+  /** Turns the first {@code length} elements of {@code
    * path} into an encoded string. */
   public static String pathToString(String[] path, int length) {
     if (length == 0) {

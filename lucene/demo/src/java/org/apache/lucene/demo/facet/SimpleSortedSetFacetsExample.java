@@ -23,15 +23,14 @@ import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -41,8 +40,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 /** Shows simple usage of faceted indexing and search,
- *  using {@link SortedSetDocValuesFacetFields} and {@link
- *  SortedSetDocValuesAccumulator}.  */
+ *  using {@link SortedSetDocValuesFacetField} and {@link
+ *  SortedSetDocValuesFacetCounts}.  */
 
 public class SimpleSortedSetFacetsExample {
 

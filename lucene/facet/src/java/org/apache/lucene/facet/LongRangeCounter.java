@@ -18,7 +18,6 @@ package org.apache.lucene.facet;
  */
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -153,7 +152,6 @@ final class LongRangeCounter {
 
     int lo = 0;
     int hi = boundaries.length - 1;
-    int count = 0;
     while (true) {
       int mid = (lo + hi) >>> 1;
       //System.out.println("  cycle lo=" + lo + " hi=" + hi + " mid=" + mid + " boundary=" + boundaries[mid] + " to " + boundaries[mid+1]);

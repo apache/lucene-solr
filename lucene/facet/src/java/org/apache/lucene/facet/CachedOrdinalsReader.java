@@ -21,11 +21,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.codecs.DocValuesFormat; // javadocs
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.BinaryDocValues; // javadocs
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -104,8 +103,6 @@ public class CachedOrdinalsReader extends OrdinalsReader {
      * Assumes that the {@link BinaryDocValues} is not {@code null}.
      */
     public CachedOrds(OrdinalsSegmentReader source, int maxDoc) throws IOException {
-      final BytesRef buf = new BytesRef();
-
       offsets = new int[maxDoc + 1];
       int[] ords = new int[maxDoc]; // let's assume one ordinal per-document as an initial size
 

@@ -28,7 +28,7 @@ public class MultiFacets extends Facets {
   private final Facets defaultFacets;
 
   public MultiFacets(Map<String,Facets> dimToFacets) {
-    this(dimToFacets = dimToFacets, null);
+    this(dimToFacets, null);
   }
 
   public MultiFacets(Map<String,Facets> dimToFacets, Facets defaultFacets) {
@@ -36,6 +36,7 @@ public class MultiFacets extends Facets {
     this.defaultFacets = defaultFacets;
   }
 
+  @Override
   public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
     Facets facets = dimToFacets.get(dim);
     if (facets == null) {
@@ -47,6 +48,7 @@ public class MultiFacets extends Facets {
     return facets.getTopChildren(topN, dim, path);
   }
 
+  @Override
   public Number getSpecificValue(String dim, String... path) throws IOException {
     Facets facets = dimToFacets.get(dim);
     if (facets == null) {
@@ -58,6 +60,7 @@ public class MultiFacets extends Facets {
     return facets.getSpecificValue(dim, path);
   }
 
+  @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
     // TODO
     throw new UnsupportedOperationException();

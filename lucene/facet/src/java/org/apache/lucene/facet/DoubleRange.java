@@ -20,13 +20,13 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.document.DoubleDocValuesField; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
