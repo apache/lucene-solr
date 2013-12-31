@@ -102,9 +102,7 @@ public class BulkUpdateDocumentHandler extends Handler {
     }
 
     IndexState state = globalState.get(parser.getText());
-    if (!state.started()) {
-      throw new IllegalArgumentException("index \"" + state.name + "\" isn't started: cannot update document");
-    }
+    state.verifyStarted(null);
 
     if (parser.nextToken() != JsonToken.FIELD_NAME) {
       throw new IllegalArgumentException("expected documents next");

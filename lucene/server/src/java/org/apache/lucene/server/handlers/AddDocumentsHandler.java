@@ -58,9 +58,7 @@ public class AddDocumentsHandler extends Handler {
   @Override
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
 
-    if (!state.started()) {
-      r.fail("indexName",  "call startIndex first");
-    }
+    state.verifyStarted(r);
 
     // NOTE: somewhat wasteful since we re-serialize to
     // string only to re-parse the JSON, but this allows

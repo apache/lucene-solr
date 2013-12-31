@@ -44,6 +44,8 @@
     <pathelement path="${queries.jar}"/>
     <pathelement path="${queryparser.jar}"/>
     <pathelement path="${suggest.jar}"/>
+    <pathelement path="${expressions.jar}"/>
+    <fileset dir="../expressions/lib"/>
     <fileset dir="lib"/>
     <path refid="base.classpath"/>
   </path>
@@ -58,6 +60,6 @@
     </invoke-module-javadoc>
   </target>
 
-  <target name="compile-core" depends="jar-analyzers-common, jar-analyzers-icu, jar-facet, jar-grouping, jar-highlighter, jar-join, jar-misc, jar-queries, jar-queryparser, jar-suggest, common.compile-core" />
+  <target name="compile-core" depends="jar-analyzers-common, jar-analyzers-icu, jar-facet, jar-grouping, jar-highlighter, jar-join, jar-misc, jar-queries, jar-queryparser, jar-suggest, jar-expressions, common.compile-core" />
 
 </project>

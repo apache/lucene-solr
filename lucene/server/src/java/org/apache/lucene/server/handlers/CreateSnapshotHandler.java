@@ -75,9 +75,7 @@ public class CreateSnapshotHandler extends Handler {
       r.fail("this index has no commits; please call commit first");
     }
 
-    if (!state.started()) { 
-      r.fail("this index hasn't been started yet");
-    }
+    state.verifyStarted(r);
 
     // nocommit not thread safe vs commitHandler?
     final boolean openSearcher = r.getBoolean("openSearcher");

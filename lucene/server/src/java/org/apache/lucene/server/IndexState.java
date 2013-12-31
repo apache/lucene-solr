@@ -30,6 +30,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -569,6 +570,10 @@ public class IndexState implements Closeable {
     }
 
     return result;
+  }
+
+  public Map<String,FieldDef> getAllFields() {
+    return Collections.unmodifiableMap(fields);
   }
 
   /** True if this index has at least one commit. */
@@ -1327,6 +1332,17 @@ public class IndexState implements Closeable {
       indexGen = indexGen1;
       taxoGen = taxoGen1;
       stateGen = stateGen1;
+    }
+  }
+
+  public void verifyStarted(Request r) {
+    if (started() == false) {
+      String message = "index '" + name + "' isn't started; call startIndex first";
+      if (r == null) {
+        throw new IllegalStateException(message);
+      } else {
+        r.fail("indexName", message);
+      }
     }
   }
 }

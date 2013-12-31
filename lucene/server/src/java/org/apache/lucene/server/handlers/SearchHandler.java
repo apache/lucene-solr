@@ -1344,9 +1344,7 @@ public class SearchHandler extends Handler {
   @Override
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
 
-    if (!state.started()) {
-      throw new IllegalArgumentException("index \"" + state.name + "\" isn't started: cannot search");
-    }
+    state.verifyStarted(r);
 
     final Map<ToParentBlockJoinQuery,BlockJoinQueryChild> useBlockJoinCollector = new HashMap<ToParentBlockJoinQuery,BlockJoinQueryChild>();
 

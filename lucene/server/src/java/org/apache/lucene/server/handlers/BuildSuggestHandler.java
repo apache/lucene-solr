@@ -25,32 +25,38 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+import net.minidev.json.parser.ParseException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.search.suggest.InputIterator;
-import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.suggest.DocumentDictionary;
+import org.apache.lucene.search.suggest.DocumentExpressionDictionary;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
+import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
+import org.apache.lucene.server.FieldDef;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.FromFileTermFreqIterator;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 
 import static org.apache.lucene.server.handlers.RegisterFieldHandler.ANALYZER_TYPE;
 
@@ -91,13 +97,14 @@ public class BuildSuggestHandler extends Handler {
         // nocommit option to stream suggestions in over the wire too
         new Param("source", "Where to get suggestions from",
             new StructType(
-                  new Param("localFile", "File to read suggestions + weights from; format is weight U+001F suggestion U+001F payload, one per line, with suggestion UTF-8 encoded.", new StringType()),
+                  new Param("localFile", "Local file (to the server) to read suggestions + weights from; format is weight U+001F suggestion U+001F payload, one per line, with suggestion UTF-8 encoded.  If this option is used then searcher, suggestField, weightField/Expression, payloadField should not be specified.", new StringType()),
                   new Param("searcher", "Specific searcher version to use for searching.  There are three different ways to specify a searcher version.",
                             new StructType(
                                            new Param("indexGen", "Search a generation previously returned by an indexing operation such as #addDocument.  Use this to search a non-committed (near-real-time) view of the index.", new LongType()),
                                            new Param("snapshot", "Search a snapshot previously created with #createSnapshot", new StringType()))),
                   new Param("suggestField", "Field (from stored documents) containing the suggestion text", new StringType()),
                   new Param("weightField", "Numeric field (from stored documents) containing the weight", new StringType()),
+                  new Param("weightExpression", "Alternative to weightField, an expression that's evaluated to the weight.  Note that any fields referenced in the expression must have been indexed with sort=true.", new StringType()),
                   new Param("payloadField", "Optional binary or string field (from stored documents) containing the payload", new StringType()))),
         new Param("suggestName", "Unique name for this suggest build.", new StringType())
                    );
@@ -129,7 +136,7 @@ public class BuildSuggestHandler extends Handler {
       r.getString("suggestName");
       Request source = r.getStruct("source");
       if (source.hasParam("localFile")) {
-        r.getString("localFile");
+        source.getString("localFile");
       } else {
         Request searcher = source.getStruct("searcher");
         if (searcher.hasParam("indexGen")) {
@@ -138,7 +145,11 @@ public class BuildSuggestHandler extends Handler {
           searcher.getString("snapshot");
         }
         source.getString("suggestField");
-        source.getString("weightField");
+        if (source.hasParam("weightField")) {
+          source.getString("weightField");
+        } else {
+          source.getString("weightExpression");
+        }
         if (source.hasParam("payloadField")) {
           source.getString("payloadField");
         }
@@ -374,7 +385,7 @@ public class BuildSuggestHandler extends Handler {
     final SearcherAndTaxonomy searcher;
 
     if (source.hasParam("localFile")) {
-      final File localFile = new File(r.getString("localFile"));
+      final File localFile = new File(source.getString("localFile"));
       if (!localFile.exists()) {
         r.fail("localFile", "file does not exist");
       }
@@ -389,6 +400,9 @@ public class BuildSuggestHandler extends Handler {
         r.fail("localFile", "cannot open file", ioe);
       }
     } else {
+
+      state.verifyStarted(r);
+
       // Pull suggestions from stored docs:
       if (source.hasParam("searcher")) {
         long searcherVersion;
@@ -413,17 +427,56 @@ public class BuildSuggestHandler extends Handler {
         searcher = state.manager.acquire();
       }
       String suggestField = source.getString("suggestField");
-      String weightField = source.getString("weightField");
+
       String payloadField;
       if (source.hasParam("payloadField")) {
         payloadField = source.getString("payloadField");
       } else {
         payloadField = null;
       }
-      DocumentDictionary dict = new DocumentDictionary(searcher.searcher.getIndexReader(),
+
+      DocumentDictionary dict;
+
+      if (source.hasParam("weightField")) {
+        // Weight is a field
+        String weightField = source.getString("weightField");
+        dict = new DocumentDictionary(searcher.searcher.getIndexReader(),
                                       suggestField,
                                       weightField,
                                       payloadField);
+      } else {
+        // Weight is an expression; add bindings for all
+        // numeric DV fields:
+        Set<SortField> sortFields = new HashSet<SortField>();
+        for(FieldDef fd : state.getAllFields().values()) {
+          if (fd.fieldType != null && fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
+            SortField sortField;
+            if (fd.valueType.equals("int")) {
+              sortField = new SortField(fd.name, SortField.Type.INT);
+            } else if (fd.valueType.equals("float")) {
+              sortField = new SortField(fd.name, SortField.Type.FLOAT);
+            } else if (fd.valueType.equals("long")) {
+              sortField = new SortField(fd.name, SortField.Type.LONG);
+            } else if (fd.valueType.equals("double")) {
+              sortField = new SortField(fd.name, SortField.Type.DOUBLE);
+            } else {
+              // Dead code today, but if new enum value is
+              // added this is live:
+              sortField = null;
+              assert false: "missing enum value in switch";
+            }
+            sortFields.add(sortField);
+          }
+        }
+        System.out.println("sortFields: " + sortFields);
+
+        dict = new DocumentExpressionDictionary(searcher.searcher.getIndexReader(),
+                                                suggestField,
+                                                source.getString("weightExpression"),
+                                                sortFields,
+                                                payloadField);
+      }
+
       // nocommit weird that I have to cast this...?
       iterator0 = (InputIterator) dict.getWordsIterator();
     }

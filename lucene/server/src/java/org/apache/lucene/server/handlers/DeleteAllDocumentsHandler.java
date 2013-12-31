@@ -50,12 +50,10 @@ public class DeleteAllDocumentsHandler extends Handler {
 
   @Override
   public FinishRequest handle(final IndexState state, Request r, Map<String,List<String>> params) throws Exception {
+    state.verifyStarted(r);
     return new FinishRequest() {
       @Override
       public String finish() throws IOException {
-        if (!state.started()) {
-          throw new IllegalArgumentException("index \"" + state.name + "\" isn't started: cannot add document");
-        }
         // nocommit should also somehow reset taxo index?
         long gen = state.writer.deleteAll();
         JSONObject r = new JSONObject();

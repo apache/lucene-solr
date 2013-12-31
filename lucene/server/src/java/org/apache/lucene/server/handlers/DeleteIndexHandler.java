@@ -51,9 +51,7 @@ public class DeleteIndexHandler extends Handler {
 
   @Override
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
-    if (state.started()) {
-      r.fail("index \"" + state.name + "\" cannot be deleted: it is still running; call stopIndex first");
-    }
+    state.verifyStarted(r);
 
     return new FinishRequest() {
       @Override

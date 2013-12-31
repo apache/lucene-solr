@@ -66,13 +66,11 @@ public class DeleteDocumentsHandler extends Handler {
       // pass binary data via json...?  byte array?
       terms[i] = new Term(field, (String) ids.get(i));
     }
+    state.verifyStarted(r);
 
     return new FinishRequest() {
       @Override
       public String finish() throws IOException {
-        if (!state.started()) {
-          r.fail("indexName",  "call startIndex first");
-        }
         state.writer.deleteDocuments(terms);
         JSONObject o = new JSONObject();
         o.put("indexGen", state.writer.getGeneration());
