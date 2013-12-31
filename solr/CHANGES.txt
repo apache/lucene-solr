@@ -98,6 +98,8 @@ New Features
 
 * SOLR-5581: Give ZkCLI the ability to get files. (Gregory Chanan via Mark Miller)
 
+* SOLR-5536: Add ValueSource collapse criteria to CollapsingQParsingPlugin (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
