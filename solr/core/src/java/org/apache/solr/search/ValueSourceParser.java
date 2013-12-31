@@ -41,6 +41,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.*;
 
+import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -219,6 +220,12 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             return Math.abs(vals.floatVal(doc));
           }
         };
+      }
+    });
+    addParser("cscore", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new CollapseScoreFunction();
       }
     });
     addParser("sum", new ValueSourceParser() {

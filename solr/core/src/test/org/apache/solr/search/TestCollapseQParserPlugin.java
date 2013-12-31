@@ -95,6 +95,40 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/float[@name='id'][.='6.0']"
     );
 
+    // Test value source collapse criteria
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s nullPolicy=collapse min=field(test_ti)}");
+    params.add("sort", "test_ti desc");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='4.0']",
+        "//result/doc[2]/float[@name='id'][.='1.0']",
+        "//result/doc[3]/float[@name='id'][.='5.0']"
+    );
+
+    // Test value source collapse criteria with cscore function
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s nullPolicy=collapse min=cscore()}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='4.0']",
+        "//result/doc[2]/float[@name='id'][.='1.0']",
+        "//result/doc[3]/float[@name='id'][.='5.0']"
+    );
+
+    // Test value source collapse criteria with compound cscore function
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s nullPolicy=collapse min=sum(cscore(),field(test_ti))}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='4.0']",
+        "//result/doc[2]/float[@name='id'][.='1.0']",
+        "//result/doc[3]/float[@name='id'][.='5.0']"
+    );
 
     //Test collapse by score with elevation
 
