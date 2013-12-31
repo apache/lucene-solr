@@ -2,8 +2,6 @@ package org.apache.lucene.demo.facet;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -14,12 +12,11 @@ import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.FacetField;
-import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.TaxonomyFacetSumValueSource;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumValueSource;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;

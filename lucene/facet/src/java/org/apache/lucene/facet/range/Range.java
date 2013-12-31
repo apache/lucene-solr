@@ -1,4 +1,4 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.facet.range;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,29 +17,20 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.PriorityQueue;
+/** Base class for a single labeled range.
+ *
+ *  @lucene.experimental */
+public abstract class Range {
+  public final String label;
 
-/** Keeps highest results, first by largest int value,
- *  then tie break by smallest ord. */
-public class TopOrdAndIntQueue extends PriorityQueue<TopOrdAndIntQueue.OrdAndValue> {
-
-  public static final class OrdAndValue {
-    public int ord;
-    public int value;
-  }
-
-  public TopOrdAndIntQueue(int topN) {
-    super(topN, false);
-  }
-
-  @Override
-  protected boolean lessThan(OrdAndValue a, OrdAndValue b) {
-    if (a.value < b.value) {
-      return true;
-    } else if (a.value > b.value) {
-      return false;
-    } else {
-      return a.ord > b.ord;
+  protected Range(String label) {
+    if (label == null) {
+      throw new NullPointerException("label cannot be null");
     }
+    this.label = label;
+  }
+
+  protected void failNoMatch() {
+    throw new IllegalArgumentException("range \"" + label + "\" matches nothing");
   }
 }

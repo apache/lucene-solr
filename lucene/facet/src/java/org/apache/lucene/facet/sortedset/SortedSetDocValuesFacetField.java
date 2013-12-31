@@ -1,4 +1,4 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.facet.sortedset;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,29 +17,31 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 
-/** Keeps highest results, first by largest int value,
- *  then tie break by smallest ord. */
-public class TopOrdAndIntQueue extends PriorityQueue<TopOrdAndIntQueue.OrdAndValue> {
-
-  public static final class OrdAndValue {
-    public int ord;
-    public int value;
+/** Add an instance of this to your Document for every facet
+ *  label to be indexed via SortedSetDocValues. */
+public class SortedSetDocValuesFacetField extends Field {
+  
+  /** Indexed {@link FieldType}. */
+  public static final FieldType TYPE = new FieldType();
+  static {
+    TYPE.setIndexed(true);
+    TYPE.freeze();
   }
+  
+  public final String dim;
+  public final String label;
 
-  public TopOrdAndIntQueue(int topN) {
-    super(topN, false);
+  public SortedSetDocValuesFacetField(String dim, String label) {
+    super("dummy", TYPE);
+    this.dim = dim;
+    this.label = label;
   }
 
   @Override
-  protected boolean lessThan(OrdAndValue a, OrdAndValue b) {
-    if (a.value < b.value) {
-      return true;
-    } else if (a.value > b.value) {
-      return false;
-    } else {
-      return a.ord > b.ord;
-    }
+  public String toString() {
+    return "SortedSetDocValuesFacetField(dim=" + dim + " label=" + label + ")";
   }
 }

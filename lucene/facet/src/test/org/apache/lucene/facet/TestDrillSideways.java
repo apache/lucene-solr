@@ -32,6 +32,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -624,7 +626,6 @@ public class TestDrillSideways extends FacetTestCase {
 
       for(int dim=0;dim<numDims;dim++) {
         if (drillDowns[dim] != null) {
-          int upto = 0;
           for(String value : drillDowns[dim]) {
             ddq.add("dim" + dim, value);
           }
@@ -786,6 +787,7 @@ public class TestDrillSideways extends FacetTestCase {
     List<Doc> hits;
     int[][] counts;
     int[] uniqueCounts;
+    public TestFacetResult() {}
   }
   
   private int[] getTopNOrds(final int[] counts, final String[] values, int topN) {
