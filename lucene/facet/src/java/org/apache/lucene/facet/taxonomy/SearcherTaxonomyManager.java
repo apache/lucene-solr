@@ -43,7 +43,10 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
   /** Holds a matched pair of {@link IndexSearcher} and
    *  {@link TaxonomyReader} */
   public static class SearcherAndTaxonomy {
+    /** Point-in-time {@link IndexSearcher}. */
     public final IndexSearcher searcher;
+
+    /** Matching point-in-time {@link DirectoryTaxonomyReader}. */
     public final DirectoryTaxonomyReader taxonomyReader;
 
     /** Create a SearcherAndTaxonomy */

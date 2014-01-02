@@ -39,6 +39,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   
   private volatile CompactLabelToOrdinal cache;
 
+  /** Sole constructor. */
   public Cl2oTaxonomyWriterCache(int initialCapcity, float loadFactor, int numHashArrays) {
     this.cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
     this.initialCapcity = initialCapcity;

@@ -54,7 +54,7 @@ import org.apache.lucene.util.BytesRef;
  *  then used from a single thread, because it holds a
  *  thread-private instance of {@link SortedSetDocValues}.
  * 
- * <p><b>NOTE:<b/>: tie-break is by unicode sort order
+ * <p><b>NOTE:</b>: tie-break is by unicode sort order
  *
  * @lucene.experimental */
 public class SortedSetDocValuesFacetCounts extends Facets {

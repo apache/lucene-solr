@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsConfig.DimConfig; // javadocs
 import org.apache.lucene.facet.FacetsConfig;
 
 /** Base class for all taxonomy-based facets impls. */
@@ -43,12 +44,24 @@ public abstract class TaxonomyFacets extends Facets {
     }
   };
 
+  /** Index field name provided to the constructor. */
   protected final String indexFieldName;
+
+  /** {@code TaxonomyReader} provided to the constructor. */
   protected final TaxonomyReader taxoReader;
+
+  /** {@code FacetsConfig} provided to the constructor. */
   protected final FacetsConfig config;
+
+  /** Maps parent ordinal to its child, or -1 if the parent
+   *  is childless. */
   protected final int[] children;
+
+  /** Maps an ordinal to its sibling, or -1 if there is no
+   *  sibling. */
   protected final int[] siblings;
 
+  /** Sole constructor. */
   protected TaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     this.indexFieldName = indexFieldName;
     this.taxoReader = taxoReader;
@@ -58,6 +71,9 @@ public abstract class TaxonomyFacets extends Facets {
     siblings = pta.siblings();
   }
 
+  /** Throws {@code IllegalArgumentException} if the
+   *  dimension is not recognized.  Otherwise, returns the
+   *  {@link DimConfig} for this dimension. */
   protected FacetsConfig.DimConfig verifyDim(String dim) {
     FacetsConfig.DimConfig dimConfig = config.getDimConfig(dim);
     if (!dimConfig.indexFieldName.equals(indexFieldName)) {

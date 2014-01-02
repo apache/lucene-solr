@@ -42,10 +42,12 @@ class NameIntCacheLRU {
     createCache(maxCacheSize);
   }
 
+  /** Maximum number of cache entries before eviction. */
   public int getMaxSize() {
     return maxCacheSize;
   }
   
+  /** Number of entries currently in the cache. */
   public int getSize() {
     return cache.size();
   }

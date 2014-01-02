@@ -19,6 +19,7 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
+/** Counts or aggregates for a single dimension. */
 public final class FacetResult {
 
   /** Dimension that was requested. */
@@ -38,6 +39,7 @@ public final class FacetResult {
   /** Child counts. */
   public final LabelAndValue[] labelValues;
 
+  /** Sole constructor. */
   public FacetResult(String dim, String[] path, Number value, LabelAndValue[] labelValues, int childCount) {
     this.dim = dim;
     this.path = path;

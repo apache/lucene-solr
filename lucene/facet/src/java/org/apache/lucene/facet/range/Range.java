@@ -21,8 +21,11 @@ package org.apache.lucene.facet.range;
  *
  *  @lucene.experimental */
 public abstract class Range {
+
+  /** Label that identifies this range. */
   public final String label;
 
+  /** Sole constructor. */
   protected Range(String label) {
     if (label == null) {
       throw new NullPointerException("label cannot be null");
@@ -30,6 +33,7 @@ public abstract class Range {
     this.label = label;
   }
 
+  /** Invoke this for a useless range. */
   protected void failNoMatch() {
     throw new IllegalArgumentException("range \"" + label + "\" matches nothing");
   }

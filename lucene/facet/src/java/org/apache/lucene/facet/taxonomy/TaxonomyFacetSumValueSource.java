@@ -112,6 +112,11 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
    *  hit; use this to aggregate the sum of all hit scores
    *  for each facet label.  */
   public static class ScoreValueSource extends ValueSource {
+
+    /** Sole constructor. */
+    public ScoreValueSource() {
+    }
+
     @Override
     public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, AtomicReaderContext readerContext) throws IOException {
       final Scorer scorer = (Scorer) context.get("scorer");

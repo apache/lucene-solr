@@ -31,13 +31,16 @@ import org.apache.lucene.facet.TopOrdAndIntQueue;
 
 public abstract class IntTaxonomyFacets extends TaxonomyFacets {
 
+  /** Per-ordinal value. */
   protected final int[] values;
 
+  /** Sole constructor. */
   protected IntTaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     super(indexFieldName, taxoReader, config);
     values = new int[taxoReader.getSize()];
   }
   
+  /** Rolls up any single-valued hierarchical dimensions. */
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
     for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {

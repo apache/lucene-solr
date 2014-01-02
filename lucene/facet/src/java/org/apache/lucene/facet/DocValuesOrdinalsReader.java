@@ -30,10 +30,12 @@ import org.apache.lucene.util.IntsRef;
 public class DocValuesOrdinalsReader extends OrdinalsReader {
   private final String field;
 
+  /** Default constructor. */
   public DocValuesOrdinalsReader() {
     this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
+  /** Create this, with the specified indexed field name. */
   public DocValuesOrdinalsReader(String field) {
     this.field = field;
   }

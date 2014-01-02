@@ -50,6 +50,8 @@ public final class SortedSetDocValuesReaderState {
   private final String field;
   private final AtomicReader topReader;
   private final int valueCount;
+
+  /** {@link IndexReader} passed to the constructor. */
   public final IndexReader origReader;
 
   /** Holds start/end range of ords, which maps to one
@@ -126,22 +128,27 @@ public final class SortedSetDocValuesReaderState {
     }
   }
 
+  /** Return top-level doc values. */
   public SortedSetDocValues getDocValues() throws IOException {
     return topReader.getSortedSetDocValues(field);
   }
 
+  /** Returns mapping from prefix to {@link OrdRange}. */
   public Map<String,OrdRange> getPrefixToOrdRange() {
     return prefixToOrdRange;
   }
 
+  /** Returns the {@link OrdRange} for this dimension. */
   public OrdRange getOrdRange(String dim) {
     return prefixToOrdRange.get(dim);
   }
 
+  /** Indexed field we are reading. */
   public String getField() {
     return field;
   }
 
+  /** Number of unique labels. */
   public int getSize() {
     return valueCount;
   }

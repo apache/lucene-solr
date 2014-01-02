@@ -43,8 +43,13 @@ public class AssociationFacetField extends Field {
     TYPE.freeze();
   }
   
+  /** Dimension for this field. */
   public final String dim;
+
+  /** Facet path for this field. */
   public final String[] path;
+
+  /** Associated value. */
   public final BytesRef assoc;
 
   /** Creates this from {@code dim} and {@code path} and an

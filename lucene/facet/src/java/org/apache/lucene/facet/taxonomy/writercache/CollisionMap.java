@@ -70,10 +70,12 @@ public class CollisionMap {
     this.threshold = (int) (this.capacity * this.loadFactor);
   }
 
+  /** How many mappings. */
   public int size() {
     return this.size;
   }
 
+  /** How many slots are allocated. */
   public int capacity() {
     return this.capacity;
   }
@@ -103,6 +105,9 @@ public class CollisionMap {
     this.threshold = (int) (this.capacity * this.loadFactor);
   }
 
+  /** Return the mapping, or {@link
+   *  LabelToOrdinal#INVALID_ORDINAL} if the label isn't
+   *  recognized. */
   public int get(FacetLabel label, int hash) {
     int bucketIndex = indexFor(hash, this.capacity);
     Entry e = this.entries[bucketIndex];
@@ -117,6 +122,7 @@ public class CollisionMap {
     return e.cid;
   }
 
+  /** Add another mapping. */
   public int addLabel(FacetLabel label, int hash, int cid) {
     int bucketIndex = indexFor(hash, this.capacity);
     for (Entry e = this.entries[bucketIndex]; e != null; e = e.next) {

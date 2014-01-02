@@ -326,6 +326,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
   }
 
+  /** Create this with {@code OpenMode.CREATE_OR_APPEND}. */
   public DirectoryTaxonomyWriter(Directory d) throws IOException {
     this(d, OpenMode.CREATE_OR_APPEND);
   }
@@ -840,12 +841,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
      * and size-1.  
      */
     public void setSize(int size) throws IOException;
+
+    /** Record a mapping. */
     public void addMapping(int origOrdinal, int newOrdinal) throws IOException;
+
     /**
      * Call addDone() to say that all addMapping() have been done.
      * In some implementations this might free some resources. 
      */
     public void addDone() throws IOException;
+
     /**
      * Return the map from the taxonomy's original (consecutive) ordinals
      * to the new taxonomy's ordinals. If the map has to be read from disk
@@ -862,6 +867,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    */
   public static final class MemoryOrdinalMap implements OrdinalMap {
     int[] map;
+
+    /** Sole constructor. */
+    public MemoryOrdinalMap() {
+    }
+
     @Override
     public void setSize(int taxonomySize) {
       map = new int[taxonomySize];
@@ -885,6 +895,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     File tmpfile;
     DataOutputStream out;
 
+    /** Sole constructor. */
     public DiskOrdinalMap(File tmpfile) throws FileNotFoundException {
       this.tmpfile = tmpfile;
       out = new DataOutputStream(new BufferedOutputStream(

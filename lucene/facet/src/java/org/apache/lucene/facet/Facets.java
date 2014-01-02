@@ -25,6 +25,10 @@ import java.util.List;
  *  @lucene.experimental */
 public abstract class Facets {
 
+  /** Default constructor. */
+  public Facets() {
+  }
+
   /** Returns the topN child labels under the specified
    *  path.  Returns null if the specified path doesn't
    *  exist or if this dimension was never seen. */

@@ -32,10 +32,19 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
    * For guaranteed correctness - not relying on no-collisions in the hash
    * function, LRU_STRING should be used.
    */
-  public enum LRUType { LRU_HASHED, LRU_STRING }
+  public enum LRUType {
+    /** Use the label's hash as the key; this can lead to
+     *  silent conflicts! */
+    LRU_HASHED,
+
+    /** Use the label as the hash key; this is always
+     *  correct but will usually use more RAM. */
+    LRU_STRING
+  }
 
   private NameIntCacheLRU cache;
 
+  /** Creates this with {@link LRUType#LRU_HASHED} method. */
   public LruTaxonomyWriterCache(int cacheSize) {
     // TODO (Facet): choose between NameHashIntCacheLRU and NameIntCacheLRU.
     // For guaranteed correctness - not relying on no-collisions in the hash
@@ -46,6 +55,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     this(cacheSize, LRUType.LRU_HASHED);
   }
 
+  /** Creates this with the specified method. */
   public LruTaxonomyWriterCache(int cacheSize, LRUType lruType) {
     // TODO (Facet): choose between NameHashIntCacheLRU and NameIntCacheLRU.
     // For guaranteed correctness - not relying on no-collisions in the hash

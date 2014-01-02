@@ -17,6 +17,8 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
+/** Single label and its value, usually contained in a
+ *  {@link FacetResult}. */
 public final class LabelAndValue {
   /** Facet's label. */
   public final String label;
@@ -24,6 +26,7 @@ public final class LabelAndValue {
   /** Value associated with this label. */
   public final Number value;
 
+  /** Sole constructor. */
   public LabelAndValue(String label, Number value) {
     this.label = label;
     this.value = value;

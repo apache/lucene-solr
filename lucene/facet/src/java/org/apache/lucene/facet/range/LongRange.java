@@ -26,7 +26,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.util.Bits;
 
 /** Represents a range over long values. */
@@ -34,9 +34,16 @@ public final class LongRange extends Range {
   final long minIncl;
   final long maxIncl;
 
+  /** Minimum. */
   public final long min;
+
+  /** Maximum. */
   public final long max;
+
+  /** True if the minimum value is inclusive. */
   public final boolean minInclusive;
+
+  /** True if the maximum value is inclusive. */
   public final boolean maxInclusive;
 
   // TODO: can we require fewer args? (same for
@@ -74,6 +81,7 @@ public final class LongRange extends Range {
     this.maxIncl = maxIn;
   }
 
+  /** True if this range accepts the provided value. */
   public boolean accept(long value) {
     return value >= minIncl && value <= maxIncl;
   }

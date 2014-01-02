@@ -30,10 +30,14 @@ public class SortedSetDocValuesFacetField extends Field {
     TYPE.setIndexed(true);
     TYPE.freeze();
   }
-  
+
+  /** Dimension. */
   public final String dim;
+
+  /** Label. */
   public final String label;
 
+  /** Sole constructor. */
   public SortedSetDocValuesFacetField(String dim, String label) {
     super("dummy", TYPE);
     this.dim = dim;

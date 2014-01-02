@@ -21,8 +21,8 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.util.Arrays;
 
-import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
-import org.apache.lucene.facet.taxonomy.writercache.NameHashIntCacheLRU;
+import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache; // javadocs
+import org.apache.lucene.facet.taxonomy.writercache.NameHashIntCacheLRU; // javadocs
 
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a

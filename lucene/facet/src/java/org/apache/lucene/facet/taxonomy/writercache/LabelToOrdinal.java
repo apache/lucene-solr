@@ -26,8 +26,16 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
  */
 public abstract class LabelToOrdinal {
 
+  /** How many ordinals we've seen. */
   protected int counter;
+
+  /** Returned by {@link #getOrdinal} when the label isn't
+   *  recognized. */
   public static final int INVALID_ORDINAL = -2;
+
+  /** Default constructor. */
+  public LabelToOrdinal() {
+  }
 
   /**
    * return the maximal Ordinal assigned so far
@@ -52,7 +60,7 @@ public abstract class LabelToOrdinal {
   public abstract void addLabel(FacetLabel label, int ordinal);
 
   /**
-   * @return the ordinal assigned to the given label, 
+   * Returns the ordinal assigned to the given label, 
    * or {@link #INVALID_ORDINAL} if the label cannot be found in this table.
    */
   public abstract int getOrdinal(FacetLabel label);

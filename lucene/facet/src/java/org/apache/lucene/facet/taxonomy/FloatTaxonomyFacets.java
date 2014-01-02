@@ -30,13 +30,16 @@ import org.apache.lucene.facet.TopOrdAndFloatQueue;
  *  to a per-ords float[]. */
 public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
 
+  /** Per-ordinal value. */
   protected final float[] values;
 
+  /** Sole constructor. */
   protected FloatTaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     super(indexFieldName, taxoReader, config);
     values = new float[taxoReader.getSize()];
   }
   
+  /** Rolls up any single-valued hierarchical dimensions. */
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
     for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {

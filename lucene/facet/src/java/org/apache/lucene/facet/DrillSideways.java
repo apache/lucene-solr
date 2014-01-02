@@ -66,9 +66,17 @@ import org.apache.lucene.search.Weight;
  */
 public class DrillSideways {
 
+  /** {@link IndexSearcher} passed to constructor. */
   protected final IndexSearcher searcher;
+
+  /** {@link TaxonomyReader} passed to constructor. */
   protected final TaxonomyReader taxoReader;
+
+  /** {@link SortedSetDocValuesReaderState} passed to
+   *  constructor; can be null. */
   protected final SortedSetDocValuesReaderState state;
+
+  /** {@link FacetsConfig} passed to constructor. */
   protected final FacetsConfig config;
 
   /** Create a new {@code DrillSideways} instance. */
@@ -371,6 +379,8 @@ public class DrillSideways {
     return false;
   }
 
+  /** Result of a drill sideways search, including the
+   *  {@link Facets} and {@link TopDocs}. */
   public static class DrillSidewaysResult {
     /** Combined drill down & sideways results. */
     public final Facets facets;
@@ -378,6 +388,7 @@ public class DrillSideways {
     /** Hits. */
     public final TopDocs hits;
 
+    /** Sole constructor. */
     public DrillSidewaysResult(Facets facets, TopDocs hits) {
       this.facets = facets;
       this.hits = hits;

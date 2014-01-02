@@ -24,7 +24,7 @@
   </description>
 
   <property name="forbidden-sysout-excludes" value="
-    org/apache/lucene/facet/util/PrintTaxonomyStats.class
+    org/apache/lucene/facet/taxonomy/PrintTaxonomyStats.class
   "/>
 
   <import file="../module-build.xml"/>

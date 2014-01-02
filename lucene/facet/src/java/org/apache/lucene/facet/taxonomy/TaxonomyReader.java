@@ -89,6 +89,10 @@ public abstract class TaxonomyReader implements Closeable {
     }
     
   }
+
+  /** Sole constructor. */
+  public TaxonomyReader() {
+  }
   
   /**
    * The root category (the category with the empty path) always has the ordinal
@@ -142,7 +146,7 @@ public abstract class TaxonomyReader implements Closeable {
   protected abstract TaxonomyReader doOpenIfChanged() throws IOException;
   
   /**
-   * @throws AlreadyClosedException if this IndexReader is closed
+   * Throws {@link AlreadyClosedException} if this IndexReader is closed
    */
   protected final void ensureOpen() throws AlreadyClosedException {
     if (getRefCount() <= 0) {
@@ -217,6 +221,7 @@ public abstract class TaxonomyReader implements Closeable {
    */
   public abstract int getOrdinal(FacetLabel categoryPath) throws IOException;
 
+  /** Returns ordinal for the dim + path. */
   public int getOrdinal(String dim, String[] path) throws IOException {
     String[] fullPath = new String[path.length+1];
     fullPath[0] = dim;

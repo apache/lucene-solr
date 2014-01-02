@@ -62,11 +62,19 @@ public final class FacetsCollector extends Collector {
    */
   public final static class MatchingDocs {
     
+    /** Context for this segment. */
     public final AtomicReaderContext context;
+
+    /** Which documents were seen. */
     public final FixedBitSet bits;
+
+    /** Non-sparse scores array. */
     public final float[] scores;
-    public final int totalHits;
     
+    /** Total number of hits */
+    public final int totalHits;
+
+    /** Sole constructor. */
     public MatchingDocs(AtomicReaderContext context, FixedBitSet bits, int totalHits, float[] scores) {
       this.context = context;
       this.bits = bits;
@@ -75,14 +83,18 @@ public final class FacetsCollector extends Collector {
     }
   }
 
+  /** Default constructor */
   public FacetsCollector() {
     this(false);
   }
 
+  /** Create this; if {@code keepScores} is true then a
+   *  float[] is allocated to hold score of all hits. */
   public FacetsCollector(boolean keepScores) {
     this.keepScores = keepScores;
   }
 
+  /** True if scores were saved. */
   public boolean getKeepScores() {
     return keepScores;
   }

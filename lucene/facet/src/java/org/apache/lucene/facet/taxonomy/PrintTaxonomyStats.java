@@ -31,6 +31,11 @@ import org.apache.lucene.store.FSDirectory;
 // java -cp ../build/core/classes/java:../build/facet/classes/java org.apache.lucene.facet.util.PrintTaxonomyStats -printTree /s2/scratch/indices/wikibig.trunk.noparents.facets.Lucene41.nd1M/facets
 public class PrintTaxonomyStats {
 
+  /** Sole constructor. */
+  public PrintTaxonomyStats() {
+  }
+
+  /** Command-line tool. */
   public static void main(String[] args) throws IOException {
     boolean printTree = false;
     String path = null;
@@ -52,6 +57,7 @@ public class PrintTaxonomyStats {
     dir.close();
   }
 
+  /** Recursively prints stats for all ordinals. */
   public static void printStats(TaxonomyReader r, PrintStream out, boolean printTree) throws IOException {
     out.println(r.getSize() + " total categories.");
 

@@ -27,10 +27,13 @@ public class MultiFacets extends Facets {
   private final Map<String,Facets> dimToFacets;
   private final Facets defaultFacets;
 
+  /** Create this, with no default {@link Facets}. */
   public MultiFacets(Map<String,Facets> dimToFacets) {
     this(dimToFacets, null);
   }
 
+  /** Create this, with the specified default {@link Facets}
+   *  for fields not included in {@code dimToFacets}. */
   public MultiFacets(Map<String,Facets> dimToFacets, Facets defaultFacets) {
     this.dimToFacets = dimToFacets;
     this.defaultFacets = defaultFacets;

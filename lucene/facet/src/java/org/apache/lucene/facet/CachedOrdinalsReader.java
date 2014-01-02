@@ -59,6 +59,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
 
   private final Map<Object,CachedOrds> ordsCache = new WeakHashMap<Object,CachedOrds>();
 
+  /** Sole constructor. */
   public CachedOrdinalsReader(OrdinalsReader source) {
     this.source = source;
   }
@@ -94,8 +95,11 @@ public class CachedOrdinalsReader extends OrdinalsReader {
 
   /** Holds the cached ordinals in two paralel {@code int[]} arrays. */
   public static final class CachedOrds {
-    
+
+    /** Index into {@link #ordinals} for each document. */
     public final int[] offsets;
+
+    /** Holds ords for all docs. */
     public final int[] ordinals;
 
     /**

@@ -30,9 +30,16 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
  *
  *  @lucene.experimental */
 abstract class RangeFacetCounts extends Facets {
+  /** Ranges passed to constructor. */
   protected final Range[] ranges;
+
+  /** Counts, initialized in by subclass. */
   protected final int[] counts;
+
+  /** Our field name. */
   protected final String field;
+
+  /** Total number of hits. */
   protected int totCount;
 
   /** Create {@code RangeFacetCounts}, using {@link

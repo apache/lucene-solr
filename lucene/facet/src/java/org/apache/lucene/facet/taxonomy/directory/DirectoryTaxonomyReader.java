@@ -208,10 +208,14 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     }
   }
 
+  /** Open the {@link DirectoryReader} from this {@link
+   *  Directory}. */
   protected DirectoryReader openIndexReader(Directory directory) throws IOException {
     return DirectoryReader.open(directory);
   }
 
+  /** Open the {@link DirectoryReader} from this {@link
+   *  IndexWriter}. */
   protected DirectoryReader openIndexReader(IndexWriter writer) throws IOException {
     return DirectoryReader.open(writer, false);
   }
@@ -342,6 +346,9 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     }
   }
 
+  /** Returns ordinal -> label mapping, up to the provided
+   *  max ordinal or number of ordinals, whichever is
+   *  smaller. */
   public String toString(int max) {
     ensureOpen();
     StringBuilder sb = new StringBuilder();

@@ -554,7 +554,7 @@ public class Field implements IndexableField, StorableField {
       return analyzer.tokenStream(name(), stringValue());
     }
 
-    throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value; this=" + this);
+    throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value; got " + this);
   }
   
   static final class StringTokenStream extends TokenStream {

@@ -26,7 +26,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
@@ -35,9 +35,16 @@ public final class DoubleRange extends Range {
   final double minIncl;
   final double maxIncl;
 
+  /** Minimum. */
   public final double min;
+
+  /** Maximum. */
   public final double max;
+
+  /** True if the minimum value is inclusive. */
   public final boolean minInclusive;
+
+  /** True if the maximum value is inclusive. */
   public final boolean maxInclusive;
 
   /** Create a DoubleRange. */
@@ -76,6 +83,7 @@ public final class DoubleRange extends Range {
     this.maxIncl = maxIn;
   }
 
+  /** True if this range accepts the provided value. */
   public boolean accept(double value) {
     return value >= minIncl && value <= maxIncl;
   }

@@ -55,6 +55,7 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
  */
 public class CompactLabelToOrdinal extends LabelToOrdinal {
 
+  /** Default maximum load factor. */
   public static final float DefaultLoadFactor = 0.15f;
 
   static final char TERMINATOR_CHAR = 0xffff;
@@ -68,6 +69,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
   private int threshold;
   private float loadFactor;
 
+  /** How many labels. */
   public int sizeOfMap() {
     return this.collisionMap.size();
   }
@@ -75,6 +77,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
   private CompactLabelToOrdinal() {
   }
 
+  /** Sole constructor. */
   public CompactLabelToOrdinal(int initialCapacity, float loadFactor,
                                 int numHashArrays) {
 

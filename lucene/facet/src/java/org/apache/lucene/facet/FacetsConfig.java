@@ -59,6 +59,8 @@ import org.apache.lucene.util.IntsRef;
  *  @lucene.experimental */
 public class FacetsConfig {
 
+  /** Which Lucene field holds the drill-downs and ords (as
+   *  doc values). */
   public static final String DEFAULT_INDEX_FIELD_NAME = "$facets";
 
   private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<String,DimConfig>();
@@ -84,6 +86,10 @@ public class FacetsConfig {
     /** Actual field where this dimension's facet labels
      *  should be indexed */
     public String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
+
+    /** Default constructor. */
+    public DimConfig() {
+    }
   }
 
   /** Default per-dimension configuration. */
@@ -148,6 +154,7 @@ public class FacetsConfig {
     ft.indexFieldName = indexFieldName;
   }
 
+  /** Returns map of field name to {@link DimConfig}. */
   public Map<String,DimConfig> getDimConfigs() {
     return fieldTypes;
   }
