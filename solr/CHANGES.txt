@@ -94,6 +94,9 @@ Bug Fixes
 * SOLR-5588: PeerSync doesn't count all connect failures as success.
   (Mark Miller)
 
+* SOLR-5564: hl.maxAlternateFieldLength should apply to original field when
+  fallback is attempted (janhoy)
+
 Optimizations
 ----------------------  
 

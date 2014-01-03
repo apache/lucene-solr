@@ -660,6 +660,16 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
             "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='a piece of text']"
             );
+
+    // with a non-existing alternate field + max length
+    args.put("hl.alternateField", "NonExistingField");
+    args.put("hl.maxAlternateFieldLength", "15");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='a piece of text']"
+            );
   }
   
   @Test
