@@ -602,6 +602,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
       StorableField[] docFields = doc.getFields(alternateField);
+      if (docFields.length == 0) {
+        // The alternate field did not exist, treat the original field as fallback instead
+        docFields = doc.getFields(fieldName);
+      }
       List<String> listFields = new ArrayList<String>();
       for (StorableField field : docFields) {
         if (field.binaryValue() == null)
