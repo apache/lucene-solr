@@ -44,6 +44,9 @@ Build
 * LUCENE-5360: Add support for developing in Netbeans IDE.
   (Michal Hlavac, Uwe Schindler, Steve Rowe)
 
+* SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
+  (Karl Wright via Shawn Heisey)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with

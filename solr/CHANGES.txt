@@ -222,6 +222,9 @@ Other Changes
 * SOLR-5574: CoreContainer shutdown publishes all nodes as down and waits to
   see that and then again publishes all nodes as down. (Mark Miller)
 
+* SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
+  (Karl Wright via Shawn Heisey)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
