@@ -42,7 +42,7 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-5308: A new 'migrate' collection API to split all documents with a
+* SOLR-5308: SOLR-5601: A new 'migrate' collection API to split all documents with a
   route key into another collection (shalin)
 
 * SOLR-5441: Expose number of transaction log files and their size via JMX.
