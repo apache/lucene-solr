@@ -177,8 +177,11 @@ public class ConnectionManager implements Watcher {
   public void close() {
     this.isClosed = true;
     this.likelyExpired = true;
-    if (this.disconnectedTimer != null) {
+    try {
       this.disconnectedTimer.cancel();
+    } catch (NullPointerException e) {
+      // fine
+    } finally {
       this.disconnectedTimer = null;
     }
   }
