@@ -1191,7 +1191,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     // refresh cluster state
     clusterState = zkStateReader.getClusterState();
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
-    Replica tempSourceLeader = clusterState.getLeader(tempSourceCollectionName, tempSourceSlice.getName());
+    Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 60000);
 
     String tempCollectionReplica1 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica1";
     String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
