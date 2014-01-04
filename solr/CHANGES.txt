@@ -261,6 +261,9 @@ Other Changes
 * SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
   (Karl Wright via Shawn Heisey)
 
+* pull request #11: change the default of hl.phraseLimit to 5000.
+  (Michael Della Bitta via Robert Muir)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
