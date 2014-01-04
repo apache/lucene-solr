@@ -20,6 +20,8 @@ org.apache.lucene.analysis.br.BrazilianStemFilterFactory
 org.apache.lucene.analysis.cjk.CJKBigramFilterFactory
 org.apache.lucene.analysis.cjk.CJKWidthFilterFactory
 org.apache.lucene.analysis.cn.ChineseFilterFactory
+org.apache.lucene.analysis.ckb.SoraniNormalizationFilterFactory
+org.apache.lucene.analysis.ckb.SoraniStemFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsQueryFilterFactory
 org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilterFactory

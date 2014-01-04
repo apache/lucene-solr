@@ -26,6 +26,8 @@ New Features
   matter in practice if the number of ranges is over 10 or so.  (Mike
   McCandless)
 
+* LUCENE-5379: Add Analyzer for Kurdish.  (Robert Muir)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable

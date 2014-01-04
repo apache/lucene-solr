@@ -612,7 +612,7 @@
   
   <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
-  <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>
+  <property name="analysis.conf.dest" value="${example}/solr/collection1/conf/lang"/>
 
   <target name="sync-analyzers"
           description="Committers' Helper: synchronizes analysis resources (e.g. stoplists) to the example">
@@ -625,6 +625,9 @@
     <!-- catalan -->
     <copy verbose="true" file="${analysis-common.res.dir}/ca/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_ca.txt"/>
+    <!-- kurdish -->
+    <copy verbose="true" file="${analysis-common.res.dir}/ckb/stopwords.txt"
+                         tofile="${analysis.conf.dest}/stopwords_ckb.txt"/>
     <!-- czech -->
     <copy verbose="true" file="${analysis-common.res.dir}/cz/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_cz.txt"/>
