@@ -34,6 +34,8 @@ import org.apache.solr.util.SolrPluginUtils;
 
 public abstract class SolrHighlighter
 {
+
+  public static int DEFAULT_PHRASE_LIMIT = 5000;
   public static Logger log = LoggerFactory.getLogger(SolrHighlighter.class);
 
   @Deprecated
