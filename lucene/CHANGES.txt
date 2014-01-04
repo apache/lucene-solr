@@ -76,6 +76,11 @@ New Features
 * SOLR-1871: The RangeMapFloatFunction accepts an arbitrary ValueSource
   as target and default values. (Chris Harris, shalin)
 
+* LUCENE-5371: Speed up Lucene range faceting from O(N) per hit to
+  O(log(N)) per hit using segment trees; this only really starts to
+  matter in practice if the number of ranges is over 10 or so.  (Mike
+  McCandless)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
@@ -116,6 +121,12 @@ Bug fixes
   IndexWriter has internal changes that were not fully applied yet
   like when index / flush requests happen concurrently to the close or
   rollback call. (Simon Willnauer)
+
+API Changes
+
+* LUCENE-5339: The facet module was simplified/reworked to make the
+  APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
+  Muir, Mike McCandless)
 
 Changes in Runtime Behavior
 

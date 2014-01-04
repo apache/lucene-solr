@@ -2,8 +2,6 @@ package org.apache.lucene.demo.facet;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -13,12 +11,12 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.SumValueSourceFacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetSumValueSource;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -53,18 +51,11 @@ public class ExpressionAggregationFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
   public ExpressionAggregationFacetsExample() {}
   
-  private void add(IndexWriter indexWriter, FacetFields facetFields, String text, String category, long popularity) throws IOException {
-    Document doc = new Document();
-    doc.add(new TextField("c", text, Store.NO));
-    doc.add(new NumericDocValuesField("popularity", popularity));
-    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(category, '/')));
-    indexWriter.addDocument(doc);
-  }
-
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
@@ -73,18 +64,24 @@ public class ExpressionAggregationFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    Document doc = new Document();
+    doc.add(new TextField("c", "foo bar", Store.NO));
+    doc.add(new NumericDocValuesField("popularity", 5L));
+    doc.add(new FacetField("A", "B"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    add(indexWriter, facetFields, "foo bar", "A/B", 5L);
-    add(indexWriter, facetFields, "foo foo bar", "A/C", 3L);
+    doc = new Document();
+    doc.add(new TextField("c", "foo foo bar", Store.NO));
+    doc.add(new NumericDocValuesField("popularity", 3L));
+    doc.add(new FacetField("A", "C"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
     
     indexWriter.close();
     taxoWriter.close();
   }
 
   /** User runs a query and aggregates facets. */
-  private List<FacetResult> search() throws IOException, ParseException {
+  private FacetResult search() throws IOException, ParseException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
@@ -96,29 +93,26 @@ public class ExpressionAggregationFacetsExample {
     bindings.add(new SortField("_score", SortField.Type.SCORE)); // the score of the document
     bindings.add(new SortField("popularity", SortField.Type.LONG)); // the value of the 'popularity' field
 
-    FacetSearchParams fsp = new FacetSearchParams(
-        new SumValueSourceFacetRequest(new CategoryPath("A"), 10, expr.getValueSource(bindings), true));
-
     // Aggregates the facet values
-    FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+    FacetsCollector fc = new FacetsCollector(true);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    // you'd use a "normal" query:
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getValueSource(bindings));
+    FacetResult result = facets.getTopChildren(10, "A");
     
     indexReader.close();
     taxoReader.close();
     
-    return facetResults;
+    return result;
   }
   
   /** Runs the search example. */
-  public List<FacetResult> runSearch() throws IOException, ParseException {
+  public FacetResult runSearch() throws IOException, ParseException {
     index();
     return search();
   }
@@ -127,10 +121,7 @@ public class ExpressionAggregationFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    List<FacetResult> results = new ExpressionAggregationFacetsExample().runSearch();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    FacetResult result = new ExpressionAggregationFacetsExample().runSearch();
+    System.out.println(result);
   }
-  
 }

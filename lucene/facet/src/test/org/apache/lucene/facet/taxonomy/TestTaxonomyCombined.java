@@ -113,7 +113,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
    */
   public static void fillTaxonomy(TaxonomyWriter tw) throws IOException {
     for (int i = 0; i < categories.length; i++) {
-      int ordinal = tw.addCategory(new CategoryPath(categories[i]));
+      int ordinal = tw.addCategory(new FacetLabel(categories[i]));
       int expectedOrdinal = expectedPaths[i][expectedPaths[i].length-1];
       if (ordinal!=expectedOrdinal) {
         fail("For category "+showcat(categories[i])+" expected ordinal "+
@@ -140,14 +140,14 @@ public class TestTaxonomyCombined extends FacetTestCase {
     return sb.toString();
   }
 
-  private String showcat(CategoryPath path) {
+  private String showcat(FacetLabel path) {
     if (path==null) {
       return "<null>";
     }
     if (path.length==0) {
       return "<empty>";
     }
-    return "<"+path.toString('/')+">";
+    return "<"+path.toString()+">";
   }
 
   /**  Basic tests for TaxonomyWriter. Basically, we test that
@@ -232,7 +232,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     tw = new DirectoryTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     // Add one new category, just to make commit() do something:
-    tw.addCategory(new CategoryPath("hi"));
+    tw.addCategory(new FacetLabel("hi"));
     // Do a commit(). Here was a bug - if tw had a reader open, it should
     // be reopened after the commit. However, in our case the reader should
     // not be open (as explained above) but because it was not set to null,
@@ -254,34 +254,34 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     assertEquals(1, tw.getSize()); // the root only
     // Test that adding a new top-level category works
-    assertEquals(1, tw.addCategory(new CategoryPath("a")));
+    assertEquals(1, tw.addCategory(new FacetLabel("a")));
     assertEquals(2, tw.getSize());
     // Test that adding the same category again is noticed, and the
     // same ordinal (and not a new one) is returned.
-    assertEquals(1, tw.addCategory(new CategoryPath("a")));
+    assertEquals(1, tw.addCategory(new FacetLabel("a")));
     assertEquals(2, tw.getSize());
     // Test that adding another top-level category returns a new ordinal,
     // not the same one
-    assertEquals(2, tw.addCategory(new CategoryPath("b")));
+    assertEquals(2, tw.addCategory(new FacetLabel("b")));
     assertEquals(3, tw.getSize());
     // Test that adding a category inside one of the above adds just one
     // new ordinal:
-    assertEquals(3, tw.addCategory(new CategoryPath("a","c")));
+    assertEquals(3, tw.addCategory(new FacetLabel("a","c")));
     assertEquals(4, tw.getSize());
     // Test that adding the same second-level category doesn't do anything:
-    assertEquals(3, tw.addCategory(new CategoryPath("a","c")));
+    assertEquals(3, tw.addCategory(new FacetLabel("a","c")));
     assertEquals(4, tw.getSize());
     // Test that adding a second-level category with two new components
     // indeed adds two categories
-    assertEquals(5, tw.addCategory(new CategoryPath("d","e")));
+    assertEquals(5, tw.addCategory(new FacetLabel("d","e")));
     assertEquals(6, tw.getSize());
     // Verify that the parents were added above in the order we expected
-    assertEquals(4, tw.addCategory(new CategoryPath("d")));
+    assertEquals(4, tw.addCategory(new FacetLabel("d")));
     // Similar, but inside a category that already exists:
-    assertEquals(7, tw.addCategory(new CategoryPath("b", "d","e")));
+    assertEquals(7, tw.addCategory(new FacetLabel("b", "d","e")));
     assertEquals(8, tw.getSize());
     // And now inside two levels of categories that already exist:
-    assertEquals(8, tw.addCategory(new CategoryPath("b", "d","f")));
+    assertEquals(8, tw.addCategory(new FacetLabel("b", "d","f")));
     assertEquals(9, tw.getSize());
     
     tw.close();
@@ -304,7 +304,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
-    assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
+    assertEquals(0, tr.getOrdinal(new FacetLabel()));
     tr.close();
     indexDir.close();
   }
@@ -323,7 +323,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
-    assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
+    assertEquals(0, tr.getOrdinal(new FacetLabel()));
     tw.close();
     tr.close();
     indexDir.close();
@@ -352,8 +352,8 @@ public class TestTaxonomyCombined extends FacetTestCase {
 
     // test TaxonomyReader.getCategory():
     for (int i = 1; i < tr.getSize(); i++) {
-      CategoryPath expectedCategory = new CategoryPath(expectedCategories[i]);
-      CategoryPath category = tr.getPath(i);
+      FacetLabel expectedCategory = new FacetLabel(expectedCategories[i]);
+      FacetLabel category = tr.getPath(i);
       if (!expectedCategory.equals(category)) {
         fail("For ordinal "+i+" expected category "+
             showcat(expectedCategory)+", but got "+showcat(category));
@@ -367,15 +367,15 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // test TaxonomyReader.getOrdinal():
     for (int i = 1; i < expectedCategories.length; i++) {
       int expectedOrdinal = i;
-      int ordinal = tr.getOrdinal(new CategoryPath(expectedCategories[i]));
+      int ordinal = tr.getOrdinal(new FacetLabel(expectedCategories[i]));
       if (expectedOrdinal != ordinal) {
         fail("For category "+showcat(expectedCategories[i])+" expected ordinal "+
             expectedOrdinal+", but got "+ordinal);
       }
     }
     // (also test invalid categories:)
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(new CategoryPath("non-existant")));
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(new CategoryPath("Author", "Jules Verne")));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(new FacetLabel("non-existant")));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(new FacetLabel("Author", "Jules Verne")));
 
     tr.close();
     indexDir.close();
@@ -407,9 +407,9 @@ public class TestTaxonomyCombined extends FacetTestCase {
 
     // check parent of non-root ordinals:
     for (int ordinal=1; ordinal<tr.getSize(); ordinal++) {
-      CategoryPath me = tr.getPath(ordinal);
+      FacetLabel me = tr.getPath(ordinal);
       int parentOrdinal = parents[ordinal];
-      CategoryPath parent = tr.getPath(parentOrdinal);
+      FacetLabel parent = tr.getPath(parentOrdinal);
       if (parent==null) {
         fail("Parent of "+ordinal+" is "+parentOrdinal+
         ", but this is not a valid category.");
@@ -476,9 +476,9 @@ public class TestTaxonomyCombined extends FacetTestCase {
 
     // check parent of non-root ordinals:
     for (int ordinal = 1; ordinal < tr.getSize(); ordinal++) {
-      CategoryPath me = tr.getPath(ordinal);
+      FacetLabel me = tr.getPath(ordinal);
       int parentOrdinal = tw.getParent(ordinal);
-      CategoryPath parent = tr.getPath(parentOrdinal);
+      FacetLabel parent = tr.getPath(parentOrdinal);
       if (parent == null) {
         fail("Parent of " + ordinal + " is " + parentOrdinal
             + ", but this is not a valid category.");
@@ -668,7 +668,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
   public void testChildrenArraysGrowth() throws Exception {
     Directory indexDir = newDirectory();
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
-    tw.addCategory(new CategoryPath("hi", "there"));
+    tw.addCategory(new FacetLabel("hi", "there"));
     tw.commit();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     ParallelTaxonomyArrays ca = tr.getParallelTaxonomyArrays();
@@ -677,8 +677,8 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(3, ca.children().length);
     assertTrue(Arrays.equals(new int[] { 1, 2, -1 }, ca.children()));
     assertTrue(Arrays.equals(new int[] { -1, -1, -1 }, ca.siblings()));
-    tw.addCategory(new CategoryPath("hi", "ho"));
-    tw.addCategory(new CategoryPath("hello"));
+    tw.addCategory(new FacetLabel("hi", "ho"));
+    tw.addCategory(new FacetLabel("hello"));
     tw.commit();
     // Before refresh, nothing changed..
     ParallelTaxonomyArrays newca = tr.getParallelTaxonomyArrays();
@@ -708,8 +708,8 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // compute base child arrays - after first chunk, and after the other
     Directory indexDirBase = newDirectory();
     TaxonomyWriter twBase = new DirectoryTaxonomyWriter(indexDirBase);
-    twBase.addCategory(new CategoryPath("a", "0"));
-    final CategoryPath abPath = new CategoryPath("a", "b");
+    twBase.addCategory(new FacetLabel("a", "0"));
+    final FacetLabel abPath = new FacetLabel("a", "b");
     twBase.addCategory(abPath);
     twBase.commit();
     TaxonomyReader trBase = new DirectoryTaxonomyReader(indexDirBase);
@@ -721,7 +721,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     
     final int numCategories = atLeast(800);
     for (int i = 0; i < numCategories; i++) {
-      twBase.addCategory(new CategoryPath("a", "b", Integer.toString(i)));
+      twBase.addCategory(new FacetLabel("a", "b", Integer.toString(i)));
     }
     twBase.close();
     
@@ -742,18 +742,18 @@ public class TestTaxonomyCombined extends FacetTestCase {
     indexDirBase.close();
   }
 
-  private void assertConsistentYoungestChild(final CategoryPath abPath,
+  private void assertConsistentYoungestChild(final FacetLabel abPath,
       final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
     SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for intialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
-    tw.addCategory(new CategoryPath("a", "0"));
+    tw.addCategory(new FacetLabel("a", "0"));
     tw.addCategory(abPath);
     tw.commit();
     
     final DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     for (int i = 0; i < numCategories; i++) {
-      final CategoryPath cp = new CategoryPath("a", "b", Integer.toString(i));
+      final FacetLabel cp = new FacetLabel("a", "b", Integer.toString(i));
       tw.addCategory(cp);
       assertEquals("Ordinal of "+cp+" must be invalid until Taxonomy Reader was refreshed", TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(cp));
     }
@@ -840,7 +840,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
 
     assertEquals(1, tr.getSize()); // the empty taxonomy has size 1 (the root)
-    tw.addCategory(new CategoryPath("Author"));
+    tw.addCategory(new FacetLabel("Author"));
     assertEquals(1, tr.getSize()); // still root only...
     assertNull(TaxonomyReader.openIfChanged(tr)); // this is not enough, because tw.commit() hasn't been done yet
     assertEquals(1, tr.getSize()); // still root only...
@@ -864,7 +864,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // the parent of this category is correct (this requires the reader
     // to correctly update its prefetched parent vector), and that the
     // old information also wasn't ruined:
-    tw.addCategory(new CategoryPath("Author", "Richard Dawkins"));
+    tw.addCategory(new FacetLabel("Author", "Richard Dawkins"));
     int dawkins = 2;
     tw.commit();
     newTaxoReader = TaxonomyReader.openIfChanged(tr);
@@ -889,7 +889,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
 
     // Test getOrdinal():
-    CategoryPath author = new CategoryPath("Author");
+    FacetLabel author = new FacetLabel("Author");
 
     assertEquals(1, tr.getSize()); // the empty taxonomy has size 1 (the root)
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(author));
@@ -924,13 +924,13 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // native fslock impl gets angry if we use it, so use RAMDirectory explicitly.
     Directory indexDir = new RAMDirectory();
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
-    tw.addCategory(new CategoryPath("hi", "there"));
+    tw.addCategory(new FacetLabel("hi", "there"));
     tw.commit();
     // we deliberately not close the write now, and keep it open and
     // locked.
     // Verify that the writer worked:
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    assertEquals(2, tr.getOrdinal(new CategoryPath("hi", "there")));
+    assertEquals(2, tr.getOrdinal(new FacetLabel("hi", "there")));
     // Try to open a second writer, with the first one locking the directory.
     // We expect to get a LockObtainFailedException.
     try {
@@ -943,14 +943,14 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // write to the new writer.
     DirectoryTaxonomyWriter.unlock(indexDir);
     TaxonomyWriter tw2 = new DirectoryTaxonomyWriter(indexDir);
-    tw2.addCategory(new CategoryPath("hey"));
+    tw2.addCategory(new FacetLabel("hey"));
     tw2.close();
     // See that the writer indeed wrote:
     TaxonomyReader newtr = TaxonomyReader.openIfChanged(tr);
     assertNotNull(newtr);
     tr.close();
     tr = newtr;
-    assertEquals(3, tr.getOrdinal(new CategoryPath("hey")));
+    assertEquals(3, tr.getOrdinal(new FacetLabel("hey")));
     tr.close();
     tw.close();
     indexDir.close();
@@ -967,7 +967,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
    */
   public static void fillTaxonomyCheckPaths(TaxonomyWriter tw) throws IOException {
     for (int i = 0; i < categories.length; i++) {
-      int ordinal = tw.addCategory(new CategoryPath(categories[i]));
+      int ordinal = tw.addCategory(new FacetLabel(categories[i]));
       int expectedOrdinal = expectedPaths[i][expectedPaths[i].length-1];
       if (ordinal!=expectedOrdinal) {
         fail("For category "+showcat(categories[i])+" expected ordinal "+
@@ -1052,7 +1052,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
     TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
     
-    CategoryPath cp = new CategoryPath("a");
+    FacetLabel cp = new FacetLabel("a");
     writer.addCategory(cp);
     TaxonomyReader newReader = TaxonomyReader.openIfChanged(reader);
     assertNotNull("expected a new instance", newReader);

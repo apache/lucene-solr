@@ -89,10 +89,14 @@ public abstract class TaxonomyReader implements Closeable {
     }
     
   }
+
+  /** Sole constructor. */
+  public TaxonomyReader() {
+  }
   
   /**
    * The root category (the category with the empty path) always has the ordinal
-   * 0, to which we give a name ROOT_ORDINAL. {@link #getOrdinal(CategoryPath)}
+   * 0, to which we give a name ROOT_ORDINAL. {@link #getOrdinal(FacetLabel)}
    * of an empty path will always return {@code ROOT_ORDINAL}, and
    * {@link #getPath(int)} with {@code ROOT_ORDINAL} will return the empty path.
    */
@@ -142,7 +146,7 @@ public abstract class TaxonomyReader implements Closeable {
   protected abstract TaxonomyReader doOpenIfChanged() throws IOException;
   
   /**
-   * @throws AlreadyClosedException if this IndexReader is closed
+   * Throws {@link AlreadyClosedException} if this IndexReader is closed
    */
   protected final void ensureOpen() throws AlreadyClosedException {
     if (getRefCount() <= 0) {
@@ -215,10 +219,18 @@ public abstract class TaxonomyReader implements Closeable {
    * @return the category's ordinal or {@link #INVALID_ORDINAL} if the category
    *         wasn't foun.
    */
-  public abstract int getOrdinal(CategoryPath categoryPath) throws IOException;
+  public abstract int getOrdinal(FacetLabel categoryPath) throws IOException;
+
+  /** Returns ordinal for the dim + path. */
+  public int getOrdinal(String dim, String[] path) throws IOException {
+    String[] fullPath = new String[path.length+1];
+    fullPath[0] = dim;
+    System.arraycopy(path, 0, fullPath, 1, path.length);
+    return getOrdinal(new FacetLabel(fullPath));
+  }
   
   /** Returns the path name of the category with the given ordinal. */
-  public abstract CategoryPath getPath(int ordinal) throws IOException;
+  public abstract FacetLabel getPath(int ordinal) throws IOException;
   
   /** Returns the current refCount for this taxonomy reader. */
   public final int getRefCount() {

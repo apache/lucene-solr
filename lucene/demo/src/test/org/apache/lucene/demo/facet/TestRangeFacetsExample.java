@@ -19,12 +19,7 @@ package org.apache.lucene.demo.facet;
 
 import java.util.List;
 
-import org.apache.lucene.facet.collections.ObjectToIntMap;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.RangeFacetRequest;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,27 +28,12 @@ import org.junit.Test;
 @SuppressCodecs("Lucene3x")
 public class TestRangeFacetsExample extends LuceneTestCase {
 
-  private static final ObjectToIntMap<CategoryPath> expectedCounts = new ObjectToIntMap<CategoryPath>();
-  static {
-    expectedCounts.put(new CategoryPath("timestamp", "Past hour"), 4);
-    expectedCounts.put(new CategoryPath("timestamp", "Past six hours"), 22);
-    expectedCounts.put(new CategoryPath("timestamp", "Past day"), 87);
-  }
-  
-  private void assertExpectedCounts(FacetResult res, ObjectToIntMap<CategoryPath> expCounts) {
-    FacetResultNode root = res.getFacetResultNode();
-    for (FacetResultNode node : root.subResults) {
-      assertEquals("incorrect count for " + node.label, expCounts.get(node.label), (int) node.value);
-    }
-  }
-  
   @Test
   public void testSimple() throws Exception {
     RangeFacetsExample example = new RangeFacetsExample();
     example.index();
-    List<FacetResult> facetResults = example.search();
-    assertEquals(1, facetResults.size());
-    assertExpectedCounts(facetResults.get(0), expectedCounts);
+    FacetResult result = example.search();
+    assertEquals("dim=timestamp path=[] value=87 childCount=3\n  Past hour (4)\n  Past six hours (22)\n  Past day (87)\n", result.toString());
     example.close();
   }
 
@@ -62,8 +42,7 @@ public class TestRangeFacetsExample extends LuceneTestCase {
   public void testDrillDown() throws Exception {
     RangeFacetsExample example = new RangeFacetsExample();
     example.index();
-    List<FacetResult> facetResults = example.search();
-    TopDocs hits = example.drillDown((LongRange) ((RangeFacetRequest<LongRange>) facetResults.get(0).getFacetRequest()).ranges[1]);
+    TopDocs hits = example.drillDown(example.PAST_SIX_HOURS);
     assertEquals(22, hits.totalHits);
     example.close();
   }

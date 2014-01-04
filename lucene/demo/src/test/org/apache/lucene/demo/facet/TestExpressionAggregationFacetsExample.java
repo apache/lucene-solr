@@ -1,13 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.util.List;
-import java.util.Locale;
-
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,25 +17,18 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestExpressionAggregationFacetsExample extends LuceneTestCase {
+import java.util.List;
+import java.util.Locale;
 
-  private static String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(fr.getFacetRequest().categoryPath.length, 0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
-  }
-  
-  private static void toSimpleString(int startLength, int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(String.format(Locale.ROOT, "%s%s (%.3f)\n", indent, node.label.components[startLength + depth - 1], node.value));
-    for (FacetResultNode childNode : node.subResults) {
-      toSimpleString(startLength, depth + 1, sb, childNode, indent + "  ");
-    }
-  }
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
+
+public class TestExpressionAggregationFacetsExample extends LuceneTestCase {
 
   @Test
   public void testSimple() throws Exception {
-    List<FacetResult> facetResults = new ExpressionAggregationFacetsExample().runSearch();
-    assertEquals("A (0.000)\n  B (2.236)\n  C (1.732)\n", toSimpleString(facetResults.get(0)));
+    FacetResult result = new ExpressionAggregationFacetsExample().runSearch();
+    assertEquals("dim=A path=[] value=3.9681187 childCount=2\n  B (2.236068)\n  C (1.7320508)\n", result.toString());
   }
-  
 }

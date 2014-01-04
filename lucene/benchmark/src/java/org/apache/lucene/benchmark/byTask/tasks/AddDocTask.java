@@ -23,6 +23,7 @@ import java.util.Locale;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexDocument;
 
 /**
  * Add a document, optionally of a certain size.
@@ -41,7 +42,7 @@ public class AddDocTask extends PerfTask {
    * volatile data passed between setup(), doLogic(), tearDown().
    * the doc is created at setup() and added at doLogic(). 
    */
-  protected Document doc = null;
+  protected IndexDocument doc = null;
 
   @Override
   public void setup() throws Exception {

@@ -1,33 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -45,31 +17,41 @@ import org.apache.lucene.store.RAMDirectory;
  * limitations under the License.
  */
 
-/** Demonstrates indexing categories into different category lists. */
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+
+/** Demonstrates indexing categories into different indexed fields. */
 public class MultiCategoryListsFacetsExample {
 
-  private final FacetIndexingParams indexingParams;
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Creates a new instance and populates the catetory list params mapping. */
   public MultiCategoryListsFacetsExample() {
-    // index all Author facets in one category list and all Publish Date in another.
-    Map<CategoryPath,CategoryListParams> categoryListParams = new HashMap<CategoryPath,CategoryListParams>();
-    categoryListParams.put(new CategoryPath("Author"), new CategoryListParams("author"));
-    categoryListParams.put(new CategoryPath("Publish Date"), new CategoryListParams("pubdate"));
-    indexingParams = new PerDimensionIndexingParams(categoryListParams);
-  }
-  
-  private void add(IndexWriter indexWriter, FacetFields facetFields, String ... categoryPaths) throws IOException {
-    Document doc = new Document();
-    
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
-    for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
-    }
-    facetFields.addFields(doc, paths);
-    indexWriter.addDocument(doc);
+    config.setIndexFieldName("Author", "author");
+    config.setIndexFieldName("Publish Date", "pubdate");
+    config.setHierarchical("Publish Date", true);
   }
 
   /** Build the example index. */
@@ -80,14 +62,30 @@ public class MultiCategoryListsFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetFields facetFields = new FacetFields(taxoWriter, indexingParams);
+    Document doc = new Document();
+    doc.add(new FacetField("Author", "Bob"));
+    doc.add(new FacetField("Publish Date", "2010", "10", "15"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    add(indexWriter, facetFields, "Author/Bob", "Publish Date/2010/10/15");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Date/2010/10/20");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Date/2012/1/1");
-    add(indexWriter, facetFields, "Author/Susan", "Publish Date/2012/1/7");
-    add(indexWriter, facetFields, "Author/Frank", "Publish Date/1999/5/5");
+    doc = new Document();
+    doc.add(new FacetField("Author", "Lisa"));
+    doc.add(new FacetField("Publish Date", "2010", "10", "20"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Lisa"));
+    doc.add(new FacetField("Publish Date", "2012", "1", "1"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Susan"));
+    doc.add(new FacetField("Publish Date", "2012", "1", "7"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Frank"));
+    doc.add(new FacetField("Publish Date", "1999", "5", "5"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
     
     indexWriter.close();
     taxoWriter.close();
@@ -99,27 +97,27 @@ public class MultiCategoryListsFacetsExample {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
-    // Count both "Publish Date" and "Author" dimensions
-    FacetSearchParams fsp = new FacetSearchParams(indexingParams,
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
-
-    // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    // you'd use a "normal" query:
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
+    List<FacetResult> results = new ArrayList<FacetResult>();
+
+    // Count both "Publish Date" and "Author" dimensions
+    Facets author = new FastTaxonomyFacetCounts("author", taxoReader, config, fc);
+    results.add(author.getTopChildren(10, "Author"));
+
+    Facets pubDate = new FastTaxonomyFacetCounts("pubdate", taxoReader, config, fc);
+    results.add(pubDate.getTopChildren(10, "Publish Date"));
     
     indexReader.close();
     taxoReader.close();
     
-    return facetResults;
+    return results;
   }
 
   /** Runs the search example. */
@@ -133,9 +131,7 @@ public class MultiCategoryListsFacetsExample {
     System.out.println("Facet counting over multiple category lists example:");
     System.out.println("-----------------------");
     List<FacetResult> results = new MultiCategoryListsFacetsExample().runSearch();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    System.out.println("Author: " + results.get(0));
+    System.out.println("Publish Date: " + results.get(1));
   }
-  
 }

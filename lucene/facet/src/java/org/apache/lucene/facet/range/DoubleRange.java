@@ -17,24 +17,41 @@ package org.apache.lucene.facet.range;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.DoubleDocValuesField; // javadocs
+import java.io.IOException;
+import java.util.Collections;
 
-/** Represents a range over double values indexed as {@link
- *  DoubleDocValuesField}.  */
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.NumericRangeFilter; // javadocs
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
+
+/** Represents a range over double values. */
 public final class DoubleRange extends Range {
-  private final double minIncl;
-  private final double maxIncl;
+  final double minIncl;
+  final double maxIncl;
 
+  /** Minimum. */
   public final double min;
+
+  /** Maximum. */
   public final double max;
+
+  /** True if the minimum value is inclusive. */
   public final boolean minInclusive;
+
+  /** True if the maximum value is inclusive. */
   public final boolean maxInclusive;
 
   /** Create a DoubleRange. */
-  public DoubleRange(String label, double min, boolean minInclusive, double max, boolean maxInclusive) {
+  public DoubleRange(String label, double minIn, boolean minInclusive, double maxIn, boolean maxInclusive) {
     super(label);
-    this.min = min;
-    this.max = max;
+    this.min = minIn;
+    this.max = maxIn;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
 
@@ -47,7 +64,7 @@ public final class DoubleRange extends Range {
       throw new IllegalArgumentException("min cannot be NaN");
     }
     if (!minInclusive) {
-      min = Math.nextUp(min);
+      minIn = Math.nextUp(minIn);
     }
 
     if (Double.isNaN(max)) {
@@ -55,17 +72,99 @@ public final class DoubleRange extends Range {
     }
     if (!maxInclusive) {
       // Why no Math.nextDown?
-      max = Math.nextAfter(max, Double.NEGATIVE_INFINITY);
+      maxIn = Math.nextAfter(maxIn, Double.NEGATIVE_INFINITY);
     }
 
-    this.minIncl = min;
-    this.maxIncl = max;
+    if (minIn > maxIn) {
+      failNoMatch();
+    }
+
+    this.minIncl = minIn;
+    this.maxIncl = maxIn;
+  }
+
+  /** True if this range accepts the provided value. */
+  public boolean accept(double value) {
+    return value >= minIncl && value <= maxIncl;
+  }
+
+  LongRange toLongRange() {
+    return new LongRange(label,
+                         NumericUtils.doubleToSortableLong(minIncl), true,
+                         NumericUtils.doubleToSortableLong(maxIncl), true);
   }
 
   @Override
-  public boolean accept(long value) {
-    double doubleValue = Double.longBitsToDouble(value);
-    return doubleValue >= minIncl && doubleValue <= maxIncl;
+  public String toString() {
+    return "DoubleRange(" + minIncl + " to " + maxIncl + ")";
+  }
+
+  /** Returns a new {@link Filter} accepting only documents
+   *  in this range.  Note that this filter is not
+   *  efficient: it's a linear scan of all docs, testing
+   *  each value.  If the {@link ValueSource} is static,
+   *  e.g. an indexed numeric field, then it's more
+   *  efficient to use {@link NumericRangeFilter}. */
+  public Filter getFilter(final ValueSource valueSource) {
+    return new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+
+        // TODO: this is just like ValueSourceScorer,
+        // ValueSourceFilter (spatial),
+        // ValueSourceRangeFilter (solr); also,
+        // https://issues.apache.org/jira/browse/LUCENE-4251
+
+        final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
+
+        final int maxDoc = context.reader().maxDoc();
+
+        return new DocIdSet() {
+
+          @Override
+          public DocIdSetIterator iterator() {
+            return new DocIdSetIterator() {
+              int doc = -1;
+
+              @Override
+              public int nextDoc() throws IOException {
+                while (true) {
+                  doc++;
+                  if (doc == maxDoc) {
+                    return doc = NO_MORE_DOCS;
+                  }
+                  if (acceptDocs != null && acceptDocs.get(doc) == false) {
+                    continue;
+                  }
+                  double v = values.doubleVal(doc);
+                  if (accept(v)) {
+                    return doc;
+                  }
+                }
+              }
+
+              @Override
+              public int advance(int target) throws IOException {
+                doc = target-1;
+                return nextDoc();
+              }
+
+              @Override
+              public int docID() {
+                return doc;
+              }
+
+              @Override
+              public long cost() {
+                // Since we do a linear scan over all
+                // documents, our cost is O(maxDoc):
+                return maxDoc;
+              }
+            };
+          }
+        };
+      }
+    };
   }
 }
 
