@@ -38,6 +38,12 @@ public class TestHighlight extends ServerBaseTestCase {
     shutdownServer();
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    curIndexName = "index";
+  }
+
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
@@ -142,8 +148,8 @@ public class TestHighlight extends ServerBaseTestCase {
   public void testMultiValuedWholeHighlight() throws Exception {
     deleteAllDocs();
 
-    long gen = addDocument("{indexName: index, fields: {authors: ['Dr. Seuss', 'Bob Smith', 'Seuss is Fun.  Some extra content.']}}");
-    JSONObject result = send("search", "{indexName: index, queryText: 'authors:seuss', retrieveFields: [{field: authors, highlight: whole}], searcher: {indexGen: " + gen + "}}");
+    long gen = addDocument("{fields: {authors: ['Dr. Seuss', 'Bob Smith', 'Seuss is Fun.  Some extra content.']}}");
+    JSONObject result = send("search", "{queryText: 'authors:seuss', retrieveFields: [{field: authors, highlight: whole}], searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
     JSONArray fields = getArray(result, "hits[0].fields.authors");
     assertEquals(3, fields.size());
@@ -155,8 +161,8 @@ public class TestHighlight extends ServerBaseTestCase {
   public void testMultiValuedSnippetHighlight() throws Exception {
     deleteAllDocs();
 
-    long gen = addDocument("{indexName: index, fields: {authors: ['Dr. Seuss', 'Bob Smith', 'Seuss is Fun.  Some extra content.']}}");
-    JSONObject result = send("search", "{indexName: index, queryText: 'authors:seuss', retrieveFields: [{field: authors, highlight: snippets, maxPassages: 1}], searcher: {indexGen: " + gen + "}}");
+    long gen = addDocument("{fields: {authors: ['Dr. Seuss', 'Bob Smith', 'Seuss is Fun.  Some extra content.']}}");
+    JSONObject result = send("search", "{queryText: 'authors:seuss', retrieveFields: [{field: authors, highlight: snippets, maxPassages: 1}], searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals(1, getInt(result, "hits[0].fields.authors.length"));
     assertEquals("<b>Seuss</b> Bob Smith <b>Seuss</b> is Fun.  ", renderSingleHighlight(getArray(result, "hits[0].fields.authors[0].parts")));
@@ -165,8 +171,8 @@ public class TestHighlight extends ServerBaseTestCase {
   /** Make sure we can use a different maxPassages per field */
   public void testPerFieldMaxPassages() throws Exception {
     deleteAllDocs();
-    long gen = addDocument("{indexName: index, fields: {body: 'This sentence has test.  This one does not.  Here is test again.', authors: ['This sentence has test.  This one does not.  Here is test again.']}}");
-    JSONObject result = send("search", "{indexName: index, queryText: 'test', retrieveFields: [{field: authors, highlight: snippets, maxPassages: 1}, {field: body, highlight: snippets, maxPassages: 2}], searcher: {indexGen: " + gen + "}}");
+    long gen = addDocument("{fields: {body: 'This sentence has test.  This one does not.  Here is test again.', authors: ['This sentence has test.  This one does not.  Here is test again.']}}");
+    JSONObject result = send("search", "{queryText: 'test', retrieveFields: [{field: authors, highlight: snippets, maxPassages: 1}, {field: body, highlight: snippets, maxPassages: 2}], searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
 
     // Author has just 1 passage:
@@ -183,7 +189,7 @@ public class TestHighlight extends ServerBaseTestCase {
   public void testContentWithSep() throws Exception {
     deleteAllDocs();
     try {
-      addDocument("{indexName: index, fields: {authors: ['Dr. Seuss', 'Bob \u001F Smith', 'Seuss is Fun']}}");
+      addDocument("{fields: {authors: ['Dr. Seuss', 'Bob \u001F Smith', 'Seuss is Fun']}}");
       fail("didn't hit exception");
     } catch (IOException ioe) {
       // expected
@@ -195,26 +201,26 @@ public class TestHighlight extends ServerBaseTestCase {
   public void testNonDefaultOffsetGap() throws Exception {
     // nocommit add test infra to create a randomly named new index?
     _TestUtil.rmDir(new File("offsetgap"));
-    send("createIndex", "{indexName: offsetgap, rootDir: offsetgap}");
+    curIndexName = "offsetgap";
+    send("createIndex", "{rootDir: offsetgap}");
     // Wait at most 1 msec for a searcher to reopen; this
     // value is too low for a production site but for
     // testing we want to minimize sleep time:
-    send("liveSettings", "{indexName: offsetgap, minRefreshSec: 0.001}");
-    send("startIndex", "{indexName: offsetgap}");
+    send("liveSettings", "{minRefreshSec: 0.001}");
+    send("startIndex", "{}");
     JSONObject o = new JSONObject();
 
     put(o, "body", "{type: text, multiValued: true, highlight: true, store: true, analyzer: {tokenizer: StandardTokenizer, offsetGap: 100}}");
 
     JSONObject o2 = new JSONObject();
     o2.put("fields", o);
-    o2.put("indexName", "offsetgap");
     send("registerFields", o2);
 
     // Index one document:
-    long indexGen = getLong(send("addDocument", "{indexName: offsetgap, fields: {body: ['highlight me', 'highlight me too']}}"), "indexGen");
+    long indexGen = getLong(send("addDocument", "{fields: {body: ['highlight me', 'highlight me too']}}"), "indexGen");
 
     // Search w/ highlight:
-    JSONObject result = send("search", "{indexName: offsetgap, queryText: highlight, retrieveFields: [{field: 'body', highlight: 'whole'}]}");
+    JSONObject result = send("search", "{queryText: highlight, retrieveFields: [{field: 'body', highlight: 'whole'}]}");
 
     JSONArray parts = getArray(result, "hits[0].fields.body");
     assertEquals(2, parts.size());

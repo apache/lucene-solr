@@ -32,7 +32,7 @@ public class TestAddDocuments extends ServerBaseTestCase {
     startServer();
     createAndStartIndex();
     registerFields();
-    commit();
+    //commit();
   }
 
   @AfterClass
@@ -41,7 +41,7 @@ public class TestAddDocuments extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{indexName: index, fields: {docType: {type: atom}, name: {type: atom}, country: {type: atom}, skill: {type: atom}, year: {type: int}}}");
+    send("registerFields", "{fields: {docType: {type: atom}, name: {type: atom}, country: {type: atom}, skill: {type: atom}, year: {type: int}}}");
   }
 
   private JSONObject getResume(String name, String country) {
@@ -77,11 +77,11 @@ public class TestAddDocuments extends ServerBaseTestCase {
     long indexGen = ((Number) result.get("indexGen")).longValue();    
 
     // search on parent:
-    result = send("search", String.format(Locale.ROOT, "{indexName: index, queryText: 'name:Lisa', searcher: {indexGen: %d}}", indexGen));
+    result = send("search", String.format(Locale.ROOT, "{queryText: 'name:Lisa', searcher: {indexGen: %d}}", indexGen));
     assertEquals(1, result.get("totalHits"));
 
     // search on child:
-    result = send("search", String.format(Locale.ROOT, "{indexName: index, queryText: 'skill:python', searcher: {indexGen: %d}}", indexGen));
+    result = send("search", String.format(Locale.ROOT, "{queryText: 'skill:python', searcher: {indexGen: %d}}", indexGen));
     assertEquals(1, result.get("totalHits"));
   }
 
@@ -110,11 +110,11 @@ public class TestAddDocuments extends ServerBaseTestCase {
     long indexGen = ((Number) result.get("indexGen")).longValue();
 
     // search on parent:
-    result = send("search", String.format(Locale.ROOT, "{indexName: index, queryText: 'name:Lisa', searcher: {indexGen: %d}}", indexGen));
+    result = send("search", String.format(Locale.ROOT, "{queryText: 'name:Lisa', searcher: {indexGen: %d}}", indexGen));
     assertEquals(100, result.get("totalHits"));
 
     // search on child:
-    result = send("search", String.format(Locale.ROOT, "{indexName: index, queryText: 'skill:python', searcher: {indexGen: %d}}", indexGen));
+    result = send("search", String.format(Locale.ROOT, "{queryText: 'skill:python', searcher: {indexGen: %d}}", indexGen));
     assertEquals(100, result.get("totalHits"));
   }
 

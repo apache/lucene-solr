@@ -38,8 +38,8 @@ public class TestLiveValues extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{indexName: index, fields: {id: {type: atom, store: true, postingsFormat: Memory}}}");
-    send("registerFields", "{indexName: index, fields: {value: {type: atom, index: false, store: true, liveValues: id}}}");
+    send("registerFields", "{fields: {id: {type: atom, store: true, postingsFormat: Memory}}}");
+    send("registerFields", "{fields: {value: {type: atom, index: false, store: true, liveValues: id}}}");
   }
 
   // nocommit testDeletions
@@ -47,7 +47,7 @@ public class TestLiveValues extends ServerBaseTestCase {
   public void testLiveFields() throws Exception {
     JSONArray arr = new JSONArray();
     for(int i=0;i<100;i++) {
-      send("addDocument", "{indexName: index, fields: {id: '" + i + "', value: 'value is " + i + "'}}");
+      send("addDocument", "{fields: {id: '" + i + "', value: 'value is " + i + "'}}");
       arr.add("" + i);
     }
     JSONObject request = new JSONObject();

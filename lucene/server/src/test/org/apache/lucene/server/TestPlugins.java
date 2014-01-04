@@ -76,12 +76,12 @@ public class TestPlugins extends ServerBaseTestCase {
     // nocommit need a "list plugins" API: verify foobar is there
     // nocommit send addDocument & verify change "took"
 
-    send("createIndex", "{indexName: index, rootDir: " + TEST_DIR.getAbsolutePath() + "}");
-    send("startIndex", "{indexName: index}");
-    send("registerFields", "{indexName: index, fields: {id: {type: int, store: true, postingsFormat: Memory}, intfield: {type: int, store: true}}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {id: 0, mockFoobar: 7}}"), "indexGen");
+    send("createIndex", "{rootDir: " + TEST_DIR.getAbsolutePath() + "}");
+    send("startIndex", "{}");
+    send("registerFields", "{fields: {id: {type: int, store: true, postingsFormat: Memory}, intfield: {type: int, store: true}}}");
+    long gen = getLong(send("addDocument", "{fields: {id: 0, mockFoobar: 7}}"), "indexGen");
 
-    JSONObject result = send("search", "{indexName: index, searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, retrieveFields: [id, intfield]}");
+    JSONObject result = send("search", "{searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, retrieveFields: [id, intfield]}");
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals(14, getInt(result, "hits[0].fields.intfield"));
     //System.out.println("got: " + prettyPrint(result));

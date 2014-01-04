@@ -646,7 +646,6 @@ public class Server {
       // Close everything:
       sc.close().awaitUninterruptibly();
 
-      globalState.closeAll();
     } finally {
       if (bootstrap != null) {
         bootstrap.releaseExternalResources();

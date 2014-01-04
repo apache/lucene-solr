@@ -822,9 +822,10 @@ public class IndexState implements Closeable {
 
   @Override
   public synchronized void close() throws IOException {
+    //System.out.println("IndexState.close name=" + name + " writer=" + writer);
+    commit();
     // nocommit catch exc & rollback:
     if (writer != null) {
-      commit();
       IOUtils.close(reopenThread,
                     manager,
                     writer.getIndexWriter(),
@@ -906,18 +907,16 @@ public class IndexState implements Closeable {
 
   /** Commit all state. */
   public synchronized void commit() throws IOException {
-    if (writer == null) {
-      throw new IllegalStateException("index \"" + name + "\" isn't started: cannot commit");
+    if (writer != null) {
+      // nocommit: two phase commit?
+      taxoWriter.commit();
+      writer.getIndexWriter().commit();
     }
-
-    // nocommit: two phase commit?
-    taxoWriter.commit();
-    writer.getIndexWriter().commit();
 
     JSONObject saveState = new JSONObject();
     saveState.put("state", getSaveState());
     saveLoadState.save(saveState);
-    //System.out.println("DONE saveLoadState.save: " + Arrays.toString(new File(rootDir, "state").listFiles()));
+    //System.out.println("IndexState.commit name=" + name + " state=" + saveState.toJSONString(new JSONStyleIdent()));
   }
 
   /** Load all previously saved state. */

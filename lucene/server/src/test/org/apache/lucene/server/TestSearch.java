@@ -42,6 +42,12 @@ public class TestSearch extends ServerBaseTestCase {
     shutdownServer();
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    curIndexName = "index";
+  }
+
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: WhitespaceAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
@@ -49,152 +55,152 @@ public class TestSearch extends ServerBaseTestCase {
     put(o, "id", "{type: int, store: true, sort: true}");
     JSONObject o2 = new JSONObject();
     o2.put("fields", o);
-    o2.put("indexName", "index");
     send("registerFields", o2);
   }
 
   public void testPhraseQuery() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'the wizard of oz'}}"), "indexGen");
-    JSONObject result = send("search", "{indexName: index, query: {class: PhraseQuery, field: body, terms: [wizard, of, oz]}, searcher: {indexGen: " + gen + "}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'the wizard of oz'}}"), "indexGen");
+    JSONObject result = send("search", "{query: {class: PhraseQuery, field: body, terms: [wizard, of, oz]}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
 
-    result = send("search", "{indexName: index, query: {class: PhraseQuery, field: body, terms: [wizard, oz]}, searcher: {indexGen: " + gen + "}}");
+    result = send("search", "{query: {class: PhraseQuery, field: body, terms: [wizard, oz]}, searcher: {indexGen: " + gen + "}}");
     assertEquals(0, getInt(result, "totalHits"));
 
-    result = send("search", "{indexName: index, query: {class: PhraseQuery, field: body, terms: [wizard, oz], slop: 1}, searcher: {indexGen: " + gen + "}}");
+    result = send("search", "{query: {class: PhraseQuery, field: body, terms: [wizard, oz], slop: 1}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
   }
 
   public void testConstantScoreQuery() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'the wizard of oz'}}"), "indexGen");
-    JSONObject result = send("search", "{indexName: index, query: {class: TermQuery, field: body, term: wizard}, searcher: {indexGen: " + gen + "}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'the wizard of oz'}}"), "indexGen");
+    JSONObject result = send("search", "{query: {class: TermQuery, field: body, term: wizard}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
 
-    result = send("search", "{indexName: index, query: {class: ConstantScoreQuery, boost: 10.0, query: {class: TermQuery, field: body, term: wizard}}, searcher: {indexGen: " + gen + "}}");
+    result = send("search", "{query: {class: ConstantScoreQuery, boost: 10.0, query: {class: TermQuery, field: body, term: wizard}}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals(10.0, getFloat(result, "hits[0].score"), .000001f);
   }
 
   public void testRegexpQuery() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'testing'}}"), "indexGen");
-    JSONObject r = send("search", "{indexName: index, query: {class: RegexpQuery, field: body, regexp: '.*est.*'}, searcher: {indexGen: " + gen + "}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'testing'}}"), "indexGen");
+    JSONObject r = send("search", "{query: {class: RegexpQuery, field: body, regexp: '.*est.*'}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(r, "totalHits"));
-    r = send("search", "{indexName: index, query: {class: RegexpQuery, field: body, regexp: '.*zest.*'}, searcher: {indexGen: " + gen + "}}");
+    r = send("search", "{query: {class: RegexpQuery, field: body, regexp: '.*zest.*'}, searcher: {indexGen: " + gen + "}}");
     assertEquals(0, getInt(r, "totalHits"));
   }
 
   public void testTermRangeQuery() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {body: 'terma'}}");
-    send("addDocument", "{indexName: index, fields: {body: 'termb'}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'termc'}}"), "indexGen");
+    send("addDocument", "{fields: {body: 'terma'}}");
+    send("addDocument", "{fields: {body: 'termb'}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'termc'}}"), "indexGen");
 
-    JSONObject result = send("search", "{indexName: index, query: {class: TermRangeQuery, field: body, lowerTerm: terma, upperTerm: termc, includeLower: true, includeUpper: true}, searcher: {indexGen: " + gen + "}}");
+    JSONObject result = send("search", "{query: {class: TermRangeQuery, field: body, lowerTerm: terma, upperTerm: termc, includeLower: true, includeUpper: true}, searcher: {indexGen: " + gen + "}}");
     assertEquals(3, getInt(result, "totalHits"));
-    result = send("search", "{indexName: index, query: {class: TermRangeQuery, field: body, lowerTerm: terma, upperTerm: termc, includeLower: false, includeUpper: false}, searcher: {indexGen: " + gen + "}}");
+    result = send("search", "{query: {class: TermRangeQuery, field: body, lowerTerm: terma, upperTerm: termc, includeLower: false, includeUpper: false}, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
   }
 
   public void testMatchAllDocsQuery() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {body: 'terma'}}");
-    send("addDocument", "{indexName: index, fields: {body: 'termb'}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'termc'}}"), "indexGen");
-    assertEquals(3, getInt(send("search", "{indexName: index, query: {class: MatchAllDocsQuery}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    send("addDocument", "{fields: {body: 'terma'}}");
+    send("addDocument", "{fields: {body: 'termb'}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'termc'}}"), "indexGen");
+    assertEquals(3, getInt(send("search", "{query: {class: MatchAllDocsQuery}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testWildcardQuery() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {body: 'terma'}}");
-    send("addDocument", "{indexName: index, fields: {body: 'termb'}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'termc'}}"), "indexGen");
-    assertEquals(3, getInt(send("search", "{indexName: index, query: {class: WildcardQuery, field: body, term: 'term?'}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    send("addDocument", "{fields: {body: 'terma'}}");
+    send("addDocument", "{fields: {body: 'termb'}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'termc'}}"), "indexGen");
+    assertEquals(3, getInt(send("search", "{query: {class: WildcardQuery, field: body, term: 'term?'}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testFuzzyQuery() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'fantastic'}}"), "indexGen");
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: FuzzyQuery, field: body, term: 'fantasic', maxEdits: 1}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: FuzzyQuery, field: body, term: 'fantasic', maxEdits: 2}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(0, getInt(send("search", "{indexName: index, query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 1}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 2}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 2, prefixLength: 4}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic'}}"), "indexGen");
+    assertEquals(1, getInt(send("search", "{query: {class: FuzzyQuery, field: body, term: 'fantasic', maxEdits: 1}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{query: {class: FuzzyQuery, field: body, term: 'fantasic', maxEdits: 2}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(0, getInt(send("search", "{query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 1}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 2}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{query: {class: FuzzyQuery, field: body, term: 'fantasc', maxEdits: 2, prefixLength: 4}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testCommonTermsQuery() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {body: 'fantastic'}}");
-    send("addDocument", "{indexName: index, fields: {body: 'fantastic four'}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'fantastic five'}}"), "indexGen");
+    send("addDocument", "{fields: {body: 'fantastic'}}");
+    send("addDocument", "{fields: {body: 'fantastic four'}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic five'}}"), "indexGen");
 
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: CommonTermsQuery, highFreqOccur: must, lowFreqOccur: must, maxTermFrequency: 0.5, field: body, terms: [fantastic, four]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{query: {class: CommonTermsQuery, highFreqOccur: must, lowFreqOccur: must, maxTermFrequency: 0.5, field: body, terms: [fantastic, four]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testMultiPhraseQuery() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {body: 'fantastic five is furious'}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'fantastic four is furious'}}"), "indexGen");
+    send("addDocument", "{fields: {body: 'fantastic five is furious'}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic four is furious'}}"), "indexGen");
 
-    assertEquals(1, getInt(send("search", "{indexName: index, query: {class: MultiPhraseQuery, field: body, terms: [fantastic, five, is, furious]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(2, getInt(send("search", "{indexName: index, query: {class: MultiPhraseQuery, field: body, terms: [fantastic, {term: furious, position: 3}]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(2, getInt(send("search", "{indexName: index, query: {class: MultiPhraseQuery, field: body, terms: [fantastic, [five, four], {term: furious, position: 3}]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{query: {class: MultiPhraseQuery, field: body, terms: [fantastic, five, is, furious]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(2, getInt(send("search", "{query: {class: MultiPhraseQuery, field: body, terms: [fantastic, {term: furious, position: 3}]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(2, getInt(send("search", "{query: {class: MultiPhraseQuery, field: body, terms: [fantastic, [five, four], {term: furious, position: 3}]}, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testClassicQPDefaultOperator() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'fantastic four is furious'}}"), "indexGen");
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic four is furious'}}"), "indexGen");
     
-    assertEquals(1, getInt(send("search", "{indexName: index, queryParser: {class: classic, defaultOperator: or, defaultField: body}, queryText: 'furious five', searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(0, getInt(send("search", "{indexName: index, queryParser: {class: classic, defaultOperator: and, defaultField: body}, queryText: 'furious five', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: classic, defaultOperator: or, defaultField: body}, queryText: 'furious five', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(0, getInt(send("search", "{queryParser: {class: classic, defaultOperator: and, defaultField: body}, queryText: 'furious five', searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testMultiFieldQP() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'fantastic four is furious', title: 'here is the title'}}"), "indexGen");
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic four is furious', title: 'here is the title'}}"), "indexGen");
     
-    assertEquals(1, getInt(send("search", "{indexName: index, queryParser: {class: MultiFieldQueryParser, defaultOperator: or, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
-    assertEquals(1, getInt(send("search", "{indexName: index, queryParser: {class: MultiFieldQueryParser, defaultOperator: and, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: MultiFieldQueryParser, defaultOperator: or, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: MultiFieldQueryParser, defaultOperator: and, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testNumericRangeQuery() throws Exception {
+    curIndexName = "nrq";
     for(String type : new String[] {"int", "long", "float", "double"}) {
-      send("createIndex", "{indexName: nrq, rootDir: nrq}");
-      send("startIndex", "{indexName: nrq}");
-      send("registerFields", String.format(Locale.ROOT, "{indexName: nrq, fields: {nf: {type: %s, index: true}}}", type));
-      send("addDocument", "{indexName: nrq, fields: {nf: 5}}");
-      send("addDocument", "{indexName: nrq, fields: {nf: 10}}");
-      long gen = getLong(send("addDocument", "{indexName: nrq, fields: {nf: 17}}"), "indexGen");
+      send("createIndex", "{rootDir: nrq}");
+      send("startIndex", "{}");
+      send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, index: true}}}", type));
+      send("addDocument", "{fields: {nf: 5}}");
+      send("addDocument", "{fields: {nf: 10}}");
+      long gen = getLong(send("addDocument", "{fields: {nf: 17}}"), "indexGen");
 
       // Both min & max:
       assertEquals(3, getInt(send("search",
 
-                                  String.format(Locale.ROOT, "{indexName: nrq, query: {class: NumericRangeQuery, field: nf, min: 5, max: 17, minInclusive: true, maxInclusive: true}, searcher: {indexGen: %d}}", gen)),
+                                  String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, min: 5, max: 17, minInclusive: true, maxInclusive: true}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
 
       // Leave min out:
       assertEquals(3, getInt(send("search",
-                                  String.format(Locale.ROOT, "{indexName: nrq, query: {class: NumericRangeQuery, field: nf, max: 17, maxInclusive: true}, searcher: {indexGen: %d}}", gen)),
+                                  String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, max: 17, maxInclusive: true}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
 
       // Leave min out, don't include max:
       assertEquals(2, getInt(send("search",
-                                  String.format(Locale.ROOT, "{indexName: nrq, query: {class: NumericRangeQuery, field: nf, max: 17, maxInclusive: false}, searcher: {indexGen: %d}}", gen)),
+                                  String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, max: 17, maxInclusive: false}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
 
       // Leave max out:
       assertEquals(3, getInt(send("search",
-                                  String.format(Locale.ROOT, "{indexName: nrq, query: {class: NumericRangeQuery, field: nf, min: 5, minInclusive: true}, searcher: {indexGen: %d}}", gen)),
+                                  String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, min: 5, minInclusive: true}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
 
       // Leave max out, don't include max:
       assertEquals(2, getInt(send("search",
-                                  String.format(Locale.ROOT, "{indexName: nrq, query: {class: NumericRangeQuery, field: nf, min: 5, minInclusive: false}, searcher: {indexGen: %d}}", gen)),
+                                  String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, min: 5, minInclusive: false}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
-      send("stopIndex", "{indexName: nrq}");
-      send("deleteIndex", "{indexName: nrq}");
+      send("stopIndex", "{}");
+      send("deleteIndex", "{}");
     }
   }
 
@@ -202,7 +208,7 @@ public class TestSearch extends ServerBaseTestCase {
     deleteAllDocs();
     long gen = 0;
     for(int i=0;i<20;i++) {
-      gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'this is the body', id: " + i + "}}"), "indexGen");
+      gen = getLong(send("addDocument", "{fields: {body: 'this is the body', id: " + i + "}}"), "indexGen");
     }
 
     JSONObject lastPage = null;
@@ -218,7 +224,7 @@ public class TestSearch extends ServerBaseTestCase {
         sa = "";
       }
 
-      lastPage = send("search", "{indexName: index, query: MatchAllDocsQuery, topHits: 5, retrieveFields: [id], searcher: {indexGen: " + gen + "}" + sa + "}");
+      lastPage = send("search", "{query: MatchAllDocsQuery, topHits: 5, retrieveFields: [id], searcher: {indexGen: " + gen + "}" + sa + "}");
       //System.out.println("i=" + i + ": " + lastPage);
 
       // 20 total hits
@@ -236,7 +242,7 @@ public class TestSearch extends ServerBaseTestCase {
     deleteAllDocs();
     long gen = 0;
     for(int i=0;i<20;i++) {
-      gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'this is the body', id: " + i + "}}"), "indexGen");
+      gen = getLong(send("addDocument", "{fields: {body: 'this is the body', id: " + i + "}}"), "indexGen");
     }
 
     JSONObject lastPage = null;
@@ -247,7 +253,6 @@ public class TestSearch extends ServerBaseTestCase {
     for(int i=0;i<4;i++) {
       String sa;
       JSONObject o = new JSONObject();
-      o.put("indexName", "index");
       o.put("query", "MatchAllDocsQuery");
       o.put("topHits", 5);
       put(o, "retrieveFields", "[id]");
@@ -276,31 +281,32 @@ public class TestSearch extends ServerBaseTestCase {
   }
 
   public void testRecencyBlendedSort() throws Exception {
+    curIndexName = "recency";
     File dir = new File(_TestUtil.getTempDir("recency"), "root");
-    send("createIndex", "{indexName: recency, rootDir: " + dir.getAbsolutePath() + "}");
-    send("startIndex", "{indexName: recency}");
-    send("registerFields", "{indexName: recency, fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}, blend: {type: virtual, recencyScoreBlend: {timeStampField: timestamp, maxBoost: 2.0, range: 30}}}}");
+    send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
+    send("startIndex", "{}");
+    send("registerFields", "{fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}, blend: {type: virtual, recencyScoreBlend: {timeStampField: timestamp, maxBoost: 2.0, range: 30}}}}");
 
     long t = System.currentTimeMillis()/1000;
-    send("addDocument", "{indexName: recency, fields: {body: 'this is some text', timestamp: " + (t-100) + "}}");
-    long gen = getLong(send("addDocument", "{indexName: recency, fields: {body: 'this is some text', timestamp: " + t + "}}"), "indexGen");
+    send("addDocument", "{fields: {body: 'this is some text', timestamp: " + (t-100) + "}}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'this is some text', timestamp: " + t + "}}"), "indexGen");
 
     for(int pass=0;pass<2;pass++) {
       // Unboosted:
-      JSONObject result = send("search", "{indexName: recency, queryText: text, searcher: {indexGen: " + gen + "}}");
+      JSONObject result = send("search", "{queryText: text, searcher: {indexGen: " + gen + "}}");
       assertEquals(2, getInt(result, "totalHits"));
       assertEquals(0, getInt(result, "hits[0].doc"));
       assertEquals(1, getInt(result, "hits[1].doc"));
 
       // Relevance + recency changes the order:
-      result = send("search", "{indexName: recency, queryText: text, sort: {fields: [{field: blend}]}, searcher: {indexGen: " + gen + "}}");
+      result = send("search", "{queryText: text, sort: {fields: [{field: blend}]}, searcher: {indexGen: " + gen + "}}");
       assertEquals(2, getInt(result, "totalHits"));
       assertEquals(1, getInt(result, "hits[0].doc"));
       assertEquals(0, getInt(result, "hits[1].doc"));
 
       // Make sure this survives restart:
-      send("stopIndex", "{indexName: recency}");
-      send("startIndex", "{indexName: recency}");
+      send("stopIndex", "{}");
+      send("startIndex", "{}");
     }
   }
 

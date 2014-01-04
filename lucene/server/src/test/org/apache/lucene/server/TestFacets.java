@@ -28,6 +28,7 @@ public class TestFacets extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -179,25 +180,25 @@ public class TestFacets extends ServerBaseTestCase {
 
   public void testDrillSideways() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {author: Bob}}");
-    send("addDocument", "{indexName: index, fields: {author: Lisa}}");
-    send("addDocument", "{indexName: index, fields: {author: Lisa}}");
-    send("addDocument", "{indexName: index, fields: {author: Tom}}");
-    send("addDocument", "{indexName: index, fields: {author: Tom}}");
-    long indexGen = getLong(send("addDocument", "{indexName: index, fields: {author: Tom}}"), "indexGen");
+    send("addDocument", "{fields: {author: Bob}}");
+    send("addDocument", "{fields: {author: Lisa}}");
+    send("addDocument", "{fields: {author: Lisa}}");
+    send("addDocument", "{fields: {author: Tom}}");
+    send("addDocument", "{fields: {author: Tom}}");
+    long indexGen = getLong(send("addDocument", "{fields: {author: Tom}}"), "indexGen");
 
     // Initial query:
-    JSONObject o = send("search", String.format(Locale.ROOT, "{indexName: index, query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
+    JSONObject o = send("search", String.format(Locale.ROOT, "{query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
     assertEquals(6, o.get("totalHits"));
     assertEquals("[[\"top\",0],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
 
     // Now, single drill down:
-    o = send("search", String.format(Locale.ROOT, "{indexName: index, drillDowns: [{field: author, values: [Bob]}], query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
+    o = send("search", String.format(Locale.ROOT, "{drillDowns: [{field: author, values: [Bob]}], query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
     assertEquals(1, o.get("totalHits"));
     assertEquals("[[\"top\",0],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
 
     // Multi drill down:
-    o = send("search", String.format(Locale.ROOT, "{indexName: index, drillDowns: [{field: author, values: [Bob, Lisa]}], query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
+    o = send("search", String.format(Locale.ROOT, "{drillDowns: [{field: author, values: [Bob, Lisa]}], query: MatchAllDocsQuery, facets: [{path: [author], topN: 10}], searcher: {indexGen: %d}}", indexGen));
     assertEquals(3, o.get("totalHits"));
     assertEquals("[[\"top\",0],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
   }
@@ -206,9 +207,9 @@ public class TestFacets extends ServerBaseTestCase {
     deleteAllDocs();    
     long gen = -1;
     for(int i=0;i<100;i++) {
-      gen = getLong(send("addDocument", "{indexName: index, fields: {longField: " + i + "}}"), "indexGen");
+      gen = getLong(send("addDocument", "{fields: {longField: " + i + "}}"), "indexGen");
     }
-    JSONObject o = send("search", "{indexName: index, facets: [{path: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
+    JSONObject o = send("search", "{facets: [{path: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
     assertEquals("All", getString(o, "facets[0].counts[1][0]"));
     assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
     assertEquals("Half", getString(o, "facets[0].counts[2][0]"));

@@ -35,9 +35,9 @@ public class TestSuggest extends ServerBaseTestCase {
   
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
-    //registerFields();
     commit();
     File tempDir = _TestUtil.getTempDir("TestSuggest");
     tempDir.mkdirs();
@@ -50,6 +50,12 @@ public class TestSuggest extends ServerBaseTestCase {
     tempFile = null;
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    curIndexName = "index";
+  }
+
   public void testAnalyzingSuggest() throws Exception {
     Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
     BufferedWriter out = new BufferedWriter(fstream);
@@ -60,12 +66,12 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("5\u001fthe time is now\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
     assertEquals(5, result.get("count"));
     //commit();
 
     for(int i=0;i<2;i++) {
-      result = send("suggestLookup", "{indexName: index, text: 'l', suggestName: 'suggest'}");
+      result = send("suggestLookup", "{text: 'l', suggestName: 'suggest'}");
       assertEquals(3, get(result, "results.length"));
 
       assertEquals("love", get(result, "results[0].key"));
@@ -83,20 +89,20 @@ public class TestSuggest extends ServerBaseTestCase {
       // ForkLastTokenFilter allows 'the' to match
       // 'theories'; without it (and StopKeywordFilter) the
       // would be dropped:
-      result = send("suggestLookup", "{indexName: index, text: 'the', suggestName: 'suggest'}");
+      result = send("suggestLookup", "{text: 'the', suggestName: 'suggest'}");
       assertEquals(1, get(result, "results.length"));
 
       assertEquals("theories take time", get(result, "results[0].key"));
       assertEquals(5, get(result, "results[0].weight"));
       assertEquals("foobar", get(result, "results[0].payload"));
 
-      result = send("suggestLookup", "{indexName: index, text: 'the ', suggestName: 'suggest'}");
+      result = send("suggestLookup", "{text: 'the ', suggestName: 'suggest'}");
       assertEquals(0, get(result, "results.length"));
 
       // Make sure suggest survives server restart:
       shutdownServer();
       startServer();
-      send("startIndex", "{indexName: index}");
+      send("startIndex", "{}");
     }
   }
 
@@ -106,12 +112,12 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'InfixSuggester', suggestName: 'suggest2', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggest2, analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     //commit();
 
     for(int i=0;i<2;i++) {
-      result = send("suggestLookup", "{indexName: index, text: 'lost', suggestName: 'suggest2'}");
+      result = send("suggestLookup", "{text: lost, suggestName: suggest2}");
       assertEquals(15, get(result, "results[0].weight"));
       assertEquals("love <font color=red>lost</font>", toString(getArray(result, "results[0].key")));
       assertEquals("foobar", get(result, "results[0].payload"));
@@ -119,7 +125,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{indexName: index}");
+      send("startIndex", "{}");
     }
   }
 
@@ -144,13 +150,13 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{indexName: index, source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     assertEquals(1, result.get("count"));
     //commit();
 
     for(int i=0;i<2;i++) {
       // 1 transposition and this is prefix of "love":
-      result = send("suggestLookup", "{indexName: index, text: 'lvo', suggestName: 'suggest3'}");
+      result = send("suggestLookup", "{text: 'lvo', suggestName: 'suggest3'}");
       assertEquals(15, get(result, "results[0].weight"));
       assertEquals("love lost", get(result, "results[0].key"));
       assertEquals("foobar", get(result, "results[0].payload"));
@@ -158,31 +164,30 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{indexName: index}");
+      send("startIndex", "{}");
     }
   }
 
   /** Build a suggest, pulling suggestions/weights/payloads from stored fields. */
   public void testFromStoredFields() throws Exception {
-
+    curIndexName = "storedSuggest";
     _TestUtil.rmDir(new File("storedsuggest"));
-    send("createIndex", "{indexName: storedsuggest, rootDir: storedsuggest}");
-    send("settings", "{indexName: storedsuggest, directory: FSDirectory, matchVersion: LUCENE_46}");
-    send("startIndex", "{indexName: storedsuggest}");
+    send("createIndex", "{rootDir: storedsuggest}");
+    send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
+    send("startIndex", "{}");
     send("registerFields",
-         "{indexName: storedsuggest, " +
-         "fields: {text: {type: text, store: true, index: false}," + 
+         "{fields: {text: {type: text, store: true, index: false}," + 
                   "weight: {type: float, store: true, index: false}," +
                   "payload: {type: text, store: true, index: false}}}");
-    send("addDocument", "{indexName: storedsuggest, fields: {text: 'the cat meows', weight: 1, payload: 'payload1'}}");
-    long indexGen = getLong(send("addDocument", "{indexName: storedsuggest, fields: {text: 'the dog barks', weight: 2, payload: 'payload2'}}"), "indexGen");
+    send("addDocument", "{fields: {text: 'the cat meows', weight: 1, payload: 'payload1'}}");
+    long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', weight: 2, payload: 'payload2'}}"), "indexGen");
 
-    JSONObject result = send("buildSuggest", "{indexName: storedsuggest, source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightField: weight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightField: weight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     // nocommit count isn't returned for stored fields source:
     //assertEquals(2, result.get("count"));
 
     for(int i=0;i<2;i++) {
-      result = send("suggestLookup", "{indexName: storedsuggest, text: the, suggestName: suggest}");
+      result = send("suggestLookup", "{text: the, suggestName: suggest}");
       assertEquals(2, getInt(result, "results[0].weight"));
       assertEquals("the dog barks", get(result, "results[0].key"));
       assertEquals("payload2", get(result, "results[0].payload"));
@@ -193,32 +198,32 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{indexName: storedsuggest}");
+      send("startIndex", "{}");
     }
   }
 
   /** Build a suggest, pulling suggestions/payloads from
    *  stored fields, and weight from an expression */
   public void testFromStoredFieldsWithWeightExpression() throws Exception {
-
+    curIndexName = "storedsuggestexpr";
     _TestUtil.rmDir(new File("storedsuggestexpr"));
-    send("createIndex", "{indexName: storedsuggestexpr, rootDir: storedsuggestexpr}");
-    send("settings", "{indexName: storedsuggestexpr, directory: FSDirectory, matchVersion: LUCENE_46}");
-    send("startIndex", "{indexName: storedsuggestexpr}");
+    send("createIndex", "{rootDir: storedsuggestexpr}");
+    send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
+    send("startIndex", "{}");
     send("registerFields",
-         "{indexName: storedsuggestexpr, " +
+         "{" +
          "fields: {text: {type: text, store: true, index: false}," + 
                   "negWeight: {type: float, sort: true}," +
                   "payload: {type: text, store: true, index: false}}}");
-    send("addDocument", "{indexName: storedsuggestexpr, fields: {text: 'the cat meows', negWeight: -1, payload: 'payload1'}}");
-    long indexGen = getLong(send("addDocument", "{indexName: storedsuggestexpr, fields: {text: 'the dog barks', negWeight: -2, payload: 'payload2'}}"), "indexGen");
+    send("addDocument", "{fields: {text: 'the cat meows', negWeight: -1, payload: 'payload1'}}");
+    long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', negWeight: -2, payload: 'payload2'}}"), "indexGen");
 
-    JSONObject result = send("buildSuggest", "{indexName: storedsuggestexpr, source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightExpression: -negWeight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightExpression: -negWeight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
     // nocommit count isn't returned for stored fields source:
     //assertEquals(2, result.get("count"));
 
     for(int i=0;i<2;i++) {
-      result = send("suggestLookup", "{indexName: storedsuggestexpr, text: the, suggestName: suggest}");
+      result = send("suggestLookup", "{text: the, suggestName: suggest}");
       assertEquals(2, getInt(result, "results[0].weight"));
       assertEquals("the dog barks", get(result, "results[0].key"));
       assertEquals("payload2", get(result, "results[0].payload"));
@@ -229,7 +234,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{indexName: storedsuggestexpr}");
+      send("startIndex", "{}");
     }
   }
 }

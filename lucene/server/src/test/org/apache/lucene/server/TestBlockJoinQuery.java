@@ -26,6 +26,7 @@ public class TestBlockJoinQuery extends ServerBaseTestCase {
   
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -38,7 +39,7 @@ public class TestBlockJoinQuery extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{indexName: index, fields: {docType: {type: atom}, name: {type: atom, store: true}, country: {type: atom, store: true}, skill: {type: atom, store: true}, year: {type: int, store: true}}}");
+    send("registerFields", "{fields: {docType: {type: atom}, name: {type: atom, store: true}, country: {type: atom, store: true}, skill: {type: atom, store: true}, year: {type: int, store: true}}}");
   }
 
   private JSONObject getResume(String name, String country) {
@@ -74,11 +75,11 @@ public class TestBlockJoinQuery extends ServerBaseTestCase {
     long indexGen = ((Number) result.get("indexGen")).longValue();    
 
     // search on parent:
-    result = send("search", "{indexName: index, query: {class: ToParentBlockJoinQuery, childQuery: {class: text, field: skill, text: python}, parentsFilter: {class: CachingWrapperFilter, filter: {class: QueryWrapperFilter, query: {class: TermQuery, field: docType, term: resume}}}}, searcher: {indexGen: " + indexGen + "}}");
+    result = send("search", "{query: {class: ToParentBlockJoinQuery, childQuery: {class: text, field: skill, text: python}, parentsFilter: {class: CachingWrapperFilter, filter: {class: QueryWrapperFilter, query: {class: TermQuery, field: docType, term: resume}}}}, searcher: {indexGen: " + indexGen + "}}");
     //System.out.println("GOT: " + result);
     assertEquals(1, getInt(result, "totalHits"));
 
-    result = send("search", "{indexName: index, retrieveFields: [skill, year, name, country], query: {class: ToParentBlockJoinQuery, childHits: {}, childQuery: {class: text, field: skill, text: python}, parentsFilter: {class: CachingWrapperFilter, filter: {class: QueryWrapperFilter, query: {class: TermQuery, field: docType, term: resume}}}}, searcher: {indexGen: " + indexGen + "}}");
+    result = send("search", "{retrieveFields: [skill, year, name, country], query: {class: ToParentBlockJoinQuery, childHits: {}, childQuery: {class: text, field: skill, text: python}, parentsFilter: {class: CachingWrapperFilter, filter: {class: QueryWrapperFilter, query: {class: TermQuery, field: docType, term: resume}}}}, searcher: {indexGen: " + indexGen + "}}");
     //System.out.println("GOT: " + prettyPrint(result));
 
     // nocommit why is this 0?

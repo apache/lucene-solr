@@ -25,6 +25,7 @@ public class TestBooleanFieldType extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -49,9 +50,9 @@ public class TestBooleanFieldType extends ServerBaseTestCase {
 
   public void testStored() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {id: 0, flagStored: false}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {id: 1, flagStored: true}}"), "indexGen");
-    JSONObject o = send("search", "{indexName: index, searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, retrieveFields: [id, flagStored]}");
+    send("addDocument", "{fields: {id: 0, flagStored: false}}");
+    long gen = getLong(send("addDocument", "{fields: {id: 1, flagStored: true}}"), "indexGen");
+    JSONObject o = send("search", "{searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, retrieveFields: [id, flagStored]}");
     assertEquals(2, getInt(o, "totalHits"));
     assertFalse(getBoolean(o, "hits[0].fields.flagStored"));
     assertTrue(getBoolean(o, "hits[1].fields.flagStored"));
@@ -59,9 +60,9 @@ public class TestBooleanFieldType extends ServerBaseTestCase {
 
   public void testIndexed() throws Exception {
     deleteAllDocs();
-    send("addDocument", "{indexName: index, fields: {id: 0, flagIndexed: false, flagStored: false}}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {id: 1, flagIndexed: true, flagStored: true}}"), "indexGen");
-    JSONObject o = send("search", "{indexName: index, searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, filter: {class: BooleanFieldFilter, field: flagIndexed}, retrieveFields: [id, flagStored]}");
+    send("addDocument", "{fields: {id: 0, flagIndexed: false, flagStored: false}}");
+    long gen = getLong(send("addDocument", "{fields: {id: 1, flagIndexed: true, flagStored: true}}"), "indexGen");
+    JSONObject o = send("search", "{searcher: {indexGen: " + gen + "}, query: MatchAllDocsQuery, filter: {class: BooleanFieldFilter, field: flagIndexed}, retrieveFields: [id, flagStored]}");
     assertEquals(1, getInt(o, "totalHits"));
     assertTrue(getBoolean(o, "hits[0].fields.flagStored"));
   }

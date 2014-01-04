@@ -468,7 +468,6 @@ public class BuildSuggestHandler extends Handler {
             sortFields.add(sortField);
           }
         }
-        System.out.println("sortFields: " + sortFields);
 
         dict = new DocumentExpressionDictionary(searcher.searcher.getIndexReader(),
                                                 suggestField,
@@ -516,6 +515,8 @@ public class BuildSuggestHandler extends Handler {
             outFile.delete();
           }
         }
+
+        //System.out.println("buildSuggest: now add suggestName=" + suggestName + " to IndexState.name=" + state.name);
 
         try {
           state.addSuggest(suggestName, (JSONObject) JSONValue.parseStrict(jsonOrig));

@@ -50,8 +50,8 @@ public class TestNumericFields extends ServerBaseTestCase {
 
   public void testRetrieve() throws Exception {
     deleteAllDocs();
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {intNoSort: 17, intSort: 22, floatNoSort: 17.0, floatSort: 22.0}}"), "indexGen");
-    JSONObject result = send("search", "{indexName: index, retrieveFields: [intNoSort, intSort, floatNoSort, floatSort], query: MatchAllDocsQuery, searcher: {indexGen: " + gen + "}}");
+    long gen = getLong(send("addDocument", "{fields: {intNoSort: 17, intSort: 22, floatNoSort: 17.0, floatSort: 22.0}}"), "indexGen");
+    JSONObject result = send("search", "{retrieveFields: [intNoSort, intSort, floatNoSort, floatSort], query: MatchAllDocsQuery, searcher: {indexGen: " + gen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals(17, getInt(result, "hits[0].fields.intNoSort"));
     assertEquals(22, getInt(result, "hits[0].fields.intSort"));

@@ -204,11 +204,6 @@ public class GlobalState implements Closeable {
     }
   }
 
-  /** Close all indices. */
-  public void closeAll() throws IOException {
-    IOUtils.close(indices.values());
-  }
-
   void loadIndexNames() throws IOException {
     long gen = IndexState.getLastGen(stateDir, "indices");
     lastIndicesGen = gen;
@@ -252,7 +247,8 @@ public class GlobalState implements Closeable {
 
   @Override
   public void close() throws IOException {
-    // nocommit move closeAll into here?
+    //System.out.println("GlobalState.close");
+    IOUtils.close(indices.values());
     indexService.shutdown();
   }
 

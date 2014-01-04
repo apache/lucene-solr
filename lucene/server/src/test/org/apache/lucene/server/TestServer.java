@@ -245,13 +245,13 @@ public class TestServer extends ServerBaseTestCase {
   public void testMultiValuedString() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{indexName: index, fields: {authors: {type: text, index: true, store: true, facet: flat, multiValued: true, analyzer: {matchVersion: LUCENE_43, class: StandardAnalyzer}}}}");
+    send("registerFields", "{fields: {authors: {type: text, index: true, store: true, facet: flat, multiValued: true, analyzer: {matchVersion: LUCENE_43, class: StandardAnalyzer}}}}");
 
-    JSONObject result = send("addDocument", "{indexName: index, fields: {authors: [Bob, Lisa]}}");
+    JSONObject result = send("addDocument", "{fields: {authors: [Bob, Lisa]}}");
 
     long indexGen = getInt(result, "indexGen");
 
-    result = send("search", "{indexName: index, searcher: {indexGen: " + indexGen + "}, queryText: 'authors:bob', retrieveFields: [authors]}");
+    result = send("search", "{searcher: {indexGen: " + indexGen + "}, queryText: 'authors:bob', retrieveFields: [authors]}");
 
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals("[\"Bob\",\"Lisa\"]", getArray(result, "hits[0].fields.authors").toString());
@@ -260,13 +260,13 @@ public class TestServer extends ServerBaseTestCase {
   public void testMultiValuedNumeric() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{indexName: index, fields: {ratings: {type: int, index: true, store: true, multiValued: true}}}");
+    send("registerFields", "{fields: {ratings: {type: int, index: true, store: true, multiValued: true}}}");
 
-    JSONObject result = send("addDocument", "{indexName: index, fields: {body: 'here is a test', ratings: [17, 22]}}");
+    JSONObject result = send("addDocument", "{fields: {body: 'here is a test', ratings: [17, 22]}}");
 
     long indexGen = getInt(result, "indexGen");
 
-    result = send("search", "{indexName: index, searcher: {indexGen: " + indexGen + "}, queryText: 'body:test', retrieveFields: [ratings]}");
+    result = send("search", "{searcher: {indexGen: " + indexGen + "}, queryText: 'body:test', retrieveFields: [ratings]}");
 
     assertEquals(1, getInt(result, "totalHits"));
     assertEquals("[17,22]", getArray(result, "hits[0].fields.ratings").toString());
@@ -275,47 +275,47 @@ public class TestServer extends ServerBaseTestCase {
   public void testStandardAnalyzer() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{indexName: index, fields: {aTextField: {type: text, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, store: true}}}");
+    send("registerFields", "{fields: {aTextField: {type: text, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, store: true}}}");
 
-    JSONObject result = send("addDocument", "{indexName: index, fields: {aTextField: 'here is a test'}}");
+    JSONObject result = send("addDocument", "{fields: {aTextField: 'here is a test'}}");
     long indexGen = getInt(result, "indexGen");
 
     // nocommit: grrr need QP to understand schema
     //o.put("queryText", "ratings:[16 TO 18]");
 
     // search on a stop word should yield no results:
-    result = send("search", String.format(Locale.ROOT, "{indexName: index, searcher: {indexGen: %d}, queryText: 'aTextField:a'}", indexGen));
+    result = send("search", String.format(Locale.ROOT, "{searcher: {indexGen: %d}, queryText: 'aTextField:a'}", indexGen));
     assertEquals(0, getInt(result, "totalHits"));
   }
 
   public void testStandardAnalyzerNoStopWords() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{indexName: index, fields: {aTextField2: {type: text, index: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
+    send("registerFields", "{fields: {aTextField2: {type: text, index: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
 
-    JSONObject result = send("addDocument", "{indexName: index, fields: {aTextField2: 'here is a test'}}");
+    JSONObject result = send("addDocument", "{fields: {aTextField2: 'here is a test'}}");
     long indexGen = getLong(result, "indexGen");
 
     // nocommit: grrr need QP to understand schema
     //o.put("queryText", "ratings:[16 TO 18]");
 
     // search on a stop word should now yield one hit:
-    result = send("search", "{indexName: index, queryText: 'aTextField2:a', searcher: {indexGen: " + indexGen + "}}");
+    result = send("search", "{queryText: 'aTextField2:a', searcher: {indexGen: " + indexGen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
   }
 
   public void testEnglishAnalyzerNoStopWords() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{indexName: index, fields: {aTextField3: {type: text, index: true, store: true, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
-    JSONObject result = send("addDocument", "{indexName: index, fields: {aTextField3: 'the cats in the hat'}}");
+    send("registerFields", "{fields: {aTextField3: {type: text, index: true, store: true, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
+    JSONObject result = send("addDocument", "{fields: {aTextField3: 'the cats in the hat'}}");
     long indexGen = getLong(result, "indexGen");
 
     // nocommit: grrr need QP to understand schema
     //o.put("queryText", "ratings:[16 TO 18]");
 
     // cats should stem to cat and get a match:
-    result = send("search", "{indexName: index, queryText: 'aTextField3:cat', searcher: {indexGen: " + indexGen + "}}");
+    result = send("search", "{queryText: 'aTextField3:cat', searcher: {indexGen: " + indexGen + "}}");
     assertEquals(1, getInt(result, "totalHits"));
   }
 
@@ -351,16 +351,16 @@ public class TestServer extends ServerBaseTestCase {
   public void testServerRestart() throws Exception {
     deleteAllDocs();
     addDocument(0, "Bob", "this is a test", 10f, "2012/10/17");
-    send("commit", "{indexName: index}");
+    send("commit", "{}");
     shutdownServer();
     startServer();
-    send("startIndex", "{indexName: index}");
+    send("startIndex", "{}");
     JSONObject o = search("test", 0, null, false, true, null, null);
     assertEquals(1, ((Number) o.get("totalHits")).intValue());
   }
 
   public void testStatsHandler() throws Exception {
-    JSONObject result = send("stats", "{indexName: index}");
+    JSONObject result = send("stats", "{}");
     //System.out.println("GOT: " + result);
   }
 

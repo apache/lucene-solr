@@ -37,21 +37,21 @@ public class TestSettings extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{indexName: index, fields: {body: {type: text, analyzer: StandardAnalyzer}}}");
+    send("registerFields", "{fields: {body: {type: text, analyzer: StandardAnalyzer}}}");
   }
 
   public void testNRTCachingDirSettings() throws Exception {
     deleteAllDocs();
     commit();
-    send("stopIndex", "{indexName: index}");
-    JSONObject o = send("settings", "{indexName: index}");
+    send("stopIndex", "{}");
+    JSONObject o = send("settings", "{}");
     assertEquals(0, o.size());
     // Turn off NRTCachingDir:
-    send("settings", "{indexName: index, nrtCachingDirectory.maxMergeSizeMB: 0.0, nrtCachingDirectory.maxSizeMB: 0.0}");
-    o = send("settings", "{indexName: index}");
+    send("settings", "{nrtCachingDirectory.maxMergeSizeMB: 0.0, nrtCachingDirectory.maxSizeMB: 0.0}");
+    o = send("settings", "{}");
     assertEquals(2, o.size());
-    send("startIndex", "{indexName: index}");
-    long gen = getLong(send("addDocument", "{indexName: index, fields: {body: 'here is a test'}}"), "indexGen");
-    assertEquals(1, getInt(send("search", "{indexName: index, queryText: test, searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    send("startIndex", "{}");
+    long gen = getLong(send("addDocument", "{fields: {body: 'here is a test'}}"), "indexGen");
+    assertEquals(1, getInt(send("search", "{queryText: test, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 }

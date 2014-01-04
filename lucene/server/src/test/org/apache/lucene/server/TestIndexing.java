@@ -41,6 +41,12 @@ public class TestIndexing extends ServerBaseTestCase {
     shutdownServer();
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    curIndexName = "index";
+  }
+
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
@@ -51,15 +57,14 @@ public class TestIndexing extends ServerBaseTestCase {
     put(o, "author", "{type: text, index: false, facet: flat, store: true, group: true}");
     put(o, "charCount", "{type: int, store: true}");
     JSONObject o2 = new JSONObject();
-    o2.put("indexName", "index");
     o2.put("fields", o);
     send("registerFields", o2);
   }
 
   public void testUpdateDocument() throws Exception {
-    send("addDocument", "{indexName: index, fields: {body: 'here is a test', id: '0'}}");
-    long gen = getLong(send("updateDocument", "{indexName: index, term: {field: id, term: '0'}, fields: {body: 'here is another test', id: '0'}}"), "indexGen");
-    JSONObject o = send("search", "{indexName: index, queryText: 'body:test', searcher: {indexGen: " + gen + "}, retrieveFields: [body]}");
+    send("addDocument", "{fields: {body: 'here is a test', id: '0'}}");
+    long gen = getLong(send("updateDocument", "{term: {field: id, term: '0'}, fields: {body: 'here is another test', id: '0'}}"), "indexGen");
+    JSONObject o = send("search", "{queryText: 'body:test', searcher: {indexGen: " + gen + "}, retrieveFields: [body]}");
     assertEquals(1, getInt(o, "totalHits"));
     assertEquals("here is another test", getString(o, "hits[0].fields.body"));
   }
@@ -86,7 +91,7 @@ public class TestIndexing extends ServerBaseTestCase {
     JSONObject result = sendChunked(s, "bulkAddDocument");
     assertEquals(100, result.get("indexedDocumentCount"));
     long indexGen = ((Number) result.get("indexGen")).longValue();
-    assertEquals(1, getInt(send("search", "{indexName: index, queryText: 'body:99', searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryText: 'body:99', searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
 
     // Now, update:
     sb = new StringBuilder();
@@ -110,9 +115,9 @@ public class TestIndexing extends ServerBaseTestCase {
     result = sendChunked(s, "bulkUpdateDocument");
     assertEquals(100, result.get("indexedDocumentCount"));
     indexGen = ((Number) result.get("indexGen")).longValue();
-    assertEquals(1, getInt(send("search", "{indexName: index, queryText: 'body:99', searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryText: 'body:99', searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
 
-    assertEquals(100, getInt(send("search", "{indexName: index, query: MatchAllDocsQuery, searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
+    assertEquals(100, getInt(send("search", "{query: MatchAllDocsQuery, searcher: {indexGen: " + indexGen + "}}"), "totalHits"));
   }
 
   public void testBulkAddException() throws Exception {
@@ -221,45 +226,44 @@ public class TestIndexing extends ServerBaseTestCase {
    *  after index is stopped */
   public void testAddAfterStop() throws Exception {
     deleteAllDocs();
-    send("stopIndex", "{indexName: index}");
+    send("stopIndex", "{}");
     try {
-      send("addDocument", "{indexName: index, fields: {}}");
+      send("addDocument", "{fields: {}}");
       fail();
     } catch (IOException ioe) {
       // expected
     }
-    send("startIndex", "{indexName: index}");
+    send("startIndex", "{}");
   }
 
   public void testBoost() throws Exception {
-    // nocommit make test infra class that is for one index
-    // and auto-inserts indexName: xxx into each request
     _TestUtil.rmDir(new File("boost"));
-    send("createIndex", "{indexName: boost, rootDir: boost}");
-    send("settings", "{indexName: boost, directory: RAMDirectory, matchVersion: LUCENE_40}");
+    curIndexName = "boost";
+    send("createIndex", "{rootDir: boost}");
+    send("settings", "{directory: RAMDirectory, matchVersion: LUCENE_40}");
     // Just to test index.ramBufferSizeMB:
-    send("liveSettings", "{indexName: boost, index.ramBufferSizeMB: 20.0}");
-    send("registerFields", "{indexName: boost, fields: {id: {type: atom, store: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
-    send("startIndex", "{indexName: boost}");
-    send("addDocument", "{indexName: boost, fields: {id: '0', body: 'here is a test'}}");
-    long gen = getLong(send("addDocument", "{indexName: boost, fields: {id: '1', body: 'here is a test'}}"), "indexGen");
-    JSONObject result = send("search", String.format(Locale.ROOT, "{indexName: boost, retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
+    send("liveSettings", "{index.ramBufferSizeMB: 20.0}");
+    send("registerFields", "{fields: {id: {type: atom, store: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
+    send("startIndex", "{}");
+    send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
+    long gen = getLong(send("addDocument", "{fields: {id: '1', body: 'here is a test'}}"), "indexGen");
+    JSONObject result = send("search", String.format(Locale.ROOT, "{retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
     assertEquals(2, getInt(result, "hits.length"));
     // Unboosted, the hits come back in order they were added:
     assertEquals("0", getString(result, "hits[0].fields.id"));
     assertEquals("1", getString(result, "hits[1].fields.id"));
 
     // Do it again, this time setting higher boost for 2nd doc:
-    send("deleteAllDocuments", "{indexName: boost}");
-    send("addDocument", "{indexName: boost, fields: {id: '0', body: 'here is a test'}}");
-    gen = getLong(send("addDocument", "{indexName: boost, fields: {id: '1', body: {boost: 2.0, value: 'here is a test'}}}"), "indexGen");
-    result = send("search", String.format(Locale.ROOT, "{indexName: boost, retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
+    send("deleteAllDocuments", "{}");
+    send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
+    gen = getLong(send("addDocument", "{fields: {id: '1', body: {boost: 2.0, value: 'here is a test'}}}"), "indexGen");
+    result = send("search", String.format(Locale.ROOT, "{retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
     assertEquals(2, getInt(result, "hits.length"));
     // Unboosted, the hits come back in order they were added:
     assertEquals("1", getString(result, "hits[0].fields.id"));
     assertEquals("0", getString(result, "hits[1].fields.id"));
 
-    send("stopIndex", "{indexName: boost}");
-    send("deleteIndex", "{indexName: boost}");
+    send("stopIndex", "{}");
+    send("deleteIndex", "{}");
   }
 }

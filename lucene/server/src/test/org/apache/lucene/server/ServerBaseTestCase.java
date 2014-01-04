@@ -41,10 +41,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyle;
+import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
@@ -52,6 +52,8 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   private static Thread serverThread;
   static int port;
+
+  protected static String curIndexName = "index";
   
   protected static File TEST_DIR;
   protected static File STATE_DIR;
@@ -145,12 +147,12 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void createAndStartIndex() throws Exception {
-    send("createIndex", "{indexName: index, rootDir: " + TEST_DIR.getAbsolutePath() + "}");
+    send("createIndex", "{indexName: " + curIndexName + ", rootDir: " + TEST_DIR.getAbsolutePath() + "}");
     // Wait at most 1 msec for a searcher to reopen; this
     // value is too low for a production site but for
     // testing we want to minimize sleep time:
-    send("liveSettings", "{indexName: index, minRefreshSec: 0.001}");
-    send("startIndex", "{indexName: index}");
+    send("liveSettings", "{indexName: " + curIndexName + ", minRefreshSec: 0.001}");
+    send("startIndex", "{indexName: " + curIndexName + "}");
   }
 
   protected static void shutdownServer() throws Exception {
@@ -172,11 +174,11 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: deleteAllDocs");
     }
-    send("deleteAllDocuments", "{indexName: index}");
+    send("deleteAllDocuments", "{indexName: " + curIndexName + "}");
   }
 
   protected static void commit() throws Exception {
-    send("commit", "{indexName: index}");
+    send("commit", "{indexName: " + curIndexName + "}");
   }
 
   protected static JSONObject send(String command, String args) throws Exception {
@@ -185,11 +187,35 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     if (o == null) {
       throw new IllegalArgumentException("invalid JSON: " + args);
     }
+
     return send(command, o);
   }
 
+  private static boolean requiresIndexName(String command) {
+    // nocommit which commands don't?
+    return true;
+  }
+
   protected static JSONObject send(String command, JSONObject args) throws Exception {
-    return sendRaw(command, args.toJSONString(JSONStyle.NO_COMPRESS));
+    // Auto-insert indexName:
+    if (curIndexName != null && requiresIndexName(command) && args.get("indexName") == null) {
+      if (VERBOSE) {
+        System.out.println("NOTE: ServerBaseTestCase: now add current indexName: " + curIndexName);
+      }
+      args.put("indexName", curIndexName);
+    }
+
+    if (VERBOSE) {
+      System.out.println("\nNOTE: ServerBaseTestCase: sendRaw command=" + command + " args:\n" + args.toJSONString(new JSONStyleIdent()));
+    }
+
+    JSONObject result = sendRaw(command, args.toJSONString(JSONStyle.NO_COMPRESS));
+
+    if (VERBOSE) {
+      System.out.println("NOTE: ServerBaseTestCase: server response:\n" + result.toJSONString(new JSONStyleIdent()));
+    }
+
+    return result;
   }
 
   protected static JSONObject sendRaw(String command, String body) throws Exception {

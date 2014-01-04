@@ -51,8 +51,6 @@ public class DeleteIndexHandler extends Handler {
 
   @Override
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
-    state.verifyStarted(r);
-
     return new FinishRequest() {
       @Override
       public String finish() throws IOException {
