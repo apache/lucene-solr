@@ -239,7 +239,7 @@
     <!-- core: problems -->
     <check-missing-javadocs dir="build/docs/demo" level="method"/>
     <check-missing-javadocs dir="build/docs/expressions" level="method"/>
-    <!-- facet: problems -->
+    <check-missing-javadocs dir="build/docs/facet" level="method"/>
     <!-- grouping: problems -->
     <!-- highlighter: problems -->
     <check-missing-javadocs dir="build/docs/join" level="method"/>

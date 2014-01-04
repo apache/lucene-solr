@@ -1,15 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.util.List;
-
-import org.apache.lucene.facet.collections.ObjectToIntMap;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,34 +17,21 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+import java.util.List;
+
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
+
 @SuppressCodecs("Lucene3x")
 public class TestMultiCategoryListsFacetsExample extends LuceneTestCase {
 
-  private static final ObjectToIntMap<CategoryPath> expectedCounts = new ObjectToIntMap<CategoryPath>();
-  static {
-    expectedCounts.put(new CategoryPath("Publish Date", "2012"), 2);
-    expectedCounts.put(new CategoryPath("Publish Date", "2010"), 2);
-    expectedCounts.put(new CategoryPath("Publish Date", "1999"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Lisa"), 2);
-    expectedCounts.put(new CategoryPath("Author", "Frank"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Susan"), 1);
-    expectedCounts.put(new CategoryPath("Author", "Bob"), 1);
-  }
-  
-  private void assertExpectedCounts(List<FacetResult> facetResults, ObjectToIntMap<CategoryPath> expCounts) {
-    for (FacetResult res : facetResults) {
-      FacetResultNode root = res.getFacetResultNode();
-      for (FacetResultNode node : root.subResults) {
-        assertEquals("incorrect count for " + node.label, expCounts.get(node.label), (int) node.value);
-      }
-    }
-  }
-
   @Test
   public void testExample() throws Exception {
-    List<FacetResult> facetResults = new MultiCategoryListsFacetsExample().runSearch();
-    assertEquals(2, facetResults.size());
-    assertExpectedCounts(facetResults, expectedCounts);
+    List<FacetResult> results = new MultiCategoryListsFacetsExample().runSearch();
+    assertEquals(2, results.size());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", results.get(0).toString());
+    assertEquals("dim=Publish Date path=[] value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", results.get(1).toString());
   }
-  
 }

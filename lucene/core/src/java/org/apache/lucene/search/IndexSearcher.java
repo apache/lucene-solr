@@ -439,7 +439,7 @@ public class IndexSearcher {
       limit = 1;
     }
     if (after != null && after.doc >= limit) {
-      throw new IllegalArgumentException("after.doc exceeds the number of documents in that reader: after.doc="
+      throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
           + after.doc + " limit=" + limit);
     }
     nDocs = Math.min(nDocs, limit);

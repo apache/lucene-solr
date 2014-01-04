@@ -17,17 +17,24 @@ package org.apache.lucene.facet.range;
  * limitations under the License.
  */
 
-/** Represents a single labelled range, one facet label in
- *  the facets computed by {@link RangeAccumulator}.
+/** Base class for a single labeled range.
  *
  *  @lucene.experimental */
-
 public abstract class Range {
+
+  /** Label that identifies this range. */
   public final String label;
 
+  /** Sole constructor. */
   protected Range(String label) {
+    if (label == null) {
+      throw new NullPointerException("label cannot be null");
+    }
     this.label = label;
   }
 
-  public abstract boolean accept(long value);
+  /** Invoke this for a useless range. */
+  protected void failNoMatch() {
+    throw new IllegalArgumentException("range \"" + label + "\" matches nothing");
+  }
 }

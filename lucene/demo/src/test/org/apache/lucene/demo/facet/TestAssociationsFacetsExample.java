@@ -1,13 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.util.List;
-
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,33 +17,21 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+import java.util.List;
+
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
+
 @SuppressCodecs("Lucene3x")
 public class TestAssociationsFacetsExample extends LuceneTestCase {
   
-  private static final double[] EXPECTED_INT_SUM_RESULTS = { 4, 2};
-  private static final double[] EXPECTED_FLOAT_SUM_RESULTS = { 1.62, 0.34};
-
   @Test
   public void testExamples() throws Exception {
     List<FacetResult> res = new AssociationsFacetsExample().runSumAssociations();
-   
     assertEquals("Wrong number of results", 2, res.size());
-    
-    for (FacetResult fres : res) {
-      assertEquals("Wrong number of facets", 2, fres.getNumValidDescendants());
-    }
-    
-    Iterable<? extends FacetResultNode> it = res.get(0).getFacetResultNode().subResults;
-    int i = 0;
-    for (FacetResultNode fResNode : it) {
-      assertEquals("Wrong result for facet " + fResNode.label, EXPECTED_INT_SUM_RESULTS[i++], fResNode.value, 1E-5);
-    }
-    
-    it = res.get(1).getFacetResultNode().subResults;
-    i = 0;
-    for (FacetResultNode fResNode : it) {
-      assertEquals("Wrong result for facet " + fResNode.label, EXPECTED_FLOAT_SUM_RESULTS[i++], fResNode.value, 1E-5);
-    }
-  }
-  
+    assertEquals("dim=tags path=[] value=-1 childCount=2\n  lucene (4)\n  solr (2)\n", res.get(0).toString());
+    assertEquals("dim=genre path=[] value=-1.0 childCount=2\n  computing (1.62)\n  software (0.34)\n", res.get(1).toString());
+  }  
 }
