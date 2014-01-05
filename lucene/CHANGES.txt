@@ -75,6 +75,11 @@ API Changes
   APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
 
+Optimizations
+
+* LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
+  (Joshua Hartman via Uwe Schindler, Dawid Weiss, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 

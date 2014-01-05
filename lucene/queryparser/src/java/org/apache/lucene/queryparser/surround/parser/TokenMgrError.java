@@ -48,7 +48,7 @@ public class TokenMgrError extends Error
    * equivalents in the given string
    */
   protected static final String addEscapes(String str) {
-    StringBuffer retval = new StringBuffer();
+    StringBuilder retval = new StringBuilder();
     char ch;
     for (int i = 0; i < str.length(); i++) {
       switch (str.charAt(i))
@@ -144,4 +144,4 @@ public class TokenMgrError extends Error
     this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
   }
 }
-/* JavaCC - OriginalChecksum=8c69a370d9a9893140562c8bb911678c (do not edit this line) */
+/* JavaCC - OriginalChecksum=dcdd5ccde13b91bcd8f76a86ca618852 (do not edit this line) */

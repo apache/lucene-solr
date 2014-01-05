@@ -419,7 +419,7 @@ public class JaspellTernarySearchTrie {
    *@return The <code>String</code> that indexes the node argument.
    */
   protected String getKey(TSTNode node) {
-    StringBuffer getKeyBuffer = new StringBuffer();
+    StringBuilder getKeyBuffer = new StringBuilder();
     getKeyBuffer.setLength(0);
     getKeyBuffer.append("" + node.splitchar);
     TSTNode currentNode;

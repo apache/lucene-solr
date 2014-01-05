@@ -53,7 +53,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       doTest(random(), pw, false, MAX_DOCS);
       pw.close();
       sw.close();
-      String multiFileOutput = sw.getBuffer().toString();
+      String multiFileOutput = sw.toString();
       //System.out.println(multiFileOutput);
 
       sw = new StringWriter();
@@ -61,7 +61,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       doTest(random(), pw, true, MAX_DOCS);
       pw.close();
       sw.close();
-      String singleFileOutput = sw.getBuffer().toString();
+      String singleFileOutput = sw.toString();
 
       assertEquals(multiFileOutput, singleFileOutput);
   }
