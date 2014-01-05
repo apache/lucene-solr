@@ -278,12 +278,16 @@ public class Request {
         return null;
       }
     } else {
-      if (!(v instanceof String)) {
-        fail(name, "expected String but got " + v.getClass());
+      if ((v instanceof String) == false) {
+        fail(name, "expected String but got " + toSimpleString(v.getClass()));
       }
       params.remove(name);
       return (String) v;
     }
+  }
+
+  private static String toSimpleString(Class<?> cl) {
+    return cl.getSimpleName();
   }
 
   /** Retrieve an enum parameter.  Once this is called

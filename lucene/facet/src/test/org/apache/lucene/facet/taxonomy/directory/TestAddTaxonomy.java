@@ -6,7 +6,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
@@ -48,7 +48,7 @@ public class TestAddTaxonomy extends FacetTestCase {
             while (numCats.decrementAndGet() > 0) {
               String cat = Integer.toString(random.nextInt(range));
               try {
-                tw.addCategory(new CategoryPath("a", cat));
+                tw.addCategory(new FacetLabel("a", cat));
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
@@ -97,7 +97,7 @@ public class TestAddTaxonomy extends FacetTestCase {
         // validate that all source categories exist in destination, and their
         // ordinals are as expected.
         for (int j = 1; j < srcSize; j++) {
-          CategoryPath cp = srcTR.getPath(j);
+          FacetLabel cp = srcTR.getPath(j);
           int destOrdinal = destTR.getOrdinal(cp);
           assertTrue(cp + " not found in destination", destOrdinal > 0);
           assertEquals(destOrdinal, map[j]);
@@ -113,8 +113,8 @@ public class TestAddTaxonomy extends FacetTestCase {
   public void testAddEmpty() throws Exception {
     Directory dest = newDirectory();
     DirectoryTaxonomyWriter destTW = new DirectoryTaxonomyWriter(dest);
-    destTW.addCategory(new CategoryPath("Author", "Rob Pike"));
-    destTW.addCategory(new CategoryPath("Aardvarks", "Bob"));
+    destTW.addCategory(new FacetLabel("Author", "Rob Pike"));
+    destTW.addCategory(new FacetLabel("Aardvarks", "Bob"));
     destTW.commit();
     
     Directory src = newDirectory();
@@ -134,8 +134,8 @@ public class TestAddTaxonomy extends FacetTestCase {
     
     Directory src = newDirectory();
     DirectoryTaxonomyWriter srcTW = new DirectoryTaxonomyWriter(src);
-    srcTW.addCategory(new CategoryPath("Author", "Rob Pike"));
-    srcTW.addCategory(new CategoryPath("Aardvarks", "Bob"));
+    srcTW.addCategory(new FacetLabel("Author", "Rob Pike"));
+    srcTW.addCategory(new FacetLabel("Aardvarks", "Bob"));
     srcTW.close();
     
     DirectoryTaxonomyWriter destTW = new DirectoryTaxonomyWriter(dest);
@@ -168,14 +168,14 @@ public class TestAddTaxonomy extends FacetTestCase {
   public void testSimple() throws Exception {
     Directory dest = newDirectory();
     DirectoryTaxonomyWriter tw1 = new DirectoryTaxonomyWriter(dest);
-    tw1.addCategory(new CategoryPath("Author", "Mark Twain"));
-    tw1.addCategory(new CategoryPath("Animals", "Dog"));
-    tw1.addCategory(new CategoryPath("Author", "Rob Pike"));
+    tw1.addCategory(new FacetLabel("Author", "Mark Twain"));
+    tw1.addCategory(new FacetLabel("Animals", "Dog"));
+    tw1.addCategory(new FacetLabel("Author", "Rob Pike"));
     
     Directory src = newDirectory();
     DirectoryTaxonomyWriter tw2 = new DirectoryTaxonomyWriter(src);
-    tw2.addCategory(new CategoryPath("Author", "Rob Pike"));
-    tw2.addCategory(new CategoryPath("Aardvarks", "Bob"));
+    tw2.addCategory(new FacetLabel("Author", "Rob Pike"));
+    tw2.addCategory(new FacetLabel("Aardvarks", "Bob"));
     tw2.close();
 
     OrdinalMap map = randomOrdinalMap();
@@ -196,7 +196,7 @@ public class TestAddTaxonomy extends FacetTestCase {
     Directory src = newDirectory();
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(src);
     for (int i = 0; i < numCategories; i++) {
-      tw.addCategory(new CategoryPath("a", Integer.toString(i)));
+      tw.addCategory(new FacetLabel("a", Integer.toString(i)));
     }
     tw.close();
     
@@ -209,7 +209,7 @@ public class TestAddTaxonomy extends FacetTestCase {
       public void run() {
         for (int i = 0; i < numCategories; i++) {
           try {
-            destTW.addCategory(new CategoryPath("a", Integer.toString(i)));
+            destTW.addCategory(new FacetLabel("a", Integer.toString(i)));
           } catch (IOException e) {
             // shouldn't happen - if it does, let the test fail on uncaught exception.
             throw new RuntimeException(e);
@@ -229,9 +229,9 @@ public class TestAddTaxonomy extends FacetTestCase {
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dest);
     // +2 to account for the root category + "a"
     assertEquals(numCategories + 2, dtr.getSize());
-    HashSet<CategoryPath> categories = new HashSet<CategoryPath>();
+    HashSet<FacetLabel> categories = new HashSet<FacetLabel>();
     for (int i = 1; i < dtr.getSize(); i++) {
-      CategoryPath cat = dtr.getPath(i);
+      FacetLabel cat = dtr.getPath(i);
       assertTrue("category " + cat + " already existed", categories.add(cat));
     }
     dtr.close();

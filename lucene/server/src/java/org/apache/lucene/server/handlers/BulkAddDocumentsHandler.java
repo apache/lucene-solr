@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
@@ -33,7 +34,6 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 import static org.apache.lucene.server.IndexState.AddDocumentContext;
-import static org.apache.lucene.server.IndexState.DocumentAndFacets;
 
 /** Reads more than one { ... } request in a single
  *  connection, but each request must be separated by at
@@ -117,8 +117,8 @@ public class BulkAddDocumentsHandler extends Handler {
     // Parse as many doc blocks as there are:
     while (true) {
 
-      List<DocumentAndFacets> children = null;
-      DocumentAndFacets parent = null;
+      List<Document> children = null;
+      Document parent = null;
 
       JsonToken token = parser.nextToken();
       if (token == JsonToken.END_ARRAY) {
@@ -145,11 +145,11 @@ public class BulkAddDocumentsHandler extends Handler {
             throw new IllegalArgumentException("expected array for children");
           }
 
-          children = new ArrayList<DocumentAndFacets>();
+          children = new ArrayList<Document>();
 
           // Parse each child:
           while (true) {
-            DocumentAndFacets doc = addDocHandler.parseDocument(state, parser);
+            Document doc = addDocHandler.parseDocument(state, parser);
             if (doc == null) {
               break;
             }

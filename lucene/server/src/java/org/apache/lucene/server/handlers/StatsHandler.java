@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.IndexSearcher;
@@ -81,7 +81,6 @@ public class StatsHandler extends Handler {
               searchers.put(Long.toString(((DirectoryReader) searcher.getIndexReader()).getVersion()), s);
               s.put("staleAgeSeconds", ageSec);
               s.put("segments", searcher.getIndexReader().toString());
-              s.put("facetCacheSizeBytes", RamUsageEstimator.sizeOf(((MyIndexSearcher) searcher).topFacetsCache));
               return false;
             }
           });

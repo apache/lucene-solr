@@ -167,6 +167,7 @@ public class TestSearch extends ServerBaseTestCase {
   public void testNumericRangeQuery() throws Exception {
     curIndexName = "nrq";
     for(String type : new String[] {"int", "long", "float", "double"}) {
+      _TestUtil.rmDir(new File("nrq"));
       send("createIndex", "{rootDir: nrq}");
       send("startIndex", "{}");
       send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, index: true}}}", type));

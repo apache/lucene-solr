@@ -28,13 +28,9 @@ import org.apache.lucene.search.Weight;
  *  methods. */
 public class MyIndexSearcher extends IndexSearcher {
 
-  /** Cache to hold top-level (pure browse) facet counts. */
-  public final TopFacetsCache topFacetsCache;
-
   /** Sole constructor. */
   public MyIndexSearcher(IndexReader r) {
     super(r);
-    topFacetsCache = new TopFacetsCache();
   }
 
   // nocommit ugly that we need to do this, to handle the

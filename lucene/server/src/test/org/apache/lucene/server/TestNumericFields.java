@@ -25,6 +25,7 @@ public class TestNumericFields extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();

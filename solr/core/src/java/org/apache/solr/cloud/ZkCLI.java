@@ -3,6 +3,7 @@ package org.apache.solr.cloud;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -48,6 +49,8 @@ public class ZkCLI {
   private static final String MAKEPATH = "makepath";
   private static final String PUT = "put";
   private static final String PUT_FILE = "putfile";
+  private static final String GET = "get";
+  private static final String GET_FILE = "getfile";
   private static final String DOWNCONFIG = "downconfig";
   private static final String ZK_CLI_NAME = "ZkCLI";
   private static final String HELP = "help";
@@ -92,7 +95,7 @@ public class ZkCLI {
         .withDescription(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
                 + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
-                + LIST + ", " + CLEAR).create(CMD));
+                + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR).create(CMD));
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -137,6 +140,8 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT_FILE + " /solr.xml /User/myuser/solr/solr.xml");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         return;
@@ -264,6 +269,22 @@ public class ZkCLI {
             IOUtils.closeQuietly(is);
           }
 
+        } else if (line.getOptionValue(CMD).equals(GET)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 1) {
+            System.out.println("-" + GET + " requires one arg - the path to get");
+            System.exit(1);
+          }
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          System.out.println(new String(data, "UTF-8"));
+        } else if (line.getOptionValue(CMD).equals(GET_FILE)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 2) {
+            System.out.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
+            System.exit(1);
+          }
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         }
       } finally {
         if (solrPort != null) {

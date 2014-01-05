@@ -20,8 +20,8 @@ package org.apache.lucene.server;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.LiveFieldValues;

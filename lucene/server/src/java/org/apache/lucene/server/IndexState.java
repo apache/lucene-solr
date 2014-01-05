@@ -51,16 +51,17 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.CachedOrdinalsReader;
+import org.apache.lucene.facet.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.OrdinalsReader;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -184,32 +185,17 @@ public class IndexState implements Closeable {
   final JSONObject suggestSaveState = new JSONObject();
   final JSONObject fieldsSaveState = new JSONObject();
 
+  // nocommit once we allow custom indexFieldName for
+  // facets, need to pass it here:
+
+  /** Holds cached ordinals; doesn't use any RAM unless it's
+   *  actually used when a caller sets useOrdsCache=true. */
+  public final OrdinalsReader ordsCache = new CachedOrdinalsReader(new DocValuesOrdinalsReader());
+
   /** The schema (registerField) */
   private final Map<String,FieldDef> fields = new ConcurrentHashMap<String,FieldDef>();
 
-  // TODO: need per-field control:
-  CategoryListParams clp = new CategoryListParams("$facets") {
-      @Override
-      public OrdinalPolicy getOrdinalPolicy(String fieldName) {
-        FieldDef fd = getField(fieldName);
-        if (fd.faceted.equals("no")) {
-          assert false;
-          return null;
-        } else if (fd.faceted.equals("flat")) {
-          // Don't do NO_PARENTS, so we avoid the
-          // [pointless] rollup cost:
-          return OrdinalPolicy.ALL_BUT_DIMENSION;
-        } else if (fd.multiValued == false) {
-          // Index only the exact ord, and do rollup in the
-          // end:
-          return OrdinalPolicy.NO_PARENTS;
-        } else {
-          // Index all parents, de-duping ancestor ords at
-          // indexing time:
-          return OrdinalPolicy.ALL_PARENTS;
-        }
-      }
-    };
+  public final FacetsConfig facetsConfig = new FacetsConfig();
 
   /** Tracks snapshot references to generations. */
   private static class SaveLoadRefCounts extends GenFileUtil<Map<Long,Integer>> {
@@ -291,9 +277,6 @@ public class IndexState implements Closeable {
   final SaveLoadRefCounts saveLoadGenRefCounts;
 
   final SaveLoadState saveLoadState;
-
-  /** Facet indexing params. */
-  public FacetIndexingParams facetIndexingParams = new FacetIndexingParams(clp);
 
   /** Enables lookup of previously used searchers, so
    *  follow-on actions (next page, drill down/sideways/up,
@@ -477,14 +460,14 @@ public class IndexState implements Closeable {
    *  static because it uses this.writer. */
   class AddDocumentJob implements Callable<Long> {
     private final Term updateTerm;
-    private final DocumentAndFacets doc;
+    private final Document doc;
     private final AddDocumentContext ctx;
 
     // Position of this document in the bulk request:
     private final int index;
 
     /** Sole constructor. */
-    public AddDocumentJob(int index, Term updateTerm, DocumentAndFacets doc, AddDocumentContext ctx) {
+    public AddDocumentJob(int index, Term updateTerm, Document doc, AddDocumentContext ctx) {
       this.updateTerm = updateTerm;
       this.doc = doc;
       this.ctx = ctx;
@@ -496,23 +479,20 @@ public class IndexState implements Closeable {
       long gen = -1;
 
       try {
-        if (doc.facets != null && !doc.facets.isEmpty()) {
-          FacetFields ff = new FacetFields(taxoWriter, facetIndexingParams);
-          ff.addFields(doc.doc, doc.facets);
-        }
+        IndexDocument idoc = facetsConfig.build(taxoWriter, doc);
         if (updateTerm == null) {
-          gen = writer.addDocument(doc.doc);
+          gen = writer.addDocument(idoc);
         } else {
-          gen = writer.updateDocument(updateTerm, doc.doc);
+          gen = writer.updateDocument(updateTerm, idoc);
         }
 
         if (!liveFieldValues.isEmpty()) {
           // TODO: wasteful!
-          for(StorableField f : doc.doc.getFields()) {
+          for(StorableField f : doc.getFields()) {
             FieldDef fd = getField(f.name());
             if (fd.liveValuesIDField != null) {
               // TODO: O(N):
-              String id = doc.doc.get(fd.liveValuesIDField);
+              String id = doc.get(fd.liveValuesIDField);
               if (id != null) {
                 liveFieldValues.get(f.name()).add(id, f.stringValue());
               }
@@ -670,14 +650,14 @@ public class IndexState implements Closeable {
   /** Job for a single block addDocuments call. */
   class AddDocumentsJob implements Callable<Long> {
     private final Term updateTerm;
-    private final Iterable<DocumentAndFacets> docs;
+    private final Iterable<Document> docs;
     private final AddDocumentContext ctx;
 
     // Position of this document in the bulk request:
     private final int index;
 
     /** Sole constructor. */
-    public AddDocumentsJob(int index, Term updateTerm, Iterable<DocumentAndFacets> docs, AddDocumentContext ctx) {
+    public AddDocumentsJob(int index, Term updateTerm, Iterable<Document> docs, AddDocumentContext ctx) {
       this.updateTerm = updateTerm;
       this.docs = docs;
       this.ctx = ctx;
@@ -688,13 +668,10 @@ public class IndexState implements Closeable {
     public Long call() throws Exception {
       long gen = -1;
       try {
-        List<Document> justDocs = new ArrayList<Document>();
-        for(DocumentAndFacets daf : docs) {
-          if (daf.facets != null && !daf.facets.isEmpty()) {
-            FacetFields ff = new FacetFields(taxoWriter, facetIndexingParams);
-            ff.addFields(daf.doc, daf.facets);
-          }
-          justDocs.add(daf.doc);
+        List<IndexDocument> justDocs = new ArrayList<IndexDocument>();
+        for(Document doc : docs) {
+          // Translate any FacetFields:
+          justDocs.add(facetsConfig.build(taxoWriter, doc));
         }
 
         //System.out.println(Thread.currentThread().getName() + ": add; " + docs);
@@ -705,7 +682,7 @@ public class IndexState implements Closeable {
         }
 
         if (!liveFieldValues.isEmpty()) {
-          for(Document doc : justDocs) {
+          for(Document doc : docs) {
             // TODO: wasteful!
             for(StorableField f : doc.getFields()) {
               FieldDef fd = getField(f.name());
@@ -730,34 +707,13 @@ public class IndexState implements Closeable {
     }
   }
 
-  /** Holds a document and its facets. */
-  public static class DocumentAndFacets {
-    /** Document. */
-    public final Document doc = new Document();
-
-    /** Facets. */
-    public List<CategoryPath> facets;
-
-    /** Sole constructor. */
-    public DocumentAndFacets() {
-    }
-
-    /** Add another facet. */
-    public void addFacet(CategoryPath cp) {
-      if (facets == null) {
-        facets = new ArrayList<CategoryPath>();
-      }
-      facets.add(cp);
-    }
-  }
-
   /** Create a new {@code AddDocumentJob}. */
-  public Callable<Long> getAddDocumentJob(int index, Term term, DocumentAndFacets doc, AddDocumentContext ctx) {
+  public Callable<Long> getAddDocumentJob(int index, Term term, Document doc, AddDocumentContext ctx) {
     return new AddDocumentJob(index, term, doc, ctx);
   }
 
   /** Create a new {@code AddDocumentsJob}. */
-  public Callable<Long> getAddDocumentsJob(int index, Term term, Iterable<DocumentAndFacets> docs, AddDocumentContext ctx) {
+  public Callable<Long> getAddDocumentsJob(int index, Term term, Iterable<Document> docs, AddDocumentContext ctx) {
     return new AddDocumentsJob(index, term, docs, ctx);
   }
 

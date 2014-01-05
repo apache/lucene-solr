@@ -343,6 +343,11 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testFuncRord() throws Exception {
     assertFuncEquals("rord(foo_s)","rord(foo_s    )"); 
   }
+
+  public void testFuncCscore() throws Exception {
+    assertFuncEquals("cscore()", "cscore(  )");
+  }
+
   public void testFuncTop() throws Exception {
     assertFuncEquals("top(sum(3,foo_i))");
   }

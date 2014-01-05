@@ -399,7 +399,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
         // FVH cannot process hl.requireFieldMatch parameter per-field basis
         params.getBool( HighlightParams.FIELD_MATCH, false ) );
-    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, Integer.MAX_VALUE));
+    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
     FieldQuery fieldQuery = fvh.getFieldQuery( query, searcher.getIndexReader() );
 
     // Highlight each document
@@ -602,6 +602,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
       StorableField[] docFields = doc.getFields(alternateField);
+      if (docFields.length == 0) {
+        // The alternate field did not exist, treat the original field as fallback instead
+        docFields = doc.getFields(fieldName);
+      }
       List<String> listFields = new ArrayList<String>();
       for (StorableField field : docFields) {
         if (field.binaryValue() == null)

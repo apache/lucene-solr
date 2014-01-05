@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
@@ -36,7 +37,6 @@ import org.codehaus.jackson.JsonToken;
 import net.minidev.json.JSONObject;
 
 import static org.apache.lucene.server.IndexState.AddDocumentContext;
-import static org.apache.lucene.server.IndexState.DocumentAndFacets;
 
 /** Handles {@code bulkUpdateDocument}. */
 public class BulkUpdateDocumentHandler extends Handler {
@@ -133,7 +133,7 @@ public class BulkUpdateDocumentHandler extends Handler {
       // Parse term: and fields:
       Term updateTerm = null;
 
-      final DocumentAndFacets doc = new DocumentAndFacets();
+      final Document doc = new Document();
 
       while (true) {
         token = parser.nextToken();

@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -99,6 +100,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private String oneInstanceCollection = "oneInstanceCollection";
   private String oneInstanceCollection2 = "oneInstanceCollection2";
+  
+  private AtomicInteger nodeCounter = new AtomicInteger();
   
   ThreadPoolExecutor executor = new ThreadPoolExecutor(0,
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
@@ -928,11 +931,16 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         try {
           server = new HttpSolrServer(baseUrl);
           server.setConnectionTimeout(15000);
-          server.setSoTimeout(60000);
           Create createCmd = new Create();
           createCmd.setRoles("none");
           createCmd.setCoreName(collection + num);
           createCmd.setCollection(collection);
+          
+          if (random().nextBoolean()) {
+            // sometimes we use an explicit core node name
+            createCmd.setCoreNodeName("anode" + nodeCounter.incrementAndGet());
+          }
+          
           if (shardId == null) {
             createCmd.setNumShards(2);
           }

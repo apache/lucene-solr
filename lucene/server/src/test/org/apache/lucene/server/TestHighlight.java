@@ -116,7 +116,7 @@ public class TestHighlight extends ServerBaseTestCase {
       put(o, "grouping", s);
     }
 
-    put(o, "facets", "[{path: 'dateFacet', topN: 10}]");
+    put(o, "facets", "[{dim: 'dateFacet', topN: 10}]");
     put(o, "retrieveFields", "['id', 'date', 'price', {field: 'body', highlight: " + (snippets ? "snippets" : "whole") + "}]");
 
     return send("search", o);

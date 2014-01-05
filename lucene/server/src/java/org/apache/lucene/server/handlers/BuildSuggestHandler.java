@@ -30,16 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.search.SearcherTaxonomyManager;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.suggest.DocumentDictionary;
@@ -57,6 +54,9 @@ import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+import net.minidev.json.parser.ParseException;
 
 import static org.apache.lucene.server.handlers.RegisterFieldHandler.ANALYZER_TYPE;
 
@@ -99,9 +99,7 @@ public class BuildSuggestHandler extends Handler {
             new StructType(
                   new Param("localFile", "Local file (to the server) to read suggestions + weights from; format is weight U+001F suggestion U+001F payload, one per line, with suggestion UTF-8 encoded.  If this option is used then searcher, suggestField, weightField/Expression, payloadField should not be specified.", new StringType()),
                   new Param("searcher", "Specific searcher version to use for searching.  There are three different ways to specify a searcher version.",
-                            new StructType(
-                                           new Param("indexGen", "Search a generation previously returned by an indexing operation such as #addDocument.  Use this to search a non-committed (near-real-time) view of the index.", new LongType()),
-                                           new Param("snapshot", "Search a snapshot previously created with #createSnapshot", new StringType()))),
+                            SearchHandler.SEARCHER_VERSION_TYPE),
                   new Param("suggestField", "Field (from stored documents) containing the suggestion text", new StringType()),
                   new Param("weightField", "Numeric field (from stored documents) containing the weight", new StringType()),
                   new Param("weightExpression", "Alternative to weightField, an expression that's evaluated to the weight.  Note that any fields referenced in the expression must have been indexed with sort=true.", new StringType()),
@@ -405,25 +403,10 @@ public class BuildSuggestHandler extends Handler {
 
       // Pull suggestions from stored docs:
       if (source.hasParam("searcher")) {
-        long searcherVersion;
-        IndexState.Gens searcherSnapshot;
-
-        Request s = source.getStruct("searcher");
-        if (s.hasParam("indexGen")) {
-          long indexGen = s.getLong("indexGen");
-          state.reopenThread.waitForGeneration(indexGen);
-          searcherVersion = -1;
-          searcherSnapshot = null;
-        } else {
-          searcherSnapshot = new IndexState.Gens(s, "snapshot");
-          Long v = state.snapshotGenToVersion.get(searcherSnapshot.indexGen);
-          if (v == null) {
-            s.fail("snapshot", "unrecognized snapshot \"" + searcherSnapshot.id + "\"");
-          }
-          searcherVersion = v.longValue();
-        }
-        searcher = SearchHandler.getSearcherAndTaxonomy(s, state, searcherVersion, searcherSnapshot, null);
+        // Specific searcher version:
+        searcher = SearchHandler.getSearcherAndTaxonomy(source, state, null);
       } else {
+        // Just use current searcher version:
         searcher = state.manager.acquire();
       }
       String suggestField = source.getString("suggestField");

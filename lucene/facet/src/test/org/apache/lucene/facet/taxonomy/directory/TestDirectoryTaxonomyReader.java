@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -46,7 +46,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
   public void testCloseAfterIncRef() throws Exception {
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
-    ltw.addCategory(new CategoryPath("a"));
+    ltw.addCategory(new FacetLabel("a"));
     ltw.close();
     
     DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
@@ -64,7 +64,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
   public void testCloseTwice() throws Exception {
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
-    ltw.addCategory(new CategoryPath("a"));
+    ltw.addCategory(new FacetLabel("a"));
     ltw.close();
     
     DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
@@ -84,13 +84,13 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
       dir = newDirectory();
       ltw = new DirectoryTaxonomyWriter(dir);
       
-      ltw.addCategory(new CategoryPath("a"));
+      ltw.addCategory(new FacetLabel("a"));
       ltw.commit();
       
       ltr = new DirectoryTaxonomyReader(dir);
       assertNull("Nothing has changed", TaxonomyReader.openIfChanged(ltr));
       
-      ltw.addCategory(new CategoryPath("b"));
+      ltw.addCategory(new FacetLabel("b"));
       ltw.commit();
       
       DirectoryTaxonomyReader newtr = TaxonomyReader.openIfChanged(ltr);
@@ -106,7 +106,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
   public void testAlreadyClosed() throws Exception {
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
-    ltw.addCategory(new CategoryPath("a"));
+    ltw.addCategory(new FacetLabel("a"));
     ltw.close();
     
     DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
@@ -140,16 +140,16 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     
     // prepare a few categories
     int  n = 10;
-    CategoryPath[] cp = new CategoryPath[n];
+    FacetLabel[] cp = new FacetLabel[n];
     for (int i=0; i<n; i++) {
-      cp[i] = new CategoryPath("a", Integer.toString(i));
+      cp[i] = new FacetLabel("a", Integer.toString(i));
     }
     
     try {
       dir = newDirectory();
       
       tw = new DirectoryTaxonomyWriter(dir);
-      tw.addCategory(new CategoryPath("a"));
+      tw.addCategory(new FacetLabel("a"));
       tw.close();
       
       tr = new DirectoryTaxonomyReader(dir);
@@ -183,7 +183,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     Directory dir = new RAMDirectory(); // no need for random directories here
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.commit();
 
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
@@ -192,7 +192,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     taxoReader.incRef();
     assertEquals("wrong refCount", 2, taxoReader.getRefCount());
 
-    taxoWriter.addCategory(new CategoryPath("a", "b"));
+    taxoWriter.addCategory(new FacetLabel("a", "b"));
     taxoWriter.commit();
     TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
     assertNotNull(newtr);
@@ -226,7 +226,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     for (int i = 0; i < numRounds; i++) {
       int numCats = random().nextInt(4) + 1;
       for (int j = 0; j < numCats; j++) {
-        writer.addCategory(new CategoryPath(Integer.toString(i), Integer.toString(j)));
+        writer.addCategory(new FacetLabel(Integer.toString(i), Integer.toString(j)));
       }
       numCategories += numCats + 1 /* one for round-parent */;
       TaxonomyReader newtr = TaxonomyReader.openIfChanged(reader);
@@ -236,11 +236,11 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
       
       // assert categories
       assertEquals(numCategories, reader.getSize());
-      int roundOrdinal = reader.getOrdinal(new CategoryPath(Integer.toString(i)));
+      int roundOrdinal = reader.getOrdinal(new FacetLabel(Integer.toString(i)));
       int[] parents = reader.getParallelTaxonomyArrays().parents();
       assertEquals(0, parents[roundOrdinal]); // round's parent is root
       for (int j = 0; j < numCats; j++) {
-        int ord = reader.getOrdinal(new CategoryPath(Integer.toString(i), Integer.toString(j)));
+        int ord = reader.getOrdinal(new FacetLabel(Integer.toString(i), Integer.toString(j)));
         assertEquals(roundOrdinal, parents[ord]); // round's parent is root
       }
     }
@@ -276,7 +276,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
     // add category and call forceMerge -- this should flush IW and merge segments down to 1
     // in ParentArray.initFromReader, this used to fail assuming there are no parents.
-    writer.addCategory(new CategoryPath("1"));
+    writer.addCategory(new FacetLabel("1"));
     iw.forceMerge(1);
     
     // now calling openIfChanged should trip on the bug
@@ -315,7 +315,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     
     // add a category so that the following DTR open will cause a flush and 
     // a new segment will be created
-    writer.addCategory(new CategoryPath("a"));
+    writer.addCategory(new FacetLabel("a"));
     
     TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
     assertEquals(2, reader.getSize());
@@ -342,7 +342,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // tests that if the taxonomy is recreated, no data is reused from the previous taxonomy
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
-    CategoryPath cp_a = new CategoryPath("a");
+    FacetLabel cp_a = new FacetLabel("a");
     writer.addCategory(cp_a);
     writer.close();
     
@@ -353,7 +353,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     
     // now recreate, add a different category
     writer = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE);
-    CategoryPath cp_b = new CategoryPath("b");
+    FacetLabel cp_b = new FacetLabel("b");
     writer.addCategory(cp_b);
     writer.close();
     
@@ -384,7 +384,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
       Directory dir = newDirectory();
       DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
       
-      CategoryPath cp_a = new CategoryPath("a");
+      FacetLabel cp_a = new FacetLabel("a");
       writer.addCategory(cp_a);
       if (!nrt) writer.commit();
       
@@ -393,7 +393,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
       assertEquals(1, r1.getOrdinal(cp_a));
       assertEquals(cp_a, r1.getPath(1));
       
-      CategoryPath cp_b = new CategoryPath("b");
+      FacetLabel cp_b = new FacetLabel("b");
       writer.addCategory(cp_b);
       if (!nrt) writer.commit();
       
@@ -421,7 +421,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // only can work with NRT as well
     Directory src = newDirectory();
     DirectoryTaxonomyWriter w = new DirectoryTaxonomyWriter(src);
-    CategoryPath cp_b = new CategoryPath("b");
+    FacetLabel cp_b = new FacetLabel("b");
     w.addCategory(cp_b);
     w.close();
     
@@ -429,7 +429,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
       Directory dir = newDirectory();
       DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
       
-      CategoryPath cp_a = new CategoryPath("a");
+      FacetLabel cp_a = new FacetLabel("a");
       writer.addCategory(cp_a);
       if (!nrt) writer.commit();
       
@@ -474,29 +474,29 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     int numA = 0, numB = 0;
     Random random = random();
     // add the two categories for which we'll also add children (so asserts are simpler)
-    taxoWriter.addCategory(new CategoryPath("a"));
-    taxoWriter.addCategory(new CategoryPath("b"));
+    taxoWriter.addCategory(new FacetLabel("a"));
+    taxoWriter.addCategory(new FacetLabel("b"));
     for (int i = 0; i < numCategories; i++) {
       if (random.nextBoolean()) {
-        taxoWriter.addCategory(new CategoryPath("a", Integer.toString(i)));
+        taxoWriter.addCategory(new FacetLabel("a", Integer.toString(i)));
         ++numA;
       } else {
-        taxoWriter.addCategory(new CategoryPath("b", Integer.toString(i)));
+        taxoWriter.addCategory(new FacetLabel("b", Integer.toString(i)));
         ++numB;
       }
     }
     // add category with no children
-    taxoWriter.addCategory(new CategoryPath("c"));
+    taxoWriter.addCategory(new FacetLabel("c"));
     taxoWriter.close();
     
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
 
     // non existing category
-    ChildrenIterator it = taxoReader.getChildren(taxoReader.getOrdinal(new CategoryPath("invalid")));
+    ChildrenIterator it = taxoReader.getChildren(taxoReader.getOrdinal(new FacetLabel("invalid")));
     assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
 
     // a category with no children
-    it = taxoReader.getChildren(taxoReader.getOrdinal(new CategoryPath("c")));
+    it = taxoReader.getChildren(taxoReader.getOrdinal(new FacetLabel("c")));
     assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
 
     // arbitrary negative ordinal
@@ -507,20 +507,20 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     Set<String> roots = new HashSet<String>(Arrays.asList("a", "b", "c"));
     it = taxoReader.getChildren(TaxonomyReader.ROOT_ORDINAL);
     while (!roots.isEmpty()) {
-      CategoryPath root = taxoReader.getPath(it.next());
+      FacetLabel root = taxoReader.getPath(it.next());
       assertEquals(1, root.length);
       assertTrue(roots.remove(root.components[0]));
     }
     assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
     
     for (int i = 0; i < 2; i++) {
-      CategoryPath cp = i == 0 ? new CategoryPath("a") : new CategoryPath("b");
+      FacetLabel cp = i == 0 ? new FacetLabel("a") : new FacetLabel("b");
       int ordinal = taxoReader.getOrdinal(cp);
       it = taxoReader.getChildren(ordinal);
       int numChildren = 0;
       int child;
       while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
-        CategoryPath path = taxoReader.getPath(child);
+        FacetLabel path = taxoReader.getPath(child);
         assertEquals(2, path.length);
         assertEquals(path.components[0], i == 0 ? "a" : "b");
         ++numChildren;

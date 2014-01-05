@@ -199,7 +199,9 @@ public class TestGrouping extends ServerBaseTestCase {
     if (sortField != null) {
       JSONObject sort = new JSONObject();
       o.put("sort", sort);
-      sort.put("doDocScores", true);
+      if (groupField == null) {
+        sort.put("doDocScores", true);
+      }
 
       JSONArray sortFields = new JSONArray();
       sort.put("fields", sortFields);
@@ -220,7 +222,7 @@ public class TestGrouping extends ServerBaseTestCase {
       put(o, "grouping", s);
     }
 
-    put(o, "facets", "[{path: 'dateFacet', topN: 10}]");
+    put(o, "facets", "[{dim: 'dateFacet', topN: 10}]");
     put(o, "retrieveFields", "['id', 'date', 'price', {field: 'body', highlight: " + (snippets ? "snippets" : "whole") + "}]");
 
     return send("search", o);

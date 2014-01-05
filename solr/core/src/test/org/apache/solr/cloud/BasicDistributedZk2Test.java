@@ -282,14 +282,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     // kill a shard
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
-
-
-    // we are careful to make sure the downed node is no longer in the state,
-    // because on some systems (especially freebsd w/ blackhole enabled), trying
-    // to talk to a downed node causes grief
-    Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
-    jetties.addAll(shardToJetty.get(SHARD1));
-    jetties.remove(deadShard);
     
     // ensure shard is dead
     try {

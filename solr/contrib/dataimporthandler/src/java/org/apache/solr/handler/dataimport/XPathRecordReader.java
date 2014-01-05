@@ -296,7 +296,7 @@ public class XPathRecordReader {
                 for (Node n : childNodes) {
                   // For the multivalue child nodes where we could have, but
                   // didnt, collect text. Push a null string into values.
-                  if (!childrenFound.contains(n)) n.putNulls(values);
+                  if (!childrenFound.contains(n)) n.putNulls(values, valuesAddedinThisFrame);
                 }
               }
               return;
@@ -429,18 +429,28 @@ public class XPathRecordReader {
      * pushing a null string onto every multiValued fieldName's List of values
      * where a value has not been provided from the stream.
      */
-    private void putNulls(Map<String, Object> values) {
+    private void putNulls(Map<String, Object> values, Set<String> valuesAddedinThisFrame) {
       if (attributes != null) {
         for (Node n : attributes) {
-          if (n.multiValued)
-            putText(values, null, n.fieldName, true);
+          if (n.multiValued) {
+            putANull(n.fieldName, values, valuesAddedinThisFrame);
+          }
         }
       }
-      if (hasText && multiValued)
-        putText(values, null, fieldName, true);
+      if (hasText && multiValued) {
+        putANull(fieldName, values, valuesAddedinThisFrame);
+      }
       if (childNodes != null) {
-        for (Node childNode : childNodes)
-          childNode.putNulls(values);
+        for (Node childNode : childNodes) {
+          childNode.putNulls(values, valuesAddedinThisFrame);
+        }
+      }
+    }
+    
+    private void putANull(String thisFieldName, Map<String, Object> values, Set<String> valuesAddedinThisFrame) {
+      putText(values, null, thisFieldName, true);
+      if( valuesAddedinThisFrame != null) {
+        valuesAddedinThisFrame.add(thisFieldName);
       }
     }
 

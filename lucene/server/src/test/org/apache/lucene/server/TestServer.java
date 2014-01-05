@@ -29,6 +29,7 @@ public class TestServer extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -118,8 +119,8 @@ public class TestServer extends ServerBaseTestCase {
       put(o, "grouping", s);
     }
 
-    put(o, "facets", "[{path: 'dateFacet', topN: 10}]");
-    put(o, "retrieveFields", "['id', 'date', 'price', {field: 'body', highlight: " + (snippets ? "snippets" : "whole") + "}]");
+    put(o, "facets", "[{dim: dateFacet, topN: 10}]");
+    put(o, "retrieveFields", "[id, date, price, {field: body, highlight: " + (snippets ? "snippets" : "whole") + "}]");
 
     return send("search", o);
   }

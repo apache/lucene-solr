@@ -25,17 +25,17 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.server.Constants;
 import org.apache.lucene.server.FieldDef;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
-import org.apache.lucene.server.IndexState.DocumentAndFacets;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.util.BytesRef;
@@ -84,7 +84,7 @@ public class AddDocumentHandler extends Handler {
 
   /** Parses value for one field. */
   @SuppressWarnings({"unchecked"})
-  private static void parseOneNativeValue(FieldDef fd, DocumentAndFacets doc, Object o, float boost) {
+  private static void parseOneNativeValue(FieldDef fd, Document doc, Object o, float boost) {
 
     assert o != null;
     assert fd != null;
@@ -122,29 +122,13 @@ public class AddDocumentHandler extends Handler {
         assert false;
         fail(fd.name, "value should be String when facet=flat; got array");
       }
-      doc.addFacet(new CategoryPath(fd.name, o.toString()));
+      doc.add(new FacetField(fd.name, o.toString()));
     } else if (fd.faceted.equals("hierarchy")) {
-      if (o instanceof JSONArray) {
-        // nocommit this is dead code?
-        assert false;
-        JSONArray arr = (JSONArray) o;
-        String[] values = new String[1+arr.size()];
-        values[0] = fd.name;
-        for(int idx=0;idx<values.length-1;idx++) {
-          values[idx+1] = arr.get(idx).toString();
-        }
-        doc.addFacet(new CategoryPath(values));
-      } else if (o instanceof List) { 
+      if (o instanceof List) { 
         List<String> values = (List<String>) o;
-        CategoryPath cp = null;
-        try {
-          cp = new CategoryPath(values.toArray(new String[values.size()]));
-        } catch (IllegalArgumentException iae) {
-          fail(fd.name, "unable to create facet path: " + iae.getMessage());
-        }
-        doc.addFacet(cp);
+        doc.add(new FacetField(fd.name, values.toArray(new String[values.size()])));
       } else {
-        doc.addFacet(new CategoryPath(fd.name, o.toString()));
+        doc.add(new FacetField(fd.name, o.toString()));
       }
     }
 
@@ -165,29 +149,29 @@ public class AddDocumentHandler extends Handler {
       assert o instanceof String;
       BytesRef br = new BytesRef((String) o);
       if (fd.fieldType.docValueType() == DocValuesType.BINARY) {
-        doc.doc.add(new BinaryDocValuesField(fd.name, br));
+        doc.add(new BinaryDocValuesField(fd.name, br));
       } else {
-        doc.doc.add(new SortedDocValuesField(fd.name, br));
+        doc.add(new SortedDocValuesField(fd.name, br));
       }
     } else if (fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
       if (fd.valueType.equals("float")) {
-        doc.doc.add(new NumericDocValuesField(fd.name, Float.floatToRawIntBits(((Number) o).floatValue())));
+        doc.add(new NumericDocValuesField(fd.name, Float.floatToRawIntBits(((Number) o).floatValue())));
       } else if (fd.valueType.equals("double")) {
-        doc.doc.add(new NumericDocValuesField(fd.name, Double.doubleToRawLongBits(((Number) o).doubleValue())));
+        doc.add(new NumericDocValuesField(fd.name, Double.doubleToRawLongBits(((Number) o).doubleValue())));
       } else if (fd.valueType.equals("int")) {
-        doc.doc.add(new NumericDocValuesField(fd.name, ((Number) o).intValue()));
+        doc.add(new NumericDocValuesField(fd.name, ((Number) o).intValue()));
       } else if (fd.valueType.equals("long")) {
-        doc.doc.add(new NumericDocValuesField(fd.name, ((Number) o).longValue()));
+        doc.add(new NumericDocValuesField(fd.name, ((Number) o).longValue()));
       } else {
         assert fd.valueType.equals("boolean");
-        doc.doc.add(new NumericDocValuesField(fd.name, ((Integer) o).intValue()));
+        doc.add(new NumericDocValuesField(fd.name, ((Integer) o).intValue()));
       }
     }
 
     if (fd.fieldType.stored() || fd.fieldType.indexed()) {
       Field f = new MyField(fd.name, fd.fieldTypeNoDV, o);
       f.setBoost(boost);
-      doc.doc.add(f);
+      doc.add(f);
     }
   }
 
@@ -196,9 +180,9 @@ public class AddDocumentHandler extends Handler {
   public interface PostHandle {
     // nocommit need test coverage:
     /** Invoke the handler, non-streaming. */
-    public void invoke(IndexState state, Request r, DocumentAndFacets doc) throws IOException;
+    public void invoke(IndexState state, Request r, Document doc) throws IOException;
     /** Invoke the handler, streaming. */
-    public boolean invoke(IndexState state, String fieldName, JsonParser p, DocumentAndFacets doc) throws IOException;
+    public boolean invoke(IndexState state, String fieldName, JsonParser p, Document doc) throws IOException;
   }
 
   final List<PostHandle> postHandlers = new CopyOnWriteArrayList<PostHandle>();
@@ -233,7 +217,7 @@ public class AddDocumentHandler extends Handler {
 
   /** Parses the fields, which should look like {field1:
    *  ..., field2: ..., ...} */
-  void parseFields(IndexState state, DocumentAndFacets doc, JsonParser p) throws IOException {
+  void parseFields(IndexState state, Document doc, JsonParser p) throws IOException {
     JsonToken token = p.nextToken();
     if (token != JsonToken.START_OBJECT) {
       throw new IllegalArgumentException("fields should be an object");
@@ -251,7 +235,7 @@ public class AddDocumentHandler extends Handler {
   /** Parse a Document using Jackson's streaming parser
    * API.  The document should look like {indexName: 'foo',
    * fields: {..., ...}} */
-  DocumentAndFacets parseDocument(IndexState state, JsonParser p) throws IOException {
+  Document parseDocument(IndexState state, JsonParser p) throws IOException {
     //System.out.println("parseDocument: " + r);
     JsonToken token = p.nextToken();
     if (token == JsonToken.END_ARRAY) {
@@ -261,7 +245,7 @@ public class AddDocumentHandler extends Handler {
       throw new IllegalArgumentException("expected JSON Object");
     }
 
-    final DocumentAndFacets doc = new DocumentAndFacets();
+    final Document doc = new Document();
     while (true) {
       token = p.nextToken();
       if (token == JsonToken.END_OBJECT) {
@@ -299,7 +283,7 @@ public class AddDocumentHandler extends Handler {
   /** Parses a field's value, which is an array in the
    * multi-valued case, or an object of the appropriate type
    * in the single-valued case. */
-  private static void parseOneField(JsonParser p, IndexState state, DocumentAndFacets doc, String name) throws IOException {
+  private static void parseOneField(JsonParser p, IndexState state, Document doc, String name) throws IOException {
 
     FieldDef fd = state.getField(name);
 
@@ -335,7 +319,6 @@ public class AddDocumentHandler extends Handler {
       o = Boolean.FALSE;
     } else if (fd.faceted.equals("hierarchy") && token == JsonToken.START_ARRAY) {
       List<String> values = new ArrayList<String>();
-      values.add(fd.name);
       while (true) {
         token = p.nextToken();
         if (token == JsonToken.END_ARRAY) {
@@ -369,7 +352,7 @@ public class AddDocumentHandler extends Handler {
   /** Parse one value for a field, which is either an
    *  object matching the type of the field, or a {boost:
    *  ..., value: ...}. */
-  private static boolean parseOneValue(FieldDef fd, JsonParser p, DocumentAndFacets doc) throws IOException {
+  private static boolean parseOneValue(FieldDef fd, JsonParser p, Document doc) throws IOException {
 
     Object o = null;
 

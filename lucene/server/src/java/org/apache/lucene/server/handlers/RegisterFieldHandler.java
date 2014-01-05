@@ -672,6 +672,18 @@ public class RegisterFieldHandler extends Handler {
 
     ft.freeze();
 
+    if (facet.equals("no") == false && facet.equals("numericRange") == false) {
+      if (facet.equals("hierarchy")) {
+        state.facetsConfig.setHierarchical(name, true);
+      }
+      if (multiValued) {
+        state.facetsConfig.setMultiValued(name, true);
+      }
+    }
+
+    // nocommit facetsConfig.setIndexFieldName
+    // nocommit facetsConfig.setRequireDimCount
+
     return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l);
   }
 

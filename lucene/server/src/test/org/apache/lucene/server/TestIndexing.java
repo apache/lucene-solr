@@ -132,11 +132,7 @@ public class TestIndexing extends ServerBaseTestCase {
         sb.append(',');
       }
       if (i == 57) {
-        JSONArray broken = new JSONArray();
-        broken.add("2013");
-        broken.add("");
-        broken.add("17");
-        o.put("dateFacet", broken);
+        o.put("foobar", 17);
       }
       JSONObject o2 = new JSONObject();
       o2.put("fields", o);
@@ -188,8 +184,8 @@ public class TestIndexing extends ServerBaseTestCase {
       put(o, "grouping", s);
     }
 
-    put(o, "facets", "[{path: 'dateFacet', topN: 10}]");
-    put(o, "retrieveFields", "['id', 'date', 'price', {field: 'body', highlight: " + (snippets ? "snippets" : "whole") + "}]");
+    put(o, "facets", "[{dim: dateFacet, topN: 10}]");
+    put(o, "retrieveFields", "[id, date, price, {field: body, highlight: " + (snippets ? "snippets" : "whole") + "}]");
 
     return send("search", o);
   }
