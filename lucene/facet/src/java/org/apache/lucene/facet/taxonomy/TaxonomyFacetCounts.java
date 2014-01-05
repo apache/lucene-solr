@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.OrdinalsReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
