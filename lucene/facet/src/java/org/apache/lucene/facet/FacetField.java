@@ -42,6 +42,10 @@ public class FacetField extends Field {
    *  {@code path}. */
   public FacetField(String dim, String... path) {
     super("dummy", TYPE);
+    verifyLabel(dim);
+    for(String label : path) {
+      verifyLabel(label);
+    }
     this.dim = dim;
     if (path.length == 0) {
       throw new IllegalArgumentException("path must have at least one element");
@@ -52,5 +56,14 @@ public class FacetField extends Field {
   @Override
   public String toString() {
     return "FacetField(dim=" + dim + " path=" + Arrays.toString(path) + ")";
+  }
+
+  /** Verifies the label is not null or empty string.
+   * 
+   *  @lucene.internal */
+  public static void verifyLabel(String label) {
+    if (label == null || label.isEmpty()) {
+      throw new IllegalArgumentException("empty or null components not allowed; got: " + label);
+    }
   }
 }
