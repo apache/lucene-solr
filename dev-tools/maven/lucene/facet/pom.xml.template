@@ -105,7 +105,7 @@
               </bundledSignatures>
               <excludes>
                 <!-- exclude command line tools -->
-                <exclude>org/apache/lucene/facet/util/PrintTaxonomyStats.class</exclude>
+                <exclude>org/apache/lucene/facet/taxonomy/PrintTaxonomyStats.class</exclude>
               </excludes>
             </configuration>
             <goals>
