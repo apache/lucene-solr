@@ -92,7 +92,7 @@ public class ParseException extends QueryNodeParseException {
                            int[][] expectedTokenSequences,
                            String[] tokenImage) {
     String eol = System.getProperty("line.separator", "\n");
-    StringBuffer expected = new StringBuffer();
+    StringBuilder expected = new StringBuilder();
     int maxSize = 0;
     for (int i = 0; i < expectedTokenSequences.length; i++) {
       if (maxSize < expectedTokenSequences[i].length) {
@@ -142,7 +142,7 @@ public class ParseException extends QueryNodeParseException {
    * string literal.
    */
   static String add_escapes(String str) {
-      StringBuffer retval = new StringBuffer();
+      StringBuilder retval = new StringBuilder();
       char ch;
       for (int i = 0; i < str.length(); i++) {
         switch (str.charAt(i))
@@ -187,4 +187,4 @@ public class ParseException extends QueryNodeParseException {
    }
 
 }
-/* JavaCC - OriginalChecksum=4263a02db9988d7a863aa97ad2f6dc67 (do not edit this line) */
+/* JavaCC - OriginalChecksum=81401c29cf6f9909761c636b4778ccc0 (do not edit this line) */

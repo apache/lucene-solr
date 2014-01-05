@@ -78,6 +78,9 @@
                      byline="true"
                      match="public QueryParser\(QueryParserTokenManager "
                      replace="protected QueryParser(QueryParserTokenManager "/>
+      <replace token="StringBuffer" value="StringBuilder" encoding="UTF-8">
+         <fileset dir="src/java/org/apache/solr/parser" includes="ParseException.java TokenMgrError.java"/>
+      </replace>
 
     </sequential>
   </target>

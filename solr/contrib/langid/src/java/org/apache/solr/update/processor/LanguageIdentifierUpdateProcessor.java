@@ -287,7 +287,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * Concatenates content from multiple fields
    */
   protected String concatFields(SolrInputDocument doc, String[] fields) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (String fieldName : inputFields) {
       log.debug("Appending field "+fieldName);
       if (doc.containsKey(fieldName)) {

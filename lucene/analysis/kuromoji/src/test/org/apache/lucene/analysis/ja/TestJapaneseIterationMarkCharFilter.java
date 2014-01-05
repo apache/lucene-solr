@@ -209,7 +209,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
   }
 
   private String readFully(Reader stream) throws IOException {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     int ch;
     while ((ch = stream.read()) != -1) {
       buffer.append((char) ch);
