@@ -78,14 +78,6 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
 
     LongRangeCounter counter = new LongRangeCounter(longRanges);
 
-    // Compute min & max over all ranges:
-    double minIncl = Double.POSITIVE_INFINITY;
-    double maxIncl = Double.NEGATIVE_INFINITY;
-    for(DoubleRange range : ranges) {
-      minIncl = Math.min(minIncl, range.minIncl);
-      maxIncl = Math.max(maxIncl, range.maxIncl);
-    }
-
     int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);

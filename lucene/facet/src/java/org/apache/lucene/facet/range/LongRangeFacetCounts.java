@@ -57,14 +57,6 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
 
     LongRange[] ranges = (LongRange[]) this.ranges;
 
-    // Compute min & max over all ranges:
-    long minIncl = Long.MAX_VALUE;
-    long maxIncl = Long.MIN_VALUE;
-    for(LongRange range : ranges) {
-      minIncl = Math.min(minIncl, range.minIncl);
-      maxIncl = Math.max(maxIncl, range.maxIncl);
-    }
-
     LongRangeCounter counter = new LongRangeCounter(ranges);
 
     int missingCount = 0;
