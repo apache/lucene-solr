@@ -59,6 +59,8 @@ Build
   of failing. It also instructs the user, how to run on SVN 1.8 working
   copies.  (Robert Muir, Uwe Schindler)
 
+* LUCENE-5383: fix changes2html to link pull requests (Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
