@@ -1272,110 +1272,131 @@ public class SearchHandler extends Handler {
     public BreakIterator breakIterator;
   }
 
+  /** Returns a ref. */
+  private static SearcherAndTaxonomy openSnapshotReader(IndexState state, IndexState.Gens snapshot, JSONObject diagnostics) throws IOException {
+    // TODO: this "reverse-NRT" is ridiculous: we acquire
+    // the latest reader, and from that do a reopen to an
+    // older snapshot ... this is inefficient if multiple
+    // snaphots share older segments that the latest reader
+    // does not share ... Lucene needs a reader pool
+    // somehow:
+    SearcherAndTaxonomy s = state.manager.acquire();
+    try {
+      // This returns a new reference to us, which
+      // is decRef'd in the finally clause after
+      // search is done:
+      long t0 = System.nanoTime();
+
+      // Returns a ref, which we return to caller:
+      IndexReader r = DirectoryReader.openIfChanged((DirectoryReader) s.searcher.getIndexReader(),
+                                                    state.snapshots.getIndexCommit(snapshot.indexGen));
+
+      // Ref that we return to caller
+      s.taxonomyReader.incRef();
+
+      SearcherAndTaxonomy result = new SearcherAndTaxonomy(new MyIndexSearcher(r), s.taxonomyReader);
+      state.slm.record(result.searcher);
+      long t1 = System.nanoTime();
+      if (diagnostics != null) {
+        diagnostics.put("newSnapshotSearcherOpenMS", ((t1-t0)/1000000.0));
+      }
+      return result;
+    } finally {
+      state.manager.release(s);
+    }
+  }
+
+  /** Returns the requested searcher + taxoReader, either
+   *  by indexGen, snapshot, version or just the current
+   *  (latest) one. */
   public static SearcherAndTaxonomy getSearcherAndTaxonomy(Request request, IndexState state, JSONObject diagnostics) throws InterruptedException, IOException {
     // Figure out which searcher to use:
-    final long searcherVersion;
-    final IndexState.Gens searcherSnapshot;
+    //final long searcherVersion;
+    //final IndexState.Gens searcherSnapshot;
+
+    SearcherAndTaxonomy s;
+
     if (request.hasParam("searcher")) {
-      Request r2 = request.getStruct("searcher");
-      if (r2.hasParam("indexGen")) {
-        long indexGen = r2.getLong("indexGen");
+
+      // Request wants a specific searcher:
+      Request searcher = request.getStruct("searcher");
+      if (searcher.hasParam("indexGen")) {
+
+        // Searcher is identified by an indexGen, returned
+        // from a previous indexing operation,
+        // e.g. addDocument.  Apps use this then they want
+        // to ensure a specific indexing change is visible:
         long t0 = System.nanoTime();
-        state.reopenThread.waitForGeneration(indexGen);
+        state.reopenThread.waitForGeneration(searcher.getLong("indexGen"));
         if (diagnostics != null) {
           diagnostics.put("nrtWaitMS", (System.nanoTime() - t0)/1000000);
         }
-        searcherVersion = -1;
-        searcherSnapshot = null;
-      } else if (r2.hasParam("version")) {
-        searcherVersion = r2.getLong("version");
-        searcherSnapshot = null;
-      } else if (r2.hasParam("snapshot")) {
-        searcherSnapshot = new IndexState.Gens(r2, "snapshot");
-        Long v = state.snapshotGenToVersion.get(searcherSnapshot.indexGen);
-        if (v == null) {
-          r2.fail("snapshot", "unrecognized snapshot \"" + searcherSnapshot.id + "\"");
-        }
-        searcherVersion = v.longValue();
+        s = state.manager.acquire();
+        state.slm.record(s.searcher);
       } else {
-        request.fail("searcher", "must specify exactly one of indexGen, version or snapshot");
-        // Dead code but compiler disagrees:
-        searcherSnapshot = null;
-        searcherVersion = -1;
+
+        long version;
+        IndexState.Gens snapshot;
+
+        if (searcher.hasParam("version")) {
+          // Searcher is identified by a version, returned by
+          // a prior search.  Apps use this when the user does
+          // a follow-on search (next page, drill down, etc.):
+          version = searcher.getLong("version");
+          snapshot = null;
+        } else {
+
+          if (searcher.hasParam("snapshot") == false) {
+            request.fail("searcher", "must specify exactly one of indexGen, version or snapshot");
+          }
+
+          // Searcher is identified by a specific snapshot,
+          // previously created by the app using
+          // createSnapshot.  This saves a point-in-time
+          // view of the index indefinitely, until the app
+          // calls deleteSnapshot.  Here, we resolve it to
+          // the corresponding version:
+          snapshot = new IndexState.Gens(searcher, "snapshot");
+          Long v = state.snapshotGenToVersion.get(snapshot.indexGen);
+          if (v == null) {
+            searcher.fail("snapshot", "unrecognized snapshot \"" + snapshot.id + "\"; please call createSnapshot first");
+          }
+          version = v.longValue();
+        }
+
+        // nocommit need to generify this so we can pull
+        // TaxoReader too:
+        IndexSearcher priorSearcher = state.slm.acquire(version);
+        if (priorSearcher == null) {
+          if (snapshot != null) {
+            // First time this snapshot is being searched
+            // against since this server started, or the call
+            // to createSnapshot didn't specify
+            // openSearcher=true; now open the reader:
+            s = openSnapshotReader(state, snapshot, diagnostics);
+          } else {
+            // Specific searcher version was requested,
+            // but this searcher has timed out.  App
+            // should present a "your session expired" to
+            // user:
+            request.fail("searcher", "This searcher has expired.");
+            // Dead code but compiler disagrees:
+            s = null;
+          }
+        } else {
+          // nocommit messy ... we pull an old searcher
+          // but the latest taxoReader ... necessary
+          // because SLM can't take taxo reader yet:
+          SearcherAndTaxonomy s2 = state.manager.acquire();
+          s = new SearcherAndTaxonomy(priorSearcher, s2.taxonomyReader);
+          s2.searcher.getIndexReader().decRef();
+        }
       }
     } else {
-      searcherSnapshot = null;
-      searcherVersion = -1;
-    }
-
-    // nocommit merge this method into here; don't need
-    // separate method w/ intermediate vars
-    return getSearcherAndTaxonomy(request, state, searcherVersion, searcherSnapshot, diagnostics);
-  }
-
-  /** Retrieve the {@link SearcherAndTaxonomy} by version or
-   *  snapshot. */
-  private static SearcherAndTaxonomy getSearcherAndTaxonomy(Request request, IndexState state, long version,
-                                                            IndexState.Gens snapshot, JSONObject diagnostics) throws IOException {
-    SearcherAndTaxonomy s;
-
-    if (version == -1) {
       // Request didn't specify any specific searcher;
       // just use the current (latest) searcher:
       s = state.manager.acquire();
       state.slm.record(s.searcher);
-    } else {
-      // Request specified a specific searcher by version:
-
-      // nocommit need to generify this so we can pull
-      // TaxoReader too:
-      IndexSearcher priorSearcher = state.slm.acquire(version);
-      if (priorSearcher == null) {
-        if (snapshot != null) {
-          // First time this snapshot is being searched
-          // against (and the call to createSnapshot
-          // didn't specify openSearcher=true); open the
-          // reader:
-
-          // TODO: this "reverse-NRT" is somewhat silly
-          // ... Lucene needs a reader pool somehow:
-          SearcherAndTaxonomy s2 = state.manager.acquire();
-          try {
-            // This returns a new reference to us, which
-            // is decRef'd in the finally clause after
-            // search is done:
-            long t0 = System.nanoTime();
-            IndexReader r = DirectoryReader.openIfChanged((DirectoryReader) s2.searcher.getIndexReader(),
-                                                          state.snapshots.getIndexCommit(snapshot.indexGen));
-            // nocommit messy:
-            s2.taxonomyReader.incRef();
-            s = new SearcherAndTaxonomy(new MyIndexSearcher(r), s2.taxonomyReader);
-            state.slm.record(s.searcher);
-            long t1 = System.nanoTime();
-            if (diagnostics != null) {
-              diagnostics.put("newSnapshotSearcherOpenMS", ((t1-t0)/1000000.0));
-            }
-          } finally {
-            state.manager.release(s2);
-          }
-        } else {
-          // Specific searcher version was requested,
-          // but this searcher has timed out.  App
-          // should present a "your session expired" to
-          // user:
-          request.fail("searcher", "This searcher has expired.");
-
-          // Dead code but compiler disagrees:
-          s = null;
-        }
-      } else {
-        // nocommit messy ... we pull an old searcher
-        // but the latest taxoReader ... necessary
-        // because SLM can't take taxo reader yet:
-        SearcherAndTaxonomy s2 = state.manager.acquire();
-        s = new SearcherAndTaxonomy(priorSearcher, s2.taxonomyReader);
-        s2.searcher.getIndexReader().decRef();
-      }
     }
 
     return s;
