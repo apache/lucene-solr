@@ -597,27 +597,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       } else {
         if (coreContainer.getZkController() != null) {
           // we are unloading, cancel any ongoing recovery
-          // so there are no races to publish state
-          // we will try to cancel again later before close
           if (core != null) {
             if (coreContainer.getZkController() != null) {
               core.getSolrCoreState().cancelRecovery();
             }
-          }
-          
-          log.info("Unregistering core " + core.getName() + " from cloudstate.");
-          try {
-            coreContainer.getZkController().unregister(cname,
-                core.getCoreDescriptor());
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
-          } catch (KeeperException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
           }
         }
         
@@ -671,6 +654,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
         if (closeCore) {
           core.close();
+        }
+        
+        if (coreContainer.getZkController() != null) {
+          log.info("Unregistering core " + core.getName() + " from cloudstate.");
+          try {
+            coreContainer.getZkController().unregister(cname,
+                core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
+          } catch (KeeperException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
+          }
         }
       }
     }
