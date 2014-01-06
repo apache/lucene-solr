@@ -115,13 +115,11 @@
       
       File basedir = new File(project.getProperty('basedir')).getAbsoluteFile();
       int baseLen = basedir.toString().length();
-      def convertRelative = {
-        file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
-      }
 
       // do some fake check, to verify if this is valid SVN working copy. If this fails ignore checks but log some useful message.
+      task.log('Initializing working copy...');
       try {
-        statusClient.doStatus(basedir, false);
+        wcClient.doInfo(basedir, SVNRevision.WORKING);
       } catch (SVNException ex) {
         def ec = ex.getErrorMessage().getErrorCode();
         int code = ec.getCode();
@@ -141,6 +139,10 @@
         }
       }
       
+      def convertRelative = {
+        file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
+      }
+
       Set missingProps = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
 
       task.log('Getting all versioned and unversioned files...');
