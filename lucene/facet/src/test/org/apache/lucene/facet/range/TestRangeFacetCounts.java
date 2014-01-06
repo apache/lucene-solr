@@ -541,8 +541,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Must truncate to float precision so that the
         // drill-down counts (which use NRQ.newFloatRange)
         // are correct:
-        min = (double) (float) min;
-        max = (double) (float) max;
+        min = (float) min;
+        max = (float) max;
 
         boolean minIncl;
         boolean maxIncl;
