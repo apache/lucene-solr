@@ -947,51 +947,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Ignore("See SOLR-1726")
-  @Test
-  public void testDeepPaging() throws Exception {
-    for (int i = 0; i < 1000; i++){
-      assertU(adoc("id", String.valueOf(i),  "foo_t", English.intToEnglish(i)));
-    }
-    assertU(commit());
-    SolrQueryRequest goldReq = null;
-    try {
-      goldReq = req("q", "foo_t:one", "rows", "50", "fl", "docid, score");
-      SolrQueryResponse gold = h.queryAndResponse("standard", goldReq);
-      ResultContext response = (ResultContext) gold.getValues().get("response");
-      assertQ("page: " + 0 + " failed",
-          req("q", "foo_t:one", "rows", "10", CommonParams.QT, "standard", "fl", "[docid], score"),
-          "*[count(//doc)=10]");
-      //ugh, what a painful way to get the document
-      DocIterator iterator = response.docs.subset(9, 1).iterator();
-      int lastDoc = iterator.nextDoc();
-      float lastScore = iterator.score();
-      for (int i = 1; i < 5; i++){
-        //page through some results
-        DocList subset = response.docs.subset(i * 10, 1);
-        iterator = subset.iterator();
-        int compareDoc = iterator.nextDoc();
-        float compareScore = iterator.score();
-        assertQ("page: " + i + " failed",
-            req("q", "foo_t:one", CommonParams.QT, "standard", "fl", "[docid], score",
-                "start", String.valueOf(i * 10), "rows", "1",  //only get one doc, and then compare it to gold
-                CommonParams.PAGEDOC, String.valueOf(lastDoc), CommonParams.PAGESCORE, String.valueOf(lastScore)),
-            "*[count(//doc)=1]",
-            "//float[@name='score'][.='" + compareScore + "']",
-            "//int[@name='[docid]'][.='" + compareDoc + "']"
-        );
-        lastScore = compareScore;
-        lastDoc = compareDoc;
-
-      }
-    } finally {
-      if (goldReq != null ) {
-        goldReq.close();
-      }
-    }
-  }
-
-
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
 
