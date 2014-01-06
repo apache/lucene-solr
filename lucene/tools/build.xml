@@ -28,7 +28,7 @@
 
   <path id="classpath">
     <!-- TODO: we need this for forbidden-apis to be happy, because it does not support "includeantruntime": -->
-    <path refid="ant-path"/>
+    <fileset dir="lib"/>
   </path>
 
   <path id="test.classpath"/>

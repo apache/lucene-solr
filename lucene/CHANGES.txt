@@ -109,6 +109,11 @@ Build
 * SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
   (Karl Wright via Shawn Heisey)
 
+* LUCENE-5385: "ant precommit" / "ant check-svn-working-copy" now work
+  for SVN 1.8 or GIT checkouts. The ANT target prints a warning instead
+  of failing. It also instructs the user, how to run on SVN 1.8 working
+  copies.  (Robert Muir, Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with

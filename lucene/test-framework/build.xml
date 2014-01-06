@@ -27,8 +27,7 @@
   <path id="classpath">
     <pathelement location="${common.dir}/build/core/classes/java"/>
     <pathelement location="${common.dir}/build/codecs/classes/java"/>
-    <path refid="junit-path"/>
-    <path refid="ant-path"/>
+    <fileset dir="lib"/>
   </path>
 
   <path id="test.classpath"/>
