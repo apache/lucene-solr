@@ -1000,10 +1000,27 @@ public final class ZkController {
     publish(cd, state, true);
   }
   
+  public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
+    publish(cd, state, true, false);
+  }
+  
   /**
    * Publish core state to overseer.
    */
-  public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final String state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
+    if (!forcePublish) {
+      SolrCore core = cc.getCore(cd.getName());
+      if (core == null) {
+        return;
+      }
+      try {
+        if (core.isClosed()) {
+          return;
+        }
+      } finally {
+        core.close();
+      }
+    }
     log.info("publishing core={} state={}", cd.getName(), state);
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
     Integer numShards = cd.getCloudDescriptor().getNumShards();
@@ -1359,7 +1376,7 @@ public final class ZkController {
         cloudDesc.setCoreNodeName(coreNodeName);
       }
 
-      publish(cd, ZkStateReader.DOWN, false);
+      publish(cd, ZkStateReader.DOWN, false, true);
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

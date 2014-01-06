@@ -97,6 +97,9 @@ Bug Fixes
 * SOLR-5564: hl.maxAlternateFieldLength should apply to original field when
   fallback is attempted (janhoy)
 
+* SOLR-5608: Don't allow a closed SolrCore to publish state to ZooKeeper.
+  (Mark Miller, Shawn Heisey)
+
 Optimizations
 ----------------------  
 
