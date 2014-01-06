@@ -123,7 +123,9 @@
       try {
         statusClient.doStatus(basedir, false);
       } catch (SVNException ex) {
-        int code = ex.getErrorMessage().getErrorCode().getCode();
+        def ec = ex.getErrorMessage().getErrorCode();
+        int code = ec.getCode();
+        int category = ec.getCategory();
         if (code == SVNErrorCode.WC_UNSUPPORTED_FORMAT.getCode()) {
           task.log('WARNING: Unsupported SVN working copy version! Disabling checks...', Project.MSG_WARN);
           task.log('If your working copy is on version 1.8 already, please pass -Dsvnkit.version=' + RECOMMENDED_SVNKIT_18 + ' to successfully run checks.', Project.MSG_INFO);
@@ -131,9 +133,11 @@
         } else if (code == SVNErrorCode.WC_NOT_DIRECTORY.getCode() || code == SVNErrorCode.WC_NOT_FILE.getCode()) {
           task.log('WARNING: Development directory is not an SVN checkout! Disabling checks...', Project.MSG_WARN);
           return;
-        } else {
+        } else if (category == SVNErrorCode.WC_CATEGORY) {
           task.log('WARNING: Development directory is not a valid SVN checkout (' + ex.getErrorMessage() + '). Disabling checks...', Project.MSG_WARN);
           return;
+        } else {
+          throw ex;
         }
       }
       
