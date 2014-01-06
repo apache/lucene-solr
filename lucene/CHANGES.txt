@@ -86,6 +86,12 @@ Changes in Runtime Behavior
   AlreadyClosedException if the refCount in incremented but
   is less that 1. (Simon Willnauer) 
 
+Documentation
+
+* LUCENE-5384: Add some tips for making tokenfilters and tokenizers 
+  to the analysis package overview.  
+  (Benson Margulies via Robert Muir - pull request #12)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
