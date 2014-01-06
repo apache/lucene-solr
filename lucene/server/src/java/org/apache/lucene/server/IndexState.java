@@ -1119,7 +1119,7 @@ public class IndexState implements Closeable {
       manager = new SearcherTaxonomyManager(writer.getIndexWriter(), true, new SearcherFactory() {
           @Override
           public IndexSearcher newSearcher(IndexReader r) throws IOException {
-            IndexSearcher searcher = new MyIndexSearcher(r);
+            IndexSearcher searcher = new MyIndexSearcher(r, IndexState.this);
             searcher.setSimilarity(sim);
             return searcher;
           }

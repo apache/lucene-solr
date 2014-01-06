@@ -50,12 +50,6 @@ public class TestSuggest extends ServerBaseTestCase {
     tempFile = null;
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    curIndexName = "index";
-  }
-
   public void testAnalyzingSuggest() throws Exception {
     Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
     BufferedWriter out = new BufferedWriter(fstream);
@@ -206,8 +200,8 @@ public class TestSuggest extends ServerBaseTestCase {
    *  stored fields, and weight from an expression */
   public void testFromStoredFieldsWithWeightExpression() throws Exception {
     curIndexName = "storedsuggestexpr";
-    _TestUtil.rmDir(new File("storedsuggestexpr"));
-    send("createIndex", "{rootDir: storedsuggestexpr}");
+    _TestUtil.rmDir(new File(curIndexName));
+    send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
     send("startIndex", "{}");
     send("registerFields",

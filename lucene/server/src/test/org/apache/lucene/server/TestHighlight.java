@@ -27,6 +27,7 @@ public class TestHighlight extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -36,12 +37,6 @@ public class TestHighlight extends ServerBaseTestCase {
   @AfterClass
   public static void fini() throws Exception {
     shutdownServer();
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    curIndexName = "index";
   }
 
   private static void registerFields() throws Exception {

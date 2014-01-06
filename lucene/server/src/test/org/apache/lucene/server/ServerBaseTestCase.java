@@ -54,14 +54,13 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   static int port;
 
   protected static String curIndexName = "index";
+  protected static boolean useDefaultIndex = true;
   
-  protected static File TEST_DIR;
   protected static File STATE_DIR;
   
   @BeforeClass
   public static void beforeClassServerBase() throws Exception {
     File dir = _TestUtil.getTempDir("ServerBase");
-    TEST_DIR = new File(dir, "test");
     STATE_DIR = new File(dir, "state");
   }
   
@@ -69,7 +68,20 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   public static void afterClassServerBase() throws Exception {
     // who sets this? netty? what a piece of crap
     System.clearProperty("sun.nio.ch.bugLevel");
-    TEST_DIR = STATE_DIR = null;
+    STATE_DIR = null;
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    if (useDefaultIndex) {
+      curIndexName = "index";
+
+      // Some tests bounce the server, so we need to restart
+      // the default "index" index for those tests that expect
+      // it to be running:
+      send("startIndex");
+    }
   }
 
   protected long addDocument(String json) throws Exception {
@@ -147,7 +159,8 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void createAndStartIndex() throws Exception {
-    send("createIndex", "{indexName: " + curIndexName + ", rootDir: " + TEST_DIR.getAbsolutePath() + "}");
+    _TestUtil.rmDir(new File(curIndexName));
+    send("createIndex", "{indexName: " + curIndexName + ", rootDir: " + curIndexName + "}");
     // Wait at most 1 msec for a searcher to reopen; this
     // value is too low for a production site but for
     // testing we want to minimize sleep time:
@@ -179,6 +192,13 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   protected static void commit() throws Exception {
     send("commit", "{indexName: " + curIndexName + "}");
+  }
+
+  /** Send a no-args command, or a command taking just
+   *  indexName which is automatically added (e.g., commit,
+   *  closeIndex, startIndex). */
+  protected static JSONObject send(String command) throws Exception {
+    return send(command, "{}");
   }
 
   protected static JSONObject send(String command, String args) throws Exception {

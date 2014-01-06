@@ -33,6 +33,7 @@ public class TestPlugins extends ServerBaseTestCase {
 
   @BeforeClass
   public static void init() throws Exception {
+    useDefaultIndex = false;
     File tmpDir = _TestUtil.getTempDir("TestPlugins");
     tmpDir.mkdirs();
     File zipFile = new File(tmpDir, "MockPlugin-0.1.zip");
@@ -44,7 +45,7 @@ public class TestPlugins extends ServerBaseTestCase {
     installPlugin(zipFile);
     startServer();
   }
-  
+
   static void addToZip(ZipOutputStream dest, String zipName, String resourcePath) throws Exception {
     ZipEntry file = new ZipEntry(zipName);
     dest.putNextEntry(file);
@@ -63,7 +64,6 @@ public class TestPlugins extends ServerBaseTestCase {
     shutdownServer();
   }
 
-
   // nocommit this test should install from zip file (call installPlugin(...))
 
   public void testMockPlugin() throws Exception {
@@ -76,8 +76,9 @@ public class TestPlugins extends ServerBaseTestCase {
     // nocommit need a "list plugins" API: verify foobar is there
     // nocommit send addDocument & verify change "took"
 
-    send("createIndex", "{rootDir: " + TEST_DIR.getAbsolutePath() + "}");
-    send("startIndex", "{}");
+    _TestUtil.rmDir(new File("index"));
+    send("createIndex", "{rootDir: index}");
+    send("startIndex");
     send("registerFields", "{fields: {id: {type: int, store: true, postingsFormat: Memory}, intfield: {type: int, store: true}}}");
     long gen = getLong(send("addDocument", "{fields: {id: 0, mockFoobar: 7}}"), "indexGen");
 

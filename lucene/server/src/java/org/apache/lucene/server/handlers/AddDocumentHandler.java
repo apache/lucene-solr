@@ -30,7 +30,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.server.Constants;
 import org.apache.lucene.server.FieldDef;
@@ -117,11 +119,11 @@ public class AddDocumentHandler extends Handler {
     }
 
     if (fd.faceted.equals("flat")) {
-      if (o instanceof JSONArray) {
-        // nocommit dead code?
-        assert false;
-        fail(fd.name, "value should be String when facet=flat; got array");
+
+      if (o instanceof List) { 
+        fail(fd.name, "value should be String when facet=flat; got JSONArray");
       }
+        
       doc.add(new FacetField(fd.name, o.toString()));
     } else if (fd.faceted.equals("hierarchy")) {
       if (o instanceof List) { 
@@ -130,6 +132,11 @@ public class AddDocumentHandler extends Handler {
       } else {
         doc.add(new FacetField(fd.name, o.toString()));
       }
+    } else if (fd.faceted.equals("sortedSetDocValues")) {
+      if (o instanceof List) { 
+        fail(fd.name, "value should be String when facet=sortedSetDocValues; got JSONArray");
+      }
+      doc.add(new SortedSetDocValuesFacetField(fd.name, o.toString()));
     }
 
     if (fd.highlighted) {
@@ -142,6 +149,8 @@ public class AddDocumentHandler extends Handler {
         fail(fd.name, "multiValued and hihglighted fields cannot contain INFORMATION_SEPARATOR (U+001F) character: this character is used internally when highlighting multi-valued fields");
       }
     }
+
+    // nocommit what about sorted set?
 
     // Separately index doc values:
     if (fd.fieldType.docValueType() == DocValuesType.BINARY ||

@@ -30,6 +30,7 @@ public class TestSnapshots extends ServerBaseTestCase {
   
   @BeforeClass
   public static void initClass() throws Exception {
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -76,7 +77,7 @@ public class TestSnapshots extends ServerBaseTestCase {
         if (ent.getKey().equals("id")) {
           continue;
         }
-        File dirPath = new File(TEST_DIR, ent.getKey());
+        File dirPath = new File(curIndexName, ent.getKey());
         File destDir = new File(backupDir, ent.getKey());
         destDir.mkdirs();
         for (Object sub : ((JSONArray) ent.getValue())) {
@@ -103,7 +104,7 @@ public class TestSnapshots extends ServerBaseTestCase {
         if (ent.getKey().equals("id")) {
           continue;
         }
-        File dirPath = new File(TEST_DIR, ent.getKey());
+        File dirPath = new File(curIndexName, ent.getKey());
         File destDir = new File(backupDir, ent.getKey());
         destDir.mkdirs();
         for (Object sub : ((JSONArray) ent.getValue())) {

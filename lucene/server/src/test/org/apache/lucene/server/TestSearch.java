@@ -42,12 +42,6 @@ public class TestSearch extends ServerBaseTestCase {
     shutdownServer();
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    curIndexName = "index";
-  }
-
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: WhitespaceAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");

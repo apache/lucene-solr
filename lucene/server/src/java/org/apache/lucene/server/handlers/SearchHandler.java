@@ -42,6 +42,8 @@ import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.facet.range.Range;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
@@ -1294,7 +1296,7 @@ public class SearchHandler extends Handler {
       // Ref that we return to caller
       s.taxonomyReader.incRef();
 
-      SearcherAndTaxonomy result = new SearcherAndTaxonomy(new MyIndexSearcher(r), s.taxonomyReader);
+      SearcherAndTaxonomy result = new SearcherAndTaxonomy(new MyIndexSearcher(r, state), s.taxonomyReader);
       state.slm.record(result.searcher);
       long t1 = System.nanoTime();
       if (diagnostics != null) {
@@ -1500,8 +1502,11 @@ public class SearchHandler extends Handler {
 
     // Holds already computed Facets, since more
     // than one dimension can share a single
-    // index field name:
+    // index field name.  We need one map for "normal" and
+    // another for SSDV facets because an app can index both
+    // into the same Lucene field (this is the default):
     Map<String,Facets> indexFieldNameToFacets = new HashMap<String,Facets>();
+    Map<String,Facets> indexFieldNameToSSDVFacets = new HashMap<String,Facets>();
 
     for(Object o2 : r.getList("facets")) {
       Request r2 = (Request) o2;
@@ -1542,9 +1547,20 @@ public class SearchHandler extends Handler {
           // Dead code but compiler disagrees:
           facetResult = null;
         }
+      } else if (fd.faceted.equals("sortedSetDocValues")) {
+        FacetsCollector c = dsDimMap.get(fd.name);
+        if (c == null) {
+          c = drillDowns;
+        }
+        SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(fd.name);
+        if (ssdvState == null) {
+          r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
+        }
+        SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
+        facetResult = facets.getTopChildren(r2.getInt("topN"), fd.name, new String[0]);
       } else {
 
-        // Taxonomy facets
+        // Taxonomy or SSDV facets
         if (fd.faceted.equals("no")) {
           r2.fail("path", "field \"" + fd.name + "\" was not registered with facet enabled");
         } else if (fd.faceted.equals("numericRange")) {
@@ -1573,7 +1589,16 @@ public class SearchHandler extends Handler {
 
         FacetsCollector c = dsDimMap.get(fd.name);
 
-        boolean useCachedOrds = r2.getBoolean("useOrdsCache");
+        boolean useCachedOrds;
+
+        if (r2.hasParam("useOrdsCache")) {
+          if (fd.faceted.equals("sortedSetDocValues")) {
+            r2.fail("useOrdsCache", "field: \"" + fd.name + "\": cannot useOrdsCache with facet=sortedSetDocValues");
+          }
+          useCachedOrds = r2.getBoolean("useOrdsCache");
+        } else {
+          useCachedOrds = false;
+        }
 
         if (c != null) {
           // This dimension was used in
@@ -1584,6 +1609,12 @@ public class SearchHandler extends Handler {
                                              s.taxonomyReader,
                                              state.facetsConfig, 
                                              c);
+          } else if (fd.faceted.equals("sortedSetDocValues")) {
+            SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(fd.name);
+            if (ssdvState == null) {
+              r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
+            }
+            facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
           } else {
             facets = new FastTaxonomyFacetCounts(s.taxonomyReader,
                                                  state.facetsConfig, 
@@ -1591,22 +1622,36 @@ public class SearchHandler extends Handler {
           }
         } else {
 
+          // nocommit test both normal & ssdv facets in same index
+
           // See if we already computed facet
           // counts for this indexFieldName:
           String indexFieldName = state.facetsConfig.getDimConfig(fd.name).indexFieldName;
-          facets = indexFieldNameToFacets.get(indexFieldName);
+          Map<String,Facets> facetsMap;
+          if (fd.faceted.equals("sortedSetDocValues")) {
+            facetsMap = indexFieldNameToSSDVFacets;
+          } else {
+            facetsMap = indexFieldNameToFacets;
+          }
+          facets = facetsMap.get(indexFieldName);
           if (facets == null) {
             if (useCachedOrds) {
               facets = new TaxonomyFacetCounts(state.ordsCache,
                                                s.taxonomyReader,
                                                state.facetsConfig, 
                                                c);
+            } else if (fd.faceted.equals("sortedSetDocValues")) {
+              SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(indexFieldName);
+              if (ssdvState == null) {
+                r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
+              }
+              facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
             } else {
               facets = new FastTaxonomyFacetCounts(s.taxonomyReader,
                                                    state.facetsConfig, 
                                                    drillDowns);
             }
-            indexFieldNameToFacets.put(indexFieldName, facets);
+            facetsMap.put(indexFieldName, facets);
           }
         }
 

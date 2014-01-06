@@ -94,6 +94,7 @@ public class CreateSnapshotHandler extends Handler {
         state.snapshotGenToVersion.put(c.getGeneration(), sis.getVersion());
 
         if (openSearcher) {
+          // nocommit share w/ SearchHandler's method:
           // TODO: this "reverse-NRT" is silly ... we need a reader
           // pool somehow:
           SearcherAndTaxonomy s2 = state.manager.acquire();
@@ -103,7 +104,7 @@ public class CreateSnapshotHandler extends Handler {
             // search is done:
             long t0 = System.nanoTime();
             IndexReader r = DirectoryReader.openIfChanged((DirectoryReader) s2.searcher.getIndexReader(), c);
-            IndexSearcher s = new MyIndexSearcher(r);
+            IndexSearcher s = new MyIndexSearcher(r, state);
             try {
               state.slm.record(s);
             } finally {

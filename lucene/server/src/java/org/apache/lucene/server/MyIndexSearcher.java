@@ -18,7 +18,10 @@ package org.apache.lucene.server;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,9 +31,20 @@ import org.apache.lucene.search.Weight;
  *  methods. */
 public class MyIndexSearcher extends IndexSearcher {
 
+  /** Maps each SSDV facets field to its reader state. */
+  public final Map<String,SortedSetDocValuesReaderState> ssdvStates;
+
   /** Sole constructor. */
-  public MyIndexSearcher(IndexReader r) {
+  public MyIndexSearcher(IndexReader r, IndexState state) throws IOException {
     super(r);
+
+    ssdvStates = new HashMap<String,SortedSetDocValuesReaderState>();
+    for (FieldDef field : state.getAllFields().values()) {
+      if ("sortedSetDocValues".equals(field.faceted)) {
+        // TODO: log how long this took
+        ssdvStates.put(field.name, new SortedSetDocValuesReaderState(r));
+      }
+    }
   }
 
   // nocommit ugly that we need to do this, to handle the

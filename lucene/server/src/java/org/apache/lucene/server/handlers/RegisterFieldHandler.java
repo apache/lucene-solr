@@ -320,7 +320,8 @@ public class RegisterFieldHandler extends Handler {
                   new EnumType("no", "No facets are indexed.",
                                "flat", "Facets are indexed with no hierarchy.",
                                "hierarchy", "Facets are indexed and are hierarchical.",
-                               "numericRange", "Compute facet counts for custom numeric ranges"),
+                               "numericRange", "Compute facet counts for custom numeric ranges",
+                               "sortedSetDocValues", "Use SortedSetDocValuesFacetCounts, which must be flat but don't require a taxonomy index"),
                   "no"),
         new Param("storeDocValues", "Whether to index the value into doc values.", new BooleanType(), false),
         new Param("liveValues", "Enable live values for this field: whenever this field is retrieved during a search, the live (most recetly added) value will always be returned; set this to the field name of your id (primary key) field.  Uses @lucene:core:org.apache.lucene.index.LiveFieldValues under the hood.", new StringType()),
@@ -654,6 +655,9 @@ public class RegisterFieldHandler extends Handler {
     } else {
       liveValuesIDField = null;
     }
+
+    // nocommit allow changing indexFieldName for
+    // SSDVFacets, too
 
     String facet = f.getEnum("facet");
     if (facet.equals("hierarchy") && type.equals("atom") && (ft.indexed() || ft.stored())) {

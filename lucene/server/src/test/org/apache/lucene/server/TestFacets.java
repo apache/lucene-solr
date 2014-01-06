@@ -17,8 +17,10 @@ package org.apache.lucene.server;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.util.Locale;
 
+import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -177,7 +179,6 @@ public class TestFacets extends ServerBaseTestCase {
     assertEquals("[\"2010\",1]", facets.get(2).toString());
   }    
 
-
   public void testDrillSideways() throws Exception {
     deleteAllDocs();
     send("addDocument", "{fields: {author: Bob}}");
@@ -214,6 +215,40 @@ public class TestFacets extends ServerBaseTestCase {
     assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
     assertEquals("Half", getString(o, "facets[0].counts[2][0]"));
     assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
+  }
+
+  public void testSortedSetDocValuesFacets() throws Exception {
+    curIndexName = "ssdvFacets";
+    _TestUtil.rmDir(new File(curIndexName));
+    send("createIndex", "{rootDir: " + curIndexName + "}");
+    send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
+    // nocommit server base test case should do this
+    // automatically somehow
+    send("liveSettings", "{minRefreshSec: 0.001}");
+    send("startIndex");
+    send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues}}}");
+    send("addDocument", "{fields: {ssdv: one}}");
+    send("addDocument", "{fields: {ssdv: two}}");
+    send("commit");
+    send("addDocument", "{fields: {ssdv: two}}");
+    send("addDocument", "{fields: {ssdv: three}}");
+    send("commit");
+    send("addDocument", "{fields: {ssdv: one}}");
+    long indexGen = getLong(send("addDocument", "{fields: {ssdv: one}}"), "indexGen");
+
+    for(int i=0;i<2;i++) {
+      // nocommit if i remove indexGen from here, the error
+      // message is bad: it says "each element in the array
+      // my have these params:..." when it shouldn't
+      JSONObject result = send("search", "{query: MatchAllDocsQuery, facets: [{dim: ssdv}], searcher: {indexGen: " + indexGen + "}}");
+      assertEquals(6, getInt(result, "totalHits"));
+      assertEquals("[[\"top\",6],[\"one\",3],[\"two\",2],[\"three\",1]]", getArray(result, "facets[0].counts").toString());
+
+      // Make sure suggest survives server restart:    
+      shutdownServer();
+      startServer();
+      send("startIndex");
+    }
   }
 }
 

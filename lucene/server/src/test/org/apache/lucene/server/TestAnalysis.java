@@ -40,12 +40,6 @@ public class TestAnalysis extends ServerBaseTestCase {
     shutdownServer();
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    curIndexName = "index";
-  }
-
   public void testCustomAnalysisChain() throws Exception {
     //send("{body: {type: text, analyzer: {tokenizer: StandardTokenizer, tokenFilters: [LowerCaseFilter]}}}", "registerFields");
     //send("{queryParser: {class: classic, defaultField: body}}", "settings");
