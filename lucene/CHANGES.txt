@@ -131,6 +131,9 @@ Bug fixes
   like when index / flush requests happen concurrently to the close or
   rollback call. (Simon Willnauer)
 
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
