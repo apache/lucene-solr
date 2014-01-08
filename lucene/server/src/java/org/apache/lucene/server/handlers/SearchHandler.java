@@ -2365,6 +2365,7 @@ public class SearchHandler extends Handler {
 
   /** Parses the {@link Request} into a {@link Locale}. */
   public static Locale getLocale(Request r) {
+    // nocommit cutover to bcp47
     Locale locale;
     if (!r.hasParam("variant")) {
       if (!r.hasParam("country")) {

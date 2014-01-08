@@ -108,6 +108,24 @@ public class TestVirtualFields extends ServerBaseTestCase {
     assertEquals(0.0f, getFloat(result, "hits[1].fields.logboost"), .0001f);
   }
 
+  public void testFieldUsingAnother() throws Exception {
+    deleteAllDocs();
+    send("registerFields", "{fields: {scoreboost2: {type: virtual, expression: '2*scoreboost'}}}");
+
+    send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
+    long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
+    JSONObject result = send("search", "{queryText: wind, sort: {fields: [{field: scoreboost2, reverse: true}]}, retrieveFields: [id, scoreboost2], searcher: {indexGen: " + gen + "}}");
+    assertEquals(2, getInt(result, "totalHits"));
+    assertEquals(1, getInt(result, "hits[0].fields.id"));
+    assertEquals(0, getInt(result, "hits[1].fields.id"));
+
+    assertEquals(1.60721f, getFloat(result, "hits[0].fields.scoreboost2"), .0001f);
+    assertEquals(0.22092f, getFloat(result, "hits[1].fields.scoreboost2"), .0001f);
+
+    assertEquals(1.60721f, getFloat(result, "hits[0].fields.sortFields.scoreboost2"), .0001f);
+    assertEquals(0.22092f, getFloat(result, "hits[1].fields.sortFields.scoreboost2"), .0001f);
+  }
+
   public void testWithScore1() throws Exception {
     deleteAllDocs();
     send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
