@@ -115,7 +115,6 @@ import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.MyIndexSearcher;
-import org.apache.lucene.server.RecencyBlendedFieldComparatorSource;
 import org.apache.lucene.server.SVJSONPassageFormatter;
 import org.apache.lucene.server.WholeMVJSONPassageFormatter;
 import org.apache.lucene.server.params.*;
@@ -668,8 +667,6 @@ public class SearchHandler extends Handler {
 
         if (fd.valueSource != null) {
           sf = fd.valueSource.getSortField(sub.getBoolean("reverse"));
-        } else if (fd.blendFieldName != null) {
-          sf = new SortField(fd.name, new RecencyBlendedFieldComparatorSource(fd.blendFieldName, fd.blendMaxBoost, timeStamp, fd.blendRange), sub.getBoolean("reverse"));
         } else {
           if ((fd.fieldType != null && fd.fieldType.docValueType() == null) ||
               (fd.fieldType == null && fd.valueSource == null)) {
@@ -1738,7 +1735,7 @@ public class SearchHandler extends Handler {
           values = null;
         }
 
-        FieldDef fd = new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, null, 0.0f, 0L, values);
+        FieldDef fd = new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, values);
 
         if (dynamicFields.put(name, fd) != null) {
           oneField.fail("name", "registered field or dynamic field \"" + name + "\" already exists");

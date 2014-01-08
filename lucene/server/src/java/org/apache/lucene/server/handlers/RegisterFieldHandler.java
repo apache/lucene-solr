@@ -306,10 +306,8 @@ public class RegisterFieldHandler extends Handler {
                                "double", "Double value.",
                                "int", "Int value.",
                                "long", "Long value.",
-                               // TODO: this is hacked up now ... only supports fixed "recency" blending ... ideally we would accept
-                               // a custom equation and parse & execute that:
                                // nocommit name this "dynamic" instead of "virtual"?
-                               "virtual", "Virtual (computed at search time) field, e.g. for blended sorting.")),
+                               "virtual", "Virtual field defined with a JavaScript expression.")),
         // nocommit rename to "search"?  ie, "I will search on/by this field's values"
         new Param("index", "True if the value should be indexed.", new BooleanType(), false),
         new Param("tokenize", "True if the value should be tokenized.", new BooleanType(), true),
@@ -331,7 +329,7 @@ public class RegisterFieldHandler extends Handler {
                   "no"),
         new Param("storeDocValues", "Whether to index the value into doc values.", new BooleanType(), false),
         new Param("liveValues", "Enable live values for this field: whenever this field is retrieved during a search, the live (most recetly added) value will always be returned; set this to the field name of your id (primary key) field.  Uses @lucene:core:org.apache.lucene.index.LiveFieldValues under the hood.", new StringType()),
-        new Param("numericPrecisionStep", "If the value is numeric, what precision step to use during indexing.", new IntType(), NumericUtils.PRECISION_STEP_DEFAULT),
+        new Param("numericPrecisionStep", "If the value is numeric, what precision step to use during indexing.", new IntType(), NumericUtils.PRECISION_STEP_DEFAULT), // nocommit is 16 better?
         new Param("omitNorms", "True if norms are omitted.", new BooleanType(), false),
         new Param("analyzer", "Analyzer to use for this field during indexing and searching.", ANALYZER_TYPE),
         new Param("indexAnalyzer", "Analyzer to use for this field during indexing.", ANALYZER_TYPE),
@@ -343,11 +341,6 @@ public class RegisterFieldHandler extends Handler {
                                "docsFreqsPositionsOffsets", "Index doc ids, term frequencies, positions and offsets."),
                   "docsFreqsPositions"),
         new Param("expression", "The JavaScript expression defining a virtual field's value (only used with type=virtual).", new StringType()),
-        new Param("recencyScoreBlend", "Only used with type=virtual, to describe how the virtual field blends with score.",
-                  new StructType(
-                                 new Param("timeStampField", "Field holding timestamp value (must be type long, with sort=true)", new StringType()),
-                                 new Param("maxBoost", "Maximum boost to apply to the relevance score (for the most recent matches)", new FloatType()),
-                                 new Param("range", "Age beyond which no boosting occurs", new LongType()))),
         new Param("termVectors", "Whether/how term vectors should be indexed.",
                   new EnumType("terms", "Index terms and freqs only.",
                                "termsPositions", "Index terms, freqs and positions.",
@@ -387,63 +380,41 @@ public class RegisterFieldHandler extends Handler {
   }
 
   private FieldDef parseOneVirtualFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
-    if (r.hasParam("expression")) {
-      String exprString = r.getString("expression");
-      Expression expr;
+    String exprString = r.getString("expression");
+    Expression expr;
 
-      try {
-        expr = JavascriptCompiler.compile(exprString);
-      } catch (ParseException pe) {
-        // Static error (e.g. bad JavaScript syntax):
-        r.fail("expression", "could not parse expression: " + pe, pe);
+    try {
+      expr = JavascriptCompiler.compile(exprString);
+    } catch (ParseException pe) {
+      // Static error (e.g. bad JavaScript syntax):
+      r.fail("expression", "could not parse expression: " + pe, pe);
 
-        // Dead code but compiler disagrees:
-        expr = null;
-      } catch (IllegalArgumentException iae) {
-        // Static error (e.g. bad JavaScript syntax):
-        r.fail("expression", "could not parse expression: " + iae, iae);
+      // Dead code but compiler disagrees:
+      expr = null;
+    } catch (IllegalArgumentException iae) {
+      // Static error (e.g. bad JavaScript syntax):
+      r.fail("expression", "could not parse expression: " + iae, iae);
 
-        // Dead code but compiler disagrees:
-        expr = null;
-      }
-
-      Map<String,FieldDef> allFields = new HashMap<String,FieldDef>(state.getAllFields());
-      allFields.putAll(pendingFieldDefs);
-
-      ValueSource values;
-      try {
-        values = expr.getValueSource(new FieldDefBindings(allFields));
-      } catch (RuntimeException re) {
-        // Dynamic error (e.g. referred to a field that
-        // doesn't exist):
-        r.fail("expression", "could not evaluate expression: " + re, re);
-
-        // Dead code but compiler disagrees:
-        values = null;
-      }
-
-      return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, null, 0.0f, 0L, values);
-
-    } else {
-      // nocommit cutover all tests to expression fields and remove this hack:
-      Request r2 = r.getStruct("recencyScoreBlend");
-      String timeStampField = r2.getString("timeStampField");
-      FieldDef fd;
-      try {
-        fd = state.getField(timeStampField);
-      } catch (IllegalArgumentException iae) {
-        fd = pendingFieldDefs.get(timeStampField);
-        if (fd == null) {
-          r2.fail("timeStampField", "field \"" + timeStampField + "\" was not yet registered");
-        }
-      }
-      if (fd.fieldType.docValueType() != DocValuesType.NUMERIC) {
-        r2.fail("timeStampField", "field \"" + fd.name + "\" must be registered with type=long and sort=true");
-      }
-      float maxBoost = r2.getFloat("maxBoost");
-      long range = r2.getLong("range");
-      return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, fd.name, maxBoost, range, null);
+      // Dead code but compiler disagrees:
+      expr = null;
     }
+
+    Map<String,FieldDef> allFields = new HashMap<String,FieldDef>(state.getAllFields());
+    allFields.putAll(pendingFieldDefs);
+
+    ValueSource values;
+    try {
+      values = expr.getValueSource(new FieldDefBindings(allFields));
+    } catch (RuntimeException re) {
+      // Dynamic error (e.g. referred to a field that
+      // doesn't exist):
+      r.fail("expression", "could not evaluate expression: " + re, re);
+
+      // Dead code but compiler disagrees:
+      values = null;
+    }
+
+    return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, values);
   }
 
   private FieldDef parseOneFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
@@ -735,7 +706,7 @@ public class RegisterFieldHandler extends Handler {
     // nocommit facetsConfig.setIndexFieldName
     // nocommit facetsConfig.setRequireDimCount
 
-    return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l, null);
+    return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null);
   }
 
   /** Messy: we need this for indexed-but-not-tokenized

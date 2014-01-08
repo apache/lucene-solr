@@ -66,22 +66,13 @@ public class FieldDef {
   /** Field name to use as the ID field for live-values. */
   public final String liveValuesIDField;
 
-  /** Time-stamp field name for recency-blended sorting. */
-  public final String blendFieldName;
-
-  /** Maximum boost from recency. */
-  public final float blendMaxBoost;
-
-  /** Maximum age for recency boosting to have an effect (seconds). */
-  public final long blendRange;
-
   /** Only set for a virtual field (expression). */
   public final ValueSource valueSource;
 
   /** Sole constructor. */
   public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean multiValued,
                   Similarity sim, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean highlighted, String liveValuesIDField,
-                  String blendFieldName, float blendMaxBoost, long blendRange, ValueSource valueSource) {
+                  ValueSource valueSource) {
     this.name = name;
     this.fieldType = fieldType;
     if (fieldType != null) {
@@ -105,10 +96,6 @@ public class FieldDef {
     } else {
       fieldTypeNoDV = null;
     }
-    // nocommit make this a subclass somehow
-    this.blendFieldName = blendFieldName;
-    this.blendMaxBoost = blendMaxBoost;
-    this.blendRange = blendRange;
     this.valueSource = valueSource;
   }
 }

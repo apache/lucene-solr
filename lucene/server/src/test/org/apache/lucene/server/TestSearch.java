@@ -279,8 +279,8 @@ public class TestSearch extends ServerBaseTestCase {
     curIndexName = "recency";
     File dir = new File(_TestUtil.getTempDir("recency"), "root");
     send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
-    send("startIndex", "{}");
-    send("registerFields", "{fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}, blend: {type: virtual, recencyScoreBlend: {timeStampField: timestamp, maxBoost: 2.0, range: 30}}}}");
+    send("startIndex");
+    send("registerFields", "{fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
 
     long t = System.currentTimeMillis()/1000;
     send("addDocument", "{fields: {body: 'this is some text', timestamp: " + (t-100) + "}}");
@@ -293,17 +293,23 @@ public class TestSearch extends ServerBaseTestCase {
       assertEquals(0, getInt(result, "hits[0].doc"));
       assertEquals(1, getInt(result, "hits[1].doc"));
 
-      // Relevance + recency changes the order:
-      result = send("search", "{queryText: text, sort: {fields: [{field: blend}]}, searcher: {indexGen: " + gen + "}}");
+      // Blended relevance + recency changes the order:
+      t = System.currentTimeMillis()/1000;
+      result = send("search",
+                    "{queryText: text, virtualFields: [" + 
+                     "{name: age,   expression: '" + t + " - timestamp'}, " + 
+                     "{name: boost, expression: '(age >= 30) ? 1.0 : (2.0 * (30. - age) / 30)'}, " +
+                     "{name: blend, expression: 'boost * _score'}], " + 
+                    " sort: {fields: [{field: blend, reverse: true}]}, retrieveFields: [age, boost], searcher: {indexGen: " + gen + "}}");
       assertEquals(2, getInt(result, "totalHits"));
       assertEquals(1, getInt(result, "hits[0].doc"));
       assertEquals(0, getInt(result, "hits[1].doc"));
+      assertTrue(getFloat(result, "hits[0].fields.boost") > 1.0f);
+      assertEquals(1.0, getFloat(result, "hits[1].fields.boost"), 0.0001f);
 
       // Make sure this survives restart:
-      send("stopIndex", "{}");
-      send("startIndex", "{}");
+      send("stopIndex");
+      send("startIndex");
     }
   }
-
-  // nocommit test grouping
 }
