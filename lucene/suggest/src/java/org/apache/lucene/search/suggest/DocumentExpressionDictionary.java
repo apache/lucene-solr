@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
+import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -66,7 +67,7 @@ import org.apache.lucene.util.BytesRefIterator;
 public class DocumentExpressionDictionary extends DocumentDictionary {
   
   private final ValueSource weightsValueSource;
-  
+
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms and computes the corresponding weights of the term by compiling the
@@ -77,7 +78,7 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
       String weightExpression, Set<SortField> sortFields) {
     this(reader, field, weightExpression, sortFields, null);
   }
-  
+
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>payloadField</code> for the corresponding payloads
@@ -87,6 +88,17 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
    */
   public DocumentExpressionDictionary(IndexReader reader, String field,
       String weightExpression, Set<SortField> sortFields, String payload) {
+    this(reader, field, weightExpression, buildBindings(sortFields), payload);
+  }
+
+  /**
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms, <code>payloadField</code> for the corresponding payloads
+   * and computes the corresponding weights of the term by compiling the
+   * user-defined <code>weightExpression</code> using the provided bindings.
+   */
+  public DocumentExpressionDictionary(IndexReader reader, String field,
+      String weightExpression, Bindings bindings, String payload) {
     super(reader, field, null, payload);
     Expression expression = null;
     try {
@@ -94,12 +106,15 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
     } catch (ParseException e) {
       throw new RuntimeException();
     }
+    weightsValueSource = expression.getValueSource(bindings);
+  }
+
+  private static Bindings buildBindings(Set<SortField> sortFields) {
     SimpleBindings bindings = new SimpleBindings();
     for (SortField sortField: sortFields) {
       bindings.add(sortField);
     }
-    
-    weightsValueSource = expression.getValueSource(bindings);
+    return bindings;
   }
   
   /** 

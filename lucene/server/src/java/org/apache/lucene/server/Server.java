@@ -433,6 +433,11 @@ public class Server {
       if (e.getCause() instanceof RequestFailedException) {
         RequestFailedException rfe = (RequestFailedException) e.getCause();
         pw.write(rfe.path + ": " + rfe.reason);
+        // TODO?
+        //Throwable cause = rfe.getCause();
+        //if (cause != null) {
+        //pw.write("\n\nCaused by:\n\n" + cause);
+        //}
       } else {
         e.getCause().printStackTrace(pw);
       }

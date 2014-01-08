@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.text.Collator;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,13 +71,17 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.suggest.analyzing.SuggestStopFilter;
 import org.apache.lucene.server.FieldDef;
+import org.apache.lucene.server.FieldDefBindings;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
@@ -87,7 +92,6 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
@@ -304,7 +308,9 @@ public class RegisterFieldHandler extends Handler {
                                "long", "Long value.",
                                // TODO: this is hacked up now ... only supports fixed "recency" blending ... ideally we would accept
                                // a custom equation and parse & execute that:
+                               // nocommit name this "dynamic" instead of "virtual"?
                                "virtual", "Virtual (computed at search time) field, e.g. for blended sorting.")),
+        // nocommit rename to "search"?  ie, "I will search on/by this field's values"
         new Param("index", "True if the value should be indexed.", new BooleanType(), false),
         new Param("tokenize", "True if the value should be tokenized.", new BooleanType(), true),
         new Param("store", "True if the value should be stored.", new BooleanType(), false),
@@ -336,6 +342,7 @@ public class RegisterFieldHandler extends Handler {
                                "docsFreqsPositions", "Index doc ids, term frequences and positions.",
                                "docsFreqsPositionsOffsets", "Index doc ids, term frequencies, positions and offsets."),
                   "docsFreqsPositions"),
+        new Param("expression", "The JavaScript expression defining a virtual field's value (only used with type=virtual).", new StringType()),
         new Param("recencyScoreBlend", "Only used with type=virtual, to describe how the virtual field blends with score.",
                   new StructType(
                                  new Param("timeStampField", "Field holding timestamp value (must be type long, with sort=true)", new StringType()),
@@ -380,23 +387,63 @@ public class RegisterFieldHandler extends Handler {
   }
 
   private FieldDef parseOneVirtualFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
-    Request r2 = r.getStruct("recencyScoreBlend");
-    String timeStampField = r2.getString("timeStampField");
-    FieldDef fd;
-    try {
-      fd = state.getField(timeStampField);
-    } catch (IllegalArgumentException iae) {
-      fd = pendingFieldDefs.get(timeStampField);
-      if (fd == null) {
-        r2.fail("timeStampField", "field \"" + timeStampField + "\" was not yet registered");
+    if (r.hasParam("expression")) {
+      String exprString = r.getString("expression");
+      Expression expr;
+
+      try {
+        expr = JavascriptCompiler.compile(exprString);
+      } catch (ParseException pe) {
+        // Static error (e.g. bad JavaScript syntax):
+        r.fail("expression", "could not parse expression: " + pe, pe);
+
+        // Dead code but compiler disagrees:
+        expr = null;
+      } catch (IllegalArgumentException iae) {
+        // Static error (e.g. bad JavaScript syntax):
+        r.fail("expression", "could not parse expression: " + iae, iae);
+
+        // Dead code but compiler disagrees:
+        expr = null;
       }
+
+      Map<String,FieldDef> allFields = new HashMap<String,FieldDef>(state.getAllFields());
+      allFields.putAll(pendingFieldDefs);
+
+      ValueSource values;
+      try {
+        values = expr.getValueSource(new FieldDefBindings(allFields));
+      } catch (RuntimeException re) {
+        // Dynamic error (e.g. referred to a field that
+        // doesn't exist):
+        r.fail("expression", "could not evaluate expression: " + re, re);
+
+        // Dead code but compiler disagrees:
+        values = null;
+      }
+
+      return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, null, 0.0f, 0L, values);
+
+    } else {
+      // nocommit cutover all tests to expression fields and remove this hack:
+      Request r2 = r.getStruct("recencyScoreBlend");
+      String timeStampField = r2.getString("timeStampField");
+      FieldDef fd;
+      try {
+        fd = state.getField(timeStampField);
+      } catch (IllegalArgumentException iae) {
+        fd = pendingFieldDefs.get(timeStampField);
+        if (fd == null) {
+          r2.fail("timeStampField", "field \"" + timeStampField + "\" was not yet registered");
+        }
+      }
+      if (fd.fieldType.docValueType() != DocValuesType.NUMERIC) {
+        r2.fail("timeStampField", "field \"" + fd.name + "\" must be registered with type=long and sort=true");
+      }
+      float maxBoost = r2.getFloat("maxBoost");
+      long range = r2.getLong("range");
+      return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, fd.name, maxBoost, range, null);
     }
-    if (fd.fieldType.docValueType() != DocValuesType.NUMERIC) {
-      r2.fail("timeStampField", "field \"" + fd.name + "\" must be registered with type=long and sort=true");
-    }
-    float maxBoost = r2.getFloat("maxBoost");
-    long range = r2.getLong("range");
-    return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, fd.name, maxBoost, range);
   }
 
   private FieldDef parseOneFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
@@ -688,7 +735,7 @@ public class RegisterFieldHandler extends Handler {
     // nocommit facetsConfig.setIndexFieldName
     // nocommit facetsConfig.setRequireDimCount
 
-    return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l);
+    return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null, 0.0f, 0l, null);
   }
 
   /** Messy: we need this for indexed-but-not-tokenized
@@ -873,7 +920,7 @@ public class RegisterFieldHandler extends Handler {
       JSONObject o;
       try {
         o = (JSONObject) JSONValue.parseStrict(json);
-      } catch (ParseException pe) {
+      } catch (net.minidev.json.parser.ParseException pe) {
         // BUG
         throw new RuntimeException(pe);
       }
@@ -1048,6 +1095,11 @@ public class RegisterFieldHandler extends Handler {
 
       Set<String> seen = new HashSet<String>();
 
+      // We make two passes.  In the first pass, we do the
+      // "real" fields, and second pass does the virtual
+      // fields, so that any fields the virtual field
+      // references are guaranteed to exist, in a single
+      // request (or, from the saved json):
       for(int pass=0;pass<2;pass++) {
         Iterator<Map.Entry<String,Object>> it = r.getParams();
         while(it.hasNext()) {
@@ -1098,7 +1150,7 @@ public class RegisterFieldHandler extends Handler {
           JSONObject o;
           try {
             o = (JSONObject) JSONValue.parseStrict(saveStates.get(ent.getKey()));
-          } catch (ParseException pe) {
+          } catch (net.minidev.json.parser.ParseException pe) {
             // BUG
             assert false;
             throw new RuntimeException(pe);

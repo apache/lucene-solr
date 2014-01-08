@@ -19,12 +19,14 @@ package org.apache.lucene.server;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.similarities.Similarity;
 
 /** Defines the type of one field. */
 public class FieldDef {
   /** Field name. */
   public final String name;
+
   /** {@link FieldType}, used during indexing. */
   public final FieldType fieldType;
 
@@ -73,10 +75,13 @@ public class FieldDef {
   /** Maximum age for recency boosting to have an effect (seconds). */
   public final long blendRange;
 
+  /** Only set for a virtual field (expression). */
+  public final ValueSource valueSource;
+
   /** Sole constructor. */
   public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean multiValued,
                   Similarity sim, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean highlighted, String liveValuesIDField,
-                  String blendFieldName, float blendMaxBoost, long blendRange) {
+                  String blendFieldName, float blendMaxBoost, long blendRange, ValueSource valueSource) {
     this.name = name;
     this.fieldType = fieldType;
     if (fieldType != null) {
@@ -104,5 +109,6 @@ public class FieldDef {
     this.blendFieldName = blendFieldName;
     this.blendMaxBoost = blendMaxBoost;
     this.blendRange = blendRange;
+    this.valueSource = valueSource;
   }
 }

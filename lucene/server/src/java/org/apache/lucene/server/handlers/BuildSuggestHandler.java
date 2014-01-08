@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,11 +33,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
-import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.suggest.DocumentDictionary;
 import org.apache.lucene.search.suggest.DocumentExpressionDictionary;
 import org.apache.lucene.search.suggest.InputIterator;
@@ -47,7 +42,6 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
-import org.apache.lucene.server.FieldDef;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.FromFileTermFreqIterator;
 import org.apache.lucene.server.GlobalState;
@@ -430,32 +424,10 @@ public class BuildSuggestHandler extends Handler {
       } else {
         // Weight is an expression; add bindings for all
         // numeric DV fields:
-        Set<SortField> sortFields = new HashSet<SortField>();
-        for(FieldDef fd : state.getAllFields().values()) {
-          if (fd.fieldType != null && fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
-            SortField sortField;
-            if (fd.valueType.equals("int")) {
-              sortField = new SortField(fd.name, SortField.Type.INT);
-            } else if (fd.valueType.equals("float")) {
-              sortField = new SortField(fd.name, SortField.Type.FLOAT);
-            } else if (fd.valueType.equals("long")) {
-              sortField = new SortField(fd.name, SortField.Type.LONG);
-            } else if (fd.valueType.equals("double")) {
-              sortField = new SortField(fd.name, SortField.Type.DOUBLE);
-            } else {
-              // Dead code today, but if new enum value is
-              // added this is live:
-              sortField = null;
-              assert false: "missing enum value in switch";
-            }
-            sortFields.add(sortField);
-          }
-        }
-
         dict = new DocumentExpressionDictionary(searcher.searcher.getIndexReader(),
                                                 suggestField,
                                                 source.getString("weightExpression"),
-                                                sortFields,
+                                                state.exprBindings,
                                                 payloadField);
       }
 

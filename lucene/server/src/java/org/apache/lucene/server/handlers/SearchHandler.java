@@ -41,20 +41,21 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
-import org.apache.lucene.facet.range.Range;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -631,13 +632,18 @@ public class SearchHandler extends Handler {
     return config;
   }
 
-  private static Sort parseSort(long timeStamp, IndexState state, List<Object> fields) {
+  /** Decodes a list of Request into the corresponding
+   *  Sort. */
+  private static Sort parseSort(long timeStamp, IndexState state, List<Object> fields, List<String> sortFieldNames) {
     List<SortField> sortFields = new ArrayList<SortField>();
     for(Object _sub : fields) {
       Request sub = (Request) _sub;
 
       String fieldName = sub.getString("field");
       SortField sf;
+      if (sortFieldNames != null) {
+        sortFieldNames.add(fieldName);
+      }
       if (fieldName.equals("docid")) {
         sf = SortField.FIELD_DOC;
       } else if (fieldName.equals("score")) {
@@ -652,11 +658,13 @@ public class SearchHandler extends Handler {
           fd = null;
         }
 
-        if (fd.blendFieldName != null) {
+        if (fd.valueSource != null) {
+          sf = fd.valueSource.getSortField(sub.getBoolean("reverse"));
+        } else if (fd.blendFieldName != null) {
           sf = new SortField(fd.name, new RecencyBlendedFieldComparatorSource(fd.blendFieldName, fd.blendMaxBoost, timeStamp, fd.blendRange), sub.getBoolean("reverse"));
         } else {
-
-          if (fd.fieldType.docValueType() == null) {
+          if ((fd.fieldType != null && fd.fieldType.docValueType() == null) ||
+              (fd.fieldType == null && fd.valueSource == null)) {
             sub.fail("field", "field \"" + fieldName + "\" was not registered with sort=true");
           }
 
@@ -709,7 +717,8 @@ public class SearchHandler extends Handler {
   private void fillFields(IndexState state, HighlighterConfig highlighter, IndexSearcher s,
                           JSONObject result, ScoreDoc hit, Set<String> fields,
                           Map<String,String[]> highlights,
-                          int hiliteHitIndex, Sort sort) throws IOException {
+                          int hiliteHitIndex, Sort sort,
+                          List<String> sortFieldNames) throws IOException {
     //System.out.println("fillFields fields=" + fields);
     if (fields != null) {
 
@@ -725,21 +734,39 @@ public class SearchHandler extends Handler {
         // We detect invalid field above:
         assert fd != null;
 
-        Object v = doc.get(name);
-        if (v != null) {
-          // We caught same field name above:
-          assert !result.containsKey(name);
+        // nocommit also allow pulling from doc values
+        if (fd.valueSource != null) {
+          List<AtomicReaderContext> leaves = s.getIndexReader().leaves();
+          AtomicReaderContext leaf = leaves.get(ReaderUtil.subIndex(hit.doc, leaves));
+          Map<String,Object> context = new HashMap<String,Object>();
 
-          if (fd.multiValued == false) {
-            result.put(name, convertType(fd, v));
-          } else {
-            JSONArray arr = new JSONArray();
-            result.put(name, arr);
-            if (!(v instanceof List)) {
-              arr.add(convertType(fd, v));
+          // nocommit: should we only do this if "wantsScores"?
+          // where do we get that boolean!!
+          int docID = hit.doc - leaf.docBase;
+
+          // nocommit not quite right?  what if app didn't
+          // sort by score but uses it in the expr that it
+          // is sorting by?
+          context.put("scorer", new CannedScorer(docID, hit.score));
+          FunctionValues segValues = fd.valueSource.getValues(context, leaf);
+          result.put(name, segValues.doubleVal(docID));
+        } else {
+          Object v = doc.get(name);
+          if (v != null) {
+            // We caught same field name above:
+            assert !result.containsKey(name);
+
+            if (fd.multiValued == false) {
+              result.put(name, convertType(fd, v));
             } else {
-              for(Object o : (List<Object>) v) {
-                arr.add(convertType(fd, o));
+              JSONArray arr = new JSONArray();
+              result.put(name, arr);
+              if (!(v instanceof List)) {
+                arr.add(convertType(fd, v));
+              } else {
+                for(Object o : (List<Object>) v) {
+                  arr.add(convertType(fd, o));
+                }
               }
             }
           }
@@ -768,21 +795,15 @@ public class SearchHandler extends Handler {
         result.put("sortFields", o4);
         SortField[] sortFields = sort.getSort();
         for(int i=0;i<sortFields.length;i++) {
+          // We must use a separate list because an expr's
+          // SortField doesn't know the virtual field name
+          // (it returns the expression string from
+          // .getField):
+          String fieldName = sortFieldNames.get(i);
           if (fd.fields[i] instanceof BytesRef) {
-            o4.put(sortFields[i].getField(),
-                   ((BytesRef) fd.fields[i]).utf8ToString());
+            o4.put(fieldName, ((BytesRef) fd.fields[i]).utf8ToString());
           } else {
-            String field = sortFields[i].getField();
-            if (field == null) {
-              if (sortFields[i] == SortField.FIELD_DOC) {
-                field = "docid";
-              } else if (sortFields[i] == SortField.FIELD_SCORE) {
-                field = "score";
-              } else {
-                throw new AssertionError();
-              }
-            }
-            o4.put(field, fd.fields[i]);
+            o4.put(fieldName, fd.fields[i]);
           }
         }
       }
@@ -1099,7 +1120,7 @@ public class SearchHandler extends Handler {
         Request childHits = pr.r.getStruct("childHits");
         BlockJoinQueryChild child = new BlockJoinQueryChild();
         if (childHits.hasParam("sort")) {
-          child.sort = parseSort(timeStamp, state, childHits.getList("sort"));
+          child.sort = parseSort(timeStamp, state, childHits.getList("sort"), null);
         }
         child.maxChildren = childHits.getInt("maxChildren");
         child.trackScores = childHits.getBoolean("trackScores");
@@ -1757,8 +1778,15 @@ public class SearchHandler extends Handler {
         if (!highlight.equals("no") && !fd.highlighted) {
           r.fail("retrieveFields", "field \"" + field + "\" was not indexed with highlight=true");
         }
-        if (!fd.fieldType.stored()) {
-          // nocommit allow pulling from DV?  need separate dvFields?
+
+        // nocommit allow pulling from DV?  need separate
+        // dvFields?
+
+        if (fd.fieldType == null) {
+          if (fd.valueSource == null) {
+            r.fail("retrieveFields", "field \"" + field + "\" was not registered with store=true");
+          }
+        } else if (!fd.fieldType.stored()) {
           r.fail("retrieveFields", "field \"" + field + "\" was not registered with store=true");
         }
       }
@@ -1812,12 +1840,15 @@ public class SearchHandler extends Handler {
       Sort groupSort = null;
       Sort sort;
       Request sortRequest;
+      List<String> sortFieldNames;
       if (r.hasParam("sort")) {
         sortRequest = r.getStruct("sort");
-        sort = parseSort(timeStamp, state, sortRequest.getList("fields"));
+        sortFieldNames = new ArrayList<String>();
+        sort = parseSort(timeStamp, state, sortRequest.getList("fields"), sortFieldNames);
       } else {
         sortRequest = null;
         sort = null;
+        sortFieldNames = null;
       }
 
       int topHits = r.getInt("topHits");
@@ -1838,7 +1869,7 @@ public class SearchHandler extends Handler {
         }
 
         if (grouping.hasParam("sort")) {
-          groupSort = parseSort(timeStamp, state, grouping.getList("sort"));
+          groupSort = parseSort(timeStamp, state, grouping.getList("sort"), null);
         } else {
           groupSort = Sort.RELEVANCE;
         }
@@ -2155,7 +2186,7 @@ public class SearchHandler extends Handler {
               if (fields != null || highlightFields != null) {
                 JSONObject o7 = new JSONObject();
                 o6.put("fields", o7);
-                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, sort);
+                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, sort, sortFieldNames);
               }
 
               hitIndex++;
@@ -2201,7 +2232,7 @@ public class SearchHandler extends Handler {
               // nocommit where does parent score come
               // from ...
               ScoreDoc sd = new ScoreDoc(group.groupValue.intValue(), 0.0f);
-              fillFields(state, highlighter, s.searcher, o4, sd, fields, highlights, hitIndex, sort);
+              fillFields(state, highlighter, s.searcher, o4, sd, fields, highlights, hitIndex, sort, sortFieldNames);
             }
             hitIndex++;
 
@@ -2236,7 +2267,7 @@ public class SearchHandler extends Handler {
               if (fields != null || highlightFields != null) {
                 JSONObject o7 = new JSONObject();
                 o6.put("fields", o7);
-                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort);
+                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort, null);
               }
 
               hitIndex++;
@@ -2265,7 +2296,7 @@ public class SearchHandler extends Handler {
           if (fields != null || highlightFields != null) {
             JSONObject o4 = new JSONObject();
             o3.put("fields", o4);
-            fillFields(state, highlighter, s.searcher, o4, hit, fields, highlights, hitIndex, sort);
+            fillFields(state, highlighter, s.searcher, o4, hit, fields, highlights, hitIndex, sort, sortFieldNames);
           }
         }
       }

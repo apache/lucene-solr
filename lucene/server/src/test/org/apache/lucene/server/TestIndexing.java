@@ -28,6 +28,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 public class TestIndexing extends ServerBaseTestCase {
+
   @BeforeClass
   public static void initClass() throws Exception {
     startServer();

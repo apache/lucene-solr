@@ -51,6 +51,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.facet.CachedOrdinalsReader;
 import org.apache.lucene.facet.DocValuesOrdinalsReader;
 import org.apache.lucene.facet.FacetsConfig;
@@ -196,6 +197,12 @@ public class IndexState implements Closeable {
   private final Map<String,FieldDef> fields = new ConcurrentHashMap<String,FieldDef>();
 
   public final FacetsConfig facetsConfig = new FacetsConfig();
+
+  // nocommit need to handle dynamic exprs too; new Bindings
+  // wrapping this one:
+
+  /** {@link Bindings} to pass when evaluating expressions. */
+  public final Bindings exprBindings = new FieldDefBindings(fields);
 
   /** Tracks snapshot references to generations. */
   private static class SaveLoadRefCounts extends GenFileUtil<Map<Long,Integer>> {
