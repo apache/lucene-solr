@@ -178,6 +178,7 @@ public class TestVirtualFields extends ServerBaseTestCase {
     deleteAllDocs();
     try {
       send("registerFields", "{fields: {bad: {type: virtual, expression: 'ln(boost'}}}");
+      fail("didn't hit exception");
     } catch (IOException ioe) {
       String message = ioe.toString();
       assertTrue(message.contains("registerFields > fields > bad > expression: could not parse expression"));
@@ -189,6 +190,7 @@ public class TestVirtualFields extends ServerBaseTestCase {
     deleteAllDocs();
     try {
       send("registerFields", "{fields: {bad: {type: virtual, expression: 'ln(bad2)'}}}");
+      fail("didn't hit exception");
     } catch (IOException ioe) {
       String message = ioe.toString();
       assertTrue(message.contains("registerFields > fields > bad > expression: could not evaluate expression"));
@@ -200,10 +202,55 @@ public class TestVirtualFields extends ServerBaseTestCase {
     deleteAllDocs();
     try {
       send("registerFields", "{fields: {bad2: {type: int, store: true}, bad: {type: virtual, expression: 'ln(bad2)'}}}");
+      fail("didn't hit exception");
     } catch (IOException ioe) {
       String message = ioe.toString();
       assertTrue(message.contains("registerFields > fields > bad > expression: could not evaluate expression"));
       assertTrue(message.contains("Field 'bad2' cannot be used in an expression: it was not registered with sort=true"));
     }
+  }
+
+  public void testDynamicFieldSameName() throws Exception {
+    deleteAllDocs();
+    send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
+    long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
+
+    // It's an error to try to define a dynamic field name
+    // that already exists:
+    try {
+      send("search", "{queryText: wind, virtualFields: [{name: scoreboost, expression: 2*_score}]}");
+      fail("didn't hit exception");
+    } catch (IOException ioe) {
+      String message = ioe.toString();
+      assertTrue(message.contains("search > virtualFields[0] > name: registered field or dynamic field \"scoreboost\" already exists"));
+    }
+  }
+
+  public void testRetrievedDynamicField() throws Exception {
+    deleteAllDocs();
+    send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
+    long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
+    JSONObject result = send("search",
+                             "{queryText: wind, virtualFields: [{name: scoreboost3, expression: 3*scoreboost}], sort: {fields: [{field: id, reverse: true}]}, retrieveFields: [id, scoreboost3], searcher: {indexGen: " + gen + "}}");
+    assertEquals(2, getInt(result, "totalHits"));
+    assertEquals(1, getInt(result, "hits[0].fields.id"));
+    assertEquals(0, getInt(result, "hits[1].fields.id"));
+
+    assertEquals(2.41082, getFloat(result, "hits[0].fields.scoreboost3"), .0001f);
+    assertEquals(0.33138, getFloat(result, "hits[1].fields.scoreboost3"), .0001f);
+  }
+
+  public void testSortedDynamicField() throws Exception {
+    deleteAllDocs();
+    send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
+    long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
+    JSONObject result = send("search",
+                             "{queryText: wind, virtualFields: [{name: scoreboost3, expression: 3*scoreboost}], sort: {fields: [{field: scoreboost3}]}, retrieveFields: [id], searcher: {indexGen: " + gen + "}}");
+    assertEquals(2, getInt(result, "totalHits"));
+    assertEquals(0, getInt(result, "hits[0].fields.id"));
+    assertEquals(1, getInt(result, "hits[1].fields.id"));
+
+    assertEquals(0.33138, getFloat(result, "hits[0].fields.sortFields.scoreboost3"), .0001f);
+    assertEquals(2.41082, getFloat(result, "hits[1].fields.sortFields.scoreboost3"), .0001f);
   }
 }

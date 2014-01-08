@@ -19,6 +19,7 @@ package org.apache.lucene.server.handlers;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +34,9 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.expressions.Bindings;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetResult;
@@ -56,6 +60,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -105,6 +110,7 @@ import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
 import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
 import org.apache.lucene.server.Constants;
 import org.apache.lucene.server.FieldDef;
+import org.apache.lucene.server.FieldDefBindings;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
@@ -120,7 +126,6 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 
 // nocommit why no double range faceting?
 
@@ -326,6 +331,11 @@ public class SearchHandler extends Handler {
                   SEARCHER_VERSION_TYPE),
         new Param("startHit", "Which hit to start from (for pagination).", new IntType(), 0),
         new Param("topHits", "How many top hits to retrieve.", new IntType(), 10),
+        new Param("virtualFields", "Defines virtual fields (name'd dynamic expressions) for this query.",
+                  new ListType(
+                      new StructType(
+                          new Param("name", "Virtual field's name.  Must be different from registered fields and any other virtual fields.", new StringType()),
+                          new Param("expression", "JavaScript expression defining this field's values.", new StringType())))),
         new Param("searchAfter", "Only return hits after the specified hit; this is useful for deep paging",
                   new StructType(
                                  new Param("lastDoc", "Last docID of the previous page.", new IntType()),
@@ -634,7 +644,7 @@ public class SearchHandler extends Handler {
 
   /** Decodes a list of Request into the corresponding
    *  Sort. */
-  private static Sort parseSort(long timeStamp, IndexState state, List<Object> fields, List<String> sortFieldNames) {
+  private static Sort parseSort(long timeStamp, IndexState state, List<Object> fields, List<String> sortFieldNames, Map<String,FieldDef> dynamicFields) {
     List<SortField> sortFields = new ArrayList<SortField>();
     for(Object _sub : fields) {
       Request sub = (Request) _sub;
@@ -649,11 +659,9 @@ public class SearchHandler extends Handler {
       } else if (fieldName.equals("score")) {
         sf = SortField.FIELD_SCORE;
       } else {
-        FieldDef fd;
-        try {
-          fd = state.getField(fieldName);
-        } catch (IllegalArgumentException iae) {
-          sub.fail("field", iae.toString());
+        FieldDef fd = dynamicFields.get(fieldName);
+        if (fd == null) {
+          sub.fail("field", "field \"" + fieldName + "\" was not registered and was not specified as a dynamicField");
           // Dead code but compiler disagrees:
           fd = null;
         }
@@ -718,7 +726,8 @@ public class SearchHandler extends Handler {
                           JSONObject result, ScoreDoc hit, Set<String> fields,
                           Map<String,String[]> highlights,
                           int hiliteHitIndex, Sort sort,
-                          List<String> sortFieldNames) throws IOException {
+                          List<String> sortFieldNames,
+                          Map<String,FieldDef> dynamicFields) throws IOException {
     //System.out.println("fillFields fields=" + fields);
     if (fields != null) {
 
@@ -729,7 +738,7 @@ public class SearchHandler extends Handler {
       Map<String,Object> doc = highlighter.getDocument(state, s, hit.doc);
 
       for (String name : fields) {
-        FieldDef fd = state.getField(name);
+        FieldDef fd = dynamicFields.get(name);
 
         // We detect invalid field above:
         assert fd != null;
@@ -774,12 +783,14 @@ public class SearchHandler extends Handler {
       for (Map.Entry<String,String[]> ent : highlights.entrySet()) {
         String v = ent.getValue()[hiliteHitIndex];
         if (v != null) {
+          Object o;
           try {
-            result.put(ent.getKey(), JSONValue.parseStrict(v));
-          } catch (ParseException pe) {
+            o = JSONValue.parseStrict(v);
+          } catch (net.minidev.json.parser.ParseException pe) {
             // BUG
             throw new RuntimeException(pe);
           }
+          result.put(ent.getKey(), o);
         }
       }
     }
@@ -820,7 +831,7 @@ public class SearchHandler extends Handler {
     }
   }
 
-  private static Filter parseFilter(long timeStamp, Request topRequest, IndexState state, Request r) {
+  private static Filter parseFilter(long timeStamp, Request topRequest, IndexState state, Request r, Map<String,FieldDef> dynamicFields) {
     Filter f;
 
     Request.PolyResult pr = r.getPoly("class");
@@ -831,12 +842,12 @@ public class SearchHandler extends Handler {
       }
       f = new QueryWrapperFilter(new TermQuery(new Term(fd.name, "1")));
     } else if (pr.name.equals("QueryWrapperFilter")) {
-      return new QueryWrapperFilter(parseQuery(timeStamp, topRequest, state, pr.r.getStruct("query"), null, null));
+      return new QueryWrapperFilter(parseQuery(timeStamp, topRequest, state, pr.r.getStruct("query"), null, null, dynamicFields));
     } else if (pr.name.equals("BooleanFilter")) {
       BooleanFilter bf = new BooleanFilter();
       for (Object o : pr.r.getList("subFilters")) {
         Request sub = (Request) o;
-        bf.add(parseFilter(timeStamp, topRequest, state, sub.getStruct("filter")),
+        bf.add(parseFilter(timeStamp, topRequest, state, sub.getStruct("filter"), dynamicFields),
                parseBooleanOccur(sub.getEnum("occur")));
       }
       f = bf;
@@ -860,7 +871,7 @@ public class SearchHandler extends Handler {
         }
         f = state.cachedFilters.get(id);
         if (f == null) {
-          CachingWrapperFilter cwf = new CachingWrapperFilter(parseFilter(timeStamp, topRequest, state, fr)) {
+          CachingWrapperFilter cwf = new CachingWrapperFilter(parseFilter(timeStamp, topRequest, state, fr, dynamicFields)) {
               @Override
               protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader) throws IOException {
                 // nocommit let caller control which Bits
@@ -906,7 +917,8 @@ public class SearchHandler extends Handler {
 
   @SuppressWarnings("unchecked")
   private static Query parseQuery(long timeStamp, Request topRequest, IndexState state, Request r, String field,
-                                  Map<ToParentBlockJoinQuery,BlockJoinQueryChild> useBlockJoinCollector) {
+                                  Map<ToParentBlockJoinQuery,BlockJoinQueryChild> useBlockJoinCollector,
+                                  Map<String,FieldDef> dynamicFields) {
     Query q;
     Request.PolyResult pr = r.getPoly("class");
     if (r.hasParam("field")) {
@@ -927,7 +939,7 @@ public class SearchHandler extends Handler {
       for(Object o : r2.getList("subQueries")) {
         Request r3 = (Request) o;
         BooleanClause.Occur occur = parseBooleanOccur(r3.getEnum("occur"));
-        bq.add(parseQuery(timeStamp, topRequest, state, r3.getStruct("query"), field, useBlockJoinCollector), occur);
+        bq.add(parseQuery(timeStamp, topRequest, state, r3.getStruct("query"), field, useBlockJoinCollector, dynamicFields), occur);
       }
       q = bq;
     } else if (pr.name.equals("CommonTermsQuery")) {
@@ -944,9 +956,9 @@ public class SearchHandler extends Handler {
       q = ctq;
     } else if (pr.name.equals("ConstantScoreQuery")) {
       if (pr.r.hasParam("query")) {
-        q = new ConstantScoreQuery(parseQuery(timeStamp, topRequest, state, pr.r.getStruct("query"), field, useBlockJoinCollector));
+        q = new ConstantScoreQuery(parseQuery(timeStamp, topRequest, state, pr.r.getStruct("query"), field, useBlockJoinCollector, dynamicFields));
       } else {
-        q = new ConstantScoreQuery(parseFilter(timeStamp, topRequest, state, pr.r.getStruct("filter")));
+        q = new ConstantScoreQuery(parseFilter(timeStamp, topRequest, state, pr.r.getStruct("filter"), dynamicFields));
       }
     } else if (pr.name.equals("FuzzyQuery")) {
       if (field == null) {
@@ -1089,8 +1101,8 @@ public class SearchHandler extends Handler {
       }
       q = new TermQuery(new Term(field, pr.r.getString("term")));
     } else if (pr.name.equals("ToParentBlockJoinQuery")) {
-      Query childQuery = parseQuery(timeStamp, topRequest, state, pr.r.getStruct("childQuery"), field, useBlockJoinCollector);
-      Filter parentsFilter = parseFilter(timeStamp, topRequest, state, pr.r.getStruct("parentsFilter"));
+      Query childQuery = parseQuery(timeStamp, topRequest, state, pr.r.getStruct("childQuery"), field, useBlockJoinCollector, dynamicFields);
+      Filter parentsFilter = parseFilter(timeStamp, topRequest, state, pr.r.getStruct("parentsFilter"), dynamicFields);
       String scoreModeString = pr.r.getEnum("scoreMode");
       ScoreMode scoreMode;
       if (scoreModeString.equals("None")) {
@@ -1116,7 +1128,7 @@ public class SearchHandler extends Handler {
         Request childHits = pr.r.getStruct("childHits");
         BlockJoinQueryChild child = new BlockJoinQueryChild();
         if (childHits.hasParam("sort")) {
-          child.sort = parseSort(timeStamp, state, childHits.getList("sort"), null);
+          child.sort = parseSort(timeStamp, state, childHits.getList("sort"), null, dynamicFields);
         }
         child.maxChildren = childHits.getInt("maxChildren");
         child.trackScores = childHits.getBoolean("trackScores");
@@ -1129,7 +1141,7 @@ public class SearchHandler extends Handler {
       DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(r2.getFloat("tieBreakMultiplier"));
       q = dmq;
       for(Object o : subQueries) {
-        dmq.add(parseQuery(timeStamp, topRequest, state, (Request) o, field, useBlockJoinCollector));
+        dmq.add(parseQuery(timeStamp, topRequest, state, (Request) o, field, useBlockJoinCollector, dynamicFields));
       }
     } else if (pr.name.equals("text")) {
       Request r2 = pr.r;
@@ -1422,7 +1434,7 @@ public class SearchHandler extends Handler {
   }
 
   /** Fold in any drillDowns requests into the query. */
-  private static DrillDownQuery addDrillDowns(long timeStamp, IndexState state, Request r, Query q) {
+  private static DrillDownQuery addDrillDowns(long timeStamp, IndexState state, Request r, Query q, Map<String,FieldDef> dynamicFields) {
     // Always create a DrillDownQuery; if there
     // are no drill-downs it will just rewrite to the
     // original query:
@@ -1437,7 +1449,7 @@ public class SearchHandler extends Handler {
 
           if (fr.hasParam("query")) {
             // Drill down by query:
-            ddq.add(fd.name, parseQuery(timeStamp, null, state, r.getStruct("query"), fd.name, null));
+            ddq.add(fd.name, parseQuery(timeStamp, null, state, r.getStruct("query"), fd.name, null, dynamicFields));
           } else {
             String[] path;
             if (fr.isString("value")) {
@@ -1460,7 +1472,8 @@ public class SearchHandler extends Handler {
   }
 
   private static Query extractQuery(IndexState state, Request r, long timeStamp,
-                                    Map<ToParentBlockJoinQuery,BlockJoinQueryChild> useBlockJoinCollector) throws Exception {
+                                    Map<ToParentBlockJoinQuery,BlockJoinQueryChild> useBlockJoinCollector,
+                                    Map<String,FieldDef> dynamicFields) throws Exception {
     Query q;
     if (r.hasParam("queryText")) {
       QueryParser queryParser = createQueryParser(state, r, null);
@@ -1479,7 +1492,7 @@ public class SearchHandler extends Handler {
         q = null;
       }
     } else if (r.hasParam("query")) {
-      q = parseQuery(timeStamp, r, state, r.getStruct("query"), null, useBlockJoinCollector);
+      q = parseQuery(timeStamp, r, state, r.getStruct("query"), null, useBlockJoinCollector, dynamicFields);
     } else {
       q = new MatchAllDocsQuery();
     }
@@ -1683,6 +1696,61 @@ public class SearchHandler extends Handler {
     }
   }
 
+  /** Parses any virtualFields, which define dynamic
+   *  (expression) fields for this one request. */
+  private static Map<String,FieldDef> getDynamicFields(IndexState state, Request r) {
+    Map<String,FieldDef> dynamicFields;
+    if (r.hasParam("virtualFields")) {
+      dynamicFields = new HashMap<String,FieldDef>();
+      dynamicFields.putAll(state.getAllFields());
+      Bindings bindings = new FieldDefBindings(dynamicFields);
+      for(Object o : r.getList("virtualFields")) {
+        Request oneField = (Request) o;
+        String name = oneField.getString("name");
+        String exprString = oneField.getString("expression");
+
+        Expression expr;
+        try {
+          expr = JavascriptCompiler.compile(exprString);
+        } catch (ParseException pe) {
+          // Static error (e.g. bad JavaScript syntax):
+          oneField.fail("expressoin", "could not parse expression: " + pe, pe);
+
+          // Dead code but compiler disagrees:
+          expr = null;
+        } catch (IllegalArgumentException iae) {
+          // Static error (e.g. bad JavaScript syntax):
+          oneField.fail("expression", "could not parse expression: " + iae, iae);
+
+          // Dead code but compiler disagrees:
+          expr = null;
+        }
+
+        ValueSource values;
+        try {
+          values = expr.getValueSource(bindings);
+        } catch (RuntimeException re) {
+          // Dynamic error (e.g. referred to a field that
+          // doesn't exist):
+          oneField.fail("expression", "could not evaluate expression: " + re, re);
+
+          // Dead code but compiler disagrees:
+          values = null;
+        }
+
+        FieldDef fd = new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, null, 0.0f, 0L, values);
+
+        if (dynamicFields.put(name, fd) != null) {
+          oneField.fail("name", "registered field or dynamic field \"" + name + "\" already exists");
+        }
+      }
+    } else {
+      dynamicFields = state.getAllFields();
+    }
+
+    return dynamicFields;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
@@ -1705,11 +1773,14 @@ public class SearchHandler extends Handler {
 
     JSONObject diagnostics = new JSONObject();
 
-    Query q = extractQuery(state, r, timeStamp, useBlockJoinCollector);
+    Map<String,FieldDef> dynamicFields = getDynamicFields(state, r);
+
+    Query q = extractQuery(state, r, timeStamp, useBlockJoinCollector, dynamicFields);
 
     final Filter filter;
     if (r.hasParam("filter")) {
-      filter = parseFilter(timeStamp, r, state, r.getStruct("filter"));
+      // nocommit allow Filter against dynamic field?
+      filter = parseFilter(timeStamp, r, state, r.getStruct("filter"), dynamicFields);
     } else {
       filter = null;
     }
@@ -1759,11 +1830,10 @@ public class SearchHandler extends Handler {
           r.fail("retrieveFields", "field \"" + field + "\" cannot be retrieved more than once");
         }       
         fieldSeen.add(field);
-        FieldDef fd;
-        try {
-          fd = state.getField(field);
-        } catch (IllegalArgumentException iae) {
-          r.fail("retrieveFields", iae.toString());
+
+        FieldDef fd = dynamicFields.get(field);
+        if (fd == null) {
+          r.fail("retrieveFields", "field \"" + field + "\" was not registered and was not specified as a dynamicField");
           // Dead code but compiler disagrees:
           fd = null;
         }
@@ -1833,7 +1903,7 @@ public class SearchHandler extends Handler {
       // in-order collectors
       //Weight w = s.createNormalizedWeight(q2);
 
-      DrillDownQuery ddq = addDrillDowns(timeStamp, state, r, q);
+      DrillDownQuery ddq = addDrillDowns(timeStamp, state, r, q, dynamicFields);
 
       diagnostics.put("drillDownQuery", q.toString());
 
@@ -1850,7 +1920,7 @@ public class SearchHandler extends Handler {
       if (r.hasParam("sort")) {
         sortRequest = r.getStruct("sort");
         sortFieldNames = new ArrayList<String>();
-        sort = parseSort(timeStamp, state, sortRequest.getList("fields"), sortFieldNames);
+        sort = parseSort(timeStamp, state, sortRequest.getList("fields"), sortFieldNames, dynamicFields);
       } else {
         sortRequest = null;
         sort = null;
@@ -1875,7 +1945,7 @@ public class SearchHandler extends Handler {
         }
 
         if (grouping.hasParam("sort")) {
-          groupSort = parseSort(timeStamp, state, grouping.getList("sort"), null);
+          groupSort = parseSort(timeStamp, state, grouping.getList("sort"), null, dynamicFields);
         } else {
           groupSort = Sort.RELEVANCE;
         }
@@ -2199,7 +2269,7 @@ public class SearchHandler extends Handler {
               if (fields != null || highlightFields != null) {
                 JSONObject o7 = new JSONObject();
                 o6.put("fields", o7);
-                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, sort, sortFieldNames);
+                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, sort, sortFieldNames, dynamicFields);
               }
 
               hitIndex++;
@@ -2245,7 +2315,7 @@ public class SearchHandler extends Handler {
               // nocommit where does parent score come
               // from ...
               ScoreDoc sd = new ScoreDoc(group.groupValue.intValue(), 0.0f);
-              fillFields(state, highlighter, s.searcher, o4, sd, fields, highlights, hitIndex, sort, sortFieldNames);
+              fillFields(state, highlighter, s.searcher, o4, sd, fields, highlights, hitIndex, sort, sortFieldNames, dynamicFields);
             }
             hitIndex++;
 
@@ -2280,7 +2350,7 @@ public class SearchHandler extends Handler {
               if (fields != null || highlightFields != null) {
                 JSONObject o7 = new JSONObject();
                 o6.put("fields", o7);
-                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort, null);
+                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort, null, dynamicFields);
               }
 
               hitIndex++;
@@ -2309,7 +2379,7 @@ public class SearchHandler extends Handler {
           if (fields != null || highlightFields != null) {
             JSONObject o4 = new JSONObject();
             o3.put("fields", o4);
-            fillFields(state, highlighter, s.searcher, o4, hit, fields, highlights, hitIndex, sort, sortFieldNames);
+            fillFields(state, highlighter, s.searcher, o4, hit, fields, highlights, hitIndex, sort, sortFieldNames, dynamicFields);
           }
         }
       }
