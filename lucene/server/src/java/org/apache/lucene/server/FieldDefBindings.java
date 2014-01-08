@@ -20,7 +20,6 @@ package org.apache.lucene.server;
 import java.util.Map;
 
 import org.apache.lucene.expressions.Bindings;
-import org.apache.lucene.expressions.ScoreValueSource;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -42,7 +41,7 @@ public final class FieldDefBindings extends Bindings {
   @Override
   public ValueSource getValueSource(String name) {
     if (name.equals("_score")) {
-      return new ScoreValueSource();
+      return getScoreValueSource();
     }
     FieldDef fd = fields.get(name);
     if (fd == null) {

@@ -30,8 +30,7 @@ import java.util.Map;
  * the context map by {@link ExpressionComparator}.
  */
 @SuppressWarnings({"rawtypes"})
-// nocomit i made this public...
-public class ScoreValueSource extends ValueSource {
+class ScoreValueSource extends ValueSource {
 
   /**
    * <code>context</code> must contain a key "scorer" which is a {@link Scorer}.
