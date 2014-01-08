@@ -108,7 +108,7 @@ public class TestVirtualFields extends ServerBaseTestCase {
     assertEquals(0.0f, getFloat(result, "hits[1].fields.logboost"), .0001f);
   }
 
-  public void testWithScore() throws Exception {
+  public void testWithScore1() throws Exception {
     deleteAllDocs();
     send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
     long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
@@ -122,8 +122,6 @@ public class TestVirtualFields extends ServerBaseTestCase {
   }
 
   /** Also tries to retrieve the scoreboost */
-  // nocommit fixme: it currently fails because of NaN disaster
-  /*
   public void testWithScore2() throws Exception {
     deleteAllDocs();
     send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
@@ -139,7 +137,24 @@ public class TestVirtualFields extends ServerBaseTestCase {
     assertEquals(.6931f, getFloat(result, "hits[0].fields.logboost"), .0001f);
     assertEquals(0.0f, getFloat(result, "hits[1].fields.logboost"), .0001f);
   }
-  */
+
+  /** Sort by not score, and try to retrieve expression
+   *  using score. */
+  public void testWithScore3() throws Exception {
+    deleteAllDocs();
+    send("addDocument", "{fields: {text: 'the wind is howling like this swirling storm inside', id: 0, boost: 1.0}}");
+    long gen = getLong(send("addDocument", "{fields: {text: 'I am one with the wind and sky', id: 1, boost: 2.0}}"), "indexGen");
+    JSONObject result = send("search", "{queryText: wind, sort: {fields: [{field: id, reverse: true}]}, retrieveFields: [id, scoreboost, logboost], searcher: {indexGen: " + gen + "}}");
+    assertEquals(2, getInt(result, "totalHits"));
+    assertEquals(1, getInt(result, "hits[0].fields.id"));
+    assertEquals(0, getInt(result, "hits[1].fields.id"));
+
+    assertEquals(.80361f, getFloat(result, "hits[0].fields.scoreboost"), .0001f);
+    assertEquals(.11046f, getFloat(result, "hits[1].fields.scoreboost"), .0001f);
+
+    assertEquals(.6931f, getFloat(result, "hits[0].fields.logboost"), .0001f);
+    assertEquals(0.0f, getFloat(result, "hits[1].fields.logboost"), .0001f);
+  }
 
   public void testSyntaxError() throws Exception {
     deleteAllDocs();

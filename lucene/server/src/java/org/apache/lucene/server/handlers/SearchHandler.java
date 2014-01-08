@@ -740,13 +740,9 @@ public class SearchHandler extends Handler {
           AtomicReaderContext leaf = leaves.get(ReaderUtil.subIndex(hit.doc, leaves));
           Map<String,Object> context = new HashMap<String,Object>();
 
-          // nocommit: should we only do this if "wantsScores"?
-          // where do we get that boolean!!
           int docID = hit.doc - leaf.docBase;
 
-          // nocommit not quite right?  what if app didn't
-          // sort by score but uses it in the expr that it
-          // is sorting by?
+          assert Float.isNaN(hit.score) == false || fd.valueSource.getSortField(false).needsScores() == false;
           context.put("scorer", new CannedScorer(docID, hit.score));
           FunctionValues segValues = fd.valueSource.getValues(context, leaf);
           result.put(name, segValues.doubleVal(docID));
@@ -1721,6 +1717,8 @@ public class SearchHandler extends Handler {
     final Set<String> fields;
     final Map<String,FieldHighlightConfig> highlightFields;
 
+    boolean forceDocScores = false;
+
     if (r.hasParam("retrieveFields")) {
       fields = new HashSet<String>();
       highlightFields = new HashMap<String,FieldHighlightConfig>();
@@ -1769,6 +1767,14 @@ public class SearchHandler extends Handler {
           // Dead code but compiler disagrees:
           fd = null;
         }
+
+        // If any of the fields being retrieved require
+        // score, than force returned FieldDoc.score to be
+        // computed:
+        if (fd.valueSource != null && fd.valueSource.getSortField(false).needsScores()) {
+          forceDocScores = true;
+        }
+
         if (perField != null) {
           perField.multiValued = fd.multiValued;
           if (fd.multiValued == false && perField.mode.equals("joinedSnippets")) {
@@ -1902,6 +1908,13 @@ public class SearchHandler extends Handler {
         //c = TopScoreDocCollector.create(topHits, searchAfter, !w.scoresDocsOutOfOrder());
         c = TopScoreDocCollector.create(topHits, searchAfter, false);
       } else {
+
+        // If any of the sort fields require score, than
+        // ask for FieldDoc.score in the returned hits:
+        for(SortField sortField : sort.getSort()) {
+          forceDocScores |= sortField.needsScores();
+        }
+
         // Sort by fields:
         FieldDoc searchAfter;
         if (r.hasParam("searchAfter")) {
@@ -1916,7 +1929,7 @@ public class SearchHandler extends Handler {
 
         //c = TopFieldCollector.create(sort, topHits, searchAfter, true, doDocScores, doMaxScore, !w.scoresDocsOutOfOrder());
         c = TopFieldCollector.create(sort, topHits, searchAfter, true,
-                                     sortRequest.getBoolean("doDocScores"),
+                                     sortRequest.getBoolean("doDocScores") || forceDocScores,
                                      sortRequest.getBoolean("doMaxScore"),
                                      false);
       }
