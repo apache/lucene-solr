@@ -64,7 +64,6 @@ public  class LeaderElector {
   
   private ZkCmdExecutor zkCmdExecutor;
 
-  // for tests
   private volatile ElectionContext context;
 
   public LeaderElector(SolrZkClient zkClient) {
@@ -72,7 +71,6 @@ public  class LeaderElector {
     zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
   
-  // for tests
   public ElectionContext getContext() {
     return context;
   }

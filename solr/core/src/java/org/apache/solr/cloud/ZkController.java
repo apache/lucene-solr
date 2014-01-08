@@ -17,6 +17,28 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -42,7 +64,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -50,28 +71,6 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Handle ZooKeeper interactions.
@@ -140,13 +139,13 @@ public final class ZkController {
   }
   private final Map<ContextKey, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<ContextKey, ElectionContext>());
   
-  private SolrZkClient zkClient;
-  private ZkCmdExecutor cmdExecutor;
-  private ZkStateReader zkStateReader;
+  private final SolrZkClient zkClient;
+  private final ZkCmdExecutor cmdExecutor;
+  private final ZkStateReader zkStateReader;
 
-  private LeaderElector leaderElector;
+  private final LeaderElector leaderElector;
   
-  private String zkServerAddress;          // example: 127.0.0.1:54062/solr
+  private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
   private final String localHostPort;      // example: 54065
   private final String localHostContext;   // example: solr
@@ -226,6 +225,11 @@ public final class ZkController {
               
               ElectionContext context = new OverseerElectionContext(zkClient,
                   overseer, getNodeName());
+              
+              ElectionContext prevContext = overseerElector.getContext();
+              if (prevContext != null) {
+                prevContext.cancelElection();
+              }
               
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
@@ -919,6 +923,17 @@ public final class ZkController {
 
 
   private void joinElection(CoreDescriptor cd, boolean afterExpiration) throws InterruptedException, KeeperException, IOException {
+    // look for old context - if we find it, cancel it
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    
+    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    
+    ElectionContext prevContext = electionContexts.get(contextKey);
+    
+    if (prevContext != null) {
+      prevContext.cancelElection();
+    }
     
     String shardId = cd.getCloudDescriptor().getShardId();
     
@@ -928,16 +943,15 @@ public final class ZkController {
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+ 
     ZkNodeProps ourProps = new ZkNodeProps(props);
-    String collection = cd.getCloudDescriptor()
-        .getCollectionName();
+
     
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
     leaderElector.setup(context);
-    electionContexts.put(new ContextKey(collection, coreNodeName), context);
+    electionContexts.put(contextKey, context);
     leaderElector.joinElection(context, false);
   }
 
