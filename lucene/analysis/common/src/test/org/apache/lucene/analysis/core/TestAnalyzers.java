@@ -129,6 +129,17 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     
   }
   
+  private static class UpperCaseWhitespaceAnalyzer extends Analyzer {
+
+    @Override
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      return new TokenStreamComponents(tokenizer, new UpperCaseFilter(TEST_VERSION_CURRENT, tokenizer));
+    }
+    
+  }
+  
+  
   /**
    * Test that LowercaseFilter handles entire unicode range correctly
    */
@@ -148,6 +159,27 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
         new String [] { "abac\uDC16adaba" });
   }
+
+  /**
+   * Test that LowercaseFilter handles entire unicode range correctly
+   */
+  public void testUpperCaseFilter() throws IOException {
+    Analyzer a = new UpperCaseWhitespaceAnalyzer();
+    // BMP
+    assertAnalyzesTo(a, "AbaCaDabA", new String[] { "ABACADABA" });
+    // supplementary
+    assertAnalyzesTo(a, "\ud801\udc3e\ud801\udc3e\ud801\udc3e\ud801\udc3e",
+          new String[] {"\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16"});
+    assertAnalyzesTo(a, "AbaCa\ud801\udc3eDabA", 
+         new String[] { "ABACA\ud801\udc16DABA" });
+    // unpaired lead surrogate
+    assertAnalyzesTo(a, "AbaC\uD801AdaBa", 
+        new String [] { "ABAC\uD801ADABA" });
+    // unpaired trail surrogate
+    assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
+        new String [] { "ABAC\uDC16ADABA" });
+  }
+  
   
   /**
    * Test that LowercaseFilter handles the lowercasing correctly if the term

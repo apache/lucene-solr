@@ -28,6 +28,9 @@ New Features
 
 * LUCENE-5379: Add Analyzer for Kurdish.  (Robert Muir)
 
+* LUCENE-5369: Added an UpperCaseFilter to make UPPERCASE tokens. (ryan)
+
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable

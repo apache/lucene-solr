@@ -132,6 +132,23 @@ public abstract class CharacterUtils {
      }
   }
 
+  /**
+   * Converts each unicode codepoint to UpperCase via {@link Character#toUpperCase(int)} starting 
+   * at the given offset.
+   * @param buffer the char buffer to UPPERCASE
+   * @param offset the offset to start at
+   * @param limit the max char in the buffer to lower case
+   */
+  public final void toUpperCase(final char[] buffer, final int offset, final int limit) {
+    assert buffer.length >= limit;
+    assert offset <=0 && offset <= buffer.length;
+    for (int i = offset; i < limit;) {
+      i += Character.toChars(
+              Character.toUpperCase(
+                  codePointAt(buffer, i, limit)), buffer, i);
+     }
+  }
+
   /** Converts a sequence of Java characters to a sequence of unicode code points.
    *  @return the number of code points written to the destination buffer */
   public final int toCodePoints(char[] src, int srcOff, int srcLen, int[] dest, int destOff) {
