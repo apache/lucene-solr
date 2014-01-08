@@ -347,6 +347,10 @@ Bug Fixes
 * SOLR-5608: Don't allow a closed SolrCore to publish state to ZooKeeper.
   (Mark Miller, Shawn Heisey)
 
+* SOLR-5615: Deadlock while trying to recover after a ZK session expiration.
+  (Ramkumar Aiyengar, Mark Miller)
+  
+
 Optimizations
 ----------------------
 
