@@ -11,6 +11,9 @@ Bug fixes
   [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
   (Shay Banon, Adrien Grand, Robert Muir)
 
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
