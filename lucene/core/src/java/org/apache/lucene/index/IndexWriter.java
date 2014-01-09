@@ -931,8 +931,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           closeInternal(waitForMerges, true);
         }
       }
-      assert eventQueue.isEmpty();
+      assert assertEventQueueAfterClose();
     }
+  }
+
+  private boolean assertEventQueueAfterClose() {
+    if (eventQueue.isEmpty()) {
+      return true;
+    }
+    for (Event e : eventQueue) {
+      assert e instanceof DocumentsWriter.MergePendingEvent : e;
+    }
+    return true;
   }
 
   // Returns true if this thread should attempt to close, or
@@ -2023,7 +2033,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         rollbackInternal();
       }
     }
-    assert eventQueue.isEmpty() : eventQueue;
+    assert assertEventQueueAfterClose();
   }
 
   private void rollbackInternal() throws IOException {
