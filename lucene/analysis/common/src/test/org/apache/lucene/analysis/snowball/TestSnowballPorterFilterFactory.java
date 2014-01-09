@@ -39,7 +39,7 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamFactoryTestC
     }
     
     Reader reader = new StringReader(text);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("SnowballPorter", "language", "English").create(stream);
     assertTokenStreamContents(stream, gold);
   }
@@ -49,7 +49,7 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamFactoryTestC
    */
   public void testProtected() throws Exception {
     Reader reader = new StringReader("ridding of some stemming");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("SnowballPorter", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("ridding"),
         "protected", "protwords.txt",

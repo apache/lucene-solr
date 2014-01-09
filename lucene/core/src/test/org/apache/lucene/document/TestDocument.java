@@ -17,10 +17,12 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -314,10 +316,14 @@ public class TestDocument extends LuceneTestCase {
   // LUCENE-3616
   public void testInvalidFields() {
     try {
-      new Field("foo", new MockTokenizer(new StringReader("")), StringField.TYPE_STORED);
+      Tokenizer tok = new MockTokenizer();
+      tok.setReader(new StringReader(""));
+      new Field("foo", tok, StringField.TYPE_STORED);
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
     }
   }
   

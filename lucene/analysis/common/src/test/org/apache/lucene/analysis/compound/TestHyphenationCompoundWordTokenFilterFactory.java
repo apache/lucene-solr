@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
@@ -33,7 +34,8 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
    */
   public void testHyphenationWithDictionary() throws Exception {
     Reader reader = new StringReader("min veninde som er lidt af en læsehest");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("HyphenationCompoundWord", 
         "hyphenator", "da_UTF8.xml",
         "dictionary", "da_compoundDictionary.txt").create(stream);
@@ -51,7 +53,8 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
    */
   public void testHyphenationOnly() throws Exception {
     Reader reader = new StringReader("basketballkurv");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("HyphenationCompoundWord", 
         "hyphenator", "da_UTF8.xml",
         "minSubwordSize", "2",

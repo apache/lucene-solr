@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestCJKWidthFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void test() throws Exception {
     Reader reader = new StringReader("Ｔｅｓｔ １２３４");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("CJKWidth").create(stream);
     assertTokenStreamContents(stream, new String[] { "Test", "1234" });
   }

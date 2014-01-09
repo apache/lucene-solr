@@ -75,7 +75,7 @@ public abstract class AbstractAnalysisFactory {
     return originalArgs;
   }
 
-   /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create(java.io.Reader)}
+   /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create()}
    * or {@link org.apache.lucene.analysis.util.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)} methods,
    * to inform user, that for this factory a {@link #luceneMatchVersion} is required */
   protected final void assureMatchVersion() {

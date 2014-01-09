@@ -54,6 +54,9 @@ New Features
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
 
+* LUCENE-5388: Remove Reader from Tokenizer's constructor. 
+  (Benson Margulies via Robert Muir - pull request #16)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile

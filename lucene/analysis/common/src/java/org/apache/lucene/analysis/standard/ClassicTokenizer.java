@@ -96,20 +96,17 @@ public final class ClassicTokenizer extends Tokenizer {
    * Creates a new instance of the {@link ClassicTokenizer}.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
    *
-   * @param input The input reader
-   *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public ClassicTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public ClassicTokenizer(Version matchVersion) {
     init(matchVersion);
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
-  public ClassicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public ClassicTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     init(matchVersion);
   }
 

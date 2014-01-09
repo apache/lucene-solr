@@ -86,8 +86,8 @@ public class PreAnalyzedField extends FieldType {
     return new SolrAnalyzer() {
       
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new PreAnalyzedTokenizer(reader, parser));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new PreAnalyzedTokenizer(parser));
       }
       
     };
@@ -198,7 +198,8 @@ public class PreAnalyzedField extends FieldType {
     if (val == null || val.trim().length() == 0) {
       return null;
     }
-    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(new StringReader(val), parser);
+    PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(parser);
+    parse.setReader(new StringReader(val));
     parse.reset(); // consume
     org.apache.lucene.document.FieldType type = createFieldType(field);
     if (type == null) {
@@ -251,12 +252,8 @@ public class PreAnalyzedField extends FieldType {
     private String stringValue = null;
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
-    private Reader lastReader;
-    private Reader input; // hides original input since we replay saved states (and dont reuse)
     
-    public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) {
-      super(reader);
-      this.input = reader;
+    public PreAnalyzedTokenizer(PreAnalyzedParser parser) {
       this.parser = parser;
     }
     
@@ -271,7 +268,7 @@ public class PreAnalyzedField extends FieldType {
     public byte[] getBinaryValue() {
       return binaryValue;
     }
-    
+
     @Override
     public final boolean incrementToken() {
       // lazy init the iterator
@@ -291,8 +288,8 @@ public class PreAnalyzedField extends FieldType {
     @Override
     public final void reset() throws IOException {
       // NOTE: this acts like rewind if you call it again
-      if (input != lastReader) {
-        lastReader = input;
+      if (it == null) {
+        super.reset();
         cachedStates.clear();
         stringValue = null;
         binaryValue = null;
@@ -306,12 +303,6 @@ public class PreAnalyzedField extends FieldType {
         }
       }
       it = cachedStates.iterator();
-    }
-
-    @Override
-    public void close() throws IOException {
-      super.close();
-      lastReader = null; // just a ref, null for gc
     }
   }
   

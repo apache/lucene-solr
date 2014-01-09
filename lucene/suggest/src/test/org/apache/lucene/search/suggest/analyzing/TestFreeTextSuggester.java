@@ -231,8 +231,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Just deletes "of"
     Analyzer a = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String field, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader);
+        public TokenStreamComponents createComponents(String field) {
+          Tokenizer tokenizer = new MockTokenizer();
           CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
           return new TokenStreamComponents(tokenizer, new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet));
         }
@@ -259,8 +259,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Just deletes "of"
     Analyzer a = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String field, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader);
+        public TokenStreamComponents createComponents(String field) {
+          Tokenizer tokenizer = new MockTokenizer();
           CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
           return new TokenStreamComponents(tokenizer, new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet));
         }

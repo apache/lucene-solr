@@ -27,7 +27,7 @@ public class TokenRangeSinkTokenizerTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     TokenRangeSinkFilter sinkFilter = new TokenRangeSinkFilter(2, 4);
     String test = "The quick red fox jumped over the lazy brown dogs";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(whitespaceMockTokenizer(test));
     TeeSinkTokenFilter.SinkTokenStream rangeToks = tee.newSinkTokenStream(sinkFilter);
     
     int count = 0;

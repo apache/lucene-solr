@@ -46,7 +46,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    input = new MockTokenizer(new StringReader("abcde"), MockTokenizer.WHITESPACE, false);
+    input = whitespaceMockTokenizer("abcde");
   }
 
   public void testInvalidInput() throws Exception {
@@ -95,7 +95,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testFilterPositions() throws Exception {
-    TokenStream ts = new MockTokenizer(new StringReader("abcde vwxyz"), MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer("abcde vwxyz");
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, ts, 1, 3);
     assertTokenStreamContents(tokenizer,
                               new String[]{"a","ab","abc","v","vw","vwx"},
@@ -139,7 +139,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testFirstTokenPositionIncrement() throws Exception {
-    TokenStream ts = new MockTokenizer(new StringReader("a abc"), MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer("a abc");
     ts = new PositionFilter(ts); // All but first token will get 0 position increment
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, ts, 2, 3);
     // The first token "a" will not be output, since it's smaller than the mingram size of 2.
@@ -154,13 +154,14 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testSmallTokenInStream() throws Exception {
-    input = new MockTokenizer(new StringReader("abc de fgh"), MockTokenizer.WHITESPACE, false);
+    input = whitespaceMockTokenizer("abc de fgh");
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, 3, 3);
     assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10});
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader("abcde"));
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 1, 3);
     assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{5,5,5});
     tokenizer.setReader(new StringReader("abcde"));
@@ -175,8 +176,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, 
             new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, min, max));
         }    
@@ -189,8 +190,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     Random random = random();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, 
             new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 2, 15));
       }    
@@ -199,7 +200,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testGraphs() throws IOException {
-    TokenStream tk = new LetterTokenizer(TEST_VERSION_CURRENT, new StringReader("abc d efgh ij klmno p q"));
+    TokenStream tk = new LetterTokenizer(TEST_VERSION_CURRENT);
+    ((Tokenizer)tk).setReader(new StringReader("abc d efgh ij klmno p q"));
     tk = new ShingleFilter(tk);
     tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, 7, 10);
     assertTokenStreamContents(tk,
@@ -217,7 +219,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     final int codePointCount = s.codePointCount(0, s.length());
     final int minGram = _TestUtil.nextInt(random(), 1, 3);
     final int maxGram = _TestUtil.nextInt(random(), minGram, 10);
-    TokenStream tk = new KeywordTokenizer(new StringReader(s));
+    TokenStream tk = new KeywordTokenizer();
+    ((Tokenizer)tk).setReader(new StringReader(s));
     tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
     final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
     final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);

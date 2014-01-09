@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.pattern;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /** Simple Tests to ensure this factory is working */
@@ -28,7 +28,8 @@ public class TestPatternTokenizerFactory extends BaseTokenStreamFactoryTestCase 
   public void testFactory() throws Exception {
     final Reader reader = new StringReader("Günther Günther is here");
     // create PatternTokenizer
-    TokenStream stream = tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create(reader);
+    Tokenizer stream = tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create();
+    stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" });
   }

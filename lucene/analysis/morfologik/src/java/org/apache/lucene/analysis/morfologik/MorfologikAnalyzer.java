@@ -49,16 +49,14 @@ public class MorfologikAnalyzer extends Analyzer {
    * which tokenizes all the text in the provided {@link Reader}.
    * 
    * @param field ignored field name
-   * @param reader source of tokens
-   * 
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter} and {@link MorfologikFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(final String field, final Reader reader) {
-    final Tokenizer src = new StandardTokenizer(this.version, reader);
+  protected TokenStreamComponents createComponents(final String field) {
+    final Tokenizer src = new StandardTokenizer(this.version);
     
     return new TokenStreamComponents(
         src, 

@@ -41,8 +41,8 @@ import org.junit.Ignore;
 public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(tokenizer, 
           new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
     }
@@ -71,8 +71,8 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
     }});
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer( MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, 
             new BeiderMorseFilter(tokenizer, 
                 new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true), languages));
@@ -101,8 +101,8 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
       }
     };
@@ -110,7 +110,8 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   }
   
   public void testCustomAttribute() throws IOException {
-    TokenStream stream = new KeywordTokenizer(new StringReader("D'Angelo"));
+    TokenStream stream = new KeywordTokenizer();
+    ((Tokenizer)stream).setReader(new StringReader("D'Angelo"));
     stream = new PatternKeywordMarkerFilter(stream, Pattern.compile(".*"));
     stream = new BeiderMorseFilter(stream, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true));
     KeywordAttribute keyAtt = stream.addAttribute(KeywordAttribute.class);

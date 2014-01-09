@@ -35,7 +35,7 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Traditional-Simplified");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "简化字" });
   }
@@ -47,7 +47,7 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Cyrillic-Latin");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Rossijskaâ",  "Federaciâ" });
   }
@@ -59,7 +59,7 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
     args.put("id", "Cyrillic-Latin");
     args.put("direction", "reverse");
     ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Российская", "Федерация" });
   }

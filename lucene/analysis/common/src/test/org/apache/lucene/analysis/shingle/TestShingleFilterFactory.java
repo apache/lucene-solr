@@ -33,7 +33,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "this", "this is", "is", "is a", "a", "a test", "test" }
@@ -45,7 +45,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "outputUnigrams", "false").create(stream);
     assertTokenStreamContents(stream,
@@ -57,7 +57,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testMaxShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "maxShingleSize", "3").create(stream);
     assertTokenStreamContents(stream, 
@@ -71,7 +71,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testMinShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "4").create(stream);
@@ -86,7 +86,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testMinShingleSizeNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "4",
@@ -100,7 +100,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testEqualMinAndMaxShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "3").create(stream);
@@ -113,7 +113,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testEqualMinAndMaxShingleSizeNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "3",
@@ -127,7 +127,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "tokenSeparator", "=BLAH=").create(stream);
     assertTokenStreamContents(stream, 
@@ -141,7 +141,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testTokenSeparatorNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "tokenSeparator", "=BLAH=",
         "outputUnigrams", "false").create(stream);
@@ -154,7 +154,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testEmptyTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "tokenSeparator", "").create(stream);
     assertTokenStreamContents(stream, 
@@ -167,7 +167,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testMinShingleSizeAndTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "4",
@@ -186,7 +186,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testMinShingleSizeAndTokenSeparatorNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "minShingleSize", "3",
         "maxShingleSize", "4",
@@ -208,7 +208,7 @@ public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testOutputUnigramsIfNoShingles() throws Exception {
     Reader reader = new StringReader("test");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle",
         "outputUnigrams", "false",
         "outputUnigramsIfNoShingles", "true").create(stream);

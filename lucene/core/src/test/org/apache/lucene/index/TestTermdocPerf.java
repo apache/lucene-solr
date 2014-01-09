@@ -42,8 +42,8 @@ class RepeatingTokenizer extends Tokenizer {
   CharTermAttribute termAtt;
   String value;
 
-   public RepeatingTokenizer(Reader reader, String val, Random random, float percentDocs, int maxTF) {
-     super(reader);
+   public RepeatingTokenizer(String val, Random random, float percentDocs, int maxTF) {
+     super();
      this.value = val;
      this.random = random;
      this.percentDocs = percentDocs;
@@ -80,8 +80,8 @@ public class TestTermdocPerf extends LuceneTestCase {
 
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new RepeatingTokenizer(reader, val, random, percentDocs, maxTF));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new RepeatingTokenizer(val, random, percentDocs, maxTF));
       }
     };
 

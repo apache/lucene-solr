@@ -578,13 +578,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     return (T) producer.create(random);
   }
   
-  static Object[] newTokenizerArgs(Random random, Reader reader, Class<?>[] paramTypes) {
+  static Object[] newTokenizerArgs(Random random, Class<?>[] paramTypes) {
     Object[] args = new Object[paramTypes.length];
     for (int i = 0; i < args.length; i++) {
       Class<?> paramType = paramTypes[i];
-      if (paramType == Reader.class) {
-        args[i] = reader;
-      } else if (paramType == AttributeFactory.class) {
+      if (paramType == AttributeFactory.class) {
         // TODO: maybe the collator one...???
         args[i] = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
       } else if (paramType == AttributeSource.class) {
@@ -637,15 +635,15 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     public boolean offsetsAreCorrect() {
       // TODO: can we not do the full chain here!?
       Random random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, new StringReader(""));
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
       return filterSpec.offsetsAreCorrect;
     }
     
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
       Random random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, reader);
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       //System.out.println("seed=" + seed + ",create tokenizer=" + tokenizerSpec.toString);
       TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
       //System.out.println("seed=" + seed + ",create filter=" + filterSpec.toString);
@@ -668,7 +666,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       sb.append(charFilterSpec.toString);
       // intentional: initReader gets its own separate random
       random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, charFilterSpec.reader);
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       sb.append("\n");
       sb.append("tokenizer=");
       sb.append(tokenizerSpec.toString);
@@ -726,13 +724,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
 
     // create a new random tokenizer from classpath
-    private TokenizerSpec newTokenizer(Random random, Reader reader) {
+    private TokenizerSpec newTokenizer(Random random) {
       TokenizerSpec spec = new TokenizerSpec();
       while (spec.tokenizer == null) {
         final Constructor<? extends Tokenizer> ctor = tokenizers.get(random.nextInt(tokenizers.size()));
         final StringBuilder descr = new StringBuilder();
-        final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
-        final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
+        final Object args[] = newTokenizerArgs(random, ctor.getParameterTypes());
         if (broken(ctor, args)) {
           continue;
         }
@@ -740,8 +737,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         if (spec.tokenizer != null) {
           spec.offsetsAreCorrect &= !brokenOffsets(ctor, args);
           spec.toString = descr.toString();
-        } else {
-          assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
         }
       }
       return spec;

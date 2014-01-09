@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.ja;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -31,7 +32,8 @@ public class TestJapaneseReadingFormFilterFactory extends BaseTokenStreamTestCas
   public void testReadings() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream tokenStream = tokenizerFactory.create(new StringReader("先ほどベルリンから来ました。"));
+    TokenStream tokenStream = tokenizerFactory.create();
+    ((Tokenizer)tokenStream).setReader(new StringReader("先ほどベルリンから来ました。"));
     JapaneseReadingFormFilterFactory filterFactory = new JapaneseReadingFormFilterFactory(new HashMap<String,String>());
     assertTokenStreamContents(filterFactory.create(tokenStream),
         new String[] { "サキ", "ホド", "ベルリン", "カラ", "キ", "マシ", "タ" }

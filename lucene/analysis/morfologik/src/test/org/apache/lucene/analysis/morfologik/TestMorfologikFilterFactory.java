@@ -32,7 +32,7 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testCreateDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
     MorfologikFilterFactory factory = new MorfologikFilterFactory(Collections.<String,String>emptyMap());
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
   }

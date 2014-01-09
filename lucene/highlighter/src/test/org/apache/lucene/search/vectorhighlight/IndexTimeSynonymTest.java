@@ -297,8 +297,8 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     }
     
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer ts = new Tokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, reader) {
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer ts = new Tokenizer(Token.TOKEN_ATTRIBUTE_FACTORY) {
         final AttributeImpl reusableToken = (AttributeImpl) addAttribute(CharTermAttribute.class);
         int p = 0;
         

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestTrimFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testTrimming() throws Exception {
     Reader reader = new StringReader("trim me    ");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    TokenStream stream = keywordMockTokenizer(reader);
     stream = tokenFilterFactory("Trim").create(stream);
     assertTokenStreamContents(stream, new String[] { "trim me" });
   }

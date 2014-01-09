@@ -26,8 +26,7 @@ import java.io.StringReader;
 public class TestScandinavianNormalizationFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testStemming() throws Exception {
-    Reader reader = new StringReader("räksmörgås");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("räksmörgås");
     stream = tokenFilterFactory("ScandinavianNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "ræksmørgås" });
   }

@@ -43,7 +43,7 @@ public class KeywordTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public KeywordTokenizer create(AttributeFactory factory, Reader input) {
-    return new KeywordTokenizer(factory, input, KeywordTokenizer.DEFAULT_BUFFER_SIZE);
+  public KeywordTokenizer create(AttributeFactory factory) {
+    return new KeywordTokenizer(factory, KeywordTokenizer.DEFAULT_BUFFER_SIZE);
   }
 }

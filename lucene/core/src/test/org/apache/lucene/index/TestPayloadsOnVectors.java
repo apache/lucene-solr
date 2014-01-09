@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -48,7 +49,8 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorPayloads(true);
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
-    TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
+    TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    ((Tokenizer)ts).setReader(new StringReader("here we go"));
     assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
@@ -61,7 +63,8 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     field.setTokenStream(ts);
     writer.addDocument(doc);
     
-    ts = new MockTokenizer(new StringReader("another"), MockTokenizer.WHITESPACE, true);
+    ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    ((Tokenizer)ts).setReader(new StringReader("another"));
     assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     writer.addDocument(doc);
@@ -91,7 +94,8 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorPayloads(true);
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
-    TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
+    TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    ((Tokenizer)ts).setReader(new StringReader("here we go"));
     assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
@@ -103,7 +107,8 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     field2.setTokenStream(ts);
     doc.add(field2);
     Field field3 = new Field("field", "", customType);
-    ts = new MockTokenizer(new StringReader("nopayload"), MockTokenizer.WHITESPACE, true);
+    ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+    ((Tokenizer)ts).setReader(new StringReader("nopayload"));
     assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field3.setTokenStream(ts);
     doc.add(field3);

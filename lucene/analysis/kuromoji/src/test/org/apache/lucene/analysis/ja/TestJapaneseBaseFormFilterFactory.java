@@ -23,6 +23,7 @@ import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Simple tests for {@link JapaneseBaseFormFilterFactory}
@@ -31,7 +32,8 @@ public class TestJapaneseBaseFormFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = tokenizerFactory.create(new StringReader("それはまだ実験段階にあります"));
+    TokenStream ts = tokenizerFactory.create();
+    ((Tokenizer)ts).setReader(new StringReader("それはまだ実験段階にあります"));
     JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory(new HashMap<String,String>());
     ts = factory.create(ts);
     assertTokenStreamContents(ts,

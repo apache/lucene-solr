@@ -77,24 +77,22 @@ public class NGramTokenizer extends Tokenizer {
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-  NGramTokenizer(Version version, Reader input, int minGram, int maxGram, boolean edgesOnly) {
-    super(input);
+  NGramTokenizer(Version version, int minGram, int maxGram, boolean edgesOnly) {
     init(version, minGram, maxGram, edgesOnly);
   }
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
    * @param version the lucene compatibility <a href="#version">version</a>
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public NGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
-    this(version, input, minGram, maxGram, false);
+  public NGramTokenizer(Version version, int minGram, int maxGram) {
+    this(version, minGram, maxGram, false);
   }
 
-  NGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram, boolean edgesOnly) {
-    super(factory, input);
+  NGramTokenizer(Version version, AttributeFactory factory, int minGram, int maxGram, boolean edgesOnly) {
+    super(factory);
     init(version, minGram, maxGram, edgesOnly);
   }
 
@@ -102,21 +100,19 @@ public class NGramTokenizer extends Tokenizer {
    * Creates NGramTokenizer with given min and max n-grams.
    * @param version the lucene compatibility <a href="#version">version</a>
    * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public NGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    this(version, factory, input, minGram, maxGram, false);
+  public NGramTokenizer(Version version, AttributeFactory factory, int minGram, int maxGram) {
+    this(version, factory, minGram, maxGram, false);
   }
 
   /**
    * Creates NGramTokenizer with default min and max n-grams.
    * @param version the lucene compatibility <a href="#version">version</a>
-   * @param input {@link Reader} holding the input to be tokenized
    */
-  public NGramTokenizer(Version version, Reader input) {
-    this(version, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  public NGramTokenizer(Version version) {
+    this(version, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
 
   private void init(Version version, int minGram, int maxGram, boolean edgesOnly) {

@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
@@ -30,7 +31,8 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestNorwegianMinimalStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("eple eplet epler eplene eplets eplenes");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("NorwegianMinimalStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "epl", "epl", "epl", "epl", "epl", "epl" });
   }
@@ -38,7 +40,8 @@ public class TestNorwegianMinimalStemFilterFactory extends BaseTokenStreamFactor
   /** Test stemming with variant set explicitly to Bokmål */
   public void testBokmaalStemming() throws Exception {
     Reader reader = new StringReader("eple eplet epler eplene eplets eplenes");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("NorwegianMinimalStem", "variant", "nb").create(stream);
     assertTokenStreamContents(stream, new String[] { "epl", "epl", "epl", "epl", "epl", "epl" });
   }
@@ -46,7 +49,8 @@ public class TestNorwegianMinimalStemFilterFactory extends BaseTokenStreamFactor
   /** Test stemming with variant set explicitly to Nynorsk */
   public void testNynorskStemming() throws Exception {
     Reader reader = new StringReader("gut guten gutar gutane gutens gutanes");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("NorwegianMinimalStem", "variant", "nn").create(stream);
     assertTokenStreamContents(stream, new String[] { "gut", "gut", "gut", "gut", "gut", "gut" });
   }

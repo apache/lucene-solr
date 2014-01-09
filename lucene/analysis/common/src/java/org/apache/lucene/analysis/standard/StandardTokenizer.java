@@ -109,25 +109,22 @@ public final class StandardTokenizer extends Tokenizer {
   /**
    * Creates a new instance of the {@link org.apache.lucene.analysis.standard.StandardTokenizer}.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
-   *
-   * @param input The input reader
-   *
+
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public StandardTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public StandardTokenizer(Version matchVersion) {
     init(matchVersion);
   }
 
   /**
    * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
-  public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public StandardTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     init(matchVersion);
   }
 
-  private final void init(Version matchVersion) {
+  private void init(Version matchVersion) {
     this.scanner = new StandardTokenizerImpl(input);
   }
 

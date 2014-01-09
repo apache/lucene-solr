@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,7 +37,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     final String text = "時々馬鹿々々しいところゞゝゝミスヾ";
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>());
     CharFilter filter = filterFactory.create(new StringReader(text));
-    TokenStream tokenStream = new MockTokenizer(filter, MockTokenizer.KEYWORD, false);
+    TokenStream tokenStream = new MockTokenizer(MockTokenizer.KEYWORD, false);
+    ((Tokenizer)tokenStream).setReader(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時馬鹿馬鹿しいところどころミスズ"});
   }
 
@@ -48,7 +50,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create();
+    ((Tokenizer)tokenStream).setReader(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところどころ", "ミ", "スズ"});
   }
 
@@ -64,7 +67,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create();
+    ((Tokenizer)tokenStream).setReader(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところ", "ゞ", "ゝ", "ゝ", "ミス", "ヾ"});
   }
 
@@ -80,7 +84,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create();
+    ((Tokenizer)tokenStream).setReader(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時々", "馬鹿", "々", "々", "しい", "ところどころ", "ミ", "スズ"});
   }
   

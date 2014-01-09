@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.ar;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -122,14 +120,14 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("ساهدهات");
-    MockTokenizer tokenStream  = new MockTokenizer(new StringReader("ساهدهات"), MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenStream  = whitespaceMockTokenizer("ساهدهات");
 
     ArabicStemFilter filter = new ArabicStemFilter(new SetKeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[]{"ساهدهات"});
   }
 
   private void check(final String input, final String expected) throws IOException {
-    MockTokenizer tokenStream  = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenStream  = whitespaceMockTokenizer(input);
     ArabicStemFilter filter = new ArabicStemFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }
@@ -137,8 +135,8 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ArabicStemFilter(tokenizer));
       }
     };

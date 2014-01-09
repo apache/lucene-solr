@@ -16,6 +16,7 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -25,12 +26,12 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 
-public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
+public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testPayloads() throws Exception {
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
-      (new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), 
+      (whitespaceMockTokenizer(test), 
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
@@ -54,7 +55,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
 
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
-      (new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), 
+      (whitespaceMockTokenizer(test), 
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     filter.reset();
     assertTermEquals("The", filter, null);
@@ -75,7 +76,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
 
   public void testFloatEncoding() throws Exception {
     String test = "The quick|1.0 red|2.0 fox|3.5 jumped|0.5 over the lazy|5 brown|99.3 dogs|83.7";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), '|', new FloatEncoder());
+    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new FloatEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();
@@ -96,7 +97,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
 
   public void testIntEncoding() throws Exception {
     String test = "The quick|1 red|2 fox|3 jumped over the lazy|5 brown|99 dogs|83";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false), '|', new IntegerEncoder());
+    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new IntegerEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();

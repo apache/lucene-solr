@@ -29,7 +29,9 @@ public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
+    final MockTokenizer input = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    input.setReader(new StringReader(test));
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(input);
     TeeSinkTokenFilter.SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);
     int count = 0;
     

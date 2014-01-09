@@ -21,7 +21,9 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /**
  * Simple tests to ensure the Hindi filter Factories are working.
@@ -32,7 +34,8 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = tokenizerFactory("Standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
   }
@@ -42,7 +45,8 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = tokenizerFactory("Standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     stream = tokenFilterFactory("HindiNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
@@ -53,7 +57,8 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = tokenizerFactory("Standard").create();
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     stream = tokenFilterFactory("HindiNormalization").create(stream);
     stream = tokenFilterFactory("HindiStem").create(stream);

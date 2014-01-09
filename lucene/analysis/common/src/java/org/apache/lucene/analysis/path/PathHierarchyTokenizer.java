@@ -43,37 +43,37 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  */
 public class PathHierarchyTokenizer extends Tokenizer {
 
-  public PathHierarchyTokenizer(Reader input) {
-    this(input, DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, DEFAULT_SKIP);
+  public PathHierarchyTokenizer() {
+    this( DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, int skip) {
-    this(input, DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, skip);
+  public PathHierarchyTokenizer( int skip) {
+    this( DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, skip);
   }
 
-  public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter) {
-    this(input, bufferSize, delimiter, delimiter, DEFAULT_SKIP);
+  public PathHierarchyTokenizer( int bufferSize, char delimiter) {
+    this( bufferSize, delimiter, delimiter, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, char delimiter, char replacement) {
-    this(input, DEFAULT_BUFFER_SIZE, delimiter, replacement, DEFAULT_SKIP);
+  public PathHierarchyTokenizer(char delimiter, char replacement) {
+    this(DEFAULT_BUFFER_SIZE, delimiter, replacement, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, char delimiter, char replacement, int skip) {
-    this(input, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
+  public PathHierarchyTokenizer(char delimiter, char replacement, int skip) {
+    this(DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public PathHierarchyTokenizer(AttributeFactory factory, Reader input, char delimiter, char replacement, int skip) {
-    this(factory, input, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
+  public PathHierarchyTokenizer(AttributeFactory factory, char delimiter, char replacement, int skip) {
+    this(factory, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, bufferSize, delimiter, replacement, skip);
+  public PathHierarchyTokenizer(int bufferSize, char delimiter, char replacement, int skip) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
   }
 
   public PathHierarchyTokenizer
-      (AttributeFactory factory, Reader input, int bufferSize, char delimiter, char replacement, int skip) {
-    super(factory, input);
+      (AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {
+    super(factory);
     if (bufferSize < 0) {
       throw new IllegalArgumentException("bufferSize cannot be negative");
     }

@@ -27,7 +27,8 @@ public class TestLimitTokenCountFilterFactory extends BaseTokenStreamFactoryTest
 
   public void test() throws Exception {
     Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(reader);
     // LimitTokenCountFilter doesn't consume the entire stream that it wraps
     tokenizer.setEnableChecks(false);
     TokenStream stream = tokenizer;

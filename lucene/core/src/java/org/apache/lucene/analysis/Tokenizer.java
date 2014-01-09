@@ -37,21 +37,21 @@ public abstract class Tokenizer extends TokenStream {
   /** Pending reader: not actually assigned to input until reset() */
   private Reader inputPending = ILLEGAL_STATE_READER;
 
-  /** Construct a token stream processing the given input. */
-  protected Tokenizer(Reader input) {
-    if (input == null) {
-      throw new NullPointerException("input must not be null");
-    }
-    this.inputPending = input;
+  /**
+   * Construct a tokenizer with no input, awaiting a call to {@link #setReader(java.io.Reader)}
+   * to provide input.
+   */
+  protected Tokenizer() {
+    //
   }
-  
-  /** Construct a token stream processing the given input using the given AttributeFactory. */
-  protected Tokenizer(AttributeFactory factory, Reader input) {
+
+  /**
+   * Construct a tokenizer with no input, awaiting a call to {@link #setReader(java.io.Reader)} to
+   * provide input.
+   * @param factory attribute factory.
+   */
+  protected Tokenizer(AttributeFactory factory) {
     super(factory);
-    if (input == null) {
-      throw new NullPointerException("input must not be null");
-    }
-    this.inputPending = input;
   }
 
   /**
