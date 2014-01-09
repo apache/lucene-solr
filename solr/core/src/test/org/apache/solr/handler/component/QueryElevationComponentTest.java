@@ -641,6 +641,32 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       );
 
 
+      // Test setting ids and excludes from http parameters
+
+      booster.elevationCache.clear();
+      args.put(QueryElevationParams.IDS, "x,y,z");
+      args.put(QueryElevationParams.EXCLUDE, "b");
+
+      assertQ("All five should make it", req
+          , "//*[@numFound='5']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='y']"
+          , "//result/doc[3]/str[@name='id'][.='z']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+          , "//result/doc[5]/str[@name='id'][.='c']"
+      );
+
+      args.put(QueryElevationParams.IDS, "x,z,y");
+      args.put(QueryElevationParams.EXCLUDE, "b,c");
+
+      assertQ("All four should make it", req
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='z']"
+          , "//result/doc[3]/str[@name='id'][.='y']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+      );
+
       req.close();
     } finally {
       delete();
