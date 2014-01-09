@@ -14,6 +14,12 @@ Bug fixes
 * LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
   (Nik Everett via Adrien Grand)
 
+* LUCENE-5374: IndexWriter processes internal events after the it
+  closed itself internally. This rare condition can happen if an
+  IndexWriter has internal changes that were not fully applied yet
+  like when index / flush requests happen concurrently to the close or
+  rollback call. (Simon Willnauer)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

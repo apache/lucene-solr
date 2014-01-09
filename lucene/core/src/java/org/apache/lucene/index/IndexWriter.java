@@ -1029,7 +1029,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       if (doFlush) {
         commitInternal();
       }
-
+      processEvents(false, true);
       synchronized(this) {
         // commitInternal calls ReaderPool.commit, which
         // writes any pending liveDocs from ReaderPool, so
@@ -1064,7 +1064,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
       // finally, restore interrupt status:
       if (interrupted) Thread.currentThread().interrupt();
-      processEvents(false, true);
     }
   }
 
