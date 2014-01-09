@@ -107,6 +107,11 @@ public class CorePropertiesLocator implements CoresLocator {
   }
 
   @Override
+  public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
+    persist(cc, cd1, cd2);
+  }
+
+  @Override
   public List<CoreDescriptor> discover(CoreContainer cc) {
     logger.info("Looking for core definitions underneath {}", rootDirectory.getAbsolutePath());
     List<CoreDescriptor> cds = Lists.newArrayList();
