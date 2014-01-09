@@ -47,9 +47,6 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.facet.CachedOrdinalsReader;
@@ -105,6 +102,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.packed.PackedInts;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
@@ -164,6 +162,13 @@ public class IndexState implements Closeable {
   public IndexWriter taxoInternalWriter;
 
   private final GlobalState globalState;
+
+  /** Which norms format to use for all indexed fields. */
+  public String normsFormat = "Lucene42";
+
+  /** If normsFormat is Lucene42, what
+   *  acceptableOverheadRatio to pass. */
+  public float normsAcceptableOverheadRatio = PackedInts.FASTEST;
 
   /** All live values fields. */
   public final Map<String,StringLiveFieldValues> liveFieldValues = new ConcurrentHashMap<String,StringLiveFieldValues>();
@@ -858,6 +863,11 @@ public class IndexState implements Closeable {
     this.df = df;
   }
 
+  public void setNormsFormat(String format, float acceptableOverheadRatio) {
+    this.normsFormat = format;
+    this.normsAcceptableOverheadRatio = acceptableOverheadRatio;
+  }
+
   /** Get the current save state. */
   public synchronized JSONObject getSaveState() throws IOException {
     JSONObject o = new JSONObject();
@@ -1076,35 +1086,7 @@ public class IndexState implements Closeable {
 
       iwc.setIndexDeletionPolicy(snapshots);
 
-      iwc.setCodec(new Lucene46Codec() {
-          @Override
-          public PostingsFormat getPostingsFormatForField(String field) {
-            String pf;
-            if (field.equals("$facets")) {
-              // nocommit we have to do this because $facets
-              // is a "fake" field ... which is sort of
-              // weird; we need to make this (which PF is
-              // used for this "fake" field) controllable;
-              // prolly we need to make it a "real" field
-              pf = "Lucene41";
-            } else {
-              pf = getField(field).postingsFormat;
-            }
-            return PostingsFormat.forName(pf);
-          }
-
-          @Override
-          public DocValuesFormat getDocValuesFormatForField(String field) {
-            String dvf;
-            if (field.equals("$facets")) {
-              dvf = "Lucene45";
-              //dvf = "Direct";
-            } else {
-              dvf = getField(field).docValuesFormat;
-            }
-            return DocValuesFormat.forName(dvf);
-          }
-        });
+      iwc.setCodec(new ServerCodec(this));
 
       writer = new TrackingIndexWriter(new IndexWriter(indexDir, iwc));
 

@@ -235,7 +235,7 @@ public class TestIndexing extends ServerBaseTestCase {
     // Just to test index.ramBufferSizeMB:
     send("liveSettings", "{index.ramBufferSizeMB: 20.0}");
     send("registerFields", "{fields: {id: {type: atom, store: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
-    send("startIndex", "{}");
+    send("startIndex");
     send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
     long gen = getLong(send("addDocument", "{fields: {id: '1', body: 'here is a test'}}"), "indexGen");
     JSONObject result = send("search", String.format(Locale.ROOT, "{retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
@@ -254,7 +254,46 @@ public class TestIndexing extends ServerBaseTestCase {
     assertEquals("1", getString(result, "hits[0].fields.id"));
     assertEquals("0", getString(result, "hits[1].fields.id"));
 
-    send("stopIndex", "{}");
-    send("deleteIndex", "{}");
+    send("stopIndex");
+    send("deleteIndex");
+  }
+
+  public void testInvalidNormsFormat() throws Exception {
+    try {
+      send("registerFields",
+           "{fields: {bad: {type: text, normsFormat: DoesNotExist, analyzer: WhitespaceAnalyzer}}}");
+      fail("did not hit exception");
+    } catch (IOException ioe) {
+      // nocommit chieck message
+      System.out.println("message: " + ioe.getMessage());
+    }
+  }
+
+  public void testNormsFormat() throws Exception {
+    for(int i=0;i<2;i++) {
+      curIndexName = "normsFormat";
+      _TestUtil.rmDir(new File(curIndexName));
+      send("createIndex", "{rootDir: " + curIndexName + "}");
+      String norms;
+      if (i == 0) {
+        norms = "normsFormat: Lucene42";
+      } else {
+        norms = "normsFormat: {class: Lucene42, acceptableOverheadRatio: 0.0}";
+      }
+      send("settings", "{directory: RAMDirectory, matchVersion: LUCENE_40, " + norms + "}");
+      send("registerFields",
+           "{fields: {id: {type: atom, store: true}," +
+           " body: {type: text, analyzer: StandardAnalyzer}}}");
+      send("startIndex");
+      send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
+      long gen = getLong(send("addDocument", "{fields: {id: '1', body: 'here is a test again'}}"), "indexGen");
+      JSONObject result = send("search", String.format(Locale.ROOT, "{retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));
+      assertEquals(2, getInt(result, "hits.length"));
+      assertEquals("0", getString(result, "hits[0].fields.id"));
+      assertEquals("1", getString(result, "hits[1].fields.id"));
+
+      send("stopIndex");
+      send("deleteIndex");
+    }
   }
 }

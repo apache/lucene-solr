@@ -70,7 +70,8 @@ public class FieldDef {
   public final ValueSource valueSource;
 
   /** Sole constructor. */
-  public FieldDef(String name, FieldType fieldType, String valueType, String faceted, String postingsFormat, String docValuesFormat, boolean multiValued,
+  public FieldDef(String name, FieldType fieldType, String valueType, String faceted,
+                  String postingsFormat, String docValuesFormat, boolean multiValued,
                   Similarity sim, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean highlighted, String liveValuesIDField,
                   ValueSource valueSource) {
     this.name = name;

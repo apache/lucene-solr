@@ -20,6 +20,7 @@ package org.apache.lucene.server.handlers;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.server.DirectoryFactory;
 import org.apache.lucene.server.FinishRequest;
 import org.apache.lucene.server.GlobalState;
@@ -28,6 +29,7 @@ import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
 import org.apache.lucene.server.params.Request.PolyResult;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.packed.PackedInts;
 import net.minidev.json.JSONValue;
 
 /** For changing index settings that cannot be changed while
@@ -48,7 +50,17 @@ public class SettingsHandler extends Handler {
         new Param("nrtCachingDirectory.maxSizeMB", "Largest overall size for all files cached in NRTCachingDirectory; set to 0 to disable NRTCachingDirectory", new FloatType(), 60.0),
         new Param("concurrentMergeScheduler.maxThreadCount", "How many merge threads to allow at once", new IntType(), 1),
         new Param("concurrentMergeScheduler.maxMergeCount", "Maximum backlog of pending merges before indexing threads are stalled", new IntType(), 2),
+
         new Param("index.verbose", "Turn on IndexWriter's infoStream (to stdout)", new BooleanType(), false),
+        // nocommit how to accept any class on the CP that
+        // implements NormsFormat and has default ctor ...?
+        new Param("normsFormat", "Which NormsFormat should be used for all indexed fields.",
+                  new StructType(
+                      new Param("class", "Which NormsFormat implementation to use",
+                          new PolyType(NormsFormat.class, "Lucene42",
+                              new PolyEntry("Lucene42", "Lucene42NormsFormat",
+                                  new Param("acceptableOverheadRatio", "How much, if any, compression should be used; pass 7.0 or higher for no compression, and 0.0 for maximum compression.", new FloatType(), PackedInts.FASTEST)),
+                              new PolyEntry("Lucene40", "Lucene40NormsFormat"))))),
         new Param("directory", "Directory implementation to use",
             new PolyType(Directory.class,
                 new PolyEntry("FSDirectory", "Use the default filesystem Directory (FSDirectory.open)"),
@@ -88,6 +100,27 @@ public class SettingsHandler extends Handler {
       directoryJSON = null;
     }
 
+    if (r.hasParam("normsFormat")) {
+      Request r2 = r.getStruct("normsFormat");
+      Request.PolyResult npr = r2.getPoly("class");
+      float acceptableOverheadRatio;
+      if (npr.name.equals("Lucene42") && npr.r.hasParam("acceptableOverheadRatio")) {
+        acceptableOverheadRatio = npr.r.getFloat("acceptableOverheadRatio");
+      } else {
+        acceptableOverheadRatio = PackedInts.FASTEST;
+      }
+
+      state.setNormsFormat(npr.name, acceptableOverheadRatio);
+      
+      // Sneaky: if we don't do this, and if the PolyResult
+      // was a struct, then state.mergeSimpleSettings below
+      // gets angry because it doesn't know what to do w/
+      // this parameter:
+      r.clearParam("normsFormat");
+    }
+
+    // nocommit these settings take effect even if there is
+    // an error?
     state.mergeSimpleSettings(r);
 
     return new FinishRequest() {

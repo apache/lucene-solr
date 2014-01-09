@@ -39,6 +39,9 @@ public class PolyType extends Type {
    *  to allow custom (plugin) classes to be accepted. */
   public final Class baseClass;
 
+  /** Default value, or null. */
+  public final String defaultClassName;
+
   /** Describes one sub type. */
   public static class PolyEntry {
 
@@ -69,9 +72,15 @@ public class PolyType extends Type {
   public void validate(Object o) {
   }
 
-  /** Sole constructor. */
+  /** No default value. */
   public PolyType(Class baseClass, PolyEntry... entries) {
+    this(baseClass, null, entries);
+  }
+
+  /** With default value. */
+  public PolyType(Class baseClass, String defaultClassName, PolyEntry... entries) {
     this.baseClass = baseClass;
+    this.defaultClassName = defaultClassName;
     for(PolyEntry e : entries) {
       if (types.containsKey(e.name)) {
         throw new IllegalArgumentException("name \"" + e.name + "\" appears more than once");

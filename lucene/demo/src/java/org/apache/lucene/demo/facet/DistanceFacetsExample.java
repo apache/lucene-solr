@@ -92,7 +92,8 @@ public class DistanceFacetsExample implements Closeable {
   private ValueSource getDistanceValueSource() {
     Expression distance;
     try {
-      distance = JavascriptCompiler.compile("haversin(40.7143528,-74.0059731,latitude,longitude)");
+      distance = JavascriptCompiler.compile(
+                  "haversin(40.7143528,-74.0059731,latitude,longitude)");
     } catch (ParseException pe) {
       // Should not happen
       throw new RuntimeException(pe);

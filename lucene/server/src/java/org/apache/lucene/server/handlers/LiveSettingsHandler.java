@@ -36,7 +36,8 @@ public class LiveSettingsHandler extends Handler {
         new Param("maxRefreshSec", "Longest time to wait before reopening IndexSearcher (i.e., periodic background reopen).", new FloatType(), 1.0f),
         new Param("minRefreshSec", "Shortest time to wait before reopening IndexSearcher (i.e., when a search is waiting for a specific indexGen).", new FloatType(), .05f),
         new Param("maxSearcherAgeSec", "Non-current searchers older than this are pruned.", new FloatType(), 60.0f),
-        new Param("index.ramBufferSizeMB", "Size (in MB) of IndexWriter's RAM buffer.", new FloatType(), 16.0f));
+        new Param("index.ramBufferSizeMB", "Size (in MB) of IndexWriter's RAM buffer.", new FloatType(), 16.0f)
+                   );
 
   @Override
   public StructType getType() {
