@@ -100,6 +100,9 @@ New Features
 
 * SOLR-5536: Add ValueSource collapse criteria to CollapsingQParsingPlugin (Joel Bernstein)
 
+* SOLR-5541: Allow QueryElevationComponent to accept elevateIds and excludeIds 
+  as http parameters (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
