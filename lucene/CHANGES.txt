@@ -6,30 +6,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
-Changes in backwards compatibility policy
-
-* LUCENE-4535: oal.util.FilterIterator is now an internal API.
-  (Adrien Grand)
-
-* LUCENE-3312: The API of oal.document was restructured to
-  differentiate between stored documents and indexed documents.
-  IndexReader.document(int) now returns StoredDocument
-  instead of Document. In most cases a simple replacement
-  of the return type is enough to upgrade (see MIGRATE.txt).
-  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
-  Robert Muir)
-
-* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
-  not positioned. This change affects all classes that inherit from
-  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
-
-* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
-  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
-  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
-  with the default codec since Lucene 4.0. If you want to configure the interval for
-  this term index, pass it directly in your codec, where it can also be configured
-  per-field. (Robert Muir)
-
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.
@@ -53,6 +29,30 @@ New Features
   FieldsConsumer API, removing PushFieldsConsumer.  Added new
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
+
+API Changes
+
+* LUCENE-4535: oal.util.FilterIterator is now an internal API.
+  (Adrien Grand)
+
+* LUCENE-3312: The API of oal.document was restructured to
+  differentiate between stored documents and indexed documents.
+  IndexReader.document(int) now returns StoredDocument
+  instead of Document. In most cases a simple replacement
+  of the return type is enough to upgrade (see MIGRATE.txt).
+  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
+  Robert Muir)
+
+* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
+  not positioned. This change affects all classes that inherit from
+  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
+
+* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
+  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
+  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
+  with the default codec since Lucene 4.0. If you want to configure the interval for
+  this term index, pass it directly in your codec, where it can also be configured
+  per-field. (Robert Muir)
 
 * LUCENE-5388: Remove Reader from Tokenizer's constructor. 
   (Benson Margulies via Robert Muir - pull request #16)
