@@ -33,20 +33,12 @@ public class WholeMVJSONPassageFormatter extends PassageFormatter {
     this.offsetGap = offsetGap;
   }
 
-  @Override
-  public String format(Passage passages[], String content) {
-    JSONArray result = wholeMultiValued(passages, content);
-    // NOTE: silly to have to convert back to string only to
-    // (up above) re-parse back into JSONArray ... if only
-    // PH let me return JSONObject ... need to generify it
-    return result.toString();
-  }
-
   /** Carefully finds the field boundaries
    *  (INFORMATION_SEPARATOR) in the content and builds a
    *  JSONArray so that each original field value is
    *  separated and highlighted. */
-  private JSONArray wholeMultiValued(Passage[] passages, String content) {
+  @Override
+  public JSONArray format(Passage[] passages, String content) {
 
     // Caller must use WholeBreakIterator:
     assert passages.length == 1;

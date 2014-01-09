@@ -413,7 +413,7 @@ public class SearchHandler extends Handler {
   /** Holds the state for a single {@link
    *  PostingsHighlighter} instance. */
   public final class HighlighterConfig {
-    PostingsHighlighter highlighter;
+    CachedDocsJSONPostingsHighlighter highlighter;
     int maxPassages;
     String config;
 
@@ -509,6 +509,11 @@ public class SearchHandler extends Handler {
       } else {
         return new SVJSONPassageFormatter(maxSnippetLength);
       }
+    }
+
+    /** Highlights directly to JSONArray[]. */
+    public Map<String,Object[]> highlightToObjects(String fieldsIn[], Query query, IndexSearcher searcher, int docidsIn[], int maxPassagesIn[]) throws IOException {
+      return super.highlightFieldsAsObjects(fieldsIn, query, searcher, docidsIn, maxPassagesIn);
     }
 
     // TODO: allow pulling from DV too:
@@ -721,7 +726,7 @@ public class SearchHandler extends Handler {
   /** Fills in the returned fields (some hilited) for one hit: */
   private void fillFields(IndexState state, HighlighterConfig highlighter, IndexSearcher s,
                           JSONObject result, ScoreDoc hit, Set<String> fields,
-                          Map<String,String[]> highlights,
+                          Map<String,Object[]> highlights,
                           int hiliteHitIndex, Sort sort,
                           List<String> sortFieldNames,
                           Map<String,FieldDef> dynamicFields) throws IOException {
@@ -777,17 +782,10 @@ public class SearchHandler extends Handler {
     }
 
     if (highlights != null) {
-      for (Map.Entry<String,String[]> ent : highlights.entrySet()) {
-        String v = ent.getValue()[hiliteHitIndex];
+      for (Map.Entry<String,Object[]> ent : highlights.entrySet()) {
+        Object v = ent.getValue()[hiliteHitIndex];
         if (v != null) {
-          Object o;
-          try {
-            o = JSONValue.parseStrict(v);
-          } catch (net.minidev.json.parser.ParseException pe) {
-            // BUG
-            throw new RuntimeException(pe);
-          }
-          result.put(ent.getKey(), o);
+          result.put(ent.getKey(), v);
         }
       }
     }
@@ -2170,7 +2168,7 @@ public class SearchHandler extends Handler {
         }
       }
 
-      Map<String,String[]> highlights = null;
+      Map<String,Object[]> highlights = null;
 
       long t0 = System.nanoTime();
       if (highlightDocIDs != null && highlightFields != null && !highlightFields.isEmpty()) {
@@ -2187,11 +2185,11 @@ public class SearchHandler extends Handler {
           upto++;
         }
 
-        highlights = highlighter.highlighter.highlightFields(fieldsArray,
-                                                             q,
-                                                             s.searcher,
-                                                             highlightDocIDs,
-                                                             maxPassages);
+        highlights = highlighter.highlighter.highlightToObjects(fieldsArray,
+                                                                q,
+                                                                s.searcher,
+                                                                highlightDocIDs,
+                                                                maxPassages);
       }
       diagnostics.put("highlightTimeMS", (System.nanoTime() - t0)/1000000.);
 

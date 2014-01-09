@@ -260,12 +260,10 @@ public class TestIndexing extends ServerBaseTestCase {
 
   public void testInvalidNormsFormat() throws Exception {
     try {
-      send("registerFields",
-           "{fields: {bad: {type: text, normsFormat: DoesNotExist, analyzer: WhitespaceAnalyzer}}}");
+      send("settings", "{normsFormat: NoSuchNormsFormat}");
       fail("did not hit exception");
     } catch (IOException ioe) {
-      // nocommit chieck message
-      System.out.println("message: " + ioe.getMessage());
+      assertTrue(ioe.getMessage().contains("unrecognized value \"NoSuchNormsFormat\""));
     }
   }
 

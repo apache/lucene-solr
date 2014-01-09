@@ -40,18 +40,8 @@ public class SVJSONPassageFormatter extends PassageFormatter {
   }
 
   @Override
-  public String format(Passage passages[], String content) {
-
+  public Object format(Passage[] passages, String content) {
     JSONArray result = new JSONArray();
-    singleValued(result, content, passages);
-
-    // NOTE: silly to have to convert back to string only to
-    // (up above) re-parse back into JSONArray ... if only
-    // PH let me return JSONObject ... need to generify it
-    return result.toString();
-  }
-
-  private void singleValued(JSONArray result, String content, Passage[] passages) {
 
     int pos = 0;
     JSONArray snippet = null;
@@ -118,6 +108,8 @@ public class SVJSONPassageFormatter extends PassageFormatter {
     if (lastPassage != null) {
       lastSnippetObj.put("endOffset", lastPassage.getEndOffset());
     }
+
+    return result;
   }
 
   /** Find last word boundary before offset. */

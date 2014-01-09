@@ -85,6 +85,11 @@ public class ServerCodec extends Codec {
     this.state = state;
   }
 
+  /** Default constructor. */
+  public ServerCodec() {
+    this(null);
+  }
+
   @Override
   public final StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
@@ -122,7 +127,9 @@ public class ServerCodec extends Codec {
 
   @Override
   public final NormsFormat normsFormat() {
-    if (state.normsFormat.equals("Lucene42")) {
+    if (state == null) {
+      return new Lucene42NormsFormat();
+    } else if (state.normsFormat.equals("Lucene42")) {
       return new Lucene42NormsFormat(state.normsAcceptableOverheadRatio);
     } else if (state.normsFormat.equals("Lucene40")) {
       return new Lucene40NormsFormat();
