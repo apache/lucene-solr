@@ -30,6 +30,10 @@ New Features
 
 * LUCENE-5369: Added an UpperCaseFilter to make UPPERCASE tokens. (ryan)
 
+* LUCENE-5345: Add a new BlendedInfixSuggester, which is like
+  AnalyzingInfixSuggester but boosts suggestions that matched tokens
+  with lower positions.  (Remi Melisson via Mike McCandless)
+
 
 Build
 
