@@ -108,7 +108,13 @@ public class ConnectionManager implements Watcher {
       clientConnected.countDown();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
-      disconnected();
+      if (disconnectedTimer != null) {
+        disconnectedTimer.cancel();
+        disconnectedTimer = null;
+      }
+      
+      connected = false;
+      likelyExpired = true;
       log.info("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
       
       try {

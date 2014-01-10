@@ -60,7 +60,7 @@ Bug Fixes
 
 * SOLR-5577: Likely ZooKeeper expiration should not slow down updates a given
   amount, but instead cut off updates after a given time. 
-  (Mark Miller, Christine Poerschke)
+  (Mark Miller, Christine Poerschke, Ramkumar Aiyengar)
   
 * SOLR-5580: NPE when creating a core with both explicit shard and coreNodeName.
   (YouPeng Yang, Mark Miller)
