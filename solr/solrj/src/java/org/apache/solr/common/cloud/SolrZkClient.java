@@ -144,6 +144,10 @@ public class SolrZkClient {
     numOpens.incrementAndGet();
   }
 
+  public ConnectionManager getConnectionManager() {
+    return connManager;
+  }
+  
   public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
     return zkClientConnectionStrategy;
   }

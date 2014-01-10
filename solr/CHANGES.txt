@@ -57,6 +57,10 @@ Bug Fixes
 * SOLR-5547: Creating a collection alias using SolrJ's CollectionAdminRequest
   sets the alias name and the collections to alias to the same value.
   (Aaron Schram, Mark Miller)
+
+* SOLR-5577: Likely ZooKeeper expiration should not slow down updates a given
+  amount, but instead cut off updates after a given time. 
+  (Mark Miller, Christine Poerschke)
   
 * SOLR-5580: NPE when creating a core with both explicit shard and coreNodeName.
   (YouPeng Yang, Mark Miller)
