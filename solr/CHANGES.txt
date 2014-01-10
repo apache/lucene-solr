@@ -103,6 +103,9 @@ Bug Fixes
 * SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when
   using solr.xml persistence. (Bill Bell, Alan Woodward)
 
+* SOLR-5618: Fix false cache hits in queryResultCache when hashCodes are equal 
+  and duplicate filter queries exist in one of the requests (hossman)
+
 Optimizations
 ----------------------  
 
