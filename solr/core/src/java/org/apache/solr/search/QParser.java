@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc; //Issue 1726
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -208,37 +207,6 @@ public abstract class QParser {
     return nestedParser;
   }
 
-  /**
-   * use common params to look up pageScore and pageDoc in global params
-   * @return the ScoreDoc
-   */
-  public ScoreDoc getPaging() throws SyntaxError
-  {
-    return null;
-
-    /*** This is not ready for prime-time... see SOLR-1726
-
-    String pageScoreS = null;
-    String pageDocS = null;
-
-    pageScoreS = params.get(CommonParams.PAGESCORE);
-    pageDocS = params.get(CommonParams.PAGEDOC);
-
-    if (pageScoreS == null || pageDocS == null)
-      return null;
-
-    int pageDoc = pageDocS != null ? Integer.parseInt(pageDocS) : -1;
-    float pageScore = pageScoreS != null ? new Float(pageScoreS) : -1;
-    if(pageDoc != -1 && pageScore != -1){
-      return new ScoreDoc(pageDoc, pageScore);
-    }
-    else {
-      return null;
-    }
-
-    ***/
-  }
-  
   /**
    * @param useGlobalParams look up sort, start, rows in global params if not in local params
    * @return the sort specification

@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -33,12 +31,12 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -48,6 +46,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
@@ -81,6 +80,8 @@ import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTran
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.util.SolrPluginUtils;
+
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -147,8 +148,15 @@ public class QueryComponent extends SearchComponent
       rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
-      rb.setScoreDoc(parser.getPaging());
       
+      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != cursorStr) {
+        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(),
+                                                     rb.getSortSpec());
+        cursorMark.parseSerializedTotem(cursorStr);
+        rb.setCursorMark(cursorMark);
+      }
+
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
@@ -171,11 +179,23 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    boolean grouping = params.getBool(GroupParams.GROUP, false);
-    if (!grouping) {
-      return;
+    if (params.getBool(GroupParams.GROUP, false)) {
+      prepareGrouping(rb);
     }
+  }
 
+  private void prepareGrouping(ResponseBuilder rb) throws IOException {
+
+    SolrQueryRequest req = rb.req;
+    SolrParams params = req.getParams();
+
+    if (null != rb.getCursorMark()) {
+      // It's hard to imagine, conceptually, what it would mean to combine
+      // grouping with a cursor - so for now we just don't allow the combination at all
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not use Grouping with " + 
+                              CursorMarkParams.CURSOR_MARK_PARAM);
+    }
+ 
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
     SolrIndexSearcher searcher = rb.req.getSearcher();
     GroupingSpecification groupingSpec = new GroupingSpecification();
@@ -242,6 +262,11 @@ public class QueryComponent extends SearchComponent
 
     // -1 as flag if not set.
     long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
+    if (null != rb.getCursorMark() && 0 < timeAllowed) {
+      // fundementally incompatible
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " + 
+                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
+    }
 
     // Optional: This could also be implemented by the top-level searcher sending
     // a filter that lists the ids... that would be transparent to
@@ -434,13 +459,18 @@ public class QueryComponent extends SearchComponent
     searcher.search(result,cmd);
     rb.setResult( result );
 
-
     ResultContext ctx = new ResultContext();
     ctx.docs = rb.getResults().docList;
     ctx.query = rb.getQuery();
     rsp.add("response", ctx);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
+    if ( ! rb.req.getParams().getBool(ShardParams.IS_SHARD,false) ) {
+      if (null != rb.getNextCursorMark()) {
+        rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, 
+                   rb.getNextCursorMark().getSerializedTotem());
+      }
+    }
     doFieldSortValues(rb, searcher);
     doPrefetch(rb);
   }
@@ -452,6 +482,8 @@ public class QueryComponent extends SearchComponent
     // The query cache doesn't currently store sort field values, and SolrIndexSearcher doesn't
     // currently have an option to return sort field values.  Because of this, we
     // take the documents given and re-derive the sort values.
+    //
+    // TODO: See SOLR-5595
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
@@ -696,6 +728,10 @@ public class QueryComponent extends SearchComponent
     }
 
     rb.rsp.add("response", rb._responseDocs);
+    if (null != rb.getNextCursorMark()) {
+      rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, 
+                 rb.getNextCursorMark().getSerializedTotem());
+    }
   }
 
   private void createDistributedIdf(ResponseBuilder rb) {
@@ -904,9 +940,64 @@ public class QueryComponent extends SearchComponent
       // TODO: use ResponseBuilder (w/ comments) or the request context?
       rb.resultIds = resultIds;
       rb._responseDocs = responseDocs;
+
+      populateNextCursorMarkFromMergedShards(rb);
+
       if (partialResults) {
         rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
       }
+  }
+
+  /**
+   * Inspects the state of the {@link ResponseBuilder} and populates the next 
+   * {@link ResponseBuilder#setNextCursorMark} as appropriate based on the merged 
+   * sort values from individual shards
+   *
+   * @param rb A <code>ResponseBuilder</code> that already contains merged 
+   *           <code>ShardDocs</code> in <code>resultIds</code>, may or may not be 
+   *           part of a Cursor based request (method will NOOP if not needed)
+   */
+  private void populateNextCursorMarkFromMergedShards(ResponseBuilder rb) {
+
+    final CursorMark lastCursorMark = rb.getCursorMark();
+    if (null == lastCursorMark) {
+      // Not a cursor based request
+      return; // NOOP
+    }
+
+    assert null != rb.resultIds : "resultIds was not set in ResponseBuilder";
+
+    Collection<ShardDoc> docsOnThisPage = rb.resultIds.values();
+
+    if (0 == docsOnThisPage.size()) {
+      // nothing more matching query, re-use existing totem so user can "resume" 
+      // search later if it makes sense for this sort.
+      rb.setNextCursorMark(lastCursorMark);
+      return;
+    }
+
+    ShardDoc lastDoc = null;
+    // ShardDoc and rb.resultIds are weird structures to work with...
+    for (ShardDoc eachDoc : docsOnThisPage) {
+      if (null == lastDoc || lastDoc.positionInResponse  < eachDoc.positionInResponse) {
+        lastDoc = eachDoc;
+      }
+    }
+    SortField[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
+    List<Object> nextCursorMarkValues = new ArrayList<Object>(sortFields.length);
+    for (SortField sf : sortFields) {
+      if (sf.getType().equals(SortField.Type.SCORE)) {
+        assert null != lastDoc.score : "lastDoc has null score";
+        nextCursorMarkValues.add(lastDoc.score);
+      } else {
+        assert null != sf.getField() : "SortField has null field";
+        List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.getField());
+        nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
+      }
+    }
+    CursorMark nextCursorMark = lastCursorMark.createNext(nextCursorMarkValues);
+    assert null != nextCursorMark : "null nextCursorMark";
+    rb.setNextCursorMark(nextCursorMark);
   }
 
   private NamedList unmarshalSortValues(SortSpec sortSpec, 
@@ -982,6 +1073,7 @@ public class QueryComponent extends SearchComponent
 
       // no need for a sort, we already have order
       sreq.params.remove(CommonParams.SORT);
+      sreq.params.remove(CursorMarkParams.CURSOR_MARK_PARAM);
 
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);

@@ -673,9 +673,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
    * @see JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
    */
-  public static void assertJQ(SolrQueryRequest req, String... tests) throws Exception {
-    assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
+  public static String assertJQ(SolrQueryRequest req, String... tests) throws Exception {
+    return assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
   }
   /**
    * Validates a query matches some JSON test expressions and closes the
@@ -690,8 +691,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @param req Solr request to execute
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
+   * @return The request response as a JSON String if all test patterns pass
    */
-  public static void assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
+  public static String assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
     SolrParams params =  null;
     try {
       params = req.getParams();
@@ -739,6 +741,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
           }
         }
       }
+      return response;
     } finally {
       // restore the params
       if (params != null && params != req.getParams()) req.setParams(params);
