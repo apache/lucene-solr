@@ -144,6 +144,10 @@ Bug fixes
 * LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
   (Nik Everett via Adrien Grand)
 
+* LUCENE-5391: UAX29URLEmailTokenizer should not tokenize no-scheme
+  domain-only URLs that are followed by an alphanumeric character.
+  (Chris Geeringh, Steve Rowe)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
