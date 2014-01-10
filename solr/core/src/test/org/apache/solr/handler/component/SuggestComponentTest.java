@@ -66,11 +66,11 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
         SuggesterParams.SUGGEST_COUNT, "2"),
-        "//lst[@name='suggest']/lst[@name='exampel']/int[@name='numFound'][.='2']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']"
         );
     
     assertQ(req("qt", rh, 
@@ -78,11 +78,11 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "Rad",
         SuggesterParams.SUGGEST_COUNT, "2"),
-        "//lst[@name='suggest']/lst[@name='Rad']/int[@name='numFound'][.='2']",
-        "//lst[@name='suggest']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Rad fox']",
-        "//lst[@name='suggest']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='35']",
-        "//lst[@name='suggest']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Red fox']",
-        "//lst[@name='suggest']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='30']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Rad fox']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='35']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Red fox']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='30']"
         );
   }
   
@@ -93,11 +93,11 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
         SuggesterParams.SUGGEST_COUNT, "2"),
-        "//lst[@name='suggest']/lst[@name='exampel']/int[@name='numFound'][.='2']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
         );
   }
   
@@ -108,11 +108,62 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "chn",
         SuggesterParams.SUGGEST_COUNT, "2"),
-        "//lst[@name='suggest']/lst[@name='chn']/int[@name='numFound'][.='2']",
-        "//lst[@name='suggest']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
-        "//lst[@name='suggest']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='1']",
-        "//lst[@name='suggest']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']",
-        "//lst[@name='suggest']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='1']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='1']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='1']"
         );
   }
+  @Test
+  public void testMultiSuggester() throws Exception {
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict",
+        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_expr_dict",
+        SuggesterParams.SUGGEST_BUILD, "true",
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "2"),
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
+        );
+  }
+  
+  @Test
+  public void testBuildAllSuggester() throws Exception {
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_BUILD_ALL, "true",
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "2"),
+        "//str[@name='command'][.='buildAll']"
+        );
+    
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        "//str[@name='command'][.='buildAll']"
+        );
+  }
+  
+  @Test
+  public void testReloadAllSuggester() throws Exception {
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_RELOAD_ALL, "true",
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "2"),
+        "//str[@name='command'][.='reloadAll']"
+        );
+    
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
+        "//str[@name='command'][.='reloadAll']"
+        );
+  }
+  
 }

@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -27,6 +28,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 
@@ -67,9 +69,10 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
   {    
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
-    NamedList<Object> sc = (NamedList<Object>) nl.get("suggest");
-    if(sc.size()==0) {
-      Assert.fail("Control data did not return any suggestions.");
+    Map<String, SimpleOrderedMap<NamedList<Object>>> sc = (Map<String, SimpleOrderedMap<NamedList<Object>>>) nl.get("suggest");
+    String command = (String) nl.get("command");
+    if(sc.size() == 0 && command == null) {
+      Assert.fail("Control data did not return any suggestions or execute any command");
     }
   } 
   
@@ -100,18 +103,26 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     
     //Shortcut names
     String build = SuggesterParams.SUGGEST_BUILD;
+    String buildAll = SuggesterParams.SUGGEST_BUILD_ALL;
     String count = SuggesterParams.SUGGEST_COUNT;
     String dictionaryName = SuggesterParams.SUGGEST_DICT;
     
-    //Build the suggest dictionary 
-    query(buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docDictName));
-    query(buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docExprDictName));
+    //Build the suggest dictionary
+    if (random().nextBoolean()) { // build all the suggesters in one go
+      query(buildRequest("", true, requestHandlerName, buildAll, "true"));
+    } else { // build suggesters individually
+      query(buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docDictName));
+      query(buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docExprDictName)); 
+    }
     
     //Test Basic Functionality
     query(buildRequest("exampel", false, requestHandlerName, dictionaryName, docDictName, count, "2"));
     query(buildRequest("Yet", false, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
     query(buildRequest("blah", true, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
     query(buildRequest("blah", true, requestHandlerName, dictionaryName, docDictName, count, "2"));
+    
+    //Test multiSuggester
+    query(buildRequest("exampel", false, requestHandlerName, dictionaryName, docDictName, dictionaryName, docExprDictName, count, "2"));
     
   }
   private Object[] buildRequest(String q, boolean useSuggestQ, String handlerName, String... addlParams) {
@@ -123,6 +134,7 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
       params.add("q");
     }
     params.add(q);
+    
 
     params.add("qt");
     params.add(handlerName);

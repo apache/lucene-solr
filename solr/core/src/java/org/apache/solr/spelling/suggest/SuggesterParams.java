@@ -47,10 +47,23 @@ public interface SuggesterParams {
    * Whether to build the index or not. Optional and false by default.
    */
   public static final String SUGGEST_BUILD = SUGGEST_PREFIX + "build";
+  
+  /**
+   * Whether to build the index or not for all suggesters in the component.
+   * Optional and false by default.
+   * This parameter does not need any suggest dictionary names to be specified
+   */
+  public static final String SUGGEST_BUILD_ALL = SUGGEST_PREFIX + "buildAll";
 
   /**
    * Whether to reload the index. Optional and false by default.
    */
   public static final String SUGGEST_RELOAD = SUGGEST_PREFIX + "reload";
 
+  /**
+   * Whether to reload the index or not for all suggesters in the component.
+   * Optional and false by default.
+   * This parameter does not need any suggest dictionary names to be specified
+   */
+  public static final String SUGGEST_RELOAD_ALL = SUGGEST_PREFIX + "reloadAll";
 }

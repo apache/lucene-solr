@@ -254,7 +254,6 @@
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_file_dict">
     <lst name="defaults">
       <str name="suggest">true</str>
-      <str name="suggest.dictionary">fuzzy_suggest_analyzing_with_file_dict</str>
     </lst>
     <arr name="components">
       <str>fuzzy_suggest_analyzing_with_file_dict</str>
@@ -264,7 +263,6 @@
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_high_freq_dict">
     <lst name="defaults">
       <str name="suggest">true</str>
-      <str name="suggest.dictionary">fuzzy_suggest_analyzing_with_high_freq_dict</str>
     </lst>
     <arr name="components">
       <str>fuzzy_suggest_analyzing_with_high_freq_dict</str>
