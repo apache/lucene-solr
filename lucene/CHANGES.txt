@@ -57,6 +57,11 @@ API Changes
 * LUCENE-5388: Remove Reader from Tokenizer's constructor. 
   (Benson Margulies via Robert Muir - pull request #16)
 
+Documentation
+
+* LUCENE-5392: Add/improve analysis package documentation to reflect
+  analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
