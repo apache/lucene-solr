@@ -339,7 +339,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
   }
 
   public void testHossssSanity() throws Exception {
-    
+    clearIndex();
+
     SolrParams match_0 
       = params("q",  "{!frange v=val_i l=0 u=1}",
                "fq", "{!frange v=val_i l=1 u=1}",
