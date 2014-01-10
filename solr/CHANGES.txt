@@ -53,9 +53,6 @@ New Features
   Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
   Eric Wong)
 
-* SOLR-5463: new 'cursorMark' request param for deep paging of sorted result sets
-  (sarowe, hossman)
-
 Other Changes
 ----------------------
 
@@ -141,6 +138,9 @@ New Features
 
 * SOLR-5541: Allow QueryElevationComponent to accept elevateIds and excludeIds 
   as http parameters (Joel Bernstein)
+
+* SOLR-5463: new 'cursorMark' request param for deep paging of sorted result sets
+  (sarowe, hossman)
 
 Bug Fixes
 ----------------------
