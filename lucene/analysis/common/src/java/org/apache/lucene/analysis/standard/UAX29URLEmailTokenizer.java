@@ -33,7 +33,7 @@ import org.apache.lucene.util.Version;
 
 /**
  * This class implements Word Break rules from the Unicode Text Segmentation 
- * algorithm, as specified in 
+ * algorithm, as specified in                 `
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
  * URLs and email addresses are also tokenized according to the relevant RFCs.
  * <p/>

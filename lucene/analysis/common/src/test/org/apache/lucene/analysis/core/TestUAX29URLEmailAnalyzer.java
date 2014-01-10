@@ -259,6 +259,98 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "<URL>", "<ALPHANUM>", "<ALPHANUM>", "<URL>", "<URL>", "<ALPHANUM>" });
   }
 
+  public void testNoSchemeURLs() throws Exception {
+    // ".ph" is a Top Level Domain
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "<index.ph>", new String[]{"index.ph"}, new String[]{"<URL>"});
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index.ph", new String[]{"index.ph"}, new String[]{"<URL>"});
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index.php", new String[]{"index.php"}, new String[]{"<ALPHANUM>"});
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index.phα", new String[]{"index.phα"}, new String[]{"<ALPHANUM>"});
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index-h.php", new String[] { "index",     "h.php" },
+                           new String[] { "<ALPHANUM>","<ALPHANUM>"});
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index2.php", new String[] { "index2",     "php" },
+                          new String[] { "<ALPHANUM>", "<ALPHANUM>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "index2.ph９,", new String[] { "index2",     "ph９" },
+                            new String[] { "<ALPHANUM>", "<ALPHANUM>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com,example.ph,index.php,index2.php,example2.ph",
+            new String[] { "example.com", "example.ph", "index.php",  "index2",     "php",        "example2.ph" },
+            new String[] { "<URL>",       "<URL>",      "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080 example.com/path/here example.com?query=something example.com#fragment",
+            new String[] { "example.com:8080", "example.com/path/here", "example.com?query=something", "example.com#fragment" },
+            new String[] { "<URL>",            "<URL>",                 "<URL>",                       "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080/path/here?query=something#fragment", 
+            new String[] { "example.com:8080/path/here?query=something#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080/path/here?query=something",
+            new String[] { "example.com:8080/path/here?query=something" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080/path/here#fragment",
+            new String[] { "example.com:8080/path/here#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080/path/here",
+            new String[] { "example.com:8080/path/here" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080?query=something#fragment",
+            new String[] { "example.com:8080?query=something#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080?query=something",
+            new String[] { "example.com:8080?query=something" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com:8080#fragment",
+            new String[] { "example.com:8080#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com/path/here?query=something#fragment",
+            new String[] { "example.com/path/here?query=something#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com/path/here?query=something",
+            new String[] { "example.com/path/here?query=something" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com/path/here#fragment",
+            new String[] { "example.com/path/here#fragment" },
+            new String[] { "<URL>" });
+
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a, "example.com?query=something#fragment",
+            new String[] { "example.com?query=something#fragment" },
+            new String[] { "<URL>" });
+  }
+
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
