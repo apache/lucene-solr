@@ -167,6 +167,10 @@ Documentation
   to the analysis package overview.  
   (Benson Margulies via Robert Muir - pull request #12)
 
+* LUCENE-5389: Add more guidance in the analyis documentation 
+  package overview.
+  (Benson Margulies via Robert Muir - pull request #14)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features
