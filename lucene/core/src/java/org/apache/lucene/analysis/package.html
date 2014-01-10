@@ -179,7 +179,7 @@ and proximity searches (though sentence identification is not provided by Lucene
 <p>
   However an application might invoke Analysis of any text for testing or for any other purpose, something like:
 </p>
-<PRE class="prettyprint">
+<PRE class="prettyprint" id="analysis-workflow">
     Version matchVersion = Version.LUCENE_XY; // Substitute desired Lucene version for XY
     Analyzer analyzer = new StandardAnalyzer(matchVersion); // or any other analyzer
     TokenStream ts = analyzer.tokenStream("myfield", new StringReader("some text goes here"));
@@ -476,6 +476,71 @@ and proximity searches (though sentence identification is not provided by Lucene
     </td>
   </tr>
 </table>
+<h3>More Requirements for Analysis Component Classes</h3>
+Due to the historical development of the API, there are some perhaps
+less than obvious requirements to implement analysis components
+classes.
+<h4 id="analysis-lifetime">Token Stream Lifetime</h4>
+The code fragment of the <a href="#analysis-workflow">analysis workflow
+protocol</a> above shows a token stream being obtained, used, and then
+left for garbage. However, that does not mean that the components of
+that token stream will, in fact, be discarded. The default is just the
+opposite. {@link org.apache.lucene.analysis.Analyzer} applies a reuse
+strategy to the tokenizer and the token filters. It will reuse
+them. For each new input, it calls {@link org.apache.lucene.analysis.Tokenizer#setReader(java.io.Reader)} 
+to set the input. Your components must be prepared for this scenario,
+as described below.
+<h4>Tokenizer</h4>
+<ul>
+  <li>
+  You should create your tokenizer class by extending {@link org.apache.lucene.analysis.Tokenizer}.
+  </li>
+  <li>
+  Your tokenizer must <strong>never</strong> make direct use of the
+  {@link java.io.Reader} supplied to its constructor(s). (A future
+  release of Apache Lucene may remove the reader parameters from the
+  Tokenizer constructors.)
+  {@link org.apache.lucene.analysis.Tokenizer} wraps the reader in an
+  object that helps enforce that applications comply with the <a
+  href="#analysis-workflow">analysis workflow</a>. Thus, your class
+  should only reference the input via the protected 'input' field
+  of Tokenizer.
+  </li>
+  <li>
+  Your tokenizer <strong>must</strong> override {@link org.apache.lucene.analysis.TokenStream#end()}.
+  Your implementation <strong>must</strong> call
+  <code>super.end()</code>. It must set a correct final offset into
+  the offset attribute, and finish up and other attributes to reflect
+  the end of the stream.
+  </li>
+  <li>
+  If your tokenizer overrides {@link org.apache.lucene.analysis.TokenStream#reset()}
+  or {@link org.apache.lucene.analysis.TokenStream#close()}, it
+  <strong>must</strong> call the corresponding superclass method.
+  </li>
+</ul>
+<h4>Token Filter</h4>
+  You should create your token filter class by extending {@link org.apache.lucene.analysis.TokenFilter}.
+  If your token filter overrides {@link org.apache.lucene.analysis.TokenStream#reset()},
+  {@link org.apache.lucene.analysis.TokenStream#end()}
+  or {@link org.apache.lucene.analysis.TokenStream#close()}, it
+  <strong>must</strong> call the corresponding superclass method.
+<h4>Creating delegates</h4>
+  Forwarding classes (those which extend {@link org.apache.lucene.analysis.Tokenizer} but delegate
+  selected logic to another tokenizer) must also set the reader to the delegate in the overridden
+  {@link org.apache.lucene.analysis.Tokenizer#reset()} method, e.g.:
+  <pre class="prettyprint">
+    public class ForwardingTokenizer extends Tokenizer {
+       private Tokenizer delegate;
+       ...
+       {@literal @Override}
+       public void reset() {
+          super.reset();
+          delegate.setReader(this.input);
+          delegate.reset();
+       }
+    }
+  </pre>
 <h3>Testing Your Analysis Component</h3>
 <p>
     The lucene-test-framework component defines
