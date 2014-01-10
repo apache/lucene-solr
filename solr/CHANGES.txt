@@ -106,6 +106,9 @@ New Features
 * SOLR-5463: new 'cursorMark' request param for deep paging of sorted result sets
   (sarowe, hossman)
 
+* SOLR-5529: Add support for queries to use multiple suggesters.
+  (Areek Zillur, Erick Erickson, via Robert Muir)
+
 Bug Fixes
 ----------------------
 
