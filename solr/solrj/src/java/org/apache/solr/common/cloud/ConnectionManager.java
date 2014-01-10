@@ -78,7 +78,7 @@ public class ConnectionManager implements Watcher {
       disconnectedTimer = null;
     }
     if (!isClosed) {
-      disconnectedTimer = new Timer();
+      disconnectedTimer = new Timer(true);
       disconnectedTimer.schedule(new TimerTask() {
         
         @Override
