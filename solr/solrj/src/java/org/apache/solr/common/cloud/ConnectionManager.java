@@ -35,8 +35,8 @@ public class ConnectionManager implements Watcher {
 
   private final String name;
   private CountDownLatch clientConnected;
-  private KeeperState state;
-  private boolean connected;
+  private KeeperState state = KeeperState.Disconnected;
+  private boolean connected = false;
   private boolean likelyExpired = true;
 
   private final ZkClientConnectionStrategy connectionStrategy;
@@ -57,13 +57,7 @@ public class ConnectionManager implements Watcher {
     this.connectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
     this.onReconnect = onConnect;
-    reset();
-  }
-
-  private synchronized void reset() {
     clientConnected = new CountDownLatch(1);
-    state = KeeperState.Disconnected;
-    disconnected();
   }
   
   private synchronized void connected() {
