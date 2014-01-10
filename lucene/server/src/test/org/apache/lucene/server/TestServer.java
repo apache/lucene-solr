@@ -29,6 +29,8 @@ public class TestServer extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    useDefaultIndex = true;
+    curIndexName = "index";
     curIndexName = "index";
     startServer();
     createAndStartIndex();

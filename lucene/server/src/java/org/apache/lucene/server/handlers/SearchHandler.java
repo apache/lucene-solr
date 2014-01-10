@@ -63,6 +63,8 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.apache.lucene.queryparser.simple.SimpleQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -121,6 +123,7 @@ import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -264,7 +267,7 @@ public class SearchHandler extends Handler {
 
   private final static Type QUERY_PARSER_TYPE = new StructType(
                       new Param("defaultOperator", "Whether terms are OR'd or AND'd by default.",
-                                new EnumType("or", "or", "and", "and"), "or"),  
+                                new EnumType("or", "or", "and", "and"), "or"),
                       new Param("fuzzyMinSim", "Minimum similarity for fuzzy queries", new IntType(), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE),
                       new Param("fuzzyPrefixLength", "Prefix length for fuzzy queries", new IntType(), FuzzyQuery.defaultPrefixLength),
                       new Param("phraseSlop", "Default slop for phrase queries", new IntType(), 0),
@@ -273,6 +276,23 @@ public class SearchHandler extends Handler {
                       new Param("locale", "Locale to be used by date range parsing, lowercasing and other locale-sensitive operations", LOCALE_TYPE),
                       new Param("class", "Which QueryParser to use.",
                                 new PolyType(QueryParser.class,
+                                             new PolyEntry("SimpleQueryParser", "@lucene:queryparser:org.apache.lucene.queryparser.simple.SimpleQueryParser is used to parse human readable query syntax.",
+                                                 new Param("operators", "Which operators to allow",
+                                                     new ListType(
+                                                         new EnumType("AND", "Enable the AND operator with +",
+                                                                      "OR", "Enable the OR operator with |",
+                                                                      "NOT", "Enable the NOT operator with -",
+                                                                      "PREFIX", "Enable the PREFIX operator with *",
+                                                                      "PHRASE", "Enable the PHRASE operator with \"",
+                                                                      "PRECEDENCE", "Enable the PRECEDENCE operator with ( and )",
+                                                                      "ESCAPE", "Enable the ESCAPE operator with \\",
+                                                                      "WHITESPACE", "Enable the WHITESPACE operator with ' ', '\\n', '\\r, or '\\t'")),
+                                                     new ArrayList<Object>()),
+                                                 new Param("fields", "Which fields/boosts to query against",
+                                                     new ListType(new OrType(new StringType(),
+                                                          new StructType(
+                                                              new Param("field", "Field name", new StringType()),
+                                                              new Param("boost", "Field boost", new FloatType())))))),
                                              new PolyEntry("MultiFieldQueryParser", "",
                                                            new Param("fields", "Which fields/boosts to query against",
                                                                      new ListType(new OrType(new StringType(),
@@ -1145,9 +1165,9 @@ public class SearchHandler extends Handler {
       if (field == null) {
         r.fail("no field specified");
       }
-      QueryParser queryParser = createQueryParser(state, topRequest, field);
+      QueryBuilder queryParser = createQueryParser(state, topRequest, field);
       try {
-        q = queryParser.parse(queryText);
+        q = parseQuery(queryParser, queryText);
       } catch (Exception e) {
         r2.fail("text", "could not parse", e);
         // dead code but compiler disagrees:
@@ -1166,6 +1186,14 @@ public class SearchHandler extends Handler {
     q.setBoost(r.getFloat("boost"));
 
     return q;
+  }
+
+  private static Query parseQuery(QueryBuilder qp, String text) throws ParseException, org.apache.lucene.queryparser.classic.ParseException {
+    if (qp instanceof QueryParserBase) {
+      return ((QueryParserBase) qp).parse(text);
+    } else {
+      return ((SimpleQueryParser) qp).parse(text);
+    }
   }
 
   private static Integer toInt(Number x) {
@@ -1202,53 +1230,63 @@ public class SearchHandler extends Handler {
 
   /** If field is non-null it overrides any specified
    *  defaultField. */
-  private static QueryParser createQueryParser(IndexState state, Request r, String field) {
+  private static QueryBuilder createQueryParser(IndexState state, Request r, String field) {
 
     if (r.hasParam("queryParser")) {
       r = r.getStruct("queryParser");
       Request.PolyResult pr = r.getPoly("class");
-      QueryParser qp;
+      QueryBuilder qp;
 
       if (pr.name.equals("classic")) {
         FieldDef fd = state.getField(pr.r, "defaultField");
         qp = new QueryParser(state.matchVersion, field == null ? fd.name : field, state.searchAnalyzer);
-
-      } else if (pr.name.equals("MultiFieldQueryParser")) {
-        List<Object> l = pr.r.getList("fields");
-        String[] fields = new String[l.size()];
-        Map<String,Float> boosts = new HashMap<String,Float>();
-        for(int i=0;i<fields.length;i++) {
-          Object o = l.get(i);
-          String field2;
-          float boost;
-
-          if (o instanceof String) {
-            field2 = (String) o;
-            boost = 1.0f;
+      } else if (pr.name.equals("SimpleQueryParser")) {
+        int flags = 0;
+        for(Object o : pr.r.getList("operators")) {
+          if (o.equals("AND")) {
+            flags = flags | SimpleQueryParser.AND_OPERATOR;
+          } else if (o.equals("NOT")) {
+            flags = flags | SimpleQueryParser.NOT_OPERATOR;
+          } else if (o.equals("OR")) {
+            flags = flags | SimpleQueryParser.OR_OPERATOR;
+          } else if (o.equals("PREFIX")) {
+            flags = flags | SimpleQueryParser.PREFIX_OPERATOR;
+          } else if (o.equals("PHRASE")) {
+            flags = flags | SimpleQueryParser.PHRASE_OPERATOR;
+          } else if (o.equals("PRECEDENCE")) {
+            flags = flags | SimpleQueryParser.PRECEDENCE_OPERATORS;
+          } else if (o.equals("ESCAPE")) {
+            flags = flags | SimpleQueryParser.ESCAPE_OPERATOR;
+          } else if (o.equals("WHITESPACE")) {
+            flags = flags | SimpleQueryParser.WHITESPACE_OPERATOR;
           } else {
-            Request r2 = (Request) o;
-            field2 = r2.getString("field");
-            boost = r2.getFloat("boost");
-          }
-
-          FieldDef fd;
-          try {
-            fd = state.getField(field2);
-          } catch (IllegalArgumentException iae) {
-            pr.r.fail("fields", iae.toString());
-            // Dead code but compiler disagrees:
-            fd = null;
-          }
-          if (!fd.fieldType.indexed()) {
-            pr.r.fail("fields", "field \"" + field2 + "\" was not registered with index=true");
-          }
-          fields[i] = field2;
-          if (boost != 1.0f) {
-            boosts.put(field, boost);
+            // BUG
+            throw new AssertionError();
           }
         }
 
-        qp = new MultiFieldQueryParser(state.matchVersion, fields, state.searchAnalyzer, boosts);
+        Map<String,Float> fieldAndWeights;
+
+        if (field != null) {
+          fieldAndWeights = new HashMap<String,Float>();
+          fieldAndWeights.put(field, 1.0f);
+        } else {
+          fieldAndWeights = parseFieldsAndWeights(state, pr.r, "fields");
+        }
+
+        qp = new SimpleQueryParser(state.searchAnalyzer,
+                                   fieldAndWeights,
+                                   flags);
+        
+      } else if (pr.name.equals("MultiFieldQueryParser")) {
+        Map<String,Float> fieldsAndWeights = parseFieldsAndWeights(state, pr.r, "fields");
+        System.out.println("boosts: "+ fieldsAndWeights);
+        String[] fields = new String[fieldsAndWeights.size()];
+        int upto=0;
+        for(String field2 : fieldsAndWeights.keySet()) {
+          fields[upto++] = field2;
+        }
+        qp = new MultiFieldQueryParser(state.matchVersion, fields, state.searchAnalyzer, fieldsAndWeights);
       } else {
         // BUG
         assert false;
@@ -1257,17 +1295,28 @@ public class SearchHandler extends Handler {
 
       String opString = r.getEnum("defaultOperator");
       if (opString.equals("or")) {
-        qp.setDefaultOperator(QueryParser.Operator.OR);
+        if (qp instanceof SimpleQueryParser) {
+          ((SimpleQueryParser) qp).setDefaultOperator(BooleanClause.Occur.SHOULD);
+        } else {
+          ((QueryParserBase) qp).setDefaultOperator(QueryParser.OR_OPERATOR);
+        }
       } else {
-        qp.setDefaultOperator(QueryParser.Operator.AND);
+        if (qp instanceof SimpleQueryParser) {
+          ((SimpleQueryParser) qp).setDefaultOperator(BooleanClause.Occur.MUST);
+        } else {
+          ((QueryParserBase) qp).setDefaultOperator(QueryParser.AND_OPERATOR);
+        }
       }
-      qp.setFuzzyMinSim(r.getInt("fuzzyMinSim"));
-      qp.setFuzzyPrefixLength(r.getInt("fuzzyPrefixLength"));
-      qp.setPhraseSlop(r.getInt("phraseSlop"));
       qp.setEnablePositionIncrements(r.getBoolean("enablePositionIncrements"));
-      qp.setLowercaseExpandedTerms(r.getBoolean("lowercaseExpandedTerms"));
-      if (r.hasParam("locale")) {
-        qp.setLocale(getLocale(r.getStruct("locale")));
+      if (qp instanceof QueryParserBase) {
+        QueryParserBase qpb = (QueryParserBase) qp;
+        qpb.setFuzzyMinSim(r.getInt("fuzzyMinSim"));
+        qpb.setFuzzyPrefixLength(r.getInt("fuzzyPrefixLength"));
+        qpb.setPhraseSlop(r.getInt("phraseSlop"));
+        qpb.setLowercaseExpandedTerms(r.getBoolean("lowercaseExpandedTerms"));
+        if (r.hasParam("locale")) {
+          qpb.setLocale(getLocale(r.getStruct("locale")));
+        }
       }
       return qp;
     } else {
@@ -1281,6 +1330,39 @@ public class SearchHandler extends Handler {
       return new MultiFieldQueryParser(state.matchVersion, fields.toArray(new String[fields.size()]), state.searchAnalyzer);
     }
   }
+
+  private static Map<String,Float> parseFieldsAndWeights(IndexState state, Request r, String param) {
+    Map<String,Float> boosts = new HashMap<String,Float>();
+    for(Object o : r.getList(param)) {
+      String field2;
+      float boost;
+
+      if (o instanceof String) {
+        field2 = (String) o;
+        boost = 1.0f;
+      } else {
+        Request r2 = (Request) o;
+        field2 = r2.getString("field");
+        boost = r2.getFloat("boost");
+      }
+
+      FieldDef fd;
+      try {
+        fd = state.getField(field2);
+      } catch (IllegalArgumentException iae) {
+        r.fail(param, iae.toString());
+        // Dead code but compiler disagrees:
+        fd = null;
+      }
+      if (!fd.fieldType.indexed()) {
+        r.fail(param, "field \"" + field2 + "\" was not registered with index=true");
+      }
+      boosts.put(field2, boost);
+    }
+
+    return boosts;
+  }
+
 
   /** Highlight configuration. */
   static class FieldHighlightConfig {
@@ -1471,13 +1553,13 @@ public class SearchHandler extends Handler {
                                     Map<String,FieldDef> dynamicFields) throws Exception {
     Query q;
     if (r.hasParam("queryText")) {
-      QueryParser queryParser = createQueryParser(state, r, null);
+      QueryBuilder queryParser = createQueryParser(state, r, null);
 
       String queryText = r.getString("queryText");
 
       if (queryText != null) {
         try {
-          q = queryParser.parse(queryText);
+          q = parseQuery(queryParser, queryText);
         } catch (Exception e) {
           r.fail("queryText", "could not parse", e);
           // dead code but compiler disagrees:

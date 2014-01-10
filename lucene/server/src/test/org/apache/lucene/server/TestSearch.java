@@ -31,6 +31,8 @@ public class TestSearch extends ServerBaseTestCase {
 
   @BeforeClass
   public static void initClass() throws Exception {
+    useDefaultIndex = true;
+    curIndexName = "index";
     startServer();
     createAndStartIndex();
     registerFields();
@@ -150,12 +152,25 @@ public class TestSearch extends ServerBaseTestCase {
     assertEquals(0, getInt(send("search", "{queryParser: {class: classic, defaultOperator: and, defaultField: body}, queryText: 'furious five', searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
-  public void testMultiFieldQP() throws Exception {
+  public void testMultiFieldQueryParser() throws Exception {
     deleteAllDocs();
     long gen = getLong(send("addDocument", "{fields: {body: 'fantastic four is furious', title: 'here is the title'}}"), "indexGen");
     
     assertEquals(1, getInt(send("search", "{queryParser: {class: MultiFieldQueryParser, defaultOperator: or, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
     assertEquals(1, getInt(send("search", "{queryParser: {class: MultiFieldQueryParser, defaultOperator: and, fields: [body, {field: title, boost: 2.0}]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+  }
+
+  public void testSimpleQueryParser() throws Exception {
+    deleteAllDocs();
+    long gen = getLong(send("addDocument", "{fields: {body: 'fantastic four is furious', title: 'here is the title'}}"), "indexGen");
+    
+    assertEquals(1, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: and, fields: [body, title], operators: [WHITESPACE]}, queryText: 'title furious', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(0, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE]}, queryText: 't* f*', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE, PREFIX]}, queryText: 't* f*', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(0, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE]}, queryText: '\"furious title\"', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(0, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE, PHRASE]}, queryText: '\"furious title\"', searcher: {indexGen: " + gen + "}}"), "totalHits"));
+    assertEquals(1, getInt(send("search", "{queryParser: {class: SimpleQueryParser, defaultOperator: or, fields: [body, title], operators: [WHITESPACE, PHRASE]}, queryText: '\"fantastic four\"', searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }
 
   public void testNumericRangeQuery() throws Exception {
@@ -194,8 +209,8 @@ public class TestSearch extends ServerBaseTestCase {
       assertEquals(2, getInt(send("search",
                                   String.format(Locale.ROOT, "{query: {class: NumericRangeQuery, field: nf, min: 5, minInclusive: false}, searcher: {indexGen: %d}}", gen)),
                              "totalHits"));
-      send("stopIndex", "{}");
-      send("deleteIndex", "{}");
+      send("stopIndex");
+      send("deleteIndex");
     }
   }
 
