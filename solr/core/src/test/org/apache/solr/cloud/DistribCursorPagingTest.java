@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.CursorPagingTest;
@@ -52,6 +53,7 @@ import java.util.Map;
  * @see CursorPagingTest 
  */
 @Slow
+@SuppressCodecs("Lucene3x")
 public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
   public DistribCursorPagingTest() {

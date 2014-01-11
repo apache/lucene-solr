@@ -18,6 +18,7 @@
 package org.apache.solr;
 
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.common.SolrInputDocument;
@@ -48,6 +49,7 @@ import org.junit.After;
 /**
  * Tests of deep paging using {@link CursorMark} and {@link #CURSOR_MARK_PARAM}.
  */
+@SuppressCodecs("Lucene3x")
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
