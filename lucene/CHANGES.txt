@@ -90,6 +90,9 @@ Bug fixes
   domain-only URLs that are followed by an alphanumeric character.
   (Chris Geeringh, Steve Rowe)
 
+* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
+  they were indexed with the term vectors. (Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
