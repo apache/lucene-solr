@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Terms;
@@ -48,6 +49,8 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
 
   private OffsetAttribute offsetAttribute;
 
+  private PayloadAttribute payloadAttribute;
+
   /**
    * Constructor.
    * 
@@ -59,7 +62,9 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     termAttribute = addAttribute(CharTermAttribute.class);
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
     offsetAttribute = addAttribute(OffsetAttribute.class);
+    payloadAttribute = addAttribute(PayloadAttribute.class);
     final boolean hasOffsets = vector.hasOffsets();
+    final boolean hasPayloads = vector.hasPayloads();
     final TermsEnum termsEnum = vector.iterator(null);
     BytesRef text;
     DocsAndPositionsEnum dpEnum = null;
@@ -79,6 +84,13 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
           token = new Token();
           token.setEmpty().append(text.utf8ToString());
         }
+        if (hasPayloads) {
+          // Must make a deep copy of the returned payload,
+          // since D&PEnum API is allowed to re-use on every
+          // call:
+          token.setPayload(BytesRef.deepCopyOf(dpEnum.getPayload()));
+        }
+
         // Yes - this is the position, not the increment! This is for
         // sorting. This value
         // will be corrected before use.
@@ -112,6 +124,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
       positionIncrementAttribute.setPositionIncrement(next
           .getPositionIncrement());
       offsetAttribute.setOffset(next.startOffset(), next.endOffset());
+      payloadAttribute.setPayload(next.getPayload());
       return true;
     }
     return false;
