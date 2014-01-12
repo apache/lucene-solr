@@ -242,12 +242,6 @@ public abstract class FSDirectory extends BaseDirectory {
     return file.exists();
   }
 
-  /** Returns the time the named file was last modified. */
-  public static long fileModified(File directory, String name) {
-    File file = new File(directory, name);
-    return file.lastModified();
-  }
-
   /** Returns the length in bytes of a file in the directory. */
   @Override
   public long fileLength(String name) throws IOException {
