@@ -97,7 +97,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
     }
   }
 
@@ -120,7 +120,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
     }
   }
 
@@ -159,7 +159,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
     }
   }
 
@@ -169,7 +169,7 @@ public class TestSuggest extends ServerBaseTestCase {
     _TestUtil.rmDir(new File("storedsuggest"));
     send("createIndex", "{rootDir: storedsuggest}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
-    send("startIndex", "{}");
+    send("startIndex");
     send("registerFields",
          "{fields: {text: {type: text, store: true, index: false}," + 
                   "weight: {type: float, store: true, index: false}," +
@@ -193,7 +193,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
     }
   }
 
@@ -204,7 +204,7 @@ public class TestSuggest extends ServerBaseTestCase {
     _TestUtil.rmDir(new File(curIndexName));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
-    send("startIndex", "{}");
+    send("startIndex");
     send("registerFields",
          "{" +
          "fields: {text: {type: text, store: true, index: false}," + 
@@ -229,7 +229,7 @@ public class TestSuggest extends ServerBaseTestCase {
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
     }
   }
 }

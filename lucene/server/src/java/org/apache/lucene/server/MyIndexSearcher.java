@@ -41,8 +41,11 @@ public class MyIndexSearcher extends IndexSearcher {
     ssdvStates = new HashMap<String,SortedSetDocValuesReaderState>();
     for (FieldDef field : state.getAllFields().values()) {
       if ("sortedSetDocValues".equals(field.faceted)) {
-        // TODO: log how long this took
-        ssdvStates.put(field.name, new SortedSetDocValuesReaderState(r));
+        String indexFieldName = state.facetsConfig.getDimConfig(field.name).indexFieldName;
+        if (ssdvStates.containsKey(indexFieldName) == false) {
+          // TODO: log how long this took
+          ssdvStates.put(indexFieldName, new SortedSetDocValuesReaderState(r, indexFieldName));
+        }
       }
     }
   }

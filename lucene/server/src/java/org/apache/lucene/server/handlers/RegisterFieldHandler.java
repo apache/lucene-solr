@@ -73,6 +73,7 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
@@ -179,7 +180,6 @@ public class RegisterFieldHandler extends Handler {
   /** Analyzer type. */
   final static Type ANALYZER_TYPE =
     new StructType(
-                   // nocommit cutover to PolyType
                    new Param("class",
                              "An existing Analyzer class.  Use either this, or define your own analysis chain by setting tokenizer and tokenFilter.",
                              new PolyType(Analyzer.class,
@@ -288,14 +288,6 @@ public class RegisterFieldHandler extends Handler {
     ANALYZER_TYPE_WRAP.set(ANALYZER_TYPE);
   }
 
-  // nocommit need not be separate TYPE anymore!
-  private static final StructType BM25_SIM_TYPE =
-    new StructType(new Param("k1", "Controls non-linear term frequency normalization (saturation).", new FloatType(), 1.2f),
-                   new Param("b", "Controls to what degree document length normalizes tf values.", new FloatType(), 0.75f));
-
-  // nocommit need not be separate TYPE anymore!
-  private static final StructType DEFAULT_SIM_TYPE = new StructType();
-
   private final static StructType FIELD_TYPE =
     new StructType(
         new Param("type", "Type of the value.",
@@ -307,7 +299,8 @@ public class RegisterFieldHandler extends Handler {
                                "int", "Int value.",
                                "long", "Long value.",
                                // nocommit name this "dynamic" instead of "virtual"?
-                               "virtual", "Virtual field defined with a JavaScript expression.")),
+                               "virtual", "Virtual field defined with a JavaScript expression.",
+                               "internal", "Internal field, currently only for holding indexed facets data.")),
         // nocommit rename to "search"?  ie, "I will search on/by this field's values"
         new Param("index", "True if the value should be indexed.", new BooleanType(), false),
         new Param("tokenize", "True if the value should be tokenized.", new BooleanType(), true),
@@ -327,6 +320,9 @@ public class RegisterFieldHandler extends Handler {
                                "numericRange", "Compute facet counts for custom numeric ranges",
                                "sortedSetDocValues", "Use SortedSetDocValuesFacetCounts, which must be flat but don't require a taxonomy index"),
                   "no"),
+        new Param("facetIndexFieldName",
+                  "Which underlying Lucene index field is used to hold any indexed taxonomy or sorted set doc values facets",
+                  new StringType(), FacetsConfig.DEFAULT_INDEX_FIELD_NAME),
         new Param("storeDocValues", "Whether to index the value into doc values.", new BooleanType(), false),
         new Param("liveValues", "Enable live values for this field: whenever this field is retrieved during a search, the live (most recetly added) value will always be returned; set this to the field name of your id (primary key) field.  Uses @lucene:core:org.apache.lucene.index.LiveFieldValues under the hood.", new StringType()),
         new Param("numericPrecisionStep", "If the value is numeric, what precision step to use during indexing.", new IntType(), NumericUtils.PRECISION_STEP_DEFAULT), // nocommit is 16 better?
@@ -352,8 +348,10 @@ public class RegisterFieldHandler extends Handler {
                                  new Param("class",
                                            "Which Similarity class to use.",
                                            new PolyType(Similarity.class,
-                                               new PolyEntry("DefaultSimilarity", "Expert: Default scoring implementation. (see @lucene:core:org.apache.lucene.search.similarities.DefaultSimilarity)", DEFAULT_SIM_TYPE),
-                                               new PolyEntry("BM25Similarity", "BM25 Similarity (see @lucene:core:org.apache.lucene.search.similarities.BM25Similarity)", BM25_SIM_TYPE)),
+                                               new PolyEntry("DefaultSimilarity", "Expert: Default scoring implementation. (see @lucene:core:org.apache.lucene.search.similarities.DefaultSimilarity)", new StructType()),
+                                               new PolyEntry("BM25Similarity", "BM25 Similarity (see @lucene:core:org.apache.lucene.search.similarities.BM25Similarity)",
+                                                   new StructType(new Param("k1", "Controls non-linear term frequency normalization (saturation).", new FloatType(), 1.2f),
+                                                                  new Param("b", "Controls to what degree document length normalizes tf values.", new FloatType(), 0.75f)))),
                                            "DefaultSimilarity")))
                    );
 
@@ -674,9 +672,6 @@ public class RegisterFieldHandler extends Handler {
       liveValuesIDField = null;
     }
 
-    // nocommit allow changing indexFieldName for
-    // SSDVFacets, too
-
     String facet = f.getEnum("facet");
     if (facet.equals("hierarchy") && type.equals("atom") && (ft.indexed() || ft.stored())) {
       f.fail("facet", "facet=hierarchy fields cannot have type atom if it's indexed or stored");
@@ -695,15 +690,16 @@ public class RegisterFieldHandler extends Handler {
     ft.freeze();
 
     if (facet.equals("no") == false && facet.equals("numericRange") == false) {
+      // hierarchy, float or sortedSetDocValues
       if (facet.equals("hierarchy")) {
         state.facetsConfig.setHierarchical(name, true);
       }
       if (multiValued) {
         state.facetsConfig.setMultiValued(name, true);
       }
+      state.facetsConfig.setIndexFieldName(name, f.getString("facetIndexFieldName"));
     }
 
-    // nocommit facetsConfig.setIndexFieldName
     // nocommit facetsConfig.setRequireDimCount
 
     return new FieldDef(name, ft, type, facet, pf, dvf, multiValued, sim, indexAnalyzer, searchAnalyzer, highlighted, liveValuesIDField, null);

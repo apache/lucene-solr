@@ -156,6 +156,14 @@ public class Server {
       } catch (RequestFailedException rfe) {
         String details = null;
         if (rfe.param != null) {
+
+          // nocommit this seems to not help, ie if a
+          // handler threw an exception on a specific
+          // parameter, it means something went wrong w/
+          // that param, and it's not (rarely?) helpful to
+          // then list all the other valid params?
+
+          /*
           if (rfe.request.getType() != null) {
             Param p = rfe.request.getType().params.get(rfe.param);
             if (p != null) {
@@ -170,6 +178,7 @@ public class Server {
               }
             }
           }
+          */
         } else {
           List<String> validParams = new ArrayList<String>(rfe.request.getType().params.keySet());
           Collections.sort(validParams);
@@ -646,10 +655,10 @@ public class Server {
       // Await shutdown:
       globalState.shutdownNow.await();
 
-      globalState.close();
-
       // Close everything:
       sc.close().awaitUninterruptibly();
+
+      globalState.close();
 
     } finally {
       if (bootstrap != null) {

@@ -178,7 +178,7 @@ public class TestSearch extends ServerBaseTestCase {
     for(String type : new String[] {"int", "long", "float", "double"}) {
       _TestUtil.rmDir(new File("nrq"));
       send("createIndex", "{rootDir: nrq}");
-      send("startIndex", "{}");
+      send("startIndex");
       send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, index: true}}}", type));
       send("addDocument", "{fields: {nf: 5}}");
       send("addDocument", "{fields: {nf: 10}}");

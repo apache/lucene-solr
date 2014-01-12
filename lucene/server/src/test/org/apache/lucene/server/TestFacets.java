@@ -18,6 +18,7 @@ package org.apache.lucene.server;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Locale;
 
 import org.apache.lucene.util._TestUtil;
@@ -43,6 +44,11 @@ public class TestFacets extends ServerBaseTestCase {
     shutdownServer();
   }
 
+  static String indexFacetField;
+
+  // nocommit need test showing how to change the DVF for
+  // the "underlying" facet index field ($facets by default)
+
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
@@ -50,8 +56,33 @@ public class TestFacets extends ServerBaseTestCase {
     put(o, "longField", "{type: long, index: true, facet: numericRange}");
     put(o, "id", "{type: int, store: true, postingsFormat: Memory}");
     put(o, "date", "{type: atom, index: false, store: true}");
-    put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
-    put(o, "author", "{type: text, index: false, facet: flat, group: true}");
+    if (random().nextBoolean()) {
+      // Send facets to two different random fields:
+      String name = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
+      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy, facetIndexFieldName: " + name + "}");
+      if (VERBOSE) {
+        System.out.println("NOTE: send dateFacet to facetIndexFieldName=" + name);
+      }
+      name = "y" + _TestUtil.randomSimpleString(random(), 1, 10);
+      put(o, "author", "{type: text, index: false, facet: flat, group: true, facetIndexFieldName: " + name + "}");
+      if (VERBOSE) {
+        System.out.println("NOTE: send author to facetIndexFieldName=" + name);
+      }
+
+    } else if (random().nextBoolean()) {
+      // Send facets to the same random field:
+      indexFacetField = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
+      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy, facetIndexFieldName: " + indexFacetField + "}");
+      put(o, "author", "{type: text, index: false, facet: flat, group: true, facetIndexFieldName: " + indexFacetField + "}");
+      if (VERBOSE) {
+        System.out.println("NOTE: send dateFacet to facetIndexFieldName=" + indexFacetField);
+        System.out.println("NOTE: send author to facetIndexFieldName=" + indexFacetField);
+      }
+    } else {
+      // Use default $facets field:
+      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
+      put(o, "author", "{type: text, index: false, facet: flat, group: true}");
+    }
     JSONObject o2 = new JSONObject();
     o2.put("indexName", "index");
     o2.put("fields", o);
@@ -223,11 +254,30 @@ public class TestFacets extends ServerBaseTestCase {
     _TestUtil.rmDir(new File(curIndexName));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
-    // nocommit server base test case should do this
-    // automatically somehow
-    send("liveSettings", "{minRefreshSec: 0.001}");
     send("startIndex");
-    send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues}}}");
+
+    if (indexFacetField != null && random().nextBoolean()) {
+      // Send SSDV facets to same field as the taxo facets:
+      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + indexFacetField + "}}}");
+    } else if (random().nextBoolean()) {
+      // Send SSDV facets to a random index field:
+      String name = _TestUtil.randomSimpleString(random(), 1, 10);
+      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + name + "}}}");
+    } else {
+      // Send SSDV facets to default field:
+      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues}}}");
+    }
+
+    // Verify error message:
+    try {
+      send("search", "{query: MatchAllDocsQuery, facets: [{dim: ssdv}]}");
+      fail("did not hit expected exception");
+    } catch (IOException ioe) {
+      // nocommit we could/should make this NOT be an error?
+      // you should just get back empty facets?
+      assertTrue(ioe.getMessage().contains("search > facets: field \"ssdv\" was properly registered with facet=\"sortedSetDocValues\", however no documents were indexed as of this searcher"));
+    }
+
     send("addDocument", "{fields: {ssdv: one}}");
     send("addDocument", "{fields: {ssdv: two}}");
     send("commit");

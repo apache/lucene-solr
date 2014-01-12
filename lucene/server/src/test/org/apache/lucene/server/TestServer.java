@@ -354,16 +354,16 @@ public class TestServer extends ServerBaseTestCase {
   public void testServerRestart() throws Exception {
     deleteAllDocs();
     addDocument(0, "Bob", "this is a test", 10f, "2012/10/17");
-    send("commit", "{}");
+    send("commit");
     shutdownServer();
     startServer();
-    send("startIndex", "{}");
+    send("startIndex");
     JSONObject o = search("test", 0, null, false, true, null, null);
     assertEquals(1, ((Number) o.get("totalHits")).intValue());
   }
 
   public void testStatsHandler() throws Exception {
-    JSONObject result = send("stats", "{}");
+    JSONObject result = send("stats");
     //System.out.println("GOT: " + result);
   }
 

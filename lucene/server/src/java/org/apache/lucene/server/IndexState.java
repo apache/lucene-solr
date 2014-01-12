@@ -191,20 +191,17 @@ public class IndexState implements Closeable {
   final JSONObject suggestSaveState = new JSONObject();
   final JSONObject fieldsSaveState = new JSONObject();
 
-  // nocommit once we allow custom indexFieldName for
-  // facets, need to pass it here:
-
   /** Holds cached ordinals; doesn't use any RAM unless it's
    *  actually used when a caller sets useOrdsCache=true. */
-  public final OrdinalsReader ordsCache = new CachedOrdinalsReader(new DocValuesOrdinalsReader());
+  public final Map<String,OrdinalsReader> ordsCache = new HashMap<String,OrdinalsReader>();
 
   /** The schema (registerField) */
   private final Map<String,FieldDef> fields = new ConcurrentHashMap<String,FieldDef>();
 
-  public final FacetsConfig facetsConfig = new FacetsConfig();
+  /** Contains fields set as facetIndexFieldName. */
+  public final Set<String> internalFacetFieldNames = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
-  // nocommit need to handle dynamic exprs too; new Bindings
-  // wrapping this one:
+  public final FacetsConfig facetsConfig = new FacetsConfig();
 
   /** {@link Bindings} to pass when evaluating expressions. */
   public final Bindings exprBindings = new FieldDefBindings(fields);
@@ -573,6 +570,18 @@ public class IndexState implements Closeable {
     return saveLoadState.getNextWriteGen() != 0;
   }
 
+  /** Returns cached ordinals for the specified index field
+   *  name. */
+  public synchronized OrdinalsReader getOrdsCache(String indexFieldName) {
+    OrdinalsReader ords = ordsCache.get(indexFieldName);
+    if (ords == null) {
+      ords = new CachedOrdinalsReader(new DocValuesOrdinalsReader(indexFieldName));
+      ordsCache.put(indexFieldName, ords);
+    }
+
+    return ords;
+  }
+
   /** Record that this snapshot id refers to the current
    *  generation, returning it. */
   public synchronized long incRefLastCommitGen() throws IOException {
@@ -637,6 +646,9 @@ public class IndexState implements Closeable {
     }
     assert !fieldsSaveState.containsKey(fd.name);
     fieldsSaveState.put(fd.name, json);
+    if (fd.faceted != null && fd.faceted.equals("no") == false && fd.faceted.equals("numericRange") == false) {
+      internalFacetFieldNames.add(facetsConfig.getDimConfig(fd.name).indexFieldName);
+    }
   }
 
   /** Returns JSON representation of all registered fields. */

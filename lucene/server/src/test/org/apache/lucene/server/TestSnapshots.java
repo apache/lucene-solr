@@ -59,14 +59,14 @@ public class TestSnapshots extends ServerBaseTestCase {
     assertEquals(1, o.get("totalHits"));
 
     // Take snapshot before making some changes:
-    JSONObject result = send("createSnapshot", "{}");
-    String id = getString(result, "id");
-    // System.out.println("GOT: " + prettyPrint(result));
+    JSONObject result = send("createSnapshot");
+    String snapshotID = getString(result, "id");
 
-    // Delete first doc, register new field, add another:
+    // Delete first doc, register new field, add two more docs:
     send("deleteDocuments", "{field: id, values: ['0']}");
     send("registerFields", "{fields: {field: {type: 'atom'}}}");
     send("addDocument", "{fields: {body: 'here is the body', id: '1', facet: 'facet2', field: 'abc'}}");
+    long indexGen2 = getLong(send("addDocument", "{fields: {body: 'here is the body', id: '2', facet: 'facet2', field: 'abc'}}"), "indexGen");
     commit();
 
     File backupDir = _TestUtil.getTempDir("backup");
@@ -91,14 +91,29 @@ public class TestSnapshots extends ServerBaseTestCase {
       }
 
       // Make sure we can search the snapshot and only get 1 hit:
-      JSONObject searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + id + "\"}, query: MatchAllDocsQuery}");
+      JSONObject searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
       assertEquals(1, getInt(searchResult, "totalHits"));
       assertEquals("0", getString(searchResult, "hits[0].fields.id"));
+
+      // Make sure we can search the current searcher and we
+      // get 2 hits:
+      searchResult = send("search", "{retrieveFields: [id], searcher: {indexGen: " + indexGen2 + "}, query: MatchAllDocsQuery}");
+      assertEquals(2, getInt(searchResult, "totalHits"));
 
       // Bounce the server:
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
+
+      // Make sure we can search the snapshot and still only get 1 hit:
+      searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
+      assertEquals(1, getInt(searchResult, "totalHits"));
+      assertEquals("0", getString(searchResult, "hits[0].fields.id"));
+
+      // Make sure we can search the current searcher and we
+      // get 2 hits:
+      searchResult = send("search", "{retrieveFields: [id], query: MatchAllDocsQuery}");
+      assertEquals(2, getInt(searchResult, "totalHits"));
 
       // Make sure files still exist (snapshot persisted):
       for(Map.Entry<String,Object> ent : result.entrySet()) {
@@ -106,8 +121,6 @@ public class TestSnapshots extends ServerBaseTestCase {
           continue;
         }
         File dirPath = new File(curIndexName, ent.getKey());
-        File destDir = new File(backupDir, ent.getKey());
-        destDir.mkdirs();
         for (Object sub : ((JSONArray) ent.getValue())) {
           String fileName = (String) sub;
           File sourceFile = new File(dirPath, fileName);
@@ -116,12 +129,12 @@ public class TestSnapshots extends ServerBaseTestCase {
       }
 
       // Make sure we can still search the snapshot:
-      searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + id + "\"}, query: MatchAllDocsQuery}");
+      searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
       assertEquals(1, getInt(searchResult, "totalHits"));
       assertEquals("0", getString(searchResult, "hits[0].fields.id"));
 
       // Now, release the snapshot:
-      send("releaseSnapshot", "{id: \"" + id + "\"}");
+      send("releaseSnapshot", "{id: \"" + snapshotID + "\"}");
 
       // Make sure some files in the snapshot are now gone:
       boolean someGone = false;
@@ -139,27 +152,19 @@ public class TestSnapshots extends ServerBaseTestCase {
       }
       assertTrue(someGone);
 
-      // nocommit test searching against old snapshot after restart
-
       // Restart server against the backup image:
       shutdownServer();
       startServer();
-      send("startIndex", "{}");
+      send("startIndex");
 
-      // Make sure seach is working, and we still see only
-      // one hit:
+      // Make sure search is working, and both docs are visible:
       o = send("search", "{queryText: 'body:body', searcher: {indexGen:" + indexGen + "}}");
-      assertEquals(1, o.get("totalHits"));
-
-      shutdownServer();
+      assertEquals(2, o.get("totalHits"));
 
     } finally {
       _TestUtil.rmDir(backupDir);
     }
   }
-
-  // nocommit need testSearchSnapshot, and also
-  // shutdown/restart server
 
   // TODO: threaded test, taking snapshot while threads are
   // adding/deleting/committing

@@ -46,6 +46,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyle;
 import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
+import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 
 public abstract class ServerBaseTestCase extends LuceneTestCase {
@@ -128,7 +129,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void put(JSONObject o, String key, String value) throws ParseException {
-    o.put(key, JSONValue.parse(value));
+    o.put(key, JSONValue.parseWithException(value));
   }
     
   protected static void startServer() throws Exception {
@@ -169,14 +170,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void shutdownServer() throws Exception {
-    HttpURLConnection c = (HttpURLConnection) new URL("http://localhost:" + port + "/shutdown").openConnection();
-    c.setUseCaches(false);
-    c.setRequestMethod("GET");
-    // c.connect()
-    c.getContentLength();
-    // nocommit how to check return status code...
-    c.disconnect();
-
+    send("shutdown");
     if (serverThread != null) {
       serverThread.join();
       serverThread = null;
@@ -198,21 +192,48 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
    *  indexName which is automatically added (e.g., commit,
    *  closeIndex, startIndex). */
   protected static JSONObject send(String command) throws Exception {
-    return send(command, "{}");
+    if (command.equals("startIndex")) {
+      // We do this so tests that index a doc and then need
+      // to search it, don't wait very long for the new
+      // searcher:
+      send("liveSettings", "{minRefreshSec: 0.001}");
+    }
+    return _send(command, "{}");
   }
 
   protected static JSONObject send(String command, String args) throws Exception {
-    // nocommit detect if parser didn't consume all args!
-    JSONObject o = (JSONObject) JSONValue.parse(args);
-    if (o == null) {
-      throw new IllegalArgumentException("invalid JSON: " + args);
+    if (args.equals("{}")) {
+      throw new IllegalArgumentException("don't pass empty args");
     }
+    JSONObject o;
+    try {
+      o = (JSONObject) new JSONParser(JSONParser.MODE_PERMISSIVE & ~(JSONParser.ACCEPT_TAILLING_DATA)).parse(args);
+    } catch (ParseException pe) {
+      // NOTE: don't send pe as the cause; it adds lots of
+      // unhelpful noise because the message usually states
+      // what's wrong very well:
+      throw new IllegalArgumentException("test bug: failed to parse json args \"" + args + "\": " + pe.getMessage());
+    }
+    return send(command, o);
+  }
 
+  private static JSONObject _send(String command, String args) throws Exception {
+    JSONObject o;
+    try {
+      o = (JSONObject) new JSONParser(JSONParser.MODE_PERMISSIVE & ~(JSONParser.ACCEPT_TAILLING_DATA)).parse(args);
+    } catch (ParseException pe) {
+      // NOTE: don't send pe as the cause; it adds lots of
+      // unhelpful noise because the message usually states
+      // what's wrong very well:
+      throw new IllegalArgumentException("test bug: failed to parse json args \"" + args + "\": " + pe.getMessage());
+    }
     return send(command, o);
   }
 
   private static boolean requiresIndexName(String command) {
-    // nocommit which commands don't?
+    if (command.equals("shutdown")) {
+      return false;
+    }
     return true;
   }
 
@@ -319,22 +340,29 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static JSONObject sendChunked(String body, String request) throws Exception {
-    byte[] bytes = body.getBytes("UTF-8");
     HttpURLConnection c = (HttpURLConnection) new URL("http://localhost:" + port + "/" + request).openConnection();
     c.setUseCaches(false);
     c.setDoOutput(true);
     c.setChunkedStreamingMode(256);
     c.setRequestMethod("POST");
     c.setRequestProperty("Charset", "UTF-8");
+    byte[] bytes = body.getBytes("UTF-8");
     c.getOutputStream().write(bytes);
     // c.connect()
+    int code = c.getResponseCode();
     int size = c.getContentLength();
-    InputStream is = c.getInputStream();
-    bytes = new byte[size];
-    is.read(bytes);
-    // nocommit how to check return status code...
-    c.disconnect();
-    return (JSONObject) JSONValue.parseStrict(new String(bytes, "UTF-8"));
+    if (code == 200) {
+      InputStream is = c.getInputStream();
+      bytes = new byte[size];
+      is.read(bytes);
+      c.disconnect();
+      return (JSONObject) JSONValue.parseStrict(new String(bytes, "UTF-8"));
+    } else {
+      InputStream is = c.getErrorStream();
+      is.read(bytes);
+      c.disconnect();
+      throw new IOException("Server error:\n" + new String(bytes, "UTF-8"));
+    }
   }
 
   /** Simple xpath-like utility method to jump down and grab

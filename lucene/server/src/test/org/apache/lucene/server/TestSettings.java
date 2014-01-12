@@ -45,14 +45,14 @@ public class TestSettings extends ServerBaseTestCase {
   public void testNRTCachingDirSettings() throws Exception {
     deleteAllDocs();
     commit();
-    send("stopIndex", "{}");
-    JSONObject o = send("settings", "{}");
+    send("stopIndex");
+    JSONObject o = send("settings");
     assertEquals(0, o.size());
     // Turn off NRTCachingDir:
     send("settings", "{nrtCachingDirectory.maxMergeSizeMB: 0.0, nrtCachingDirectory.maxSizeMB: 0.0}");
-    o = send("settings", "{}");
+    o = send("settings");
     assertEquals(2, o.size());
-    send("startIndex", "{}");
+    send("startIndex");
     long gen = getLong(send("addDocument", "{fields: {body: 'here is a test'}}"), "indexGen");
     assertEquals(1, getInt(send("search", "{queryText: test, searcher: {indexGen: " + gen + "}}"), "totalHits"));
   }

@@ -63,11 +63,11 @@ public class TestAnalysis extends ServerBaseTestCase {
 
   public void testSetKeywordMarkerFilter() throws Exception {
     // No KWMarkerFilter, dogs is stemmed:
-    JSONObject o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, EnglishMinimalStemFilter]}}}");
+    JSONObject o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, EnglishMinimalStemFilter]}}");
     assertEquals("here some dog", justTokens(o));
 
     // KWMarkerFilter protects dogs:
-    o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, {class: SetKeywordMarkerFilter, keyWords:[dogs]}, EnglishMinimalStemFilter]}}}");
+    o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, {class: SetKeywordMarkerFilter, keyWords:[dogs]}, EnglishMinimalStemFilter]}}");
     assertEquals("here some dogs", justTokens(o));
   }
 
@@ -86,7 +86,7 @@ public class TestAnalysis extends ServerBaseTestCase {
     send("createIndex", "{rootDir: posinc}");
     send("settings", "{directory: RAMDirectory}");
     send("registerFields", "{fields: {author1: {type: text, analyzer: {tokenizer: WhitespaceTokenizer}, multiValued: true}, author2: {type: text, analyzer: {tokenizer: WhitespaceTokenizer, positionIncrementGap: 1}, multiValued: true}}}");
-    send("startIndex", "{}");
+    send("startIndex");
     long gen = getLong(send("addDocument", "{fields: {author1: [bob, smith], author2: [bob, smith]}}"), "indexGen");
 
     // This one matches because the two values act like they
@@ -98,8 +98,8 @@ public class TestAnalysis extends ServerBaseTestCase {
     // between the two values:
     result = send("search", String.format(Locale.ROOT, "{queryText: 'author2: \"bob smith\"', searcher: {indexGen: %d}}", gen));
     assertEquals(0, getInt(result, "hits.length"));
-    send("stopIndex", "{}");
-    send("deleteIndex", "{}");
+    send("stopIndex");
+    send("deleteIndex");
   }
 
   public void testSynonymFilter() throws Exception {

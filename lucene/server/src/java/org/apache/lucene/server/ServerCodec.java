@@ -40,6 +40,9 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 public class ServerCodec extends Codec {
 
+  public final static String DEFAULT_POSTINGS_FORMAT = "Lucene41";
+  public final static String DEFAULT_DOC_VALUES_FORMAT = "Lucene45";
+
   private final IndexState state;
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
@@ -51,15 +54,16 @@ public class ServerCodec extends Codec {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       String pf;
-      if (field.equals("$facets")) {
-        // nocommit we have to do this because $facets
-        // is a "fake" field ... which is sort of
-        // weird; we need to make this (which PF is
-        // used for this "fake" field) controllable;
-        // prolly we need to make it a "real" field
-        pf = "Lucene41";
-      } else {
+      try {
         pf = state.getField(field).postingsFormat;
+      } catch (IllegalArgumentException iae) {
+        if (state.internalFacetFieldNames.contains(field)) {
+          // nocommit why is anything asking for the postings
+          // format for $facets!?
+          pf = DEFAULT_POSTINGS_FORMAT;
+        } else {
+          throw iae;
+        }
       }
       return PostingsFormat.forName(pf);
     }
@@ -69,11 +73,14 @@ public class ServerCodec extends Codec {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
       String dvf;
-      if (field.equals("$facets")) {
-        dvf = "Lucene45";
-        //dvf = "Direct";
-      } else {
+      try {
         dvf = state.getField(field).docValuesFormat;
+      } catch (IllegalArgumentException iae) {
+        if (state.internalFacetFieldNames.contains(field)) {
+          dvf = DEFAULT_DOC_VALUES_FORMAT;
+        } else {
+          throw iae;
+        }
       }
       return DocValuesFormat.forName(dvf);
     }

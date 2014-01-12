@@ -219,14 +219,14 @@ public class TestIndexing extends ServerBaseTestCase {
    *  after index is stopped */
   public void testAddAfterStop() throws Exception {
     deleteAllDocs();
-    send("stopIndex", "{}");
+    send("stopIndex");
     try {
       send("addDocument", "{fields: {}}");
       fail();
     } catch (IOException ioe) {
       // expected
     }
-    send("startIndex", "{}");
+    send("startIndex");
   }
 
   public void testBoost() throws Exception {
@@ -247,7 +247,7 @@ public class TestIndexing extends ServerBaseTestCase {
     assertEquals("1", getString(result, "hits[1].fields.id"));
 
     // Do it again, this time setting higher boost for 2nd doc:
-    send("deleteAllDocuments", "{}");
+    send("deleteAllDocuments");
     send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
     gen = getLong(send("addDocument", "{fields: {id: '1', body: {boost: 2.0, value: 'here is a test'}}}"), "indexGen");
     result = send("search", String.format(Locale.ROOT, "{retrieveFields: [id], queryText: test, searcher: {indexGen: %d}}", gen));

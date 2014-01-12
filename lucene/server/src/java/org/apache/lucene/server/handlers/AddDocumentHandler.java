@@ -178,6 +178,8 @@ public class AddDocumentHandler extends Handler {
     }
 
     if (fd.fieldType.stored() || fd.fieldType.indexed()) {
+      // We use fieldTypeNoDV because we separately added
+      // (above) the doc values field:
       Field f = new MyField(fd.name, fd.fieldTypeNoDV, o);
       f.setBoost(boost);
       doc.add(f);

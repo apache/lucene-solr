@@ -42,6 +42,7 @@ import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
@@ -1596,6 +1597,18 @@ public class SearchHandler extends Handler {
     return o;
   }
 
+  private static SortedSetDocValuesReaderState getSSDVState(SearcherAndTaxonomy s, IndexState state, Request r, FieldDef fd) {
+    FacetsConfig.DimConfig dimConfig = state.facetsConfig.getDimConfig(fd.name);
+    MyIndexSearcher s2 = (MyIndexSearcher) s.searcher;
+    SortedSetDocValuesReaderState ssdvState = s2.ssdvStates.get(dimConfig.indexFieldName);
+    // nocommit maybe we shouldn't make this a hard error
+    // ... ie just return 0 facets
+    if (ssdvState == null) {
+      r.fail("facets", "field \"" + fd.name + "\" was properly registered with facet=\"sortedSetDocValues\", however no documents were indexed as of this searcher");
+    }
+    return ssdvState;
+  }
+
   static void fillFacetResults(Request r, SearcherAndTaxonomy s, FacetsCollector drillDowns,
                                FacetsCollector[] drillSideways, String[] drillSidewaysDims,
                                IndexState state, JSONArray facetResults) throws IOException {
@@ -1659,11 +1672,7 @@ public class SearchHandler extends Handler {
         if (c == null) {
           c = drillDowns;
         }
-        SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(fd.name);
-        if (ssdvState == null) {
-          r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
-        }
-        SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
+        SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(getSSDVState(s, state, r, fd), c);
         facetResult = facets.getTopChildren(r2.getInt("topN"), fd.name, new String[0]);
       } else {
 
@@ -1711,19 +1720,18 @@ public class SearchHandler extends Handler {
           // This dimension was used in
           // drill-down; compute its facet counts from the
           // drill-sideways collector:
+          String indexFieldName = state.facetsConfig.getDimConfig(fd.name).indexFieldName;
           if (useCachedOrds) {
-            facets = new TaxonomyFacetCounts(state.ordsCache,
+            facets = new TaxonomyFacetCounts(state.getOrdsCache(indexFieldName),
                                              s.taxonomyReader,
                                              state.facetsConfig, 
                                              c);
           } else if (fd.faceted.equals("sortedSetDocValues")) {
-            SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(fd.name);
-            if (ssdvState == null) {
-              r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
-            }
-            facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
+            facets = new SortedSetDocValuesFacetCounts(getSSDVState(s, state, r, fd),
+                                                       c);
           } else {
-            facets = new FastTaxonomyFacetCounts(s.taxonomyReader,
+            facets = new FastTaxonomyFacetCounts(indexFieldName,
+                                                 s.taxonomyReader,
                                                  state.facetsConfig, 
                                                  c);
           }
@@ -1743,18 +1751,16 @@ public class SearchHandler extends Handler {
           facets = facetsMap.get(indexFieldName);
           if (facets == null) {
             if (useCachedOrds) {
-              facets = new TaxonomyFacetCounts(state.ordsCache,
+              facets = new TaxonomyFacetCounts(state.getOrdsCache(indexFieldName),
                                                s.taxonomyReader,
                                                state.facetsConfig, 
                                                c);
             } else if (fd.faceted.equals("sortedSetDocValues")) {
-              SortedSetDocValuesReaderState ssdvState = ((MyIndexSearcher) s.searcher).ssdvStates.get(indexFieldName);
-              if (ssdvState == null) {
-                r.fail("facets", "field \"" + fd.name + "\" has no doc values in the specified searcher");
-              }
-              facets = new SortedSetDocValuesFacetCounts(ssdvState, c);
+              facets = new SortedSetDocValuesFacetCounts(getSSDVState(s, state, r, fd),
+                                                         c);
             } else {
-              facets = new FastTaxonomyFacetCounts(s.taxonomyReader,
+              facets = new FastTaxonomyFacetCounts(indexFieldName,
+                                                   s.taxonomyReader,
                                                    state.facetsConfig, 
                                                    drillDowns);
             }

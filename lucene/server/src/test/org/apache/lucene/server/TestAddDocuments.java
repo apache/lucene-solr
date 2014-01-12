@@ -24,7 +24,6 @@ import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
-// nocommit merge into TestIndexing?
 public class TestAddDocuments extends ServerBaseTestCase {
   
   @BeforeClass

@@ -30,8 +30,9 @@ public class FieldDef {
   /** {@link FieldType}, used during indexing. */
   public final FieldType fieldType;
 
-  // nocommit why do we have this...
-  /** {@link FieldType} minus doc values, used during indexing. */
+  /** {@link FieldType} minus doc values, used during
+   * indexing because we separately add the doc values field
+   * and then the "normal" field. */
   public final FieldType fieldTypeNoDV;
 
   // nocommit use enum:
@@ -39,7 +40,7 @@ public class FieldDef {
   public final String valueType;
 
   // nocommit use enum:
-  /** Facet type (no, flat, hierarchical). */
+  /** Facet type (no, flat, hierarchical, numericRange, sortedSetDocValues). */
   public final String faceted;
 
   /** Postings format (codec). */
