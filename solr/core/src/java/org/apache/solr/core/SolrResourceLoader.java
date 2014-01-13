@@ -675,8 +675,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     for (SolrInfoMBean bean : arr) {
       try {
         infoRegistry.put(bean.getName(), bean);
-      } catch (Throwable t) {
-        log.warn("could not register MBean '" + bean.getName() + "'.", t);
+      } catch (Exception e) {
+        log.warn("could not register MBean '" + bean.getName() + "'.", e);
       }
     }
   }

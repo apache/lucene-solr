@@ -189,7 +189,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
          } catch (InterruptedException e) {
            Thread.currentThread().interrupt();
            return;
-         } catch (Throwable e) {
+         } catch (Exception e) {
            SolrException.log(log, "", e);
          }
        }
@@ -255,13 +255,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + operation);
       }
 
-    } catch (Throwable t) {
+    } catch (Exception e) {
       SolrException.log(log, "Collection " + operation + " of " + operation
-          + " failed", t);
-      results.add("Operation " + operation + " caused exception:", t);
+          + " failed", e);
+      results.add("Operation " + operation + " caused exception:", e);
       SimpleOrderedMap nl = new SimpleOrderedMap();
-      nl.add("msg", t.getMessage());
-      nl.add("rspCode", t instanceof SolrException ? ((SolrException)t).code() : -1);
+      nl.add("msg", e.getMessage());
+      nl.add("rspCode", e instanceof SolrException ? ((SolrException)e).code() : -1);
       results.add("exception", nl);
     } 
     

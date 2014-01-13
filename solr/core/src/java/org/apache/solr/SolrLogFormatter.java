@@ -114,9 +114,9 @@ public class SolrLogFormatter extends Formatter {
   public String format(LogRecord record) {
     try {
       return _format(record);
-    } catch (Throwable th) {
+    } catch (Exception e) {
       // logging swallows exceptions, so if we hit an exception we need to convert it to a string to see it
-      return "ERROR IN SolrLogFormatter! original message:" + record.getMessage() + "\n\tException: " + SolrException.toStr(th);
+      return "ERROR IN SolrLogFormatter! original message:" + record.getMessage() + "\n\tException: " + SolrException.toStr(e);
     }
   }
 
@@ -415,7 +415,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
       public void run() {
         try {
           go();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           e.printStackTrace();
         }
       }

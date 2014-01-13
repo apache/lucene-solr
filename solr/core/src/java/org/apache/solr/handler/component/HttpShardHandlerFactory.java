@@ -175,25 +175,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   public void close() {
     try {
       ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-    }
-    
-    try {
-      if(defaultClient != null) {
-        defaultClient.getConnectionManager().shutdown();
+    } finally {
+      try {
+        if (defaultClient != null) {
+          defaultClient.getConnectionManager().shutdown();
+        }
+      } finally {
+        
+        if (loadbalancer != null) {
+          loadbalancer.shutdown();
+        }
       }
-    } catch (Throwable e) {
-      SolrException.log(log, e);
     }
-    try {
-      if(loadbalancer != null) {
-        loadbalancer.shutdown();
-      }
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-    }
-
   }
 
   /**

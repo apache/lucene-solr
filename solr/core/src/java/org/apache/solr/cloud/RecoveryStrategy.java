@@ -245,15 +245,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
       try {
         doRecovery(core);
-      }  catch (InterruptedException e) {
+      } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
-      } catch (Throwable t) {
-        log.error("", t);
+      } catch (Exception e) {
+        log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", t);
+            "", e);
       }
     } finally {
       if (core != null) core.close();
@@ -282,8 +282,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     try {
       recentUpdates = ulog.getRecentUpdates();
       recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
-    } catch (Throwable t) {
-      SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, t);
+    } catch (Exception e) {
+      SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, e);
       recentVersions = new ArrayList<Long>(0);
     } finally {
       if (recentUpdates != null) {
@@ -311,8 +311,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         log.info("###### startupVersions=" + startingVersions);
-      } catch (Throwable t) {
-        SolrException.log(log, "Error getting recent versions. core=" + coreName, t);
+      } catch (Exception e) {
+        SolrException.log(log, "Error getting recent versions. core=" + coreName, e);
         recentVersions = new ArrayList<Long>(0);
       }
     }
@@ -331,9 +331,9 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               + coreName);
           firstTime = false; // skip peersync
         }
-      } catch (Throwable t) {
+      } catch (Exception e) {
         SolrException.log(log, "Error trying to get ulog starting operation. core="
-            + coreName, t);
+            + coreName, e);
         firstTime = false; // skip peersync
       }
     }
@@ -449,21 +449,21 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
           retries = INTERRUPTED;
-        } catch (Throwable t) {
-          SolrException.log(log, "Error while trying to recover", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error while trying to recover", e);
         } finally {
           if (!replayed) {
             try {
               ulog.dropBufferedUpdates();
-            } catch (Throwable t) {
-              SolrException.log(log, "", t);
+            } catch (Exception e) {
+              SolrException.log(log, "", e);
             }
           }
 
         }
 
-      } catch (Throwable t) {
-        SolrException.log(log, "Error while trying to recover. core=" + coreName, t);
+      } catch (Exception e) {
+        SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       }
 
       if (!successfulRecovery) {
@@ -486,9 +486,9 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               try {
                 recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                     core.getCoreDescriptor());
-              } catch (Throwable t) {
+              } catch (Exception e) {
                 SolrException.log(log,
-                    "Could not publish that recovery failed", t);
+                    "Could not publish that recovery failed", e);
               }
             } else {
               SolrException.log(log,
@@ -496,15 +496,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               try {
                 recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                     core.getCoreDescriptor());
-              } catch (Throwable t) {
+              } catch (Exception e) {
                 SolrException.log(log,
-                    "Could not publish that recovery failed", t);
+                    "Could not publish that recovery failed", e);
               }
             }
             break;
           }
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "core=" + coreName, e);
         }
 

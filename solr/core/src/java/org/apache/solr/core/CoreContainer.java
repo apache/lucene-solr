@@ -257,21 +257,24 @@ public class CoreContainer {
                   }
                   c = create(cd);
                   registerCore(cd.isTransient(), name, c, false, false);
-                } catch (Throwable t) {
+                } catch (Exception e) {
+                  SolrException.log(log, null, e);
+                  try {
               /*    if (isZooKeeperAware()) {
                     try {
                       zkSys.zkController.unregister(name, cd);
-                    } catch (InterruptedException e) {
+                    } catch (InterruptedException e2) {
                       Thread.currentThread().interrupt();
-                      SolrException.log(log, null, e);
-                    } catch (KeeperException e) {
-                      SolrException.log(log, null, e);
+                      SolrException.log(log, null, e2);
+                    } catch (KeeperException e3) {
+                      SolrException.log(log, null, e3);
                     }
                   }*/
-                  SolrException.log(log, null, t);
-                  if (c != null) {
-                    c.close();
-                  }
+                  } finally {
+                    if (c != null) {
+                      c.close();
+                    }
+                  }            
                 }
                 return c;
               }
@@ -279,8 +282,8 @@ public class CoreContainer {
             pending.add(completionService.submit(task));
 
           }
-        } catch (Throwable ex) {
-          SolrException.log(log, null, ex);
+        } catch (Exception e) {
+          SolrException.log(log, null, e);
         }
       }
 
@@ -416,8 +419,8 @@ public class CoreContainer {
     for (SolrCore core : cores) {
       try {
         core.getSolrCoreState().cancelRecovery();
-      } catch (Throwable t) {
-        SolrException.log(log, "Error canceling recovery for core", t);
+      } catch (Exception e) {
+        SolrException.log(log, "Error canceling recovery for core", e);
       }
     }
   }

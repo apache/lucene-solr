@@ -188,7 +188,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
           boolean continueRegen = regenerator.regenerateItem(searcher, this, old, keys[i], vals[i]);
           if (!continueRegen) break;
         }
-        catch (Throwable e) {
+        catch (Exception e) {
           SolrException.log(log,"Error during auto-warming of key:" + keys[i], e);
         }
       }

@@ -134,14 +134,17 @@ public class SolrIndexWriter extends IndexWriter {
           // don't allow interruption
           continue;
         } catch (Throwable t) {
+          if (t instanceof OutOfMemoryError) {
+            throw (OutOfMemoryError) t;
+          }
           log.error("Error closing IndexWriter, trying rollback", t);
           super.rollback();
         }
         if (IndexWriter.isLocked(directory)) {
           try {
             IndexWriter.unlock(directory);
-          } catch (Throwable t) {
-            log.error("Coud not unlock directory after seemingly failed IndexWriter#close()", t);
+          } catch (Exception e) {
+            log.error("Coud not unlock directory after seemingly failed IndexWriter#close()", e);
           }
         }
         break;

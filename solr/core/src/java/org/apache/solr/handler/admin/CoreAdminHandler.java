@@ -766,8 +766,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
             }  catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               SolrException.log(log, "", e);
-            } catch (Throwable t) {
-              SolrException.log(log, "", t);
+            } catch (Throwable e) {
+              SolrException.log(log, "", e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
             
             core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
@@ -1005,7 +1008,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.warn("Recovery was interrupted", e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       if (e instanceof SolrException)
         throw (SolrException)e;
       else

@@ -250,6 +250,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
           }
         }
       } catch (Throwable e) {
+        if (e instanceof OutOfMemoryError) {
+          throw (OutOfMemoryError) e;
+        }
         handleError(e);
       } finally {
 

@@ -177,7 +177,7 @@ public class SystemInfoHandler extends RequestHandlerBase
         info.add( "uptime", execute( "uptime" ) );
       }
     }
-    catch( Throwable ex ) {
+    catch( Exception ex ) {
       ex.printStackTrace();
     } 
     return info;

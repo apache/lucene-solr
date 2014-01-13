@@ -118,8 +118,11 @@ class SolrCores {
       for (SolrCore core : coreList) {
         try {
           core.close();
-        } catch (Throwable t) {
-          SolrException.log(CoreContainer.log, "Error shutting down core", t);
+        } catch (Throwable e) {
+          SolrException.log(CoreContainer.log, "Error shutting down core", e);
+          if (e instanceof Error) {
+            throw (Error) e;
+          }
         }
       }
     } while (coreList.size() > 0);

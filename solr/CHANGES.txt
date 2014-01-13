@@ -164,6 +164,9 @@ Bug Fixes
 * SOLR-5567: ZkController getHostAddress duplicates url prefix.
   (Kyle Halliday, Alexey Serba, shalin)
 
+* SOLR-4992: Solr eats OutOfMemoryError exceptions in many cases.
+  (Mark Miller, Daniel Collins)  
+
 Optimizations
 ----------------------
 
