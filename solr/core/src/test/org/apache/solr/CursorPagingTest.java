@@ -19,6 +19,7 @@ package org.apache.solr;
 
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
+import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -36,6 +37,7 @@ import org.noggit.ObjectBuilder;
 
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
@@ -540,7 +542,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
   }
 
-  /** Similar to usually() but we want it to happen just as often regardless 
+  /** Similar to usually() but we want it to happen just as often regardless
    * of test multiplier and nightly status 
    */
   private static boolean useField() {
@@ -569,8 +571,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * Given a set of params, executes a cursor query using {@link #CURSOR_MARK_START}
    * and then continuously walks the results using {@link #CURSOR_MARK_START} as long
    * as a non-0 number of docs ar returned.  This method records the the set of all id's
-   * (must be postive ints) encountered and throws an assertion failure if any id is 
-   * encountered more then once, or if the set grows above maxSize
+   * (must be positive ints) encountered and throws an assertion failure if any id is
+   * encountered more than once, or if the set grows above maxSize
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) 
     throws Exception {
@@ -609,6 +611,126 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     return ids;
   }
 
+  /**
+   * test faceting with deep paging
+   */
+  public void testFacetingWithRandomSorts() throws Exception {
+    final int numDocs = _TestUtil.nextInt(random(), 1000, 3000);
+    String[] fieldsToFacetOn = { "int", "long", "str" };
+    String[] facetMethods = { "enum", "fc", "fcs" };
+
+    for (int i = 1; i <= numDocs; i++) {
+      SolrInputDocument doc = buildRandomDocument(i);
+      assertU(adoc(doc));
+    }
+    assertU(commit());
+
+    Collection<String> allFieldNames = getAllFieldNames();
+    String[] fieldNames = new String[allFieldNames.size()];
+    getAllFieldNames().toArray(fieldNames);
+    String f = fieldNames[_TestUtil.nextInt(random(), 0, fieldNames.length - 1)];
+    String order = 0 == _TestUtil.nextInt(random(), 0, 1) ? " asc" : " desc";
+    String sort = f + order + (f.equals("id") ? "" : ", id" + order);
+    String rows = "" + _TestUtil.nextInt(random(),13,50);
+    String facetField = fieldsToFacetOn
+        [_TestUtil.nextInt(random(), 0, fieldsToFacetOn.length - 1)];
+    String facetMethod = facetMethods
+        [_TestUtil.nextInt(random(), 0, facetMethods.length - 1)];
+    SentinelIntSet ids = assertFullWalkNoDupsWithFacets
+        (numDocs, params("q", "*:*",
+            "fl", "id," + facetField,
+            "facet", "true",
+            "facet.field", facetField,
+            "facet.method", facetMethod,
+            "facet.missing", "true",
+            "facet.limit", "-1", // unlimited
+            "rows", rows,
+            "sort", sort));
+    assertEquals(numDocs, ids.size());
+  }
+
+  /**
+   * Given a set of params, executes a cursor query using {@link #CURSOR_MARK_START}
+   * and then continuously walks the results using {@link #CURSOR_MARK_START} as long
+   * as a non-0 number of docs ar returned.  This method records the the set of all id's
+   * (must be positive ints) encountered and throws an assertion failure if any id is
+   * encountered more than once, or if the set grows above maxSize.
+   *
+   * Also checks that facets are the same with each page, and that they are correct.
+   */
+  public SentinelIntSet assertFullWalkNoDupsWithFacets(int maxSize, SolrParams params)
+      throws Exception {
+
+    final String facetField = params.get("facet.field");
+    assertNotNull("facet.field param not specified", facetField);
+    assertFalse("facet.field param contains multiple values", facetField.contains(","));
+    assertEquals("facet.limit param not set to -1", "-1", params.get("facet.limit"));
+    final Map<String,MutableValueInt> facetCounts = new HashMap<String,MutableValueInt>();
+    SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
+    String cursorMark = CURSOR_MARK_START;
+    int docsOnThisPage = Integer.MAX_VALUE;
+    List previousFacets = null;
+    while (0 < docsOnThisPage) {
+      String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark));
+      Map rsp = (Map) ObjectBuilder.fromJSON(json);
+      assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
+                 rsp.containsKey(CURSOR_MARK_NEXT));
+      String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
+      assertNotNull(CURSOR_MARK_NEXT + " is null", nextCursorMark);
+      List<Map<Object,Object>> docs = (List)(((Map)rsp.get("response")).get("docs"));
+      docsOnThisPage = docs.size();
+      if (null != params.getInt(CommonParams.ROWS)) {
+        int rows = params.getInt(CommonParams.ROWS);
+        assertTrue("Too many docs on this page: " + rows + " < " + docsOnThisPage,
+                   docsOnThisPage <= rows);
+      }
+      if (0 == docsOnThisPage) {
+        assertEquals("no more docs, but "+CURSOR_MARK_NEXT+" isn't same",
+                     cursorMark, nextCursorMark);
+      }
+      for (Map<Object,Object> doc : docs) {
+        int id = ((Long)doc.get("id")).intValue();
+        assertFalse("walk already seen: " + id, ids.exists(id));
+        ids.put(id);
+        assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
+                    maxSize < ids.size());
+        Object facet = doc.get(facetField);
+        String facetString = null == facet ? null : facet.toString(); // null: missing facet value
+        MutableValueInt count = facetCounts.get(facetString);
+        if (null == count) {
+          count = new MutableValueInt();
+          facetCounts.put(facetString, count);
+        }
+        ++count.value;
+      }
+      cursorMark = nextCursorMark;
+
+      Map facetFields = (Map)((Map)rsp.get("facet_counts")).get("facet_fields");
+      List facets = (List)facetFields.get(facetField);
+      if (null != previousFacets) {
+        assertEquals("Facets not the same as on previous page:\nprevious page facets: "
+            + Arrays.toString(facets.toArray(new Object[facets.size()]))
+            + "\ncurrent page facets: "
+            + Arrays.toString(previousFacets.toArray(new Object[previousFacets.size()])),
+            previousFacets, facets);
+      }
+      previousFacets = facets;
+    }
+
+    assertNotNull("previousFacets is null", previousFacets);
+    assertEquals("Mismatch in number of facets: ", facetCounts.size(), previousFacets.size() / 2);
+    int pos;
+    for (pos = 0 ; pos < previousFacets.size() ; pos += 2) {
+      String label = (String)previousFacets.get(pos);
+      int expectedCount = ((Number)previousFacets.get(pos + 1)).intValue();
+      MutableValueInt count = facetCounts.get(label);
+      assertNotNull("Expected facet label #" + (pos / 2) + " not found: '" + label + "'", count);
+      assertEquals("Facet count mismatch for label #" + (pos / 2) + " '" + label + "'", expectedCount,
+                   facetCounts.get(label).value);
+      pos += 2;
+    }
+    return ids;
+  }
 
   /**
    * Asserts that the query matches the specified JSON patterns and then returns the
