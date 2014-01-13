@@ -268,6 +268,10 @@ Bug Fixes
   sets the alias name and the collections to alias to the same value.
   (Aaron Schram, Mark Miller)
 
+* SOLR-5577: Likely ZooKeeper expiration should not slow down updates a given
+  amount, but instead cut off updates after a given time. 
+  (Mark Miller, Christine Poerschke, Ramkumar Aiyengar)
+  
 * SOLR-5580: NPE when creating a core with both explicit shard and coreNodeName.
   (YouPeng Yang, Mark Miller)
 
@@ -295,9 +299,9 @@ Bug Fixes
   ZkCmdExecutor#ensureExists to ensure their election paths are properly
   created. (Mark Miller)
 
-* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory 
-  if necessary. (Mark Miller)
-
+* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory if 
+  necessary. (Mark Miller)
+  
 * SOLR-4709: The core reload after replication if config files have changed
   can fail due to a race condition. (Mark Miller, Hossman))
 
@@ -306,7 +310,7 @@ Bug Fixes
 
 * SOLR-5588: PeerSync doesn't count all connect failures as success.
   (Mark Miller)
-    
+
 * SOLR-5564: hl.maxAlternateFieldLength should apply to original field when
   fallback is attempted (janhoy)
 
@@ -315,19 +319,19 @@ Bug Fixes
 
 * SOLR-5615: Deadlock while trying to recover after a ZK session expiration.
   (Ramkumar Aiyengar, Mark Miller)
-  
-* SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when 
+
+* SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when
   using solr.xml persistence. (Bill Bell, Alan Woodward)
 
 * SOLR-5618: Fix false cache hits in queryResultCache when hashCodes are equal 
   and duplicate filter queries exist in one of the requests (hossman)
 
 Optimizations
-----------------------
+----------------------  
 
 * SOLR-5576: Improve concurrency when registering and waiting for all 
   SolrCore's to register a DOWN state. (Christine Poerschke via Mark Miller)
-  
+
 ==================  4.6.0 ==================
 
 Versions of Major Components
@@ -402,7 +406,7 @@ New Features
 
 * SOLR-5464: Add option to ConcurrentSolrServer to stream pure delete 
    requests. (Mark Miller)
-
+  
 Bug Fixes
 ----------------------
   
@@ -446,7 +450,7 @@ Bug Fixes
 * SOLR-5465: SolrCmdDistributor retry logic has a concurrency race bug. 
   (Mark Miller)
   
-* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)  
+* SOLR-5452: Do not attempt to proxy internal update requests. (Mark Miller)
 
 Optimizations
 ----------------------  
@@ -1070,6 +1074,9 @@ Bug Fixes
 
 * SOLR-5037: The CSV loader now accepts field names that are not in the schema.
   (gsingers, ehatcher, Steve Rowe)
+
+* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
+  Erick Erickson)
 
 Optimizations
 ----------------------
