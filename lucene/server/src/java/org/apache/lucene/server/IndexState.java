@@ -95,10 +95,12 @@ import org.apache.lucene.server.params.StringType;
 import org.apache.lucene.server.params.StructType;
 import org.apache.lucene.server.params.Type;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
@@ -1066,6 +1068,13 @@ public class IndexState implements Closeable {
         }
       } else {
         indexDir = origIndexDir;
+      }
+
+      // Install rate limiting for merges:
+      if (settingsSaveState.containsKey("mergeMaxMBPerSec")) {
+        RateLimitedDirectoryWrapper rateLimitDir = new RateLimitedDirectoryWrapper(indexDir);
+        rateLimitDir.setMaxWriteMBPerSec(getDoubleSetting("mergeMaxMBPerSec"), IOContext.Context.MERGE);
+        indexDir = rateLimitDir;
       }
 
       // Rather than rely on IndexWriter/TaxonomyWriter to

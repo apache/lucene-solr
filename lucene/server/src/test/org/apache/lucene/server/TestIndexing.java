@@ -234,6 +234,8 @@ public class TestIndexing extends ServerBaseTestCase {
     curIndexName = "boost";
     send("createIndex");
     send("settings", "{directory: RAMDirectory, matchVersion: LUCENE_40}");
+    // Just to test merge rate limiting:
+    send("settings", "{mergeMaxMBPerSec: 10.0}");
     // Just to test index.ramBufferSizeMB:
     send("liveSettings", "{index.ramBufferSizeMB: 20.0}");
     send("registerFields", "{fields: {id: {type: atom, store: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
@@ -343,7 +345,6 @@ public class TestIndexing extends ServerBaseTestCase {
           System.out.println("\nTEST: settings3");
         }
         result = send("settings");
-        System.out.println("GOT: " + result);
         assertEquals(dirImpl, getString(result, "directory"));
       }
       send("deleteIndex");

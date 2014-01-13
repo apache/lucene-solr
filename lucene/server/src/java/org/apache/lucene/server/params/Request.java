@@ -28,6 +28,8 @@ import net.minidev.json.JSONObject;
 
 // nocommit instead of removing as we getXXX, we could do a
 // Set<String> seen?
+//   - would close the loophole of foobar={} not being detected
+//   - would allow us to lookup same param more than once
 
 /** Pairs up the actual parameters with its type.  For
  *  complex requests, e.g. {@code search}, this is used

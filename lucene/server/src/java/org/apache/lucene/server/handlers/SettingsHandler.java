@@ -46,6 +46,7 @@ public class SettingsHandler extends Handler {
     new StructType(
         new Param("indexName", "Index name", new StringType()),
         RegisterFieldHandler.MATCH_VERSION_PARAM,
+        new Param("mergeMaxMBPerSec", "Rate limit merges to at most this many MB/sec", new FloatType()),
         new Param("nrtCachingDirectory.maxMergeSizeMB", "Largest merged segment size to cache in RAMDirectory", new FloatType(), 5.0),
         new Param("nrtCachingDirectory.maxSizeMB", "Largest overall size for all files cached in NRTCachingDirectory; set to 0 to disable NRTCachingDirectory", new FloatType(), 60.0),
         new Param("concurrentMergeScheduler.maxThreadCount", "How many merge threads to allow at once", new IntType(), 1),
