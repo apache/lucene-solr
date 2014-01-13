@@ -62,6 +62,7 @@ import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 //import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
+import org.jboss.netty.handler.codec.http.HttpContentCompressor;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -602,6 +603,7 @@ public class Server {
             ChannelPipeline p = Channels.pipeline();
             p.addLast("decoder", new HttpRequestDecoder());
             p.addLast("encoder", new HttpResponseEncoder());
+            p.addLast("deflater", new HttpContentCompressor(1));
             // nocommit deflater (HttpContentCompressor)?
             p.addLast("handler", new Dispatcher());
             return p;
@@ -612,9 +614,6 @@ public class Server {
       bootstrap.setOption("child.keepAlive", true);
         
       // Bind and start to accept incoming connections.
-      //Channel sc = bootstrap.bind(new
-      //InetSocketAddress(port));
-      // nocommit
       Channel sc = bootstrap.bind(new InetSocketAddress(port));
       this.actualPort = ((InetSocketAddress) sc.getLocalAddress()).getPort();
 

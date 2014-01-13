@@ -96,7 +96,12 @@ public class ToParentBlockJoinCollector extends Collector {
   private boolean queueFull;
 
   private OneGroup bottom;
+
+  /** This is really the total group count, in the returned
+   *  TopGroups, since each parent is one group containging
+   *  its child docs. */
   private int totalHitCount;
+
   private float maxScore = Float.NaN;
 
   /**  Creates a ToParentBlockJoinCollector.  The provided sort must
@@ -487,17 +492,20 @@ public class ToParentBlockJoinCollector extends Collector {
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, numDocsInGroup);
 
       groups[groupIDX-offset] = new GroupDocs<>(og.score,
-                                                       topDocs.getMaxScore(),
-                                                       numChildDocs,
-                                                       topDocs.scoreDocs,
-                                                       og.doc,
-                                                       groupSortValues);
+                                                topDocs.getMaxScore(),
+                                                numChildDocs,
+                                                topDocs.scoreDocs,
+                                                og.doc,
+                                                groupSortValues);
     }
 
+    // We must pass 0 for totalHitCount, since for each
+    // collected parent doc we don't go and sum the child
+    // doc count for all sub-queries:
     return new TopGroups<>(new TopGroups<>(sort.getSort(),
-                                                       withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                                       0, totalGroupedHitCount, groups, maxScore),
-                                  totalHitCount);
+                                           withinGroupSort == null ? null : withinGroupSort.getSort(),
+                                           0, totalGroupedHitCount, groups, maxScore),
+                           totalHitCount);
   }
 
   /** Returns the TopGroups for the specified BlockJoinQuery.

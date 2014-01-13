@@ -52,8 +52,6 @@ public class TestVirtualFields extends ServerBaseTestCase {
     send("registerFields", o2);
   }
 
-  // nocommit need dynamic exprs too (defined for one request)
-
   /** Non-reversed sort by virtual field */
   public void testSortByVirtualFieldStraight() throws Exception {
     deleteAllDocs();

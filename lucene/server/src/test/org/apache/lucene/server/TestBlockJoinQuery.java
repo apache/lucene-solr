@@ -80,11 +80,14 @@ public class TestBlockJoinQuery extends ServerBaseTestCase {
     //System.out.println("GOT: " + result);
     assertEquals(1, getInt(result, "totalHits"));
 
+    // Returns child docs grouped up to parent doc:
     result = send("search", "{retrieveFields: [skill, year, name, country], query: {class: ToParentBlockJoinQuery, childHits: {}, childQuery: {class: text, field: skill, text: python}, parentsFilter: {class: CachingWrapperFilter, filter: {class: QueryWrapperFilter, query: {class: TermQuery, field: docType, term: resume}}}}, searcher: {indexGen: " + indexGen + "}}");
     //System.out.println("GOT: " + prettyPrint(result));
 
-    // nocommit why is this 0?
-    //assertEquals(1, getInt(result, "totalHits"));
+    assertEquals(1, getInt(result, "totalGroupCount"));
+    // Grouping from a BJQ does not set totalHits:
+    assertEquals(0, getInt(result, "totalHits"));
+
     assertEquals(1, getInt(result, "groups.length"));
     assertEquals(1, getInt(result, "groups[0].hits.length"));
     assertEquals("Lisa", getString(result, "groups[0].fields.name"));

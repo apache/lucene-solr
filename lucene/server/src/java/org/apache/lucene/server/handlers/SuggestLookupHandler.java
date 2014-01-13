@@ -89,14 +89,8 @@ public class SuggestLookupHandler extends Handler {
           JSONObject o = new JSONObject();
           retArray.add(o);
           if (result.highlightKey != null) {
-            JSONArray fragments = new JSONArray();
-            o.put("key", fragments);
-            for(LookupHighlightFragment fragment : (List<LookupHighlightFragment>) result.highlightKey) {
-              JSONObject o2 = new JSONObject();
-              fragments.add(o2);
-              o2.put("text", fragment.text);
-              o2.put("isHit", fragment.isHit);
-            }
+            // Currently only AnalyzingInfixSuggester does highlighting:
+            o.put("key", result.highlightKey);
           } else {
             o.put("key", result.key);
           }

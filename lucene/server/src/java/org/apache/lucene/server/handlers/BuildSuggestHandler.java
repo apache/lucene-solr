@@ -48,6 +48,9 @@ import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
+import org.apache.lucene.util.BytesRef;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
@@ -219,86 +222,28 @@ public class BuildSuggestHandler extends Handler {
                                               indexAnalyzer,
                                               queryAnalyzer,
                                               AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS) {
-
-          /*
-          @Override
-          protected Query finishQuery(BooleanQuery in, boolean allTermsRequired) {
-            // nocommit not general
-            List<BooleanClause> clauses = in.clauses();
-            if (clauses.size() >= 2 && allTermsRequired) {
-              String t1 = getTerm(clauses.get(clauses.size()-2).getQuery());
-              String t2 = getTerm(clauses.get(clauses.size()-1).getQuery());
-              if (t1.equals(t2)) {
-                BooleanQuery sub = new BooleanQuery();
-                BooleanClause other = clauses.get(clauses.size()-2);
-                sub.add(new BooleanClause(clauses.get(clauses.size()-2).getQuery(), BooleanClause.Occur.SHOULD));
-                sub.add(new BooleanClause(clauses.get(clauses.size()-1).getQuery(), BooleanClause.Occur.SHOULD));
-                clauses.subList(clauses.size()-2, clauses.size()).clear();
-                clauses.add(new BooleanClause(sub, BooleanClause.Occur.MUST));
-              }
-            }
-            return in;
-          }
-
-          private String getTerm(Query query) {
-            if (query instanceof TermQuery) {
-              return ((TermQuery) query).getTerm().text();
-            } else if (query instanceof PrefixQuery) {
-              return ((PrefixQuery) query).getPrefix().text();
-            } else {
-              return null;
-            }
-          }
-          */
-          
-          /*
-          @Override
-          protected void addNonMatch(StringBuilder sb, String text) {
-            if (sb.size() > 0) {
-              sb.append(',');
-            }
-            sb.append('"');
-          }
-
-          @Override
-          protected void addPrefixMatch(StringBuilder sb, String surface, String analyzed, String prefixToken) {
-            prefixToken = prefixToken.toLowerCase();
-            String surfaceLower = surface.toLowerCase();
-            sb.append("<font color=red>");
-            if (surfaceLower.startsWith(prefixToken)) {
-              sb.append(surface.substring(0, prefixToken.length()));
-              sb.append("</font>");
-              sb.append(surface.substring(prefixToken.length()));
-            } else {
-              sb.append(surface);
-              sb.append("</font>");
-            }
-          }
-
-          @Override
-          protected void addWholeMatch(StringBuilder sb, String surface, String analyzed) {
-            sb.append("<font color=red>");
-            sb.append(surface);
-            sb.append("</font>");
-          }
-          */
-
           @Override
           protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
-            // nocommit what the heck is this doing and can
-            // it be moved to Lucene?
+            
+            // We override the entire highlight method, to
+            // render directly to JSONArray instead of html
+            // string:
+
             TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text));
             CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
             OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
             ts.reset();
-            List<LookupHighlightFragment> fragments = new ArrayList<LookupHighlightFragment>();
+            JSONArray fragments = new JSONArray();
             int upto = 0;
             while (ts.incrementToken()) {
               String token = termAtt.toString();
               int startOffset = offsetAtt.startOffset();
               int endOffset = offsetAtt.endOffset();
               if (upto < startOffset) {
-                fragments.add(new LookupHighlightFragment(text.substring(upto, startOffset), false));
+                JSONObject o = new JSONObject();
+                fragments.add(o);
+                o.put("isHit", false);
+                o.put("text", text.substring(upto, startOffset));
                 upto = startOffset;
               } else if (upto > startOffset) {
                 continue;
@@ -306,12 +251,19 @@ public class BuildSuggestHandler extends Handler {
 
               if (matchedTokens.contains(token)) {
                 // Token matches.
-                fragments.add(new LookupHighlightFragment(text.substring(startOffset, endOffset), true));
+                JSONObject o = new JSONObject();
+                fragments.add(o);
+                o.put("isHit", true);
+                o.put("text", text.substring(startOffset, endOffset));
                 upto = endOffset;
               } else if (prefixToken != null && token.startsWith(prefixToken)) {
-                fragments.add(new LookupHighlightFragment(text.substring(startOffset, startOffset+prefixToken.length()), true));
+                JSONObject o = new JSONObject();
+                fragments.add(o);
+                o.put("isHit", true);
+                o.put("text", text.substring(startOffset, startOffset+prefixToken.length()));
                 if (prefixToken.length() < token.length()) {
-                  fragments.add(new LookupHighlightFragment(text.substring(startOffset+prefixToken.length(), startOffset+token.length()), false));
+                  o.put("isHit", false);
+                  o.put("text", text.substring(startOffset+prefixToken.length(), startOffset+token.length()));
                 }
                 upto = endOffset;
               }
@@ -319,7 +271,10 @@ public class BuildSuggestHandler extends Handler {
             ts.end();
             int endOffset = offsetAtt.endOffset();
             if (upto < endOffset) {
-              fragments.add(new LookupHighlightFragment(text.substring(upto), false));
+              JSONObject o = new JSONObject();
+              fragments.add(o);
+              o.put("isHit", false);
+              o.put("text", text.substring(upto));
             }
             ts.close();
 
@@ -355,6 +310,49 @@ public class BuildSuggestHandler extends Handler {
     @Override
     public String toString() {
       return "LookupHighlightFragment(text=" + text + " isHit=" + isHit + ")";
+    }
+  }
+
+  // nocommit should we add InputIterator.getCount instead?
+
+  /** Wraps another {@link InputIterator} and counts how
+   *  many suggestions were seen. */
+  private static class CountingInputIterator implements InputIterator {
+
+    private final InputIterator other;
+    private int count;
+
+    public CountingInputIterator(InputIterator other) {
+      this.other = other;
+    }
+
+    @Override
+    public long weight() {
+      return other.weight();
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      BytesRef result = other.next();
+      if (result != null) {
+        count++;
+      }
+
+      return result;
+    }
+
+    @Override
+    public BytesRef payload() {
+      return other.payload();
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return other.hasPayloads();
+    }
+
+    public int getCount() {
+      return count;
     }
   }
 
@@ -435,7 +433,7 @@ public class BuildSuggestHandler extends Handler {
       iterator0 = (InputIterator) dict.getWordsIterator();
     }
 
-    final InputIterator iterator = iterator0;
+    final CountingInputIterator iterator = new CountingInputIterator(iterator0);
 
     // nocommit return error if suggester already exists?
 
@@ -485,15 +483,7 @@ public class BuildSuggestHandler extends Handler {
           ret.put("sizeInBytes", ((AnalyzingSuggester) suggester).sizeInBytes());
         }
 
-        int count;
-        if (iterator instanceof FromFileTermFreqIterator) {
-          count = ((FromFileTermFreqIterator) iterator).suggestCount;
-        } else {
-          // nocommit how to get count "in general"...?  or
-          // stop returning it?
-          count = 0;
-        }
-        ret.put("count", count);
+        ret.put("count", iterator.getCount());
         return ret.toString();
       }
     };

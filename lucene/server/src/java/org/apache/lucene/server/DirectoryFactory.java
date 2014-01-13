@@ -19,6 +19,8 @@ package org.apache.lucene.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 //import org.apache.lucene.store.AsyncFSDirectory;
 import org.apache.lucene.store.Directory;
@@ -42,7 +44,7 @@ public abstract class DirectoryFactory {
   /** Returns an instance, using the specified
    *  implementation {FSDirectory, MMapDirectory,
    *  NIOFSDirectory, SimpleFSDirectory or RAMDirectory}. */
-  public static DirectoryFactory get(String dirImpl) {
+  public static DirectoryFactory get(final String dirImpl) {
     if (dirImpl.equals("FSDirectory")) {
       return new DirectoryFactory() {
           @Override
@@ -71,30 +73,41 @@ public abstract class DirectoryFactory {
             return new SimpleFSDirectory(path);
           }
         };
-      /*} else if (dirImpl.equals("AsyncFSDirectory")) {
-      return new DirectoryFactory() {
-          @Override
-          public Directory open(File path) throws IOException {
-            return new AsyncFSDirectory(path);
-          }
-          };*/
     } else if (dirImpl.equals("RAMDirectory")) {
       return new DirectoryFactory() {
           @Override
           public Directory open(File path) throws IOException {
             return new RAMDirectory();
-            /*
-            final long t0 = System.currentTimeMillis();
-            Directory dir =new RAMDirectory(new SimpleFSDirectory(path), IOContext.READ);
-            System.out.println((System.currentTimeMillis() - t0) + " msec to load RAMDir; sizeInBytes=" + ((RAMDirectory) dir).sizeInBytes());
-            return dir;
-            */
           }
       };
     } else {
-      // nocommit we should try to load/instantiate the class
-      // to allow custom dir impls, here
-      throw new IllegalArgumentException("unknown directory implementation \"" + dirImpl + "\"");
+      final Class<? extends Directory> dirClass;
+      try {
+        dirClass = Class.forName(dirImpl).asSubclass(Directory.class);
+      } catch (ClassNotFoundException cnfe) {
+        throw new IllegalArgumentException("could not locate Directory sub-class \"" + dirImpl + "\"; verify CLASSPATH");
+      }
+      final Constructor<? extends Directory> ctor;
+      try {
+        ctor = dirClass.getConstructor(File.class);
+      } catch (NoSuchMethodException nsme) {
+        throw new IllegalArgumentException("class \"" + dirImpl + "\" does not have a constructor taking a single File argument");
+      }
+
+      return new DirectoryFactory() {
+        @Override
+        public Directory open(File path) throws IOException {
+          try {
+            return ctor.newInstance(path);
+          } catch (InstantiationException ie) {
+            throw new RuntimeException("failed to instantiate directory class \"" + dirImpl + "\" on path=\"" + path + "\"", ie);
+          } catch (InvocationTargetException ite) {
+            throw new RuntimeException("failed to instantiate directory class \"" + dirImpl + "\" on path=\"" + path + "\"", ite);
+          } catch (IllegalAccessException iae) {
+            throw new RuntimeException("failed to instantiate directory class \"" + dirImpl + "\" on path=\"" + path + "\"", iae);
+          }
+        }
+      };
     }
   }
 }

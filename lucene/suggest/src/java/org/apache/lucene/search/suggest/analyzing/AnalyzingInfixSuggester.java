@@ -391,6 +391,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           query.add(lastQuery, occur);
         }
       }
+
+      // Must explicitly close now because we pull another
+      // TokenStream in highlight:
       ts.close();
 
       // TODO: we could allow blended sort here, combining

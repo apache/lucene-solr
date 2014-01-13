@@ -61,14 +61,8 @@ public class SettingsHandler extends Handler {
                               new PolyEntry("Lucene42", "Lucene42NormsFormat",
                                   new Param("acceptableOverheadRatio", "How much, if any, compression should be used; pass 7.0 or higher for no compression, and 0.0 for maximum compression.", new FloatType(), PackedInts.FASTEST)),
                               new PolyEntry("Lucene40", "Lucene40NormsFormat"))))),
-        new Param("directory", "Directory implementation to use",
-            new PolyType(Directory.class,
-                new PolyEntry("FSDirectory", "Use the default filesystem Directory (FSDirectory.open)"),
-                new PolyEntry("SimpleFSDirectory", ""),
-                new PolyEntry("MMapDirectory", ""),
-                new PolyEntry("NIOFSDirectory", ""),
-                new PolyEntry("RAMDirectory", "Store all state in RAMDirectory.  Note that this is very inefficient, and all data is lost when the server is shut down.")),
-                  "FSDirectory"));
+        new Param("directory", "Base Directory implementation to use (NRTCachingDirectory will wrap this); either one of the core implementations (FSDirectory, MMapDirectory, NIOFSDirectory, SimpleFSDirectory, RAMDirectory (for temporary indices!) or a fully qualified path to a Directory implementation that has a public constructor taking a single File argument",
+            new StringType(), "FSDirectory"));
 
   @Override
   public StructType getType() {
@@ -93,8 +87,7 @@ public class SettingsHandler extends Handler {
     final String directoryJSON;
     if (r.hasParam("directory")) {
       directoryJSON = r.getRaw("directory").toString();
-      PolyResult pr = r.getPoly("directory");
-      df = DirectoryFactory.get(pr.name);
+      df = DirectoryFactory.get(r.getString("directory"));
     } else {
       df = null;
       directoryJSON = null;
