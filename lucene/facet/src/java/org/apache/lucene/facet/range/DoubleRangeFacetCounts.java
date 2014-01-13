@@ -71,6 +71,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     LongRange[] longRanges = new LongRange[ranges.length];
     for(int i=0;i<ranges.length;i++) {
       DoubleRange range = ranges[i];
+      System.out.println("range " + i + ": " + range);
       longRanges[i] =  new LongRange(range.label,
                                      NumericUtils.doubleToSortableLong(range.minIncl), true,
                                      NumericUtils.doubleToSortableLong(range.maxIncl), true);

@@ -71,11 +71,11 @@ public class CreateSnapshotHandler extends Handler {
 
   @Override
   public FinishRequest handle(final IndexState state, Request r, Map<String,List<String>> params) throws Exception {
+    state.verifyStarted(r);
+
     if (!state.hasCommit()) {
       r.fail("this index has no commits; please call commit first");
     }
-
-    state.verifyStarted(r);
 
     // nocommit not thread safe vs commitHandler?
     final boolean openSearcher = r.getBoolean("openSearcher");

@@ -33,8 +33,6 @@ import org.apache.lucene.server.params.StructType;
 public class CreateIndexHandler extends Handler {
   private static StructType TYPE = new StructType(
                                        new Param("indexName", "Index name", new StringType()),
-                                       // nocommit what about RAMDir...
-                                       // nocommit should we only allow rootDir "under" the globalRoot?
                                        new Param("rootDir", "Filesystem path where all state is stored", new StringType()));
 
   /** Sole constructor. */
@@ -59,13 +57,18 @@ public class CreateIndexHandler extends Handler {
     if (!IndexState.isSimpleName(indexName)) {
       r.fail("indexName", "invalid indexName \"" + indexName + "\": must be [a-zA-Z_][a-zA-Z0-9]*");
     }
-    final String rootDir = r.getString("rootDir");
+    final File rootDir;
+    if (r.hasParam("rootDir")) {
+      rootDir = new File(r.getString("rootDir"));
+    } else {
+      rootDir = null;
+    }
 
     return new FinishRequest() {
       @Override
       public String finish() throws Exception {
         try {
-          globalState.createIndex(indexName, new File(rootDir));
+          globalState.createIndex(indexName, rootDir);
         } catch (IllegalArgumentException iae) {
           r.fail("invalid indexName \"" + indexName + "\": " + iae.toString());
         }

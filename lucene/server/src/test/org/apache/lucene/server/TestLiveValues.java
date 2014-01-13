@@ -41,7 +41,7 @@ public class TestLiveValues extends ServerBaseTestCase {
 
   private static void registerFields() throws Exception {
     send("registerFields", "{fields: {id: {type: atom, store: true, postingsFormat: Memory}}}");
-    send("registerFields", "{fields: {value: {type: atom, index: false, store: true, liveValues: id}}}");
+    send("registerFields", "{fields: {value: {type: atom, search: false, store: true, liveValues: id}}}");
   }
 
   // nocommit testDeletions

@@ -56,7 +56,7 @@ public class StartIndexHandler extends Handler {
   public FinishRequest handle(final IndexState state, final Request r, Map<String,List<String>> params) throws Exception {
     return new FinishRequest() {
       @Override
-      public String finish() throws IOException {
+      public String finish() throws Exception {
         long t0 = System.nanoTime();
         state.start();
         JSONObject result = new JSONObject();

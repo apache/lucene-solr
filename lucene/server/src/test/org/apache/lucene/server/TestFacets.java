@@ -52,19 +52,21 @@ public class TestFacets extends ServerBaseTestCase {
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
-    put(o, "price", "{type: float, sort: true, index: true, store: true}");
-    put(o, "longField", "{type: long, index: true, facet: numericRange}");
+    put(o, "price", "{type: float, sort: true, search: true, store: true}");
+    put(o, "longField", "{type: long, search: true, facet: numericRange}");
+    put(o, "doubleField", "{type: double, search: true, facet: numericRange}");
+    put(o, "floatField", "{type: float, search: true, facet: numericRange}");
     put(o, "id", "{type: int, store: true, postingsFormat: Memory}");
-    put(o, "date", "{type: atom, index: false, store: true}");
+    put(o, "date", "{type: atom, search: false, store: true}");
     if (random().nextBoolean()) {
       // Send facets to two different random fields:
       String name = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
-      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy, facetIndexFieldName: " + name + "}");
+      put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy, facetIndexFieldName: " + name + "}");
       if (VERBOSE) {
         System.out.println("NOTE: send dateFacet to facetIndexFieldName=" + name);
       }
       name = "y" + _TestUtil.randomSimpleString(random(), 1, 10);
-      put(o, "author", "{type: text, index: false, facet: flat, group: true, facetIndexFieldName: " + name + "}");
+      put(o, "author", "{type: text, search: false, facet: flat, group: true, facetIndexFieldName: " + name + "}");
       if (VERBOSE) {
         System.out.println("NOTE: send author to facetIndexFieldName=" + name);
       }
@@ -72,16 +74,16 @@ public class TestFacets extends ServerBaseTestCase {
     } else if (random().nextBoolean()) {
       // Send facets to the same random field:
       indexFacetField = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
-      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy, facetIndexFieldName: " + indexFacetField + "}");
-      put(o, "author", "{type: text, index: false, facet: flat, group: true, facetIndexFieldName: " + indexFacetField + "}");
+      put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy, facetIndexFieldName: " + indexFacetField + "}");
+      put(o, "author", "{type: text, search: false, facet: flat, group: true, facetIndexFieldName: " + indexFacetField + "}");
       if (VERBOSE) {
         System.out.println("NOTE: send dateFacet to facetIndexFieldName=" + indexFacetField);
         System.out.println("NOTE: send author to facetIndexFieldName=" + indexFacetField);
       }
     } else {
       // Use default $facets field:
-      put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
-      put(o, "author", "{type: text, index: false, facet: flat, group: true}");
+      put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy}");
+      put(o, "author", "{type: text, search: false, facet: flat, group: true}");
     }
     JSONObject o2 = new JSONObject();
     o2.put("indexName", "index");
@@ -236,7 +238,7 @@ public class TestFacets extends ServerBaseTestCase {
     assertEquals("[[\"top\",6],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
   }
 
-  public void testRangeFacets() throws Exception {
+  public void testLongRangeFacets() throws Exception {
     deleteAllDocs();    
     long gen = -1;
     for(int i=0;i<100;i++) {
@@ -249,6 +251,38 @@ public class TestFacets extends ServerBaseTestCase {
     assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
   }
 
+  public void testDoubleRangeFacets() throws Exception {
+    deleteAllDocs();    
+    long gen = -1;
+    for(int i=0;i<100;i++) {
+      gen = getLong(send("addDocument", "{fields: {doubleField: " + i + "}}"), "indexGen");
+    }
+    JSONObject o = send("search", "{facets: [{dim: doubleField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
+    assertEquals("All", getString(o, "facets[0].counts[1][0]"));
+    assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
+    assertEquals("Half", getString(o, "facets[0].counts[2][0]"));
+    assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
+  }
+
+  // nocommit fails ... we need to add FloatRangeFacetCounts
+  // to lucene???
+
+  /*
+  public void testFloatRangeFacets() throws Exception {
+    deleteAllDocs();    
+    long gen = -1;
+    for(int i=0;i<100;i++) {
+      gen = getLong(send("addDocument", "{fields: {floatField: " + i + "}}"), "indexGen");
+    }
+    JSONObject o = send("search", "{facets: [{dim: floatField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
+    System.out.println("got" + get(o, "facets[0]"));
+    assertEquals("All", getString(o, "facets[0].counts[1][0]"));
+    assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
+    assertEquals("Half", getString(o, "facets[0].counts[2][0]"));
+    assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
+  }
+  */
+
   public void testSortedSetDocValuesFacets() throws Exception {
     curIndexName = "ssdvFacets";
     _TestUtil.rmDir(new File(curIndexName));
@@ -258,14 +292,14 @@ public class TestFacets extends ServerBaseTestCase {
 
     if (indexFacetField != null && random().nextBoolean()) {
       // Send SSDV facets to same field as the taxo facets:
-      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + indexFacetField + "}}}");
+      send("registerFields", "{fields: {ssdv: {type: atom, search: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + indexFacetField + "}}}");
     } else if (random().nextBoolean()) {
       // Send SSDV facets to a random index field:
       String name = _TestUtil.randomSimpleString(random(), 1, 10);
-      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + name + "}}}");
+      send("registerFields", "{fields: {ssdv: {type: atom, search: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + name + "}}}");
     } else {
       // Send SSDV facets to default field:
-      send("registerFields", "{fields: {ssdv: {type: atom, index: false, store: false, facet: sortedSetDocValues}}}");
+      send("registerFields", "{fields: {ssdv: {type: atom, search: false, store: false, facet: sortedSetDocValues}}}");
     }
 
     // Verify error message:

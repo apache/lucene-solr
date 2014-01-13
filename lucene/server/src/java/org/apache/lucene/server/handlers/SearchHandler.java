@@ -44,6 +44,8 @@ import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.facet.range.DoubleRange;
+import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
@@ -397,9 +399,9 @@ public class SearchHandler extends Handler {
                                    new Param("numericRanges", "Custom numeric ranges.  Field must be indexed with facet=numericRange.",
                                        new ListType(
                                            new StructType(new Param("label", "Label for this range", new StringType()),
-                                                          new Param("min", "Min value for the range", new LongType()),
+                                                          new Param("min", "Min value for the range", new OrType(new LongType(), new FloatType())),
                                                           new Param("minInclusive", "True if the min value is inclusive", new BooleanType()),
-                                                          new Param("max", "Max value for the range", new LongType()),
+                                                          new Param("max", "Max value for the range", new OrType(new LongType(), new FloatType())),
                                                           new Param("maxInclusive", "True if the max value is inclusive", new BooleanType())))),
                                    new Param("autoDrillDown", "True if single-child facet should be auto-expanded (not yet implemented!).", new BooleanType()),
                                    new Param("useOrdsCache", "True if the ordinals cache should be used.", new BooleanType(), false),
@@ -1281,7 +1283,7 @@ public class SearchHandler extends Handler {
         
       } else if (pr.name.equals("MultiFieldQueryParser")) {
         Map<String,Float> fieldsAndWeights = parseFieldsAndWeights(state, pr.r, "fields");
-        System.out.println("boosts: "+ fieldsAndWeights);
+        //System.out.println("boosts: "+ fieldsAndWeights);
         String[] fields = new String[fieldsAndWeights.size()];
         int upto=0;
         for(String field2 : fieldsAndWeights.keySet()) {
@@ -1660,9 +1662,30 @@ public class SearchHandler extends Handler {
                                                    c,
                                                    ranges);
           facetResult = facets.getTopChildren(0, fd.name);
+        } else if (fd.valueType.equals("float") || fd.valueType.equals("double")) {
+          List<Object> rangeList = r2.getList("numericRanges");
+          DoubleRange[] ranges = new DoubleRange[rangeList.size()];
+          for(int i=0;i<ranges.length;i++) {
+            Request r3 = (Request) rangeList.get(i);
+            ranges[i] = new DoubleRange(r3.getString("label"),
+                                        r3.getDouble("min"),
+                                        r3.getBoolean("minInclusive"),
+                                        r3.getDouble("max"),
+                                        r3.getBoolean("maxInclusive"));
+          }
+
+          FacetsCollector c = dsDimMap.get(fd.name);
+          if (c == null) {
+            c = drillDowns;
+          }
+
+          Facets facets = new DoubleRangeFacetCounts(fd.name,
+                                                     c,
+                                                     ranges);
+          facetResult = facets.getTopChildren(0, fd.name);
         } else {
           // nocommit float/double too
-          r2.fail("numericRanges", "only int/long currently supported");
+          r2.fail("numericRanges", "field type must be numeric; got: " + fd.valueType);
 
           // Dead code but compiler disagrees:
           facetResult = null;
@@ -2089,13 +2112,6 @@ public class SearchHandler extends Handler {
 
       // nocommit can we do better?  sometimes downgrade
       // to DDQ not DS?
-      // nocommit improve this: we can use the cache if
-      // there's a single DS dim, for just that dim
-      // (other dims must recompute)
-      // nocommit turn this back on but ... this causes
-      // NPEs when drillDownFacet tries to fill
-
-      //System.out.println("useCache=" + useFacetsCache + " cacheHit=" + facetsCacheHit);
 
       long searchStartTime = System.nanoTime();
 

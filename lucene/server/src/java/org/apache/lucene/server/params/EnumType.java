@@ -17,15 +17,16 @@ package org.apache.lucene.server.params;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Type for an enumeration. */
 public class EnumType extends Type {
-  /** Enum labels. */
-  final String[] values;
 
-  /** Enum descriptions (English). */
-  final String[] descriptions;
+  /** Maps label to description. */
+  final Map<String,String> values;
 
   /** Sole constructor, values is alternating label1,
    *  desc1, label2, desc2, ... */
@@ -33,11 +34,9 @@ public class EnumType extends Type {
     if ((values.length & 1) != 0) {
       throw new IllegalArgumentException("input must be value/desc pairs");
     }
-    this.values = new String[values.length/2];
-    this.descriptions = new String[values.length/2];
+    this.values = new HashMap<String,String>();
     for(int i=0;i<values.length;i+=2) {
-      this.values[i/2] = values[i];
-      this.descriptions[i/2] = values[i+1];
+      this.values.put(values[i], values[i+1]);
     }
   }
 
@@ -46,12 +45,9 @@ public class EnumType extends Type {
     if (!(o instanceof String)) {
       throw new IllegalArgumentException("expected String but got " + o.getClass());
     }
-    // nocommit use Set?
-    for(int i=0;i<values.length;i++) {
-      if (o.equals(values[i])) {
-        return;
-      }
+    if (values.containsKey(o) == false) {
+      String[] keys = new ArrayList<String>(values.keySet()).toArray(new String[values.size()]);
+      throw new IllegalArgumentException("expected one of " + Arrays.toString(keys) + " but got \"" + o + "\"");
     }
-    throw new IllegalArgumentException("expected one of " + Arrays.toString(values) + " but got \"" + o + "\"");
   }
 }

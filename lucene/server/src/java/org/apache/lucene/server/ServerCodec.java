@@ -57,9 +57,9 @@ public class ServerCodec extends Codec {
       try {
         pf = state.getField(field).postingsFormat;
       } catch (IllegalArgumentException iae) {
+        // The indexed facets field will have drill-downs,
+        // which will pull the postings format:
         if (state.internalFacetFieldNames.contains(field)) {
-          // nocommit why is anything asking for the postings
-          // format for $facets!?
           pf = DEFAULT_POSTINGS_FORMAT;
         } else {
           throw iae;

@@ -187,6 +187,36 @@ public class Request {
     }
   }
 
+  /** Retrieve a double parameter.  Once this is called
+   *  for a given parameter it cannot be called again on
+   *  that parameter. */
+  public double getDouble(String name) {
+    Param p = type.params.get(name);
+    assert p != null: "name \"" + name + "\" is not a known parameter";
+    // assert p.type instanceof FloatType: "name \"" + name + "\" is not FloatType: got " + p.type;
+
+    Object v = params.get(name);
+    if (v == null) {
+      // Request didn't provide it:
+      if (p.defaultValue != null) {
+        // Fallback to default
+        return ((Number) p.defaultValue).doubleValue();
+      } else {
+        fail(name, "required parameter \"" + name + "\" is missing");
+        // dead code but compiler disagrees:
+        return 0;
+      }
+    } else {
+      try {
+        p.type.validate(v);
+      } catch (IllegalArgumentException iae) {
+        fail(name, iae.getMessage(), iae);
+      }
+      params.remove(name);
+      return ((Number) v).doubleValue();
+    }
+  }
+
   /** Retrieve an int parameter.  Once this is called
    *  for a given parameter it cannot be called again on
    *  that parameter. */
@@ -222,7 +252,7 @@ public class Request {
   public long getLong(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
-    assert p.type instanceof LongType: "name \"" + name + "\" is not LongType: got " + p.type;
+    //assert p.type instanceof LongType: "name \"" + name + "\" is not LongType: got " + p.type;
 
     Object v = params.get(name);
     if (v == null) {
@@ -253,18 +283,14 @@ public class Request {
     return v instanceof String;
   }
 
-  // nocommit bad that enum values is not strongly typed
-  // here ... maybe we need isEnumValue(name, X)?  having
-  // else/if chain in the code can hide a sneaky bug
-
   /** Retrieve a string parameter.  Once this is called
    *  for a given parameter it cannot be called again on
    *  that parameter. */
   public String getString(String name) {
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
+    // Use getEnum instead:
     assert !(p.type instanceof EnumType);
-    //assert p.type instanceof StringType: "name \"" + name + "\" is not StringType: got " + p.type;
 
     Object v = params.get(name);
     if (v == null) {
@@ -281,6 +307,11 @@ public class Request {
       if ((v instanceof String) == false) {
         fail(name, "expected String but got " + toSimpleString(v.getClass()));
       }
+      try {
+        p.type.validate(v);
+      } catch (IllegalArgumentException iae) {
+        fail(name, iae.getMessage(), iae);
+      }
       params.remove(name);
       return (String) v;
     }
@@ -294,10 +325,6 @@ public class Request {
    *  for a given parameter it cannot be called again on
    *  that parameter. */
   public String getEnum(String name) {
-    // nocommit bad that enum values is not strongly typed
-    // here ... maybe we need isEnumValue(name, X)?  having
-    // else/if chain in the code can hide a sneaky bug
-
     Param p = type.params.get(name);
     assert p != null: "name \"" + name + "\" is not a known parameter";
     assert p.type instanceof EnumType: "name \"" + name + "\" is not EnumType: got " + p.type;
@@ -314,6 +341,7 @@ public class Request {
         return null;
       }
     } else {
+      // Make sure the value is valid for this enum:
       try {
         p.type.validate(v);
       } catch (IllegalArgumentException iae) {

@@ -26,8 +26,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -164,9 +166,11 @@ public class AddDocumentHandler extends Handler {
       }
     } else if (fd.fieldType.docValueType() == DocValuesType.NUMERIC) {
       if (fd.valueType.equals("float")) {
-        doc.add(new NumericDocValuesField(fd.name, Float.floatToRawIntBits(((Number) o).floatValue())));
+        //doc.add(new NumericDocValuesField(fd.name, Float.floatToRawIntBits(((Number) o).floatValue())));
+        doc.add(new FloatDocValuesField(fd.name, ((Number) o).floatValue()));
       } else if (fd.valueType.equals("double")) {
-        doc.add(new NumericDocValuesField(fd.name, Double.doubleToRawLongBits(((Number) o).doubleValue())));
+        //doc.add(new NumericDocValuesField(fd.name, Double.doubleToRawLongBits(((Number) o).doubleValue())));
+        doc.add(new DoubleDocValuesField(fd.name, ((Number) o).doubleValue()));
       } else if (fd.valueType.equals("int")) {
         doc.add(new NumericDocValuesField(fd.name, ((Number) o).intValue()));
       } else if (fd.valueType.equals("long")) {
@@ -184,6 +188,7 @@ public class AddDocumentHandler extends Handler {
       f.setBoost(boost);
       doc.add(f);
     }
+    //System.out.println("add doc: " + doc);
   }
 
   /** Used by plugins to process a document after it was

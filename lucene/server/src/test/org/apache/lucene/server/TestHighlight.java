@@ -43,11 +43,11 @@ public class TestHighlight extends ServerBaseTestCase {
   private static void registerFields() throws Exception {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
-    put(o, "price", "{type: float, sort: true, index: true, store: true}");
+    put(o, "price", "{type: float, sort: true, search: true, store: true}");
     put(o, "id", "{type: int, store: true, postingsFormat: Memory}");
-    put(o, "date", "{type: atom, index: false, store: true}");
-    put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
-    put(o, "author", "{type: text, index: false, facet: flat, group: true}");
+    put(o, "date", "{type: atom, search: false, store: true}");
+    put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy}");
+    put(o, "author", "{type: text, search: false, facet: flat, group: true}");
     // Register multi-valued field:
     put(o, "authors", "{type: text, highlight: true, facet: flat, multiValued: true, analyzer: {matchVersion: LUCENE_43, class: StandardAnalyzer}}");
     JSONObject o2 = new JSONObject();

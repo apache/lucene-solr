@@ -164,7 +164,11 @@ public class GlobalState implements Closeable {
       if (state == null) {
         String rootPath = (String) indexNames.get(name);
         if (rootPath != null) {
-          state = new IndexState(this, name, new File(rootPath));
+          if (rootPath.equals("NULL")) {
+            state = new IndexState(this, name, null, false);
+          } else {
+            state = new IndexState(this, name, new File(rootPath), false);
+          }
           indices.put(name, state);
         } else {
           throw new IllegalArgumentException("index \"" + name + "\" was not yet created");
@@ -184,15 +188,19 @@ public class GlobalState implements Closeable {
   /** Create a new index. */
   public IndexState createIndex(String name, File rootDir) throws Exception {
     synchronized (indices) {
-      if (rootDir.exists()) {
-        throw new IllegalArgumentException("rootDir \"" + rootDir + "\" already exists");
-      }
       if (indexNames.containsKey(name)) {
         throw new IllegalArgumentException("index \"" + name + "\" already exists");
       }
-      indexNames.put(name, rootDir.toString());
+      if (rootDir == null) {
+        indexNames.put(name, "NULL");
+      } else {
+        if (rootDir.exists()) {
+          throw new IllegalArgumentException("rootDir \"" + rootDir + "\" already exists");
+        }
+        indexNames.put(name, rootDir.getAbsolutePath().toString());
+      }
       saveIndexNames();
-      IndexState state = new IndexState(this, name, rootDir);
+      IndexState state = new IndexState(this, name, rootDir, true);
       indices.put(name, state);
       return state;
     }
@@ -208,7 +216,6 @@ public class GlobalState implements Closeable {
     long gen = IndexState.getLastGen(stateDir, "indices");
     lastIndicesGen = gen;
     if (gen != -1) {
-      // nocommit cutover to Directory
       File path = new File(stateDir, "indices." + gen);
       RandomAccessFile raf = new RandomAccessFile(path, "r");
       byte[] bytes = new byte[(int) raf.length()];
@@ -220,7 +227,7 @@ public class GlobalState implements Closeable {
       } catch (ParseException pe) {
         // Something corrupted the save state since we last
         // saved it ...
-        throw new RuntimeException(pe);
+        throw new RuntimeException("index state file \"" + path + "\" cannot be parsed: " + pe.getMessage());
       }
       indexNames.putAll(o);
     }

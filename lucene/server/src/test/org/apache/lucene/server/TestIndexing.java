@@ -48,10 +48,10 @@ public class TestIndexing extends ServerBaseTestCase {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
     put(o, "id", "{type: atom, store: true, postingsFormat: Memory}");
-    put(o, "price", "{type: float, sort: true, index: true, store: true}");
-    put(o, "date", "{type: atom, index: false, store: true}");
-    put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
-    put(o, "author", "{type: text, index: false, facet: flat, store: true, group: true}");
+    put(o, "price", "{type: float, sort: true, search: true, store: true}");
+    put(o, "date", "{type: atom, search: false, store: true}");
+    put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy}");
+    put(o, "author", "{type: text, search: false, facet: flat, store: true, group: true}");
     put(o, "charCount", "{type: int, store: true}");
     JSONObject o2 = new JSONObject();
     o2.put("fields", o);
@@ -232,7 +232,7 @@ public class TestIndexing extends ServerBaseTestCase {
   public void testBoost() throws Exception {
     _TestUtil.rmDir(new File("boost"));
     curIndexName = "boost";
-    send("createIndex", "{rootDir: boost}");
+    send("createIndex");
     send("settings", "{directory: RAMDirectory, matchVersion: LUCENE_40}");
     // Just to test index.ramBufferSizeMB:
     send("liveSettings", "{index.ramBufferSizeMB: 20.0}");
@@ -256,7 +256,6 @@ public class TestIndexing extends ServerBaseTestCase {
     assertEquals("1", getString(result, "hits[0].fields.id"));
     assertEquals("0", getString(result, "hits[1].fields.id"));
 
-    send("stopIndex");
     send("deleteIndex");
   }
 
@@ -272,8 +271,10 @@ public class TestIndexing extends ServerBaseTestCase {
   public void testNormsFormat() throws Exception {
     for(int i=0;i<2;i++) {
       curIndexName = "normsFormat";
-      _TestUtil.rmDir(new File(curIndexName));
-      send("createIndex", "{rootDir: " + curIndexName + "}");
+      if (VERBOSE) {
+        System.out.println("\nTEST: createIndex");
+      }
+      send("createIndex");
       String norms;
       if (i == 0) {
         norms = "normsFormat: Lucene42";
@@ -284,6 +285,9 @@ public class TestIndexing extends ServerBaseTestCase {
       send("registerFields",
            "{fields: {id: {type: atom, store: true}," +
            " body: {type: text, analyzer: StandardAnalyzer}}}");
+      if (VERBOSE) {
+        System.out.println("\nTEST: startIndex");
+      }
       send("startIndex");
       send("addDocument", "{fields: {id: '0', body: 'here is a test'}}");
       long gen = getLong(send("addDocument", "{fields: {id: '1', body: 'here is a test again'}}"), "indexGen");
@@ -292,8 +296,100 @@ public class TestIndexing extends ServerBaseTestCase {
       assertEquals("0", getString(result, "hits[0].fields.id"));
       assertEquals("1", getString(result, "hits[1].fields.id"));
 
-      send("stopIndex");
+      if (VERBOSE) {
+        System.out.println("\nTEST: deleteIndex");
+      }
       send("deleteIndex");
     }
+  }
+
+  public void testOnlySettings() throws Exception {
+    for(int i=0;i<2;i++) {
+      curIndexName = "settings";
+      if (VERBOSE) {
+        System.out.println("\nTEST: create");
+      }
+      if (i == 0) {
+        send("createIndex");
+      } else {
+        File dir = new File(_TestUtil.getTempDir("recency"), "root");
+        send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
+      }
+      String dirImpl = i == 0 ? "RAMDirectory" : "FSDirectory";
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: settings1");
+      }
+      send("settings", "{directory: " + dirImpl + ", matchVersion: LUCENE_40}");
+      send("registerFields", "{fields: {id: {type: atom, store: true}}}");
+      //send("stopIndex");
+      if (VERBOSE) {
+        System.out.println("\nTEST: settings2");
+      }
+      JSONObject result = send("settings");
+      assertEquals(dirImpl, getString(result, "directory"));
+      if (i == 1) {
+        // With FSDir, the index & settings should survive a
+        // server bounce, even if the index wasn't ever started:
+
+        if (VERBOSE) {
+          System.out.println("\nTEST: bounce");
+        }
+
+        shutdownServer();
+        startServer();
+
+        if (VERBOSE) {
+          System.out.println("\nTEST: settings3");
+        }
+        result = send("settings");
+        System.out.println("GOT: " + result);
+        assertEquals(dirImpl, getString(result, "directory"));
+      }
+      send("deleteIndex");
+    }
+  }
+
+  public void testIllegalRegisterFields() throws Exception {
+    // Cannot specify an analyzer with an atom field (it
+    // always uses KeywordAnalyzer):
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: atom, analyzer: WhitespaceAnalyzer}}}",
+                    "registerFields > fields > bad > analyzer: no analyzer allowed with atom (it's hardwired to KeywordAnalyzer internally)");
+
+    // Must specify an analyzer with a text field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: text}}}",
+                    "registerFields > fields > bad > indexAnalyzer: either analyzer or indexAnalyzer must be specified for an indexed text field");
+
+    // Must not specify an analyzer with a non-searched text field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: text, search: false, analyzer: WhitespaceAnalyzer}}}",
+                    "registerFields > fields > bad > analyzer: no analyzer allowed when search=false");
+
+    // Must not disable store if highlight is true:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: text, store: false, highlight: true, analyzer: WhitespaceAnalyzer}}}",
+                    "registerFields > fields > bad > store: store=false is not allowed when highlight=true");
+
+    // Cannot search a facet=hierarchy field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: atom, facet: hierarchy, search: true}}}",
+                    "registerFields > fields > bad > facet: facet=hierarchy fields cannot have search=true");
+
+    // Cannot store a facet=hierarchy field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: atom, facet: hierarchy, search: false, store: true}}}",
+                    "registerFields > fields > bad > facet: facet=hierarchy fields cannot have store=true");
+
+    // Cannot highlight a facet=hierarchy field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: atom, facet: hierarchy, highlight: true}}}",
+                    "registerFields > fields > bad > facet: facet=hierarchy fields cannot have highlight=true");
+
+    // Cannot create a pointless do-nothing field:
+    assertFailsWith("registerFields",
+                    "{fields: {bad: {type: atom, search: false, store: false}}}",
+                    "registerFields > fields > bad: field does nothing: it's neither searched, stored, sorted, grouped, highlighted nor faceted");
   }
 }

@@ -44,7 +44,7 @@ public class TestSnapshots extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{fields: {body: {type: text, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43}}, id: {type: atom, store: true}, facet: {type: atom, index: false, facet: flat}}}");
+    send("registerFields", "{fields: {body: {type: text, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43}}, id: {type: atom, store: true}, facet: {type: atom, search: false, facet: flat}}}");
   }
 
   public void testBasic() throws Exception {

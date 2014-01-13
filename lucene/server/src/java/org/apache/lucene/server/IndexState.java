@@ -130,7 +130,6 @@ import net.minidev.json.parser.ParseException;
  */
 
 public class IndexState implements Closeable {
-  // nocommit settingsHandler should set this
   /** Default {@link Version} for {@code matchVersion}. */
   public Version matchVersion = Version.LUCENE_46;
 
@@ -283,9 +282,9 @@ public class IndexState implements Closeable {
   /** Which snapshots (List<Long>) are referencing which
    *  save state generations. */
   Map<Long,Integer> genRefCounts;
-  final SaveLoadRefCounts saveLoadGenRefCounts;
+  SaveLoadRefCounts saveLoadGenRefCounts;
 
-  final SaveLoadState saveLoadState;
+  SaveLoadState saveLoadState;
 
   /** Enables lookup of previously used searchers, so
    *  follow-on actions (next page, drill down/sideways/up,
@@ -313,10 +312,6 @@ public class IndexState implements Closeable {
   public final Analyzer indexAnalyzer = new AnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
         @Override
         public Analyzer getWrappedAnalyzer(String name) {
-          // nocommit hackish:
-          if (name.equals("$facets")) {
-            return RegisterFieldHandler.dummyAnalyzer;
-          }
           FieldDef fd = getField(name);
           if (fd.valueType.equals("atom")) {
             return keywordAnalyzer;
@@ -337,10 +332,6 @@ public class IndexState implements Closeable {
   public final Analyzer searchAnalyzer = new AnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
         @Override
         public Analyzer getWrappedAnalyzer(String name) {
-          // nocommit hackish:
-          if (name.equals("$facets")) {
-            return RegisterFieldHandler.dummyAnalyzer;
-          }
           FieldDef fd = getField(name);
           if (fd.valueType.equals("atom")) {
             return keywordAnalyzer;
@@ -364,10 +355,6 @@ public class IndexState implements Closeable {
 
       @Override
       public Similarity get(String name) {
-        // nocommit hacky that i have to do this!!
-        if (name.equals("$facets")) {
-          return defaultSim;
-        }
         return getField(name).sim;
       }
     };
@@ -402,39 +389,20 @@ public class IndexState implements Closeable {
   /** Name of this index. */
   public final String name;
 
-  private final boolean isNew;
+  /** True if this is a new index. */
+  private final boolean doCreate;
 
   /** Sole constructor; creates a new index or loads an
    *  existing one if it exists, but does not start the
    *  index. */
-  public IndexState(GlobalState globalState, String name, File rootDir) throws Exception {
+  public IndexState(GlobalState globalState, String name, File rootDir, boolean doCreate) throws IOException {
+    //System.out.println("IndexState.init name=" + name + " this=" + this + " rootDir=" + rootDir);
     this.globalState = globalState;
     this.name = name;
     this.rootDir = rootDir;
-
-    File stateDirFile = new File(rootDir, "state");
-    if (!stateDirFile.exists()) {
-      stateDirFile.mkdirs();
-      isNew = true;
-    } else {
-      isNew = false;
-    }
-
-    Directory stateDir = df.open(stateDirFile);
-
-    saveLoadGenRefCounts = new SaveLoadRefCounts(stateDir);
-
-    // Snapshot ref counts:
-    genRefCounts = saveLoadGenRefCounts.load();
-    if (genRefCounts == null) {
-      genRefCounts = new HashMap<Long,Integer>();
-    }
-
-    saveLoadState = new SaveLoadState(stateDir);
-
-    JSONObject priorState = saveLoadState.load();
-    if (priorState != null) {
-      load((JSONObject) priorState.get("state"));
+    this.doCreate = doCreate;
+    if (doCreate == false) {
+      initSaveLoadState();
     }
   }
 
@@ -802,7 +770,7 @@ public class IndexState implements Closeable {
 
   @Override
   public synchronized void close() throws IOException {
-    //System.out.println("IndexState.close name=" + name + " writer=" + writer);
+    //System.out.println("IndexState.close name=" + name);
     commit();
     // nocommit catch exc & rollback:
     if (writer != null) {
@@ -814,10 +782,16 @@ public class IndexState implements Closeable {
                     indexDir,
                     taxoDir);
       writer = null;
-      // nocommit this is dangerous .. eg Server iterates
-      // all IS.indices and closes ...:
-      globalState.indices.remove(name);
     }
+
+    // nocommit should we remove this instance?  if app
+    // starts again ... should we re-use the current
+    // instance?  seems ... risky?
+    // nocommit this is dangerous .. eg Server iterates
+    // all IS.indices and closes ...:
+    // nocommit need sync:
+
+    globalState.indices.remove(name);
   }
 
   /** True if this index is started. */
@@ -898,6 +872,15 @@ public class IndexState implements Closeable {
       writer.getIndexWriter().commit();
     }
 
+    // nocommit needs test case that creates index, changes
+    // some settings, closes it w/o ever starting it:
+    // settings changes are lost then?
+    //System.out.println("IndexState.commit name=" + name + " saveLoadState=" + saveLoadState + " this=" + this);
+
+    if (saveLoadState == null) {
+      initSaveLoadState();
+    }
+
     JSONObject saveState = new JSONObject();
     saveState.put("state", getSaveState());
     saveLoadState.save(saveState);
@@ -905,44 +888,48 @@ public class IndexState implements Closeable {
   }
 
   /** Load all previously saved state. */
-  public synchronized void load(JSONObject o) throws Exception {
+  public synchronized void load(JSONObject o) throws IOException {
 
     // To load, we invoke each handler from the save state,
     // as if the app had just done so from a fresh index,
     // except for suggesters which uses a dedicated load
     // method:
 
-    // Global settings:
-    JSONObject settingsState = (JSONObject) o.get("settings");
-    //System.out.println("load: state=" + o);
-    Request r = new Request(null, null, settingsState, SettingsHandler.TYPE);
-    FinishRequest fr = ((SettingsHandler) globalState.getHandler("settings")).handle(this, r, null);
-    fr.finish();
-    assert !Request.anythingLeft(settingsState): settingsState.toString();
+    try {
+      // Global settings:
+      JSONObject settingsState = (JSONObject) o.get("settings");
+      //System.out.println("load: state=" + o);
+      Request r = new Request(null, null, settingsState, SettingsHandler.TYPE);
+      FinishRequest fr = ((SettingsHandler) globalState.getHandler("settings")).handle(this, r, null);
+      fr.finish();
+      assert !Request.anythingLeft(settingsState): settingsState.toString();
 
-    JSONObject liveSettingsState = (JSONObject) o.get("settings");
-    r = new Request(null, null, liveSettingsState, LiveSettingsHandler.TYPE);
-    fr = ((LiveSettingsHandler) globalState.getHandler("liveSettings")).handle(this, r, null);
-    fr.finish();
-    assert !Request.anythingLeft(liveSettingsState): liveSettingsState.toString();
+      JSONObject liveSettingsState = (JSONObject) o.get("settings");
+      r = new Request(null, null, liveSettingsState, LiveSettingsHandler.TYPE);
+      fr = ((LiveSettingsHandler) globalState.getHandler("liveSettings")).handle(this, r, null);
+      fr.finish();
+      assert !Request.anythingLeft(liveSettingsState): liveSettingsState.toString();
 
-    // Field defs:
-    JSONObject fieldsState = (JSONObject) o.get("fields");
-    JSONObject top = new JSONObject();
-    top.put("fields", fieldsState);
-    r = new Request(null, null, top, RegisterFieldHandler.TYPE);
-    fr = ((RegisterFieldHandler) globalState.getHandler("registerFields")).handle(this, r, null);
-    assert !Request.anythingLeft(top): top;
-    fr.finish();
+      // Field defs:
+      JSONObject fieldsState = (JSONObject) o.get("fields");
+      JSONObject top = new JSONObject();
+      top.put("fields", fieldsState);
+      r = new Request(null, null, top, RegisterFieldHandler.TYPE);
+      fr = ((RegisterFieldHandler) globalState.getHandler("registerFields")).handle(this, r, null);
+      assert !Request.anythingLeft(top): top;
+      fr.finish();
 
-    for(FieldDef fd : fields.values()) {
-      if (fd.liveValuesIDField != null) {
-        liveFieldValues.put(fd.name, new StringLiveFieldValues(manager, fd.liveValuesIDField, fd.name));
+      for(FieldDef fd : fields.values()) {
+        if (fd.liveValuesIDField != null) {
+          liveFieldValues.put(fd.name, new StringLiveFieldValues(manager, fd.liveValuesIDField, fd.name));
+        }
       }
-    }
 
-    // Suggesters:
-    ((BuildSuggestHandler) globalState.getHandler("buildSuggest")).load(this, (JSONObject) o.get("suggest"));
+      // Suggesters:
+      ((BuildSuggestHandler) globalState.getHandler("buildSuggest")).load(this, (JSONObject) o.get("suggest"));
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
   }
 
   /** Prunes stale searchers. */
@@ -1020,21 +1007,53 @@ public class IndexState implements Closeable {
     return (Boolean) o;
   }
 
+  private void initSaveLoadState() throws IOException {
+    File stateDirFile;
+    if (rootDir != null) {
+      stateDirFile = new File(rootDir, "state");
+      //if (!stateDirFile.exists()) {
+      //stateDirFile.mkdirs();
+      //}
+    } else {
+      stateDirFile = null;
+    }
+
+    Directory stateDir = df.open(stateDirFile);
+
+    saveLoadGenRefCounts = new SaveLoadRefCounts(stateDir);
+
+    // Snapshot ref counts:
+    genRefCounts = saveLoadGenRefCounts.load();
+    if (genRefCounts == null) {
+      genRefCounts = new HashMap<Long,Integer>();
+    }
+
+    saveLoadState = new SaveLoadState(stateDir);
+
+    JSONObject priorState = saveLoadState.load();
+    if (priorState != null) {
+      load((JSONObject) priorState.get("state"));
+    }
+  }
+
   /** Start this index. */
-  public synchronized void start() throws IOException {
+  public synchronized void start() throws Exception {
     if (writer != null) {
       // throw new IllegalStateException("index \"" + name + "\" was already started");
       return;
     }
 
+    //System.out.println("IndexState.start name=" + name);
+
     boolean success = false;
 
     try {
 
-      File indexDirFile = new File(rootDir, "index");
-      if (isNew) {
-        indexDirFile.mkdirs();
+      if (saveLoadState == null) {
+        initSaveLoadState();
       }
+
+      File indexDirFile = new File(rootDir, "index");
       origIndexDir = df.open(indexDirFile);
 
       if (!(origIndexDir instanceof RAMDirectory)) {
@@ -1049,17 +1068,27 @@ public class IndexState implements Closeable {
         indexDir = origIndexDir;
       }
 
-      File taxoDirFile = new File(rootDir, "taxonomy");
-      if (isNew) {
-        taxoDirFile.mkdirs();
+      // Rather than rely on IndexWriter/TaxonomyWriter to
+      // figure out if an index is new or not by passing
+      // CREATE_OR_APPEND (which can be dangerous), we
+      // alyready know the intention from the app (whether
+      // it called createIndex vs openIndex), so we make it
+      // explicit here:
+      IndexWriterConfig.OpenMode openMode;
+      if (doCreate) {
+        openMode = IndexWriterConfig.OpenMode.CREATE;
+      } else {
+        openMode = IndexWriterConfig.OpenMode.APPEND;
       }
+
+      File taxoDirFile = new File(rootDir, "taxonomy");
       taxoDir = df.open(taxoDirFile);
 
       taxoSnapshots = new PersistentSnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy(),
                                                            taxoDir,
-                                                           IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+                                                           openMode);
 
-      taxoWriter = new DirectoryTaxonomyWriter(taxoDir) {
+      taxoWriter = new DirectoryTaxonomyWriter(taxoDir, openMode) {
           @Override
           protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
             IndexWriterConfig iwc = super.createIndexWriterConfig(openMode);
@@ -1084,7 +1113,7 @@ public class IndexState implements Closeable {
       }
 
       iwc.setSimilarity(sim);
-      iwc.setOpenMode(isNew ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND);
+      iwc.setOpenMode(openMode);
       iwc.setRAMBufferSizeMB(indexRAMBufferSizeMB);
       iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(iwc.getInfoStream()));
 
@@ -1248,7 +1277,9 @@ public class IndexState implements Closeable {
 
   /** Delete this index. */
   public void deleteIndex() throws IOException {
-    deleteAllFiles(rootDir);
+    if (rootDir != null) {
+      deleteAllFiles(rootDir);
+    }
     globalState.deleteIndex(name);
   }
 

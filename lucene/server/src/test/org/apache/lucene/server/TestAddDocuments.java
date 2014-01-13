@@ -42,7 +42,7 @@ public class TestAddDocuments extends ServerBaseTestCase {
   }
 
   private static void registerFields() throws Exception {
-    send("registerFields", "{fields: {docType: {type: atom}, name: {type: atom}, country: {type: atom}, skill: {type: atom}, year: {type: int}}}");
+    send("registerFields", "{fields: {docType: {type: atom}, name: {type: atom}, country: {type: atom}, skill: {type: atom}}}");
   }
 
   private JSONObject getResume(String name, String country) {
@@ -58,7 +58,7 @@ public class TestAddDocuments extends ServerBaseTestCase {
   private JSONObject getJob(String skill, int year) {
     JSONObject o = new JSONObject();
     o.put("skill", skill);
-    o.put("year", year);
+    //o.put("year", year);
     JSONObject o2 = new JSONObject();
     o2.put("fields", o);
     return o2;

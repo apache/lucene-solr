@@ -92,6 +92,8 @@ public abstract class DirectoryFactory {
           }
       };
     } else {
+      // nocommit we should try to load/instantiate the class
+      // to allow custom dir impls, here
       throw new IllegalArgumentException("unknown directory implementation \"" + dirImpl + "\"");
     }
   }

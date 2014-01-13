@@ -46,7 +46,7 @@ public class TestVirtualFields extends ServerBaseTestCase {
     put(o, "text", "{type: text, analyzer: WhitespaceAnalyzer}");
     put(o, "logboost", "{type: virtual, expression: ln(boost)}");
     put(o, "scoreboost", "{type: virtual, expression: _score+ln(boost)}");
-    put(o, "id", "{type: int, sort: true, store: true, index: false}");
+    put(o, "id", "{type: int, sort: true, store: true, search: false}");
     JSONObject o2 = new JSONObject();
     o2.put("fields", o);
     send("registerFields", o2);

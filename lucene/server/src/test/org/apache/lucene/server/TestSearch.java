@@ -179,7 +179,7 @@ public class TestSearch extends ServerBaseTestCase {
       _TestUtil.rmDir(new File("nrq"));
       send("createIndex", "{rootDir: nrq}");
       send("startIndex");
-      send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, index: true}}}", type));
+      send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, search: true}}}", type));
       send("addDocument", "{fields: {nf: 5}}");
       send("addDocument", "{fields: {nf: 10}}");
       long gen = getLong(send("addDocument", "{fields: {nf: 17}}"), "indexGen");
@@ -295,7 +295,7 @@ public class TestSearch extends ServerBaseTestCase {
     File dir = new File(_TestUtil.getTempDir("recency"), "root");
     send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
     send("startIndex");
-    send("registerFields", "{fields: {timestamp: {type: long, index: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
+    send("registerFields", "{fields: {timestamp: {type: long, search: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}}}");
 
     long t = System.currentTimeMillis()/1000;
     send("addDocument", "{fields: {body: 'this is some text', timestamp: " + (t-100) + "}}");

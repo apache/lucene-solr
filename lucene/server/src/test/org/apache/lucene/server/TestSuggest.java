@@ -171,9 +171,9 @@ public class TestSuggest extends ServerBaseTestCase {
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
     send("startIndex");
     send("registerFields",
-         "{fields: {text: {type: text, store: true, index: false}," + 
-                  "weight: {type: float, store: true, index: false}," +
-                  "payload: {type: text, store: true, index: false}}}");
+         "{fields: {text: {type: text, store: true, search: false}," + 
+                  "weight: {type: float, store: true, search: false}," +
+                  "payload: {type: text, store: true, search: false}}}");
     send("addDocument", "{fields: {text: 'the cat meows', weight: 1, payload: 'payload1'}}");
     long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', weight: 2, payload: 'payload2'}}"), "indexGen");
 
@@ -207,9 +207,9 @@ public class TestSuggest extends ServerBaseTestCase {
     send("startIndex");
     send("registerFields",
          "{" +
-         "fields: {text: {type: text, store: true, index: false}," + 
+         "fields: {text: {type: text, store: true, search: false}," + 
                   "negWeight: {type: float, sort: true}," +
-                  "payload: {type: text, store: true, index: false}}}");
+                  "payload: {type: text, store: true, search: false}}}");
     send("addDocument", "{fields: {text: 'the cat meows', negWeight: -1, payload: 'payload1'}}");
     long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', negWeight: -2, payload: 'payload2'}}"), "indexGen");
 

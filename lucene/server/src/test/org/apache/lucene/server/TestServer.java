@@ -47,10 +47,10 @@ public class TestServer extends ServerBaseTestCase {
     JSONObject o = new JSONObject();
     put(o, "body", "{type: text, highlight: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43}, similarity: {class: BM25Similarity, b: 0.15}}");
     put(o, "id", "{type: int, store: true, postingsFormat: Memory}");
-    put(o, "price", "{type: float, sort: true, index: true, store: true}");
-    put(o, "date", "{type: atom, index: false, store: true}");
-    put(o, "dateFacet", "{type: atom, index: false, store: false, facet: hierarchy}");
-    put(o, "author", "{type: text, index: false, facet: flat, group: true}");
+    put(o, "price", "{type: float, sort: true, search: true, store: true}");
+    put(o, "date", "{type: atom, search: false, store: true}");
+    put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy}");
+    put(o, "author", "{type: text, search: false, facet: flat, group: true}");
     JSONObject o2 = new JSONObject();
     o2.put("indexName", "index");
     o2.put("fields", o);
@@ -248,7 +248,7 @@ public class TestServer extends ServerBaseTestCase {
   public void testMultiValuedString() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{fields: {authors: {type: text, index: true, store: true, facet: flat, multiValued: true, analyzer: {matchVersion: LUCENE_43, class: StandardAnalyzer}}}}");
+    send("registerFields", "{fields: {authors: {type: text, search: true, store: true, facet: flat, multiValued: true, analyzer: {matchVersion: LUCENE_43, class: StandardAnalyzer}}}}");
 
     JSONObject result = send("addDocument", "{fields: {authors: [Bob, Lisa]}}");
 
@@ -263,7 +263,7 @@ public class TestServer extends ServerBaseTestCase {
   public void testMultiValuedNumeric() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{fields: {ratings: {type: int, index: true, store: true, multiValued: true}}}");
+    send("registerFields", "{fields: {ratings: {type: int, search: true, store: true, multiValued: true}}}");
 
     JSONObject result = send("addDocument", "{fields: {body: 'here is a test', ratings: [17, 22]}}");
 
@@ -294,7 +294,7 @@ public class TestServer extends ServerBaseTestCase {
   public void testStandardAnalyzerNoStopWords() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{fields: {aTextField2: {type: text, index: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
+    send("registerFields", "{fields: {aTextField2: {type: text, search: true, store: true, analyzer: {class: StandardAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
 
     JSONObject result = send("addDocument", "{fields: {aTextField2: 'here is a test'}}");
     long indexGen = getLong(result, "indexGen");
@@ -310,7 +310,7 @@ public class TestServer extends ServerBaseTestCase {
   public void testEnglishAnalyzerNoStopWords() throws Exception {
     deleteAllDocs();
 
-    send("registerFields", "{fields: {aTextField3: {type: text, index: true, store: true, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
+    send("registerFields", "{fields: {aTextField3: {type: text, search: true, store: true, analyzer: {class: EnglishAnalyzer, matchVersion: LUCENE_43, stopWords: []}}}}");
     JSONObject result = send("addDocument", "{fields: {aTextField3: 'the cats in the hat'}}");
     long indexGen = getLong(result, "indexGen");
 
@@ -391,4 +391,7 @@ public class TestServer extends ServerBaseTestCase {
   // nocommit need test case that screws up adding bulk docs
   // (eg category path with empty string component) and
   // verifies the error "comes through"
+
+  // nocommit need stress test that makes some index
+  // thousands of times to make sure nothing leaks...
 }

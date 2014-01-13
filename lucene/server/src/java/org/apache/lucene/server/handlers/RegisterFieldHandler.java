@@ -300,9 +300,9 @@ public class RegisterFieldHandler extends Handler {
                                "long", "Long value.",
                                // nocommit name this "dynamic" instead of "virtual"?
                                "virtual", "Virtual field defined with a JavaScript expression.",
+                               // nocommit need tests for internal:
                                "internal", "Internal field, currently only for holding indexed facets data.")),
-        // nocommit rename to "search"?  ie, "I will search on/by this field's values"
-        new Param("index", "True if the value should be indexed.", new BooleanType(), false),
+        new Param("search", "True if the value should be available for searching (or numeric range searching, for a numeric field).", new BooleanType(), false),
         new Param("tokenize", "True if the value should be tokenized.", new BooleanType(), true),
         new Param("store", "True if the value should be stored.", new BooleanType(), false),
         new Param("multiValued", "True if this field may sometimes have more than one value.", new BooleanType(), false),
@@ -431,13 +431,16 @@ public class RegisterFieldHandler extends Handler {
     boolean sorted = f.getBoolean("sort");
     boolean grouped = f.getBoolean("group");
 
-    // nocommit: user must say which highlighter?  ie, we
-    // may index offsets into postings, or term vectors...
+    // TODO: current we only highlight using
+    // PostingsHighlighter; if we enable others (that use
+    // term vectors), we need to fix this so app specifies
+    // up front which highlighter(s) it wants to use at
+    // search time:
     boolean highlighted = f.getBoolean("highlight");
 
     if (highlighted) {
       if (type.equals("text") == false && type.equals("atom") == false) {
-        f.fail("highlighted", "only type=text or type=atom fields can be highlighted");
+        f.fail("highlight", "only type=text or type=atom fields can have highlight=true");
       }
     }
 
@@ -503,23 +506,17 @@ public class RegisterFieldHandler extends Handler {
     if (f.hasParam("store")) {
       ft.setStored(f.getBoolean("store"));
       if (!ft.stored() && highlighted) {
-        f.fail("store", "store cannot be False when highlighted is True");
+        f.fail("store", "store=false is not allowed when highlight=true");
       }
     }
 
-    if (f.hasParam("index")) {
-      ft.setIndexed(f.getBoolean("index"));
+    if (f.hasParam("search")) {
+      ft.setIndexed(f.getBoolean("search"));
     }
 
     if (f.hasParam("analyzer") && !ft.indexed()) {
-      f.fail("analyzer", "no analyzer allowed when indexed is false");
+      f.fail("analyzer", "no analyzer allowed when search=false");
     }
-
-    // nocommit hierarchical facet field cannot be indexed &
-    // stored; make test & check that here
-
-    // nocommit make sure a useless field (not indexed,
-    // stored, dv'd nor faceted) is detected!
 
     if (type.equals("text") || type.equals("atom")) {
 
@@ -623,10 +620,10 @@ public class RegisterFieldHandler extends Handler {
 
     if (type.equals("text") && ft.indexed()) {
       if (indexAnalyzer == null) {
-        f.fail("indexAnalyzer", "field=\"" + name + "\": either analyzer or indexAnalyzer must be specified for an indexed text field");
+        f.fail("indexAnalyzer", "either analyzer or indexAnalyzer must be specified for an indexed text field");
       }
       if (searchAnalyzer == null) {
-        f.fail("searchAnalyzer", "field=\"" + name + "\": either analyzer or searchAnalyzer must be specified for an indexed text field");
+        f.fail("searchAnalyzer", "either analyzer or searchAnalyzer must be specified for an indexed text field");
       }
     }
 
@@ -673,18 +670,29 @@ public class RegisterFieldHandler extends Handler {
     }
 
     String facet = f.getEnum("facet");
-    if (facet.equals("hierarchy") && type.equals("atom") && (ft.indexed() || ft.stored())) {
-      f.fail("facet", "facet=hierarchy fields cannot have type atom if it's indexed or stored");
-    }
-    if (facet.equals("numericRange")) {
+    if (facet.equals("hierarchy")) {
+      if (highlighted) {
+        f.fail("facet", "facet=hierarchy fields cannot have highlight=true");
+      }
+      if (ft.indexed()) {
+        f.fail("facet", "facet=hierarchy fields cannot have search=true");
+      }
+      if (ft.stored()) {
+        f.fail("facet", "facet=hierarchy fields cannot have store=true");
+      }
+    } else if (facet.equals("numericRange")) {
       if (!type.equals("long") && !type.equals("int") && !type.equals("float") && !type.equals("double")) {
         f.fail("facet", "numericRange facets only applies to numeric types");
       }
       if (!ft.indexed()) {
-        f.fail("index", "facet=numericRange fields must have index=true");
+        f.fail("search", "facet=numericRange fields must have search=true");
       }
       // We index the field as NumericField, for drill-down, and store doc values, for dynamic facet counting
       ft.setDocValueType(DocValuesType.NUMERIC);
+    } else if (facet.equals("no")) {
+      if (ft.indexed() == false && ft.stored() == false && ft.docValueType() == null) {
+        f.fail("field does nothing: it's neither searched, stored, sorted, grouped, highlighted nor faceted");
+      }
     }
 
     ft.freeze();
@@ -733,7 +741,7 @@ public class RegisterFieldHandler extends Handler {
     // nocommit charFilters
 
     Tokenizer tokenizer;
-    // nocommit use java7 string switch:
+    // nocommit use analysis factories
     if (pr.name.equals("StandardTokenizer")) {
       tokenizer = new StandardTokenizer(matchVersion, reader);
       ((StandardTokenizer) tokenizer).setMaxTokenLength(pr.r.getInt("maxTokenLength"));
@@ -804,7 +812,7 @@ public class RegisterFieldHandler extends Handler {
       for(Object o : chain.getList("tokenFilters")) {
         Request sub = (Request) o;
         pr = sub.getPoly("class");
-        // nocommit use java7 string switch:
+        // nocommit use analysis factories
         if (pr.name.equals("StandardFilter")) {
           last = new StandardFilter(matchVersion, last);
         } else if (pr.name.equals("EnglishPossessiveFilter")) {

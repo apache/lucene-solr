@@ -473,5 +473,16 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
     return sb.toString();
   }
+
+  protected void assertFailsWith(String command, String args, String fragment) throws Exception {
+    try {
+      send(command, args);
+      fail("did not hit expected exception");
+    } catch (IOException ioe) {
+      if (ioe.getMessage().contains(fragment) == false) {
+        fail("expected: " + fragment + "\nactual: \"" + ioe.getMessage());
+      }
+    }
+  }
 }
 
