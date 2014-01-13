@@ -865,6 +865,9 @@ Bug Fixes
 * SOLR-5037: The CSV loader now accepts field names that are not in the schema.
   (gsingers, ehatcher, Steve Rowe)
 
+* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
+  Erick Erickson)
+
 Optimizations
 ----------------------
 
