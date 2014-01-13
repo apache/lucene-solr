@@ -149,6 +149,9 @@ Bug Fixes
 * SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory 
   if necessary. (Mark Miller)
 
+* SOLR-5615: Deadlock while trying to recover after a ZK session expiration.
+  (Ramkumar Aiyengar, Mark Miller)
+
 * SOLR-5543: Core swaps resulted in duplicate core entries in solr.xml when 
   using solr.xml persistence. (Bill Bell, Alan Woodward)
 
