@@ -88,6 +88,9 @@ Bug Fixes
 * SOLR-5587: ElectionContext implementations should use 
   ZkCmdExecutor#ensureExists to ensure their election paths are properly
   created. (Mark Miller)
+
+* SOLR-5540: HdfsLockFactory should explicitly create the lock parent directory if 
+  necessary. (Mark Miller)
   
 * SOLR-4709: The core reload after replication if config files have changed
   can fail due to a race condition. (Mark Miller, Hossman))
