@@ -63,10 +63,16 @@ public  class LeaderElector {
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
-  
+
+  private volatile ElectionContext context;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+  }
+  
+  public ElectionContext getContext() {
+    return context;
   }
   
   /**

@@ -443,4 +443,8 @@ final class OverseerElectionContext extends ElectionContext {
     overseer.start(id);
   }
   
+  public void cancelElection() throws InterruptedException, KeeperException {
+    super.cancelElection();
+    overseer.close();
+  }
 }

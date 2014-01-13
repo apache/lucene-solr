@@ -137,13 +137,13 @@ public final class ZkController {
   }
   private final Map<ContextKey, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<ContextKey, ElectionContext>());
   
-  private SolrZkClient zkClient;
-  private ZkCmdExecutor cmdExecutor;
-  private ZkStateReader zkStateReader;
+  private final SolrZkClient zkClient;
+  private final ZkCmdExecutor cmdExecutor;
+  private final ZkStateReader zkStateReader;
 
-  private LeaderElector leaderElector;
+  private final LeaderElector leaderElector;
   
-  private String zkServerAddress;          // example: 127.0.0.1:54062/solr
+  private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
   private final String localHostPort;      // example: 54065
   private final String localHostContext;   // example: solr
@@ -224,6 +224,11 @@ public final class ZkController {
 
               ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+              ElectionContext prevContext = overseerElector.getContext();
+              if (prevContext != null) {
+                prevContext.cancelElection();
+              }
+              
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -937,6 +942,17 @@ public final class ZkController {
 
 
   private void joinElection(CoreDescriptor cd, boolean afterExpiration) throws InterruptedException, KeeperException, IOException {
+    // look for old context - if we find it, cancel it
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    
+    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    
+    ElectionContext prevContext = electionContexts.get(contextKey);
+    
+    if (prevContext != null) {
+      prevContext.cancelElection();
+    }
     
     String shardId = cd.getCloudDescriptor().getShardId();
     
@@ -946,16 +962,15 @@ public final class ZkController {
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+ 
     ZkNodeProps ourProps = new ZkNodeProps(props);
-    String collection = cd.getCloudDescriptor()
-        .getCollectionName();
+
     
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
     leaderElector.setup(context);
-    electionContexts.put(new ContextKey(collection, coreNodeName), context);
+    electionContexts.put(contextKey, context);
     leaderElector.joinElection(context, false);
   }
 
