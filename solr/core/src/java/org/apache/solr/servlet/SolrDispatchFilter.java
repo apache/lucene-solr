@@ -136,6 +136,9 @@ public class SolrDispatchFilter implements Filter
       // catch this so our filter still works
       log.error( "Could not start Solr. Check solr/home property and the logs");
       SolrCore.log( t );
+      if (t instanceof Error) {
+        throw (Error) t;
+      }
     }
 
     log.info("SolrDispatchFilter.init() done");
@@ -434,17 +437,25 @@ public class SolrDispatchFilter implements Filter
       } 
       catch (Throwable ex) {
         sendError( core, solrReq, request, (HttpServletResponse)response, ex );
+        if (ex instanceof Error) {
+          throw (Error) ex;
+        }
         return;
-      } 
-      finally {
-        if( solrReq != null ) {
-          log.debug("Closing out SolrRequest: {}", solrReq);
-          solrReq.close();
+      } finally {
+        try {
+          if (solrReq != null) {
+            log.debug("Closing out SolrRequest: {}", solrReq);
+            solrReq.close();
+          }
+        } finally {
+          try {
+            if (core != null) {
+              core.close();
+            }
+          } finally {
+            SolrRequestInfo.clearRequestInfo();
+          }
         }
-        if (core != null) {
-          core.close();
-        }
-        SolrRequestInfo.clearRequestInfo();        
       }
     }
 
@@ -758,6 +769,7 @@ public class SolrDispatchFilter implements Filter
       ServletRequest request, 
       HttpServletResponse response, 
       Throwable ex) throws IOException {
+    Exception exp = null;
     SolrCore localCore = null;
     try {
       SolrQueryResponse solrResp = new SolrQueryResponse();
@@ -786,15 +798,21 @@ public class SolrDispatchFilter implements Filter
       QueryResponseWriter writer = core.getQueryResponseWriter(req);
       writeResponse(solrResp, response, writer, req, Method.GET);
     }
-    catch( Throwable t ) { // This error really does not matter
-      SimpleOrderedMap info = new SimpleOrderedMap();
-      int code = ResponseUtils.getErrorInfo(ex, info, log);
-      response.sendError( code, info.toString() );
+    catch (Exception e) { // This error really does not matter
+         exp = e;
     } finally {
-      if (core == null && localCore != null) {
-        localCore.close();
+      try {
+        if (exp != null) {
+          SimpleOrderedMap info = new SimpleOrderedMap();
+          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          response.sendError(code, info.toString());
+        }
+      } finally {
+        if (core == null && localCore != null) {
+          localCore.close();
+        }
       }
-    }
+   }
   }
 
   //---------------------------------------------------------------------

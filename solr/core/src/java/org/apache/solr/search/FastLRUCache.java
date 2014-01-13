@@ -160,7 +160,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
                   this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
           if (!continueRegen) break;
         }
-        catch (Throwable e) {
+        catch (Exception e) {
           SolrException.log(log, "Error during auto-warming of key:" + itemsArr[i].getKey(), e);
         }
       }

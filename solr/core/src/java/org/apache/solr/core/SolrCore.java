@@ -834,7 +834,11 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (Throwable e) {
       latch.countDown();//release the latch, otherwise we block trying to do the close.  This should be fine, since counting down on a latch of 0 is still fine
       //close down the searcher and any other resources, if it exists, as this is not recoverable
+      if (e instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError)e;
+      }
       close();
+      
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                               e.getMessage(), e);
     } finally {
@@ -1002,7 +1006,10 @@ public final class SolrCore implements SolrInfoMBean {
          try {
            hook.preClose( this );
          } catch (Throwable e) {
-           SolrException.log(log, e);           
+           SolrException.log(log, e);       
+           if (e instanceof Error) {
+             throw (Error) e;
+           }
          }
       }
     }
@@ -1012,6 +1019,9 @@ public final class SolrCore implements SolrInfoMBean {
       infoRegistry.clear();
     } catch (Throwable e) {
       SolrException.log(log, e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
     }
 
     try {
@@ -1020,6 +1030,9 @@ public final class SolrCore implements SolrInfoMBean {
       }
     } catch (Throwable e) {
       SolrException.log(log,e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
     }
     
     boolean coreStateClosed = false;
@@ -1033,12 +1046,18 @@ public final class SolrCore implements SolrInfoMBean {
       }
     } catch (Throwable e) {
       SolrException.log(log, e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
     }
     
     try {
       ExecutorUtil.shutdownAndAwaitTermination(searcherExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
     }
 
     try {
@@ -1052,14 +1071,20 @@ public final class SolrCore implements SolrInfoMBean {
       closeSearcher();
     } catch (Throwable e) {
       SolrException.log(log,e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
     }
     
     if (coreStateClosed) {
       
       try {
         directoryFactory.close();
-      } catch (Throwable t) {
-        SolrException.log(log, t);
+      } catch (Throwable e) {
+        SolrException.log(log, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
       
     }
@@ -1071,6 +1096,9 @@ public final class SolrCore implements SolrInfoMBean {
            hook.postClose( this );
          } catch (Throwable e) {
            SolrException.log(log, e);
+           if (e instanceof Error) {
+             throw (Error) e;
+           }
          }
       }
     }
@@ -1646,6 +1674,9 @@ public final class SolrCore implements SolrInfoMBean {
                   newSearcher.warm(currSearcher);
                 } catch (Throwable e) {
                   SolrException.log(log,e);
+                  if (e instanceof Error) {
+                    throw (Error) e;
+                  }
                 }
                 return null;
               }
@@ -1664,6 +1695,9 @@ public final class SolrCore implements SolrInfoMBean {
                   }
                 } catch (Throwable e) {
                   SolrException.log(log,null,e);
+                  if (e instanceof Error) {
+                    throw (Error) e;
+                  }
                 }
                 return null;
               }
@@ -1682,6 +1716,9 @@ public final class SolrCore implements SolrInfoMBean {
                   }
                 } catch (Throwable e) {
                   SolrException.log(log,null,e);
+                  if (e instanceof Error) {
+                    throw (Error) e;
+                  }
                 }
                 return null;
               }
@@ -1703,6 +1740,9 @@ public final class SolrCore implements SolrInfoMBean {
                   registerSearcher(newSearchHolder);
                 } catch (Throwable e) {
                   SolrException.log(log, e);
+                  if (e instanceof Error) {
+                    throw (Error) e;
+                  }
                 } finally {
                   // we are all done with the old searcher we used
                   // for warming...
@@ -1778,7 +1818,7 @@ public final class SolrCore implements SolrInfoMBean {
             searcherList.remove(this);
           }
           resource.close();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           // do not allow decref() operations to fail since they are typically called in finally blocks
           // and throwing another exception would be very unexpected.
           SolrException.log(log, "Error closing searcher:" + this, e);
@@ -1826,7 +1866,7 @@ public final class SolrCore implements SolrInfoMBean {
         newSearcher.register(); // register subitems (caches)
         log.info(logid+"Registered new searcher " + newSearcher);
 
-      } catch (Throwable e) {
+      } catch (Exception e) {
         // an exception in register() shouldn't be fatal.
         log(e);
       } finally {
@@ -1871,8 +1911,8 @@ public final class SolrCore implements SolrInfoMBean {
     // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
     //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
 
-    handler.handleRequest(req,rsp);
 
+    handler.handleRequest(req,rsp);
     postDecorateResponse(handler, req, rsp);
 
     if (log.isInfoEnabled() && rsp.getToLog().size() > 0) {

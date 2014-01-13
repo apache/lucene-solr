@@ -92,7 +92,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
       if (data != null) {
         props.load(new StringReader(new String(data, "UTF-8")));
       }
-    } catch (Throwable e) {
+    } catch (Exception e) {
       log.warn(
           "Could not read DIH properties from " + path + " :" + e.getClass(), e);
     }

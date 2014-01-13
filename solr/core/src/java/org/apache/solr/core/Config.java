@@ -260,7 +260,7 @@ public class Config {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
       throw(e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }
@@ -290,7 +290,7 @@ public class Config {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
       throw(e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }

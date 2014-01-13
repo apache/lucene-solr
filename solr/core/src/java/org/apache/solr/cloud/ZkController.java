@@ -249,8 +249,8 @@ public final class ZkController {
                   // with connection loss
                   try {
                     register(descriptor.getName(), descriptor, true, true);
-                  } catch (Throwable t) {
-                    SolrException.log(log, "Error registering SolrCore", t);
+                  } catch (Exception e) {
+                    SolrException.log(log, "Error registering SolrCore", e);
                   }
                 }
               }
@@ -385,32 +385,37 @@ public final class ZkController {
    */
   public void close() {
     this.isClosed = true;
-    
-    for (ElectionContext context : electionContexts.values()) {
+    try {
+      for (ElectionContext context : electionContexts.values()) {
+        try {
+          context.close();
+        } catch (Exception e) {
+          log.error("Error closing overseer", e);
+        }
+      }
+    } finally {
       try {
-        context.close();
-      } catch (Throwable t) {
-        log.error("Error closing overseer", t);
+        try {
+          overseer.close();
+        } catch (Exception e) {
+          log.error("Error closing overseer", e);
+        }
+      } finally {
+        try {
+          try {
+            zkStateReader.close();
+          } catch (Exception e) {
+            log.error("Error closing zkStateReader", e);
+          }
+        } finally {
+          try {
+            zkClient.close();
+          } catch (Exception e) {
+            log.error("Error closing zkClient", e);
+          }
+        }
       }
     }
-    
-    try {
-      overseer.close();
-    } catch(Throwable t) {
-      log.error("Error closing overseer", t);
-    }
-    
-    try {
-      zkStateReader.close();
-    } catch(Throwable t) {
-      log.error("Error closing zkStateReader", t);
-    } 
-    
-    try {
-      zkClient.close();;
-    } catch(Throwable t) {
-      log.error("Error closing zkClient", t);
-    } 
     
   }
 
@@ -473,7 +478,7 @@ public final class ZkController {
               }
             }
           }
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log,
               "Error while looking for a better host name than 127.0.0.1", e);
         }

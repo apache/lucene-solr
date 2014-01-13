@@ -123,7 +123,7 @@ public class SolrZkClient {
               }
             }
           });
-    } catch (Throwable e) {
+    } catch (Exception e) {
       connManager.close();
       if (keeper != null) {
         try {
@@ -137,7 +137,7 @@ public class SolrZkClient {
     
     try {
       connManager.waitForConnected(clientConnectTimeout);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       connManager.close();
       try {
         keeper.close();

@@ -165,7 +165,7 @@ public class HttpShardHandler extends ShardHandler {
         }
         catch( ConnectException cex ) {
           srsp.setException(cex); //????
-        } catch (Throwable th) {
+        } catch (Exception th) {
           srsp.setException(th);
           if (th instanceof SolrException) {
             srsp.setResponseCode(((SolrException)th).code());

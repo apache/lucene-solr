@@ -963,6 +963,7 @@ public class Overseer {
 
   private String adminPath;
   
+  // overseer not responsible for closing reader
   public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader) throws KeeperException, InterruptedException {
     this.reader = reader;
     this.shardHandler = shardHandler;
@@ -992,20 +993,24 @@ public class Overseer {
   }
   
   public void close() {
-    if (updaterThread != null) {
-      try {
-        updaterThread.close();
-        updaterThread.interrupt();
-      } catch (Throwable t) {
-        log.error("Error closing updaterThread", t);
+    try {
+      if (updaterThread != null) {
+        try {
+          updaterThread.close();
+          updaterThread.interrupt();
+        } catch (Exception e) {
+          log.error("Error closing updaterThread", e);
+        }
       }
-    }
-    if (ccThread != null) {
-      try {
-        ccThread.close();
-        ccThread.interrupt();
-      } catch (Throwable t) {
-        log.error("Error closing ccThread", t);
+    } finally {
+      
+      if (ccThread != null) {
+        try {
+          ccThread.close();
+          ccThread.interrupt();
+        } catch (Exception e) {
+          log.error("Error closing ccThread", e);
+        }
       }
     }
     updaterThread = null;

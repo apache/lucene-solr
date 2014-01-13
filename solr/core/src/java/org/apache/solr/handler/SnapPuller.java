@@ -1356,10 +1356,10 @@ public class SnapPuller {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
-      } catch (Throwable t) {
+      } catch (Exception e) {
         //close stream on error
         IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", t);
+        throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
         s.shutdown();
       }
@@ -1620,10 +1620,10 @@ public class SnapPuller {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
-      } catch (Throwable t) {
+      } catch (Exception e) {
         //close stream on error
         IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", t);
+        throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
         s.shutdown();
       }
@@ -1683,19 +1683,13 @@ public class SnapPuller {
   public void destroy() {
     try {
       if (executorService != null) executorService.shutdown();
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
-    }
-    try {
-      abortPull();
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
-    }
-    try {
-      if (executorService != null) ExecutorUtil
-          .shutdownNowAndAwaitTermination(executorService);
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
+    } finally {
+      try {
+        abortPull();
+      } finally {
+        if (executorService != null) ExecutorUtil
+            .shutdownNowAndAwaitTermination(executorService);
+      }
     }
   }
 

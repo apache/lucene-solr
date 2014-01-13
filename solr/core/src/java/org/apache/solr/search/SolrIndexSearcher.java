@@ -175,9 +175,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
     try {
       reader = core.getIndexReaderFactory().newReader(dir, core);
-    } catch (Throwable t) {
+    } catch (Exception e) {
       directoryFactory.release(dir);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", t);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", e);
     }
     return reader;
   }
@@ -347,8 +347,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     long cpg = reader.getIndexCommit().getGeneration();
     try {
       if (closeReader) reader.decRef();
-    } catch (Throwable t) {
-      SolrException.log(log, "Problem dec ref'ing reader", t);
+    } catch (Exception e) {
+      SolrException.log(log, "Problem dec ref'ing reader", e);
     }
 
     if (directoryFactory.searchersReserveCommitPoints()) {

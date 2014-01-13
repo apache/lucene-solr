@@ -186,8 +186,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
             }
           }
           assert val.refCnt == 0 : val.refCnt;
-        } catch (Throwable t) {
-          SolrException.log(log, "Error closing directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error closing directory", e);
         }
       }
       
@@ -203,8 +203,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
               closedDirs.add(v);
             }
           }
-        } catch (Throwable t) {
-          SolrException.log(log, "Error closing directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error closing directory", e);
         }
       }
 
@@ -212,8 +212,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         log.info("Removing directory after core close: " + val.path);
         try {
           removeDirectory(val);
-        } catch (Throwable t) {
-          SolrException.log(log, "Error removing directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error removing directory", e);
         }
       }
       
@@ -238,8 +238,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       for (CloseListener listener : listeners) {
         try {
           listener.preClose();
-        } catch (Throwable t) {
-          SolrException.log(log, "Error executing preClose for directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error executing preClose for directory", e);
         }
       }
     }
@@ -279,8 +279,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         log.info("Removing directory before core close: " + val.path);
         try {
           removeDirectory(val);
-        } catch (Throwable t) {
-          SolrException.log(log, "Error removing directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error removing directory", e);
         }
       } else {
         removeEntries.add(val);
@@ -291,8 +291,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       for (CloseListener listener : listeners) {
         try {
           listener.postClose();
-        } catch (Throwable t) {
-          SolrException.log(log, "Error executing postClose for directory", t);
+        } catch (Exception e) {
+          SolrException.log(log, "Error executing postClose for directory", e);
         }
       }
     }
@@ -303,8 +303,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     try {
       log.info("Closing directory: " + val.path);
       val.directory.close();
-    } catch (Throwable t) {
-      SolrException.log(log, "Error closing directory", t);
+    } catch (Exception e) {
+      SolrException.log(log, "Error closing directory", e);
     }
   }
 
