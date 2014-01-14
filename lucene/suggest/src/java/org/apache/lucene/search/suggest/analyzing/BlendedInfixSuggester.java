@@ -276,7 +276,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       if (o1.value > o2.value) {
         return 1;
       } else if (o1.value < o2.value) {
-        return 0;
+        return -1;
       }
 
       // otherwise on alphabetic order

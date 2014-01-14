@@ -136,7 +136,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     BytesRef ret = new BytesRef("ret");
 
     Input keys[] = new Input[]{
-        new Input("top of the lake", 15, lake),
+        new Input("top of the lake", 18, lake),
         new Input("star wars: episode v - the empire strikes back", 12, star),
         new Input("the returned", 10, ret),
     };
@@ -152,13 +152,19 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         return newFSDirectory(path);
       }
     };
+
     suggester.build(new InputArrayIterator(keys));
 
-    long w0 = getInResults(suggester, "the", ret, 2);
-    assertTrue(w0 < 1);
 
+    // we don't find it for in the 2 first
+    assertEquals(2, suggester.lookup("the", 2, true, false).size());
+    long w0 = getInResults(suggester, "the", ret, 2);
+    assertTrue(w0 < 0);
+
+    // but it's there if we search for 3 elements
+    assertEquals(3, suggester.lookup("the", 3, true, false).size());
     long w1 = getInResults(suggester, "the", ret, 3);
-    assertTrue(w1 > 1);
+    assertTrue(w1 > 0);
 
     suggester.close();
 
@@ -172,11 +178,13 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     };
     suggester.build(new InputArrayIterator(keys));
 
+    // we have it
     long w2 = getInResults(suggester, "the", ret, 2);
-    assertTrue(w2 > 1);
+    assertTrue(w2 > 0);
 
+    // but we don't have the other
     long w3 = getInResults(suggester, "the", star, 2);
-    assertTrue(w3 < 1);
+    assertTrue(w3 < 0);
 
     suggester.close();
   }
