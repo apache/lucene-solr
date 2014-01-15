@@ -42,6 +42,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.hack.MiniMRCluster;
+import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -125,7 +126,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
-    MRUnitBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes");
+    AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);
     
     System.setProperty("hadoop.log.dir", new File(solrHomeDirectory, "logs").getAbsolutePath());
     

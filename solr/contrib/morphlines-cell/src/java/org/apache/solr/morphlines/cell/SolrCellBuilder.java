@@ -223,16 +223,12 @@ public final class SolrCellBuilder implements CommandBuilder {
       
       ParseContext parseContext = new ParseContext();
       
-      // necessary for gzipped files or tar files, etc! copied from TikaCLI
-      parseContext.set(Parser.class, parser);
-      
       Metadata metadata = new Metadata();
       for (Entry<String, Object> entry : record.getFields().entries()) {
         metadata.add(entry.getKey(), entry.getValue().toString());
       }
 
       SolrContentHandler handler = solrContentHandlerFactory.createSolrContentHandler(metadata, solrParams, schema);
-      
       try {
         inputStream = TikaInputStream.get(inputStream);
 
