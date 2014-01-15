@@ -88,6 +88,11 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
   }
 
   @Override
+  public void setTopValue(Comparable value) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public int compareBottom(int doc) {
     throw new UnsupportedOperationException();
   }
@@ -123,7 +128,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
   }
 
   @Override
-  public int compareDocToValue(int doc, Comparable docValue) {
+  public int compareTop(int doc) {
     throw new UnsupportedOperationException();
   }
 
@@ -166,6 +171,11 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       return TermOrdValComparator_SML.createComparator(context.reader(), parent);
+    }
+
+    @Override
+    public void setTopValue(BytesRef value) {
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -223,19 +233,16 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
       return values==null ? parent.NULL_VAL : values[slot];
     }
 
+    // this stuff caches the ordinal of the last 'value' from compareDocToValue
+    BytesRef lastValue = new BytesRef(); // sentinel
+    int lastOrd;
+    int lastReaderGen = -1;
+    boolean lastSameReader = false;
+
+    // nocommit, broken: nuke all of this
     @Override
-    public int compareDocToValue(int doc, BytesRef value) {
-      int docOrd = termsIndex.getOrd(doc);
-      if (docOrd == -1) {
-        if (value == null) {
-          return 0;
-        }
-        return 1;
-      } else if (value == null) {
-        return -1;
-      }
-      termsIndex.lookupOrd(docOrd, tempBR);
-      return tempBR.compareTo(value);
+    public int compareTop(int doc) {
+      throw new UnsupportedOperationException();
     }
   }
 
@@ -247,34 +254,18 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
-      int order = termsIndex.getOrd(doc);
-      if (order == -1) order = NULL_ORD;
+      int docOrd = termsIndex.getOrd(doc);
+      if (docOrd == -1) docOrd = NULL_ORD;
       if (bottomSameReader) {
-        // ord is precisely comparable, even in the equal
-        // case
-        return bottomOrd - order;
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - docOrd;
+      } else if (bottomOrd >= docOrd) {
+        // the equals case always means bottom is > doc
+        // (because we set bottomOrd to the lower bound in
+        // setBottom):
+        return 1;
       } else {
-        // ord is only approx comparable: if they are not
-        // equal, we can use that; if they are equal, we
-        // must fallback to compare by value
-
-        final int cmp = bottomOrd - order;
-        if (cmp != 0) {
-          return cmp;
-        }
-
-        // take care of the case where both vals are null
-        if (order == NULL_ORD) {
-          return 0;
-        }
-
-        // and at this point we know that neither value is null, so safe to compare
-        if (order == NULL_ORD) {
-          return bottomValue.compareTo(parent.NULL_VAL);
-        } else {
-          termsIndex.lookupOrd(order, tempBR);
-          return bottomValue.compareTo(tempBR);
-        }
+        return -1;
       }
     }
 

@@ -632,7 +632,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       randomIOExceptionRateOnOpen = 0.0;
       if (DirectoryReader.indexExists(this)) {
         if (LuceneTestCase.VERBOSE) {
-          System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
+          System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
         }
         crash(); // corrupt any unsynced-files
         if (LuceneTestCase.VERBOSE) {

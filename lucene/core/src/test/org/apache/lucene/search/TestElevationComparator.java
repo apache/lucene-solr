@@ -157,6 +157,11 @@ class ElevationComparatorSource extends FieldComparatorSource {
        bottomVal = values[slot];
      }
 
+     @Override
+     public void setTopValue(Integer value) {
+       throw new UnsupportedOperationException();
+     }
+
      private int docVal(int doc) {
        int ord = idIndex.getOrd(doc);
        if (ord == -1) {
@@ -190,11 +195,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public int compareDocToValue(int doc, Integer valueObj) {
-       final int value = valueObj.intValue();
-       final int docValue = docVal(doc);
-       // values will be small enough that there is no overflow concern
-       return value - docValue;
+     public int compareTop(int doc) {
+       throw new UnsupportedOperationException();
      }
    };
  }
