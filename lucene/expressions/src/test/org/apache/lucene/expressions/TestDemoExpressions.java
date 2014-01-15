@@ -200,12 +200,12 @@ public class  TestDemoExpressions extends LuceneTestCase {
     TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(0.4621D, (Double)d.fields[0], 1E-4);
+    assertEquals(0.4619D, (Double)d.fields[0], 1E-4);
     
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(1.0550D, (Double)d.fields[0], 1E-4);
+    assertEquals(1.0546D, (Double)d.fields[0], 1E-4);
     
     d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(5.2859D, (Double)d.fields[0], 1E-4);
+    assertEquals(5.2842D, (Double)d.fields[0], 1E-4);
   }
 }

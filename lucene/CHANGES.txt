@@ -104,6 +104,9 @@ Optimizations
 * LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
   (Joshua Hartman via Uwe Schindler, Dawid Weiss, Mike McCandless)
 
+* LUCENE-5271: A slightly more accurate SloppyMath distance.
+  (Gilad Barkai via Ryan Ernst)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
