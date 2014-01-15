@@ -96,6 +96,10 @@ Bug fixes
 * LUCENE-5344: Flexible StandardQueryParser behaves differently than 
   ClassicQueryParser. (Adriano Crestani)
   
+* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
+  when the parent query incorrectly returns child documents, and throw
+  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
