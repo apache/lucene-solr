@@ -136,7 +136,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       showNonSolrCloud = Arrays.asList(args).contains(SHOW_NON_SOLR_CLOUD); // intercept it first
       
       ArgumentParser parser = ArgumentParsers
-        .newArgumentParser("hadoop [GenericOptions]... jar search-mr-*-job.jar " + MapReduceIndexerTool.class.getName(), false)
+        .newArgumentParser("hadoop [GenericOptions]... jar solr-map-reduce-*.jar ", false)
         .defaultHelp(true)
         .description(
           "MapReduce batch job driver that takes a morphline and creates a set of Solr index shards from a set of input files " +
@@ -197,7 +197,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "# (Re)index an Avro based Twitter tweet file:\n" +
               "sudo -u hdfs hadoop \\\n" + 
               "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" +
-              "  jar target/search-mr-*-job.jar " + MapReduceIndexerTool.class.getName() + " \\\n" +
+              "  jar target/solr-map-reduce-*.jar \\\n" +
               "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
 //            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
               "  --log4j src/test/resources/log4j.properties \\\n" + 
@@ -213,7 +213,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "# 3) file was last modified less than 100000 minutes ago\n" +
               "# 4) file size is between 1 MB and 1 GB\n" +
               "# Also include extra library jar file containing JSON tweet Java parser:\n" +
-              "hadoop jar target/search-mr-*-job.jar " + "com.cloudera.cdk.morphline.hadoop.find.HdfsFindTool" + " \\\n" + 
+              "hadoop jar target/solr-map-reduce-*.jar " + "com.cloudera.cdk.morphline.hadoop.find.HdfsFindTool" + " \\\n" + 
               "  -find hdfs:///user/$USER/solrloadtest/twitter/tweets \\\n" + 
               "  -type f \\\n" + 
               "  -name 'sample-statuses*.gz' \\\n" + 
@@ -222,7 +222,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "  -size +1000000c \\\n" + 
               "| sudo -u hdfs hadoop \\\n" + 
               "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" + 
-              "  jar target/search-mr-*-job.jar " + MapReduceIndexerTool.class.getName() + " \\\n" +
+              "  jar target/solr-map-reduce-*.jar \\\n" +
               "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
 //            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
               "  --log4j src/test/resources/log4j.properties \\\n" + 
@@ -236,7 +236,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "# (explicitly specify Solr URLs - for a SolrCloud cluster see next example):\n" +
               "sudo -u hdfs hadoop \\\n" + 
               "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" +
-              "  jar target/search-mr-*-job.jar " + MapReduceIndexerTool.class.getName() + " \\\n" +
+              "  jar target/solr-map-reduce-*.jar \\\n" +
               "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
 //            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
               "  --log4j src/test/resources/log4j.properties \\\n" + 
@@ -252,7 +252,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "# (discover shards and Solr URLs through ZooKeeper):\n" +
               "sudo -u hdfs hadoop \\\n" + 
               "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" +
-              "  jar target/search-mr-*-job.jar " + MapReduceIndexerTool.class.getName() + " \\\n" +
+              "  jar target/solr-map-reduce-*.jar \\\n" +
               "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
 //            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
               "  --log4j src/test/resources/log4j.properties \\\n" + 
