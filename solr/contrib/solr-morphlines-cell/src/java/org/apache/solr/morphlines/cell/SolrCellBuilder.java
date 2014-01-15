@@ -124,7 +124,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       if (uprefix != null) {
         cellParams.put(ExtractingParams.UNKNOWN_FIELD_PREFIX, uprefix);
       }
-      for (String capture : getConfigs().getStringList(config, ExtractingParams.CAPTURE_ELEMENTS, Collections.EMPTY_LIST)) {
+      for (String capture : getConfigs().getStringList(config, ExtractingParams.CAPTURE_ELEMENTS, Collections.<String>emptyList())) {
         cellParams.put(ExtractingParams.CAPTURE_ELEMENTS, capture);
       }
       Config fmapConfig = getConfigs().getConfig(config, "fmap", null);
@@ -182,7 +182,7 @@ public final class SolrCellBuilder implements CommandBuilder {
         Parser parser = (Parser) obj;
         this.parsers.add(parser);
 
-        List<String> mediaTypes = getConfigs().getStringList(parserConfig, SUPPORTED_MIME_TYPES, Collections.EMPTY_LIST);
+        List<String> mediaTypes = getConfigs().getStringList(parserConfig, SUPPORTED_MIME_TYPES, Collections.<String>emptyList());
         for (String mediaTypeStr : mediaTypes) {
           MediaType mediaType = parseMediaType(mediaTypeStr);
           addSupportedMimeType(mediaTypeStr);
@@ -195,7 +195,7 @@ public final class SolrCellBuilder implements CommandBuilder {
             addSupportedMimeType(mediaType.toString());
             this.mediaTypeToParserMap.put(mediaType, parser);
           }        
-          List<String> extras = getConfigs().getStringList(parserConfig, ADDITIONAL_SUPPORTED_MIME_TYPES, Collections.EMPTY_LIST);
+          List<String> extras = getConfigs().getStringList(parserConfig, ADDITIONAL_SUPPORTED_MIME_TYPES, Collections.<String>emptyList());
           for (String mediaTypeStr : extras) {
             MediaType mediaType = parseMediaType(mediaTypeStr);
             addSupportedMimeType(mediaTypeStr);
