@@ -37,6 +37,7 @@ import org.apache.hadoop.security.authorize.ProxyUsers;
 import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -109,12 +110,15 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    LuceneTestCase.assumeTrue(
+    assumeTrue(
         "Currently this test can only be run without the lucene test security policy in place",
         System.getProperty("java.security.manager", "").equals(""));
     
-    LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
+    assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
         Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
+    
+    assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
+    assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_CONF_DIR, solrHomeDirectory);

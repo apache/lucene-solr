@@ -18,11 +18,13 @@ package org.apache.solr.morphlines.solr;
 
 import java.util.Iterator;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
@@ -42,7 +44,13 @@ import com.cloudera.cdk.morphline.base.Notifications;
 @SuppressCodecs({"Lucene3x", "Lucene40"})
 @Slow
 public class SolrMorphlineZkTest extends AbstractSolrMorphlineZkTestBase {
-    
+  
+  @BeforeClass
+  public static void beforeClass2() {
+    assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
+    assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+  }
+  
   @Override
   public void doTest() throws Exception {
     
