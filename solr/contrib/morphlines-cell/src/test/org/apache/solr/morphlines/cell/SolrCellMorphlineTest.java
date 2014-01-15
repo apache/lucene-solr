@@ -41,6 +41,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   private Map<String, Map<String, Object>> expectedRecordContents = new HashMap<String, Map<String, Object>>();
   @BeforeClass
   public static void beforeClass2() {
+    assumeFalse("FIXME: Morphlines currently has issues with Windows paths", Constants.WINDOWS);
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
   }
