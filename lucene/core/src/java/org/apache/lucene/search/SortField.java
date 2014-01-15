@@ -169,13 +169,25 @@ public class SortField {
     this.parser = parser;
   }
 
+  // nocommit should missing first/last not be affected by reverse=true???
+
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort first. */
-  public final static Object STRING_FIRST = new Object();
+  public final static Object STRING_FIRST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_FIRST";
+      }
+    };
   
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort last. */
-  public final static Object STRING_LAST = new Object();
+  public final static Object STRING_LAST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_LAST";
+      }
+    };
 
   public void setMissingValue(Object missingValue) {
     if (type == Type.STRING) {
@@ -308,6 +320,10 @@ public class SortField {
     }
 
     if (reverse) buffer.append('!');
+    if (missingValue != null) {
+      buffer.append(" missingValue=");
+      buffer.append(missingValue);
+    }
 
     return buffer.toString();
   }

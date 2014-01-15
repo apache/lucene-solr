@@ -887,6 +887,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void collect(int doc) throws IOException {
+      //System.out.println("  collect doc=" + doc);
+
       totalHits++;
 
       float score = Float.NaN;
@@ -919,8 +921,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         }
       }
 
-      //System.out.println("  collect doc=" + doc);
-
       // Check if this hit was already collected on a
       // previous page:
       boolean sameValues = true;
@@ -935,7 +935,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         } else if (cmp < 0) {
           // Not yet collected
           sameValues = false;
-          //System.out.println("    keep: after");
+          //System.out.println("    keep: after; reverseMul=" + reverseMul[compIDX]);
           break;
         }
       }

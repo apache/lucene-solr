@@ -51,8 +51,6 @@ public class TestSearchAfter extends LuceneTestCase {
   private IndexSearcher searcher;
   private int iter;
 
-  // nocommit add SF.setMissingValue too
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -132,7 +130,7 @@ public class TestSearchAfter extends LuceneTestCase {
     }
   }
 
-  static SortField[] allSortFields = new SortField[] {
+  static List<SortField> allSortFields = new ArrayList<SortField>(Arrays.asList(new SortField[] {
     new SortField("int", SortField.Type.INT, false),
     new SortField("long", SortField.Type.LONG, false),
     new SortField("float", SortField.Type.FLOAT, false),
@@ -157,8 +155,25 @@ public class TestSearchAfter extends LuceneTestCase {
     new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
     SortField.FIELD_SCORE,
     SortField.FIELD_DOC,
-    // nocommit add RELEVANCE too
-  };
+      }));
+
+  static {
+    // Also test missing first / last for the "string" sorts:
+    for(String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
+      for(int rev=0;rev<2;rev++) {
+        boolean reversed = rev == 0;
+        SortField sf = new SortField(field, SortField.Type.STRING, reversed);
+        sf.setMissingValue(SortField.STRING_FIRST);
+        allSortFields.add(sf);
+
+        sf = new SortField(field, SortField.Type.STRING, reversed);
+        sf.setMissingValue(SortField.STRING_LAST);
+        allSortFields.add(sf);
+      }
+    }
+
+    // nocommit test missing value for numerics too:
+  }
   
   void assertQuery(Query query, Filter filter) throws Exception {
     assertQuery(query, filter, null);
@@ -175,7 +190,7 @@ public class TestSearchAfter extends LuceneTestCase {
   Sort getRandomSort() {
     SortField[] sortFields = new SortField[_TestUtil.nextInt(random(), 2, 7)];
     for(int i=0;i<sortFields.length;i++) {
-      sortFields[i] = allSortFields[random().nextInt(allSortFields.length)];
+      sortFields[i] = allSortFields.get(random().nextInt(allSortFields.size()));
     }
     return new Sort(sortFields);
   }

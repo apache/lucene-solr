@@ -876,6 +876,7 @@ public abstract class FieldComparator<T> {
         topOrd = missingOrd;
         topSameReader = true;
       }
+      //System.out.println("  setNextReader topOrd=" + topOrd + " topSameReader=" + topSameReader);
 
       if (bottomSlot != -1) {
         // Recompute bottomOrd/SameReader
@@ -921,6 +922,7 @@ public abstract class FieldComparator<T> {
       // null is fine: it means the last doc of the prior
       // search was missing this value
       topValue = value;
+      //System.out.println("setTopValue " + topValue);
     }
 
     @Override
@@ -932,9 +934,14 @@ public abstract class FieldComparator<T> {
     public int compareTop(int doc) {
 
       int ord = termsIndex.getOrd(doc);
+      if (ord == -1) {
+        ord = missingOrd;
+      }
 
       if (topSameReader) {
-        // ord is precisely comparable, even in the equal case
+        // ord is precisely comparable, even in the equal
+        // case
+        //System.out.println("compareTop doc=" + doc + " ord=" + ord + " ret=" + (topOrd-ord));
         return topOrd - ord;
       } else if (ord <= topOrd) {
         // the equals case always means doc is < value
@@ -1066,6 +1073,7 @@ public abstract class FieldComparator<T> {
 
     private void setMissingBytes(int doc, BytesRef br) {
       if (br.length == 0) {
+        br.offset = 0;
         if (docsWithField.get(doc) == false) {
           br.bytes = MISSING_BYTES;
         } else {
