@@ -236,23 +236,23 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="Solr morphlines-cell contrib" type="JUnit" factoryName="JUnit">
-      <module name="solr-morphlines-cell" />
+      <module name="morphlines-cell" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-morphlines-cell" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-cell" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="Solr morphlines-core contrib" type="JUnit" factoryName="JUnit">
-      <module name="solr-morphlines-core" />
+      <module name="morphlines-core" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-morphlines-core" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-core" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="Solr mr (map-reduce) contrib" type="JUnit" factoryName="JUnit">
-      <module name="solr-mr" />
+      <module name="map-reduce" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-mr" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/map-reduce" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
