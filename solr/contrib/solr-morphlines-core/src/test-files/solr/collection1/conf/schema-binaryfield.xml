@@ -1,0 +1,97 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- The Solr schema file. This file should be named "schema.xml" and
+     should be located where the classloader for the Solr webapp can find it.
+
+     This schema is used for testing, and as such has everything and the
+     kitchen sink thrown in. See example/solr/conf/schema.xml for a
+     more concise example.
+
+  -->
+
+<schema name="test" version="1.2">
+  <types>
+
+    <!-- field type definitions... note that the "name" attribute is
+         just a label to be used by field definitions.  The "class"
+         attribute and any other attributes determine the real type and
+         behavior of the fieldtype.
+      -->
+
+    <!-- numeric field types that store and index the text
+         value verbatim (and hence don't sort correctly or support range queries.)
+         These are provided more for backward compatability, allowing one
+         to create a schema that matches an existing lucene index.
+    -->
+    <fieldType name="integer" class="solr.IntField"/>
+    <fieldType name="long" class="solr.LongField"/>
+    <fieldtype name="float" class="solr.FloatField"/>
+    <fieldType name="double" class="solr.DoubleField"/>
+
+    <!-- numeric field types that manipulate the value into
+       a string value that isn't human readable in it's internal form,
+       but sorts correctly and supports range queries.
+
+         If sortMissingLast="true" then a sort on this field will cause documents
+       without the field to come after documents with the field,
+       regardless of the requested sort order.
+         If sortMissingFirst="true" then a sort on this field will cause documents
+       without the field to come before documents with the field,
+       regardless of the requested sort order.
+         If sortMissingLast="false" and sortMissingFirst="false" (the default),
+       then default lucene sorting will be used which places docs without the field
+       first in an ascending sort and last in a descending sort.
+    -->
+    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
+    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
+    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
+    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
+    <fieldtype name="binary" class="solr.BinaryField"/>
+
+    <!-- bcd versions of sortable numeric type may provide smaller
+         storage space and support very large numbers.
+    -->
+    <fieldtype name="bcdint" class="solr.BCDIntField" sortMissingLast="true"/>
+    <fieldtype name="bcdlong" class="solr.BCDLongField" sortMissingLast="true"/>
+    <fieldtype name="bcdstr" class="solr.BCDStrField" sortMissingLast="true"/>
+
+
+
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+
+    <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
+         seconds part (.999) is optional.
+      -->
+    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+
+
+
+ </types>
+
+ <fields>
+   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="true"/>
+   <field name="data" type="binary" stored="true"/>
+
+ </fields>
+
+ <uniqueKey>id</uniqueKey>
+
+
+</schema>

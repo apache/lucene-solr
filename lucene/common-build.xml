@@ -386,7 +386,7 @@
   <target name="resolve" depends="ivy-availability-check,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
-    <ivy:retrieve type="jar,bundle,tests" log="download-only"
+    <ivy:retrieve type="jar,bundle,test,test-jar,tests" log="download-only"
                   conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
@@ -655,6 +655,7 @@
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
         <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
+        <attribute name="Main-Class" value="${main.class}"/>
       </manifest>
     </sequential>
   </macrodef>

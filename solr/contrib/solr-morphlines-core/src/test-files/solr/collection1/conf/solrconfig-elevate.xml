@@ -1,0 +1,178 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <jmx />
+
+  <!-- Used to specify an alternate directory to hold all index data.
+       It defaults to "index" if not present, and should probably
+       not be changed if replication is in use. -->
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <!--  The DirectoryFactory to use for indexes.
+        solr.StandardDirectoryFactory, the default, is filesystem based.
+        solr.RAMDirectoryFactory is memory based and not persistent. -->
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+
+    <!-- autocommit pending docs if certain criteria are met 
+    <autoCommit> 
+      <maxDocs>10000</maxDocs>
+      <maxTime>3600000</maxTime> 
+    </autoCommit>
+    -->
+    <!-- represents a lower bound on the frequency that commits may
+    occur (in seconds). NOTE: not yet implemented
+    
+    <commitIntervalLowerBound>0</commitIntervalLowerBound>
+    -->
+
+    <!-- The RunExecutableListener executes an external command.
+         exe - the name of the executable to run
+         dir - dir to use as the current working directory. default="."
+         wait - the calling thread waits until the executable returns. default="true"
+         args - the arguments to pass to the program.  default=nothing
+         env - environment variables to set.  default=nothing
+      -->
+    <!-- A postCommit event is fired after every commit
+    <listener event="postCommit" class="solr.RunExecutableListener">
+      <str name="exe">/var/opt/resin3/__PORT__/scripts/solr/snapshooter</str>
+      <str name="dir">/var/opt/resin3/__PORT__</str>
+      <bool name="wait">true</bool>
+      <arr name="args"> <str>arg1</str> <str>arg2</str> </arr>
+      <arr name="env"> <str>MYVAR=val1</str> </arr>
+    </listener>
+    -->
+
+  </updateHandler>
+
+  <query>
+    <!-- Maximum number of clauses in a boolean query... can affect
+        range or wildcard queries that expand to big boolean
+        queries.  An exception is thrown if exceeded.
+    -->
+    <maxBooleanClauses>1024</maxBooleanClauses>
+
+    <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
+         that match a particular query.
+      -->
+    <filterCache
+      class="solr.search.FastLRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="256"/>
+
+    <queryResultCache
+      class="solr.search.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="1024"/>
+
+    <documentCache
+      class="solr.search.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <!-- If true, stored fields that are not requested will be loaded lazily.
+    -->
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+
+    <queryResultWindowSize>10</queryResultWindowSize>
+
+    <!-- set maxSize artificially low to exercise both types of sets -->
+    <HashDocSet maxSize="3" loadFactor="0.75"/>
+
+    <!-- boolToFilterOptimizer converts boolean clauses with zero boost
+         into cached filters if the number of docs selected by the clause exceeds
+         the threshold (represented as a fraction of the total index)
+    -->
+    <boolTofilterOptimizer enabled="false" cacheSize="32" threshold=".05"/>
+
+  </query>
+
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
+
+  <!-- test elevation -->
+  <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <str name="queryFieldType">string</str>
+    <str name="config-file">${elevate.file:elevate.xml}</str>
+  </searchComponent>
+
+  <!-- SOLR-1730 -->
+  <!--<searchComponent name="badElevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <str name="queryFieldType">string</str>
+    <str name="config-file">foo.xml</str>
+  </searchComponent>-->
+  <searchComponent name="dataElevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <str name="queryFieldType">string</str>
+    <str name="config-file">${elevate.data.file:elevate-data.xml}</str>
+  </searchComponent>
+
+  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="last-components">
+      <str>elevate</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler name="/dataElevate" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="last-components">
+      <str>dataElevate</str>
+    </arr>
+  </requestHandler>
+
+  <!--<requestHandler name="/badElevate" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="last-components">
+      <str>badElevate</str>
+    </arr>
+  </requestHandler>-->
+
+  <!-- enable streaming for testing... -->
+  <requestDispatcher handleSelect="true" >
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+    <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
+      <cacheControl>max-age=30, public</cacheControl>
+    </httpCaching>
+  </requestDispatcher>
+
+  <admin>
+    <defaultQuery>solr</defaultQuery>
+    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
+  </admin>
+
+  <!-- test getting system property -->
+  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
+            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
+
+  <queryParser name="foo" class="FooQParserPlugin"/>
+
+</config>

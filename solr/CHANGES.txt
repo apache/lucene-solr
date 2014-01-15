@@ -109,6 +109,12 @@ New Features
 * SOLR-5529: Add support for queries to use multiple suggesters.
   (Areek Zillur, Erick Erickson, via Robert Muir)
 
+* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
+  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
+  Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
+  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
+  Eric Wong)
+
 Bug Fixes
 ----------------------
 

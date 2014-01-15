@@ -82,6 +82,11 @@
       <name>Public online Restlet repository</name>
       <url>http://maven.restlet.org</url>
     </repository>
+    <repository>
+      <id>releases.cloudera.com</id>
+      <name>Cloudera Releases</name>
+      <url>https://repository.cloudera.com/artifactory/libs-release</url>
+    </repository>
   </repositories>
   <build>
     <pluginManagement>

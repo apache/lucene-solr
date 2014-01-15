@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<schema name="test" version="1.4">
+  <types>
+
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+
+    <fieldType name="srpt_geohash"   class="solr.SpatialRecursivePrefixTreeFieldType"
+               prefixTree="geohash" units="degrees"
+        />
+    <fieldType name="srpt_quad"   class="solr.SpatialRecursivePrefixTreeFieldType"
+              prefixTree="quad" units="degrees"
+        />
+    <fieldType name="srpt_100km"   class="solr.SpatialRecursivePrefixTreeFieldType"
+              maxDistErr="0.9" units="degrees"
+        />
+    <fieldType name="stqpt_geohash"   class="solr.SpatialTermQueryPrefixTreeFieldType"
+              prefixTree="geohash" units="degrees" />
+
+    <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
+        geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
+
+    <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
+               numberType="tdouble" units="degrees"/>
+
+  </types>
+
+
+  <fields>
+
+    <field name="id" type="string" required="true"/>
+
+    <field name="srpt_geohash" type="srpt_geohash" multiValued="true" />
+    <field name="srpt_quad" type="srpt_quad" multiValued="true" />
+    <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true" />
+    <field name="pointvector" type="pointvector" />
+
+  </fields>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>
