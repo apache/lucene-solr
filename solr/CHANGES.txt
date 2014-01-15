@@ -230,6 +230,9 @@ Other Changes
 * SOLR-2794: change the default of hl.phraseLimit to 5000.
   (Michael Della Bitta via Robert Muir, Koji, zarni - pull request #11)
 
+* SOLR-5632: Improve response message for reloading a non-existent core.
+  (Anshum Gupta via Mark Miller)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
