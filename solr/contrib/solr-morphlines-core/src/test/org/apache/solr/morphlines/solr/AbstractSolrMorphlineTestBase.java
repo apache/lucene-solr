@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -182,7 +183,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   
   public static void setupMorphline(String tempDir, String file) throws IOException {
     String morphlineText = FileUtils.readFileToString(new File(RESOURCES_DIR + "/" + file + ".conf"), "UTF-8");
-    morphlineText = morphlineText.replaceAll("RESOURCES_DIR", new File(tempDir).getAbsolutePath());
+    morphlineText = morphlineText.replace("RESOURCES_DIR", StringEscapeUtils.escapeJavaScript(new File(tempDir).getAbsolutePath()));
     
     FileUtils.writeStringToFile(new File(tempDir + "/" + file + ".conf"), morphlineText, "UTF-8");
   }
