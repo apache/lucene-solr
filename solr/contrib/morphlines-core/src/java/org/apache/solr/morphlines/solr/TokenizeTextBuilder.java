@@ -51,7 +51,7 @@ public final class TokenizeTextBuilder implements CommandBuilder {
 
   @Override
   public Command build(Config config, Command parent, Command child, MorphlineContext context) {
-    return new TokenizeText(config, parent, child, context);
+    return new TokenizeText(this, config, parent, child, context);
   }
   
   
@@ -66,8 +66,8 @@ public final class TokenizeTextBuilder implements CommandBuilder {
     private final CharTermAttribute token; // cached
     private final ReusableStringReader reader = new ReusableStringReader(); // cached
     
-    public TokenizeText(Config config, Command parent, Command child, MorphlineContext context) {
-      super(config, parent, child, context);
+    public TokenizeText(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
+      super(builder, config, parent, child, context);
       this.inputFieldName = getConfigs().getString(config, "inputField");
       this.outputFieldName = getConfigs().getString(config, "outputField");      
       String solrFieldType = getConfigs().getString(config, "solrFieldType");      
