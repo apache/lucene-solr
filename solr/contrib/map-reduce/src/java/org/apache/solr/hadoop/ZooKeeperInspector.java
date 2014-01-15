@@ -117,9 +117,11 @@ final class ZooKeeperInspector {
     Collections.sort(sorted, new Comparator<Slice>() {
       @Override
       public int compare(Slice slice1, Slice slice2) {
-        return slice1.getName().compareTo(slice2.getName());
+        Comparator c = new AlphaNumericComparator();
+        return c.compare(slice1.getName(), slice2.getName());
       }      
     });
+    LOG.trace("Sorted slices: {}", sorted);
     return sorted;
   }
 

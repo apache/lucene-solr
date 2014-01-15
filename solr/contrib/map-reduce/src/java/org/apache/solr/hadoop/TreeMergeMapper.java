@@ -34,6 +34,8 @@ public class TreeMergeMapper extends Mapper<LongWritable, Text, Text, NullWritab
 
   public static final String MAX_SEGMENTS_ON_TREE_MERGE = "maxSegmentsOnTreeMerge";
 
+  public static final String SOLR_SHARD_NUMBER = "_solrShardNumber";
+
   @Override
   protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
     LOGGER.trace("map key: {}, value: {}", key, value);

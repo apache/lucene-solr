@@ -196,8 +196,8 @@ class BatchWriter {
         batchPool.awaitTermination(5, TimeUnit.SECONDS);
       }
     }
-    //reporter.setStatus("Committing Solr");
-    //solr.commit(true, false);
+    context.setStatus("Committing Solr Phase 1");
+    solr.commit(true, false);
     context.setStatus("Optimizing Solr");
     int maxSegments = context.getConfiguration().getInt(SolrOutputFormat.SOLR_RECORD_WRITER_MAX_SEGMENTS, 1);
     LOG.info("Optimizing Solr: forcing merge down to {} segments", maxSegments);
@@ -206,9 +206,9 @@ class BatchWriter {
     context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_REDUCER_MERGE_TIME.toString()).increment(System.currentTimeMillis() - start);
     float secs = (System.currentTimeMillis() - start) / 1000.0f;
     LOG.info("Optimizing Solr: done forcing merge down to {} segments in {} secs", maxSegments, secs);
+    context.setStatus("Committing Solr Phase 2");
+    solr.commit(true, false);
     context.setStatus("Shutting down Solr");
-    // TODO is core close needed? - according to TestEmbeddedSolrServer it's not...
-    //core.close();
     solr.shutdown();
   }
 

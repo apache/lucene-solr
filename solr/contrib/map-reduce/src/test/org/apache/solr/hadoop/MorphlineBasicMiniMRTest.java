@@ -43,6 +43,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.hack.MiniMRCluster;
+import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -323,7 +324,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     jobConf.setMaxMapAttempts(1);
     jobConf.setMaxReduceAttempts(1);
     jobConf.setJar(SEARCH_ARCHIVES_JAR);
-    jobConf.setBoolean("ignoreTikaException", false);
+    jobConf.setBoolean(ExtractingParams.IGNORE_TIKA_EXCEPTION, false);
     
     int shards = 2;
     int maxReducers = Integer.MAX_VALUE;
