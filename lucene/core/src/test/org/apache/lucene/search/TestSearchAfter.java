@@ -50,10 +50,75 @@ public class TestSearchAfter extends LuceneTestCase {
   private IndexReader reader;
   private IndexSearcher searcher;
   private int iter;
+  private List<SortField> allSortFields;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+
+    allSortFields = new ArrayList<SortField>(Arrays.asList(new SortField[] {
+          new SortField("int", SortField.Type.INT, false),
+          new SortField("long", SortField.Type.LONG, false),
+          new SortField("float", SortField.Type.FLOAT, false),
+          new SortField("double", SortField.Type.DOUBLE, false),
+          new SortField("bytes", SortField.Type.STRING, false),
+          new SortField("bytesval", SortField.Type.STRING_VAL, false),
+          new SortField("intdocvalues", SortField.Type.INT, false),
+          new SortField("floatdocvalues", SortField.Type.FLOAT, false),
+          new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
+          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
+          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
+          new SortField("int", SortField.Type.INT, true),
+          new SortField("long", SortField.Type.LONG, true),
+          new SortField("float", SortField.Type.FLOAT, true),
+          new SortField("double", SortField.Type.DOUBLE, true),
+          new SortField("bytes", SortField.Type.STRING, true),
+          new SortField("bytesval", SortField.Type.STRING_VAL, true),
+          new SortField("intdocvalues", SortField.Type.INT, true),
+          new SortField("floatdocvalues", SortField.Type.FLOAT, true),
+          new SortField("sortedbytesdocvalues", SortField.Type.STRING, true),
+          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, true),
+          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
+          SortField.FIELD_SCORE,
+          SortField.FIELD_DOC,
+        }));
+
+    // Also test missing first / last for the "string" sorts:
+    for(String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
+      for(int rev=0;rev<2;rev++) {
+        boolean reversed = rev == 0;
+        SortField sf = new SortField(field, SortField.Type.STRING, reversed);
+        sf.setMissingValue(SortField.STRING_FIRST);
+        allSortFields.add(sf);
+
+        sf = new SortField(field, SortField.Type.STRING, reversed);
+        sf.setMissingValue(SortField.STRING_LAST);
+        allSortFields.add(sf);
+      }
+    }
+
+    int limit = allSortFields.size();
+    for(int i=0;i<limit;i++) {
+      SortField sf = allSortFields.get(i);
+      if (sf.getType() == SortField.Type.INT) {
+        SortField sf2 = new SortField(sf.getField(), SortField.Type.INT, sf.getReverse());
+        sf2.setMissingValue(random().nextInt());
+        allSortFields.add(sf2);
+      } else if (sf.getType() == SortField.Type.LONG) {
+        SortField sf2 = new SortField(sf.getField(), SortField.Type.LONG, sf.getReverse());
+        sf2.setMissingValue(random().nextLong());
+        allSortFields.add(sf2);
+      } else if (sf.getType() == SortField.Type.FLOAT) {
+        SortField sf2 = new SortField(sf.getField(), SortField.Type.FLOAT, sf.getReverse());
+        sf2.setMissingValue(random().nextFloat());
+        allSortFields.add(sf2);
+      } else if (sf.getType() == SortField.Type.DOUBLE) {
+        SortField sf2 = new SortField(sf.getField(), SortField.Type.DOUBLE, sf.getReverse());
+        sf2.setMissingValue(random().nextDouble());
+        allSortFields.add(sf2);
+      }
+    }
+
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(200);
@@ -95,7 +160,9 @@ public class TestSearchAfter extends LuceneTestCase {
 
       iw.addDocument(document);
 
-      // nocommit randomly commit so we exercise segments
+      if (random().nextInt(50) == 17) {
+        iw.commit();
+      }
     }
     reader = iw.getReader();
     iw.close();
@@ -130,51 +197,6 @@ public class TestSearchAfter extends LuceneTestCase {
     }
   }
 
-  static List<SortField> allSortFields = new ArrayList<SortField>(Arrays.asList(new SortField[] {
-    new SortField("int", SortField.Type.INT, false),
-    new SortField("long", SortField.Type.LONG, false),
-    new SortField("float", SortField.Type.FLOAT, false),
-    new SortField("double", SortField.Type.DOUBLE, false),
-    new SortField("bytes", SortField.Type.STRING, false),
-    new SortField("bytesval", SortField.Type.STRING_VAL, false),
-    new SortField("intdocvalues", SortField.Type.INT, false),
-    new SortField("floatdocvalues", SortField.Type.FLOAT, false),
-    new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
-    new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
-    new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
-    new SortField("int", SortField.Type.INT, true),
-    new SortField("long", SortField.Type.LONG, true),
-    new SortField("float", SortField.Type.FLOAT, true),
-    new SortField("double", SortField.Type.DOUBLE, true),
-    new SortField("bytes", SortField.Type.STRING, true),
-    new SortField("bytesval", SortField.Type.STRING_VAL, true),
-    new SortField("intdocvalues", SortField.Type.INT, true),
-    new SortField("floatdocvalues", SortField.Type.FLOAT, true),
-    new SortField("sortedbytesdocvalues", SortField.Type.STRING, true),
-    new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, true),
-    new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
-    SortField.FIELD_SCORE,
-    SortField.FIELD_DOC,
-      }));
-
-  static {
-    // Also test missing first / last for the "string" sorts:
-    for(String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
-      for(int rev=0;rev<2;rev++) {
-        boolean reversed = rev == 0;
-        SortField sf = new SortField(field, SortField.Type.STRING, reversed);
-        sf.setMissingValue(SortField.STRING_FIRST);
-        allSortFields.add(sf);
-
-        sf = new SortField(field, SortField.Type.STRING, reversed);
-        sf.setMissingValue(SortField.STRING_LAST);
-        allSortFields.add(sf);
-      }
-    }
-
-    // nocommit test missing value for numerics too:
-  }
-  
   void assertQuery(Query query, Filter filter) throws Exception {
     assertQuery(query, filter, null);
     assertQuery(query, filter, Sort.RELEVANCE);
@@ -203,14 +225,13 @@ public class TestSearchAfter extends LuceneTestCase {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " filter=" + filter + " sort=" + sort + " pageSize=" + pageSize);
     }
     final boolean doMaxScore = random().nextBoolean();
+    final boolean doScores = random().nextBoolean();
     if (sort == null) {
-      // nocommit randomly sometimes doScores & doMaxScore:
       all = searcher.search(query, filter, maxDoc);
     } else if (sort == Sort.RELEVANCE) {
       all = searcher.search(query, filter, maxDoc, sort, true, doMaxScore);
     } else {
-      // nocommit randomly sometimes doScores & doMaxScore:
-      all = searcher.search(query, filter, maxDoc, sort);
+      all = searcher.search(query, filter, maxDoc, sort, doScores, doMaxScore);
     }
     if (VERBOSE) {
       System.out.println("  all.totalHits=" + all.totalHits);
@@ -227,7 +248,6 @@ public class TestSearchAfter extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
-        // nocommit randomly sometimes doScores & doMaxScore:
         paged = searcher.searchAfter(lastBottom, query, filter, pageSize);
       } else {
         if (VERBOSE) {
@@ -236,8 +256,7 @@ public class TestSearchAfter extends LuceneTestCase {
         if (sort == Sort.RELEVANCE) {
           paged = searcher.searchAfter(lastBottom, query, filter, pageSize, sort, true, doMaxScore);
         } else {
-          // nocommit randomly sometimes doScores & doMaxScore:
-          paged = searcher.searchAfter(lastBottom, query, filter, pageSize, sort);
+          paged = searcher.searchAfter(lastBottom, query, filter, pageSize, sort, doScores, doMaxScore);
         }
       }
       if (VERBOSE) {
