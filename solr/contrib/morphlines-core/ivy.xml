@@ -27,12 +27,12 @@
   </configurations>
 
   <dependencies>
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-core" rev="${/com.cloudera.cdk/cdk-morphlines-core}"  conf="compile->*;test->*" >
-      <artifact name="cdk-morphlines-core"  ext="jar"/>
-      <artifact name="cdk-morphlines-core" type="test" ext="jar" maven:classifier="tests"/>
+    <dependency org="org.kitesdk" name="kite-morphlines-core" rev="${/org.kitesdk/kite-morphlines-core}"  conf="compile->*;test->*" >
+      <artifact name="kite-morphlines-core"  ext="jar"/>
+      <artifact name="kite-morphlines-core" type="test" ext="jar" maven:classifier="tests"/>
     </dependency>
 
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-avro" rev="${/com.cloudera.cdk/cdk-morphlines-avro}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-avro" rev="${/org.kitesdk/kite-morphlines-avro}" conf="compile->*" />
     
     <dependency org="com.codahale.metrics" name="metrics-core" rev="${/com.codahale.metrics/metrics-core}" conf="compile->*" />
     <dependency org="com.codahale.metrics" name="metrics-healthchecks" rev="${/com.codahale.metrics/metrics-healthchecks}" conf="compile->*" />

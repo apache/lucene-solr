@@ -25,10 +25,10 @@
   </configurations>
 
   <dependencies>
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-tika-core" rev="${/com.cloudera.cdk/cdk-morphlines-tika-core}" conf="compile->*" />
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-tika-decompress" rev="${/com.cloudera.cdk/cdk-morphlines-tika-decompress}" conf="compile->*" />
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-json" rev="${/com.cloudera.cdk/cdk-morphlines-json}" conf="compile->*" />
-    <dependency org="com.cloudera.cdk" name="cdk-morphlines-twitter" rev="${/com.cloudera.cdk/cdk-morphlines-twitter}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-tika-core" rev="${/org.kitesdk/kite-morphlines-tika-core}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-tika-decompress" rev="${/org.kitesdk/kite-morphlines-tika-decompress}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-json" rev="${/org.kitesdk/kite-morphlines-json}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-twitter" rev="${/org.kitesdk/kite-morphlines-twitter}" conf="compile->*" />
     
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
 
