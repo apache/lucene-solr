@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -138,20 +139,11 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
     }
     LOG.info("Creating embedded Solr server with solrHomeDir: " + solrHomeDir + ", fs: " + fs + ", outputShardDir: " + outputShardDir);
 
-    Properties props = new Properties();
-    // FIXME note this is odd (no scheme) given Solr doesn't currently
-    // support uris (just abs/relative path)
     Path solrDataDir = new Path(outputShardDir, "data");
-    if (!fs.exists(solrDataDir) && !fs.mkdirs(solrDataDir)) {
-      throw new IOException("Unable to create " + solrDataDir);
-    }
 
     String dataDirStr = solrDataDir.toUri().toString();
-    props.setProperty("solr.data.dir", dataDirStr);
-    props.setProperty("solr.home", solrHomeDir.toString());
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toString(),
-        null, props);
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toString(), null, null);
 
     LOG.info(String
         .format(Locale.ENGLISH, 
@@ -159,18 +151,25 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
             solrHomeDir, solrHomeDir.toUri(), loader.getInstanceDir(),
             loader.getConfigDir(), dataDirStr, outputShardDir));
 
-    CoreContainer container = new CoreContainer(loader);
-    container.load();
-    CoreDescriptor descr = new CoreDescriptor(container, "core1",
-        ".", props);
-    
-    SolrCore core = container.create(descr);
-    container.register(core, false);
-    
+    // TODO: This is fragile and should be well documented
+    System.setProperty("solr.directoryFactory", HdfsDirectoryFactory.class.getName()); 
+    System.setProperty("solr.lock.type", "hdfs"); 
     System.setProperty("solr.hdfs.nrtcachingdirectory", "false");
     System.setProperty("solr.hdfs.blockcache.enabled", "false");
     System.setProperty("solr.autoCommit.maxTime", "-1");
     System.setProperty("solr.autoSoftCommit.maxTime", "-1");
+    
+    CoreContainer container = new CoreContainer(loader);
+    container.load();
+    
+    Properties props = new Properties();
+    props.setProperty(CoreDescriptor.CORE_DATADIR, dataDirStr);
+    
+    CoreDescriptor descr = new CoreDescriptor(container, "core1", solrHomeDir.toString(), props);
+    
+    SolrCore core = container.create(descr);
+    container.register(core, false);
+
     EmbeddedSolrServer solr = new EmbeddedSolrServer(container, "core1");
     return solr;
   }
