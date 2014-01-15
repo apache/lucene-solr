@@ -45,7 +45,6 @@
     <dependency org="org.apache.hadoop" name="hadoop-yarn-common" rev="${/org.apache.hadoop/hadoop-yarn-common}" conf="test->*" />
     <dependency org="org.apache.hadoop" name="hadoop-yarn-api" rev="${/org.apache.hadoop/hadoop-yarn-api}" conf="test->*" />
     <dependency org="org.apache.hadoop" name="hadoop-yarn-client" rev="${/org.apache.hadoop/hadoop-yarn-client}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server" rev="${/org.apache.hadoop/hadoop-yarn-server}" conf="test->*" />
     <dependency org="org.apache.hadoop" name="hadoop-yarn-server-tests" rev="${/org.apache.hadoop/hadoop-yarn-server-tests}" conf="test->*">
       <artifact name="hadoop-yarn-server-tests" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
