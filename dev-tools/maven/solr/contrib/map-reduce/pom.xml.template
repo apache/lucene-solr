@@ -55,6 +55,13 @@
       <artifactId>solr-test-framework</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-morphlines-core</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 @solr-map-reduce.internal.dependencies@
 @solr-map-reduce.external.dependencies@
 @solr-map-reduce.internal.test.dependencies@
