@@ -46,7 +46,10 @@ import org.apache.lucene.util.FixedBitSet;
 
 public class ToChildBlockJoinQuery extends Query {
 
-  public static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
+  /** Message thrown from {@link
+   *  ToChildBlockJoinScorer#validateParentDoc} on mis-use,
+   *  when the parent query incorrectly returns child docs. */
+  static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
 
   private final Filter parentsFilter;
   private final Query parentQuery;
