@@ -93,6 +93,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
     Map<String, Object> result = new HashMap<String, Object>();
 
+    final IndexSchema schema = rb.req.getSearcher().getSchema();
+
     for (Map.Entry<String, NamedList> entry : shardResponse) {
       String key = entry.getKey();
       NamedList commandResult = entry.getValue();
@@ -124,6 +126,15 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
           Object sortValuesVal = document.get("sortValues");
           if (sortValuesVal != null) {
             sortValues = ((List) sortValuesVal).toArray();
+            for (int k = 0; k < sortValues.length; k++) {
+              SchemaField field = groupSort.getSort()[k].getField() != null ? schema.getFieldOrNull(groupSort.getSort()[k].getField()) : null;
+              if (field != null) {
+                FieldType fieldType = field.getType();
+                if (sortValues[k] != null) {
+                  sortValues[k] = fieldType.unmarshalSortValue(sortValues[k]);
+                }
+              }
+            }
           }
           else {
             log.warn("doc {} has null 'sortValues'", document);
@@ -158,6 +169,15 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
             score = Float.NaN;
           }
           Object[] sortValues = ((List) document.get("sortValues")).toArray();
+          for (int k = 0; k < sortValues.length; k++) {
+            SchemaField field = sortWithinGroup.getSort()[k].getField() != null ? schema.getFieldOrNull(sortWithinGroup.getSort()[k].getField()) : null;
+            if (field != null) {
+              FieldType fieldType = field.getType();
+              if (sortValues[k] != null) {
+                sortValues[k] = fieldType.unmarshalSortValue(sortValues[k]);
+              }
+            }
+          }
           scoreDocs[j++] = new ShardDoc(score, sortValues, uniqueId, shard);
         }
 
@@ -217,12 +237,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
           SchemaField field = sortWithinGroup.getSort()[j].getField() != null ? schema.getFieldOrNull(sortWithinGroup.getSort()[j].getField()) : null;
           if (field != null) {
             FieldType fieldType = field.getType();
-            if (sortValue instanceof BytesRef) {
-              UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
-              String indexedValue = spare.toString();
-              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 1.0f));
-            } else if (sortValue instanceof String) {
-              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 1.0f));
+            if (sortValue != null) {
+              sortValue = fieldType.marshalSortValue(sortValue);
             }
           }
           convertedSortValues[j] = sortValue;
@@ -272,12 +288,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
                           ? schema.getFieldOrNull(groupSort.getSort()[j].getField()) : null;
         if (field != null) {
           FieldType fieldType = field.getType();
-          if (sortValue instanceof BytesRef) {
-            UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
-            String indexedValue = spare.toString();
-            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 1.0f));
-          } else if (sortValue instanceof String) {
-            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 1.0f));
+          if (sortValue != null) {
+            sortValue = fieldType.marshalSortValue(sortValue);
           }
         }
         convertedSortValues[j] = sortValue;
