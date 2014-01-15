@@ -362,6 +362,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     Path INPATH = upAvroFile(fs, inDir, DATADIR, dataDir, inputAvroFile1);
     
     JobConf jobConf = getJobConf();
+    jobConf.set("jobclient.output.filter", "ALL");
     // enable mapred.job.tracker = local to run in debugger and set breakpoints
     // jobConf.set("mapred.job.tracker", "local");
     jobConf.setMaxMapAttempts(1);

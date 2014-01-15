@@ -316,6 +316,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     fs.copyFromLocalFile(new Path(DOCUMENTS_DIR, inputAvroFile), dataDir);
     
     JobConf jobConf = getJobConf();
+    jobConf.set("jobclient.output.filter", "ALL");
     if (ENABLE_LOCAL_JOB_RUNNER) { // enable Hadoop LocalJobRunner; this enables to run in debugger and set breakpoints
       jobConf.set("mapred.job.tracker", "local");
     }
