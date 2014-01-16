@@ -149,6 +149,8 @@ New Features
   Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
   Eric Wong)
 
+* SOLR-5476: Overseer Role for nodes (Noble Paul)
+
 Bug Fixes
 ----------------------
 

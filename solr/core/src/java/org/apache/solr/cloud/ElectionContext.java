@@ -432,10 +432,10 @@ final class OverseerElectionContext extends ElectionContext {
   
   private final SolrZkClient zkClient;
   private Overseer overseer;
-
+  public static final String PATH = "/overseer_elect";
 
   public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null, zkClient);
+    super(zkNodeName,PATH , PATH+"/leader", null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
@@ -477,5 +477,5 @@ final class OverseerElectionContext extends ElectionContext {
     // leader changed - close the overseer
     overseer.close();
   }
-  
+
 }

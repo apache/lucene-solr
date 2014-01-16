@@ -68,7 +68,8 @@ public class ZkStateReader {
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
-  
+  public static final String ROLES = "/roles.json";
+
   public static final String RECOVERING = "recovering";
   public static final String RECOVERY_FAILED = "recovery_failed";
   public static final String ACTIVE = "active";

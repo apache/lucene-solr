@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -54,7 +55,9 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.SolrIndexSplitter;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +67,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +77,8 @@ import static org.apache.solr.cloud.Assign.getNodesForNewShard;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 
 public class OverseerCollectionProcessor implements Runnable, ClosableThread {
@@ -158,7 +164,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
          log.debug("am_i_leader unclear {}", isLeader);
          isLeader = amILeader();  // not a no, not a yes, try ask again
        }
-       while (!this.isClosed) {
+
+    try {
+      prioritizeOverseerNodes();
+    } catch (Exception e) {
+      log.error("Unable to prioritize overseer ", e);
+
+    }
+    while (!this.isClosed) {
          try {
            isLeader = amILeader();
            if (LeaderStatus.NO == isLeader) {
@@ -198,7 +211,96 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public void close() {
     isClosed = true;
   }
-  
+
+  private void prioritizeOverseerNodes() throws KeeperException, InterruptedException {
+    log.info("prioritizing overseer nodes");
+    SolrZkClient zk = zkStateReader.getZkClient();
+    if(!zk.exists(ZkStateReader.ROLES,true))return;
+    Map m = (Map) ZkStateReader.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+
+    List overseerDesignates = (List) m.get("overseer");
+    if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
+
+    log.debug("overseer designates {}", overseerDesignates);
+
+    List<String> children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+
+
+    if(children.size()<2) return;
+
+    LeaderElector.sortSeqs(children);
+    ArrayList<String> nodeNames = new ArrayList<>(children.size());
+    for (String c : children) nodeNames.add(LeaderElector.getNodeName(c));
+    boolean overseerDesignateAvailable = false;
+    //ensure that the node right behind the leader , i.r at position 1 is a Overseer
+    String newOverseerDesignate = null;
+    log.debug("sorted nodes {}", nodeNames);
+    for (int i = 1; i < nodeNames.size(); i++) {
+      String s = nodeNames.get(i);
+      if (overseerDesignates.contains(s)) {
+        log.info(" found an overseer designate to be promoted to the front : {}, pushing others back", s);
+        overseerDesignateAvailable = true;
+        newOverseerDesignate = s;
+        for (int j = 1; j < i; j++) {
+          String nodeName = nodeNames.get(j);
+          log.debug("pushing back {} ", nodeName);
+          invokeRejoinOverseer(nodeName);
+        }
+        break;
+      }
+      if(overseerDesignateAvailable) break;
+    }
+
+    if(overseerDesignateAvailable){
+      //wait for a while to ensure the designate has indeed come in front
+      boolean prioritizationComplete = false;
+      long timeout = System.currentTimeMillis() + 5000;
+
+      for(;System.currentTimeMillis()< timeout ;){
+        children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+        LeaderElector.sortSeqs(children);
+
+        String frontRunner = LeaderElector.getNodeName(children.get(1));
+        log.debug("Frontrunner : {}", frontRunner);
+        if(newOverseerDesignate.equals(frontRunner)){
+          prioritizationComplete = true;
+          break;
+        }
+        Thread.sleep(50);
+      }
+
+      if(!prioritizationComplete) {
+        log.warn("Could not make the Overseer designate '{}' the frontrunner", newOverseerDesignate);
+      }
+
+    } else {
+      log.warn("No overseer designates are available");
+      return;
+    }
+
+
+
+    if(!overseerDesignates.contains( nodeNames.get(0)) && overseerDesignateAvailable){
+      //this means there are designated Overseer nodes and I am not one of them , kill myself
+      invokeRejoinOverseer(nodeNames.get(0));
+    }
+
+
+  }
+
+  private void invokeRejoinOverseer(String nodeName) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINOVERSEERELECTION.toString());
+    params.set("qt", adminPath);
+    ShardRequest sreq = new ShardRequest();
+    sreq.purpose = 1;
+    String replica = nodeName.replaceFirst("_", "/");
+    sreq.shards = new String[]{replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = params;
+    shardHandler.submit(sreq, replica, sreq.params);
+  }
+
   protected LeaderStatus amILeader() {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
@@ -250,7 +352,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         deleteReplica(zkStateReader.getClusterState(), message, results);
       } else if (MIGRATE.equals(operation)) {
         migrate(zkStateReader.getClusterState(), message, results);
-      } else {
+      } else if(REMOVEROLE.toString().toLowerCase().equals(operation) || ADDROLE.toString().toLowerCase().equals(operation) ){
+        processRoleCommand(message, operation);
+      }
+
+      else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
       }
@@ -266,6 +372,48 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } 
     
     return new OverseerSolrResponse(results);
+  }
+  private void processRoleCommand(ZkNodeProps message, String operation) throws KeeperException, InterruptedException {
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    Map roles = null;
+    String node = message.getStr("node");
+
+    String roleName = message.getStr("role");
+    boolean nodeExists = false;
+    if(nodeExists = zkClient.exists(ZkStateReader.ROLES, true)){
+      roles = (Map) ZkStateReader.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    } else {
+      roles = new LinkedHashMap(1);
+    }
+
+    List nodeList= (List) roles.get(roleName);
+    if(nodeList == null) roles.put(roleName, nodeList = new ArrayList());
+    if(ADDROLE.toString().toLowerCase().equals(operation) ){
+      log.info("Overseer role added to {}", node);
+      if(!nodeList.contains(node)) nodeList.add(node);
+    } else if(REMOVEROLE.toString().toLowerCase().equals(operation)) {
+      log.info("Overseer role removed from {}", node);
+      nodeList.remove(node);
+    }
+
+    if(nodeExists){
+      zkClient.setData(ZkStateReader.ROLES, ZkStateReader.toJSON(roles),true);
+    } else {
+      zkClient.create(ZkStateReader.ROLES, ZkStateReader.toJSON(roles), CreateMode.PERSISTENT,true);
+    }
+    //if there are too many nodes this command may time out. And most likely dedicated
+    // overseers are created when there are too many nodes  . So , do this operation in a separate thread
+    new Thread(){
+      @Override
+      public void run() {
+        try {
+          prioritizeOverseerNodes();
+        } catch (Exception e) {
+          log.error("Error in prioritizing Overseer",e);
+        }
+
+      }
+    }.start();
   }
 
   private void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
