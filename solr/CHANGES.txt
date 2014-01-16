@@ -145,6 +145,9 @@ New Features
 * SOLR-5529: Add support for queries to use multiple suggesters.
   (Areek Zillur, Erick Erickson, via Robert Muir)
 
+* SOLR-5631: Add support for Lucene's FreeTextSuggester.
+  (Areek Zillur via Robert Muir)
+
 Bug Fixes
 ----------------------
 
