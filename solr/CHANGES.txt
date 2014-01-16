@@ -115,6 +115,9 @@ New Features
   Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
   Eric Wong)
 
+* SOLR-5631: Add support for Lucene's FreeTextSuggester.
+  (Areek Zillur via Robert Muir)
+
 Bug Fixes
 ----------------------
 
