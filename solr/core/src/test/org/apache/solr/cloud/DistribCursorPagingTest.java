@@ -623,7 +623,16 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       }
       for (SolrDocument doc : docs) {
         int id = ((Integer)doc.get("id")).intValue();
-        assertFalse("walk already seen: " + id, ids.exists(id));
+        if (ids.exists(id)) {
+          String msg = "walk already seen: " + id;
+          try {
+            queryAndCompareShards(params("q","id:"+id));
+          } catch (AssertionError ae) {
+            throw new AssertionError(msg + ", found shard inconsistency that would explain it...", ae);
+          }
+          rsp = cloudClient.query(params("q","id:"+id));
+          throw new AssertionError(msg + ", don't know why; q=id:"+id+" gives: " + rsp.toString());
+        }
         ids.put(id);
         assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
                     maxSize < ids.size());
