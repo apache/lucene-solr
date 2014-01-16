@@ -69,6 +69,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -352,7 +353,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         deleteReplica(zkStateReader.getClusterState(), message, results);
       } else if (MIGRATE.equals(operation)) {
         migrate(zkStateReader.getClusterState(), message, results);
-      } else if(REMOVEROLE.toString().toLowerCase().equals(operation) || ADDROLE.toString().toLowerCase().equals(operation) ){
+      } else if(REMOVEROLE.toString().toLowerCase(Locale.ROOT).equals(operation) || ADDROLE.toString().toLowerCase(Locale.ROOT).equals(operation) ){
         processRoleCommand(message, operation);
       }
 
@@ -388,10 +389,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     List nodeList= (List) roles.get(roleName);
     if(nodeList == null) roles.put(roleName, nodeList = new ArrayList());
-    if(ADDROLE.toString().toLowerCase().equals(operation) ){
+    if(ADDROLE.toString().toLowerCase(Locale.ROOT).equals(operation) ){
       log.info("Overseer role added to {}", node);
       if(!nodeList.contains(node)) nodeList.add(node);
-    } else if(REMOVEROLE.toString().toLowerCase().equals(operation)) {
+    } else if(REMOVEROLE.toString().toLowerCase(Locale.ROOT).equals(operation)) {
       log.info("Overseer role removed from {}", node);
       nodeList.remove(node);
     }

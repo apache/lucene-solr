@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -198,11 +199,11 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   private void handleRole(CollectionAction action, SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     req.getParams().required().check("role", "node");
-    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toString().toLowerCase());
+    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toString().toLowerCase(Locale.ROOT));
     copyIfNotNull(req.getParams(), map,"role", "node");
     ZkNodeProps m = new ZkNodeProps(map);
     if(!KNOWN_ROLES.contains(m.getStr("role"))) throw new SolrException(ErrorCode.BAD_REQUEST,"Unknown role. Supported roles are ,"+ KNOWN_ROLES);
-    handleResponse(action.toString().toLowerCase(), m, rsp);
+    handleResponse(action.toString().toLowerCase(Locale.ROOT), m, rsp);
   }
 
   public static long DEFAULT_ZK_TIMEOUT = 60*1000;
