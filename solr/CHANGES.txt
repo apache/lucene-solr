@@ -173,6 +173,9 @@ Bug Fixes
 * SOLR-4992: Solr eats OutOfMemoryError exceptions in many cases.
   (Mark Miller, Daniel Collins)  
 
+* SOLR-5636: SolrRequestParsers does some xpath lookups on every request, which
+  can cause concurrency issues. (Mark Miller)
+
 Optimizations
 ----------------------
 

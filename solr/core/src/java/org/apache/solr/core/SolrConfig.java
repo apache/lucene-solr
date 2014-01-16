@@ -79,6 +79,16 @@ public class SolrConfig extends Config {
     // because of type determination
     NOOP
     }
+
+  private int multipartUploadLimitKB;
+
+  private int formUploadLimitKB;
+
+  private boolean enableRemoteStreams;
+
+  private boolean handleSelect;
+
+  private boolean addHttpRequestToContext;
   
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
@@ -258,6 +268,22 @@ public class SolrConfig extends Config {
                     REQUIRE_CLASS);
 
      updateHandlerInfo = loadUpdatehandlerInfo();
+     
+     multipartUploadLimitKB = getInt( 
+         "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048 );
+     
+     formUploadLimitKB = getInt( 
+         "requestDispatcher/requestParsers/@formdataUploadLimitInKB", 2048 );
+     
+     enableRemoteStreams = getBool( 
+         "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
+ 
+     // Let this filter take care of /select?xxx format
+     handleSelect = getBool( 
+         "requestDispatcher/@handleSelect", true ); 
+     
+     addHttpRequestToContext = getBool( 
+         "requestDispatcher/requestParsers/@addHttpRequestToContext", false ); 
 
     Config.log.info("Loaded SolrConfig: " + name);
   }
@@ -530,5 +556,25 @@ public class SolrConfig extends Config {
     } finally {
       loader.reloadLuceneSPI();
     }
+  }
+  
+  public int getMultipartUploadLimitKB() {
+    return multipartUploadLimitKB;
+  }
+
+  public int getFormUploadLimitKB() {
+    return formUploadLimitKB;
+  }
+
+  public boolean isHandleSelect() {
+    return handleSelect;
+  }
+
+  public boolean isAddHttpRequestToContext() {
+    return addHttpRequestToContext;
+  }
+
+  public boolean isEnableRemoteStreams() {
+    return enableRemoteStreams;
   }
 }
