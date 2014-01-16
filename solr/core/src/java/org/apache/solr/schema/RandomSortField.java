@@ -107,6 +107,7 @@ public class RandomSortField extends FieldType {
         int seed;
         private final int[] values = new int[numHits];
         int bottomVal;
+        int topVal;
 
         @Override
         public int compare(int slot1, int slot2) {
@@ -116,6 +117,11 @@ public class RandomSortField extends FieldType {
         @Override
         public void setBottom(int slot) {
           bottomVal = values[slot];
+        }
+
+        @Override
+        public void setTopValue(Integer value) {
+          topVal = value.intValue();
         }
 
         @Override
@@ -140,9 +146,9 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public int compareDocToValue(int doc, Integer valueObj) {
+        public int compareTop(int doc) {
           // values will be positive... no overflow possible.
-          return hash(doc+seed) - valueObj.intValue();
+          return topVal - hash(doc+seed);
         }
       };
     }

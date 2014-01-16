@@ -178,6 +178,10 @@ Bug Fixes
 * SOLR-5636: SolrRequestParsers does some xpath lookups on every request, which
   can cause concurrency issues. (Mark Miller)
 
+* LUCENE-5399, SOLR-5354 sort wouldn't work correctly with
+  distributed searching for some field types such as legacy numeric
+  types (Rob Muir, Mike McCandless)
+
 Optimizations
 ----------------------
 

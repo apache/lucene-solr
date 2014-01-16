@@ -192,6 +192,132 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  /** Tests sorting on type string with a missing
+   *  value sorted first */
+  public void testStringMissingSortedFirst() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sf = new SortField("value", SortField.Type.STRING);
+    Sort sort = new Sort(sf);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests reverse sorting on type string with a missing
+   *  value sorted first */
+  public void testStringMissingSortedFirstReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sf = new SortField("value", SortField.Type.STRING, true);
+    Sort sort = new Sort(sf);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    // null comes last
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests sorting on type string with a missing
+   *  value sorted last */
+  public void testStringValMissingSortedLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sf = new SortField("value", SortField.Type.STRING);
+    sf.setMissingValue(SortField.STRING_LAST);
+    Sort sort = new Sort(sf);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    // null comes last
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests reverse sorting on type string with a missing
+   *  value sorted last */
+  public void testStringValMissingSortedLastReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sf = new SortField("value", SortField.Type.STRING, true);
+    sf.setMissingValue(SortField.STRING_LAST);
+    Sort sort = new Sort(sf);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
   
   /** Tests reverse sorting on type string_val */
   public void testStringValReverse() throws IOException {

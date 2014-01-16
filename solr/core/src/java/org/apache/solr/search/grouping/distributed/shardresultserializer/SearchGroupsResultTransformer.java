@@ -92,6 +92,15 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
           SearchGroup<BytesRef> searchGroup = new SearchGroup<BytesRef>();
           searchGroup.groupValue = rawSearchGroup.getKey() != null ? new BytesRef(rawSearchGroup.getKey()) : null;
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
+          for (int i = 0; i < searchGroup.sortValues.length; i++) {
+            SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
+            if (field != null) {
+              FieldType fieldType = field.getType();
+              if (searchGroup.sortValues[i] != null) {
+                searchGroup.sortValues[i] = fieldType.unmarshalSortValue(searchGroup.sortValues[i]);
+              }
+            }
+          }
           searchGroups.add(searchGroup);
         }
       }
@@ -103,22 +112,17 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   }
 
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
-    NamedList<Comparable[]> result = new NamedList<Comparable[]>();
-    CharsRef spare = new CharsRef();
+    NamedList<Object[]> result = new NamedList<Object[]>();
 
     for (SearchGroup<BytesRef> searchGroup : data) {
-      Comparable[] convertedSortValues = new Comparable[searchGroup.sortValues.length];
+      Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
-        Comparable sortValue = (Comparable) searchGroup.sortValues[i];
+        Object sortValue = searchGroup.sortValues[i];
         SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
         if (field != null) {
           FieldType fieldType = field.getType();
-          if (sortValue instanceof BytesRef) {
-            UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
-            String indexedValue = spare.toString();
-            sortValue = (Comparable) fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 1.0f));
-          } else if (sortValue instanceof String) {
-            sortValue = (Comparable) fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 1.0f));
+          if (sortValue != null) {
+            sortValue = fieldType.marshalSortValue(sortValue);
           }
         }
         convertedSortValues[i] = sortValue;
