@@ -118,6 +118,8 @@ New Features
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
   (Areek Zillur via Robert Muir)
 
+* SOLR-5476: Overseer Role for nodes (Noble Paul)
+
 Bug Fixes
 ----------------------
 

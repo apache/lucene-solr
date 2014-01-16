@@ -17,6 +17,8 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -32,6 +34,7 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -51,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
@@ -65,6 +69,8 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 public class CollectionsHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CollectionsHandler.class);
@@ -173,6 +179,12 @@ public class CollectionsHandler extends RequestHandlerBase {
       case MIGRATE: {
         this.handleMigrate(req, rsp);
         break;
+      } case ADDROLE:{
+        handleRole(ADDROLE, req, rsp);
+        break;
+      } case REMOVEROLE:{
+        handleRole(REMOVEROLE, req, rsp);
+        break;
       }
       default: {
           throw new RuntimeException("Unknown action: " + action);
@@ -181,7 +193,18 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     rsp.setHttpCaching(false);
   }
-  
+
+  static Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
+
+  private void handleRole(CollectionAction action, SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    req.getParams().required().check("role", "node");
+    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toString().toLowerCase());
+    copyIfNotNull(req.getParams(), map,"role", "node");
+    ZkNodeProps m = new ZkNodeProps(map);
+    if(!KNOWN_ROLES.contains(m.getStr("role"))) throw new SolrException(ErrorCode.BAD_REQUEST,"Unknown role. Supported roles are ,"+ KNOWN_ROLES);
+    handleResponse(action.toString().toLowerCase(), m, rsp);
+  }
+
   public static long DEFAULT_ZK_TIMEOUT = 60*1000;
 
   private void handleResponse(String operation, ZkNodeProps m,

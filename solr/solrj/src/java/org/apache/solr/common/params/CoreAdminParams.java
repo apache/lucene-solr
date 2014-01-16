@@ -127,7 +127,8 @@ public abstract class CoreAdminParams
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
-    TRANSIENT;
+    TRANSIENT,
+    REJOINOVERSEERELECTION;
     
     public static CoreAdminAction get( String p )
     {

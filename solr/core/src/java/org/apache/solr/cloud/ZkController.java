@@ -1602,4 +1602,14 @@ public final class ZkController {
     }
     return out;
   }
+
+  public void rejoinOverseerElection() {
+    try {
+      overseerElector.retryElection();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
+    }
+
+  }
+
 }

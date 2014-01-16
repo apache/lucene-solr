@@ -218,6 +218,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
           this.handleRequestBufferUpdatesAction(req, rsp);
           break;
         }
+        case REJOINOVERSEERELECTION:{
+          ZkController zkController = coreContainer.getZkController();
+          if(zkController != null){
+            zkController.rejoinOverseerElection();
+          }
+          break;
+        }
         default: {
           this.handleCustomAction(req, rsp);
           break;
