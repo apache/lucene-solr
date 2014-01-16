@@ -27,6 +27,10 @@ Bug fixes
   when the parent query incorrectly returns child documents, and throw
   a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
 
+* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
+  preventing wrong term positions for fields that use
+  StringTokenStream. (Michael Busch)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

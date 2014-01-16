@@ -586,7 +586,8 @@ public class Field implements IndexableField {
     }
 
     @Override
-    public void end() {
+    public void end() throws IOException {
+      super.end();
       final int finalOffset = value.length();
       offsetAttribute.setOffset(finalOffset, finalOffset);
     }
