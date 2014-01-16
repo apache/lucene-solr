@@ -869,6 +869,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
       maxScore = Float.NEGATIVE_INFINITY;
+
+      // Tell all comparators their top value:
+      for(int i=0;i<comparators.length;i++) {
+        @SuppressWarnings("unchecked")
+        FieldComparator<Object> comparator = (FieldComparator<Object>) comparators[i];
+        comparator.setTopValue(after.fields[i]);
+      }
     }
     
     void updateBottom(int doc, float score) {
@@ -880,37 +887,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void collect(int doc) throws IOException {
-      totalHits++;
-
       //System.out.println("  collect doc=" + doc);
 
-      // Check if this hit was already collected on a
-      // previous page:
-      boolean sameValues = true;
-      for(int compIDX=0;compIDX<comparators.length;compIDX++) {
-        final FieldComparator comp = comparators[compIDX];
-
-        final int cmp = reverseMul[compIDX] * comp.compareDocToValue(doc, after.fields[compIDX]);
-        if (cmp < 0) {
-          // Already collected on a previous page
-          //System.out.println("    skip: before");
-          return;
-        } else if (cmp > 0) {
-          // Not yet collected
-          sameValues = false;
-          //System.out.println("    keep: after");
-          break;
-        }
-      }
-
-      // Tie-break by docID:
-      if (sameValues && doc <= afterDoc) {
-        // Already collected on a previous page
-        //System.out.println("    skip: tie-break");
-        return;
-      }
-
-      collectedHits++;
+      totalHits++;
 
       float score = Float.NaN;
       if (trackMaxScore) {
@@ -921,7 +900,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
 
       if (queueFull) {
-        // Fastmatch: return if this hit is not competitive
+        // Fastmatch: return if this hit is no better than
+        // the worst hit currently in the queue:
         for (int i = 0;; i++) {
           final int c = reverseMul[i] * comparators[i].compareBottom(doc);
           if (c < 0) {
@@ -939,7 +919,35 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             break;
           }
         }
+      }
 
+      // Check if this hit was already collected on a
+      // previous page:
+      boolean sameValues = true;
+      for(int compIDX=0;compIDX<comparators.length;compIDX++) {
+        final FieldComparator comp = comparators[compIDX];
+
+        final int cmp = reverseMul[compIDX] * comp.compareTop(doc);
+        if (cmp > 0) {
+          // Already collected on a previous page
+          //System.out.println("    skip: before");
+          return;
+        } else if (cmp < 0) {
+          // Not yet collected
+          sameValues = false;
+          //System.out.println("    keep: after; reverseMul=" + reverseMul[compIDX]);
+          break;
+        }
+      }
+
+      // Tie-break by docID:
+      if (sameValues && doc <= afterDoc) {
+        // Already collected on a previous page
+        //System.out.println("    skip: tie-break");
+        return;
+      }
+
+      if (queueFull) {
         // This hit is competitive - replace bottom element in queue & adjustTop
         for (int i = 0; i < comparators.length; i++) {
           comparators[i].copy(bottom.slot, doc);
@@ -955,6 +963,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           comparators[i].setBottom(bottom.slot);
         }
       } else {
+        collectedHits++;
+
         // Startup transient: queue hasn't gathered numHits yet
         final int slot = collectedHits - 1;
         //System.out.println("    slot=" + slot);

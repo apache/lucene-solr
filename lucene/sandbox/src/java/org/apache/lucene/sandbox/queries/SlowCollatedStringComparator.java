@@ -44,6 +44,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   private final String field;
   final Collator collator;
   private String bottom;
+  private String topValue;
   private final BytesRef tempBR = new BytesRef();
 
   public SlowCollatedStringComparator(int numHits, String field, Collator collator) {
@@ -105,6 +106,11 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   }
 
   @Override
+  public void setTopValue(final String value) {
+    this.topValue = value;
+  }
+
+  @Override
   public String value(int slot) {
     return values[slot];
   }
@@ -124,7 +130,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   }
 
   @Override
-  public int compareDocToValue(int doc, String value) {
+  public int compareTop(int doc) {
     currentDocTerms.get(doc, tempBR);
     final String docValue;
     if (tempBR.length == 0 && docsWithField.get(doc) == false) {
@@ -132,6 +138,6 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
     } else {
       docValue = tempBR.utf8ToString();
     }
-    return compareValues(docValue, value);
+    return compareValues(topValue, docValue);
   }
 }

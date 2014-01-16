@@ -142,7 +142,9 @@ public class TrieField extends PrimitiveFieldType {
     Object missingValue = null;
     boolean sortMissingLast  = field.sortMissingLast();
     boolean sortMissingFirst = field.sortMissingFirst();
-    
+
+    SortField sf;
+
     switch (type) {
       case INTEGER:
         if( sortMissingLast ) {
@@ -151,7 +153,9 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
-        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top).setMissingValue(missingValue);
+        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
+        sf.setMissingValue(missingValue);
+        return sf;
       
       case FLOAT:
         if( sortMissingLast ) {
@@ -160,7 +164,9 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
         }
-        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top).setMissingValue(missingValue);
+        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top);
+        sf.setMissingValue(missingValue);
+        return sf;
       
       case DATE: // fallthrough
       case LONG:
@@ -170,7 +176,9 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
-        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top).setMissingValue(missingValue);
+        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+        sf.setMissingValue(missingValue);
+        return sf;
         
       case DOUBLE:
         if( sortMissingLast ) {
@@ -179,7 +187,9 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         }
-        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top).setMissingValue(missingValue);
+        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top);
+        sf.setMissingValue(missingValue);
+        return sf;
         
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);

@@ -576,6 +576,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     return new FieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;
+      private int topVal;
       private TermsEnum termsEnum;
       private DocsEnum docsEnum;
       Set<String> seen = new HashSet<String>(elevations.ids.size());
@@ -588,6 +589,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       @Override
       public void setBottom(int slot) {
         bottomVal = values[slot];
+      }
+
+      @Override
+      public void setTopValue(Integer value) {
+        topVal = value.intValue();
       }
 
       private int docVal(int doc) {
@@ -646,10 +652,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public int compareDocToValue(int doc, Integer valueObj) {
-        final int value = valueObj.intValue();
+      public int compareTop(int doc) {
         final int docValue = docVal(doc);
-        return docValue - value;  // values will be small enough that there is no overflow concern
+        return topVal - docValue;  // values will be small enough that there is no overflow concern
       }
     };
   }

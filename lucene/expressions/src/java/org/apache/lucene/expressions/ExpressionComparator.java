@@ -30,6 +30,7 @@ import org.apache.lucene.search.Scorer;
 class ExpressionComparator extends FieldComparator<Double> {
   private final double[] values;
   private double bottom;
+  private double topValue;
   
   private ValueSource source;
   private FunctionValues scores;
@@ -67,6 +68,11 @@ class ExpressionComparator extends FieldComparator<Double> {
   }
   
   @Override
+  public void setTopValue(Double value) {
+    topValue = value.doubleValue();
+  }
+  
+  @Override
   public int compareBottom(int doc) throws IOException {
     return Double.compare(bottom, scores.doubleVal(doc));
   }
@@ -88,7 +94,7 @@ class ExpressionComparator extends FieldComparator<Double> {
   }
   
   @Override
-  public int compareDocToValue(int doc, Double valueObj) throws IOException {
-    return Double.compare(scores.doubleVal(doc), valueObj.doubleValue());
+  public int compareTop(int doc) throws IOException {
+    return Double.compare(topValue, scores.doubleVal(doc));
   }
 }
