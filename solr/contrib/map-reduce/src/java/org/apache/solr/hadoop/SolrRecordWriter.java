@@ -168,6 +168,13 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
     CoreDescriptor descr = new CoreDescriptor(container, "core1", solrHomeDir.toString(), props);
     
     SolrCore core = container.create(descr);
+    
+    if (!(core.getDirectoryFactory() instanceof HdfsDirectoryFactory)) {
+      throw new UnsupportedOperationException(
+          "Invalid configuration. Currently, the only DirectoryFactory supported is "
+              + HdfsDirectoryFactory.class.getSimpleName());
+    }
+
     container.register(core, false);
 
     EmbeddedSolrServer solr = new EmbeddedSolrServer(container, "core1");
