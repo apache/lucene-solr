@@ -169,8 +169,6 @@ public class SortField {
     this.parser = parser;
   }
 
-  // nocommit should missing first/last not be affected by reverse=true???
-
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort first. */
   public final static Object STRING_FIRST = new Object() {
