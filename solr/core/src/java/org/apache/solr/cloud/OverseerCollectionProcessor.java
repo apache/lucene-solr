@@ -274,7 +274,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
     } else {
-      log.warn("No overseer designates are available");
+      log.warn("No overseer designates are available, overseerDesignates: {}, nodes : ",overseerDesignates,nodeNames);
       return;
     }
 
