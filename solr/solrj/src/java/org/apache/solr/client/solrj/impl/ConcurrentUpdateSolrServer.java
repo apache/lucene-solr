@@ -341,7 +341,6 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
             // successfully, *and*
             // while we are still holding the runners lock to prevent race
             // conditions.
-            // race conditions.
             if (success)
               break;
           }
@@ -384,7 +383,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
         synchronized (runners) {
           runner = runners.peek();
         }
-        if (runner == null || scheduler.isTerminated())
+
+        if ((runner == null && queue.isEmpty()) || scheduler.isTerminated())
           break;
         runner.runnerLock.lock();
         runner.runnerLock.unlock();

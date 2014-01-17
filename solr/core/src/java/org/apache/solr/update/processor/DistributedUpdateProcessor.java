@@ -133,11 +133,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   private SolrCmdDistributor cmdDistrib;
 
-  private boolean zkEnabled = false;
+  private final boolean zkEnabled;
 
   private CloudDescriptor cloudDesc;
-  private String collection;
-  private ZkController zkController;
+  private final String collection;
+  private final ZkController zkController;
   
   // these are setup at the start of each request processing
   // method in this update processor
@@ -180,6 +180,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
+    } else {
+      collection = null;
     }
 
   }

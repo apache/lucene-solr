@@ -31,9 +31,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -53,11 +51,6 @@ public class StreamingSolrServers {
 
   public StreamingSolrServers(UpdateShardHandler updateShardHandler) {
     this.updateExecutor = updateShardHandler.getUpdateExecutor();
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
-    params.set(HttpClientUtil.PROP_USE_RETRY, false);
     
     httpClient = updateShardHandler.getHttpClient();
   }
