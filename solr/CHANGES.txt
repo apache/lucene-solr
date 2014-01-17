@@ -119,7 +119,7 @@ Bug Fixes
 * SOLR-4260: ConcurrentUpdateSolrServer#blockUntilFinished can return before
   all previously added updates have finished. This could cause distributed
   updates meant for replicas to be lost. (Markus Jelsma, Timothy Potter,
-  Joel Bernstein)
+  Joel Bernstein, Mark Miller)
 
 Optimizations
 ----------------------  
