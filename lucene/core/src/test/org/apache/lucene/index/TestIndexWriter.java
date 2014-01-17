@@ -1255,26 +1255,38 @@ public class TestIndexWriter extends LuceneTestCase {
     
     Field f = new Field("binary", b, 10, 17, customType);
     customType.setIndexed(true);
-    f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
+    final MockTokenizer doc1field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc1field1.setReader(new StringReader("doc1field1"));
+    f.setTokenStream(doc1field1);
 
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     
     Field f2 = newField("string", "value", customType2);
-    f2.setTokenStream(new MockTokenizer(new StringReader("doc1field2"), MockTokenizer.WHITESPACE, false));
+    final MockTokenizer doc1field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc1field2.setReader(new StringReader("doc1field2"));
+    f2.setTokenStream(doc1field2);
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
 
     // add 2 docs to test in-memory merging
-    f.setTokenStream(new MockTokenizer(new StringReader("doc2field1"), MockTokenizer.WHITESPACE, false));
-    f2.setTokenStream(new MockTokenizer(new StringReader("doc2field2"), MockTokenizer.WHITESPACE, false));
+    final MockTokenizer doc2field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc2field1.setReader(new StringReader("doc2field1"));
+    f.setTokenStream(doc2field1);
+    final MockTokenizer doc2field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc2field2.setReader(new StringReader("doc2field2"));
+    f2.setTokenStream(doc2field2);
     w.addDocument(doc);
 
     // force segment flush so we can force a segment merge with doc3 later.
     w.commit();
 
-    f.setTokenStream(new MockTokenizer(new StringReader("doc3field1"), MockTokenizer.WHITESPACE, false));
-    f2.setTokenStream(new MockTokenizer(new StringReader("doc3field2"), MockTokenizer.WHITESPACE, false));
+    final MockTokenizer doc3field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc3field1.setReader(new StringReader("doc3field1"));
+    f.setTokenStream(doc3field1);
+    final MockTokenizer doc3field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc3field2.setReader(new StringReader("doc3field2"));
+    f2.setTokenStream(doc3field2);
 
     w.addDocument(doc);
     w.commit();
@@ -1592,8 +1604,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
   static final class StringSplitAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new StringSplitTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new StringSplitTokenizer());
     }
   }
 
@@ -1602,13 +1614,8 @@ public class TestIndexWriter extends LuceneTestCase {
     private int upto;
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    public StringSplitTokenizer(Reader r) {
-      super(r);
-      try {
-        setReader(r);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    public StringSplitTokenizer() {
+      super();
     }
 
     @Override
@@ -1875,7 +1882,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testDontInvokeAnalyzerForUnAnalyzedFields() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         throw new IllegalStateException("don't invoke me!");
       }
 
@@ -1936,8 +1943,8 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
         TokenStream stream = new MockTokenFilter(tokenizer, MockTokenFilter.ENGLISH_STOPSET);
         return new TokenStreamComponents(tokenizer, stream);
       }
@@ -1966,8 +1973,8 @@ public class TestIndexWriter extends LuceneTestCase {
     final Automaton secondSet = BasicAutomata.makeString("foobar");
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
         TokenStream stream = new MockTokenFilter(tokenizer, MockTokenFilter.ENGLISH_STOPSET);
         stream = new MockTokenFilter(stream, new CharacterRunAutomaton(secondSet));
         return new TokenStreamComponents(tokenizer, stream);

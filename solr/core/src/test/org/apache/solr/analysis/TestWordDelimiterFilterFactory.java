@@ -211,13 +211,11 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory(args);
     factoryDefault.inform(loader);
     
-    TokenStream ts = factoryDefault.create(
-        new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
+    TokenStream ts = factoryDefault.create(whitespaceMockTokenizer(testText));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "5", "400", "00", "540000", "at", "25", "interest", "rate", "interestrate" });
 
-    ts = factoryDefault.create(
-        new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
+    ts = factoryDefault.create(whitespaceMockTokenizer("foo\u200Dbar"));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo", "bar", "foobar" });
 
@@ -235,14 +233,12 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory(args);
     factoryCustom.inform(loader);
     
-    ts = factoryCustom.create(
-        new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
+    ts = factoryCustom.create(whitespaceMockTokenizer(testText));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "rate", "interestrate" });
     
     /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
-    ts = factoryCustom.create(
-        new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
+    ts = factoryCustom.create(whitespaceMockTokenizer("foo\u200Dbar"));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo\u200Dbar" });
   }

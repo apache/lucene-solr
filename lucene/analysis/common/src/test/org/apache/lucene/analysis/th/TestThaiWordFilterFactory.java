@@ -35,7 +35,7 @@ public class TestThaiWordFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testWordBreak() throws Exception {
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("ThaiWord").create(stream);
     assertTokenStreamContents(stream, new String[] {"การ", "ที่", "ได้",
         "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});

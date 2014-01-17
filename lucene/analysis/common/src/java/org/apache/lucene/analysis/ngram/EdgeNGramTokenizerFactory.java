@@ -47,7 +47,7 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public EdgeNGramTokenizer create(AttributeFactory factory, Reader input) {
-    return new EdgeNGramTokenizer(luceneMatchVersion, factory, input, minGramSize, maxGramSize);
+  public EdgeNGramTokenizer create(AttributeFactory factory) {
+    return new EdgeNGramTokenizer(luceneMatchVersion, factory, minGramSize, maxGramSize);
   }
 }

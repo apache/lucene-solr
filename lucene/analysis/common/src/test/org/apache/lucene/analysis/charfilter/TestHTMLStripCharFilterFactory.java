@@ -35,7 +35,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890
     final String text = "this is only a test.";
     Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "a, Title").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
         new int[] { 0, 5,  8, 13, 15 },
@@ -47,7 +47,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
     Reader cs = charFilterFactory("HTMLStrip").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
         new int[] {  3, 12, 18, 27, 32 },
@@ -59,7 +59,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
     Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "U i").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "<u>this</u>", "is", "only", "a", "<I>test</I>." },
         new int[] {  0, 12, 18, 27, 29 },
@@ -71,7 +71,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
     Reader cs = charFilterFactory("HTMLStrip", "escapedTags", ",, , ").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
         new int[] {  3, 12, 18, 27, 32 },
@@ -83,7 +83,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
     Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
         new int[] {  3, 12, 18, 27, 32 },
@@ -95,7 +95,7 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCa
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
     Reader cs = charFilterFactory("HTMLStrip", "escapedTags", ", B\r\n\t").create(new StringReader(text));
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "<b>only</b>", "a", "test." },
         new int[] {  3, 12, 15, 27, 32 },

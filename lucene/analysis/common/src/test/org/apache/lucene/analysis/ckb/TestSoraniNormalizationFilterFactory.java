@@ -31,7 +31,7 @@ public class TestSoraniNormalizationFilterFactory extends BaseTokenStreamFactory
   
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("پیــــاوەکان");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("SoraniNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "پیاوەکان" });
   }

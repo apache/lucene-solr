@@ -21,6 +21,8 @@ import static org.apache.lucene.util.SloppyMath.cos;
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.haversin;
 
+import java.util.Random;
+
 public class TestSloppyMath extends LuceneTestCase {
   // accuracy for cos()
   static double COS_DELTA = 1E-15;
@@ -93,8 +95,22 @@ public class TestSloppyMath extends LuceneTestCase {
     assertEquals(0, haversin(90, -180, 90, 180), 0D);
     assertEquals(0, haversin(90, 180, 90, 180), 0D);
     
+    // Test half a circle on the equator, using WGS84 earth radius
+    double earthRadiusKMs = 6378.137;
+    double halfCircle = earthRadiusKMs * Math.PI;
+    assertEquals(halfCircle, haversin(0, 0, 0, 180), 0D);
+
+    Random r = random();
+    double randomLat1 = 40.7143528 + (r.nextInt(10) - 5) * 360;
+    double randomLon1 = -74.0059731 + (r.nextInt(10) - 5) * 360;
+
+    double randomLat2 = 40.65 + (r.nextInt(10) - 5) * 360;
+    double randomLon2 = -73.95 + (r.nextInt(10) - 5) * 360;
+    
+    assertEquals(8.572, haversin(randomLat1, randomLon1, randomLat2, randomLon2), 0.01D);
+    
+    
     // from solr and ES tests (with their respective epsilons)
-    assertEquals(314.40338, haversin(1, 2, 3, 4), 10e-5);
     assertEquals(0, haversin(40.7143528, -74.0059731, 40.7143528, -74.0059731), 0D);
     assertEquals(5.286, haversin(40.7143528, -74.0059731, 40.759011, -73.9844722), 0.01D);
     assertEquals(0.4621, haversin(40.7143528, -74.0059731, 40.718266, -74.007819), 0.01D);

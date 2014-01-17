@@ -574,7 +574,7 @@ public class SnapPuller {
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
         indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
       }
-      StringBuffer sb = readToStringBuffer(replicationTime, props.getProperty(INDEX_REPLICATED_AT_LIST));
+      StringBuilder sb = readToStringBuilder(replicationTime, props.getProperty(INDEX_REPLICATED_AT_LIST));
       props.setProperty(INDEX_REPLICATED_AT_LIST, sb.toString());
       props.setProperty(INDEX_REPLICATED_AT, String.valueOf(replicationTime));
       props.setProperty(PREVIOUS_CYCLE_TIME_TAKEN, String.valueOf(replicationTimeTaken));
@@ -596,7 +596,7 @@ public class SnapPuller {
         }
         props.setProperty(TIMES_FAILED, String.valueOf(numFailures));
         props.setProperty(REPLICATION_FAILED_AT, String.valueOf(replicationTime));
-        sb = readToStringBuffer(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
+        sb = readToStringBuilder(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
 
@@ -639,8 +639,8 @@ public class SnapPuller {
     return bytesDownloaded;
   }
 
-  private StringBuffer readToStringBuffer(long replicationTime, String str) {
-    StringBuffer sb = new StringBuffer();
+  private StringBuilder readToStringBuilder(long replicationTime, String str) {
+    StringBuilder sb = new StringBuilder();
     List<String> l = new ArrayList<String>();
     if (str != null && str.length() != 0) {
       String[] ss = str.split(",");
@@ -1356,10 +1356,10 @@ public class SnapPuller {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
-      } catch (Throwable t) {
+      } catch (Exception e) {
         //close stream on error
         IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", t);
+        throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
         s.shutdown();
       }
@@ -1620,10 +1620,10 @@ public class SnapPuller {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
-      } catch (Throwable t) {
+      } catch (Exception e) {
         //close stream on error
         IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", t);
+        throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
         s.shutdown();
       }
@@ -1683,19 +1683,13 @@ public class SnapPuller {
   public void destroy() {
     try {
       if (executorService != null) executorService.shutdown();
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
-    }
-    try {
-      abortPull();
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
-    }
-    try {
-      if (executorService != null) ExecutorUtil
-          .shutdownNowAndAwaitTermination(executorService);
-    } catch (Throwable e) {
-      SolrException.log(LOG, e);
+    } finally {
+      try {
+        abortPull();
+      } finally {
+        if (executorService != null) ExecutorUtil
+            .shutdownNowAndAwaitTermination(executorService);
+      }
     }
   }
 

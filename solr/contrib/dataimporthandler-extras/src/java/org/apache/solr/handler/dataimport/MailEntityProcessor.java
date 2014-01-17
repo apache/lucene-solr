@@ -293,7 +293,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
   private void logConfig() {
     if (!LOG.isInfoEnabled()) return;
-    StringBuffer config = new StringBuffer();
+    StringBuilder config = new StringBuilder();
     config.append("user : ").append(user).append(System.getProperty("line.separator"));
     config.append("pwd : ").append(password).append(System.getProperty("line.separator"));
     config.append("protocol : ").append(protocol).append(System.getProperty("line.separator"));

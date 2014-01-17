@@ -91,7 +91,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
 // This makes sure that there is no garbage after the query string
-  @Override
   final public Query TopLevelQuery(String field) throws ParseException, SyntaxError {
   Query q;
     q = Query(field);
@@ -479,7 +478,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
   /** Reinitialise. */
-  @Override
   public void ReInit(CharStream stream) {
     token_source.ReInit(stream);
     token = new Token();

@@ -209,8 +209,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       boolean success = false;
       try {
         success = syncStrategy.sync(zkController, core, leaderProps);
-      } catch (Throwable t) {
-        SolrException.log(log, "Exception while trying to sync", t);
+      } catch (Exception e) {
+        SolrException.log(log, "Exception while trying to sync", e);
         success = false;
       }
       
@@ -268,12 +268,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         core.close();
       }
     }
-    
+    boolean success = false;
     try {
       super.runLeaderProcess(weAreReplacement);
-    } catch (Throwable t) {
-      SolrException.log(log, "There was a problem trying to register as the leader", t);
-      cancelElection();
+      success = true;
+    } catch (Exception e) {
+      SolrException.log(log, "There was a problem trying to register as the leader", e);
+  
       try {
         core = cc.getCore(coreName);
         if (core == null) {
@@ -287,9 +288,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // we could not publish ourselves as leader - rejoin election
         rejoinLeaderElection(leaderSeqPath, core);
       } finally {
-        if (core != null) {
-          core.close();
+        try {
+          if (!success) {
+            cancelElection();
+          }
+        } finally {
+          if (core != null) {
+            core.close();
+          }
         }
+        
       }
     }
     
@@ -386,11 +394,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     cancelElection();
     
-    try {
-      core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
-    } catch (Throwable t) {
-      SolrException.log(log, "Error trying to start recovery", t);
-    }
+    core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
     
     leaderElector.joinElection(this, true);
   }
@@ -428,10 +432,10 @@ final class OverseerElectionContext extends ElectionContext {
   
   private final SolrZkClient zkClient;
   private Overseer overseer;
-
+  public static final String PATH = "/overseer_elect";
 
   public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null, zkClient);
+    super(zkNodeName,PATH , PATH+"/leader", null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
@@ -458,6 +462,11 @@ final class OverseerElectionContext extends ElectionContext {
     overseer.start(id);
   }
   
+  public void cancelElection() throws InterruptedException, KeeperException {
+    super.cancelElection();
+    overseer.close();
+  }
+  
   @Override
   public void joinedElectionFired() {
     overseer.close();
@@ -468,5 +477,5 @@ final class OverseerElectionContext extends ElectionContext {
     // leader changed - close the overseer
     overseer.close();
   }
-  
+
 }

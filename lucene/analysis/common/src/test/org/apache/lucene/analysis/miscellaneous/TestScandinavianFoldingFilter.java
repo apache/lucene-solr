@@ -31,8 +31,8 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
 
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String field, Reader reader) {
-      final Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    protected TokenStreamComponents createComponents(String field) {
+      final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       final TokenStream stream = new ScandinavianFoldingFilter(tokenizer);
       return new TokenStreamComponents(tokenizer, stream);
     }
@@ -111,8 +111,8 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ScandinavianFoldingFilter(tokenizer));
       } 
     };

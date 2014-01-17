@@ -34,8 +34,8 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
     for (final boolean consumeAll : new boolean[] { true, false }) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           // if we are consuming all tokens, we can use the checks, otherwise we can't
           tokenizer.setEnableChecks(consumeAll);
           return new TokenStreamComponents(tokenizer, new LimitTokenPositionFilter(tokenizer, 2, consumeAll));
@@ -59,7 +59,7 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
   }
   
   public void testMaxPosition3WithSynomyms() throws IOException {
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader("one two three four five"), MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenizer = whitespaceMockTokenizer("one two three four five");
     tokenizer.setEnableChecks(false); // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
     
     SynonymMap.Builder builder = new SynonymMap.Builder(true);

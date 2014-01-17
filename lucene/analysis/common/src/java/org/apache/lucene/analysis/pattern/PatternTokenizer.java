@@ -64,13 +64,13 @@ public final class PatternTokenizer extends Tokenizer {
   private final Matcher matcher;
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
-  public PatternTokenizer(Reader input, Pattern pattern, int group) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, pattern, group);
+  public PatternTokenizer(Pattern pattern, int group) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, pattern, group);
   }
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
-  public PatternTokenizer(AttributeFactory factory, Reader input, Pattern pattern, int group) {
-    super(factory, input);
+  public PatternTokenizer(AttributeFactory factory, Pattern pattern, int group) {
+    super(factory);
     this.group = group;
 
     // Use "" instead of str so don't consume chars

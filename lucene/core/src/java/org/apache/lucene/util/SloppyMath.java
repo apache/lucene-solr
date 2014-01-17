@@ -44,10 +44,16 @@ public class SloppyMath {
   public static double haversin(double lat1, double lon1, double lat2, double lon2) {
     double x1 = lat1 * TO_RADIANS;
     double x2 = lat2 * TO_RADIANS;
-    double h1 = (1 - cos(x1 - x2)) / 2;
-    double h2 = (1 - cos((lon1 - lon2) * TO_RADIANS)) / 2;
-    double h = h1 + cos(x1) * cos(x2) * h2;
-    return TO_KILOMETERS * 2 * asin(Math.min(1, Math.sqrt(h)));
+    double h1 = 1 - cos(x1 - x2);
+    double h2 = 1 - cos((lon1 - lon2) * TO_RADIANS);
+    double h = (h1 + cos(x1) * cos(x2) * h2) / 2;
+
+    double avgLat = Math.abs((x1 + x2) / 2d);
+    int index = (int)(avgLat * RADIUS_INDEXER + 0.5) % earthDiameterPerLatitude.length;
+    double radius = earthDiameterPerLatitude[index];
+
+    return radius * asin(Math.min(1, Math.sqrt(h)));
+    
   }
 
   /**
@@ -134,7 +140,6 @@ public class SloppyMath {
   
   // haversin
   private static final double TO_RADIANS = Math.PI / 180D;
-  private static final double TO_KILOMETERS = 6371.0087714D;
   
   // cos/asin
   private static final double ONE_DIV_F2 = 1/2.0;
@@ -184,6 +189,11 @@ public class SloppyMath {
   private static final double ASIN_QS3 = Double.longBitsToDouble(0xbfe6066c1b8d0159L); // -6.88283971605453293030e-01
   private static final double ASIN_QS4 = Double.longBitsToDouble(0x3fb3b8c5b12e9282L); //  7.70381505559019352791e-02
   
+  private static final int RADIUS_TABS_SIZE = (1<<10) + 1;
+  private static final double RADIUS_DELTA = (StrictMath.PI/2d) / (RADIUS_TABS_SIZE - 1);
+  private static final double RADIUS_INDEXER = 1d/RADIUS_DELTA;
+  private static final double[] earthDiameterPerLatitude = new double[RADIUS_TABS_SIZE];
+  
   /** Initializes look-up tables. */
   static {
     // sin and cos
@@ -225,6 +235,28 @@ public class SloppyMath {
       asinDer2DivF2Tab[i] = (x*oneMinusXSqInv1_5) * ONE_DIV_F2;
       asinDer3DivF3Tab[i] = ((1+2*x*x)*oneMinusXSqInv2_5) * ONE_DIV_F3;
       asinDer4DivF4Tab[i] = ((5+2*x*(2+x*(5-2*x)))*oneMinusXSqInv3_5) * ONE_DIV_F4;
+    }
+    
+    
+    // WGS84 earth-ellipsoid major (a) and minor (b) radius
+    final double a = 6_378_137; // [m]
+    final double b = 6_356_752.31420; // [m]
+    
+    final double a2 = a*a;
+    final double b2 = b*b;
+    
+    earthDiameterPerLatitude[0] = 2 * a / 1000d;
+    earthDiameterPerLatitude[RADIUS_TABS_SIZE-1] = 2 * b / 1000d;
+    // earth radius
+    for (int i=1;i<RADIUS_TABS_SIZE-1;i++) {
+      final double lat = Math.PI * i / (2d * RADIUS_TABS_SIZE-1);
+      double one = StrictMath.pow(a2 * StrictMath.cos(lat), 2); 
+      double two = StrictMath.pow(b2 * StrictMath.sin(lat), 2);
+      double three = StrictMath.pow(a * StrictMath.cos(lat), 2);
+      double four = StrictMath.pow(b * StrictMath.sin(lat), 2);
+      
+      double radius = StrictMath.sqrt((one+two)/(three+four));
+      earthDiameterPerLatitude[i] = 2 * radius / 1000d;
     }
   }
 }

@@ -22,39 +22,40 @@ import org.junit.BeforeClass;
 
 public class TestFileDictionaryLookup extends SolrTestCaseJ4  {
   static final String REQUEST_URI = "/fuzzy_suggest_analyzing_with_file_dict";
+  static final String DICT_NAME = "fuzzy_suggest_analyzing_with_file_dict";
   
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
-    assertQ(req("qt", REQUEST_URI, "q", "", SuggesterParams.SUGGEST_BUILD, "true"));
+    assertQ(req("qt", REQUEST_URI, "q", "", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_BUILD, "true"));
   }
   
   public void testDefault() throws Exception {
     
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
-    assertQ(req("qt", REQUEST_URI, "q", "chagn", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='chagn']/int[@name='numFound'][.='2']",
-      "//lst[@name='suggest']/lst[@name='chagn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
-      "//lst[@name='suggest']/lst[@name='chagn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
+    assertQ(req("qt", REQUEST_URI, "q", "chagn", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_COUNT, "3"),
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chagn']/int[@name='numFound'][.='2']",
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chagn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chagn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
       );
     
-    assertQ(req("qt", REQUEST_URI, "q", "chacn", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='chacn']/int[@name='numFound'][.='2']",
-      "//lst[@name='suggest']/lst[@name='chacn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
-      "//lst[@name='suggest']/lst[@name='chacn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
+    assertQ(req("qt", REQUEST_URI, "q", "chacn", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_COUNT, "3"),
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chacn']/int[@name='numFound'][.='2']",
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chacn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chacn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']"
       );
     
-    assertQ(req("qt", REQUEST_URI, "q", "chagr", SuggesterParams.SUGGEST_COUNT, "3"),
-      "//lst[@name='suggest']/lst[@name='chagr']/int[@name='numFound'][.='1']",
-      "//lst[@name='suggest']/lst[@name='chagr']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='charge']"
+    assertQ(req("qt", REQUEST_URI, "q", "chagr", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_COUNT, "3"),
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chagr']/int[@name='numFound'][.='1']",
+      "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chagr']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='charge']"
       );
     
-    assertQ(req("qt", REQUEST_URI, "q", "chanr", SuggesterParams.SUGGEST_COUNT, "3"),
-    "//lst[@name='suggest']/lst[@name='chanr']/int[@name='numFound'][.='3']"
+    assertQ(req("qt", REQUEST_URI, "q", "chanr", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_COUNT, "3"),
+    "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='chanr']/int[@name='numFound'][.='3']"
     );
     
-    assertQ(req("qt", REQUEST_URI, "q", "cyhnce", SuggesterParams.SUGGEST_COUNT, "3"),
-    "//lst[@name='suggest']/lst[@name='cyhnce']/int[@name='numFound'][.='0']"
+    assertQ(req("qt", REQUEST_URI, "q", "cyhnce", SuggesterParams.SUGGEST_DICT, DICT_NAME, SuggesterParams.SUGGEST_COUNT, "3"),
+    "//lst[@name='suggest']/lst[@name='"+ DICT_NAME +"']/lst[@name='cyhnce']/int[@name='numFound'][.='0']"
     );
   }
 }

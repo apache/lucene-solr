@@ -218,6 +218,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
           this.handleRequestBufferUpdatesAction(req, rsp);
           break;
         }
+        case REJOINOVERSEERELECTION:{
+          ZkController zkController = coreContainer.getZkController();
+          if(zkController != null){
+            zkController.rejoinOverseerElection();
+          }
+          break;
+        }
         default: {
           this.handleCustomAction(req, rsp);
           break;
@@ -597,27 +604,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       } else {
         if (coreContainer.getZkController() != null) {
           // we are unloading, cancel any ongoing recovery
-          // so there are no races to publish state
-          // we will try to cancel again later before close
           if (core != null) {
             if (coreContainer.getZkController() != null) {
               core.getSolrCoreState().cancelRecovery();
             }
-          }
-          
-          log.info("Unregistering core " + core.getName() + " from cloudstate.");
-          try {
-            coreContainer.getZkController().unregister(cname,
-                core.getCoreDescriptor());
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
-          } catch (KeeperException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Could not unregister core " + cname + " from cloudstate: "
-                    + e.getMessage(), e);
           }
         }
         
@@ -672,6 +662,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (closeCore) {
           core.close();
         }
+        
+        if (coreContainer.getZkController() != null) {
+          log.info("Unregistering core " + core.getName() + " from cloudstate.");
+          try {
+            coreContainer.getZkController().unregister(cname,
+                core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
+          } catch (KeeperException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
+          }
+        }
       }
     }
     
@@ -725,6 +732,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleReloadAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
+
+    if(!coreContainer.getCoreNames().contains(cname)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name [" + cname + "] does not exist.");
+    }
+
     try {
       coreContainer.reload(cname);
     } catch (Exception ex) {
@@ -766,13 +778,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
             }  catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               SolrException.log(log, "", e);
-            } catch (Throwable t) {
-              SolrException.log(log, "", t);
+            } catch (Throwable e) {
+              SolrException.log(log, "", e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
             
             core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
           } else {
-            SolrException.log(log, "Cound not find core to call recovery:" + cname);
+            SolrException.log(log, "Could not find core to call recovery:" + cname);
           }
         } finally {
           // no recoveryStrat close for now
@@ -1005,7 +1020,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.warn("Recovery was interrupted", e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       if (e instanceof SolrException)
         throw (SolrException)e;
       else

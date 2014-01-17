@@ -40,10 +40,6 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.MultiFacets;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
-import org.apache.lucene.facet.range.DoubleRange;
-import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
-import org.apache.lucene.facet.range.LongRange;
-import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -507,6 +503,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       int numRange = _TestUtil.nextInt(random(), 1, 5);
       DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
+      if (VERBOSE) {
+        System.out.println("TEST: " + numRange + " ranges");
+      }
       for(int rangeID=0;rangeID<numRange;rangeID++) {
         double min;
         if (rangeID > 0 && random().nextInt(10) == 7) {
@@ -539,6 +538,12 @@ public class TestRangeFacetCounts extends FacetTestCase {
           max = x;
         }
 
+        // Must truncate to float precision so that the
+        // drill-down counts (which use NRQ.newFloatRange)
+        // are correct:
+        min = (float) min;
+        max = (float) max;
+
         boolean minIncl;
         boolean maxIncl;
         if (min == max) {
@@ -549,6 +554,10 @@ public class TestRangeFacetCounts extends FacetTestCase {
           maxIncl = random().nextBoolean();
         }
         ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
+
+        if (VERBOSE) {
+          System.out.println("TEST:   range " + rangeID + ": " + ranges[rangeID]);
+        }
 
         // Do "slow but hopefully correct" computation of
         // expected count:
@@ -564,6 +573,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
           } else {
             accept &= values[i] < max;
           }
+          if (VERBOSE) {
+            System.out.println("TEST:   check doc=" + i + " val=" + values[i] + " accept=" + accept);
+          }
           if (accept) {
             expectedCounts[rangeID]++;
           }
@@ -577,7 +589,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
         if (VERBOSE) {
-          System.out.println("  range " + rangeID + " expectedCount=" + expectedCounts[rangeID]);
+          System.out.println("TEST: verify range " + rangeID + " expectedCount=" + expectedCounts[rangeID]);
         }
         LabelAndValue subNode = result.labelValues[rangeID];
         assertEquals("r" + rangeID, subNode.label);

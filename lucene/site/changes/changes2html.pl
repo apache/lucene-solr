@@ -27,6 +27,7 @@ use warnings;
 # JIRA REST API documentation: <http://docs.atlassian.com/jira/REST/latest/>
 my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
+my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
@@ -554,6 +555,9 @@ for my $rel (@releases) {
       # Link Lucene XXX, SOLR XXX and INFRA XXX to JIRA
       $item =~ s{((LUCENE|SOLR|INFRA)\s+(\d{3,}))}
                 {<a href="${jira_url_prefix}\U$2\E-$3">$1</a>}gi;
+      # Link "[ github | gh ] pull request [ # ] X+" to Github pull request
+      $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-)(\d+))}
+                {<a href="${github_pull_request_prefix}$2">$1</a>}gi;
       if ($product eq 'LUCENE') {
         # Find single Bugzilla issues
         $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))

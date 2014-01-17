@@ -37,7 +37,7 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryT
     reader = charFilterFactory("PatternReplace",
         "pattern", "(aa)\\s+(bb)\\s+(cc)",
         "replacement", "$1$2$3").create(reader);
-    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(reader);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "test." },
         new int[] { 0, 5, 8 },
@@ -50,7 +50,7 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryT
     Reader reader = new StringReader("aa bb cc");
     reader = charFilterFactory("PatternReplace",
         "pattern", "(aa)\\s+(bb)\\s+(cc)").create(reader);
-    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(reader);
     assertTokenStreamContents(ts, new String[] {});
   }
   
@@ -62,7 +62,7 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryT
     reader = charFilterFactory("PatternReplace",
         "pattern", "(aa)\\s+(bb)\\s+(cc)",
         "replacement", "$1#$2#$3").create(reader);
-    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream ts = whitespaceMockTokenizer(reader);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb#cc" },
         new int[] { 0 },

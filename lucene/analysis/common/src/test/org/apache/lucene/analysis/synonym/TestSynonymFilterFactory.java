@@ -19,15 +19,10 @@ package org.apache.lucene.analysis.synonym;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternTokenizerFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 
@@ -36,7 +31,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** checks for synonyms of "GB" in synonyms.txt */
   private void checkSolrSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
     assertTokenStreamContents(stream,
@@ -47,7 +42,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** checks for synonyms of "second" in synonyms-wordnet.txt */
   private void checkWordnetSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("second");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
     assertTokenStreamContents(stream,
@@ -63,7 +58,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** if the synonyms are completely empty, test that we still analyze correctly */
   public void testEmptySynonyms() throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Synonym", TEST_VERSION_CURRENT, 
         new StringMockResourceLoader(""), // empty file!
         "synonyms", "synonyms.txt").create(stream);

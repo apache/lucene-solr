@@ -40,8 +40,8 @@ public class TestWithCJKBigramFilter extends BaseTokenStreamTestCase {
    */
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer source = new ICUTokenizer(reader, new DefaultICUTokenizerConfig(false));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer source = new ICUTokenizer(new DefaultICUTokenizerConfig(false));
       TokenStream result = new CJKBigramFilter(source);
       return new TokenStreamComponents(source, new StopFilter(TEST_VERSION_CURRENT, result, CharArraySet.EMPTY_SET));
     }
@@ -55,8 +55,8 @@ public class TestWithCJKBigramFilter extends BaseTokenStreamTestCase {
    */
   private Analyzer analyzer2 = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer source = new ICUTokenizer(reader, new DefaultICUTokenizerConfig(false));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer source = new ICUTokenizer(new DefaultICUTokenizerConfig(false));
       // we put this before the CJKBigramFilter, because the normalization might combine
       // some halfwidth katakana forms, which will affect the bigramming.
       TokenStream result = new ICUNormalizer2Filter(source);

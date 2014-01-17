@@ -55,8 +55,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
   private static class PayloadAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }

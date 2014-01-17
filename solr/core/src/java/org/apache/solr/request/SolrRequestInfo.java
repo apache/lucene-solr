@@ -64,8 +64,8 @@ public class SolrRequestInfo {
         for (Closeable hook : info.closeHooks) {
           try {
             hook.close();
-          } catch (Throwable throwable) {
-            SolrException.log(SolrCore.log, "Exception during close hook", throwable);
+          } catch (Exception e) {
+            SolrException.log(SolrCore.log, "Exception during close hook", e);
           }
         }
       }

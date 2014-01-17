@@ -171,11 +171,11 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
     Analyzer a = new MorfologikAnalyzer(version) {
       @Override
-      protected TokenStreamComponents createComponents(String field, Reader reader) {
+      protected TokenStreamComponents createComponents(String field) {
         final CharArraySet keywords = new CharArraySet(version, 1, false);
         keywords.add("liście");
 
-        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT);
         TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
         result = new SetKeywordMarkerFilter(result, keywords);
         result = new MorfologikFilter(result, TEST_VERSION_CURRENT); 

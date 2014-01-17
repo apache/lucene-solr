@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.document.Document; // javadocs
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.util.BytesRef;
 
@@ -56,6 +57,10 @@ public class AssociationFacetField extends Field {
    *  association */
   public AssociationFacetField(BytesRef assoc, String dim, String... path) {
     super("dummy", TYPE);
+    FacetField.verifyLabel(dim);
+    for(String label : path) {
+      FacetField.verifyLabel(label);
+    }
     this.dim = dim;
     this.assoc = assoc;
     if (path.length == 0) {

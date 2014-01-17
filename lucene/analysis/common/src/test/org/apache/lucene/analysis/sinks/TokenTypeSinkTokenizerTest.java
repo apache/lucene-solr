@@ -17,10 +17,8 @@ package org.apache.lucene.analysis.sinks;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -32,7 +30,7 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
     TokenTypeSinkFilter sinkFilter = new TokenTypeSinkFilter("D");
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TeeSinkTokenFilter ttf = new TeeSinkTokenFilter(new WordTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false)));
+    TeeSinkTokenFilter ttf = new TeeSinkTokenFilter(new WordTokenFilter(whitespaceMockTokenizer(test)));
     TeeSinkTokenFilter.SinkTokenStream sink = ttf.newSinkTokenStream(sinkFilter);
     
     boolean seenDogs = false;

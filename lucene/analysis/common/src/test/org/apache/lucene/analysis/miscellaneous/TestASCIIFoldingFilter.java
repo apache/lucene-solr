@@ -26,8 +26,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,10 +34,9 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
   // testLain1Accents() is a copy of TestLatin1AccentFilter.testU().
   public void testLatin1Accents() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader
-      ("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ"
+    TokenStream stream = whitespaceMockTokenizer("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ"
       +" Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ"
-      +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"), MockTokenizer.WHITESPACE, false);
+      +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ");
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
 
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
@@ -1897,7 +1894,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       expectedOutputTokens.add(expected.toString());
     }
 
-    TokenStream stream = new MockTokenizer(new StringReader(inputText.toString()), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(inputText.toString());
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     Iterator<String> expectedIter = expectedOutputTokens.iterator();
@@ -1918,8 +1915,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
       } 
     };
@@ -1929,8 +1926,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
       }
     };

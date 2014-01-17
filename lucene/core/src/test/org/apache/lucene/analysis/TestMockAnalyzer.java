@@ -187,8 +187,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testTooLongToken() throws Exception {
     Analyzer whitespace = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false, 5);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer(MockTokenizer.WHITESPACE, false, 5);
         return new TokenStreamComponents(t, t);
       }
     };
@@ -235,8 +235,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       final int limit = _TestUtil.nextInt(random(), 0, 500);
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer t = new MockTokenizer(reader, dfa, lowercase, limit);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer t = new MockTokenizer(dfa, lowercase, limit);
           return new TokenStreamComponents(t, t);
         }
       };

@@ -19,6 +19,7 @@ package org.apache.lucene.facet.sortedset;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.facet.FacetField;
 
 /** Add an instance of this to your Document for every facet
  *  label to be indexed via SortedSetDocValues. */
@@ -40,6 +41,8 @@ public class SortedSetDocValuesFacetField extends Field {
   /** Sole constructor. */
   public SortedSetDocValuesFacetField(String dim, String label) {
     super("dummy", TYPE);
+    FacetField.verifyLabel(label);
+    FacetField.verifyLabel(dim);
     this.dim = dim;
     this.label = label;
   }

@@ -73,7 +73,7 @@ public class UpdateShardHandler {
   public void close() {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
       clientConnectionManager.shutdown();

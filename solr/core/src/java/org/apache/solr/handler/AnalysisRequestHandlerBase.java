@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -110,7 +111,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(null, new StringReader(value)));
+    TokenStream tokenStream = tfac.create();
+    try {
+      ((Tokenizer)tokenStream).setReader(tokenizerChain.initReader(null, new StringReader(value)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));

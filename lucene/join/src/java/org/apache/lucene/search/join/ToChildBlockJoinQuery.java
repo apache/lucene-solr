@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Explanation;
@@ -32,7 +31,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -47,6 +45,11 @@ import org.apache.lucene.util.FixedBitSet;
  */
 
 public class ToChildBlockJoinQuery extends Query {
+
+  /** Message thrown from {@link
+   *  ToChildBlockJoinScorer#validateParentDoc} on mis-use,
+   *  when the parent query incorrectly returns child docs. */
+  static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
 
   private final Filter parentsFilter;
   private final Query parentQuery;
@@ -203,6 +206,7 @@ public class ToChildBlockJoinQuery extends Query {
           // children:
           while (true) {
             parentDoc = parentScorer.nextDoc();
+            validateParentDoc();
 
             if (parentDoc == 0) {
               // Degenerate but allowed: parent has no children
@@ -211,6 +215,7 @@ public class ToChildBlockJoinQuery extends Query {
               // tricky because scorer must return -1 for
               // .doc() on init...
               parentDoc = parentScorer.nextDoc();
+              validateParentDoc();
             }
 
             if (parentDoc == NO_MORE_DOCS) {
@@ -248,6 +253,14 @@ public class ToChildBlockJoinQuery extends Query {
       }
     }
 
+    /** Detect mis-use, where provided parent query in fact
+     *  sometimes returns child documents.  */
+    private void validateParentDoc() {
+      if (parentDoc != NO_MORE_DOCS && !parentBits.get(parentDoc)) {
+        throw new IllegalStateException(INVALID_QUERY_MESSAGE + parentDoc);
+      }
+    }
+
     @Override
     public int docID() {
       return childDoc;
@@ -277,6 +290,7 @@ public class ToChildBlockJoinQuery extends Query {
       if (childDoc == -1 || childTarget > parentDoc) {
         // Advance to new parent:
         parentDoc = parentScorer.advance(childTarget);
+        validateParentDoc();
         //System.out.println("  advance to parentDoc=" + parentDoc);
         assert parentDoc > childTarget;
         if (parentDoc == NO_MORE_DOCS) {

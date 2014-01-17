@@ -31,8 +31,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
   public void testFilterWithPosIncr() throws Exception {
-    TokenStream stream = new MockTokenizer(
-        new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer("short toolong evenmuchlongertext a ab toolong foo");
     CodepointCountFilter filter = new CodepointCountFilter(TEST_VERSION_CURRENT, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
@@ -43,8 +42,8 @@ public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new CodepointCountFilter(TEST_VERSION_CURRENT, tokenizer, 0, 5));
       }
     };
@@ -58,7 +57,8 @@ public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
       int max = _TestUtil.nextInt(random(), 0, 100);
       int count = text.codePointCount(0, text.length());
       boolean expected = count >= min && count <= max;
-      TokenStream stream = new KeywordTokenizer(new StringReader(text));
+      TokenStream stream = new KeywordTokenizer();
+      ((Tokenizer)stream).setReader(new StringReader(text));
       stream = new CodepointCountFilter(TEST_VERSION_CURRENT, stream, min, max);
       stream.reset();
       assertEquals(expected, stream.incrementToken());

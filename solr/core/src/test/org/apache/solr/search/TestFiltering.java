@@ -20,6 +20,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
@@ -259,6 +260,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
         }
       }
       assertU(commit());
+      // sanity check
+      assertJQ(req("q", "*:*"), "/response/numFound==" + model.indexSize);
 
       int totalMatches=0;
       int nonZeros=0;
@@ -322,11 +325,10 @@ public class TestFiltering extends SolrTestCaseJ4 {
         } catch (Exception e) {
           // show the indexIter and queryIter for easier debugging
           SolrException.log(log, e);
-          String s= "FAILURE: iiter=" + iiter + " qiter=" + qiter + " request="+params;
+          String s= "FAILURE: indexSize=" + model.indexSize + " iiter=" + iiter + " qiter=" + qiter + " request="+params;
           log.error(s);
           fail(s);
         }
-
       }
 
       // After making substantial changes to this test, make sure that we still get a
@@ -336,4 +338,43 @@ public class TestFiltering extends SolrTestCaseJ4 {
     }
   }
 
+  public void testHossssSanity() throws Exception {
+    clearIndex();
+
+    SolrParams match_0 
+      = params("q",  "{!frange v=val_i l=0 u=1}",
+               "fq", "{!frange v=val_i l=1 u=1}",
+               "fq", "{!frange v=val_i l=0 u=1}",
+               "fq", "-_query_:\"{!frange v=val_i l=1 u=1}\"",
+               "fq", "-_query_:\"{!frange v=val_i l=0 u=1}\"");
+    
+    SolrParams match_1
+      = params("q",  "{!frange v=val_i l=0 u=1}",
+               "fq", "{!frange v=val_i l=0 u=1}",
+               "fq", "{!frange v=val_i l=0 u=1}",
+               "fq", "-_query_:\"{!frange v=val_i l=1 u=1}\"",
+               "fq", "-_query_:\"{!frange v=val_i l=1 u=1}\"");
+    
+    final int numDocs = 10;
+
+    for (int i = 0; i < numDocs; i++) {
+      String val = Integer.toString(i);
+      assertU(adoc("id",val,f,val));
+    }
+    assertU(commit());
+
+    // sanity check
+    assertJQ(req("q", "*:*"), "/response/numFound==" + numDocs);
+
+    // 1 then 0
+    assertJQ(req(match_1), "/response/numFound==1");
+    assertJQ(req(match_0), "/response/numFound==0");
+
+    // clear caches
+    assertU(commit());
+
+    // 0 then 1
+    assertJQ(req(match_0), "/response/numFound==0");
+    assertJQ(req(match_1), "/response/numFound==1");
+  }
 }

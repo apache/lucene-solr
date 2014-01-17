@@ -38,7 +38,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   public void testExactCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     CharArraySet stopWords = new CharArraySet(TEST_VERSION_CURRENT, asSet("is", "the", "Time"), false);
-    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopWords);
+    final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    in.setReader(reader);
+    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, in, stopWords);
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
   }
 
@@ -46,7 +48,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
-    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
+    final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    in.setReader(reader);
+    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, in, stopSet);
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
   }
 
@@ -67,7 +71,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    StopFilter stpf = new StopFilter(Version.LUCENE_40, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
+    final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    in.setReader(reader);
+    StopFilter stpf = new StopFilter(Version.LUCENE_40, in, stopSet);
     doTestStopPositons(stpf);
     // with increments, concatenating two stop filters
     ArrayList<String> a0 = new ArrayList<String>();
@@ -86,7 +92,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     CharArraySet stopSet0 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords0);
     CharArraySet stopSet1 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords1);
     reader = new StringReader(sb.toString());
-    StopFilter stpf0 = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet0); // first part of the set
+    final MockTokenizer in1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    in1.setReader(reader);
+    StopFilter stpf0 = new StopFilter(TEST_VERSION_CURRENT, in1, stopSet0); // first part of the set
     StopFilter stpf01 = new StopFilter(TEST_VERSION_CURRENT, stpf0, stopSet1); // two stop filters concatenated!
     doTestStopPositons(stpf01);
   }
@@ -94,7 +102,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   // LUCENE-3849: make sure after .end() we see the "ending" posInc
   public void testEndStopword() throws Exception {
     CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "of");
-    StopFilter stpf = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(new StringReader("test of"), MockTokenizer.WHITESPACE, false), stopSet);
+    final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    in.setReader(new StringReader("test of"));
+    StopFilter stpf = new StopFilter(TEST_VERSION_CURRENT, in, stopSet);
     assertTokenStreamContents(stpf, new String[] { "test" },
                               new int[] {0},
                               new int[] {4},

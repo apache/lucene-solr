@@ -27,7 +27,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
 
   public void testMaxPosition1() throws Exception {
     Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
     // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
     tokenizer.setEnableChecks(false);
     TokenStream stream = tokenizer;
@@ -48,7 +48,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
 
   public void testMaxPosition1WithShingles() throws Exception {
     Reader reader = new StringReader("one two three four five");
-    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
     // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
     tokenizer.setEnableChecks(false);
     TokenStream stream = tokenizer;
@@ -63,7 +63,7 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
   
   public void testConsumeAllTokens() throws Exception {
     Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("LimitTokenPosition",
         "maxTokenPosition", "3",
         "consumeAllTokens", "true").create(stream);

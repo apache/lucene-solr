@@ -100,19 +100,6 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     dir.close();
   }
 
-  @Test
-  public void testMissingSnapshots() throws Exception {
-    Directory dir = newDirectory();
-    try {
-      new PersistentSnapshotDeletionPolicy(
-                                           new KeepOnlyLastCommitDeletionPolicy(), dir, OpenMode.APPEND);
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    dir.close();
-  }
-
   public void testExceptionDuringSave() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.failOn(new MockDirectoryWrapper.Failure() {

@@ -59,12 +59,12 @@ public  class LeaderElector {
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
-  
+  private final static Pattern  NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
+
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
 
-  // for tests
   private volatile ElectionContext context;
 
   public LeaderElector(SolrZkClient zkClient) {
@@ -72,7 +72,6 @@ public  class LeaderElector {
     zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
   
-  // for tests
   public ElectionContext getContext() {
     return context;
   }
@@ -170,7 +169,7 @@ public  class LeaderElector {
    * 
    * @return sequence number
    */
-  private int getSeq(String nStringSequence) {
+  public static int getSeq(String nStringSequence) {
     int seq = 0;
     Matcher m = LEADER_SEQ.matcher(nStringSequence);
     if (m.matches()) {
@@ -192,6 +191,19 @@ public  class LeaderElector {
           + nStringSequence);
     }
     return id;
+  }
+
+  public static String getNodeName(String nStringSequence){
+    String result;
+    Matcher m = NODE_NAME.matcher(nStringSequence);
+    if (m.matches()) {
+      result = m.group(2);
+    } else {
+      throw new IllegalStateException("Could not find regex match in:"
+          + nStringSequence);
+    }
+    return result;
+
   }
   
   /**
@@ -293,7 +305,7 @@ public  class LeaderElector {
   /**
    * Sort n string sequence list.
    */
-  private void sortSeqs(List<String> seqs) {
+  public static void sortSeqs(List<String> seqs) {
     Collections.sort(seqs, new Comparator<String>() {
       
       @Override
@@ -302,5 +314,9 @@ public  class LeaderElector {
             Integer.valueOf(getSeq(o2)));
       }
     });
+  }
+  void retryElection() throws KeeperException, InterruptedException, IOException {
+    context.cancelElection();
+    joinElection(context, true);
   }
 }

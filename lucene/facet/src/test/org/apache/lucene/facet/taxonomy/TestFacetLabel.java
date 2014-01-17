@@ -2,7 +2,10 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.util.Arrays;
 
+import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -158,8 +161,104 @@ public class TestFacetLabel extends FacetTestCase {
         assertNotNull(new FacetLabel(components));
         fail("empty or null components should not be allowed: " + Arrays.toString(components));
       } catch (IllegalArgumentException e) {
-        // ok
+        // expected
       }
+      try {
+        new FacetField("dim", components);
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
+      try {
+        new AssociationFacetField(new BytesRef(), "dim", components);
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
+      try {
+        new IntAssociationFacetField(17, "dim", components);
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
+      try {
+        new FloatAssociationFacetField(17.0f, "dim", components);
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
+    }
+    try {
+      new FacetField(null, new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new FacetField("", new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new IntAssociationFacetField(17, null, new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new IntAssociationFacetField(17, "", new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new FloatAssociationFacetField(17.0f, null, new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new FloatAssociationFacetField(17.0f, "", new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new AssociationFacetField(new BytesRef(), null, new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new AssociationFacetField(new BytesRef(), "", new String[] {"abc"});
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new SortedSetDocValuesFacetField(null, "abc");
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new SortedSetDocValuesFacetField("", "abc");
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new SortedSetDocValuesFacetField("dim", null);
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    try {
+      new SortedSetDocValuesFacetField("dim", "");
+      fail("empty or null components should not be allowed");
+    } catch (IllegalArgumentException e) {
+      // expected
     }
   }
 

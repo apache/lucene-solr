@@ -158,7 +158,7 @@ public class TestJavascriptFunction extends LuceneTestCase {
   }
   
   public void testHaversinMethod() throws Exception {
-    assertEvaluatesTo("haversin(40.7143528,-74.0059731,40.759011,-73.9844722)", 5.285885589128);
+    assertEvaluatesTo("haversin(40.7143528,-74.0059731,40.759011,-73.9844722)", 5.284299568309);
   }
   
   public void testLnMethod() throws Exception {

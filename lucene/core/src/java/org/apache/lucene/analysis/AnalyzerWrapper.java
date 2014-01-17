@@ -98,8 +98,8 @@ public abstract class AnalyzerWrapper extends Analyzer {
   }
   
   @Override
-  protected final TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-    return wrapComponents(fieldName, getWrappedAnalyzer(fieldName).createComponents(fieldName, aReader));
+  protected final TokenStreamComponents createComponents(String fieldName) {
+    return wrapComponents(fieldName, getWrappedAnalyzer(fieldName).createComponents(fieldName));
   }
 
   @Override

@@ -70,8 +70,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -90,8 +90,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -108,8 +108,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -127,8 +127,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -145,8 +145,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random(), jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -164,8 +164,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };

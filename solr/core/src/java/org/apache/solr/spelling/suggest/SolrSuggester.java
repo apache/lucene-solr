@@ -179,7 +179,7 @@ public class SolrSuggester {
     
     SuggesterResult res = new SuggesterResult();
     List<LookupResult> suggestions = lookup.lookup(options.token, false, options.count);
-    res.add(options.token.toString(), suggestions);
+    res.add(getName(), options.token.toString(), suggestions);
     return res;
   }
 

@@ -118,8 +118,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(tokenizer, new QPTestFilter(tokenizer));
     }
   }
@@ -250,8 +250,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   protected static class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    public SimpleCJKTokenizer(Reader input) {
-      super(input);
+    public SimpleCJKTokenizer() {
+      super();
     }
 
     @Override
@@ -267,8 +267,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   private class SimpleCJKAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new SimpleCJKTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new SimpleCJKTokenizer());
     }
   }
 
@@ -403,8 +403,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // +,-,! should be directly adjacent to operand (i.e. not separated by whitespace) to be treated as an operator
     Analyzer a = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
     };
     assertQueryEquals("a - b", a, "a - b");
@@ -558,6 +558,13 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("((stop))", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
+    
+    CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
+    setDefaultOperatorAND(cqpc);
+    assertQueryEquals(cqpc, "field", "term phrase term",
+        "+term +(+phrase1 +phrase2) +term");
+    assertQueryEquals(cqpc, "field", "phrase",
+        "+phrase1 +phrase2");
   }
 
   public void testRange() throws Exception {
@@ -1133,8 +1140,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       super();
     }
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer( MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
     }
   }
@@ -1145,8 +1152,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       super();
     }
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
     }
   }
   
@@ -1176,8 +1183,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   private class MockCollationAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(tokenizer, new MockCollationFilter(tokenizer));
     }
   }

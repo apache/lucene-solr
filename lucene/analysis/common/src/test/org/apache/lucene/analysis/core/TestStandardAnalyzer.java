@@ -41,16 +41,16 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
   private Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents
-      (String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
 
-      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -250,8 +250,8 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkRandomData(random,
                     new Analyzer() {
                       @Override
-                      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+                      protected TokenStreamComponents createComponents(String fieldName) {
+                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
                         TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, tokenStream);
                       }

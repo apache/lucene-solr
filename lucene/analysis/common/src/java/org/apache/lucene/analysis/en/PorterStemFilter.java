@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
     <PRE class="prettyprint">
     class MyAnalyzer extends Analyzer {
       {@literal @Override}
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer source = new LowerCaseTokenizer(version, reader);
         return new TokenStreamComponents(source, new PorterStemFilter(source));
       }

@@ -455,9 +455,12 @@ public class RegisterFieldHandler extends Handler {
     }      
 
     if (type.equals("text")) {
+      if (sorted) {
+        f.fail("sort", "cannot sort text fields; use atom instead");
+      }
       ft.setIndexed(true);
       ft.setTokenized(true);
-      if (sorted || grouped) {
+      if (grouped) {
         ft.setDocValueType(DocValuesType.SORTED);
       } else if (dv) {
         ft.setDocValueType(DocValuesType.BINARY);
@@ -717,7 +720,7 @@ public class RegisterFieldHandler extends Handler {
    *  fields, solely for .getOffsetGap I think. */
   public final static Analyzer dummyAnalyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         throw new UnsupportedOperationException();
       }
     };
@@ -732,7 +735,7 @@ public class RegisterFieldHandler extends Handler {
 
   final static Pattern COMMENTS_PATTERN = Pattern.compile("#.*$", Pattern.MULTILINE);
 
-  static TokenStreamComponents buildCustomAnalysisChain(Version matchVersion, Request chain, Reader reader) {
+  static TokenStreamComponents buildCustomAnalysisChain(Version matchVersion, Request chain) {
 
     Request t = chain.getStruct("tokenizer");
 
@@ -743,10 +746,10 @@ public class RegisterFieldHandler extends Handler {
     Tokenizer tokenizer;
     // nocommit use analysis factories
     if (pr.name.equals("StandardTokenizer")) {
-      tokenizer = new StandardTokenizer(matchVersion, reader);
+      tokenizer = new StandardTokenizer(matchVersion);
       ((StandardTokenizer) tokenizer).setMaxTokenLength(pr.r.getInt("maxTokenLength"));
     } else if (pr.name.equals("WhitespaceTokenizer")) {
-      tokenizer = new WhitespaceTokenizer(matchVersion, reader);
+      tokenizer = new WhitespaceTokenizer(matchVersion);
     } else if (pr.name.equals("PatternTokenizer")) {
       Pattern p;
       try {
@@ -756,7 +759,7 @@ public class RegisterFieldHandler extends Handler {
         // Dead code but compiler disagrees:
         p = null;
       }
-      tokenizer = new PatternTokenizer(reader, p, pr.r.getInt("group"));
+      tokenizer = new PatternTokenizer(p, pr.r.getInt("group"));
     } else if (pr.name.equals("ICUTokenizer")) {
       final BreakIterator breakers[];
       if (pr.r.hasParam("rules")) {
@@ -799,7 +802,7 @@ public class RegisterFieldHandler extends Handler {
         // TODO: we could also allow codes->types mapping
       };
 
-      tokenizer = new ICUTokenizer(reader, config);
+      tokenizer = new ICUTokenizer(config);
 
     } else {
       // BUG
@@ -891,7 +894,7 @@ public class RegisterFieldHandler extends Handler {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
       JSONObject o;
       try {
         o = (JSONObject) JSONValue.parseStrict(json);
@@ -903,8 +906,7 @@ public class RegisterFieldHandler extends Handler {
       positionIncrementGap = r.getInt("positionIncrementGap");
       offsetGap = r.getInt("offsetGap");
       return buildCustomAnalysisChain(matchVersion,
-                                      r,
-                                      reader);
+                                      r);
     }
 
     @Override
@@ -1022,7 +1024,7 @@ public class RegisterFieldHandler extends Handler {
         a.getInt("positionIncrementGap");
         a.getInt("offsetGap");
         // Ensures the args are all correct:
-        buildCustomAnalysisChain(matchVersion, a, new StringReader(""));
+        buildCustomAnalysisChain(matchVersion, a);
         analyzer = new CustomAnalyzer(matchVersion, jsonOrig);
       } else {
         f.fail(name, "either class or tokenizer/tokenFilters are required");

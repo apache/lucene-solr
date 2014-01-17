@@ -111,10 +111,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** {@link IndexSearcher} used for lookups. */
   protected IndexSearcher searcher;
 
-  /** null if payloads were not indexed: */
-  private BinaryDocValues payloadsDV;
-  private BinaryDocValues textDV;
-  private NumericDocValues weightsDV;
+  /** DocValuesField holding the payloads; null if payloads were not indexed. */
+  protected BinaryDocValues payloadsDV;
+
+  /** DocValuesField holding each suggestion's text. */
+  protected BinaryDocValues textDV;
+
+  /** DocValuesField holding each suggestion's weight. */
+  protected NumericDocValues weightsDV;
 
   /** Default minimum number of leading characters before
    *  PrefixQuery is used (4). */
@@ -214,9 +218,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                           getIndexWriterConfig(matchVersion, gramAnalyzer));
       BytesRef text;
       Document doc = new Document();
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(IndexOptions.DOCS_ONLY);
-      ft.setOmitNorms(true);
+      FieldType ft = getTextFieldType();
       Field textField = new Field(TEXT_FIELD_NAME, "", ft);
       doc.add(textField);
 
@@ -312,6 +314,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         IOUtils.closeWhileHandlingException(w, w2, r, dirTmp);
       }
     }
+  }
+
+  /**
+   * Subclass can override this method to change the field type of the text field
+   * e.g. to change the index options
+   */
+  protected FieldType getTextFieldType(){
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.setOmitNorms(true);
+
+    return ft;
   }
 
   @Override
@@ -416,38 +430,56 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       // Slower way if postings are not pre-sorted by weight:
       // hits = searcher.search(query, null, num, new Sort(new SortField("weight", SortField.Type.LONG, true)));
 
-      List<LookupResult> results = new ArrayList<LookupResult>();
-      BytesRef scratch = new BytesRef();
-      for (int i=0;i<hits.scoreDocs.length;i++) {
-        ScoreDoc sd = hits.scoreDocs[i];
-        textDV.get(sd.doc, scratch);
-        String text = scratch.utf8ToString();
-        long score = weightsDV.get(sd.doc);
+      List<LookupResult> results = createResults(hits, num, key, doHighlight, matchedTokens, prefixToken);
 
-        BytesRef payload;
-        if (payloadsDV != null) {
-          payload = new BytesRef();
-          payloadsDV.get(sd.doc, payload);
-        } else {
-          payload = null;
-        }
-
-        LookupResult result;
-
-        if (doHighlight) {
-          Object highlightKey = highlight(text, matchedTokens, prefixToken);
-          result = new LookupResult(highlightKey.toString(), highlightKey, score, payload);
-        } else {
-          result = new LookupResult(text, score, payload);
-        }
-        results.add(result);
-      }
       //System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
       //System.out.println(results);
+
       return results;
+
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
+  }
+
+  /**
+   * Create the results based on the search hits.
+   * Can be overridden by subclass to add particular behavior (e.g. weight transformation)
+   * @throws IOException If there are problems reading fields from the underlying Lucene index.
+   */
+  protected List<LookupResult> createResults(TopDocs hits, int num, CharSequence charSequence,
+                                             boolean doHighlight, Set<String> matchedTokens, String prefixToken)
+      throws IOException {
+
+    List<LookupResult> results = new ArrayList<LookupResult>();
+    BytesRef scratch = new BytesRef();
+    for (int i=0;i<hits.scoreDocs.length;i++) {
+      ScoreDoc sd = hits.scoreDocs[i];
+      textDV.get(sd.doc, scratch);
+      String text = scratch.utf8ToString();
+      long score = weightsDV.get(sd.doc);
+
+      BytesRef payload;
+      if (payloadsDV != null) {
+        payload = new BytesRef();
+        payloadsDV.get(sd.doc, payload);
+      } else {
+        payload = null;
+      }
+
+      LookupResult result;
+
+      if (doHighlight) {
+        Object highlightKey = highlight(text, matchedTokens, prefixToken);
+        result = new LookupResult(highlightKey.toString(), highlightKey, score, payload);
+      } else {
+        result = new LookupResult(text, score, payload);
+      }
+
+      results.add(result);
+    }
+
+    return results;
   }
 
   /** Subclass can override this to tweak the Query before

@@ -947,7 +947,7 @@ public class SimplePostTool {
   public static String getXP(Node n, String xpath, boolean concatAll)
       throws XPathExpressionException {
     NodeList nodes = getNodesFromXP(n, xpath);
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     if (nodes.getLength() > 0) {
       for(int i = 0; i < nodes.getLength() ; i++) {
         sb.append(nodes.item(i).getNodeValue() + " ");

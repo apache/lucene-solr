@@ -32,8 +32,8 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   private Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
     }
   };
@@ -273,8 +273,8 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
       }
     };

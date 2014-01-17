@@ -70,8 +70,8 @@ public abstract class SolrCoreState {
       try {
         log.info("Closing SolrCoreState");
         close(closer);
-      } catch (Throwable t) {
-        log.error("Error closing SolrCoreState", t);
+      } catch (Exception e) {
+        log.error("Error closing SolrCoreState", e);
       }
     }
     return close;

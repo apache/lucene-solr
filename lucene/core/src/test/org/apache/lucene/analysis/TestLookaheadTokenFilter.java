@@ -26,9 +26,9 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         Random random = random();
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random.nextBoolean());
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random.nextBoolean());
         TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
@@ -55,8 +55,8 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
   public void testNeverCallingPeek() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random().nextBoolean());
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random().nextBoolean());
         TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
@@ -67,9 +67,8 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
   public void testMissedFirstToken() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-                                                       Reader reader) {
-        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TrivialLookaheadFilter filter = new TrivialLookaheadFilter(source);
         return new TokenStreamComponents(source, filter);
      }

@@ -103,7 +103,7 @@ abstract public class BaseTestHarness {
    *
    * @param fieldsAndValues 0 and Even numbered args are fields names odds are field values.
    */
-  public static StringBuffer makeSimpleDoc(String... fieldsAndValues) {
+  public static String makeSimpleDoc(String... fieldsAndValues) {
 
     try {
       StringWriter w = new StringWriter();
@@ -113,7 +113,7 @@ abstract public class BaseTestHarness {
             fieldsAndValues[i]);
       }
       w.append("</doc>");
-      return w.getBuffer();
+      return w.toString();
     } catch (IOException e) {
       throw new RuntimeException
           ("this should never happen with a StringWriter", e);

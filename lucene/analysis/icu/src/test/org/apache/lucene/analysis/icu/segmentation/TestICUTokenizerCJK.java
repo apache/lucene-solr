@@ -29,8 +29,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new ICUTokenizer(reader));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new ICUTokenizer());
     }
   };
   

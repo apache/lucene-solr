@@ -40,7 +40,8 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   public void testElision() throws Exception {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
-    Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(test));
+    Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(test));
     CharArraySet articles = new CharArraySet(TEST_VERSION_CURRENT, asSet("l", "M"), false);
     TokenFilter filter = new ElisionFilter(tokenizer, articles);
     List<String> tas = filter(filter);
@@ -64,8 +65,8 @@ public class TestElision extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ElisionFilter(tokenizer, FrenchAnalyzer.DEFAULT_ARTICLES));
       }
     };

@@ -95,19 +95,17 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   /**
    * Creates a new instance of the UAX29URLEmailTokenizer.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
-   *
-   * @param input The input reader
+
    */
-  public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public UAX29URLEmailTokenizer(Version matchVersion) {
     this.scanner = getScannerFor(matchVersion);
   }
 
   /**
    * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory} 
    */
-  public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     this.scanner = getScannerFor(matchVersion);
   }
 

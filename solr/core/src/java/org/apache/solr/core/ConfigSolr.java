@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -33,6 +34,7 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -288,7 +290,7 @@ public abstract class ConfigSolr {
     try {
       return readProperties(((NodeList) config.evaluate(
           path, XPathConstants.NODESET)).item(0));
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log, null, e);
     }
     return null;

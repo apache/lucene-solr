@@ -257,8 +257,53 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
-  public void testCommonTermsQueryHighlightTest() throws IOException {
+
+  public void testBoostedPhraseHighlightTest() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer( random() ) ) );
+    Document doc = new Document();
+    FieldType type = new FieldType( TextField.TYPE_STORED  );
+    type.setStoreTermVectorOffsets( true );
+    type.setStoreTermVectorPositions( true );
+    type.setStoreTermVectors( true );
+    type.freeze();
+    StringBuilder text = new StringBuilder();
+    text.append("words words junk junk junk junk junk junk junk junk highlight junk junk junk junk together junk ");
+    for ( int i = 0; i<10; i++ ) {
+      text.append("junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk ");
+    }
+    text.append("highlight words together ");
+    for ( int i = 0; i<10; i++ ) {
+      text.append("junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk ");
+    }
+    doc.add( new Field( "text", text.toString().trim(), type ) );
+    writer.addDocument(doc);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    IndexReader reader = DirectoryReader.open(writer, true);
+
+    // This mimics what some query parsers do to <highlight words together>
+    BooleanQuery terms = new BooleanQuery();
+    terms.add( clause( "text", "highlight" ), Occur.MUST );
+    terms.add( clause( "text", "words" ), Occur.MUST );
+    terms.add( clause( "text", "together" ), Occur.MUST );
+    // This mimics what some query parsers do to <"highlight words together">
+    BooleanQuery phrase = new BooleanQuery();
+    phrase.add( clause( "text", "highlight", "words", "together" ), Occur.MUST );
+    phrase.setBoost( 100 );
+    // Now combine those results in a boolean query which should pull the phrases to the front of the list of fragments 
+    BooleanQuery query = new BooleanQuery();
+    query.add( phrase, Occur.MUST );
+    query.add( phrase, Occur.SHOULD );
+    FieldQuery fieldQuery = new FieldQuery( query, reader, true, false );
+    String fragment = highlighter.getBestFragment( fieldQuery, reader, 0, "text", 100 );
+    assertEquals( "junk junk junk junk junk junk junk junk <b>highlight words together</b> junk junk junk junk junk junk junk junk", fragment );
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testCommonTermsQueryHighlight() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,  new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
     FieldType type = new FieldType(TextField.TYPE_STORED);

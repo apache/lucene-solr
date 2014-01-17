@@ -21,6 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +43,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -172,6 +175,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     } else {
       System.clearProperty("solr.directoryFactory");
     }
+  }
+
+
+  protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(input);
+    return mockTokenizer;
+  }
+
+  protected static MockTokenizer whitespaceMockTokenizer(String input) throws IOException {
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(new StringReader(input));
+    return mockTokenizer;
   }
 
   /**
@@ -673,9 +689,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
    * @see JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
    */
-  public static void assertJQ(SolrQueryRequest req, String... tests) throws Exception {
-    assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
+  public static String assertJQ(SolrQueryRequest req, String... tests) throws Exception {
+    return assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
   }
   /**
    * Validates a query matches some JSON test expressions and closes the
@@ -690,8 +707,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @param req Solr request to execute
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
+   * @return The request response as a JSON String if all test patterns pass
    */
-  public static void assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
+  public static String assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
     SolrParams params =  null;
     try {
       params = req.getParams();
@@ -739,6 +757,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
           }
         }
       }
+      return response;
     } finally {
       // restore the params
       if (params != null && params != req.getParams()) req.setParams(params);
@@ -871,7 +890,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static XmlDoc doc(String... fieldsAndValues) {
     XmlDoc d = new XmlDoc();
-    d.xml = TestHarness.makeSimpleDoc(fieldsAndValues).toString();
+    d.xml = TestHarness.makeSimpleDoc(fieldsAndValues);
     return d;
   }
 
@@ -1766,5 +1785,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return this;
     }
   }
+
 
 }

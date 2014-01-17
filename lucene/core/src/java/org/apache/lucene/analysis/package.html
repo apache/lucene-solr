@@ -80,53 +80,67 @@ and proximity searches (though sentence identification is not provided by Lucene
 </p>
 <ul>
   <li>
-    {@link org.apache.lucene.analysis.Analyzer} &ndash; An Analyzer is 
-    responsible for building a 
+    {@link org.apache.lucene.analysis.Analyzer} &ndash; An <code>Analyzer</code> is 
+    responsible for supplying a
     {@link org.apache.lucene.analysis.TokenStream} which can be consumed
     by the indexing and searching processes.  See below for more information
-    on implementing your own Analyzer.
+    on implementing your own {@link org.apache.lucene.analysis.Analyzer}. Most of the time, you can use
+    an anonymous subclass of {@link org.apache.lucene.analysis.Analyzer}.
   </li>
   <li>
-    CharFilter &ndash; CharFilter extends
-    {@link java.io.Reader} to perform pre-tokenization substitutions, 
-    deletions, and/or insertions on an input Reader's text, while providing
+    {@link org.apache.lucene.analysis.CharFilter} &ndash; <code>CharFilter</code> extends
+    {@link java.io.Reader} to transform the text before it is
+    tokenized, while providing
     corrected character offsets to account for these modifications.  This
     capability allows highlighting to function over the original text when 
-    indexed tokens are created from CharFilter-modified text with offsets
-    that are not the same as those in the original text. Tokenizers'
-    constructors and reset() methods accept a CharFilter.  CharFilters may
+    indexed tokens are created from <code>CharFilter</code>-modified text with offsets
+    that are not the same as those in the original text. {@link org.apache.lucene.analysis.Tokenizer#setReader(java.io.Reader)}
+    accept <code>CharFilter</code>s.  <code>CharFilter</code>s may
     be chained to perform multiple pre-tokenization modifications.
   </li>
   <li>
-    {@link org.apache.lucene.analysis.Tokenizer} &ndash; A Tokenizer is a 
+    {@link org.apache.lucene.analysis.Tokenizer} &ndash; A <code>Tokenizer</code> is a 
     {@link org.apache.lucene.analysis.TokenStream} and is responsible for
-    breaking up incoming text into tokens. In most cases, an Analyzer will
-    use a Tokenizer as the first step in the analysis process.  However,
-    to modify text prior to tokenization, use a CharStream subclass (see
+    breaking up incoming text into tokens. In many cases, an {@link org.apache.lucene.analysis.Analyzer} will
+    use a {@link org.apache.lucene.analysis.Tokenizer} as the first step in the analysis process.  However,
+    to modify text prior to tokenization, use a {@link org.apache.lucene.analysis.CharFilter} subclass (see
     above).
   </li>
   <li>
-    {@link org.apache.lucene.analysis.TokenFilter} &ndash; A TokenFilter is
-    also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
-    for modifying tokens that have been created by the Tokenizer.  Common 
-    modifications performed by a TokenFilter are: deletion, stemming, synonym 
-    injection, and down casing.  Not all Analyzers require TokenFilters.
+    {@link org.apache.lucene.analysis.TokenFilter} &ndash; A <code>TokenFilter</code> is
+    a {@link org.apache.lucene.analysis.TokenStream} and is responsible
+    for modifying tokens that have been created by the <code>Tokenizer</code>. Common 
+    modifications performed by a <code>TokenFilter</code> are: deletion, stemming, synonym 
+    injection, and case folding.  Not all <code>Analyzer</code>s require <code>TokenFilter</code>s.
   </li>
 </ul>
 <h2>Hints, Tips and Traps</h2>
 <p>
-  The synergy between {@link org.apache.lucene.analysis.Analyzer} and 
-  {@link org.apache.lucene.analysis.Tokenizer} is sometimes confusing. To ease
-  this confusion, some clarifications:
+  The relationship between {@link org.apache.lucene.analysis.Analyzer} and 
+  {@link org.apache.lucene.analysis.CharFilter}s,
+  {@link org.apache.lucene.analysis.Tokenizer}s,
+  and {@link org.apache.lucene.analysis.TokenFilter}s is sometimes confusing. To ease
+  this confusion, here is some clarifications:
 </p>
 <ul>
   <li>
-    The {@link org.apache.lucene.analysis.Analyzer} is responsible for the entire task of 
-    <u>creating</u> tokens out of the input text, while the {@link org.apache.lucene.analysis.Tokenizer}
-    is only responsible for <u>breaking</u> the input text into tokens. Very likely, tokens created 
-    by the {@link org.apache.lucene.analysis.Tokenizer} would be modified or even omitted 
-    by the {@link org.apache.lucene.analysis.Analyzer} (via one or more
-    {@link org.apache.lucene.analysis.TokenFilter}s) before being returned.
+    The {@link org.apache.lucene.analysis.Analyzer} is a
+    <strong>factory</strong> for analysis chains. <code>Analyzer</code>s don't
+    process text, <code>Analyzer</code>s construct <code>CharFilter</code>s, <code>Tokenizer</code>s, and/or
+    <code>TokenFilter</code>s that process text. An <code>Analyzer</code> has two tasks: 
+    to produce {@link org.apache.lucene.analysis.TokenStream}s that accept a
+    reader and produces tokens, and to wrap or otherwise
+    pre-process {@link java.io.Reader} objects.
+  </li>
+  <li>
+  The {@link org.apache.lucene.analysis.CharFilter} is a subclass of
+ {@link java.io.Reader} that supports offset tracking.
+  </li>
+  <li>The{@link org.apache.lucene.analysis.Tokenizer}
+    is only responsible for <u>breaking</u> the input text into tokens.
+  </li>
+  <li>The{@link org.apache.lucene.analysis.TokenFilter} modifies a
+  stream of tokens and their contents.
   </li>
   <li>
     {@link org.apache.lucene.analysis.Tokenizer} is a {@link org.apache.lucene.analysis.TokenStream}, 
@@ -134,55 +148,68 @@ and proximity searches (though sentence identification is not provided by Lucene
   </li>
   <li>
     {@link org.apache.lucene.analysis.Analyzer} is "field aware", but 
-    {@link org.apache.lucene.analysis.Tokenizer} is not.
+    {@link org.apache.lucene.analysis.Tokenizer} is not. {@link org.apache.lucene.analysis.Analyzer}s may
+    take a field name into account when constructing the {@link org.apache.lucene.analysis.TokenStream}.
   </li>
 </ul>
 <p>
-  Lucene Java provides a number of analysis capabilities, the most commonly used one being the StandardAnalyzer.  
+  If you want to use a particular combination of <code>CharFilter</code>s, a
+  <code>Tokenizer</code>, and some <code>TokenFilter</code>s, the simplest thing is often an
+  create an anonymous subclass of {@link org.apache.lucene.analysis.Analyzer}, provide {@link
+  org.apache.lucene.analysis.Analyzer#createComponents(String)} and perhaps also
+  {@link org.apache.lucene.analysis.Analyzer#initReader(String,
+  java.io.Reader)}. However, if you need the same set of components
+  over and over in many places, you can make a subclass of
+  {@link org.apache.lucene.analysis.Analyzer}. In fact, Apache Lucene
+  supplies a large family of <code>Analyzer</code> classes that deliver useful
+  analysis chains. The most common of these is the <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.
   Many applications will have a long and industrious life with nothing more
-  than the StandardAnalyzer.  However, there are a few other classes/packages that are worth mentioning:
+  than the <code>StandardAnalyzer</code>.
 </p>
-<ol>
-  <li>
-    PerFieldAnalyzerWrapper &ndash; Most Analyzers perform the same operation on all
-    {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different Analyzer with different
-    {@link org.apache.lucene.document.Field}s.
-  </li>
-  <li>
-    The analysis library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
-    of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.
-  </li>
-  <li>
-    There are a variety of Tokenizer and TokenFilter implementations in this package.  Take a look around, chances are someone has implemented what you need.
-  </li>
-</ol>
 <p>
-  Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
+  Aside from the <code>StandardAnalyzer</code>,
+  Lucene includes several components containing analysis components,
+  all under the 'analysis' directory of the distribution. Some of
+  these support particular languages, others integrate external
+  components. The 'common' subdirectory has some noteworthy
+ general-purpose analyzers, including the <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">PerFieldAnalyzerWrapper</a>. Most <code>Analyzer</code>s perform the same operation on all
+ {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different <code>Analyzer</code> with different
+ {@link org.apache.lucene.document.Field}s. There is a great deal of
+ functionality in the analysis area, you should study it carefully to
+ find the pieces you need.
+</p>
+<p>
+  Analysis is one of the main causes of slow indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
   Perhaps your application would be just fine using the simple WhitespaceTokenizer combined with a StopFilter. The benchmark/ library can be useful 
   for testing out the speed of the analysis process.
 </p>
 <h2>Invoking the Analyzer</h2>
 <p>
-  Applications usually do not invoke analysis &ndash; Lucene does it for them:
+  Applications usually do not invoke analysis &ndash; Lucene does it
+ for them. Applications construct <code>Analyzer</code>s and pass then into Lucene,
+ as follows:
 </p>
 <ul>
   <li>
     At indexing, as a consequence of 
     {@link org.apache.lucene.index.IndexWriter#addDocument(IndexDocument) addDocument(doc)},
-    the Analyzer in effect for indexing is invoked for each indexed field of the added document.
+    the <code>Analyzer</code> in effect for indexing is invoked for each indexed field of the added document.
   </li>
   <li>
-    At search, a QueryParser may invoke the Analyzer during parsing.  Note that for some queries, analysis does not
+    At search, a <code>QueryParser</code> may invoke the Analyzer during parsing.  Note that for some queries, analysis does not
     take place, e.g. wildcard queries.
   </li>
 </ul>
 <p>
   However an application might invoke Analysis of any text for testing or for any other purpose, something like:
 </p>
-<PRE class="prettyprint">
+<PRE class="prettyprint" id="analysis-workflow">
     Version matchVersion = Version.LUCENE_XY; // Substitute desired Lucene version for XY
     Analyzer analyzer = new StandardAnalyzer(matchVersion); // or any other analyzer
     TokenStream ts = analyzer.tokenStream("myfield", new StringReader("some text goes here"));
+    /* The Analyzer class will construct the Tokenizer, TokenFilter(s), and CharFilter(s),
+       and pass the resulting Reader to the Tokenizer.
+    */
     OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     
     try {
@@ -204,27 +231,28 @@ and proximity searches (though sentence identification is not provided by Lucene
 <p>
   Selecting the "correct" analyzer is crucial
   for search quality, and can also affect indexing and search performance.
-  The "correct" analyzer differs between applications.
+  The "correct" analyzer for your application will depend on what your input text
+  looks like and what problem you are trying to solve.
   Lucene java's wiki page 
   <a href="http://wiki.apache.org/lucene-java/AnalysisParalysis">AnalysisParalysis</a> 
   provides some data on "analyzing your analyzer".
   Here are some rules of thumb:
   <ol>
     <li>Test test test... (did we say test?)</li>
-    <li>Beware of over analysis &ndash; might hurt indexing performance.</li>
-    <li>Start with same analyzer for indexing and search, otherwise searches would not find what they are supposed to...</li>
+    <li>Beware of too much analysis &ndash; it might hurt indexing performance.</li>
+    <li>Start with the same analyzer for indexing and search, otherwise searches would not find what they are supposed to...</li>
     <li>In some cases a different analyzer is required for indexing and search, for instance:
         <ul>
-           <li>Certain searches require more stop words to be filtered. (I.e. more than those that were filtered at indexing.)</li>
+           <li>Certain searches require more stop words to be filtered. (i.e. more than those that were filtered at indexing.)</li>
            <li>Query expansion by synonyms, acronyms, auto spell correction, etc.</li>
         </ul>
         This might sometimes require a modified analyzer &ndash; see the next section on how to do that.
     </li>
   </ol>
 </p>
-<h2>Implementing your own Analyzer</h2>
+<h2>Implementing your own Analyzer and Analysis Components</h2>
 <p>
-  Creating your own Analyzer is straightforward. Your Analyzer can wrap
+  Creating your own Analyzer is straightforward. Your Analyzer should subclass {@link org.apache.lucene.analysis.Analyzer}. It can use
   existing analysis components &mdash; CharFilter(s) <i>(optional)</i>, a
   Tokenizer, and TokenFilter(s) <i>(optional)</i> &mdash; or components you
   create, or a combination of existing and newly created components.  Before
@@ -271,10 +299,22 @@ and proximity searches (though sentence identification is not provided by Lucene
     }
   };
 </PRE>
+<h3>End of Input Cleanup</h3>
+<p>
+   At the ends of each field, Lucene will call the {@link org.apache.lucene.analysis.TokenStream#end()}.
+   The components of the token stream (the tokenizer and the token filters) <strong>must</strong>
+   put accurate values into the token attributes to reflect the situation at the end of the field.
+   The Offset attribute must contain the final offset (the total number of characters processed)
+   in both start and end. Attributes like PositionLength must be correct. 
+</p>
+<p>
+   The base method{@link org.apache.lucene.analysis.TokenStream#end()} sets PositionIncrement to 0, which is required.
+   Other components must override this method to fix up the other attributes.
+</p>
 <h3>Token Position Increments</h3>
 <p>
-   By default, all tokens created by Analyzers and Tokenizers have a 
-   {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#getPositionIncrement() position increment} of one.
+   By default, TokenStream arranges for the 
+   {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#getPositionIncrement() position increment} of all tokens to be one.
    This means that the position stored for that token in the index would be one more than
    that of the previous token.
    Recall that phrase and proximity searches rely on position info.
@@ -292,7 +332,7 @@ and proximity searches (though sentence identification is not provided by Lucene
    configured to not take position increments into account when generating phrase queries.
 </p>
 <p>
-  Note that a StopFilter MUST increment the position increment in order not to generate corrupt
+  Note that a filter that filters <strong>out</strong> tokens <strong>must</strong> increment the position increment in order not to generate corrupt
   tokenstream graphs. Here is the logic used by StopFilter to increment positions when filtering out tokens:
 </p>
 <PRE class="prettyprint">
@@ -386,7 +426,15 @@ and proximity searches (though sentence identification is not provided by Lucene
   <li>The first position increment must be &gt; 0.</li>
   <li>Positions must not go backward.</li>
   <li>Tokens that have the same start position must have the same start offset.</li>
-  <li>Tokens that have the same end position (taking into account the position length) must have the same end offset.</li>
+  <li>Tokens that have the same end position (taking into account the
+  position length) must have the same end offset.</li>
+  <li>Tokenizers must call {@link
+  org.apache.lucene.util.AttributeSource#clearAttributes()} in
+  incrementToken().</li>
+  <li>Tokenizers must override {@link
+  org.apache.lucene.analysis.TokenStream#end()}, and pass the final
+  offset (the total number of input characters processed) to both
+  parameters of {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute#setOffset(int, int)}.</li>
 </ul>
 <p>
    Although these rules might seem easy to follow, problems can quickly happen when chaining
@@ -395,17 +443,19 @@ and proximity searches (though sentence identification is not provided by Lucene
 </p>
 <ul>
   <li>Token filters should not modify offsets. If you feel that your filter would need to modify offsets, then it should probably be implemented as a tokenizer.</li>
-  <li>Token filters should not insert positions. If a filter needs to add tokens, then they shoud all have a position increment of 0.</li>
+  <li>Token filters should not insert positions. If a filter needs to add tokens, then they should all have a position increment of 0.</li>
+  <li>When they add tokens, token filters should call {@link org.apache.lucene.util.AttributeSource#clearAttributes()} first.</li>
   <li>When they remove tokens, token filters should increment the position increment of the following token.</li>
   <li>Token filters should preserve position lengths.</li>
 </ul>
 <h2>TokenStream API</h2>
 <p>
-	"Flexible Indexing" summarizes the effort of making the Lucene indexer
+  "Flexible Indexing" summarizes the effort of making the Lucene indexer
   pluggable and extensible for custom index formats.  A fully customizable
   indexer means that users will be able to store custom data structures on
-  disk. Therefore an API is necessary that can transport custom types of
-  data from the documents to the indexer.
+  disk. Therefore the analysis API must transport custom types of
+  data from the documents to the indexer. (It also supports communications
+  amongst the analysis components.)
 </p>
 <h3>Attribute and AttributeSource</h3>
 <p>
@@ -467,6 +517,68 @@ and proximity searches (though sentence identification is not provided by Lucene
     </td>
   </tr>
 </table>
+<h3>More Requirements for Analysis Component Classes</h3>
+Due to the historical development of the API, there are some perhaps
+less than obvious requirements to implement analysis components
+classes.
+<h4 id="analysis-lifetime">Token Stream Lifetime</h4>
+The code fragment of the <a href="#analysis-workflow">analysis workflow
+protocol</a> above shows a token stream being obtained, used, and then
+left for garbage. However, that does not mean that the components of
+that token stream will, in fact, be discarded. The default is just the
+opposite. {@link org.apache.lucene.analysis.Analyzer} applies a reuse
+strategy to the tokenizer and the token filters. It will reuse
+them. For each new input, it calls {@link org.apache.lucene.analysis.Tokenizer#setReader(java.io.Reader)} 
+to set the input. Your components must be prepared for this scenario,
+as described below.
+<h4>Tokenizer</h4>
+<ul>
+  <li>
+  You should create your tokenizer class by extending {@link org.apache.lucene.analysis.Tokenizer}.
+  </li>
+  <li>
+  Your tokenizer <strong>must</strong> override {@link org.apache.lucene.analysis.TokenStream#end()}.
+  Your implementation <strong>must</strong> call
+  <code>super.end()</code>. It must set a correct final offset into
+  the offset attribute, and finish up and other attributes to reflect
+  the end of the stream.
+  </li>
+  <li>
+  If your tokenizer overrides {@link org.apache.lucene.analysis.TokenStream#reset()}
+  or {@link org.apache.lucene.analysis.TokenStream#close()}, it
+  <strong>must</strong> call the corresponding superclass method.
+  </li>
+</ul>
+<h4>Token Filter</h4>
+  You should create your token filter class by extending {@link org.apache.lucene.analysis.TokenFilter}.
+  If your token filter overrides {@link org.apache.lucene.analysis.TokenStream#reset()},
+  {@link org.apache.lucene.analysis.TokenStream#end()}
+  or {@link org.apache.lucene.analysis.TokenStream#close()}, it
+  <strong>must</strong> call the corresponding superclass method.
+<h4>Creating delegates</h4>
+  Forwarding classes (those which extend {@link org.apache.lucene.analysis.Tokenizer} but delegate
+  selected logic to another tokenizer) must also set the reader to the delegate in the overridden
+  {@link org.apache.lucene.analysis.Tokenizer#reset()} method, e.g.:
+  <pre class="prettyprint">
+    public class ForwardingTokenizer extends Tokenizer {
+       private Tokenizer delegate;
+       ...
+       {@literal @Override}
+       public void reset() {
+          super.reset();
+          delegate.setReader(this.input);
+          delegate.reset();
+       }
+    }
+  </pre>
+<h3>Testing Your Analysis Component</h3>
+<p>
+    The lucene-test-framework component defines
+    <a href="{@docRoot}/../test-framework/org/apache/lucene/analysis/BaseTokenStreamTestCase.html">BaseTokenStreamTestCase</a>. By extending
+    this class, you can create JUnit tests that validate that your
+    Analyzer and/or analysis components correctly implement the
+    protocol. The checkRandomData methods of that class are particularly effective in flushing out errors.
+</p>
 <h3>Using the TokenStream API</h3>
 There are a few important things to know in order to use the new API efficiently which are summarized here. You may want
 to walk through the example below first and come back to this section afterwards.
@@ -522,8 +634,8 @@ public class MyAnalyzer extends Analyzer {
   }
 
   {@literal @Override}
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    return new TokenStreamComponents(new WhitespaceTokenizer(matchVersion, reader));
+  protected TokenStreamComponents createComponents(String fieldName) {
+    return new TokenStreamComponents(new WhitespaceTokenizer(matchVersion));
   }
   
   public static void main(String[] args) throws IOException {
@@ -572,8 +684,8 @@ easily by adding a LengthFilter to the chain. Only the
 <code>createComponents()</code> method in our analyzer needs to be changed:
 <pre class="prettyprint">
   {@literal @Override}
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new WhitespaceTokenizer(matchVersion, reader);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new WhitespaceTokenizer(matchVersion);
     TokenStream result = new LengthFilter(true, source, 3, Integer.MAX_VALUE);
     return new TokenStreamComponents(source, result);
   }
@@ -776,8 +888,8 @@ public final class PartOfSpeechAttributeImpl extends AttributeImpl
 <p>Now we need to add the filter to the chain in MyAnalyzer:</p>
 <pre class="prettyprint">
   {@literal @Override}
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new WhitespaceTokenizer(matchVersion, reader);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new WhitespaceTokenizer(matchVersion);
     TokenStream result = new LengthFilter(true, source, 3, Integer.MAX_VALUE);
     result = new PartOfSpeechTaggingFilter(result);
     return new TokenStreamComponents(source, result);
@@ -875,8 +987,8 @@ Example:
 public class MyAnalyzer extends Analyzer {
 
   {@literal @Override}
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    return new TokenStreamComponents(new MyTokenizer(reader));
+  protected TokenStreamComponents createComponents(String fieldName) {
+    return new TokenStreamComponents(new MyTokenizer());
   }
   
   {@literal @Override}

@@ -105,8 +105,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(req,optimize);
       processor.processCommit(commit);
-    } catch (Throwable t) {
-      log.error("Exception while solr commit.", t);
+    } catch (Exception e) {
+      log.error("Exception while solr commit.", e);
     }
   }
 
@@ -115,8 +115,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
       processor.processRollback(rollback);
-    } catch (Throwable t) {
-      log.error("Exception while solr rollback.", t);
+    } catch (Exception e) {
+      log.error("Exception while solr rollback.", e);
     }
   }
 

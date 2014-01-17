@@ -17,7 +17,9 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,14 +34,19 @@ public class SuggesterResult {
   public SuggesterResult() {}
   
   /** token -> lookup results mapping*/
-  private Map<String, List<LookupResult>> suggestions = new HashMap<String, List<LookupResult>>();
+  private Map<String, Map<String, List<LookupResult>>> suggestionsMap = 
+      new HashMap<String, Map<String, List<LookupResult>>>();
 
   /** Add suggestion results for <code>token</code> */
-  public void add(String token, List<LookupResult> results) {
-    List<LookupResult> res = this.suggestions.get(token);
+  public void add(String suggesterName, String token, List<LookupResult> results) {
+    Map<String, List<LookupResult>> suggesterRes = this.suggestionsMap.get(suggesterName);
+    if (suggesterRes == null) {
+      this.suggestionsMap.put(suggesterName, new HashMap<String, List<LookupResult>>());
+    }
+    List<LookupResult> res = this.suggestionsMap.get(suggesterName).get(token);
     if (res == null) {
       res = results;
-      this.suggestions.put(token, res);
+      this.suggestionsMap.get(suggesterName).put(token, res);
     }
   }
   
@@ -48,15 +55,27 @@ public class SuggesterResult {
    * null can be returned, if there are no lookup results
    * for the <code>token</code>
    * */
-  public List<LookupResult> getLookupResult(String token) {
-    return this.suggestions.get(token);
+  public List<LookupResult> getLookupResult(String suggesterName, String token) {
+    return (this.suggestionsMap.containsKey(suggesterName))
+        ? this.suggestionsMap.get(suggesterName).get(token)
+        : new ArrayList<LookupResult>();
   }
   
   /**
    * Get the set of tokens that are present in the
    * instance
    */
-  public Set<String> getTokens() {
-    return this.suggestions.keySet();
+  public Set<String> getTokens(String suggesterName) {
+    return (this.suggestionsMap.containsKey(suggesterName))
+        ? this.suggestionsMap.get(suggesterName).keySet()
+        : new HashSet<String>();
+  }
+  
+  /**
+   * Get the set of suggesterNames for which this
+   * instance holds results
+   */
+  public Set<String> getSuggesterNames() {
+    return this.suggestionsMap.keySet();
   }
 }

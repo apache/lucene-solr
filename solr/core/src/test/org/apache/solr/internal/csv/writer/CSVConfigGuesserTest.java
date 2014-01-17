@@ -54,7 +54,7 @@ public class CSVConfigGuesserTest extends TestCase {
         field.setSize(4);
         expected.addField(field);
         expected.addField(field);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("1234;abcd;1234\n");
         sb.append("abcd;1234;abcd");
         ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
@@ -77,7 +77,7 @@ public class CSVConfigGuesserTest extends TestCase {
         expected.setFill(CSVConfig.FILLRIGHT);
         expected.setIgnoreValueDelimiter(false);
 //        expected.setFixedWidth(false);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("1,2,3,4\n");
         sb.append("abcd,1234,abcd,1234");
         ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));

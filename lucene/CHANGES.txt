@@ -6,30 +6,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
-Changes in backwards compatibility policy
-
-* LUCENE-4535: oal.util.FilterIterator is now an internal API.
-  (Adrien Grand)
-
-* LUCENE-3312: The API of oal.document was restructured to
-  differentiate between stored documents and indexed documents.
-  IndexReader.document(int) now returns StoredDocument
-  instead of Document. In most cases a simple replacement
-  of the return type is enough to upgrade (see MIGRATE.txt).
-  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
-  Robert Muir)
-
-* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
-  not positioned. This change affects all classes that inherit from
-  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
-
-* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
-  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
-  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
-  with the default codec since Lucene 4.0. If you want to configure the interval for
-  this term index, pass it directly in your codec, where it can also be configured
-  per-field. (Robert Muir)
-
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.
@@ -53,6 +29,38 @@ New Features
   FieldsConsumer API, removing PushFieldsConsumer.  Added new
   PushPostingsWriterBase for single-pass push of docs/positions to the
   postings format.  (Mike McCandless)
+
+API Changes
+
+* LUCENE-4535: oal.util.FilterIterator is now an internal API.
+  (Adrien Grand)
+
+* LUCENE-3312: The API of oal.document was restructured to
+  differentiate between stored documents and indexed documents.
+  IndexReader.document(int) now returns StoredDocument
+  instead of Document. In most cases a simple replacement
+  of the return type is enough to upgrade (see MIGRATE.txt).
+  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
+  Robert Muir)
+
+* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
+  not positioned. This change affects all classes that inherit from
+  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
+
+* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
+  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
+  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
+  with the default codec since Lucene 4.0. If you want to configure the interval for
+  this term index, pass it directly in your codec, where it can also be configured
+  per-field. (Robert Muir)
+
+* LUCENE-5388: Remove Reader from Tokenizer's constructor. 
+  (Benson Margulies via Robert Muir - pull request #16)
+
+Documentation
+
+* LUCENE-5392: Add/improve analysis package documentation to reflect
+  analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
 Optimizations
 
@@ -83,6 +91,19 @@ New Features
 
 * LUCENE-5379: Add Analyzer for Kurdish.  (Robert Muir)
 
+* LUCENE-5369: Added an UpperCaseFilter to make UPPERCASE tokens. (ryan)
+
+* LUCENE-5345: Add a new BlendedInfixSuggester, which is like
+  AnalyzingInfixSuggester but boosts suggestions that matched tokens
+  with lower positions.  (Remi Melisson via Mike McCandless)
+
+* LUCENE-4399: When sorting by String (SortField.STRING), you can now
+  specify whether missing values should be sorted first (the default),
+  using SortField.setMissingValue(SortField.STRING_FIRST), or last,
+  using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
+  Mike McCandless)
+
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
@@ -109,6 +130,13 @@ Build
 * SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
   (Karl Wright via Shawn Heisey)
 
+* LUCENE-5385: "ant precommit" / "ant check-svn-working-copy" now work
+  for SVN 1.8 or GIT checkouts. The ANT target prints a warning instead
+  of failing. It also instructs the user, how to run on SVN 1.8 working
+  copies.  (Robert Muir, Uwe Schindler)
+
+* LUCENE-5383: fix changes2html to link pull requests (Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
@@ -124,17 +152,59 @@ Bug fixes
   like when index / flush requests happen concurrently to the close or
   rollback call. (Simon Willnauer)
 
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+  
+* LUCENE-5344: Flexible StandardQueryParser behaves differently than 
+  ClassicQueryParser. (Adriano Crestani)
+
+* LUCENE-5391: UAX29URLEmailTokenizer should not tokenize no-scheme
+  domain-only URLs that are followed by an alphanumeric character.
+  (Chris Geeringh, Steve Rowe)
+
+* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
+  they were indexed with the term vectors. (Mike McCandless)
+
+* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
+  when the parent query incorrectly returns child documents, and throw
+  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
+
+* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
+  preventing wrong term positions for fields that use
+  StringTokenStream. (Michael Busch)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
   APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
 
+Optimizations
+
+* LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
+  (Joshua Hartman via Uwe Schindler, Dawid Weiss, Mike McCandless)
+
+* LUCENE-5271: A slightly more accurate SloppyMath distance.
+  (Gilad Barkai via Ryan Ernst)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
   AlreadyClosedException if the refCount in incremented but
   is less that 1. (Simon Willnauer) 
+
+* LUCENE-4399: Deep paging using IndexSearcher.searchAfter when
+  sorting by fields is faster (Rob Muir, Mike McCandless)
+
+Documentation
+
+* LUCENE-5384: Add some tips for making tokenfilters and tokenizers 
+  to the analysis package overview.  
+  (Benson Margulies via Robert Muir - pull request #12)
+
+* LUCENE-5389: Add more guidance in the analyis documentation 
+  package overview.
+  (Benson Margulies via Robert Muir - pull request #14)
 
 ======================= Lucene 4.6.0 =======================
 

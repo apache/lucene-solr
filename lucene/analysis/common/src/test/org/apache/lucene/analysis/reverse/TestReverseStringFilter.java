@@ -31,15 +31,15 @@ import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader("Do have a nice day"),
-        MockTokenizer.WHITESPACE, false);     // 1-4 length string
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);     // 1-4 length string
+    ((Tokenizer)stream).setReader(new StringReader("Do have a nice day"));
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream);
     assertTokenStreamContents(filter, new String[] { "oD", "evah", "a", "ecin", "yad" });
   }
   
   public void testFilterWithMark() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader("Do have a nice day"),
-        MockTokenizer.WHITESPACE, false); // 1-4 length string
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false); // 1-4 length string
+    ((Tokenizer)stream).setReader(new StringReader("Do have a nice day"));
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream, '\u0001');
     assertTokenStreamContents(filter, 
         new String[] { "\u0001oD", "\u0001evah", "\u0001a", "\u0001ecin", "\u0001yad" });
@@ -97,8 +97,8 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer));
       }
     };
@@ -108,8 +108,8 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer));
       }
     };

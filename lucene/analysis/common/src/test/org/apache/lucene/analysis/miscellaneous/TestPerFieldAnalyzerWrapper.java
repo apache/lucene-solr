@@ -65,8 +65,8 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testCharFilters() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer());
       }
 
       @Override

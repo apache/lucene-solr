@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(new HashMap<String,String>());
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
+    TokenStream ts = factory.create(whitespaceMockTokenizer("Weinberg"));
     assertTokenStreamContents(ts,
         new String[] { "vDnbirk", "vanbirk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },
         new int[] { 0, 0, 0, 0, 0, 0 },
@@ -41,7 +41,7 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("languageSet", "polish");
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
+    TokenStream ts = factory.create(whitespaceMockTokenizer("Weinberg"));
     assertTokenStreamContents(ts,
         new String[] { "vDmbYrk", "vDmbirk", "vambYrk", "vambirk", "vimbYrk", "vimbirk" },
         new int[] { 0, 0, 0, 0, 0, 0 },
@@ -54,7 +54,7 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
     args.put("nameType", "ASHKENAZI");
     args.put("ruleType", "EXACT");
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
+    TokenStream ts = factory.create(whitespaceMockTokenizer("Weinberg"));
     assertTokenStreamContents(ts,
         new String[] { "vajnberk" },
         new int[] { 0 },

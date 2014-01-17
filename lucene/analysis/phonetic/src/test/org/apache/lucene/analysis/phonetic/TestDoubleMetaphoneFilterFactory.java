@@ -31,7 +31,7 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
 
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(new HashMap<String, String>());
-    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
+    TokenStream inputStream = whitespaceMockTokenizer("international");
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -44,7 +44,7 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
     parameters.put("maxCodeLength", "8");
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(parameters);
 
-    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
+    TokenStream inputStream = whitespaceMockTokenizer("international");
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());

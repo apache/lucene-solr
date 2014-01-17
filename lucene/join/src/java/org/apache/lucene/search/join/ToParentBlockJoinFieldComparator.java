@@ -60,6 +60,11 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
   }
 
   @Override
+  public void setTopValue(Object value) {
+    wrappedComparator.setTopValue(value);
+  }
+
+  @Override
   public FieldComparator<Object> setNextReader(AtomicReaderContext context) throws IOException {
     DocIdSet innerDocuments = childFilter.getDocIdSet(context, null);
     if (isEmpty(innerDocuments)) {
@@ -193,7 +198,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
     @Override
     @SuppressWarnings("unchecked")
-    public int compareDocToValue(int parentDoc, Object value) throws IOException {
+    public int compareTop(int parentDoc) throws IOException {
       if (parentDoc == 0 || parentDocuments == null || childDocuments == null) {
         return 0;
       }
@@ -216,7 +221,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
         if (childDoc >= parentDoc || childDoc == -1) {
           return cmp;
         }
-        int cmp1 = wrappedComparator.compareDocToValue(childDoc, value);
+        int cmp1 = wrappedComparator.compareTop(childDoc);
         if (cmp1 > 0) {
           return cmp1;
         } else {
@@ -309,7 +314,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
     @Override
     @SuppressWarnings("unchecked")
-    public int compareDocToValue(int parentDoc, Object value) throws IOException {
+    public int compareTop(int parentDoc) throws IOException {
       if (parentDoc == 0 || parentDocuments == null || childDocuments == null) {
         return 0;
       }
@@ -330,7 +335,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
         if (childDoc >= parentDoc || childDoc == -1) {
           return cmp;
         }
-        int cmp1 = wrappedComparator.compareDocToValue(childDoc, value);
+        int cmp1 = wrappedComparator.compareTop(childDoc);
         if (cmp1 < 0) {
           return cmp1;
         } else {

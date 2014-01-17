@@ -799,7 +799,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           master.copyConfigFile(CONF_DIR + slaveSchema, "schema.xml");
         }
         
-        int docs = random().nextInt(maxDocs);
+        int docs = random().nextInt(maxDocs) + 1;
         for (int i = 0; i < docs; i++) {
           index(masterClient, "id", id++, "name", "name = " + i);
         }

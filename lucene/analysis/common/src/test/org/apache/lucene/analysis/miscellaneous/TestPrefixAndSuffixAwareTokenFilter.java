@@ -28,9 +28,11 @@ public class TestPrefixAndSuffixAwareTokenFilter extends BaseTokenStreamTestCase
 
   public void test() throws IOException {
 
+    final MockTokenizer input = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    input.setReader(new StringReader("hello world"));
     PrefixAndSuffixAwareTokenFilter ts = new PrefixAndSuffixAwareTokenFilter(
         new SingleTokenTokenStream(createToken("^", 0, 0)),
-        new MockTokenizer(new StringReader("hello world"), MockTokenizer.WHITESPACE, false),
+        input,
         new SingleTokenTokenStream(createToken("$", 0, 0)));
 
     assertTokenStreamContents(ts,

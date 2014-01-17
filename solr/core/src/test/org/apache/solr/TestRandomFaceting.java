@@ -95,7 +95,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     }
     if (ids.size() == 0) return;
 
-    StringBuffer sb = new StringBuffer("id:(");
+    StringBuilder sb = new StringBuilder("id:(");
     for (String id : ids) {
       sb.append(id).append(' ');
       model.remove(id);

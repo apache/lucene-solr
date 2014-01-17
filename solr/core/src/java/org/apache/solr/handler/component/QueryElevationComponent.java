@@ -339,6 +339,18 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     elev.put(obj.analyzed, obj);
   }
 
+  ElevationObj getElevationObj(String query, String[] ids, String[] ex) throws IOException {
+    if (ids == null) {
+      ids = new String[0];
+    }
+    if (ex == null) {
+      ex = new String[0];
+    }
+
+    ElevationObj obj = new ElevationObj(query, Arrays.asList(ids), Arrays.asList(ex));
+    return obj;
+  }
+
   String getAnalyzedQuery(String query) throws IOException {
     if (analyzer == null) {
       return query;
@@ -373,17 +385,26 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     // A runtime parameter can alter the config value for forceElevation
     boolean force = params.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
     boolean markExcludes = params.getBool(QueryElevationParams.MARK_EXCLUDES, false);
+    String boostStr = params.get(QueryElevationParams.IDS);
+    String exStr = params.get(QueryElevationParams.EXCLUDE);
+
     Query query = rb.getQuery();
     String qstr = rb.getQueryString();
     if (query == null || qstr == null) {
       return;
     }
 
-    qstr = getAnalyzedQuery(qstr);
-    IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
-      booster = getElevationMap(reader, req.getCore()).get(qstr);
+      if(boostStr != null || exStr != null) {
+        String[] boosts = (boostStr != null) ? boostStr.split(",") : new String[0];
+        String[] excludes = (exStr != null) ? exStr.split(",") : new String[0];
+        booster = getElevationObj(qstr, boosts, excludes);
+      } else {
+        IndexReader reader = req.getSearcher().getIndexReader();
+        qstr = getAnalyzedQuery(qstr);
+        booster = getElevationMap(reader, req.getCore()).get(qstr);
+      }
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error loading elevation", ex);
@@ -555,6 +576,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     return new FieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;
+      private int topVal;
       private TermsEnum termsEnum;
       private DocsEnum docsEnum;
       Set<String> seen = new HashSet<String>(elevations.ids.size());
@@ -567,6 +589,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       @Override
       public void setBottom(int slot) {
         bottomVal = values[slot];
+      }
+
+      @Override
+      public void setTopValue(Integer value) {
+        topVal = value.intValue();
       }
 
       private int docVal(int doc) {
@@ -625,10 +652,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public int compareDocToValue(int doc, Integer valueObj) {
-        final int value = valueObj.intValue();
+      public int compareTop(int doc) {
         final int docValue = docVal(doc);
-        return docValue - value;  // values will be small enough that there is no overflow concern
+        return topVal - docValue;  // values will be small enough that there is no overflow concern
       }
     };
   }

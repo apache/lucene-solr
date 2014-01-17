@@ -49,6 +49,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
+%xstate AVOID_BAD_URL
 %buffer 4096
 
 %include SUPPLEMENTARY.jflex-macro
@@ -127,16 +128,18 @@ URIfragment = "#" ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims} | [:@/
 URIport = ":" [0-9]{1,5}
 URIhostStrict = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict}  
 URIhostLoose  = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameLoose} 
-
-URIauthorityStrict =             {URIhostStrict} {URIport}?
 URIauthorityLoose  = {URIlogin}? {URIhostLoose}  {URIport}?
 
 HTTPsegment = ({URIunreserved} | {URIpercentEncoded} | [;:@&=])*
-HTTPpath = ("/" {HTTPsegment})*
+HTTPpath = ("/" {HTTPsegment})+
 HTTPscheme = [hH][tT][tT][pP][sS]? "://"
-HTTPurlFull = {HTTPscheme} {URIauthorityLoose}  {HTTPpath}? {URIquery}? {URIfragment}?
+HTTPurlFull = {HTTPscheme} {URIlogin}? {URIhostLoose} {URIport}? {HTTPpath}? {URIquery}? {URIfragment}?
+URIportRequired = {URIport} {HTTPpath}? {URIquery}? {URIfragment}?
+HTTPpathRequired = {URIport}? {HTTPpath} {URIquery}? {URIfragment}?
+URIqueryRequired = {URIport}? {HTTPpath}? {URIquery} {URIfragment}?
+URIfragmentRequired = {URIport}? {HTTPpath}? {URIquery}? {URIfragment}
 // {HTTPurlNoScheme} excludes {URIlogin}, because it could otherwise accept e-mail addresses
-HTTPurlNoScheme =          {URIauthorityStrict} {HTTPpath}? {URIquery}? {URIfragment}?
+HTTPurlNoScheme = {URIhostStrict} ({URIportRequired} | {HTTPpathRequired} | {URIqueryRequired} | {URIfragmentRequired})
 HTTPurl = {HTTPurlFull} | {HTTPurlNoScheme}
 
 FTPorFILEsegment = ({URIunreserved} | {URIpercentEncoded} | [?:@&=])*
@@ -208,95 +211,113 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 %%
 
+<YYINITIAL, AVOID_BAD_URL> {
+
 // UAX#29 WB1.   sot   ÷
 //        WB2.     ÷   eot
 //
-<<EOF>> { return StandardTokenizerInterface.YYEOF; }
+  <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
-{URL}   { return URL_TYPE; }
+  {URL}   { yybegin(YYINITIAL); return URL_TYPE; }
 
-// LUCENE-3880: Disrupt recognition of "mailto:test" as <ALPHANUM> from "mailto:test@example.org"
-[mM][aA][iI][lL][tT][oO] / ":" {EMAIL} { return WORD_TYPE; }
+  // LUCENE-5391: Don't recognize no-scheme domain-only URLs with a following alphanumeric character
+  {URIhostStrict} / [^-\w] { yybegin(YYINITIAL); return URL_TYPE; }
+}
 
-{EMAIL} { return EMAIL_TYPE; }
+// Match bad URL (no scheme domain-only URL with a following alphanumeric character)
+// then change to AVOID_BAD_URL state and pushback the match.
+// This rule won't match when in AVOID_BAD_URL state
+{URIhostStrict} / [-\w]  { yybegin(AVOID_BAD_URL); yypushback(yylength()); }
 
-// UAX#29 WB8.   Numeric × Numeric
-//        WB11.  Numeric (MidNum | MidNumLet | Single_Quote) × Numeric
-//        WB12.  Numeric × (MidNum | MidNumLet | Single_Quote) Numeric
-//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
-//
-{ExtendNumLetEx}* {NumericEx} ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx} )* {ExtendNumLetEx}* 
-  { return NUMERIC_TYPE; }
+// Match a no-schema domain at EOF
+// This rule won't match when in AVOID_BAD_URL state
+{URIhostStrict} { return URL_TYPE; }
 
-// subset of the below for typing purposes only!
-{HangulEx}+
-  { return HANGUL_TYPE; }
+<YYINITIAL, AVOID_BAD_URL> {
+
+  // LUCENE-3880: Disrupt recognition of "mailto:test" as <ALPHANUM> from "mailto:test@example.org"
+  [mM][aA][iI][lL][tT][oO] / ":" {EMAIL} {  yybegin(YYINITIAL); return WORD_TYPE; }
+
+  {EMAIL} { yybegin(YYINITIAL); return EMAIL_TYPE; }
+
+  // UAX#29 WB8.   Numeric × Numeric
+  //        WB11.  Numeric (MidNum | MidNumLet | Single_Quote) × Numeric
+  //        WB12.  Numeric × (MidNum | MidNumLet | Single_Quote) Numeric
+  //        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+  //        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana)
+  //
+  {ExtendNumLetEx}* {NumericEx} ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx} )* {ExtendNumLetEx}*
+    {  yybegin(YYINITIAL); return NUMERIC_TYPE; }
+
+  // subset of the below for typing purposes only!
+  {HangulEx}+
+    { yybegin(YYINITIAL); return HANGUL_TYPE; }
   
-{KatakanaEx}+
-  { return KATAKANA_TYPE; }
+  {KatakanaEx}+
+    { yybegin(YYINITIAL); return KATAKANA_TYPE; }
 
-// UAX#29 WB5.   (ALetter | Hebrew_Letter) × (ALetter | Hebrew_Letter)
-//        WB6.   (ALetter | Hebrew_Letter) × (MidLetter | MidNumLet | Single_Quote) (ALetter | Hebrew_Letter)
-//        WB7.   (ALetter | Hebrew_Letter) (MidLetter | MidNumLet | Single_Quote) × (ALetter | Hebrew_Letter)
-//        WB7a.  Hebrew_Letter × Single_Quote
-//        WB7b.  Hebrew_Letter × Double_Quote Hebrew_Letter
-//        WB7c.  Hebrew_Letter Double_Quote × Hebrew_Letter
-//        WB9.   (ALetter | Hebrew_Letter) × Numeric
-//        WB10.  Numeric × (ALetter | Hebrew_Letter)
-//        WB13.  Katakana × Katakana
-//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
-//
-{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx} {HebrewLetterEx}      )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
-                     )+
-                   )
-({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}   {HebrewLetterEx}    )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
-                     )+
-                   )
-)*
-{ExtendNumLetEx}* 
-  { return WORD_TYPE; }
-
-
-// From UAX #29:
-//
-//    [C]haracters with the Line_Break property values of Contingent_Break (CB), 
-//    Complex_Context (SA/South East Asian), and XX (Unknown) are assigned word 
-//    boundary property values based on criteria outside of the scope of this
-//    annex.  That means that satisfactory treatment of languages like Chinese
-//    or Thai requires special handling.
-// 
-// In Unicode 6.3, only one character has the \p{Line_Break = Contingent_Break}
-// property: U+FFFC ( ￼ ) OBJECT REPLACEMENT CHARACTER.
-//
-// In the ICU implementation of UAX#29, \p{Line_Break = Complex_Context}
-// character sequences (from South East Asian scripts like Thai, Myanmar, Khmer,
-// Lao, etc.) are kept together.  This grammar does the same below.
-//
-// See also the Unicode Line Breaking Algorithm:
-//
-//    http://www.unicode.org/reports/tr14/#SA
-//
-{ComplexContext}+ { return SOUTH_EAST_ASIAN_TYPE; }
-
-// UAX#29 WB14.  Any ÷ Any
-//
-{HanEx} { return IDEOGRAPHIC_TYPE; }
-{HiraganaEx} { return HIRAGANA_TYPE; }
+  // UAX#29 WB5.   (ALetter | Hebrew_Letter) × (ALetter | Hebrew_Letter)
+  //        WB6.   (ALetter | Hebrew_Letter) × (MidLetter | MidNumLet | Single_Quote) (ALetter | Hebrew_Letter)
+  //        WB7.   (ALetter | Hebrew_Letter) (MidLetter | MidNumLet | Single_Quote) × (ALetter | Hebrew_Letter)
+  //        WB7a.  Hebrew_Letter × Single_Quote
+  //        WB7b.  Hebrew_Letter × Double_Quote Hebrew_Letter
+  //        WB7c.  Hebrew_Letter Double_Quote × Hebrew_Letter
+  //        WB9.   (ALetter | Hebrew_Letter) × Numeric
+  //        WB10.  Numeric × (ALetter | Hebrew_Letter)
+  //        WB13.  Katakana × Katakana
+  //        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+  //        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana)
+  //
+  {ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
+                     | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx} {HebrewLetterEx}      )
+                       | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
+                       | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
+                       )+
+                     )
+  ({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
+                     | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}   {HebrewLetterEx}    )
+                       | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
+                       | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
+                       )+
+                     )
+  )*
+  {ExtendNumLetEx}*
+    { yybegin(YYINITIAL); return WORD_TYPE; }
 
 
-// UAX#29 WB3.   CR × LF
-//        WB3a.  (Newline | CR | LF) ÷
-//        WB3b.  ÷ (Newline | CR | LF)
-//        WB13c. Regional_Indicator × Regional_Indicator
-//        WB14.  Any ÷ Any
-//
-{RegionalIndicatorEx} {RegionalIndicatorEx}+ | [^]
-  { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }
+  // From UAX #29:
+  //
+  //    [C]haracters with the Line_Break property values of Contingent_Break (CB),
+  //    Complex_Context (SA/South East Asian), and XX (Unknown) are assigned word
+  //    boundary property values based on criteria outside of the scope of this
+  //    annex.  That means that satisfactory treatment of languages like Chinese
+  //    or Thai requires special handling.
+  //
+  // In Unicode 6.3, only one character has the \p{Line_Break = Contingent_Break}
+  // property: U+FFFC ( ￼ ) OBJECT REPLACEMENT CHARACTER.
+  //
+  // In the ICU implementation of UAX#29, \p{Line_Break = Complex_Context}
+  // character sequences (from South East Asian scripts like Thai, Myanmar, Khmer,
+  // Lao, etc.) are kept together.  This grammar does the same below.
+  //
+  // See also the Unicode Line Breaking Algorithm:
+  //
+  //    http://www.unicode.org/reports/tr14/#SA
+  //
+  {ComplexContext}+ { yybegin(YYINITIAL); return SOUTH_EAST_ASIAN_TYPE; }
+
+  // UAX#29 WB14.  Any ÷ Any
+  //
+  {HanEx} { yybegin(YYINITIAL); return IDEOGRAPHIC_TYPE; }
+  {HiraganaEx} { yybegin(YYINITIAL); return HIRAGANA_TYPE; }
+
+
+  // UAX#29 WB3.   CR × LF
+  //        WB3a.  (Newline | CR | LF) ÷
+  //        WB3b.  ÷ (Newline | CR | LF)
+  //        WB13c. Regional_Indicator × Regional_Indicator
+  //        WB14.  Any ÷ Any
+  //
+  {RegionalIndicatorEx} {RegionalIndicatorEx}+ | [^]
+    { yybegin(YYINITIAL); /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }
+}

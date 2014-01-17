@@ -538,7 +538,7 @@ public class DocBuilder {
               throw e;
           } else
             throw e;
-        } catch (Throwable t) {
+        } catch (Exception t) {
           if (verboseDebug) {
             getDebugLogger().log(DIHLogLevels.ENTITY_EXCEPTION, epw.getEntity().getName(), t);
           }

@@ -143,6 +143,7 @@ public class SearchHandler extends Handler {
 
   private final static Type SORT_TYPE = new ListType(
                                             new StructType(new Param("field", "The field to sort on.  Pass <code>docid</code> for index order and <code>score</code> for relevance sort.", new StringType()),
+                                                           new Param("missingLast", "Whether missing values should sort last instead of first.  Note that this runs \"before\" reverse, so if you sort missing firse and reverse=true then missing values will be at the end.", new BooleanType(), false),
                                                            new Param("reverse", "Sort in reverse of the field's natural order", new BooleanType(), false)));
 
   private final static Type BOOLEAN_OCCUR_TYPE = new EnumType("must", "Clause is required.",
@@ -721,6 +722,28 @@ public class SearchHandler extends Handler {
           sf = new SortField(fieldName,
                              sortType,
                              sub.getBoolean("reverse"));
+        }
+        
+        boolean hasMissingLast = sub.hasParam("missingLast");
+
+        boolean missingLast = sub.getBoolean("missingLast");
+
+        if (sf.getType() == SortField.Type.STRING) {
+          if (missingLast) {
+            sf.setMissingValue(SortField.STRING_LAST);
+          } else {
+            sf.setMissingValue(SortField.STRING_FIRST);
+          }
+        } else if (sf.getType() == SortField.Type.INT) {
+          sf.setMissingValue(missingLast ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+        } else if (sf.getType() == SortField.Type.LONG) {
+          sf.setMissingValue(missingLast ? Long.MAX_VALUE : Long.MIN_VALUE);
+        } else if (sf.getType() == SortField.Type.FLOAT) {
+          sf.setMissingValue(missingLast ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY);
+        } else if (sf.getType() == SortField.Type.DOUBLE) {
+          sf.setMissingValue(missingLast ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+        } else if (hasMissingLast) {
+          sub.fail("missingLast", "can only specify missingLast for string and numeric field types");
         }
       }
       sortFields.add(sf);

@@ -106,8 +106,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testPositionIncrementGap() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -141,8 +141,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testTokenReuse() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new TokenFilter(tokenizer) {
           boolean first = true;
           AttributeSource.State state;

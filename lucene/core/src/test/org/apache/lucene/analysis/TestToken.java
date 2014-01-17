@@ -224,7 +224,8 @@ public class TestToken extends LuceneTestCase {
   }
 
   public void testTokenAttributeFactory() throws Exception {
-    TokenStream ts = new MockTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"), MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+    TokenStream ts = new MockTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+    ((Tokenizer)ts).setReader(new StringReader("foo bar"));
     
     assertTrue("SenselessAttribute is not implemented by SenselessAttributeImpl",
       ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);

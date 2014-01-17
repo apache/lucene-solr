@@ -522,6 +522,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   /**
+   * Sets distributed params.
+   * Returns the QueryResponse from {@link #queryServer},
+   */
+  protected QueryResponse query(SolrParams params) throws Exception {
+    return query(true, params);
+  }
+
+  /**
    * Returns the QueryResponse from {@link #queryServer}  
    */
   protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
@@ -531,6 +539,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
+    return query(setDistribParams, params);
+  }
+
+  /**
+   * Returns the QueryResponse from {@link #queryServer}  
+   */
+  protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    
+    final ModifiableSolrParams params = new ModifiableSolrParams(p);
+
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);

@@ -39,10 +39,7 @@ public class SortableBinaryField extends BinaryField {
 
   @Override
   public void checkSchemaField(final SchemaField field) {
-    if (field.hasDocValues() && !field.multiValued() && !(field.isRequired() || field.getDefaultValue() != null)) {
-      throw new IllegalStateException(
-          "Field " + this + " has single-valued doc values enabled, but has no default value and is not required");
-    }
+    // NOOP, It's Aaaaaall Good.
   }
 
   @Override

@@ -66,7 +66,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "simple text";
     args.put("withOriginal", "true");
     ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory(args);
-    TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    TokenStream input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
         new int[] { 1, 0, 1, 0 });
@@ -74,7 +74,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     // now without original tokens
     args.put("withOriginal", "false");
     factory = new ReversedWildcardFilterFactory(args);
-    input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
+    input = factory.create(whitespaceMockTokenizer(text));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },
         new int[] { 1, 1 });

@@ -38,11 +38,8 @@ public abstract class CharTokenizer extends Tokenizer {
    * 
    * @param matchVersion
    *          Lucene version to match
-   * @param input
-   *          the input to split up into tokens
    */
-  public CharTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public CharTokenizer(Version matchVersion) {
     charUtils = CharacterUtils.getInstance(matchVersion);
   }
   
@@ -53,12 +50,9 @@ public abstract class CharTokenizer extends Tokenizer {
    *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param input
-   *          the input to split up into tokens
    */
-  public CharTokenizer(Version matchVersion, AttributeFactory factory,
-      Reader input) {
-    super(factory, input);
+  public CharTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     charUtils = CharacterUtils.getInstance(matchVersion);
   }
   

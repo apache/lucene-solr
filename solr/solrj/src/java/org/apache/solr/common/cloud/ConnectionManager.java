@@ -34,10 +34,9 @@ public class ConnectionManager implements Watcher {
       .getLogger(ConnectionManager.class);
 
   private final String name;
-  private CountDownLatch clientConnected;
-  private KeeperState state;
-  private boolean connected;
-  private boolean likelyExpired = true;
+  private final CountDownLatch clientConnected = new CountDownLatch(1);
+  
+  private boolean connected = false;
 
   private final ZkClientConnectionStrategy connectionStrategy;
 
@@ -48,7 +47,9 @@ public class ConnectionManager implements Watcher {
   private final OnReconnect onReconnect;
   private final BeforeReconnect beforeReconnect;
 
+  private volatile KeeperState state = KeeperState.Disconnected;
   private volatile boolean isClosed = false;
+  private volatile boolean likelyExpired = true;
   
   private volatile Timer disconnectedTimer;
 
@@ -59,22 +60,16 @@ public class ConnectionManager implements Watcher {
     this.zkServerAddress = zkServerAddress;
     this.onReconnect = onConnect;
     this.beforeReconnect = beforeReconnect;
-    reset();
-  }
-
-  private synchronized void reset() {
-    clientConnected = new CountDownLatch(1);
-    state = KeeperState.Disconnected;
-    disconnected();
   }
   
   private synchronized void connected() {
-    connected = true;
     if (disconnectedTimer != null) {
       disconnectedTimer.cancel();
       disconnectedTimer = null;
     }
+    connected = true;
     likelyExpired = false;
+    notifyAll();
   }
 
   private synchronized void disconnected() {
@@ -83,23 +78,22 @@ public class ConnectionManager implements Watcher {
       disconnectedTimer = null;
     }
     if (!isClosed) {
-      disconnectedTimer = new Timer();
+      disconnectedTimer = new Timer(true);
       disconnectedTimer.schedule(new TimerTask() {
         
         @Override
         public void run() {
-          synchronized (ConnectionManager.this) {
-            likelyExpired = true;
-          }
+          likelyExpired = true;
         }
         
       }, (long) (client.getZkClientTimeout() * 0.90));
     }
     connected = false;
+    notifyAll();
   }
 
   @Override
-  public synchronized void process(WatchedEvent event) {
+  public void process(WatchedEvent event) {
     if (log.isInfoEnabled()) {
       log.info("Watcher " + this + " name:" + name + " got event " + event
           + " path:" + event.getPath() + " type:" + event.getType());
@@ -109,20 +103,31 @@ public class ConnectionManager implements Watcher {
       log.info("Client->ZooKeeper status change trigger but we are already closed");
       return;
     }
-
+    
     state = event.getState();
+    
     if (state == KeeperState.SyncConnected) {
       connected();
       clientConnected.countDown();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
-      disconnected();
+      if (disconnectedTimer != null) {
+        disconnectedTimer.cancel();
+        disconnectedTimer = null;
+      }
+      
+      connected = false;
+      likelyExpired = true;
+      
       log.info("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
+      
       if (beforeReconnect != null) {
         beforeReconnect.command();
       }
+      
       try {
-        connectionStrategy.reconnect(zkServerAddress, client.getZkClientTimeout(), this,
+        connectionStrategy.reconnect(zkServerAddress,
+            client.getZkClientTimeout(), this,
             new ZkClientConnectionStrategy.ZkUpdate() {
               @Override
               public void update(SolrZooKeeper keeper) {
@@ -141,16 +146,26 @@ public class ConnectionManager implements Watcher {
                   Thread.currentThread().interrupt();
                   // we must have been asked to stop
                   throw new RuntimeException(e);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                   closeKeeper(keeper);
                   throw new RuntimeException(t);
                 }
                 
-                if (onReconnect != null) {
-                  onReconnect.command();
-                }
-                
                 connected();
+                
+                if (onReconnect != null) {
+                  Thread thread = new Thread() {
+                    @Override
+                    public void run() {
+                      try {
+                        onReconnect.command();
+                      } catch (Exception e) {
+                        log.warn("Exception running onReconnect command", e);
+                      }
+                    }
+                  };
+                  thread.start();
+                }
                 
               }
             });
@@ -165,7 +180,6 @@ public class ConnectionManager implements Watcher {
     } else {
       disconnected();
     }
-    notifyAll();
   }
 
   public synchronized boolean isConnected() {
@@ -185,12 +199,8 @@ public class ConnectionManager implements Watcher {
       this.disconnectedTimer = null;
     }
   }
-
-  public synchronized KeeperState state() {
-    return state;
-  }
   
-  public synchronized boolean isLikelyExpired() {
+  public boolean isLikelyExpired() {
     return likelyExpired;
   }
 

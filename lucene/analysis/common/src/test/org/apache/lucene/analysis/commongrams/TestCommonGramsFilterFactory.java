@@ -82,7 +82,8 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase
     CharArraySet words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue(words.contains("the"));
-    Tokenizer tokenizer = new MockTokenizer(new StringReader("testing the factory"), MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(new StringReader("testing the factory"));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, 
         new String[] { "testing", "testing_the", "the", "the_factory", "factory" });

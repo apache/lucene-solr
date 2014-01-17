@@ -116,8 +116,8 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    *         provided and {@link SoraniStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer(matchVersion);
     TokenStream result = new StandardFilter(matchVersion, source);
     result = new SoraniNormalizationFilter(result);
     result = new LowerCaseFilter(matchVersion, result);

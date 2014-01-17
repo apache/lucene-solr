@@ -58,6 +58,8 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   protected static boolean useDefaultIndex = true;
   
   protected static File STATE_DIR;
+
+  protected static JSONObject lastResult;
   
   @BeforeClass
   public static void beforeClassServerBase() throws Exception {
@@ -70,6 +72,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     // who sets this? netty? what a piece of crap
     System.clearProperty("sun.nio.ch.bugLevel");
     STATE_DIR = null;
+    lastResult = null;
   }
 
   @Override
@@ -250,13 +253,13 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
       System.out.println("\nNOTE: ServerBaseTestCase: sendRaw command=" + command + " args:\n" + args.toJSONString(new JSONStyleIdent()));
     }
 
-    JSONObject result = sendRaw(command, args.toJSONString(JSONStyle.NO_COMPRESS));
+    lastResult = sendRaw(command, args.toJSONString(JSONStyle.NO_COMPRESS));
 
     if (VERBOSE) {
-      System.out.println("NOTE: ServerBaseTestCase: server response:\n" + result.toJSONString(new JSONStyleIdent()));
+      System.out.println("NOTE: ServerBaseTestCase: server response:\n" + lastResult.toJSONString(new JSONStyleIdent()));
     }
 
-    return result;
+    return lastResult;
   }
 
   protected static JSONObject sendRaw(String command, String body) throws Exception {
@@ -415,28 +418,56 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     return (String) get(o, path);
   }
 
+  protected String getString(String path) {
+    return getString(lastResult, path);
+  }
+
   protected int getInt(Object o, String path) {
     return ((Number) get(o, path)).intValue();
+  }
+
+  protected int getInt(String path) {
+    return getInt(lastResult, path);
   }
 
   protected boolean getBoolean(Object o, String path) {
     return ((Boolean) get(o, path)).booleanValue();
   }
 
+  protected boolean getBoolean(String path) {
+    return getBoolean(lastResult, path);
+  }
+
   protected long getLong(Object o, String path) {
     return ((Number) get(o, path)).longValue();
+  }
+
+  protected long getLong(String path) {
+    return getLong(lastResult, path);
   }
 
   protected float getFloat(Object o, String path) {
     return ((Number) get(o, path)).floatValue();
   }
 
+  protected float getFloat(String path) {
+    return getFloat(lastResult, path);
+  }
+
   protected JSONObject getObject(Object o, String path) {
     return (JSONObject) get(o, path);
   }
 
+  protected JSONObject getObject(String path) {
+    return getObject(lastResult, path);
+  }
+
   protected JSONArray getArray(Object o, String path) {
     return (JSONArray) get(o, path);
+  }
+
+  protected JSONArray getArray(String path) {
+    return getArray(lastResult, path);
   }
 
   protected JSONArray getArray(JSONArray o, int index) {

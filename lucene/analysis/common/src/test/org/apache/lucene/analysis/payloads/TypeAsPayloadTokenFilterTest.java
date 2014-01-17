@@ -32,7 +32,7 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false)));
+    TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(whitespaceMockTokenizer(test)));
     int count = 0;
     CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);

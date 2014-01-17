@@ -327,8 +327,8 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return stdAnalyzer.createComponents(fieldName, reader);
+    public TokenStreamComponents createComponents(String fieldName) {
+      return stdAnalyzer.createComponents(fieldName);
     }
   }
   

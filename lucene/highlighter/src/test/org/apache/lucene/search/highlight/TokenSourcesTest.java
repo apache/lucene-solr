@@ -17,10 +17,14 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,6 +33,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,9 +43,8 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 // LUCENE-2874
 public class TokenSourcesTest extends LuceneTestCase {
@@ -262,7 +266,6 @@ public class TokenSourcesTest extends LuceneTestCase {
 
   public void testTermVectorWithoutOffsetsThrowsException()
       throws IOException, InvalidTokenOffsetsException {
-    final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, null));
@@ -280,8 +283,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
-      final TokenStream tokenStream = TokenSources
-          .getTokenStream(
+      TokenSources.getTokenStream(
               indexReader.getTermVector(0, FIELD),
               false);
       fail("TokenSources.getTokenStream should throw IllegalArgumentException if term vector has no offsets");
@@ -295,5 +297,68 @@ public class TokenSourcesTest extends LuceneTestCase {
     }
   }
 
+  int curOffset;
 
+  /** Just make a token with the text, and set the payload
+   *  to the text as well.  Offets increment "naturally". */
+  private Token getToken(String text) {
+    Token t = new Token(text, curOffset, curOffset+text.length());
+    t.setPayload(new BytesRef(text));
+    curOffset++;
+    return t;
+  }
+
+  // LUCENE-5294
+  public void testPayloads() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FieldType myFieldType = new FieldType(TextField.TYPE_NOT_STORED);
+    myFieldType.setStoreTermVectors(true);
+    myFieldType.setStoreTermVectorOffsets(true);
+    myFieldType.setStoreTermVectorPositions(true);
+    myFieldType.setStoreTermVectorPayloads(true);
+
+    curOffset = 0;
+
+    Token[] tokens = new Token[] {
+      getToken("foxes"),
+      getToken("can"),
+      getToken("jump"),
+      getToken("high")
+    };
+
+    Document doc = new Document();
+    doc.add(new Field("field", new CannedTokenStream(tokens), myFieldType));
+    writer.addDocument(doc);
+  
+    IndexReader reader = writer.getReader();
+    writer.close();
+    assertEquals(1, reader.numDocs());
+
+    for(int i=0;i<2;i++) {
+      // Do this twice, once passing true and then passing
+      // false: they are entirely different code paths
+      // under-the-hood:
+      TokenStream ts = TokenSources.getTokenStream(reader.getTermVectors(0).terms("field"), i == 0);
+
+      CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.getAttribute(PositionIncrementAttribute.class);
+      OffsetAttribute offsetAtt = ts.getAttribute(OffsetAttribute.class);
+      PayloadAttribute payloadAtt = ts.getAttribute(PayloadAttribute.class);
+
+      for(Token token : tokens) {
+        assertTrue(ts.incrementToken());
+        assertEquals(token.toString(), termAtt.toString());
+        assertEquals(token.getPositionIncrement(), posIncAtt.getPositionIncrement());
+        assertEquals(token.getPayload(), payloadAtt.getPayload());
+        assertEquals(token.startOffset(), offsetAtt.startOffset());
+        assertEquals(token.endOffset(), offsetAtt.endOffset());
+      }
+
+      assertFalse(ts.incrementToken());
+    }
+
+    reader.close();
+    dir.close();
+  }
 }

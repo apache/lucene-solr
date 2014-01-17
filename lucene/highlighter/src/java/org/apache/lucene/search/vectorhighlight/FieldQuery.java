@@ -91,14 +91,15 @@ public class FieldQuery {
   void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries ) throws IOException{
     if( sourceQuery instanceof BooleanQuery ){
       BooleanQuery bq = (BooleanQuery)sourceQuery;
-      for( BooleanClause clause : bq.getClauses() ){
-        if( !clause.isProhibited() )
-          flatten( clause.getQuery(), reader, flatQueries );
+      for( BooleanClause clause : bq ) {
+        if( !clause.isProhibited() ) {
+          flatten( applyParentBoost( clause.getQuery(), bq ), reader, flatQueries );
+        }
       }
     } else if( sourceQuery instanceof DisjunctionMaxQuery ){
       DisjunctionMaxQuery dmq = (DisjunctionMaxQuery)sourceQuery;
       for( Query query : dmq ){
-        flatten( query, reader, flatQueries );
+        flatten( applyParentBoost( query, dmq ), reader, flatQueries );
       }
     }
     else if( sourceQuery instanceof TermQuery ){
@@ -111,18 +112,20 @@ public class FieldQuery {
         if( pq.getTerms().length > 1 )
           flatQueries.add( pq );
         else if( pq.getTerms().length == 1 ){
-          flatQueries.add( new TermQuery( pq.getTerms()[0] ) );
+          Query flat = new TermQuery( pq.getTerms()[0] );
+          flat.setBoost( pq.getBoost() );
+          flatQueries.add( flat );
         }
       }
     } else if (sourceQuery instanceof ConstantScoreQuery) {
       final Query q = ((ConstantScoreQuery) sourceQuery).getQuery();
       if (q != null) {
-        flatten(q, reader, flatQueries);
+        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
       }
     } else if (sourceQuery instanceof FilteredQuery) {
       final Query q = ((FilteredQuery) sourceQuery).getQuery();
       if (q != null) {
-        flatten(q, reader, flatQueries);
+        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
       }
     } else if (reader != null){
       Query query = sourceQuery;
@@ -141,6 +144,18 @@ public class FieldQuery {
       // if the query is already rewritten we discard it
     }
     // else discard queries
+  }
+
+  /**
+   * Push parent's boost into a clone of query if parent has a non 1 boost.
+   */
+  protected Query applyParentBoost( Query query, Query parent ) {
+    if ( parent.getBoost() == 1 ) {
+      return query;
+    }
+    Query cloned = query.clone();
+    cloned.setBoost( query.getBoost() * parent.getBoost() );
+    return cloned;
   }
   
   /*

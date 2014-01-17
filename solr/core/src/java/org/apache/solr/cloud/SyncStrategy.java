@@ -211,8 +211,8 @@ public class SyncStrategy {
            } else {
              requestRecovery(leaderProps, ((ShardCoreRequest)srsp.getShardRequest()).baseUrl, ((ShardCoreRequest)srsp.getShardRequest()).coreName);
            }
-         } catch (Throwable t) {
-           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+         } catch (Exception e) {
+           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", e);
          }
       } else {
         log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": " + " sync completed with " + srsp.getShardAddress());
@@ -278,6 +278,9 @@ public class SyncStrategy {
           server.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+          if (t instanceof Error) {
+            throw (Error) t;
+          }
         } finally {
           server.shutdown();
         }

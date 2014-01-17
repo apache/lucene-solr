@@ -17,8 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 /**
  * Analyzer for testing that encodes terms as UTF-16 bytes.
  */
@@ -26,8 +24,8 @@ public class MockBytesAnalyzer extends Analyzer {
   private final MockBytesAttributeFactory factory = new MockBytesAttributeFactory();
   
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer t = new MockTokenizer(factory, reader, MockTokenizer.KEYWORD, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+  protected TokenStreamComponents createComponents(String fieldName) {
+    Tokenizer t = new MockTokenizer(factory, MockTokenizer.KEYWORD, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
     return new TokenStreamComponents(t);
   }
 }

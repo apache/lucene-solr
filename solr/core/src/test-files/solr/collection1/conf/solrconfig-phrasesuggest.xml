@@ -102,6 +102,22 @@
     
   </searchComponent>
   
+  <searchComponent class="solr.SuggestComponent" name="free_text_suggest">
+    <lst name="suggester">
+      <str name="name">free_text_suggest</str>
+      <str name="lookupImpl">FreeTextLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="storeDir">free_text_suggest</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">freeTextSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="separator"> </str>
+      <str name="suggestFreeTextAnalyzerFieldType">text</str>
+	  <int name="ngrams">2</int>
+    </lst>
+    
+  </searchComponent>
   <!-- FuzzyLookup suggest component with FileDictionaryFactory -->
   <searchComponent class="solr.SuggestComponent" name="fuzzy_suggest_analyzing_with_file_dict">
     <lst name="suggester">
@@ -254,17 +270,26 @@
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_file_dict">
     <lst name="defaults">
       <str name="suggest">true</str>
-      <str name="suggest.dictionary">fuzzy_suggest_analyzing_with_file_dict</str>
     </lst>
     <arr name="components">
       <str>fuzzy_suggest_analyzing_with_file_dict</str>
     </arr>
   </requestHandler>
+  
+  
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/free_text_suggest">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>free_text_suggest</str>
+    </arr>
+  </requestHandler>
+  
 
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_high_freq_dict">
     <lst name="defaults">
       <str name="suggest">true</str>
-      <str name="suggest.dictionary">fuzzy_suggest_analyzing_with_high_freq_dict</str>
     </lst>
     <arr name="components">
       <str>fuzzy_suggest_analyzing_with_high_freq_dict</str>
