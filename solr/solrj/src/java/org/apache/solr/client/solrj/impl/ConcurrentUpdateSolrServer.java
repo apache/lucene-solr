@@ -390,6 +390,10 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
         if (runner != null) {
           runner.runnerLock.lock();
           runner.runnerLock.unlock();
+        } else if (!queue.isEmpty()) {
+          Runner r = new Runner();
+          runners.add(r);
+          scheduler.execute(r);
         }
       }
     } finally {
