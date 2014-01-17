@@ -154,9 +154,12 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   /** Controls how aggressively merges that reclaim more
-   *  deletions are favored.  Higher values favor selecting
-   *  merges that reclaim deletions.  A value of 0.0 means
-   *  deletions don't impact merge selection. */
+   *  deletions are favored.  Higher values will more
+   *  aggressively target merges that reclaim deletions, but
+   *  be careful not to go so high that way too much merging
+   *  takes place; a value of 3.0 is probably nearly too
+   *  high.  A value of 0.0 means deletions don't impact
+   *  merge selection. */ 
   public TieredMergePolicy setReclaimDeletesWeight(double v) {
     if (v < 0.0) {
       throw new IllegalArgumentException("reclaimDeletesWeight must be >= 0.0 (got " + v + ")");
@@ -255,12 +258,16 @@ public class TieredMergePolicy extends MergePolicy {
    *  merge. */
   protected static abstract class MergeScore {
     /** Sole constructor. (For invocation by subclass 
-     * constructors, typically implicit.) */
+     *  constructors, typically implicit.) */
     protected MergeScore() {
     }
     
+    /** Returns the score for this merge candidate; lower
+     *  scores are better. */
     abstract double getScore();
 
+    /** Human readable explanation of how the merge got this
+     *  score. */
     abstract String getExplanation();
   }
 
@@ -437,9 +444,12 @@ public class TieredMergePolicy extends MergePolicy {
       totBeforeMergeBytes += info.sizeInBytes();
     }
 
-    // Measure "skew" of the merge, which can range
-    // from 1.0/numSegsBeingMerged (good) to 1.0
-    // (poor):
+    // Roughly measure "skew" of the merge, i.e. how
+    // "balanced" the merge is (whether the segments are
+    // about the same size), which can range from
+    // 1.0/numSegsBeingMerged (good) to 1.0 (poor). Heavily
+    // lopsided merges (skew near 1.0) is no good; it means
+    // O(N^2) merge cost over time:
     final double skew;
     if (hitTooLarge) {
       // Pretend the merge has perfect skew; skew doesn't
