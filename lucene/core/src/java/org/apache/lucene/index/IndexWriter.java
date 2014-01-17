@@ -1112,7 +1112,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   /**
-   * Returns true if this index has deletions (including buffered deletions).
+   * Returns true if this index has deletions (including
+   * buffered deletions).  Note that this will return true
+   * if there are buffered Term/Query deletions, even if it
+   * turns out those buffered deletions don't match any
+   * documents.
    */
   public synchronized boolean hasDeletions() {
     ensureOpen();
@@ -2893,12 +2897,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     commitInternal();
   }
 
-  /** Returns true if there are changes that have not been
-   *  committed.  Note that if a merge kicked off as a
-   *  result of flushing a new segment during {@link
-   *  #commit}, or a concurrent merged finished,
-   *  this method may return true right after you
-   *  had just called {@link #commit}. */
+  /** Returns true if there may be changes that have not been
+   *  committed.  There are cases where this may return true
+   *  when there are no actual "real" changes to the index,
+   *  for example if you've deleted by Term or Query but
+   *  that Term or Query does not match any documents.
+   *  Also, if a merge kicked off as a result of flushing a
+   *  new segment during {@link #commit}, or a concurrent
+   *  merged finished, this method may return true right
+   *  after you had just called {@link #commit}. */
   public final boolean hasUncommittedChanges() {
     return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
   }
