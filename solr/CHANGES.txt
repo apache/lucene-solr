@@ -282,6 +282,9 @@ Other Changes
 * SOLR-5632: Improve response message for reloading a non-existent core.
   (Anshum Gupta via Mark Miller)
 
+* SOLR-5633: HttpShardHandlerFactory should make its http client available to subclasses.
+  (Ryan Ernst)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components

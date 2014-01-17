@@ -61,7 +61,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
-  private HttpClient defaultClient;
+  protected HttpClient defaultClient;
   private LBHttpSolrServer loadbalancer;
   //default values:
   int soTimeout = 0; 
