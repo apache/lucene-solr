@@ -386,8 +386,11 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
 
         if ((runner == null && queue.isEmpty()) || scheduler.isTerminated())
           break;
-        runner.runnerLock.lock();
-        runner.runnerLock.unlock();
+        
+        if (runner != null) {
+          runner.runnerLock.lock();
+          runner.runnerLock.unlock();
+        }
       }
     } finally {
       lock.countDown();
