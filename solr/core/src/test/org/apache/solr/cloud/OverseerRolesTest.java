@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -158,7 +159,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private void setOverseerRole(CollectionAction action, String overseerDesignate) throws SolrServerException, IOException {
     log.info("Adding overseer designate {} ", overseerDesignate);
     Map m = makeMap(
-        "action", action.toString().toLowerCase(),
+        "action", action.toString().toLowerCase(Locale.ROOT),
         "role", "overseer",
         "node", overseerDesignate);
     SolrParams params = new MapSolrParams(m);
