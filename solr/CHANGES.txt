@@ -327,7 +327,7 @@ Bug Fixes
   necessary. (Mark Miller)
   
 * SOLR-4709: The core reload after replication if config files have changed
-  can fail due to a race condition. (Mark Miller, Hossman))
+  can fail due to a race condition. (Mark Miller, Hossman)
 
 * SOLR-5503: Retry 'forward to leader' requests less aggressively - rather 
   than on IOException and status 500, ConnectException. (Mark Miller)
