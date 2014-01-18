@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,23 +28,32 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
+import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.NoTokenFoundQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TokenizedPhraseQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode.Modifier;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -73,6 +83,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
   private Analyzer analyzer;
 
   private boolean positionIncrementsEnabled;
+  
+  private Operator defaultOperator;
 
   public AnalyzerQueryNodeProcessor() {
     // empty constructor
@@ -86,6 +98,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       this.analyzer = analyzer;
       this.positionIncrementsEnabled = false;
       Boolean positionIncrementsEnabled = getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
+      Operator defaultOperator = getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
+      this.defaultOperator = defaultOperator != null ? defaultOperator : Operator.OR;
 
       if (positionIncrementsEnabled != null) {
           this.positionIncrementsEnabled = positionIncrementsEnabled;
@@ -185,24 +199,70 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       } else if (severalTokensAtSamePosition || !(node instanceof QuotedFieldQueryNode)) {
         if (positionCount == 1 || !(node instanceof QuotedFieldQueryNode)) {
           // no phrase query:
-          LinkedList<QueryNode> children = new LinkedList<QueryNode>();
-
-          for (int i = 0; i < numTokens; i++) {
-            String term = null;
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              term = termAtt.toString();
-
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
+          
+          if (positionCount == 1) { 
+            // simple case: only one position, with synonyms
+            LinkedList<QueryNode> children = new LinkedList<QueryNode>();
+            
+            for (int i = 0; i < numTokens; i++) {
+              String term = null;
+              try {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                term = termAtt.toString();
+                
+              } catch (IOException e) {
+                // safe to ignore, because we know the number of tokens
+              }
+              
+              children.add(new FieldQueryNode(field, term, -1, -1));
+              
             }
-
-            children.add(new FieldQueryNode(field, term, -1, -1));
-
+            return new GroupQueryNode(
+                new StandardBooleanQueryNode(children, positionCount==1));
+            
+          } else {
+            // multiple positions
+            QueryNode q = new StandardBooleanQueryNode(Collections.<QueryNode>emptyList(),false);
+            QueryNode currentQuery = null;
+            for (int i = 0; i < numTokens; i++) {
+              String term = null;
+              try {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                term = termAtt.toString();
+              } catch (IOException e) {
+                // safe to ignore, because we know the number of tokens
+              }
+              if (posIncrAtt != null && posIncrAtt.getPositionIncrement() == 0) {
+                if (!(currentQuery instanceof BooleanQueryNode)) {
+                  QueryNode t = currentQuery;
+                  currentQuery = new StandardBooleanQueryNode(Collections.<QueryNode>emptyList(), true);
+                  ((BooleanQueryNode)currentQuery).add(t);
+                }
+                ((BooleanQueryNode)currentQuery).add(new FieldQueryNode(field, term, -1, -1));
+              } else {
+                if (currentQuery != null) {
+                  if (this.defaultOperator == Operator.OR) {
+                    q.add(currentQuery);
+                  } else {
+                    q.add(new ModifierQueryNode(currentQuery, Modifier.MOD_REQ));
+                  }
+                }
+                currentQuery = new FieldQueryNode(field, term, -1, -1);
+              }
+            }
+            if (this.defaultOperator == Operator.OR) {
+              q.add(currentQuery);
+            } else {
+              q.add(new ModifierQueryNode(currentQuery, Modifier.MOD_REQ));
+            }
+            
+            if (q instanceof BooleanQueryNode) {
+              q = new GroupQueryNode(q);
+            }
+            return q;
           }
-          return new GroupQueryNode(
-            new StandardBooleanQueryNode(children, positionCount==1));
         } else {
           // phrase query:
           MultiPhraseQueryNode mpq = new MultiPhraseQueryNode();

@@ -558,6 +558,13 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("((stop))", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
+    
+    CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
+    setDefaultOperatorAND(cqpc);
+    assertQueryEquals(cqpc, "field", "term phrase term",
+        "+term +(+phrase1 +phrase2) +term");
+    assertQueryEquals(cqpc, "field", "phrase",
+        "+phrase1 +phrase2");
   }
 
   public void testRange() throws Exception {

@@ -22,6 +22,9 @@ Bug fixes
 
 * LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
   they were indexed with the term vectors. (Mike McCandless)
+  
+* LUCENE-5344: Flexible StandardQueryParser behaves differently than 
+  ClassicQueryParser. (Adriano Crestani)
 
 * LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
   when the parent query incorrectly returns child documents, and throw
@@ -139,7 +142,7 @@ Bug Fixes
 * LUCENE-5342: Fixed bulk-merge issue in CompressingStoredFieldsFormat which
   created corrupted segments when mixing chunk sizes.
   Lucene41StoredFieldsFormat is not impacted. (Adrien Grand, Robert Muir)
-
+  
 API Changes
 
 * LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
