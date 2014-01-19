@@ -624,6 +624,12 @@ public class Request {
     fail(null, message, cause);
   }
 
+  /** Throws {@link RequestFailedException} when the wrong
+   *  class was encountered. */
+  public void failWrongClass(String param, String reason, Object thingy) {
+    fail(param, reason + "; got: " + thingy.getClass());
+  }
+
   /** Throws a {@link RequestFailedException} with the
    *  provided parameter and message and original cause. */
   public void fail(String param, String reason, Throwable cause) {

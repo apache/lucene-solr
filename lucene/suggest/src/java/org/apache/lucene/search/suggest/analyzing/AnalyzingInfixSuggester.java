@@ -382,6 +382,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
       ts.end();
 
+      // Must explicitly close now because we pull another
+      // TokenStream in highlight, within this same try
+      // block:
+      ts.close();
+
       String prefixToken = null;
       if (lastToken != null) {
         Query lastQuery;
@@ -405,10 +410,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           query.add(lastQuery, occur);
         }
       }
-
-      // Must explicitly close now because we pull another
-      // TokenStream in highlight:
-      ts.close();
 
       // TODO: we could allow blended sort here, combining
       // weight w/ score.  Now we ignore score and sort only

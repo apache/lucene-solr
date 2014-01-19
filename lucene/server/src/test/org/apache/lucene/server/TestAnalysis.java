@@ -189,5 +189,14 @@ public class TestAnalysis extends ServerBaseTestCase {
     return sb.toString();
   }
 
+  public void testCharFilter() throws Exception {
+    send("analyze", "{text: '<pre>here is some text</pre>', analyzer: {tokenizer: Whitespace}}");
+    assertEquals("<pre>here is some text</pre>", justTokens());
+
+    // With HTMLStripCharFilter the <pre> and </pre> are removed:
+    send("analyze", "{text: '<pre>here is some text</pre>', analyzer: {charFilters: [HTMLStrip], tokenizer: Whitespace}}");
+    assertEquals("here is some text", justTokens());
+  }
+
   // nocommit need testOffsetGap ... how...
 }

@@ -36,6 +36,7 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -68,6 +69,7 @@ import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -245,17 +247,21 @@ public class RegisterFieldHandler extends Handler {
                    new Param("positionIncrementGap", "How many positions to insert between separate values in a multi-valued field", new IntType(), 0),
                    new Param("offsetGap", "How many offsets to insert between separate values in a multi-valued field", new IntType(), 1),
                    new Param("tokenizer", "Tokenizer class (for a custom analysis chain).",
-                             new OrType(new StringType(), new StructType())),
+                             new OrType(new StringType(), new StructType(new Param("class", "Tokenizer short name (e.g, 'Whitespace')", new StringType())))),
                              // nocommit somehow tap into TokenizerFactory.availableTokenizers
-                   new Param("tokenFilters", "Optional list of TokenFilters to apply after the Tokenizer",
+                   new Param("tokenFilters", "Optional chain of TokenFilters to apply after the Tokenizer",
                              new ListType(
-                                 new OrType(new StringType(), new StructType(new Param("class", "TokenFilter class name", new StringType()))))),
+                                 new OrType(new StringType(), new StructType(new Param("class", "TokenFilter short name (e.g. 'Stop')", new StringType()))))),
+                   new Param("charFilters", "Optional chain of CharFilters to apply beforethe Tokenizer",
+                             new ListType(
+                                 new OrType(new StringType(), new StructType(new Param("class", "CharFilter short name", new StringType()))))),
                    MATCH_VERSION_PARAM);
 
   static StructType SYNONYM_FILTER_TYPE = new StructType(
                                               new Param("ignoreCase", "True if matching should be case insensitive", new BooleanType(), true),
                                               new Param("analyzer", "Analyzer to use to tokenize synonym inputs", ANALYZER_TYPE_WRAP),
                                               new Param("synonyms", "Synonyms",
+                                                  /** nocommit syn filter: maybe the simpler groups / aliases format? */
                                                   new ListType(
                                                       new StructType(
                                                           new Param("input", "String or list of strings with input token(s) to match", new OrType(new ListType(new StringType()), new StringType())),
@@ -784,6 +790,8 @@ public class RegisterFieldHandler extends Handler {
     };
   }
 
+  // nocommit can we use SynonmyFilterFactory???
+
   static TokenFilterFactory buildSynonymFilterFactory(IndexState state, Request r) throws IOException {
 
     Analyzer a = getAnalyzer(state, r, "analyzer");
@@ -812,6 +820,57 @@ public class RegisterFieldHandler extends Handler {
     // nocommit what is MultiTermAwareComponent?
 
     // nocommit charFilters
+
+    List<CharFilterFactory> charFilters;
+
+    if (chain.hasParam("charFilters")) {
+      charFilters = new ArrayList<CharFilterFactory>();
+      for(Object o : chain.getList("charFilters")) {
+        Request sub;
+        String className;
+        if (o instanceof String) {
+          className = (String) o;
+          sub = null;
+        } else {
+          if ((o instanceof Request) == false) {
+            // nocommit make sure test hits this
+            chain.failWrongClass("charFilters", "each char filter must be string or struct", o);
+          }
+          sub = (Request) o;
+          className = sub.getString("class");
+        }
+
+        Map<String,String> factoryArgs = new HashMap<String,String>();
+        // nocommit how to allow the SPI name and separately
+        // also a fully qualified class name ...
+        factoryArgs.put("class", className);
+        factoryArgs.put("luceneMatchVersion", matchVersion.toString());
+        if (sub != null) {
+          for(Map.Entry<String,Object> ent : sub.getRawParams().entrySet()) {
+            factoryArgs.put(ent.getKey(), ent.getValue().toString());
+          }
+          sub.clearParams();
+        }
+
+        CharFilterFactory factory;
+        try {
+          factory = CharFilterFactory.forName(className, factoryArgs);
+        } catch (IllegalArgumentException iae) {
+          chain.fail("charFilters[" + charFilters.size() + "]", "failed to create CharFilterFactory for class \"" + className + "\": " + iae, iae);
+          // Dead code but compiler disagrees:
+          factory = null;
+        }
+
+        if (factory instanceof ResourceLoaderAware) {
+          // nocommit also do RAM wrapping resource loader here:
+          ((ResourceLoaderAware) factory).inform(state.resourceLoader);
+        }
+
+        charFilters.add(factory);
+      }
+    } else {
+      charFilters = null;
+    }
 
     // Build TokenizerFactory:
     String className;
@@ -859,6 +918,7 @@ public class RegisterFieldHandler extends Handler {
       }
 
       if (tokenizerFactory instanceof ResourceLoaderAware) {
+        // nocommit also do RAM wrapping resource loader here:
         ((ResourceLoaderAware) tokenizerFactory).inform(state.resourceLoader);
       }
     }
@@ -871,18 +931,15 @@ public class RegisterFieldHandler extends Handler {
         String paramName = "tokenFilters[" + tokenFilterFactories.size() + "]";
 
         Request sub;
-        JSONObject subParams;
         if (o instanceof String) {
           className = (String) o;
           sub = null;
-          subParams = null;
         } else {
           if ((o instanceof Request) == false) {
             // nocommit make sure test hits this
             chain.fail(paramName, "each filter must be string or struct; got: " + o.getClass());
           }
           sub = (Request) o;
-          subParams = sub.getRawParams();
 
           className = sub.getString("class");
         }
@@ -906,10 +963,8 @@ public class RegisterFieldHandler extends Handler {
           ResourceLoader resources = state.resourceLoader;
           RAMResourceLoaderWrapper ramResources = null;
 
-
           if (sub != null) {
-
-            for(Map.Entry<String,Object> ent : subParams.entrySet()) {
+            for(Map.Entry<String,Object> ent : sub.getRawParams().entrySet()) {
               String argName = ent.getKey();
               Object argValue = ent.getValue();
 
@@ -961,7 +1016,7 @@ public class RegisterFieldHandler extends Handler {
             // server.  If any params are really unused, the
             // analysis factory should throw its own
             // IllegalArgumentException:
-            subParams.clear();
+            sub.clearParams();
           }
 
           try {
@@ -984,7 +1039,8 @@ public class RegisterFieldHandler extends Handler {
       tokenFilterFactories = null;
     }
 
-    return new CustomAnalyzer(tokenizerFactory, tokenFilterFactories,
+    return new CustomAnalyzer(charFilters,
+                              tokenizerFactory, tokenFilterFactories,
                               chain.getInt("positionIncrementGap"),
                               chain.getInt("offsetGap"));
   }
@@ -1024,13 +1080,22 @@ public class RegisterFieldHandler extends Handler {
     }
   }
 
+  /** An analyzer based on the custom charFilter, tokenizer,
+   *  tokenFilters chains specified when the field was
+   *  registered. */
+
   private static class CustomAnalyzer extends Analyzer {
     private final int posIncGap;
     private final int offsetGap;
     private final TokenizerFactory tokenizerFactory;
     private final List<TokenFilterFactory> tokenFilterFactories;
+    private final List<CharFilterFactory> charFilterFactories;
 
-    public CustomAnalyzer(TokenizerFactory tokenizerFactory, List<TokenFilterFactory> tokenFilterFactories, int posIncGap, int offsetGap) {
+    public CustomAnalyzer(List<CharFilterFactory> charFilterFactories,
+                          TokenizerFactory tokenizerFactory,
+                          List<TokenFilterFactory> tokenFilterFactories,
+                          int posIncGap, int offsetGap) {
+      this.charFilterFactories = charFilterFactories;
       this.tokenizerFactory = tokenizerFactory;
       this.tokenFilterFactories = tokenFilterFactories;
       this.posIncGap = posIncGap;
@@ -1047,6 +1112,17 @@ public class RegisterFieldHandler extends Handler {
         }
       }
       return new TokenStreamComponents(tokenizer, last);
+    }
+
+    @Override
+    protected Reader initReader(String fieldName, Reader reader) {
+      Reader result = reader;
+      if (charFilterFactories != null) {
+        for(CharFilterFactory factory : charFilterFactories) {
+          result = factory.create(result);
+        }
+      }
+      return result;
     }
 
     @Override

@@ -112,15 +112,12 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     } catch (InvocationTargetException ite) {
       // nocommit ... trying to throw the "original" IAE,
       // but is this correct/safe?
-      Throwable t = ite;
-      while (t.getCause() != null) {
-        if (t.getCause() instanceof IllegalArgumentException) {
-          throw (IllegalArgumentException) t.getCause();
-        }
-        t = t.getCause();
+      if (ite.getCause() instanceof IllegalArgumentException) {
+        throw (IllegalArgumentException) ite.getCause();
+      } else {
+        throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
+                                           "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
       }
-      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
-            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);

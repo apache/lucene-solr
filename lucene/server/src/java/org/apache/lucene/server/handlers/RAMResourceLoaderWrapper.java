@@ -28,8 +28,10 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 
 /** Holds "files" in RAM, and falls back to delegate if the
  *  resource isn't in RAM.  This is used for analysis
- *  components that specify their "files" as strings in
- *  RAM. */
+ *  components that specify their "files" as strings inlined
+ *  in the JSON (e.g. list of stopwords for a stop filter). */
+
+// nocommit hacky ... e.g. how are these "files" gc'd after loading/parsing
 
 class RAMResourceLoaderWrapper implements ResourceLoader {
 
