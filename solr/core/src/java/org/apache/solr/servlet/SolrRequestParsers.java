@@ -17,16 +17,16 @@
 
 package org.apache.solr.servlet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,8 +36,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -54,9 +52,12 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class SolrRequestParsers 
@@ -96,6 +97,17 @@ public class SolrRequestParsers
       enableRemoteStreams = true;
       handleSelect = true;
       addHttpRequestToContext = false;
+    } else if (globalConfig instanceof SolrConfig) {
+      multipartUploadLimitKB = ((SolrConfig) globalConfig).getMultipartUploadLimitKB();
+      
+      formUploadLimitKB = ((SolrConfig) globalConfig).getFormUploadLimitKB();
+      
+      enableRemoteStreams = ((SolrConfig) globalConfig).isEnableRemoteStreams();
+  
+      // Let this filter take care of /select?xxx format
+      handleSelect = ((SolrConfig) globalConfig).isHandleSelect();
+      
+      addHttpRequestToContext = ((SolrConfig) globalConfig).isAddHttpRequestToContext();
     } else {
       multipartUploadLimitKB = globalConfig.getInt( 
           "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048 );
