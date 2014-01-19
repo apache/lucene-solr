@@ -362,10 +362,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     // now try to remove a collection when a couple of it's nodes are down
     if (secondConfigSet) {
-      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
           createNewSolrServer("", baseUrl), null, "conf2");
     } else {
-      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
           createNewSolrServer("", baseUrl), null);
     }
     
@@ -377,7 +377,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // wait for leaders to settle out
     for (int i = 1; i < 4; i++) {
-      cloudClient.getZkStateReader().getLeaderRetry("halfdeletedcollection2", "shard" + i);
+      cloudClient.getZkStateReader().getLeaderRetry("halfdeletedcollection2", "shard" + i, 15000);
     }
     
     baseUrl = getBaseUrl((HttpSolrServer) clients.get(2));
