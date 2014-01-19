@@ -362,10 +362,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     // now try to remove a collection when a couple of it's nodes are down
     if (secondConfigSet) {
-      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
           createNewSolrServer("", baseUrl), null, "conf2");
     } else {
-      createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
           createNewSolrServer("", baseUrl), null);
     }
     
@@ -374,6 +374,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // stop a couple nodes
     ChaosMonkey.stop(jettys.get(0));
     ChaosMonkey.stop(jettys.get(1));
+    
+    // wait for leaders to settle out
+    for (int i = 1; i < 4; i++) {
+      cloudClient.getZkStateReader().getLeaderRetry("halfdeletedcollection2", "shard" + i, 15000);
+    }
     
     baseUrl = getBaseUrl((HttpSolrServer) clients.get(2));
     
@@ -387,8 +392,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createNewSolrServer("", baseUrl).request(request);
     
     cloudClient.getZkStateReader().updateClusterState(true);
-    assertFalse(cloudClient.getZkStateReader().getClusterState()
-        .getCollections().contains("halfdeletedcollection2"));
+
+    assertFalse("Still found collection that should be gone", cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
     
   }
 
