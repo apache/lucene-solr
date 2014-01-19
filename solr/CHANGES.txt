@@ -175,9 +175,6 @@ Bug Fixes
 * SOLR-4992: Solr eats OutOfMemoryError exceptions in many cases.
   (Mark Miller, Daniel Collins)  
 
-* SOLR-5636: SolrRequestParsers does some xpath lookups on every request, which
-  can cause concurrency issues. (Mark Miller)
-
 * LUCENE-5399, SOLR-5354 sort wouldn't work correctly with
   distributed searching for some field types such as legacy numeric
   types (Rob Muir, Mike McCandless)
@@ -357,6 +354,9 @@ Bug Fixes
 
 * SOLR-5645: A SolrCore reload via the CoreContainer will try and register in
   zk again with the new SolrCore. (Mark Miller)
+
+* SOLR-5636: SolrRequestParsers does some xpath lookups on every request, which
+  can cause concurrency issues. (Mark Miller)
 
 Optimizations
 ----------------------  
