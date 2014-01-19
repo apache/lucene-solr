@@ -404,6 +404,13 @@ public class Request {
     return params.get(name);
   }
 
+  /** Returns the raw object, and removes the binding. */
+  public Object getAndRemoveRaw(String name) {
+    Object o = params.get(name);
+    params.remove(name);
+    return o;
+  }
+
   /** Retrieve a struct parameter.  This can be called
    *  multiple times for a given parameter name. */
   public Request getStruct(String name) {
@@ -609,6 +616,12 @@ public class Request {
    *  provided parameter and message. */
   public void fail(String param, String message) {
     fail(param, message, null);
+  }
+
+  /** Throws a {@link RequestFailedException} with the
+   *  provided parameter and message. */
+  public void fail(String message, Throwable cause) {
+    fail(null, message, cause);
   }
 
   /** Throws a {@link RequestFailedException} with the

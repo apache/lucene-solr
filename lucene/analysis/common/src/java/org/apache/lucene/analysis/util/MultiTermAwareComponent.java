@@ -24,7 +24,7 @@ package org.apache.lucene.analysis.util;
  * @lucene.experimental
  */
 public interface MultiTermAwareComponent {
-  /** Returns an analysis component to handle analysis if multi-term queries.
+  /** Returns an analysis component to handle analysis of multi-term queries.
    * The returned component must be a TokenizerFactory, TokenFilterFactory or CharFilterFactory.
    */
   public AbstractAnalysisFactory getMultiTermComponent();

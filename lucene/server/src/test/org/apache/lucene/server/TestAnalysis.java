@@ -42,42 +42,56 @@ public class TestAnalysis extends ServerBaseTestCase {
   }
 
   public void testCustomAnalysisChain() throws Exception {
-    //send("{body: {type: text, analyzer: {tokenizer: StandardTokenizer, tokenFilters: [LowerCaseFilter]}}}", "registerFields");
-    //send("{queryParser: {class: classic, defaultField: body}}", "settings");
-    JSONObject o = send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [LowerCaseFilter]}}");
-    assertEquals("here is some text", justTokens(o));
+    send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: Standard, tokenFilters: [LowerCase]}}");
+    assertEquals("here is some text", justTokens());
 
-    o = send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: StandardTokenizer}}");
-    assertEquals("Here is some text", justTokens(o));
+    send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: Standard}}");
+    assertEquals("Here is some text", justTokens());
 
-    o = send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: {class: StandardTokenizer, maxTokenLength: 2}, tokenFilters: [LowerCaseFilter]}}");
-    assertEquals("is", justTokens(o));
-
-    // test maxTokenLength
+    send("analyze", "{text: 'Here is some text', analyzer: {tokenizer: {class: Standard, maxTokenLength: 2}, tokenFilters: [LowerCase]}}");
+    assertEquals("is", justTokens());
   }
 
   public void testPatternTokenizer() throws Exception {
-    JSONObject o = send("analyze", "{text: 'Here is \\'some\\' text', analyzer: {tokenizer: {class: PatternTokenizer, pattern: \"\\'([^\\']+)\\'\", group: 1}}}");
-    assertEquals("some", justTokens(o));
+    send("analyze", "{text: 'Here is \\'some\\' text', analyzer: {tokenizer: {class: Pattern, pattern: \"\\'([^\\']+)\\'\", group: 1}}}");
+    assertEquals("some", justTokens());
   }
 
-  public void testSetKeywordMarkerFilter() throws Exception {
-    // No KWMarkerFilter, dogs is stemmed:
-    JSONObject o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, EnglishMinimalStemFilter]}}");
-    assertEquals("here some dog", justTokens(o));
+  public void testExtraArgs() throws Exception {
+    assertFailsWith("analyze", "{text: 'Here is \\'some\\' text', analyzer: {tokenizer: {class: Pattern, pattern: \"\\'([^\\']+)\\'\", group: 1, bad: 14}}}", "analyze > analyzer > tokenizer: failed to create TokenizerFactory for class \"Pattern\": java.lang.IllegalArgumentException: Unknown parameters: {bad=14}");
+  }
 
-    // KWMarkerFilter protects dogs:
-    o = send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter, LowerCaseFilter, StopFilter, {class: SetKeywordMarkerFilter, keyWords:[dogs]}, EnglishMinimalStemFilter]}}");
-    assertEquals("here some dogs", justTokens(o));
+  public void testKeywordMarkerFilter() throws Exception {
+    // No KWMarkerFilter, dogs is stemmed:
+    send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: Standard, tokenFilters: [EnglishPossessive, LowerCase, Stop, EnglishMinimalStem]}}");
+    assertEquals("here some dog", justTokens());
+
+    // Use KWMarkerFilter with protectedFileContents to protect dogs:
+    send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: Standard, tokenFilters: [EnglishPossessive, LowerCase, Stop, {class: KeywordMarker, protectedFileContents:[dogs]}, EnglishMinimalStem]}}");
+    assertEquals("here some dogs", justTokens());
+
+    // Use KWMarkerFilter with pattern to protect dogs:
+    send("analyze", "{text: 'Here is some dogs', analyzer: {tokenizer: Standard, tokenFilters: [EnglishPossessive, LowerCase, Stop, {class: KeywordMarker, pattern: dogs}, EnglishMinimalStem]}}");
+    assertEquals("here some dogs", justTokens());
   }
 
   public void testEnglishAnalyzer() throws Exception {
-    JSONObject o = send("analyze", "{text: 'dogs go running', analyzer: {class: EnglishAnalyzer}}");
-    assertEquals("dog go run", justTokens(o));
+    send("analyze", "{text: 'dogs go running', analyzer: {class: EnglishAnalyzer}}");
+    assertEquals("dog go run", justTokens());
 
     // This time protecting dogs from stemming:
-    o = send("analyze", "{text: 'dogs go running', analyzer: {class: EnglishAnalyzer, stemExclusionSet: [dogs]}}");
-    assertEquals("dogs go run", justTokens(o));
+    send("analyze", "{text: 'dogs go running', analyzer: {class: EnglishAnalyzer, stemExclusionSet: [dogs]}}");
+    assertEquals("dogs go run", justTokens());
+  }
+
+  public void testStopFilter() throws Exception {
+    // Uses default (english) stop words:
+    send("analyze", "{text: 'the dogs go running', analyzer: {tokenizer: Whitespace, tokenFilters: [Stop]}}");
+    assertEquals("dogs go running", justTokens());
+
+    // This time making only running a stop word:
+    send("analyze", "{text: 'the dogs go running', analyzer: {tokenizer: Whitespace, tokenFilters: [{class: Stop, wordsFileContents: [running]}]}}");
+    assertEquals("the dogs go", justTokens());
   }
 
   public void testPositionIncrementGap() throws Exception {
@@ -85,32 +99,34 @@ public class TestAnalysis extends ServerBaseTestCase {
     _TestUtil.rmDir(new File("posinc"));
     send("createIndex", "{rootDir: posinc}");
     send("settings", "{directory: RAMDirectory}");
-    send("registerFields", "{fields: {author1: {type: text, analyzer: {tokenizer: WhitespaceTokenizer}, multiValued: true}, author2: {type: text, analyzer: {tokenizer: WhitespaceTokenizer, positionIncrementGap: 1}, multiValued: true}}}");
+    send("registerFields", "{fields: {author1: {type: text, analyzer: {tokenizer: Whitespace}, multiValued: true}, author2: {type: text, analyzer: {tokenizer: Whitespace, positionIncrementGap: 1}, multiValued: true}}}");
     send("startIndex");
-    long gen = getLong(send("addDocument", "{fields: {author1: [bob, smith], author2: [bob, smith]}}"), "indexGen");
+    send("addDocument", "{fields: {author1: [bob, smith], author2: [bob, smith]}}");
+    long gen = getLong("indexGen");
 
     // This one matches because the two values act like they
     // were just concatenated:
-    JSONObject result = send("search", String.format(Locale.ROOT, "{queryText: 'author1: \"bob smith\"', searcher: {indexGen: %d}}", gen));
-    assertEquals(1, getInt(result, "hits.length"));
+    send("search", String.format(Locale.ROOT, "{queryText: 'author1: \"bob smith\"', searcher: {indexGen: %d}}", gen));
+    assertEquals(1, getInt("hits.length"));
 
     // This one doesn't match because a hole is inserted
     // between the two values:
-    result = send("search", String.format(Locale.ROOT, "{queryText: 'author2: \"bob smith\"', searcher: {indexGen: %d}}", gen));
-    assertEquals(0, getInt(result, "hits.length"));
+    send("search", String.format(Locale.ROOT, "{queryText: 'author2: \"bob smith\"', searcher: {indexGen: %d}}", gen));
+    assertEquals(0, getInt("hits.length"));
     send("stopIndex");
     send("deleteIndex");
   }
 
+  // nocommit test loading syns from "file" too
   public void testSynonymFilter() throws Exception {
-    JSONObject o = send("analyze", "{text: 'domain name service is complex', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter, {class: SynonymFilter, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: 'domain name service', output: 'dns'}]}]}}");
-    assertEquals("dns/0 is/1 complex/2", tokensAndPositions(o));
+    send("analyze", "{text: 'domain name service is complex', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase, {class: Synonym, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: 'domain name service', output: 'dns'}]}]}}");
+    assertEquals("dns/0 is/1 complex/2", tokensAndPositions());
 
-    o = send("analyze", "{text: 'domain name service is complex', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter, {class: SynonymFilter, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: 'domain name service', output: 'dns', replace: false}]}]}}");
-    assertEquals("domain/0 dns/0:3 name/1 service/2 is/3 complex/4", tokensAndPositions(o));
+    send("analyze", "{text: 'domain name service is complex', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase, {class: Synonym, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: 'domain name service', output: 'dns', replace: false}]}]}}");
+    assertEquals("domain/0 dns/0:3 name/1 service/2 is/3 complex/4", tokensAndPositions());
 
-    o = send("analyze", "{text: 'mother knows best', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter, {class: SynonymFilter, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: ['mother', 'mommy'], output: 'mom'}]}]}}");
-    assertEquals("mom/0 knows/1 best/2", tokensAndPositions(o));
+    send("analyze", "{text: 'mother knows best', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase, {class: Synonym, ignoreCase: true, analyzer: WhitespaceAnalyzer, synonyms: [{input: ['mother', 'mommy'], output: 'mom'}]}]}}");
+    assertEquals("mom/0 knows/1 best/2", tokensAndPositions());
   }
 
   String ONLY_WHITESPACE_RULES = "\\n!!forward;\\n" + 
@@ -132,13 +148,18 @@ public class TestAnalysis extends ServerBaseTestCase {
     "$NonWhitespace+   {1};";
 
   public void testICUTokenizer() throws Exception {
-    JSONObject o = send("analyze", "{text: 'domain-name service is complex', analyzer: {tokenizer: {class: ICUTokenizer, rules: [{script: Latn, rules: \"" + ONLY_WHITESPACE_RULES + "\"}]}}}");
-    assertEquals("domain-name/0 service/1 is/2 complex/3", tokensAndPositions(o));
+    send("analyze", "{text: 'domain-name service is complex', analyzer: {tokenizer: {class: ICU, rules: [{script: Latn, rules: \"" + ONLY_WHITESPACE_RULES + "\"}]}}}");
+    assertEquals("domain-name/0 service/1 is/2 complex/3", tokensAndPositions());
   }
 
-  private String justTokens(JSONObject o) {
+  public void testSpanishLightStem() throws Exception {
+    send("analyze", "{text: 'las lomitas', analyzer: {tokenizer: Standard, tokenFilters: [SpanishLightStem]}}");
+    assertEquals("las/0 lomit/1", tokensAndPositions());
+  }
+
+  private String justTokens() {
     StringBuilder sb = new StringBuilder();
-    for(Object _o : (JSONArray) o.get("tokens")) {
+    for(Object _o : (JSONArray) lastResult.get("tokens")) {
       JSONObject token = (JSONObject) _o;
       if (sb.length() > 0) {
         sb.append(' ');
@@ -148,9 +169,9 @@ public class TestAnalysis extends ServerBaseTestCase {
     return sb.toString();
   }
 
-  private String tokensAndPositions(JSONObject o) {
+  private String tokensAndPositions() {
     StringBuilder sb = new StringBuilder();
-    for(Object _o : (JSONArray) o.get("tokens")) {
+    for(Object _o : (JSONArray) lastResult.get("tokens")) {
       JSONObject token = (JSONObject) _o;
       if (sb.length() > 0) {
         sb.append(' ');

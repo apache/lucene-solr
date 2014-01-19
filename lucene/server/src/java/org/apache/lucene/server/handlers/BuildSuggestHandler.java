@@ -173,11 +173,13 @@ public class BuildSuggestHandler extends Handler {
     r = pr.r;
     Analyzer indexAnalyzer;
     Analyzer queryAnalyzer;
+    // nocommit allow passing a field name, and we use that
+    // field name's analyzer?
     if (r.hasParam("analyzer")) {
-      indexAnalyzer = queryAnalyzer = RegisterFieldHandler.getAnalyzer(state.matchVersion, r, "analyzer");
+      indexAnalyzer = queryAnalyzer = RegisterFieldHandler.getAnalyzer(state, r, "analyzer");
     } else {
-      indexAnalyzer = RegisterFieldHandler.getAnalyzer(state.matchVersion, r, "indexAnalyzer");
-      queryAnalyzer = RegisterFieldHandler.getAnalyzer(state.matchVersion, r, "queryAnalyzer");
+      indexAnalyzer = RegisterFieldHandler.getAnalyzer(state, r, "indexAnalyzer");
+      queryAnalyzer = RegisterFieldHandler.getAnalyzer(state, r, "queryAnalyzer");
     }
     if (indexAnalyzer == null) {
       r.fail("analyzer", "analyzer or indexAnalyzer must be specified");

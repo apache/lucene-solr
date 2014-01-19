@@ -47,6 +47,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.util.FilesystemResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.facet.FacetsConfig;
@@ -137,6 +139,9 @@ public class IndexState implements Closeable {
 
   /** Creates directories */
   DirectoryFactory df = DirectoryFactory.get("FSDirectory");
+
+  /** Loads all resources for analysis components */
+  public final ResourceLoader resourceLoader;
 
   /** Where all index state is saved */
   public final File rootDir;
@@ -402,6 +407,16 @@ public class IndexState implements Closeable {
     this.globalState = globalState;
     this.name = name;
     this.rootDir = rootDir;
+    if (rootDir != null) {
+      if (!rootDir.exists()) {
+        rootDir.mkdirs();
+      }
+      this.resourceLoader = new FilesystemResourceLoader(rootDir);
+    } else {
+      // nocommit can/should we make a DirectoryResourceLoader?
+      this.resourceLoader = null;
+    }
+
     this.doCreate = doCreate;
     if (doCreate == false) {
       initSaveLoadState();

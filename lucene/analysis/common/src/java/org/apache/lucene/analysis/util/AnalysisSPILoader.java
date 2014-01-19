@@ -17,13 +17,14 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.ServiceConfigurationError;
+import java.util.Set;
 
 import org.apache.lucene.util.SPIClassIterator;
 
@@ -108,6 +109,18 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     final Class<? extends S> service = lookupClass(name);
     try {
       return service.getConstructor(Map.class).newInstance(args);
+    } catch (InvocationTargetException ite) {
+      // nocommit ... trying to throw the "original" IAE,
+      // but is this correct/safe?
+      Throwable t = ite;
+      while (t.getCause() != null) {
+        if (t.getCause() instanceof IllegalArgumentException) {
+          throw (IllegalArgumentException) t.getCause();
+        }
+        t = t.getCause();
+      }
+      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
+            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);

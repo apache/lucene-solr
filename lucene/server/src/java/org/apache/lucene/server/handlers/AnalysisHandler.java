@@ -64,7 +64,7 @@ public class AnalysisHandler extends Handler {
     final String text = r.getString("text");
 
     // TODO: allow passing field name in, and we use its analyzer?
-    final Analyzer a = RegisterFieldHandler.getAnalyzer(state.matchVersion, r, "analyzer");
+    final Analyzer a = RegisterFieldHandler.getAnalyzer(state, r, "analyzer");
 
     return new FinishRequest() {
       @Override

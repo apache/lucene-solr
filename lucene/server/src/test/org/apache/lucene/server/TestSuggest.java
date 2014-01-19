@@ -61,7 +61,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("5\u001fthe time is now\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: StandardTokenizer, tokenFilters: [EnglishPossessiveFilter,LowerCaseFilter,PorterStemFilter]]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'AnalyzingSuggester', suggestName: 'suggest', indexAnalyzer: EnglishAnalyzer, queryAnalyzer: {tokenizer: Standard, tokenFilters: [EnglishPossessive, LowerCase, PorterStem]]}}");
     assertEquals(5, result.get("count"));
     //commit();
 
@@ -81,9 +81,6 @@ public class TestSuggest extends ServerBaseTestCase {
       assertEquals(5, get(result, "results[2].weight"));
       assertEquals("foobar", get(result, "results[2].payload"));
 
-      // ForkLastTokenFilter allows 'the' to match
-      // 'theories'; without it (and StopKeywordFilter) the
-      // would be dropped:
       result = send("suggestLookup", "{text: 'the', suggestName: 'suggest'}");
       assertEquals(1, get(result, "results.length"));
 
@@ -107,7 +104,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggest2, analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggest2, analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
     assertEquals(1, result.get("count"));
     //commit();
 
@@ -145,7 +142,7 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: 'FuzzySuggester', suggestName: 'suggest3', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
     assertEquals(1, result.get("count"));
     //commit();
 
@@ -177,7 +174,7 @@ public class TestSuggest extends ServerBaseTestCase {
     send("addDocument", "{fields: {text: 'the cat meows', weight: 1, payload: 'payload1'}}");
     long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', weight: 2, payload: 'payload2'}}"), "indexGen");
 
-    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightField: weight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightField: weight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
     // nocommit count isn't returned for stored fields source:
     //assertEquals(2, result.get("count"));
 
@@ -213,7 +210,7 @@ public class TestSuggest extends ServerBaseTestCase {
     send("addDocument", "{fields: {text: 'the cat meows', negWeight: -1, payload: 'payload1'}}");
     long indexGen = getLong(send("addDocument", "{fields: {text: 'the dog barks', negWeight: -2, payload: 'payload2'}}"), "indexGen");
 
-    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightExpression: -negWeight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: WhitespaceTokenizer, tokenFilters: [LowerCaseFilter]}}");
+    JSONObject result = send("buildSuggest", "{source: {searcher: {indexGen: " + indexGen + "}, suggestField: text, weightExpression: -negWeight, payloadField: payload}, class: 'AnalyzingSuggester', suggestName: 'suggest', analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
     // nocommit count isn't returned for stored fields source:
     //assertEquals(2, result.get("count"));
 

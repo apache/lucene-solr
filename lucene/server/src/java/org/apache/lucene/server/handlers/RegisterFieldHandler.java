@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.text.Collator;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,8 +65,13 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
@@ -88,9 +94,11 @@ import org.apache.lucene.server.GlobalState;
 import org.apache.lucene.server.IndexState;
 import org.apache.lucene.server.params.*;
 import org.apache.lucene.server.params.PolyType.PolyEntry;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import com.ibm.icu.lang.UCharacter;
@@ -237,52 +245,31 @@ public class RegisterFieldHandler extends Handler {
                    new Param("positionIncrementGap", "How many positions to insert between separate values in a multi-valued field", new IntType(), 0),
                    new Param("offsetGap", "How many offsets to insert between separate values in a multi-valued field", new IntType(), 1),
                    new Param("tokenizer", "Tokenizer class (for a custom analysis chain).",
-                             new StructType(
-                                 new Param("class",
-                                           "Tokenizer class",
-                                           new PolyType(Tokenizer.class,
-                                                        new PolyEntry("WhitespaceTokenizer", "A WhitespaceTokenizer is a tokenizer that divides text at whitespace (see @lucene:analyzers-common:org.apache.lucene.analysis.core.WhitespaceTokenizer)", new StructType()),
-                                                        new PolyEntry("StandardTokenizer", "A grammar-based tokenizer constructed with JFlex (see @lucene:analyzers-common:org.apache.lucene.analysis.standard.StandardTokenizer)",
-                                                            new Param("maxTokenLength", "Max length of each token", new IntType(), StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH)),
-                                                        new PolyEntry("PatternTokenizer", "This tokenizer uses regex pattern matching to construct distinct tokens for the input stream (see @lucene:analyzers-common:org.apache.lucene.analysis.pattern.PatternTokenizer)",
-                                                            new Param("pattern", "Regular expression pattern", new StringType()),
-                                                                      new Param("group", "Group index for the tokens (-1 to do 'split')", new IntType(), -1)),
-                                                        new PolyEntry("ICUTokenizer", "Breaks text into words according to UAX #29: Unicode Text Segmentation (http://www.unicode.org/reports/tr29",
-                                                            new Param("rules", "Customize the tokenization per-script",
-                                                               new ListType(
-                                                                   new StructType(
-                                                                       new Param("script", "Script", new StringType()),
-                                                                       new Param("rules", "Rules", new StringType()))))))))),
+                             new OrType(new StringType(), new StructType())),
+                             // nocommit somehow tap into TokenizerFactory.availableTokenizers
                    new Param("tokenFilters", "Optional list of TokenFilters to apply after the Tokenizer",
                              new ListType(
-                                 new StructType(
-                                     new Param("class", "TokenFilter class",
-                                         new PolyType(TokenFilter.class,
-                                                      new PolyEntry("ArabicStemFilter", "A TokenFilter that applies ArabicStemmer to stem Arabic words. (see @lucene:analyzers-common:org.apache.lucene.analysis.ar.ArabicStemFilter)"),
-                                                      new PolyEntry("StandardFilter", "Normalizes tokens extracted with StandardTokenizer. (see @lucene:analyzers-common:org.apache.lucene.analysis.standard.StandardFilter)"),
-                                                      new PolyEntry("EnglishPossessiveFilter", "TokenFilter that removes possessives (trailing 's) from words (see @lucene:analyzers-common:org.apache.lucene.analysis.en.EnglishPossessiveFilter)"),
-                                                      new PolyEntry("PorterStemFilter", "Transforms the token stream as per the Porter stemming algorithm (see @lucene:analyzers-common:org.apache.lucene.analysis.en.PorterStemFilter)"),
-                                                      new PolyEntry("SuggestStopFilter", "Like {@link StopFilter} except it will not remove the last token if that token was not followed by some token separator.",
-                                                                    new Param("stopWords", "Stop words to remove during analysis",
-                                                                        new ListType(new StringType()), DEFAULT_ENGLISH_STOP_WORDS)),
-                                                      new PolyEntry("EnglishMinimalStemFilter", "A TokenFilter that applies EnglishMinimalStemmer to stem English words (see @lucene:analyzers-common:org.apache.lucene.analysis.en.EnglishMinimalStemFilter)"),
-                                                      new PolyEntry("SetKeywordMarkerFilter", "Marks terms as keywords via the KeywordAttribute (see @lucene:analyzers-common:org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter)", new Param("keyWords", "List of tokens to mark as keywords", new ListType(new StringType()))),
-                                                      new PolyEntry("StopFilter", "Removes stop words from a token stream (see @lucene:analyzers-common:org.apache.lucene.analysis.core.StopFilter)",
-                                                          new Param("stopWords", "Stop words to remove during analysis",
-                                                                    new ListType(new StringType()), DEFAULT_ENGLISH_STOP_WORDS)),
-                                                      new PolyEntry("SynonymFilter", "Matches single- or multi-word synonyms and injects or replaces the match with a corresponding synonym",
-                                                          //new Param("synonymFile", "Local file to load synonyms from", new StringType()),   // nocommit TODO
-                                                          new Param("ignoreCase", "True if matching should be case insensitive", new BooleanType(), true),
-                                                          new Param("analyzer", "Analyzer to use to tokenize synonym inputs", ANALYZER_TYPE_WRAP),
-                                                          new Param("synonyms", "Specify synonyms inline (instead of synonymFile)",
-                                                              new ListType(
-                                                                  new StructType(
-                                                                      new Param("input", "String or list of strings with input token(s) to match", new OrType(new ListType(new StringType()), new StringType())),
-                                                                      // TODO: allow more than one token on the output?
-                                                                      new Param("output", "Single token to replace the matched tokens with", new StringType()),
-                                                                      new Param("replace", "True if the input tokens should be replaced with the output token; false if the input tokens should be preserved and the output token overlaid", new BooleanType(), true))))),
-                                                      new PolyEntry("LowerCaseFilter", "Normalizes token text to lower case (see @lucene:analyzers-common:org.apache.lucene.analysis.core.LowerCaseFilter)", new StructType())))))),
+                                 new OrType(new StringType(), new StructType(new Param("class", "TokenFilter class name", new StringType()))))),
                    MATCH_VERSION_PARAM);
+
+  static StructType SYNONYM_FILTER_TYPE = new StructType(
+                                              new Param("ignoreCase", "True if matching should be case insensitive", new BooleanType(), true),
+                                              new Param("analyzer", "Analyzer to use to tokenize synonym inputs", ANALYZER_TYPE_WRAP),
+                                              new Param("synonyms", "Synonyms",
+                                                  new ListType(
+                                                      new StructType(
+                                                          new Param("input", "String or list of strings with input token(s) to match", new OrType(new ListType(new StringType()), new StringType())),
+                                                          // TODO: allow more than one token on the output?
+                                                          new Param("output", "Single token to replace the matched tokens with", new StringType()),
+                                                          new Param("replace", "True if the input tokens should be replaced with the output token; false if the input tokens should be preserved and the output token overlaid", new BooleanType(), true)))));
+
+  static StructType ICU_TOKENIZER_TYPE = new StructType(
+                                             new Param("cjkAsWords", "??", new BooleanType(), true),
+                                             new Param("rules", "Customize the tokenization per-script",
+                                                 new ListType(
+                                                     new StructType(
+                                                         new Param("script", "Script", new StringType()),
+                                                         new Param("rules", "Rules", new StringType())))));
 
   static {
     ANALYZER_TYPE_WRAP.set(ANALYZER_TYPE);
@@ -415,7 +402,7 @@ public class RegisterFieldHandler extends Handler {
     return new FieldDef(name, null, "virtual", null, null, null, true, null, null, null, false, null, values);
   }
 
-  private FieldDef parseOneFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) {
+  private FieldDef parseOneFieldType(Request r, IndexState state, Map<String,FieldDef> pendingFieldDefs, String name, JSONObject o) throws IOException {
 
     // This way f.fail reports which field name was problematic:
     Request f = new Request(r, name, o, FIELD_TYPE);
@@ -613,12 +600,12 @@ public class RegisterFieldHandler extends Handler {
 
     Analyzer indexAnalyzer;
     Analyzer searchAnalyzer;
-    Analyzer analyzer = getAnalyzer(state.matchVersion, f, "analyzer");
+    Analyzer analyzer = getAnalyzer(state, f, "analyzer");
     if (analyzer != null) {
       indexAnalyzer = searchAnalyzer = analyzer;
     } else {
-      indexAnalyzer = getAnalyzer(state.matchVersion, f, "indexAnalyzer");
-      searchAnalyzer = getAnalyzer(state.matchVersion, f, "searchAnalyzer");
+      indexAnalyzer = getAnalyzer(state, f, "indexAnalyzer");
+      searchAnalyzer = getAnalyzer(state, f, "searchAnalyzer");
     }
 
     if (type.equals("text") && ft.indexed()) {
@@ -733,38 +720,21 @@ public class RegisterFieldHandler extends Handler {
     return words;
   }
 
-  final static Pattern COMMENTS_PATTERN = Pattern.compile("#.*$", Pattern.MULTILINE);
+  static TokenizerFactory buildICUTokenizerFactory(JSONObject params) {
+      
+    boolean cjkAsWords;
 
-  static TokenStreamComponents buildCustomAnalysisChain(Version matchVersion, Request chain) {
+    final BreakIterator breakers[];
 
-    Request t = chain.getStruct("tokenizer");
+    if (params != null) {
+            
+      // nocommit don't pass null, null:
+      Request icuRequest = new Request(null, null, params, ICU_TOKENIZER_TYPE);
+      cjkAsWords = icuRequest.getBoolean("cjkAsWords");
 
-    Request.PolyResult pr = t.getPoly("class");
-
-    // nocommit charFilters
-
-    Tokenizer tokenizer;
-    // nocommit use analysis factories
-    if (pr.name.equals("StandardTokenizer")) {
-      tokenizer = new StandardTokenizer(matchVersion);
-      ((StandardTokenizer) tokenizer).setMaxTokenLength(pr.r.getInt("maxTokenLength"));
-    } else if (pr.name.equals("WhitespaceTokenizer")) {
-      tokenizer = new WhitespaceTokenizer(matchVersion);
-    } else if (pr.name.equals("PatternTokenizer")) {
-      Pattern p;
-      try {
-        p = Pattern.compile(pr.r.getString("pattern"));
-      } catch (PatternSyntaxException pse) {
-        pr.r.fail("pattern", "failed to compile Pattern", pse);
-        // Dead code but compiler disagrees:
-        p = null;
-      }
-      tokenizer = new PatternTokenizer(p, pr.r.getInt("group"));
-    } else if (pr.name.equals("ICUTokenizer")) {
-      final BreakIterator breakers[];
-      if (pr.r.hasParam("rules")) {
+      if (icuRequest.hasParam("rules")) {
         breakers = new BreakIterator[UScript.CODE_LIMIT];
-        for(Object o : pr.r.getList("rules")) {
+        for(Object o : icuRequest.getList("rules")) {
           Request r2 = (Request) o;
           String script = r2.getString("script");
           String rules = r2.getString("rules");
@@ -786,9 +756,12 @@ public class RegisterFieldHandler extends Handler {
       } else {
         breakers = null;
       }
+    } else {
+      cjkAsWords = true;
+      breakers = null;
+    }
 
-      // nocommit: what is this doing, just passing true...
-      ICUTokenizerConfig config = new DefaultICUTokenizerConfig(true) {
+    final ICUTokenizerConfig config = new DefaultICUTokenizerConfig(true) {
         
         @Override
         public BreakIterator getBreakIterator(int script) {
@@ -802,116 +775,283 @@ public class RegisterFieldHandler extends Handler {
         // TODO: we could also allow codes->types mapping
       };
 
-      tokenizer = new ICUTokenizer(config);
+    return new TokenizerFactory(Collections.<String,String>emptyMap()) {
+      
+      @Override
+      public Tokenizer create(AttributeFactory factory) {
+        return new ICUTokenizer(factory, config);
+      };
+    };
+  }
 
-    } else {
-      // BUG
-      tokenizer = null;
-      assert false;
+  static TokenFilterFactory buildSynonymFilterFactory(IndexState state, Request r) throws IOException {
+
+    Analyzer a = getAnalyzer(state, r, "analyzer");
+    if (a == null) {
+      r.fail("analyzer", "analyzer is required");
     }
 
-    TokenStream last = tokenizer;
-    if (chain.hasParam("tokenFilters")) {
-      for(Object o : chain.getList("tokenFilters")) {
-        Request sub = (Request) o;
-        pr = sub.getPoly("class");
-        // nocommit use analysis factories
-        if (pr.name.equals("StandardFilter")) {
-          last = new StandardFilter(matchVersion, last);
-        } else if (pr.name.equals("EnglishPossessiveFilter")) {
-          last = new EnglishPossessiveFilter(matchVersion, last);
-        } else if (pr.name.equals("PorterStemFilter")) {
-          last = new PorterStemFilter(last);
-        } else if (pr.name.equals("ArabicStemFilter")) {
-          last = new ArabicStemFilter(last);
-        } else if (pr.name.equals("EnglishMinimalStemFilter")) {
-          last = new EnglishMinimalStemFilter(last);
-        } else if (pr.name.equals("LowerCaseFilter")) {
-          last = new LowerCaseFilter(matchVersion, last);
-        } else if (pr.name.equals("SetKeywordMarkerFilter")) {
-          CharArraySet set = new CharArraySet(matchVersion, toStringList(pr.r.getList("keyWords")), false);
-          last = new SetKeywordMarkerFilter(last, set);
-        } else if (pr.name.equals("StopFilter")) {
-          CharArraySet set = new CharArraySet(matchVersion, toStringList(pr.r.getList("stopWords")), false);
-          last = new StopFilter(matchVersion, last, set);
-        } else if (pr.name.equals("SuggestStopFilter")) {
-          CharArraySet set = new CharArraySet(matchVersion, toStringList(pr.r.getList("stopWords")), false);
-          last = new SuggestStopFilter(last, set);
-        } else if (pr.name.equals("SynonymFilter")) {
-          Analyzer a = getAnalyzer(matchVersion, pr.r, "analyzer");
-          if (a == null) {
-            pr.r.fail("analyzer", "analyzer is required");
-          }
+    final SynonymMap synonymMap = parseSynonyms(r.getList("synonyms"), a);
 
-          try {
-            SynonymMap.Parser parser = new SynonymMap.Parser(true, a) {
-                @Override
-                public void parse(Reader in) throws IOException {
-                  // nocommit move parsing in here!
-                };
-              };
+    final boolean ignoreCase = r.getBoolean("ignoreCase");
 
-            CharsRef scratch = new CharsRef();
-            CharsRef scratchOutput = new CharsRef();
-            for(Object o2 : pr.r.getList("synonyms")) {
-              Request syn = (Request) o2;
-              boolean replace = syn.getBoolean("replace");
-              CharsRef output = new CharsRef(syn.getString("output"));
-              if (!syn.isString("input")) {
-                for(Object o3 : syn.getList("input")) {
-                  parser.add(parser.analyze((String) o3, scratch),
-                             output,
-                             !replace);
-                }
-              } else {
-                parser.add(parser.analyze(syn.getString("input"), scratch),
-                           output,
-                           !replace);
-              }
-            }
-            last = new SynonymFilter(last, parser.build(), pr.r.getBoolean("ignoreCase"));
-          } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-          }
-        } else {
-          assert false: "unrecognized: " + pr.name;
+    // nocommit expand?  dedup?
+
+    return new TokenFilterFactory(Collections.<String,String>emptyMap()) {
+      @Override
+      public TokenFilter create(TokenStream input) {
+        return new SynonymFilter(input, synonymMap, ignoreCase);
+      }
+    };
+  }
+
+  final static Pattern COMMENTS_PATTERN = Pattern.compile("#.*$", Pattern.MULTILINE);
+
+  static Analyzer buildCustomAnalyzer(IndexState state, Version matchVersion, Request chain) throws IOException {
+
+    // nocommit what is MultiTermAwareComponent?
+
+    // nocommit charFilters
+
+    // Build TokenizerFactory:
+    String className;
+    JSONObject t;
+    if (chain.isString("tokenizer")) {
+      className = chain.getString("tokenizer");
+      t = null;
+    } else {
+      Object o = chain.getAndRemoveRaw("tokenizer");
+      if ((o instanceof JSONObject) == false) {
+        chain.fail("tokenizer", "must be string or struct; got: " + o.getClass());
+      }
+      t = (JSONObject) o;
+
+      o = t.get("class");
+      if ((o instanceof String) == false) {
+        chain.fail("tokenizer", "class must be string; got: " + o.getClass());
+      }
+      
+      className = (String) o;
+    }
+
+    TokenizerFactory tokenizerFactory;
+    if (className.toLowerCase(Locale.ROOT).equals("icu")) {
+      tokenizerFactory = buildICUTokenizerFactory(t);
+    } else {
+      Map<String,String> factoryArgs = new HashMap<String,String>();
+      // nocommit how to allow the SPI name and separately
+      // also a fully qualified class name ...
+      factoryArgs.put("class", className);
+      factoryArgs.put("luceneMatchVersion", matchVersion.toString());
+      if (t != null) {
+        for(Map.Entry<String,Object> ent : t.entrySet()) {
+          factoryArgs.put(ent.getKey(), ent.getValue().toString());
         }
+      }
+
+      try {
+        tokenizerFactory = TokenizerFactory.forName(className, factoryArgs);
+      } catch (IllegalArgumentException iae) {
+        chain.fail("tokenizer", "failed to create TokenizerFactory for class \"" + className + "\": " + iae, iae);
+
+        // Dead code but compiler disagrees:
+        tokenizerFactory = null;
+      }
+
+      if (tokenizerFactory instanceof ResourceLoaderAware) {
+        ((ResourceLoaderAware) tokenizerFactory).inform(state.resourceLoader);
       }
     }
 
-    return new TokenStreamComponents(tokenizer, last);
+    // Build TokenFilters
+    List<TokenFilterFactory> tokenFilterFactories;
+    if (chain.hasParam("tokenFilters")) {
+      tokenFilterFactories = new ArrayList<TokenFilterFactory>();
+      for(Object o : chain.getList("tokenFilters")) {
+        String paramName = "tokenFilters[" + tokenFilterFactories.size() + "]";
+
+        Request sub;
+        JSONObject subParams;
+        if (o instanceof String) {
+          className = (String) o;
+          sub = null;
+          subParams = null;
+        } else {
+          if ((o instanceof Request) == false) {
+            // nocommit make sure test hits this
+            chain.fail(paramName, "each filter must be string or struct; got: " + o.getClass());
+          }
+          sub = (Request) o;
+          subParams = sub.getRawParams();
+
+          className = sub.getString("class");
+        }
+
+        TokenFilterFactory tokenFilterFactory;
+
+        if (className.toLowerCase(Locale.ROOT).equals("synonym")) {
+          if (sub == null) {
+            chain.fail(paramName, "no synonyms were specified");
+          }
+          tokenFilterFactory = buildSynonymFilterFactory(state, new Request(chain, paramName, sub.getRawParams(), SYNONYM_FILTER_TYPE));
+        } else {
+
+          Map<String,String> factoryArgs = new HashMap<String,String>();
+
+          // nocommit how to allow the SPI name and separately
+          // also a fully qualified class name ...
+          factoryArgs.put("class", className);
+          factoryArgs.put("luceneMatchVersion", matchVersion.toString());
+
+          ResourceLoader resources = state.resourceLoader;
+          RAMResourceLoaderWrapper ramResources = null;
+
+
+          if (sub != null) {
+
+            for(Map.Entry<String,Object> ent : subParams.entrySet()) {
+              String argName = ent.getKey();
+              Object argValue = ent.getValue();
+
+              // Messy: allow components that expect files for
+              // things like stopword lists, keywords, to come
+              // in as inlined string values.  We "hijack" any
+              // argument name ending in FileContents and make a RAM
+              // file out of it:
+              String argString;
+
+              if (argName.endsWith("FileContents")) {
+                if (ramResources == null) {
+                  ramResources = new RAMResourceLoaderWrapper(resources);
+                  resources = ramResources;
+                }
+
+                String value;
+                if (argValue instanceof String) {
+                  value = (String) argValue;
+                } else if (argValue instanceof JSONArray) {
+                  StringBuilder b = new StringBuilder();
+                  for(Object v : (JSONArray) argValue) {
+                    if ((v instanceof String) == false) {
+                      sub.fail(argName, "array must contain strings; got: " + v.getClass().getSimpleName());
+                    }
+                    b.append((String) v);
+                    b.append('\n');
+                  }
+                  value = b.toString();
+                } else {
+                  sub.fail(argName, "must be a String or JSONArray; got: " + argValue.getClass().getSimpleName());
+
+                  // Dead code but compiler disagrees:
+                  value = null;
+                }
+
+                argName = argName.substring(0, argName.length()-12);
+                ramResources.add(argName, value);
+                argString = argName;
+              } else {
+                argString = argValue.toString();
+              }
+
+              factoryArgs.put(argName, argString);
+            }
+
+            // Clear all bindings from the incoming request,
+            // so that they are not seen as unused by the
+            // server.  If any params are really unused, the
+            // analysis factory should throw its own
+            // IllegalArgumentException:
+            subParams.clear();
+          }
+
+          try {
+            tokenFilterFactory = TokenFilterFactory.forName(className, factoryArgs);
+          } catch (IllegalArgumentException iae) {
+            chain.fail("tokenizer", "failed to create TokenFilterFactory for class \"" + className + "\": " + iae, iae);
+
+            // Dead code but compiler disagrees:
+            tokenFilterFactory = null;
+          }
+
+          if (tokenFilterFactory instanceof ResourceLoaderAware) {
+            ((ResourceLoaderAware) tokenFilterFactory).inform(resources);
+          }
+        }
+
+        tokenFilterFactories.add(tokenFilterFactory);
+      }
+    } else {
+      tokenFilterFactories = null;
+    }
+
+    return new CustomAnalyzer(tokenizerFactory, tokenFilterFactories,
+                              chain.getInt("positionIncrementGap"),
+                              chain.getInt("offsetGap"));
+  }
+
+  private static SynonymMap parseSynonyms(List<Object> syns, Analyzer a) {
+    try {
+      // nocommit this is awkward!  I just want to use Parser's
+      // analyze utility method...
+      SynonymMap.Parser parser = new SynonymMap.Parser(true, a) {
+          @Override
+          public void parse(Reader in) throws IOException {
+            // nocommit move parsing in here!
+          };
+        };
+
+      CharsRef scratch = new CharsRef();
+      CharsRef scratchOutput = new CharsRef();
+      for(Object o2 : syns) {
+        Request syn = (Request) o2;
+        boolean replace = syn.getBoolean("replace");
+        CharsRef output = new CharsRef(syn.getString("output"));
+        if (syn.isString("input") == false) {
+          for(Object o3 : syn.getList("input")) {
+            parser.add(parser.analyze((String) o3, scratch),
+                       output,
+                       !replace);
+          }
+        } else {
+          parser.add(parser.analyze(syn.getString("input"), scratch),
+                     output,
+                     !replace);
+        }
+      }
+      return parser.build();
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
   }
 
   private static class CustomAnalyzer extends Analyzer {
-    private final String json;
-    private final Version matchVersion;
-    private int positionIncrementGap;
-    private int offsetGap;
+    private final int posIncGap;
+    private final int offsetGap;
+    private final TokenizerFactory tokenizerFactory;
+    private final List<TokenFilterFactory> tokenFilterFactories;
 
-    public CustomAnalyzer(Version matchVersion, String json) {
-      this.matchVersion = matchVersion;
-      this.json = json;
+    public CustomAnalyzer(TokenizerFactory tokenizerFactory, List<TokenFilterFactory> tokenFilterFactories, int posIncGap, int offsetGap) {
+      this.tokenizerFactory = tokenizerFactory;
+      this.tokenFilterFactories = tokenFilterFactories;
+      this.posIncGap = posIncGap;
+      this.offsetGap = offsetGap;
     }
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      JSONObject o;
-      try {
-        o = (JSONObject) JSONValue.parseStrict(json);
-      } catch (net.minidev.json.parser.ParseException pe) {
-        // BUG
-        throw new RuntimeException(pe);
+      Tokenizer tokenizer = tokenizerFactory.create();
+      TokenStream last = tokenizer;
+      if (tokenFilterFactories != null) {
+        for(TokenFilterFactory factory : tokenFilterFactories) {
+          last = factory.create(last);
+        }
       }
-      Request r = new Request(null, fieldName, o, (StructType) ANALYZER_TYPE);
-      positionIncrementGap = r.getInt("positionIncrementGap");
-      offsetGap = r.getInt("offsetGap");
-      return buildCustomAnalysisChain(matchVersion,
-                                      r);
+      return new TokenStreamComponents(tokenizer, last);
     }
 
     @Override
     public int getPositionIncrementGap(String fieldName) {
-      return positionIncrementGap;
+      return posIncGap;
     }
 
     @Override
@@ -920,7 +1060,7 @@ public class RegisterFieldHandler extends Handler {
     }
   }
 
-  static Analyzer getAnalyzer(Version matchVersionGlobal, Request f, String name) {
+  static Analyzer getAnalyzer(IndexState state, Request f, String name) throws IOException {
     Analyzer analyzer;
     if (f.hasParam(name)) {
       Request a = f.getStruct(name);
@@ -930,10 +1070,11 @@ public class RegisterFieldHandler extends Handler {
       if (a.hasParam("matchVersion")) {
         matchVersion = getVersion(a.getEnum("matchVersion"));
       } else {
-        matchVersion = matchVersionGlobal;
+        matchVersion = state.matchVersion;
       }
 
       if (a.hasParam("class")) {
+        // nocommit just lookup via CP:
         // Predefined analyzer class:
         Request.PolyResult pr = a.getPoly("class");
         // TODO: try to "share" a single instance of
@@ -1021,11 +1162,7 @@ public class RegisterFieldHandler extends Handler {
           analyzer = null;
         }
       } else if (a.hasParam("tokenizer")) {
-        a.getInt("positionIncrementGap");
-        a.getInt("offsetGap");
-        // Ensures the args are all correct:
-        buildCustomAnalysisChain(matchVersion, a);
-        analyzer = new CustomAnalyzer(matchVersion, jsonOrig);
+        analyzer = buildCustomAnalyzer(state, matchVersion, a);
       } else {
         f.fail(name, "either class or tokenizer/tokenFilters are required");
         analyzer = null;

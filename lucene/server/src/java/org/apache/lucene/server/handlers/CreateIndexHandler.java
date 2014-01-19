@@ -70,7 +70,7 @@ public class CreateIndexHandler extends Handler {
         try {
           globalState.createIndex(indexName, rootDir);
         } catch (IllegalArgumentException iae) {
-          r.fail("invalid indexName \"" + indexName + "\": " + iae.toString());
+          r.fail("invalid indexName \"" + indexName + "\": " + iae.toString(), iae);
         }
 
         return "{}";
