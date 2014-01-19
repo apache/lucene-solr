@@ -87,6 +87,12 @@ public class ConnectionManager implements Watcher {
         }
         
       }, (long) (client.getZkClientTimeout() * 0.90));
+      if (isClosed) {
+        // we might have closed after getting by isClosed
+        // and before starting the new timer
+        disconnectedTimer.cancel();
+        disconnectedTimer = null;
+      }
     }
     connected = false;
     notifyAll();
