@@ -110,14 +110,17 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     try {
       return service.getConstructor(Map.class).newInstance(args);
     } catch (InvocationTargetException ite) {
-      // nocommit ... trying to throw the "original" IAE,
-      // but is this correct/safe?
-      if (ite.getCause() instanceof IllegalArgumentException) {
-        throw (IllegalArgumentException) ite.getCause();
-      } else {
-        throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
-                                           "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
+      Throwable cause = ite.getCause();
+      if (cause instanceof RuntimeException) {
+        throw (RuntimeException) cause;
       }
+      if (cause instanceof Error) {
+        throw (Error) cause;
+      }
+      // TODO: AssertionError?  It's invalid for analysis
+      // factories to throw checked exc...
+      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
+            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);

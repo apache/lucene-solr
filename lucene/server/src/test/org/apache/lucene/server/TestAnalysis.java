@@ -198,5 +198,8 @@ public class TestAnalysis extends ServerBaseTestCase {
     assertEquals("here is some text", justTokens());
   }
 
+  // nocommit test loading my custom analyzer using fully
+  // qualified class name...
+
   // nocommit need testOffsetGap ... how...
 }
