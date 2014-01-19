@@ -159,7 +159,6 @@
   <property name="javac.source.backwards" value="1.6"/>
   <property name="javac.target.backwards" value="1.6"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
-  <property name="bootclasspath" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
@@ -169,6 +168,35 @@
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
   <property name="javadoc.maxmemory" value="512m" />
   <property name="javadoc.noindex" value="true"/>
+
+  <!-- detect bootclasspath from given bootjdk path (including crazy AppleJDK special case) -->
+  <first id="-boot-rt.jar">
+    <fileset dir="${bootjdk}" erroronmissingdir="false" followsymlinks="true">
+      <include name="jre/lib/rt.jar" /><!-- Oracle JDK -->
+      <include name="lib/rt.jar" /><!-- Oracle JRE -->
+      <include name="bundle/Classes/classes.jar" /><!-- Apple JDK -->
+    </fileset>
+  </first>
+  <property name="bootclasspath" value="${toString:-boot-rt.jar}" />
+  <fail message="Invalid 'bootjdk' parameter, because it contains no class library JAR: ${bootjdk}">
+    <condition>
+      <and>
+        <isset property="bootjdk" />
+        <equals arg1="${bootclasspath}" arg2=""/>
+      </and>
+    </condition>
+  </fail>
+  <fail message="Invalid 'bootclasspath' parameter, because it does not point to a valid class library JAR: ${bootclasspath}">
+    <condition>
+      <not>
+        <or>
+          <equals arg1="${bootclasspath}" arg2=""/>
+          <available classname="java.lang.StringBuilder" classpath="${bootclasspath}" ignoresystemclasses="true"/>
+        </or>
+      </not>
+    </condition>
+  </fail>
+
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
     <path refid="classpath"/>
