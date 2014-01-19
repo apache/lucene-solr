@@ -719,7 +719,7 @@ public class CoreContainer {
         SolrCore newCore = core.reload(solrLoader, core);
         // keep core to orig name link
         solrCores.removeCoreToOrigName(newCore, core);
-        registerCore(false, name, newCore, false);
+        registerCore(false, name, newCore, false, false);
       } finally {
         solrCores.removeFromPendingOps(name);
       }

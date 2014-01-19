@@ -121,6 +121,9 @@ Bug Fixes
   updates meant for replicas to be lost. (Markus Jelsma, Timothy Potter,
   Joel Bernstein, Mark Miller)
 
+* SOLR-5645: A SolrCore reload via the CoreContainer will try and register in
+  zk again with the new SolrCore. (Mark Miller)
+
 Optimizations
 ----------------------  
 
