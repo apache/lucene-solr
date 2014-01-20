@@ -210,6 +210,9 @@ Bug Fixes
   distributed searching for some field types such as legacy numeric
   types (Rob Muir, Mike McCandless)
 
+* SOLR-5643: ConcurrentUpdateSolrServer will sometimes not spawn a new Runner
+  thread even though there are updates in the queue. (Mark Miller)
+
 Optimizations
 ----------------------
 
