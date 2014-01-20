@@ -77,7 +77,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   public StressHdfsTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 13 : random().nextInt(3) + 1;
+    shardCount = TEST_NIGHTLY ? 7 : random().nextInt(2) + 1;
   }
   
   protected String getSolrXml() {
@@ -103,7 +103,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     if (overshard) {
       nShards = shardCount * 2;
       maxReplicasPerNode = 8;
-      rep = 2;
+      rep = 1;
     } else {
       nShards = shardCount / 2;
       maxReplicasPerNode = 1;
@@ -118,7 +118,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     cloudClient.getZkStateReader().updateClusterState(true);
     
     for (int i = 1; i < nShards + 1; i++) {
-      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 15000);
+      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
     }
     
     // collect the data dirs
