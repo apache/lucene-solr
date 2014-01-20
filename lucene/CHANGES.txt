@@ -57,6 +57,8 @@ API Changes
 * LUCENE-5388: Remove Reader from Tokenizer's constructor. 
   (Benson Margulies via Robert Muir - pull request #16)
 
+* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
