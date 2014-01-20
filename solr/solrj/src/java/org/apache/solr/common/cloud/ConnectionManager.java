@@ -63,20 +63,14 @@ public class ConnectionManager implements Watcher {
   }
   
   private synchronized void connected() {
-    if (disconnectedTimer != null) {
-      disconnectedTimer.cancel();
-      disconnectedTimer = null;
-    }
+    cancelTimer();
     connected = true;
     likelyExpired = false;
     notifyAll();
   }
 
   private synchronized void disconnected() {
-    if (disconnectedTimer != null) {
-      disconnectedTimer.cancel();
-      disconnectedTimer = null;
-    }
+    cancelTimer();
     if (!isClosed) {
       disconnectedTimer = new Timer(true);
       disconnectedTimer.schedule(new TimerTask() {
@@ -90,12 +84,21 @@ public class ConnectionManager implements Watcher {
       if (isClosed) {
         // we might have closed after getting by isClosed
         // and before starting the new timer
-        disconnectedTimer.cancel();
-        disconnectedTimer = null;
+        cancelTimer();
       }
     }
     connected = false;
     notifyAll();
+  }
+
+  private void cancelTimer() {
+    try {
+      this.disconnectedTimer.cancel();
+    } catch (NullPointerException e) {
+      // fine
+    } finally {
+      this.disconnectedTimer = null;
+    }
   }
 
   @Override
@@ -117,10 +120,10 @@ public class ConnectionManager implements Watcher {
       clientConnected.countDown();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
-      if (disconnectedTimer != null) {
-        disconnectedTimer.cancel();
-        disconnectedTimer = null;
-      }
+      // we don't call disconnected because there
+      // is no need to start the timer - if we are expired
+      // likelyExpired can just be set to true
+      cancelTimer();
       
       connected = false;
       likelyExpired = true;
@@ -197,13 +200,7 @@ public class ConnectionManager implements Watcher {
   public void close() {
     this.isClosed = true;
     this.likelyExpired = true;
-    try {
-      this.disconnectedTimer.cancel();
-    } catch (NullPointerException e) {
-      // fine
-    } finally {
-      this.disconnectedTimer = null;
-    }
+    cancelTimer();
   }
   
   public boolean isLikelyExpired() {
