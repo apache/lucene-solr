@@ -505,13 +505,19 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     return sb.toString();
   }
 
-  protected void assertFailsWith(String command, String args, String fragment) throws Exception {
+  /** Sends the command + args, expecting a failure such
+   *  that all fragments occur in the failure message
+   *  string.  Use this to verify a failure case is hitting
+   *  the right error messages back to the user. */
+  protected void assertFailsWith(String command, String args, String... fragments) throws Exception {
     try {
       send(command, args);
       fail("did not hit expected exception");
     } catch (IOException ioe) {
-      if (ioe.getMessage().contains(fragment) == false) {
-        fail("expected: " + fragment + "\nactual: \"" + ioe.getMessage());
+      for(String fragment : fragments) {
+        if (ioe.getMessage().contains(fragment) == false) {
+          fail("expected: " + fragment + "\nactual: \"" + ioe.getMessage());
+        }
       }
     }
   }

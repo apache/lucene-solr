@@ -43,9 +43,9 @@ public class OrType extends Type {
       if (i != 0) {
         sb.append(", ");
       }
-      sb.append(types[i]);
+      sb.append(types[i].getClass().getSimpleName());
     }
-    sb.append(", but got " + o.getClass());
+    sb.append(", but got " + o.getClass().getSimpleName());
 
     throw new IllegalArgumentException(sb.toString());
   }

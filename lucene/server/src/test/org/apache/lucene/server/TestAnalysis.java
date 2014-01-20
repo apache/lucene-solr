@@ -94,6 +94,32 @@ public class TestAnalysis extends ServerBaseTestCase {
     assertEquals("the dogs go", justTokens());
   }
 
+  public void testBadCharFilterSpec() throws Exception {
+    assertFailsWith("analyze",
+                    "{text: abc, analyzer: {charFilters: [17], tokenizer: Whitespace}}",
+                    "analyze > analyzer > charFilters[0]: expected one of StringType, StructType, but got Integer");
+  }
+
+  public void testNonExistentCharFilter() throws Exception {
+    assertFailsWith("analyze",
+                    "{text: abc, analyzer: {charFilters: [Bad], tokenizer: Whitespace}}",
+                    "analyze > analyzer > charFilters[0]",
+                    "A SPI class of type org.apache.lucene.analysis.util.CharFilterFactory with name 'Bad' does not exist");
+  }
+
+  public void testPatternReplaceCharFilter() throws Exception {
+    send("analyze",
+         "{text: foo bar, analyzer: {charFilters: [{class: PatternReplace, pattern: foo, replacement: bar}], tokenizer: Whitespace}}");
+    assertEquals("bar bar", justTokens());
+  }
+
+  /** Exercises the xxxFileContents hack, for a char filter */
+  public void testMappingCharFilter() throws Exception {
+    send("analyze",
+         "{text: foo bar, analyzer: {charFilters: [{class: Mapping, mappingFileContents: '\"bar\" => \"foo\"'}], tokenizer: Whitespace}}");
+    assertEquals("foo foo", justTokens());
+  }
+
   public void testPositionIncrementGap() throws Exception {
     curIndexName = "posinc";
     _TestUtil.rmDir(new File("posinc"));

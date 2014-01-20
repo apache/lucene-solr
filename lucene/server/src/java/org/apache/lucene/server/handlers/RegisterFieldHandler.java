@@ -726,16 +726,17 @@ public class RegisterFieldHandler extends Handler {
     return words;
   }
 
-  static TokenizerFactory buildICUTokenizerFactory(JSONObject params) {
+  final static Pattern COMMENTS_PATTERN = Pattern.compile("#.*$", Pattern.MULTILINE);
+
+  static TokenizerFactory buildICUTokenizerFactory(Request sub) {
       
     boolean cjkAsWords;
 
     final BreakIterator breakers[];
 
-    if (params != null) {
+    if (sub != null) {
+      Request icuRequest = new Request(sub, ICU_TOKENIZER_TYPE);
             
-      // nocommit don't pass null, null:
-      Request icuRequest = new Request(null, null, params, ICU_TOKENIZER_TYPE);
       cjkAsWords = icuRequest.getBoolean("cjkAsWords");
 
       if (icuRequest.hasParam("rules")) {
@@ -813,57 +814,41 @@ public class RegisterFieldHandler extends Handler {
     };
   }
 
-  final static Pattern COMMENTS_PATTERN = Pattern.compile("#.*$", Pattern.MULTILINE);
-
-  static Analyzer buildCustomAnalyzer(IndexState state, Version matchVersion, Request chain) throws IOException {
-
-    // nocommit what is MultiTermAwareComponent?
-
-    // nocommit charFilters
-
+  private static List<CharFilterFactory> parseCharFilters(IndexState state, Version matchVersion, Request chain) throws IOException {
     List<CharFilterFactory> charFilters;
-
     if (chain.hasParam("charFilters")) {
       charFilters = new ArrayList<CharFilterFactory>();
       for(Object o : chain.getList("charFilters")) {
+        String paramName = "charFilters[" + charFilters.size() + "]";
         Request sub;
         String className;
         if (o instanceof String) {
           className = (String) o;
           sub = null;
         } else {
-          if ((o instanceof Request) == false) {
-            // nocommit make sure test hits this
-            chain.failWrongClass("charFilters", "each char filter must be string or struct", o);
-          }
+          // The type already validated this:
+          assert o instanceof Request;
           sub = (Request) o;
           className = sub.getString("class");
         }
 
-        Map<String,String> factoryArgs = new HashMap<String,String>();
-        // nocommit how to allow the SPI name and separately
-        // also a fully qualified class name ...
-        factoryArgs.put("class", className);
-        factoryArgs.put("luceneMatchVersion", matchVersion.toString());
-        if (sub != null) {
-          for(Map.Entry<String,Object> ent : sub.getRawParams().entrySet()) {
-            factoryArgs.put(ent.getKey(), ent.getValue().toString());
-          }
-          sub.clearParams();
-        }
+        TwoThings<Map<String,String>,ResourceLoader> things = parseArgsAndResources(state,
+                                                                                    className,
+                                                                                    matchVersion,
+                                                                                    sub);
 
         CharFilterFactory factory;
         try {
-          factory = CharFilterFactory.forName(className, factoryArgs);
+          factory = CharFilterFactory.forName(className, things.a);
         } catch (IllegalArgumentException iae) {
-          chain.fail("charFilters[" + charFilters.size() + "]", "failed to create CharFilterFactory for class \"" + className + "\": " + iae, iae);
+          chain.fail(paramName, "failed to create CharFilterFactory for class \"" + className + "\": " + iae, iae);
+
           // Dead code but compiler disagrees:
           factory = null;
         }
 
         if (factory instanceof ResourceLoaderAware) {
-          // nocommit also do RAM wrapping resource loader here:
-          ((ResourceLoaderAware) factory).inform(state.resourceLoader);
+          ((ResourceLoaderAware) factory).inform(things.b);
         }
 
         charFilters.add(factory);
@@ -872,44 +857,124 @@ public class RegisterFieldHandler extends Handler {
       charFilters = null;
     }
 
+    return charFilters;
+  }
+
+  private static final class TwoThings<A,B> {
+    public final A a;
+    public final B b;
+
+    public TwoThings(A a, B b) {
+      this.a = a;
+      this.b = b;
+    }
+  };
+
+  /** Parses the arguments for an analysis factory
+   *  component, but also detects any argument name of the
+   *  form xxxFileContents and puts its value into a "fake"
+   *  (RAM) file, leaving xxx referring to that file.  This
+   *  way any existing component expecting to load a
+   *  resource from a "file" will (hacky) work. */
+  private static TwoThings<Map<String,String>,ResourceLoader> parseArgsAndResources(IndexState state,
+                                                                                    String className,
+                                                                                    Version matchVersion,
+                                                                                    Request sub) {
+    
+    Map<String,String> factoryArgs = new HashMap<String,String>();
+
+    // nocommit how to allow the SPI name and separately
+    // also a fully qualified class name ...
+    factoryArgs.put("class", className);
+    factoryArgs.put("luceneMatchVersion", matchVersion.toString());
+
+    ResourceLoader resources = state.resourceLoader;
+    RAMResourceLoaderWrapper ramResources = null;
+
+    if (sub != null) {
+      for(Map.Entry<String,Object> ent : sub.getRawParams().entrySet()) {
+        String argName = ent.getKey();
+        Object argValue = ent.getValue();
+
+        // Messy / impedance mismatch: allow
+        // components that expect files for things
+        // like stopword lists, keywords, to come in
+        // as inlined string values.  We "hijack" any
+        // argument name ending in FileContents and
+        // make a RAM file out of it:
+        String argString;
+
+        if (argName.endsWith("FileContents")) {
+          if (ramResources == null) {
+            ramResources = new RAMResourceLoaderWrapper(resources);
+            resources = ramResources;
+          }
+
+          String value;
+          if (argValue instanceof String) {
+            value = (String) argValue;
+          } else if (argValue instanceof JSONArray) {
+            // Each element in the array is mapped to
+            // one line in the file
+            StringBuilder b = new StringBuilder();
+            for(Object v : (JSONArray) argValue) {
+              if ((v instanceof String) == false) {
+                sub.failWrongClass(argName, "array must contain strings", v);
+              }
+              b.append((String) v);
+              b.append('\n');
+            }
+            value = b.toString();
+          } else {
+            sub.failWrongClass(argName, "must be a String or Array", argValue);
+
+            // Dead code but compiler disagrees:
+            value = null;
+          }
+
+          argName = argName.substring(0, argName.length()-12);
+          ramResources.add(argName, value);
+          argString = argName;
+        } else {
+          argString = argValue.toString();
+        }
+
+        factoryArgs.put(argName, argString);
+      }
+
+      // Clear all bindings from the incoming request,
+      // so that they are not seen as unused by the
+      // server.  If any params are really unused, the
+      // analysis factory should throw its own
+      // IllegalArgumentException:
+      sub.clearParams();
+    }
+
+    return new TwoThings<Map<String,String>,ResourceLoader>(factoryArgs, resources);
+  }
+
+  static TokenizerFactory parseTokenizer(IndexState state, Version matchVersion, Request chain) throws IOException {
     // Build TokenizerFactory:
     String className;
-    JSONObject t;
+    Request sub;
     if (chain.isString("tokenizer")) {
       className = chain.getString("tokenizer");
-      t = null;
+      sub = null;
     } else {
-      Object o = chain.getAndRemoveRaw("tokenizer");
-      if ((o instanceof JSONObject) == false) {
-        chain.fail("tokenizer", "must be string or struct; got: " + o.getClass());
-      }
-      t = (JSONObject) o;
+      sub = chain.getStruct("tokenizer");
 
-      o = t.get("class");
-      if ((o instanceof String) == false) {
-        chain.fail("tokenizer", "class must be string; got: " + o.getClass());
-      }
-      
-      className = (String) o;
+      className = sub.getString("class");
     }
 
     TokenizerFactory tokenizerFactory;
     if (className.toLowerCase(Locale.ROOT).equals("icu")) {
-      tokenizerFactory = buildICUTokenizerFactory(t);
+      tokenizerFactory = buildICUTokenizerFactory(sub);
     } else {
-      Map<String,String> factoryArgs = new HashMap<String,String>();
-      // nocommit how to allow the SPI name and separately
-      // also a fully qualified class name ...
-      factoryArgs.put("class", className);
-      factoryArgs.put("luceneMatchVersion", matchVersion.toString());
-      if (t != null) {
-        for(Map.Entry<String,Object> ent : t.entrySet()) {
-          factoryArgs.put(ent.getKey(), ent.getValue().toString());
-        }
-      }
+
+      TwoThings<Map<String,String>,ResourceLoader> things = parseArgsAndResources(state, className, matchVersion, sub);
 
       try {
-        tokenizerFactory = TokenizerFactory.forName(className, factoryArgs);
+        tokenizerFactory = TokenizerFactory.forName(className, things.a);
       } catch (IllegalArgumentException iae) {
         chain.fail("tokenizer", "failed to create TokenizerFactory for class \"" + className + "\": " + iae, iae);
 
@@ -918,10 +983,16 @@ public class RegisterFieldHandler extends Handler {
       }
 
       if (tokenizerFactory instanceof ResourceLoaderAware) {
-        // nocommit also do RAM wrapping resource loader here:
-        ((ResourceLoaderAware) tokenizerFactory).inform(state.resourceLoader);
+        // nocommit need test case that requires a
+        // xxxFileContents to a Tokenizer
+        ((ResourceLoaderAware) tokenizerFactory).inform(things.b);
       }
     }
+
+    return tokenizerFactory;
+  }
+
+  static List<TokenFilterFactory> parseTokenFilters(IndexState state, Version matchVersion, Request chain) throws IOException {
 
     // Build TokenFilters
     List<TokenFilterFactory> tokenFilterFactories;
@@ -929,16 +1000,14 @@ public class RegisterFieldHandler extends Handler {
       tokenFilterFactories = new ArrayList<TokenFilterFactory>();
       for(Object o : chain.getList("tokenFilters")) {
         String paramName = "tokenFilters[" + tokenFilterFactories.size() + "]";
-
+        String className;
         Request sub;
         if (o instanceof String) {
           className = (String) o;
           sub = null;
         } else {
-          if ((o instanceof Request) == false) {
-            // nocommit make sure test hits this
-            chain.fail(paramName, "each filter must be string or struct; got: " + o.getClass());
-          }
+          // The type already validated this:
+          assert o instanceof Request;
           sub = (Request) o;
 
           className = sub.getString("class");
@@ -952,75 +1021,10 @@ public class RegisterFieldHandler extends Handler {
           }
           tokenFilterFactory = buildSynonymFilterFactory(state, new Request(chain, paramName, sub.getRawParams(), SYNONYM_FILTER_TYPE));
         } else {
-
-          Map<String,String> factoryArgs = new HashMap<String,String>();
-
-          // nocommit how to allow the SPI name and separately
-          // also a fully qualified class name ...
-          factoryArgs.put("class", className);
-          factoryArgs.put("luceneMatchVersion", matchVersion.toString());
-
-          ResourceLoader resources = state.resourceLoader;
-          RAMResourceLoaderWrapper ramResources = null;
-
-          if (sub != null) {
-            for(Map.Entry<String,Object> ent : sub.getRawParams().entrySet()) {
-              String argName = ent.getKey();
-              Object argValue = ent.getValue();
-
-              // Messy: allow components that expect files for
-              // things like stopword lists, keywords, to come
-              // in as inlined string values.  We "hijack" any
-              // argument name ending in FileContents and make a RAM
-              // file out of it:
-              String argString;
-
-              if (argName.endsWith("FileContents")) {
-                if (ramResources == null) {
-                  ramResources = new RAMResourceLoaderWrapper(resources);
-                  resources = ramResources;
-                }
-
-                String value;
-                if (argValue instanceof String) {
-                  value = (String) argValue;
-                } else if (argValue instanceof JSONArray) {
-                  StringBuilder b = new StringBuilder();
-                  for(Object v : (JSONArray) argValue) {
-                    if ((v instanceof String) == false) {
-                      sub.fail(argName, "array must contain strings; got: " + v.getClass().getSimpleName());
-                    }
-                    b.append((String) v);
-                    b.append('\n');
-                  }
-                  value = b.toString();
-                } else {
-                  sub.fail(argName, "must be a String or JSONArray; got: " + argValue.getClass().getSimpleName());
-
-                  // Dead code but compiler disagrees:
-                  value = null;
-                }
-
-                argName = argName.substring(0, argName.length()-12);
-                ramResources.add(argName, value);
-                argString = argName;
-              } else {
-                argString = argValue.toString();
-              }
-
-              factoryArgs.put(argName, argString);
-            }
-
-            // Clear all bindings from the incoming request,
-            // so that they are not seen as unused by the
-            // server.  If any params are really unused, the
-            // analysis factory should throw its own
-            // IllegalArgumentException:
-            sub.clearParams();
-          }
-
+          TwoThings<Map<String,String>,ResourceLoader> things = parseArgsAndResources(state, className, matchVersion, sub);
+          
           try {
-            tokenFilterFactory = TokenFilterFactory.forName(className, factoryArgs);
+            tokenFilterFactory = TokenFilterFactory.forName(className, things.a);
           } catch (IllegalArgumentException iae) {
             chain.fail("tokenizer", "failed to create TokenFilterFactory for class \"" + className + "\": " + iae, iae);
 
@@ -1029,7 +1033,7 @@ public class RegisterFieldHandler extends Handler {
           }
 
           if (tokenFilterFactory instanceof ResourceLoaderAware) {
-            ((ResourceLoaderAware) tokenFilterFactory).inform(resources);
+            ((ResourceLoaderAware) tokenFilterFactory).inform(things.b);
           }
         }
 
@@ -1039,8 +1043,16 @@ public class RegisterFieldHandler extends Handler {
       tokenFilterFactories = null;
     }
 
-    return new CustomAnalyzer(charFilters,
-                              tokenizerFactory, tokenFilterFactories,
+    return tokenFilterFactories;
+  }
+
+  static Analyzer buildCustomAnalyzer(IndexState state, Version matchVersion, Request chain) throws IOException {
+
+    // nocommit what is MultiTermAwareComponent?
+
+    return new CustomAnalyzer(parseCharFilters(state, matchVersion, chain),
+                              parseTokenizer(state, matchVersion, chain),
+                              parseTokenFilters(state, matchVersion, chain),
                               chain.getInt("positionIncrementGap"),
                               chain.getInt("offsetGap"));
   }
@@ -1048,7 +1060,7 @@ public class RegisterFieldHandler extends Handler {
   private static SynonymMap parseSynonyms(List<Object> syns, Analyzer a) {
     try {
       // nocommit this is awkward!  I just want to use Parser's
-      // analyze utility method...
+      // analyze utility method... if the Parser could just take the JSONObject...
       SynonymMap.Parser parser = new SynonymMap.Parser(true, a) {
           @Override
           public void parse(Reader in) throws IOException {
@@ -1081,9 +1093,8 @@ public class RegisterFieldHandler extends Handler {
   }
 
   /** An analyzer based on the custom charFilter, tokenizer,
-   *  tokenFilters chains specified when the field was
-   *  registered. */
-
+   *  tokenFilters factory chains specified when the field
+   *  was registered. */
   private static class CustomAnalyzer extends Analyzer {
     private final int posIncGap;
     private final int offsetGap;

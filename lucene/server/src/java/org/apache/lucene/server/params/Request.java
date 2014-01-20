@@ -56,12 +56,21 @@ public class Request {
    *  reporting. */
   private final String name;
 
-  /** Sole constructor. */
+  /** Creates this. */
   public Request(Request parent, String name, JSONObject params, StructType type) {
     this.params = params;
     this.type = type;
     this.parent = parent;
     this.name = name;
+  }
+
+  /** Creates Request from another Request, changing the
+   *  struct type. */
+  public Request(Request other, StructType type) {
+    this.params = other.params;
+    this.type = type;
+    this.parent = other.parent;
+    this.name = other.name;
   }
 
   /** Clears all parameters. */
@@ -420,6 +429,9 @@ public class Request {
     if (pType instanceof WrapType) {
       pType = ((WrapType) pType).getWrappedType();
     }
+    if (pType instanceof StructType == false) {
+      pType = findStructType(pType);
+    }
     assert pType instanceof StructType: "name \"" + name + "\" is not StructType: got " + type;
     
     Object v = params.get(name);
@@ -470,6 +482,13 @@ public class Request {
           if (t2 instanceof StructType) {
             return (StructType) t2;
           }
+        }
+      }
+    } else if (t instanceof OrType) {
+      OrType ot = (OrType) t;
+      for(Type t2 : ot.types) {
+        if (t2 instanceof StructType) {
+          return (StructType) t2;
         }
       }
     }
@@ -535,7 +554,7 @@ public class Request {
             try {
               ((ListType) p.type).subType.validate(o);
             } catch (IllegalArgumentException iae) {
-              fail(name, iae.getMessage(), iae);
+              fail(name + "[" + idx + "]", iae.getMessage(), iae);
             }
           }
           subs.add(o);
