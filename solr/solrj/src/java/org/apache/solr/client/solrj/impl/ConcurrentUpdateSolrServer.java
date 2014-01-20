@@ -255,16 +255,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
         }
         handleError(e);
       } finally {
-
-        // remove it from the list of running things unless we are the last
-        // runner and the queue is full...
-        // in which case, the next queue.put() would block and there would be no
-        // runners to handle it.
-        // This case has been further handled by using offer instead of put, and
-        // using a retry loop
-        // to avoid blocking forever (see request()).
         synchronized (runners) {
-          if (runners.size() == 1 && queue.remainingCapacity() == 0) {
+          if (runners.size() == 1 && !queue.isEmpty()) {
             // keep this runner alive
             scheduler.execute(this);
           } else {
@@ -394,6 +386,10 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
           runner.runnerLock.lock();
           runner.runnerLock.unlock();
         } else if (!queue.isEmpty()) {
+          // failsafe - should not be necessary, but a good
+          // precaution to ensure blockUntilFinished guarantees
+          // all updates are emptied from the queue regardless of
+          // any bugs around starting or retaining runners
           Runner r = new Runner();
           runners.add(r);
           scheduler.execute(r);
