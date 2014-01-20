@@ -116,6 +116,8 @@ API Changes
   APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
 
+*  LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
+
 Optimizations
 
 * LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
