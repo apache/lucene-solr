@@ -543,7 +543,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         Thread.sleep(100);
         removed = !zkStateReader.getClusterState().hasCollection(message.getStr(collection));
         if (removed) {
-          Thread.sleep(300); // just a bit of time so it's more likely other
+          Thread.sleep(500); // just a bit of time so it's more likely other
                              // readers see on return
           break;
         }
