@@ -97,18 +97,29 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       URISyntaxException {
     
     boolean overshard = random().nextBoolean();
+    int rep;
+    int nShards;
+    int maxReplicasPerNode;
     if (overshard) {
-      createCollection(DELETE_DATA_DIR_COLLECTION, shardCount * 2, 1, 2);
+      nShards = shardCount * 2;
+      maxReplicasPerNode = 8;
+      rep = 2;
     } else {
-      int rep = shardCount / 2;
-      if (rep == 0) rep = 1;
-      createCollection(DELETE_DATA_DIR_COLLECTION, rep, 2, 1);
+      nShards = shardCount / 2;
+      maxReplicasPerNode = 1;
+      rep = 2;
+      if (nShards == 0) nShards = 1;
     }
+    
+    createCollection(DELETE_DATA_DIR_COLLECTION, nShards, rep, maxReplicasPerNode);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
     cloudClient.getZkStateReader().updateClusterState(true);
     
+    for (int i = 1; i < nShards + 1; i++) {
+      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 15000);
+    }
     
     // collect the data dirs
     List<String> dataDirs = new ArrayList<String>();
