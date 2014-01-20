@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -46,7 +47,6 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACT
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction;
 
-@Ignore("tests need fix failing too often")
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
 
@@ -137,20 +137,18 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     timeout = System.currentTimeMillis()+10000;
     leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-      log.info(" count {}", System.currentTimeMillis());
-      List<String> seqs = client.getZkStateReader().getZkClient().getChildren("/overseer_elect/election", null, true);
-      LeaderElector.sortSeqs(seqs);
+//      log.info(" count {}", System.currentTimeMillis());
 
-      log.info("seqs : {} ",seqs);
 //
-      if(LeaderElector.getNodeName(seqs.get(1)).equals(anotherOverseer)){
+      List<String> sortedNodeNames = OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient());
+      if(sortedNodeNames.get(1) .equals(anotherOverseer) || sortedNodeNames.get(0).equals(anotherOverseer)){
         leaderchanged =true;
         break;
       }
       Thread.sleep(100);
     }
 
-    assertTrue("New overseer not the frontrunner", leaderchanged);
+    assertTrue("New overseer not the frontrunner : "+ OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
 
     client.shutdown();
@@ -158,7 +156,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
   }
 
-  private void setOverseerRole(CollectionAction action, String overseerDesignate) throws SolrServerException, IOException {
+  private void setOverseerRole(CollectionAction action, String overseerDesignate) throws Exception, IOException {
     log.info("Adding overseer designate {} ", overseerDesignate);
     Map m = makeMap(
         "action", action.toString().toLowerCase(Locale.ROOT),
