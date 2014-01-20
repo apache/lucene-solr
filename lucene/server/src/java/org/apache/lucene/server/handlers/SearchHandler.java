@@ -1636,7 +1636,8 @@ public class SearchHandler extends Handler {
 
   static void fillFacetResults(Request r, SearcherAndTaxonomy s, FacetsCollector drillDowns,
                                FacetsCollector[] drillSideways, String[] drillSidewaysDims,
-                               IndexState state, JSONArray facetResults) throws IOException {
+                               IndexState state, JSONArray facetResults,
+                               Map<String,FieldDef> dynamicFields) throws IOException {
 
     Map<String,FacetsCollector> dsDimMap = new HashMap<String,FacetsCollector>();
     if (drillSidewaysDims != null) {
@@ -1655,13 +1656,18 @@ public class SearchHandler extends Handler {
 
     for(Object o2 : r.getList("facets")) {
       Request r2 = (Request) o2;
-
-      FieldDef fd = state.getField(r2, "dim");
+      String fieldName = r2.getString("dim");
+      FieldDef fd = dynamicFields.get(fieldName);
+      if (fd == null) {
+        r2.fail("dim", "field \"" + fieldName + "\" was not registered and was not specified as a dynamicField");
+        // Dead code but compiler disagrees:
+        fd = null;
+      }
 
       FacetResult facetResult;
 
       if (r2.hasParam("numericRanges")) {
-        if (!fd.faceted.equals("numericRange")) {
+        if (fd.faceted != null && !fd.faceted.equals("numericRange")) {
           r2.fail("numericRanges", "field \"" + fd.name + "\" was not registered with facet=numericRange");
         }
         if (fd.valueType.equals("int") || fd.valueType.equals("long")) {
@@ -1685,7 +1691,7 @@ public class SearchHandler extends Handler {
                                                    c,
                                                    ranges);
           facetResult = facets.getTopChildren(0, fd.name);
-        } else if (fd.valueType.equals("float") || fd.valueType.equals("double")) {
+        } else if (fd.valueType.equals("float") || fd.valueType.equals("double") || fd.valueType.equals("virtual")) {
           List<Object> rangeList = r2.getList("numericRanges");
           DoubleRange[] ranges = new DoubleRange[rangeList.size()];
           for(int i=0;i<ranges.length;i++) {
@@ -1702,9 +1708,17 @@ public class SearchHandler extends Handler {
             c = drillDowns;
           }
 
-          Facets facets = new DoubleRangeFacetCounts(fd.name,
-                                                     c,
-                                                     ranges);
+          Facets facets;
+          if (fd.valueType.equals("virtual")) {
+            facets = new DoubleRangeFacetCounts(fd.name,
+                                                fd.valueSource,
+                                                c,
+                                                ranges);
+          } else {
+            facets = new DoubleRangeFacetCounts(fd.name,
+                                                c,
+                                                ranges);
+          }
           facetResult = facets.getTopChildren(0, fd.name);
         } else {
           // nocommit float/double too
@@ -1902,7 +1916,7 @@ public class SearchHandler extends Handler {
 
     JSONObject diagnostics = new JSONObject();
 
-    Map<String,FieldDef> dynamicFields = getDynamicFields(state, r);
+    final Map<String,FieldDef> dynamicFields = getDynamicFields(state, r);
 
     Query q = extractQuery(state, r, timeStamp, useBlockJoinCollector, dynamicFields);
 
@@ -2164,7 +2178,7 @@ public class SearchHandler extends Handler {
 
             @Override
             protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
-              fillFacetResults(r, s, drillDowns, drillSideways, drillSidewaysDims, indexState, facetResults);
+              fillFacetResults(r, s, drillDowns, drillSideways, drillSidewaysDims, indexState, facetResults, dynamicFields);
               return null;
             }
 

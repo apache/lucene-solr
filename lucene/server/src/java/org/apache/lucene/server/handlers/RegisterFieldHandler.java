@@ -420,6 +420,7 @@ public class RegisterFieldHandler extends Handler {
 
     FieldType ft = new FieldType();
 
+    // nocommit why do we have storeDocValues?  it's too low level?
     boolean dv = f.getBoolean("storeDocValues");
     boolean sorted = f.getBoolean("sort");
     boolean grouped = f.getBoolean("group");

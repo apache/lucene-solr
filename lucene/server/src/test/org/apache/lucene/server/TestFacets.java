@@ -156,29 +156,21 @@ public class TestFacets extends ServerBaseTestCase {
     deleteAllDocs();
     addDocument(0, "Bob", "this is a test", 10.99f, "2012/10/17");
     addDocument(1, "Lisa", "this is a another test", 11.99f, "2012/10/1");
-    long gen = addDocument(2, "Frank", "this is a third test", 12.99f, "2010/10/1");
-    JSONObject o = search("test", gen, "price", false, true, null, null);
-    assertEquals(3, ((Number) o.get("totalHits")).intValue());
+    addDocument(2, "Frank", "this is a third test", 12.99f, "2010/10/1");
+    search("test", -1, "price", false, true, null, null);
+    assertEquals(3, getInt("totalHits"));
+    assertEquals(3, getInt("hits.length"));
 
-    JSONArray hits = (JSONArray) o.get("hits");
-    assertEquals(3, hits.size());
+    assertEquals(0, getInt("hits[0].fields.id"));
+    assertEquals("2012/10/17", getString("hits[0].fields.date"));
 
-    JSONObject hit = (JSONObject) hits.get(0);
-    assertEquals(0, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2012/10/17", ((JSONObject) hit.get("fields")).get("date"));
+    assertEquals(1, getInt("hits[1].fields.id"));
+    assertEquals("2012/10/1", getString("hits[1].fields.date"));
 
-    hit = (JSONObject) hits.get(1);
-    assertEquals(1, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2012/10/1", ((JSONObject) hit.get("fields")).get("date"));
+    assertEquals(2, getInt("hits[2].fields.id"));
+    assertEquals("2010/10/1", getString("hits[2].fields.date"));
 
-    hit = (JSONObject) hits.get(2);
-    assertEquals(2, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2010/10/1", ((JSONObject) hit.get("fields")).get("date"));
-    JSONArray facets = getArray(o, "facets[0].counts");
-    assertEquals(3, facets.size());
-    assertEquals("[\"top\",3]", facets.get(0).toString());
-    assertEquals("[\"2012\",2]", facets.get(1).toString());
-    assertEquals("[\"2010\",1]", facets.get(2).toString());
+    assertEquals("top: 3, 2012: 2, 2010: 1", formatFacetCounts(getObject("facets[0]")));
   }    
 
   public void testFacetsReopen() throws Exception {
@@ -187,30 +179,21 @@ public class TestFacets extends ServerBaseTestCase {
     addDocument(1, "Lisa", "this is a another test", 11.99f, "2012/10/1");
     commit();
 
-    long gen = addDocument(2, "Frank", "this is a third test", 12.99f, "2010/10/1");
-    JSONObject o = search("test", gen, "price", false, true, null, null);
-    assertEquals(3, ((Number) o.get("totalHits")).intValue());
+    addDocument(2, "Frank", "this is a third test", 12.99f, "2010/10/1");
+    search("test", -1, "price", false, true, null, null);
+    assertEquals(3, getInt("totalHits"));
+    assertEquals(3, getInt("hits.length"));
 
-    JSONArray hits = (JSONArray) o.get("hits");
-    assertEquals(3, hits.size());
+    assertEquals(0, getInt("hits[0].fields.id"));
+    assertEquals("2012/10/17", getString("hits[0].fields.date"));
 
-    JSONObject hit = (JSONObject) hits.get(0);
-    assertEquals(0, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2012/10/17", ((JSONObject) hit.get("fields")).get("date"));
+    assertEquals(1, getInt("hits[1].fields.id"));
+    assertEquals("2012/10/1", getString("hits[1].fields.date"));
 
-    hit = (JSONObject) hits.get(1);
-    assertEquals(1, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2012/10/1", ((JSONObject) hit.get("fields")).get("date"));
+    assertEquals(2, getInt("hits[2].fields.id"));
+    assertEquals("2010/10/1", getString("hits[2].fields.date"));
 
-    hit = (JSONObject) hits.get(2);
-    assertEquals(2, ((JSONObject) hit.get("fields")).get("id"));
-    assertEquals("2010/10/1", ((JSONObject) hit.get("fields")).get("date"));
-
-    JSONArray facets = getArray(o, "facets[0].counts");
-    assertEquals(3, facets.size());
-    assertEquals("[\"top\",3]", facets.get(0).toString());
-    assertEquals("[\"2012\",2]", facets.get(1).toString());
-    assertEquals("[\"2010\",1]", facets.get(2).toString());
+    assertEquals("top: 3, 2012: 2, 2010: 1", formatFacetCounts(getObject("facets[0]")));
   }    
 
   public void testDrillSideways() throws Exception {
@@ -220,48 +203,40 @@ public class TestFacets extends ServerBaseTestCase {
     send("addDocument", "{fields: {author: Lisa}}");
     send("addDocument", "{fields: {author: Tom}}");
     send("addDocument", "{fields: {author: Tom}}");
-    long indexGen = getLong(send("addDocument", "{fields: {author: Tom}}"), "indexGen");
+    send("addDocument", "{fields: {author: Tom}}");
 
     // Initial query:
-    JSONObject o = send("search", String.format(Locale.ROOT, "{query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}], searcher: {indexGen: %d}}", indexGen));
-    assertEquals(6, o.get("totalHits"));
-    assertEquals("[[\"top\",6],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
+    send("search", "{query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}]}");
+    assertEquals(6, getInt("totalHits"));
+    assertEquals("top: 6, Tom: 3, Lisa: 2, Bob: 1", formatFacetCounts(getObject("facets[0]")));
 
     // Now, single drill down:
-    o = send("search", String.format(Locale.ROOT, "{drillDowns: [{field: author, value: Bob}], query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}], searcher: {indexGen: %d}}", indexGen));
-    assertEquals(1, o.get("totalHits"));
-    assertEquals("[[\"top\",6],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
+    send("search", "{drillDowns: [{field: author, value: Bob}], query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}]}");
+    assertEquals(1, getInt("totalHits"));
+    assertEquals("top: 6, Tom: 3, Lisa: 2, Bob: 1", formatFacetCounts(getObject("facets[0]")));
 
     // Multi (OR'd) drill down:
-    o = send("search", String.format(Locale.ROOT, "{drillDowns: [{field: author, value: Bob}, {field: author, value: Lisa}], query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}], searcher: {indexGen: %d}}", indexGen));
-    assertEquals(3, o.get("totalHits"));
-    assertEquals("[[\"top\",6],[\"Tom\",3],[\"Lisa\",2],[\"Bob\",1]]", getArray(o, "facets[0].counts").toString());
+    send("search", "{drillDowns: [{field: author, value: Bob}, {field: author, value: Lisa}], query: MatchAllDocsQuery, facets: [{dim: author, topN: 10}]}");
+    assertEquals(3, getInt("totalHits"));
+    assertEquals("top: 6, Tom: 3, Lisa: 2, Bob: 1", formatFacetCounts(getObject("facets[0]")));
   }
 
   public void testLongRangeFacets() throws Exception {
     deleteAllDocs();    
-    long gen = -1;
     for(int i=0;i<100;i++) {
-      gen = getLong(send("addDocument", "{fields: {longField: " + i + "}}"), "indexGen");
+      send("addDocument", "{fields: {longField: " + i + "}}");
     }
-    JSONObject o = send("search", "{facets: [{dim: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
-    assertEquals("All", getString(o, "facets[0].counts[1][0]"));
-    assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
-    assertEquals("Half", getString(o, "facets[0].counts[2][0]"));
-    assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
+    send("search", "{facets: [{dim: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
+    assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
   }
 
   public void testDoubleRangeFacets() throws Exception {
     deleteAllDocs();    
-    long gen = -1;
     for(int i=0;i<100;i++) {
-      gen = getLong(send("addDocument", "{fields: {doubleField: " + i + "}}"), "indexGen");
+      send("addDocument", "{fields: {doubleField: " + i + "}}");
     }
-    JSONObject o = send("search", "{facets: [{dim: doubleField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}], searcher: {indexGen: " + gen + "}}");
-    assertEquals("All", getString(o, "facets[0].counts[1][0]"));
-    assertEquals(100, getInt(o, "facets[0].counts[1][1]"));
-    assertEquals("Half", getString(o, "facets[0].counts[2][0]"));
-    assertEquals(50, getInt(o, "facets[0].counts[2][1]"));
+    send("search", "{facets: [{dim: doubleField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
+    assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
   }
 
   // nocommit fails ... we need to add FloatRangeFacetCounts
@@ -319,21 +294,36 @@ public class TestFacets extends ServerBaseTestCase {
     send("addDocument", "{fields: {ssdv: three}}");
     send("commit");
     send("addDocument", "{fields: {ssdv: one}}");
-    long indexGen = getLong(send("addDocument", "{fields: {ssdv: one}}"), "indexGen");
+    send("addDocument", "{fields: {ssdv: one}}");
 
     for(int i=0;i<2;i++) {
       // nocommit if i remove indexGen from here, the error
       // message is bad: it says "each element in the array
       // my have these params:..." when it shouldn't
-      JSONObject result = send("search", "{query: MatchAllDocsQuery, facets: [{dim: ssdv}], searcher: {indexGen: " + indexGen + "}}");
-      assertEquals(6, getInt(result, "totalHits"));
-      assertEquals("[[\"top\",6],[\"one\",3],[\"two\",2],[\"three\",1]]", getArray(result, "facets[0].counts").toString());
+      send("search", "{query: MatchAllDocsQuery, facets: [{dim: ssdv}]}");
+      assertEquals(6, getInt("totalHits"));
+      assertEquals("top: 6, one: 3, two: 2, three: 1", formatFacetCounts(getObject("facets[0]")));
 
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();
       send("startIndex");
     }
+  }
+
+  public static String formatFacetCounts(JSONObject facets) {
+    StringBuilder sb = new StringBuilder();
+    JSONArray arr = getArray(facets, "counts");
+    for(Object o : arr) {
+      JSONArray facet = (JSONArray) o;
+      sb.append(facet.get(0));
+      sb.append(": ");
+      sb.append(facet.get(1));
+      sb.append(", ");
+    }
+    String s = sb.toString();
+    // remove last ', ':
+    return s.substring(0, s.length()-2);
   }
 }
 

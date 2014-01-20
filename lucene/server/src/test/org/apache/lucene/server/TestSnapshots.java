@@ -66,7 +66,8 @@ public class TestSnapshots extends ServerBaseTestCase {
     send("deleteDocuments", "{field: id, values: ['0']}");
     send("registerFields", "{fields: {field: {type: 'atom'}}}");
     send("addDocument", "{fields: {body: 'here is the body', id: '1', facet: 'facet2', field: 'abc'}}");
-    long indexGen2 = getLong(send("addDocument", "{fields: {body: 'here is the body', id: '2', facet: 'facet2', field: 'abc'}}"), "indexGen");
+    send("addDocument", "{fields: {body: 'here is the body', id: '2', facet: 'facet2', field: 'abc'}}");
+    long indexGen2 = getLong("indexGen");
     commit();
 
     File backupDir = _TestUtil.getTempDir("backup");
@@ -91,14 +92,14 @@ public class TestSnapshots extends ServerBaseTestCase {
       }
 
       // Make sure we can search the snapshot and only get 1 hit:
-      JSONObject searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
-      assertEquals(1, getInt(searchResult, "totalHits"));
-      assertEquals("0", getString(searchResult, "hits[0].fields.id"));
+      send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
+      assertEquals(1, getInt("totalHits"));
+      assertEquals("0", getString("hits[0].fields.id"));
 
       // Make sure we can search the current searcher and we
       // get 2 hits:
-      searchResult = send("search", "{retrieveFields: [id], searcher: {indexGen: " + indexGen2 + "}, query: MatchAllDocsQuery}");
-      assertEquals(2, getInt(searchResult, "totalHits"));
+      send("search", "{retrieveFields: [id], searcher: {indexGen: " + indexGen2 + "}, query: MatchAllDocsQuery}");
+      assertEquals(2, getInt("totalHits"));
 
       // Bounce the server:
       shutdownServer();
@@ -106,14 +107,14 @@ public class TestSnapshots extends ServerBaseTestCase {
       send("startIndex");
 
       // Make sure we can search the snapshot and still only get 1 hit:
-      searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
-      assertEquals(1, getInt(searchResult, "totalHits"));
-      assertEquals("0", getString(searchResult, "hits[0].fields.id"));
+      send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
+      assertEquals(1, getInt("totalHits"));
+      assertEquals("0", getString("hits[0].fields.id"));
 
       // Make sure we can search the current searcher and we
       // get 2 hits:
-      searchResult = send("search", "{retrieveFields: [id], query: MatchAllDocsQuery}");
-      assertEquals(2, getInt(searchResult, "totalHits"));
+      send("search", "{retrieveFields: [id], query: MatchAllDocsQuery}");
+      assertEquals(2, getInt("totalHits"));
 
       // Make sure files still exist (snapshot persisted):
       for(Map.Entry<String,Object> ent : result.entrySet()) {
@@ -129,9 +130,9 @@ public class TestSnapshots extends ServerBaseTestCase {
       }
 
       // Make sure we can still search the snapshot:
-      searchResult = send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
-      assertEquals(1, getInt(searchResult, "totalHits"));
-      assertEquals("0", getString(searchResult, "hits[0].fields.id"));
+      send("search", "{retrieveFields: [id], searcher: {snapshot: \"" + snapshotID + "\"}, query: MatchAllDocsQuery}");
+      assertEquals(1, getInt("totalHits"));
+      assertEquals("0", getString("hits[0].fields.id"));
 
       // Now, release the snapshot:
       send("releaseSnapshot", "{id: \"" + snapshotID + "\"}");

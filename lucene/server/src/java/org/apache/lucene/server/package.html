@@ -29,6 +29,10 @@
 	  joins, grouping, highlighting, suggest, live-values,
 	  snapshots, etc.
 
+	<li> Lucene's legacy FieldCache is never used; only the
+	  faster, more RAM efficient doc values are used when you
+	  sort, group, facet on a field.
+
 	<li> All searching is based on near-real-time IndexReader; you
 	  configure the minimum and maximum refresh times.
 
@@ -60,8 +64,8 @@
 	  searching.
 
 	<li> A server thread pool handles all concurrency during
-	  indexing, so you a single client thread can use the bulk
-	  indexing API and take advantage of the server computer's
+	  indexing, so a single client thread using the bulk
+	  indexing API will take advantage of the server computer's
 	  concurrent hardware.
 
 	<li> Settings are divided into <em>live</em> settings, which

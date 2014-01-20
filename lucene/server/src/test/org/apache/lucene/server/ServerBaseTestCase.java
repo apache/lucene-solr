@@ -54,13 +54,25 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   private static Thread serverThread;
   static int port;
 
+  /** Current index name; we auto-insert this to outgoing
+   *  commands that need it. */
+
   protected static String curIndexName = "index";
   protected static boolean useDefaultIndex = true;
   
   protected static File STATE_DIR;
 
+  /** Last result from the server; tests can access this to
+   *  check results. */
   protected static JSONObject lastResult;
   
+  /** We record the last indexGen we saw return from the
+   *  server, and then insert that for search command if no
+   *  searcher is already specified.  This avoids a common
+   *  test bug of forgetting to specify which indexGen to
+   *  search. */
+  private static long lastIndexGen = -1;
+
   @BeforeClass
   public static void beforeClassServerBase() throws Exception {
     File dir = _TestUtil.getTempDir("ServerBase");
@@ -78,6 +90,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    lastIndexGen = -1;
     if (useDefaultIndex) {
       curIndexName = "index";
 
@@ -178,6 +191,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
       serverThread.join();
       serverThread = null;
     }
+    lastIndexGen = -1;
   }
 
   protected static void deleteAllDocs() throws Exception {
@@ -249,6 +263,15 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
       args.put("indexName", curIndexName);
     }
 
+    if (command.equals("search") && args.containsKey("searcher") == false && lastIndexGen != -1) {
+      if (VERBOSE) {
+        System.out.println("\nNOTE: ServerBaseTestCase: inserting 'searcher: {indexGen: " + lastIndexGen + "}' into search request");
+      }
+      JSONObject o = new JSONObject();
+      o.put("indexGen", lastIndexGen);
+      args.put("searcher", o);
+    }
+
     if (VERBOSE) {
       System.out.println("\nNOTE: ServerBaseTestCase: sendRaw command=" + command + " args:\n" + args.toJSONString(new JSONStyleIdent()));
     }
@@ -257,6 +280,13 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
     if (VERBOSE) {
       System.out.println("NOTE: ServerBaseTestCase: server response:\n" + lastResult.toJSONString(new JSONStyleIdent()));
+    }
+
+    if (lastResult.containsKey("indexGen")) {
+      lastIndexGen = getLong(lastResult, "indexGen");
+      if (VERBOSE) {
+        System.out.println("NOTE: ServerBaseTestCase: record lastIndexGen=" + lastIndexGen);
+      }
     }
 
     return lastResult;
@@ -370,7 +400,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   /** Simple xpath-like utility method to jump down and grab
    *  something out of the JSON response. */
-  protected Object get(Object o, String path) {
+  protected static Object get(Object o, String path) {
     int upto = 0;
     int tokStart = 0;
     boolean inArrayIndex = false;
@@ -414,63 +444,63 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     return o;
   }
 
-  protected String getString(Object o, String path) {
+  protected static String getString(Object o, String path) {
     return (String) get(o, path);
   }
 
-  protected String getString(String path) {
+  protected static String getString(String path) {
     return getString(lastResult, path);
   }
 
-  protected int getInt(Object o, String path) {
+  protected static int getInt(Object o, String path) {
     return ((Number) get(o, path)).intValue();
   }
 
-  protected int getInt(String path) {
+  protected static int getInt(String path) {
     return getInt(lastResult, path);
   }
 
-  protected boolean getBoolean(Object o, String path) {
+  protected static boolean getBoolean(Object o, String path) {
     return ((Boolean) get(o, path)).booleanValue();
   }
 
-  protected boolean getBoolean(String path) {
+  protected static boolean getBoolean(String path) {
     return getBoolean(lastResult, path);
   }
 
-  protected long getLong(Object o, String path) {
+  protected static long getLong(Object o, String path) {
     return ((Number) get(o, path)).longValue();
   }
 
-  protected long getLong(String path) {
+  protected static long getLong(String path) {
     return getLong(lastResult, path);
   }
 
-  protected float getFloat(Object o, String path) {
+  protected static float getFloat(Object o, String path) {
     return ((Number) get(o, path)).floatValue();
   }
 
-  protected float getFloat(String path) {
+  protected static float getFloat(String path) {
     return getFloat(lastResult, path);
   }
 
-  protected JSONObject getObject(Object o, String path) {
+  protected static JSONObject getObject(Object o, String path) {
     return (JSONObject) get(o, path);
   }
 
-  protected JSONObject getObject(String path) {
+  protected static JSONObject getObject(String path) {
     return getObject(lastResult, path);
   }
 
-  protected JSONArray getArray(Object o, String path) {
+  protected static JSONArray getArray(Object o, String path) {
     return (JSONArray) get(o, path);
   }
 
-  protected JSONArray getArray(String path) {
+  protected static JSONArray getArray(String path) {
     return getArray(lastResult, path);
   }
 
-  protected JSONArray getArray(JSONArray o, int index) {
+  protected static JSONArray getArray(JSONArray o, int index) {
     return (JSONArray) o.get(index);
   }
 
