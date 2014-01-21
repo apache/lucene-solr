@@ -99,12 +99,7 @@ public final class DoubleRange extends Range {
     return "DoubleRange(" + minIncl + " to " + maxIncl + ")";
   }
 
-  /** Returns a new {@link Filter} accepting only documents
-   *  in this range.  Note that this filter is not
-   *  efficient: it's a linear scan of all docs, testing
-   *  each value.  If the {@link ValueSource} is static,
-   *  e.g. an indexed numeric field, then it's more
-   *  efficient to use {@link NumericRangeFilter}. */
+  @Override
   public Filter getFilter(final ValueSource valueSource) {
     return new Filter() {
       @Override
@@ -128,6 +123,7 @@ public final class DoubleRange extends Range {
 
               @Override
               public int nextDoc() throws IOException {
+                assert doc != NO_MORE_DOCS;
                 while (true) {
                   doc++;
                   if (doc == maxDoc) {
@@ -145,6 +141,10 @@ public final class DoubleRange extends Range {
 
               @Override
               public int advance(int target) throws IOException {
+                if (target == NO_MORE_DOCS) {
+                  doc = target;
+                  return doc;
+                }
                 doc = target-1;
                 return nextDoc();
               }

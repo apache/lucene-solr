@@ -73,7 +73,23 @@ public class TestSimpleSpatial extends ServerBaseTestCase {
     assertEquals("top: 3, < 1 km: 1, < 2 km: 2, < 5 km: 2, < 10 km: 3",
                  TestFacets.formatFacetCounts(getObject("facets[0]")));
 
-    // nocommit show drill down too
+    // Now drill-down on '< 2 KM':
+    send("search",
+         "{query: MatchAllDocsQuery, " +
+         "drillDowns: [{field: distance, numericRange: {label: '< 2 KM', min: 0.0, minInclusive: true, max: 2.0, maxInclusive: false}}], " +
+         "virtualFields: [{name: distance, expression: 'haversin(" + homeLatitude + "," + homeLongitude + ",latitude,longitude)'}], " +
+         "facets: [{dim: distance, numericRanges: [" + 
+         "{label: '< 1 km', min: 0.0, minInclusive: true, max: 1.0, maxInclusive: false}," +
+         "{label: '< 2 km', min: 0.0, minInclusive: true, max: 2.0, maxInclusive: false}," +
+         "{label: '< 5 km', min: 0.0, minInclusive: true, max: 5.0, maxInclusive: false}," +
+         "{label: '< 10 km', min: 0.0, minInclusive: true, max: 10.0, maxInclusive: false}," +
+         "]}]}");
+
+    assertEquals(2, getInt("totalHits"));
+
+    // Drill-sideways counts are unchanged after a single drill-down:
+    assertEquals("top: 3, < 1 km: 1, < 2 km: 2, < 5 km: 2, < 10 km: 3",
+                 TestFacets.formatFacetCounts(getObject("facets[0]")));
   }
 }
 

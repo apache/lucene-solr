@@ -48,6 +48,7 @@ import org.apache.lucene.facet.range.DoubleRange;
 import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
+import org.apache.lucene.facet.range.Range;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
@@ -309,6 +310,12 @@ public class SearchHandler extends Handler {
                                 "classic")
                       );
 
+  private static final StructType NUMERIC_RANGE_TYPE = new StructType(new Param("label", "Label for this range", new StringType()),
+                                                           new Param("min", "Min value for the range", new OrType(new LongType(), new FloatType())),
+                                                           new Param("minInclusive", "True if the min value is inclusive", new BooleanType()),
+                                                           new Param("max", "Max value for the range", new OrType(new LongType(), new FloatType())),
+                                                           new Param("maxInclusive", "True if the max value is inclusive", new BooleanType()));
+
   private final static StructType TYPE =
     new StructType(
         new Param("indexName", "Which index to search", new StringType()),
@@ -399,12 +406,7 @@ public class SearchHandler extends Handler {
                                    new Param("path", "Prefix path to facet 'under'.",
                                              new OrType(new StringType(), new ListType(new StringType()))),
                                    new Param("numericRanges", "Custom numeric ranges.  Field must be indexed with facet=numericRange.",
-                                       new ListType(
-                                           new StructType(new Param("label", "Label for this range", new StringType()),
-                                                          new Param("min", "Min value for the range", new OrType(new LongType(), new FloatType())),
-                                                          new Param("minInclusive", "True if the min value is inclusive", new BooleanType()),
-                                                          new Param("max", "Max value for the range", new OrType(new LongType(), new FloatType())),
-                                                          new Param("maxInclusive", "True if the max value is inclusive", new BooleanType())))),
+                                       new ListType(NUMERIC_RANGE_TYPE)),
                                    new Param("autoDrillDown", "True if single-child facet should be auto-expanded (not yet implemented!).", new BooleanType()),
                                    new Param("useOrdsCache", "True if the ordinals cache should be used.", new BooleanType(), false),
                                    new Param("topN", "How many top facets to return.", new IntType(), 7)))),
@@ -412,6 +414,7 @@ public class SearchHandler extends Handler {
                   new ListType(new StructType(
                                    new Param("field", "Field name to drill down on.", new StringType()),
                                    new Param("query", "Sub-query for drill down (e.g., use NumericRangeQuery to drill down on dynamic ranges).", QUERY_TYPE),
+                                   new Param("numericRange", "A numeric range to drill down on", NUMERIC_RANGE_TYPE),
                                    new Param("value", "Which values to allow, either String or array of String.  Drill down on the same field more than once to OR multiple drill-down values for that field.",
                                              new OrType(new StringType(), new ListType(new StringType())))))),
         new Param("sort", "Sort hits by field (default is by relevance).",
@@ -1550,11 +1553,43 @@ public class SearchHandler extends Handler {
       if (!drillDownList.isEmpty()) {
         for(Object o : drillDownList) {
           Request fr = (Request) o;
-          FieldDef fd = state.getField(fr, "field");
+          String f = fr.getString("field");
+          FieldDef fd = dynamicFields.get(f);
+          if (fd == null) {
+            fr.fail("field", "field \"" + f + "\" was not registered and was not specified as a dynamicField");
+            // Dead code but compiler disagrees:
+            fd = null;
+          }
 
           if (fr.hasParam("query")) {
             // Drill down by query:
             ddq.add(fd.name, parseQuery(timeStamp, null, state, r.getStruct("query"), fd.name, null, dynamicFields));
+          } else if (fr.hasParam("numericRange")) {
+            Request rr = fr.getStruct("numericRange");
+            Range range;
+            if (fd.valueType.equals("int") || fd.valueType.equals("long")) {
+              range = new LongRange(rr.getString("label"),
+                                    rr.getLong("min"),
+                                    rr.getBoolean("minInclusive"),
+                                    rr.getLong("max"),
+                                    rr.getBoolean("maxInclusive"));
+
+            } else if (fd.valueType.equals("float") || fd.valueType.equals("double") || fd.valueType.equals("virtual")) {
+              range = new DoubleRange(rr.getString("label"),
+                                      rr.getDouble("min"),
+                                      rr.getBoolean("minInclusive"),
+                                      rr.getDouble("max"),
+                                      rr.getBoolean("maxInclusive"));
+            } else {
+              rr.fail("numericRange", "field \"" + fd.name + "\" is not numeric");
+
+              // Dead code but compiler disagrees:
+              range = null;
+            }
+            if (fd.valueSource == null) {
+              rr.fail("numericRange", "currently only supported for virtual fields");
+            }
+            ddq.add(fd.name, new ConstantScoreQuery(range.getFilter(fd.valueSource)));
           } else {
             String[] path;
             if (fr.isString("value")) {

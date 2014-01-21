@@ -1,5 +1,8 @@
 package org.apache.lucene.facet.range;
 
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Filter;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,6 +35,14 @@ public abstract class Range {
     }
     this.label = label;
   }
+
+  /** Returns a new {@link Filter} accepting only documents
+   *  in this range.  Note that this filter is not
+   *  efficient: it's a linear scan of all docs, testing
+   *  each value.  If the {@link ValueSource} is static,
+   *  e.g. an indexed numeric field, then it's more
+   *  efficient to use {@link NumericRangeFilter}. */
+  public abstract Filter getFilter(final ValueSource valueSource);
 
   /** Invoke this for a useless range. */
   protected void failNoMatch() {

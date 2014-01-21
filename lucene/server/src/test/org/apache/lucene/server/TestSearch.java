@@ -253,7 +253,7 @@ public class TestSearch extends ServerBaseTestCase {
   public void testSearchWithTimeout() throws Exception {
     deleteAllDocs();
     LineFileDocs docs = new LineFileDocs(random());
-    long charCountLimit = atLeast(10000*1024);
+    long charCountLimit = atLeast(10*1024);
     long charCount = 0;
     int id = 0;
     while (charCount < charCountLimit) {
