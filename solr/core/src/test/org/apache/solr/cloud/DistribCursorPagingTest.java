@@ -39,7 +39,11 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.search.CursorMark; //jdoc
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +59,8 @@ import java.util.Map;
 @Slow
 @SuppressCodecs("Lucene3x")
 public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
+
+  public static Logger log = LoggerFactory.getLogger(DistribCursorPagingTest.class);
 
   public DistribCursorPagingTest() {
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
@@ -458,18 +464,24 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     }
     commit();
 
+    log.info("SOLR-5652: Begining Loop over smallish num of docs");
+    final boolean SOLR_5652 = true;
+
     for (String f : allFieldNames) {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
         String rows = "" + _TestUtil.nextInt(random(),13,50);
-        SentinelIntSet ids = assertFullWalkNoDups(initialDocs, 
+        SentinelIntSet ids = assertFullWalkNoDups(SOLR_5652,
+                                                  initialDocs, 
                                                   params("q", "*:*",
-                                                         "fl","id",
+                                                         "fl","id,"+f,
                                                          "rows",rows,
                                                          "sort",sort));
         assertEquals(initialDocs, ids.size());
       }
     }
+
+    log.info("SOLR-5652: Ending Loop over smallish num of docs");
 
     // now add a lot more docs, and test a handful of randomized multi-level sorts
     for (int i = initialDocs+1; i <= totalDocs; i++) {
@@ -500,9 +512,11 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   }
   
   /**
-   * Asks the LukeRequestHandler on the control client for a list of the fields in the schema - excluding _version_
+   * Asks the LukeRequestHandler on the control client for a list of the fields in the 
+   * schema (excluding _version_) and then returns the field names in a deterministically 
+   * random order.
    */
-  private Collection<String> getAllFieldNames() throws SolrServerException, IOException {
+  private List<String> getAllFieldNames() throws SolrServerException, IOException {
     LukeRequest req = new LukeRequest("/admin/luke");
     req.setShowSchema(true); 
     NamedList<Object> rsp = controlClient.request(req);
@@ -514,7 +528,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         names.add(item.getKey());
       }
     }
-    return Collections.<String>unmodifiableCollection(names);
+    Collections.sort(names);
+    Collections.shuffle(names,random());
+    return Collections.<String>unmodifiableList(names);
   }
 
   /**
@@ -606,11 +622,19 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * </p>
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {
+    return assertFullWalkNoDups(false, maxSize, params);
+  }
+
+  /** :TODO: refactor method into two arg version once SOLR-5652 is resolved */
+  private SentinelIntSet assertFullWalkNoDups(final boolean verbose, 
+                                              final int maxSize, 
+                                              final SolrParams params) throws Exception {
     SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
-      QueryResponse rsp = cloudClient.query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      final SolrParams p = p(params, CURSOR_MARK_PARAM, cursorMark);
+      QueryResponse rsp = cloudClient.query(p);
       String nextCursorMark = assertHashNextCursorMark(rsp);
       SolrDocumentList docs = extractDocList(rsp);
       docsOnThisPage = docs.size();
@@ -623,12 +647,24 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         assertEquals("no more docs, but "+CURSOR_MARK_NEXT+" isn't same",
                      cursorMark, nextCursorMark);
       }
+
+      if (verbose) { // SOLR-5652
+        // SolrDocument is a bit more verbose then we need
+        StringBuilder s = new StringBuilder();
+        for (SolrDocument doc : docs) {
+          s.append(doc.getFieldValuesMap().toString());
+          s.append("; ");
+        }
+        log.info("SOLR-5652: ({}) gave us these docs: {}", p, s);
+      }
+
       for (SolrDocument doc : docs) {
         int id = ((Integer)doc.get("id")).intValue();
         if (ids.exists(id)) {
-          String msg = "walk already seen: " + id;
+          String msg = "(" + p + ") walk already seen: " + id;
           try {
-            queryAndCompareShards(params("q","id:"+id));
+            queryAndCompareShards(params("distrib","false",
+                                         "q","id:"+id));
           } catch (AssertionError ae) {
             throw (AssertionError) new AssertionError(msg + ", found shard inconsistency that would explain it...").initCause(ae);
           }
