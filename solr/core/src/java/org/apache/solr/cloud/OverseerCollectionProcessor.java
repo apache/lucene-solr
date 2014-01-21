@@ -307,7 +307,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   public static String getLeaderNode(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    Map m = (Map) ZkStateReader.fromJSON(zkClient.getData("/overseer_elect/leader", null, new Stat(), true));
+    byte[] data = new byte[0];
+    try {
+      data = zkClient.getData("/overseer_elect/leader", null, new Stat(), true);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    }
+    Map m = (Map) ZkStateReader.fromJSON(data);
     String s = (String) m.get("id");
 //    log.info("leader-id {}",s);
     String nodeName = LeaderElector.getNodeName(s);

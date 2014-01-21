@@ -99,7 +99,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     ArrayList<String> l = new ArrayList<>(nodes);
     log.info("All nodes {}", l);
-    String currentLeader = getLeaderNode(client);
+    String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
     log.info("Current leader {} ", currentLeader);
     l.remove(currentLeader);
 
@@ -112,7 +112,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     boolean leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-      if(getLeaderNode(client).equals(overseerDesignate)){
+      if(overseerDesignate.equals(OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()))){
         log.info("overseer designate is the new overseer");
         leaderchanged =true;
         break;
@@ -166,15 +166,6 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     client.request(request);
-  }
-
-  private String getLeaderNode(CloudSolrServer client) throws KeeperException, InterruptedException {
-    Map m = (Map) ZkStateReader.fromJSON(client.getZkStateReader().getZkClient().getData("/overseer_elect/leader", null, new Stat(), true));
-    String s = (String) m.get("id");
-//    log.info("leader-id {}",s);
-    String nodeName = LeaderElector.getNodeName(s);
-//    log.info("Leader {}", nodeName);
-    return nodeName;
   }
 
   protected void createCollection(String COLL_NAME, CloudSolrServer client) throws Exception {
