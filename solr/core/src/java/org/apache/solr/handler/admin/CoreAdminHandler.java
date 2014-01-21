@@ -827,7 +827,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
         
-        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props));
+        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true);
         // solrcloud_debug
         if (log.isDebugEnabled()) {
           try {

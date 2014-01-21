@@ -208,7 +208,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       boolean success = false;
       try {
-        success = syncStrategy.sync(zkController, core, leaderProps);
+        success = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
       } catch (Exception e) {
         SolrException.log(log, "Exception while trying to sync", e);
         success = false;
