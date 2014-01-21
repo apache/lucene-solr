@@ -305,6 +305,21 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return nodeNames;
   }
 
+  public static String getLeaderNode(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    byte[] data = new byte[0];
+    try {
+      data = zkClient.getData("/overseer_elect/leader", null, new Stat(), true);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    }
+    Map m = (Map) ZkStateReader.fromJSON(data);
+    String s = (String) m.get("id");
+//    log.info("leader-id {}",s);
+    String nodeName = LeaderElector.getNodeName(s);
+//    log.info("Leader {}", nodeName);
+    return nodeName;
+  }
+
   private void invokeRejoinOverseer(String nodeName) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINOVERSEERELECTION.toString());
@@ -318,12 +333,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
-  public static String getLeaderNode(SolrZkClient client) throws KeeperException, InterruptedException {
-    Map m = (Map) ZkStateReader.fromJSON(client.getData("/overseer_elect/leader", null, new Stat(), true));
-    String s = (String) m.get("id");
-    String nodeName = LeaderElector.getNodeName(s);
-    return nodeName;
-  }
 
   protected LeaderStatus amILeader() {
     try {

@@ -99,7 +99,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     ArrayList<String> l = new ArrayList<String>(nodes);
     log.info("All nodes {}", l);
-    String currentLeader = OverseerCollectionProcessor. getLeaderNode(client.getZkStateReader().getZkClient());
+    String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
     log.info("Current leader {} ", currentLeader);
     l.remove(currentLeader);
 
@@ -112,7 +112,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     boolean leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-      if(OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()).equals(overseerDesignate)){
+      if(overseerDesignate.equals(OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()))){
         log.info("overseer designate is the new overseer");
         leaderchanged =true;
         break;
@@ -167,7 +167,6 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     request.setPath("/admin/collections");
     client.request(request);
   }
-
 
 
   protected void createCollection(String COLL_NAME, CloudSolrServer client) throws Exception {
