@@ -555,16 +555,19 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
   
   /**
-   * a list of the fields in the schema - excluding _version_
+   * An immutable list of the fields in the schema (excluding _version_) in a 
+   * deterministically random order.
    */
-  private Collection<String> getAllFieldNames() {
+  private List<String> getAllFieldNames() {
     ArrayList<String> names = new ArrayList<String>(37);
     for (String f : h.getCore().getLatestSchema().getFields().keySet()) {
       if (! f.equals("_version_")) {
         names.add(f);
       }
     }
-    return Collections.<String>unmodifiableCollection(names);
+    Collections.sort(names);
+    Collections.shuffle(names,random());
+    return Collections.<String>unmodifiableList(names);
   }
 
   /**
