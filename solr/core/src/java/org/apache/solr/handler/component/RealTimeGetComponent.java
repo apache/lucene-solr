@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -537,6 +538,17 @@ public class RealTimeGetComponent extends SearchComponent
 
   
   public void processSync(ResponseBuilder rb, int nVersions, String sync) {
+    
+    boolean onlyIfActive = rb.req.getParams().getBool("onlyIfActive", false);
+    
+    if (onlyIfActive) {
+      if (!rb.req.getCore().getCoreDescriptor().getCloudDescriptor().getLastPublished().equals(ZkStateReader.ACTIVE)) {
+        log.info("Last published state was not ACTIVE, cannot sync.");
+        rb.rsp.add("sync", "false");
+        return;
+      }
+    }
+    
     List<String> replicas = StrUtils.splitSmart(sync, ",", true);
     
     boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
