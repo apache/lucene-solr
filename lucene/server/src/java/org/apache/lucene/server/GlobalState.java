@@ -41,12 +41,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.server.handlers.DocHandler;
 import org.apache.lucene.server.handlers.Handler;
 import org.apache.lucene.server.plugins.Plugin;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NamedThreadFactory;
-
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
@@ -257,6 +257,12 @@ public class GlobalState implements Closeable {
     //System.out.println("GlobalState.close");
     IOUtils.close(indices.values());
     indexService.shutdown();
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    try {
+      TimeLimitingCollector.getGlobalTimerThread().join();
+    } catch (InterruptedException ie) {
+      throw new RuntimeException(ie);
+    }
   }
 
   /** Load any plugins. */

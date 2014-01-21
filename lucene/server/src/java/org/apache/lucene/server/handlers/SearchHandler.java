@@ -95,6 +95,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -417,7 +418,8 @@ public class SearchHandler extends Handler {
                   new StructType(
                       new Param("doMaxScore", "Compute the max score across all hits (costs added CPU).", new BooleanType(), false),
                       new Param("doDocScores", "Compute the doc score for each collected (costs added CPU).", new BooleanType(), false),
-                      new Param("fields", "Fields to sort on.", SORT_TYPE)))
+                      new Param("fields", "Fields to sort on.", SORT_TYPE))),
+        new Param("timeoutSec", "Maximum number of seconds spent on each collection phase; note that for multi-pass searches (e.g. query-time grouping), this timeout applies to each phase.", new FloatType())
                    );
   @Override
   public String getTopDoc() {
@@ -2147,6 +2149,19 @@ public class SearchHandler extends Handler {
                                      false);
       }
 
+      long timeoutMS;
+      Collector c2;
+      if (r.hasParam("timeoutSec")) {
+        timeoutMS = (long) (r.getFloat("timeoutSec") * 1000);
+        if (timeoutMS <= 0) {
+          r.fail("timeoutSec", "must be > 0 msec");
+        }
+        c2 = new TimeLimitingCollector(c, TimeLimitingCollector.getGlobalCounter(), timeoutMS);
+      } else {
+        c2 = c;
+        timeoutMS = -1;
+      }
+
       // nocommit can we do better?  sometimes downgrade
       // to DDQ not DS?
 
@@ -2192,9 +2207,18 @@ public class SearchHandler extends Handler {
           };
 
         // Fills in facetResults as a side-effect:
-        ds.search(ddq, c);
+        try {
+          ds.search(ddq, c2);
+        } catch (TimeLimitingCollector.TimeExceededException tee) {
+          result.put("hitTimeout", true);
+        }
+
       } else {
-        s.searcher.search(ddq, c);
+        try {
+          s.searcher.search(ddq, c2);
+        } catch (TimeLimitingCollector.TimeExceededException tee) {
+          result.put("hitTimeout", true);
+        }
       }
 
       diagnostics.put("firstPassSearchMS", ((System.nanoTime()-searchStartTime)/1000000.0));
@@ -2213,8 +2237,18 @@ public class SearchHandler extends Handler {
                                                                                    grouping.getBoolean("doMaxScore"),
                                                                                    true);
           long t0 = System.nanoTime();
+
+          c = c3;
           //((MyIndexSearcher) s).search(w, c3);
-          s.searcher.search(ddq, c3);
+          if (timeoutMS > 0) {
+            c = new TimeLimitingCollector(c, TimeLimitingCollector.getGlobalCounter(), timeoutMS);
+          }
+
+          try {
+            s.searcher.search(ddq, c);
+          } catch (TimeLimitingCollector.TimeExceededException tee) {
+            result.put("hitTimeout", true);
+          }
           diagnostics.put("secondPassSearchMS", ((System.nanoTime()-t0)/1000000));
 
           groups = c3.getTopGroups(0);

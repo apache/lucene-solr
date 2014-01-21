@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -246,6 +248,33 @@ public class TestSearch extends ServerBaseTestCase {
     }
 
     assertEquals(20, seenIDs.size());
+  }
+
+  public void testSearchWithTimeout() throws Exception {
+    deleteAllDocs();
+    LineFileDocs docs = new LineFileDocs(random());
+    long charCountLimit = atLeast(10000*1024);
+    long charCount = 0;
+    int id = 0;
+    while (charCount < charCountLimit) {
+      Document doc = docs.nextDoc();
+      charCount += doc.get("body").length() + doc.get("titleTokenized").length();
+      JSONObject fields = new JSONObject();
+      fields.put("title", doc.get("titleTokenized"));
+      fields.put("body", doc.get("body"));
+      fields.put("id", id++);
+      JSONObject o = new JSONObject();
+      o.put("fields", fields);
+      send("addDocument", o);
+    }
+
+    assertFailsWith("search",
+                    "{queryText: the, retrieveFields: [id], timeoutSec: 0.0}",
+                    "search > timeoutSec: must be > 0 msec");
+
+    // NOTE: does not actually test that we hit the timeout;
+    // just that we can specify timeoutSec
+    send("search", "{queryText: the, retrieveFields: [id], timeoutSec: 0.001}");
   }
 
   public void testSearchAfterWithSort() throws Exception {

@@ -444,6 +444,19 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
     return o;
   }
 
+  protected boolean hasParam(Object o, String path) {
+    try {
+      get(o, path);
+      return true;
+    } catch (IllegalArgumentException iae) {
+      return false;
+    }
+  }
+
+  protected boolean hasParam(String path) {
+    return hasParam(lastResult, path);
+  }
+
   protected static String getString(Object o, String path) {
     return (String) get(o, path);
   }
