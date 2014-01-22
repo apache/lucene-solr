@@ -41,7 +41,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   
   @Override
   public PostingsFormat postingsFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return postings;
     } else {
       return super.postingsFormat();
@@ -50,7 +50,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public NormsFormat normsFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return norms;
     } else {
       return super.normsFormat();
@@ -59,7 +59,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return segmentInfos ;
     } else {
       return super.segmentInfoFormat();
@@ -68,7 +68,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public FieldInfosFormat fieldInfosFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return fieldInfos;
     } else {
       return super.fieldInfosFormat();
@@ -77,7 +77,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public TermVectorsFormat termVectorsFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return termVectors;
     } else {
       return super.termVectorsFormat();
@@ -86,7 +86,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
       return storedFields;
     } else {
       return super.storedFieldsFormat();

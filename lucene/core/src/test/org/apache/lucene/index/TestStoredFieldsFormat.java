@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -36,7 +37,7 @@ public class TestStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   
   @Override
   public void testWriteReadMerge() throws IOException {
-    assumeFalse("impersonation isnt good enough", LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE);
+    assumeFalse("impersonation isnt good enough", getCodec() instanceof Lucene3xCodec);
     // this test tries to switch up between the codec and another codec.
     // for 3.x: we currently cannot take an index with existing 4.x segments
     // and merge into newly formed 3.x segments.

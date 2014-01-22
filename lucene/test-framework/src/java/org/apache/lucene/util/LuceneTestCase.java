@@ -334,12 +334,6 @@ public abstract class LuceneTestCase extends Assert {
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
-  // TODO: why do we have this? This should just use the OLD_FORMAT_IMPERSONATION...
-  /**
-   * @lucene.internal
-   */
-  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
-
   /**
    * When {@code true}, Codecs for old Lucene version will support writing
    * indexes in that format. Defaults to {@code false}, can be disabled by
@@ -1103,7 +1097,7 @@ public abstract class LuceneTestCase extends Assert {
       if (!newType.storeTermVectorPositions()) {
         newType.setStoreTermVectorPositions(random.nextBoolean());
         
-        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads() && !PREFLEX_IMPERSONATION_IS_ACTIVE) {
+        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads() && !OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
           newType.setStoreTermVectorPayloads(random.nextBoolean());
         }
       }

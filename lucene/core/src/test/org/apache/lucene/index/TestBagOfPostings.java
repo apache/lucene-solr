@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -129,7 +130,7 @@ public class TestBagOfPostings extends LuceneTestCase {
     Terms terms = air.terms("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
     assertEquals(numTerms-1, air.fields().getUniqueTermCount());
-    if (!PREFLEX_IMPERSONATION_IS_ACTIVE) {
+    if (iwc.getCodec() instanceof Lucene3xCodec == false) {
       assertEquals(numTerms-1, terms.size());
     }
     TermsEnum termsEnum = terms.iterator(null);

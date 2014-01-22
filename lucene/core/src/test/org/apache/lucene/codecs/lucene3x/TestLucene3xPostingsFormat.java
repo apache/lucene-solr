@@ -31,7 +31,7 @@ public class TestLucene3xPostingsFormat extends BasePostingsFormatTestCase {
   /** we will manually instantiate preflex-rw here */
   @BeforeClass
   public static void beforeClass3xPostingsFormat() {
-    LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
   }
 
   @Override

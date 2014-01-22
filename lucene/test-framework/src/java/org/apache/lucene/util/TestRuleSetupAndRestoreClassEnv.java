@@ -155,7 +155,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     }
     
     // set back to default
-    LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
     
     savedCodec = Codec.getDefault();
@@ -167,7 +166,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
                                           !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-      LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     } else if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                                  "random".equals(TEST_POSTINGSFORMAT) &&
                                                   randomVal == 0 &&

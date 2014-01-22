@@ -34,7 +34,7 @@ public class TestSurrogates extends LuceneTestCase {
   /** we will manually instantiate preflex-rw here */
   @BeforeClass
   public static void beforeClass() {
-    LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
   }
 
   private static String makeDifficultRandomUnicodeString(Random r) {

@@ -28,7 +28,7 @@ public class TestLucene3xTermVectorsFormat extends BaseTermVectorsFormatTestCase
 
   @Override
   public void setUp() throws Exception {
-    LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     super.setUp();
   }
 
