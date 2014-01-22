@@ -47,7 +47,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACT
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction;
-
+@Ignore("needs to restart the OverSeer")
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
 
