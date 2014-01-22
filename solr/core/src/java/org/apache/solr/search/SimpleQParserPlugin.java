@@ -32,6 +32,7 @@ import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -112,97 +113,122 @@ public class SimpleQParserPlugin extends QParserPlugin {
   /** Returns a QParser that will create a query by using Lucene's SimpleQueryParser. */
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    // Some of the parameters may come in through localParams, so combine them with params.
-    SolrParams defaultParams = SolrParams.wrapDefaults(localParams, params);
+    return new SimpleQParser(qstr, localParams, params, req);
+  }
 
-    // This will be used to specify what fields and boosts will be used by SimpleQueryParser.
-    Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(defaultParams.get(SimpleParams.QF));
+  private static class SimpleQParser extends QParser {
+    private SimpleQueryParser parser;
 
-    if (queryFields.isEmpty()) {
-      // It qf is not specified setup up the queryFields map to use the defaultField.
-      String defaultField = QueryParsing.getDefaultField(req.getSchema(), defaultParams.get(CommonParams.DF));
+    public SimpleQParser (String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
-      if (defaultField == null) {
-        // A query cannot be run without having a field or set of fields to run against.
-        throw new IllegalStateException("Neither " + SimpleParams.QF + ", " + CommonParams.DF
-            + ", nor the default search field are present.");
-      }
+      super(qstr, localParams, params, req);
+      // Some of the parameters may come in through localParams, so combine them with params.
+      SolrParams defaultParams = SolrParams.wrapDefaults(localParams, params);
 
-      queryFields.put(defaultField, 1.0F);
-    }
-    else {
-      for (Map.Entry<String, Float> queryField : queryFields.entrySet()) {
-        if (queryField.getValue() == null) {
-          // Some fields may be specified without a boost, so default the boost to 1.0 since a null value
-          // will not be accepted by SimpleQueryParser.
-          queryField.setValue(1.0F);
+      // This will be used to specify what fields and boosts will be used by SimpleQueryParser.
+      Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(defaultParams.get(SimpleParams.QF));
+
+      if (queryFields.isEmpty()) {
+        // It qf is not specified setup up the queryFields map to use the defaultField.
+        String defaultField = QueryParsing.getDefaultField(req.getSchema(), defaultParams.get(CommonParams.DF));
+
+        if (defaultField == null) {
+          // A query cannot be run without having a field or set of fields to run against.
+          throw new IllegalStateException("Neither " + SimpleParams.QF + ", " + CommonParams.DF
+              + ", nor the default search field are present.");
         }
+
+        queryFields.put(defaultField, 1.0F);
       }
-    }
-
-    // Setup the operations that are enabled for the query.
-    int enabledOps = 0;
-    String opParam = defaultParams.get(SimpleParams.QO);
-
-    if (opParam == null) {
-      // All operations will be enabled.
-      enabledOps = -1;
-    } else {
-      // Parse the specified enabled operations to be used by the query.
-      String[] operations = opParam.split(",");
-
-      for (String operation : operations) {
-        Integer enabledOp = OPERATORS.get(operation.trim().toUpperCase(Locale.ROOT));
-
-        if (enabledOp != null) {
-          enabledOps |= enabledOp;
-        }
-      }
-    }
-
-    // Create a SimpleQueryParser using the analyzer from the schema.
-    final IndexSchema schema = req.getSchema();
-    final SimpleQueryParser parser = new SimpleQueryParser(req.getSchema().getAnalyzer(), queryFields, enabledOps) {
-      // Override newPrefixQuery to provide a multi term analyzer for prefix queries run against TextFields.
-      @Override
-      protected Query newPrefixQuery(String text) {
-        BooleanQuery bq = new BooleanQuery(true);
-
-        for (Map.Entry<String, Float> entry : weights.entrySet()) {
-          String field = entry.getKey();
-          FieldType type = schema.getFieldType(field);
-          Query prefix;
-
-          if (type instanceof TextField) {
-            // If the field type is a TextField then use the multi term analyzer.
-            Analyzer analyzer = ((TextField)type).getMultiTermAnalyzer();
-            String term = TextField.analyzeMultiTerm(field, text, analyzer).utf8ToString();
-            prefix = new PrefixQuery(new Term(field, term));
-          } else {
-            // If the type is *not* a TextField don't do any analysis.
-            prefix = new PrefixQuery(new Term(entry.getKey(), text));
+      else {
+        for (Map.Entry<String, Float> queryField : queryFields.entrySet()) {
+          if (queryField.getValue() == null) {
+            // Some fields may be specified without a boost, so default the boost to 1.0 since a null value
+            // will not be accepted by SimpleQueryParser.
+            queryField.setValue(1.0F);
           }
-
-          prefix.setBoost(entry.getValue());
-          bq.add(prefix, BooleanClause.Occur.SHOULD);
         }
-
-        return simplify(bq);
       }
-    };
 
-    // Set the default operator to be either 'AND' or 'OR' for the query.
-    QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));
+      // Setup the operations that are enabled for the query.
+      int enabledOps = 0;
+      String opParam = defaultParams.get(SimpleParams.QO);
 
-    if (defaultOp == QueryParser.Operator.AND) {
-      parser.setDefaultOperator(BooleanClause.Occur.MUST);
+      if (opParam == null) {
+        // All operations will be enabled.
+        enabledOps = -1;
+      } else {
+        // Parse the specified enabled operations to be used by the query.
+        String[] operations = opParam.split(",");
+
+        for (String operation : operations) {
+          Integer enabledOp = OPERATORS.get(operation.trim().toUpperCase(Locale.ROOT));
+
+          if (enabledOp != null) {
+            enabledOps |= enabledOp;
+          }
+        }
+      }
+
+      // Create a SimpleQueryParser using the analyzer from the schema.
+      final IndexSchema schema = req.getSchema();
+      parser = new SolrSimpleQueryParser(req.getSchema().getAnalyzer(), queryFields, enabledOps, this, schema);
+
+      // Set the default operator to be either 'AND' or 'OR' for the query.
+      QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));
+
+      if (defaultOp == QueryParser.Operator.AND) {
+        parser.setDefaultOperator(BooleanClause.Occur.MUST);
+      }
     }
 
-    // Return a QParser that wraps a SimpleQueryParser.
-    return new QParser(qstr, localParams, params, req) {
-      public Query parse() throws SyntaxError {
-        return parser.parse(qstr);
+    @Override
+    public Query parse() throws SyntaxError {
+      return parser.parse(qstr);
+    }
+
+  }
+
+  private static class SolrSimpleQueryParser extends SimpleQueryParser {
+    QParser qParser;
+    IndexSchema schema;
+
+    public SolrSimpleQueryParser(Analyzer analyzer, Map<String, Float> weights, int flags,
+                                 QParser qParser, IndexSchema schema) {
+      super(analyzer, weights, flags);
+      this.qParser = qParser;
+      this.schema = schema;
+    }
+
+    @Override
+    protected Query newPrefixQuery(String text) {
+      BooleanQuery bq = new BooleanQuery(true);
+
+      for (Map.Entry<String, Float> entry : weights.entrySet()) {
+        String field = entry.getKey();
+        FieldType type = schema.getFieldType(field);
+        Query prefix;
+
+        if (type instanceof TextField) {
+          // If the field type is a TextField then use the multi term analyzer.
+          Analyzer analyzer = ((TextField)type).getMultiTermAnalyzer();
+          String term = TextField.analyzeMultiTerm(field, text, analyzer).utf8ToString();
+          SchemaField sf = schema.getField(field);
+          prefix = sf.getType().getPrefixQuery(qParser, sf, term);
+        } else {
+          // If the type is *not* a TextField don't do any analysis.
+          SchemaField sf = schema.getField(field);
+          prefix = type.getPrefixQuery(qParser, sf, text);
+        }
+
+        prefix.setBoost(entry.getValue());
+        bq.add(prefix, BooleanClause.Occur.SHOULD);
       }
-    };
+
+      return simplify(bq);
+    }
+
+
   }
 }
+
