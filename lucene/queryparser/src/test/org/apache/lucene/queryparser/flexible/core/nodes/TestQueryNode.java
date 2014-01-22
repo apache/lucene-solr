@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
  */
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -42,6 +43,25 @@ public class TestQueryNode extends LuceneTestCase {
     assertTrue(node.containsTag("tAg"));
     assertTrue(node.getTag("tAg") != null);
     
+  }
+  
+  /* LUCENE-5099 - QueryNodeProcessorImpl should set parent to null before returning on processing */
+  public void testRemoveFromParent() throws Exception {
+    BooleanQueryNode booleanNode = new BooleanQueryNode(Collections.<QueryNode>emptyList());
+    FieldQueryNode fieldNode = new FieldQueryNode("foo", "A", 0, 1);
+    assertNull(fieldNode.getParent());
+    
+    booleanNode.add(fieldNode);
+    assertNotNull(fieldNode.getParent());
+
+    fieldNode.removeFromParent();
+    assertNull(fieldNode.getParent());
+
+    booleanNode.add(fieldNode);
+    assertNotNull(fieldNode.getParent());
+    
+    booleanNode.set(Collections.<QueryNode>emptyList());
+    assertNull(fieldNode.getParent());
   }
   
 }

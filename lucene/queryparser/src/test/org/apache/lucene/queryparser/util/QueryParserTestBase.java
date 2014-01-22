@@ -1066,6 +1066,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
   }
   
+  @SuppressWarnings("unused")
   private void assertHits(int expected, String query, IndexSearcher is) throws Exception {
     String oldDefaultField = getDefaultField();
     setDefaultField("date");

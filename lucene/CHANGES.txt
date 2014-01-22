@@ -40,6 +40,10 @@ New Features
   using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
   Mike McCandless)
 
+* LUCENE-5099: QueryNode should have the ability to detach from its node
+  parent. Added QueryNode.removeFromParent() that allows nodes to be 
+  detached from its parent node. (Adriano Crestani)
+
 
 Build
 
