@@ -151,6 +151,9 @@ New Features
 
 * SOLR-5476: Overseer Role for nodes (Noble Paul)
 
+* SOLR-5594: Allow FieldTypes to specify custom PrefixQuery behavior
+  (Anshum Gupta via hossman)
+
 Bug Fixes
 ----------------------
 

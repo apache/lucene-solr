@@ -35,6 +35,7 @@ import org.apache.lucene.search.DocTermOrdsRewriteMethod;
 import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.FieldCacheRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -425,6 +426,25 @@ public abstract class FieldType extends FieldProperties {
       }
     }
     return getClass().getName();
+  }
+
+
+  /**
+   * Returns a Query instance for doing prefix searches on this field type.
+   * Also, other QueryParser implementations may have different semantics.
+   * <p/>
+   * Sub-classes should override this method to provide their own range query implementation.
+   *
+   * @param parser       the {@link org.apache.solr.search.QParser} calling the method
+   * @param sf           the schema field
+   * @param termStr      the term string for prefix query
+   * @return a Query instance to perform prefix search
+   *
+   */
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
   }
 
   /**
