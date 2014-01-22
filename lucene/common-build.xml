@@ -227,17 +227,6 @@
   <property name="m2.repository.id" value="local"/>
   <property name="m2.credentials.prompt" value="true"/>
 
-  <property name="jflex.home" location="${common.dir}"/>
-
-  <path id="jflex.classpath">
-    <fileset dir="${jflex.home}/">
-      <!-- for a JFlex trunk checkout: -->
-      <include name="jflex/target/*.jar"/>
-      <!-- for a JFlex distribution (not yet available): -->
-      <include name="lib/*.jar"/>
-    </fileset>
-  </path>
-
   <property name="backwards.dir" location="backwards"/>
   <property name="build.dir.backwards" location="${build.dir}/backwards"/>
 
@@ -471,31 +460,6 @@
            dest="@{dest}/ivy-${ivy.bootstrap.version}.jar" usetimestamp="true" ignoreerrors="true"/>
     </sequential>
   </macrodef>
-
-  <target name="jflex-check">
-    <available property="jflex.present" classname="jflex.anttask.JFlexTask">
-      <classpath refid="jflex.classpath"/>
-    </available>
-    <fail unless="jflex.present">&#xA0;
-      ##################################################################
-      JFlex not found.
-      JFlex Home: ${jflex.home}
-
-      Please install the jFlex 1.5 version (currently not released)
-      from its SVN repository:
-
-       svn co -r 722 https://svn.code.sf.net/p/jflex/code/trunk jflex
-       cd jflex
-       mvn install
-
-      Then, create a build.properties file either in your home
-      directory, or within the Lucene directory and set the jflex.home
-      property to the path where the JFlex trunk checkout is located
-      (in the above example it's the directory called "jflex").
-
-      ##################################################################
-    </fail>
-  </target>
 
   <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
@@ -2197,7 +2161,15 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       </scp>
     </sequential>
   </macrodef>
-  
+
+  <!-- JFlex task -->
+  <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.0"
+                   inline="true" conf="default" transitive="true" pathid="jflex.classpath"/>
+    <taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpathref="jflex.classpath"/>
+    <property name="jflex.loaded" value="true"/>
+  </target>
+
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.2.1"
