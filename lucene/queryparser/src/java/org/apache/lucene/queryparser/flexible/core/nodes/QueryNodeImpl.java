@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -102,18 +103,19 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
     // reset parent value
     for (QueryNode child : children) {
-
-      ((QueryNodeImpl) child).setParent(null);
-
+      child.removeFromParent();
     }
-
+    
+    ArrayList<QueryNode> existingChildren = new ArrayList<QueryNode>(getChildren());
+    for (QueryNode existingChild : existingChildren) {
+      existingChild.removeFromParent();
+    }
+    
     // allocate new children list
     allocate();
-
+    
     // add new children and set parent
-    for (QueryNode child : children) {
-      add(child);
-    }
+    add(children);
   }
 
   @Override
@@ -154,7 +156,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     if (isLeaf() || this.clauses == null) {
       return null;
     }
-    return this.clauses;
+    return new ArrayList<QueryNode>(this.clauses);
   }
 
   @Override
@@ -181,7 +183,10 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   private QueryNode parent = null;
 
   private void setParent(QueryNode parent) {
-    this.parent = parent;
+    if (this.parent != parent) {
+      this.removeFromParent();
+      this.parent = parent;
+    }
   }
 
   @Override
@@ -240,6 +245,22 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   @SuppressWarnings("unchecked")
   public Map<String, Object> getTagMap() {
     return (Map<String, Object>) this.tags.clone();
+  }
+  
+  @Override
+  public void removeFromParent() {
+    if (this.parent != null) {
+      List<QueryNode> parentChildren = this.parent.getChildren();
+      Iterator<QueryNode> it = parentChildren.iterator();
+      
+      while (it.hasNext()) {
+        if (it.next() == this) {
+          it.remove();
+        }
+      }
+      
+      this.parent = null;
+    }
   }
 
 } // end class QueryNodeImpl
