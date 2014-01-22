@@ -291,9 +291,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       return;
     }
 
-    if(!overseerDesignates.contains( getLeaderNode(zkStateReader.getZkClient())) && !availableDesignates.isEmpty()){
+    String leaderNode = getLeaderNode(zkStateReader.getZkClient());
+    if(leaderNode ==null) return;
+    if(!overseerDesignates.contains(leaderNode) && !availableDesignates.isEmpty()){
       //this means there are designated Overseer nodes and I am not one of them , kill myself
-      invokeRejoinOverseer(nodeNames.get(0));
+      log.info("I am not an overseerdesignate , rejoining election {} ", leaderNode);
+      invokeRejoinOverseer(leaderNode);
     }
 
   }
