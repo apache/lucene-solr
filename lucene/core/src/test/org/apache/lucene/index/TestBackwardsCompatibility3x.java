@@ -74,7 +74,7 @@ import org.junit.BeforeClass;
 // don't use 3.x codec, its unrealistic since it means
 // we won't even be running the actual code, only the impostor
 // Sep codec cannot yet handle the offsets we add when changing indexes!
-@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
+@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41", "Appending", "Lucene42", "Lucene45"})
 public class TestBackwardsCompatibility3x extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene
@@ -145,6 +145,8 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assertFalse("test infra is broken!", LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE);
+    assertFalse("test infra is broken!", LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE);
     List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));

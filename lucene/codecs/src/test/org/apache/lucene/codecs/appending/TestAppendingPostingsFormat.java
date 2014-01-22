@@ -1,4 +1,9 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.appending;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.junit.BeforeClass;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,30 +22,20 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseDocValuesFormatTestCase;
-import org.junit.BeforeClass;
-
 /**
- * Tests Lucene40DocValuesFormat
+ * Tests AppendingPostingsFormat
  */
-public class TestLucene40DocValuesFormat extends BaseDocValuesFormatTestCase {
-  private final Codec codec = new Lucene40RWCodec();
-  
+public class TestAppendingPostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = new AppendingRWCodec();
+
   @BeforeClass
   public static void beforeClass() {
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
   }
-
+  
   @Override
   protected Codec getCodec() {
     return codec;
   }
-
-  // LUCENE-4583: This codec should throw IAE on huge binary values:
-  @Override
-  protected boolean codecAcceptsHugeBinaryValues(String field) {
-    return false;
-  }
-
+  
 }
