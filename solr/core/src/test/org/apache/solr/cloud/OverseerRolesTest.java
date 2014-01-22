@@ -44,6 +44,7 @@ import java.util.Set;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction;
 
@@ -95,9 +96,8 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     createCollection(collectionName, client);
 
     waitForRecoveriesToFinish(collectionName, false);
-    Set<String> nodes = client.getZkStateReader().getClusterState().getLiveNodes();
+    List<String> l = OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient()) ;
 
-    ArrayList<String> l = new ArrayList<>(nodes);
     log.info("All nodes {}", l);
     String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
     log.info("Current leader {} ", currentLeader);
@@ -108,7 +108,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     log.info("overseerDesignate {}",overseerDesignate);
     setOverseerRole(CollectionAction.ADDROLE,overseerDesignate);
 
-    long timeout = System.currentTimeMillis()+10000;
+    long timeout = System.currentTimeMillis()+15000;
 
     boolean leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
@@ -118,6 +118,11 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
         break;
       }
       Thread.sleep(100);
+    }
+    if(!leaderchanged){
+      log.warn("expected {}, current order {}",
+          overseerDesignate,
+          getSortedNodeNames(client.getZkStateReader().getZkClient())+ " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) );
     }
     assertTrue("could not set the new overseer",leaderchanged);
 
@@ -137,10 +142,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     timeout = System.currentTimeMillis()+10000;
     leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-//      log.info(" count {}", System.currentTimeMillis());
-
-//
-      List<String> sortedNodeNames = OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient());
+      List<String> sortedNodeNames = getSortedNodeNames(client.getZkStateReader().getZkClient());
       if(sortedNodeNames.get(1) .equals(anotherOverseer) || sortedNodeNames.get(0).equals(anotherOverseer)){
         leaderchanged =true;
         break;
@@ -148,7 +150,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       Thread.sleep(100);
     }
 
-    assertTrue("New overseer not the frontrunner : "+ OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
+    assertTrue("New overseer not the frontrunner : "+ getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
 
     client.shutdown();
