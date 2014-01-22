@@ -19,12 +19,18 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseDocValuesFormatTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene40DocValuesFormat
  */
 public class TestLucene40DocValuesFormat extends BaseDocValuesFormatTestCase {
   private final Codec codec = new Lucene40RWCodec();
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
 
   @Override
   protected Codec getCodec() {

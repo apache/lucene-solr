@@ -213,6 +213,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assertFalse("test infra is broken!", LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE);
     List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
