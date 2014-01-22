@@ -90,8 +90,8 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       throw new RuntimeException(e);
     }
     
-    hdfsDataDir = hdfsUri + "/solr/shard1";
-    System.setProperty("solr.data.dir", hdfsUri + "/solr/shard1");
+    //hdfsDataDir = hdfsUri + "/solr/shard1";
+    // System.setProperty("solr.data.dir", hdfsUri + "/solr/shard1");
     System.setProperty("solr.ulog.dir", hdfsUri + "/solr/shard1");
     
     initCore("solrconfig-tlog.xml","schema15.xml");
