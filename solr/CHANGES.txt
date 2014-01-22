@@ -188,6 +188,9 @@ Bug Fixes
 * SOLR-5650: When a replica becomes a leader, only peer sync with other replicas
   that last published an ACTIVE state. (Mark Miller)
 
+* SOLR-5657: When a SolrCore starts on HDFS, it should gracefully handle HDFS
+  being in safe mode. (Mark Miller)
+
 Optimizations
 ----------------------
 
