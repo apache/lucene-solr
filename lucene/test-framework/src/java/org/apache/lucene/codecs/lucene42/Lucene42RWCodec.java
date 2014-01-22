@@ -23,9 +23,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoWriter;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -47,17 +44,6 @@ public class Lucene42RWCodec extends Lucene42Codec {
       }
     }
   };
-  
-  private final SegmentInfoFormat segmentInfosFormat = new Lucene40SegmentInfoFormat() {
-    @Override
-    public org.apache.lucene.codecs.SegmentInfoWriter getSegmentInfoWriter() {
-      if (!LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE) {
-        return super.getSegmentInfoWriter();
-      } else {
-        return new Lucene40SegmentInfoWriter();
-      }
-    }
-  };
 
   @Override
   public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -72,11 +58,5 @@ public class Lucene42RWCodec extends Lucene42Codec {
   @Override
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
-  }
-  
-  @Override
-  public SegmentInfoFormat segmentInfoFormat() {
-    return segmentInfosFormat;
-  }
-  
+  }  
 }
