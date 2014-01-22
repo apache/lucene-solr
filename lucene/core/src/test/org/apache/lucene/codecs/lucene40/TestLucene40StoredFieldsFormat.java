@@ -19,8 +19,14 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.junit.BeforeClass;
 
 public class TestLucene40StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
   
   @Override
   protected Codec getCodec() {

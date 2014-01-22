@@ -34,6 +34,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.BeforeClass;
 
 public class TestLucene40PostingsReader extends LuceneTestCase {
   static final String terms[] = new String[100];
@@ -41,6 +42,11 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
     for (int i = 0; i < terms.length; i++) {
       terms[i] = Integer.toString(i+1);
     }
+  }
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
   }
 
   /** tests terms with different probabilities of being in the document.

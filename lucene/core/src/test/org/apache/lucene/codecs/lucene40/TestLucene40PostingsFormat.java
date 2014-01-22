@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene40PostingsFormat
@@ -26,6 +27,11 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
 public class TestLucene40PostingsFormat extends BasePostingsFormatTestCase {
   private final Codec codec = new Lucene40Codec();
 
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
+  
   @Override
   protected Codec getCodec() {
     return codec;

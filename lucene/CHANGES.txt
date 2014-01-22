@@ -34,6 +34,10 @@ Bug fixes
   preventing wrong term positions for fields that use
   StringTokenStream. (Michael Busch)
 
+* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
+  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
+  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
+
 ======================= Lucene 4.6.0 =======================
 
 New Features

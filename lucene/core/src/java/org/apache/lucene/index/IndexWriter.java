@@ -2702,11 +2702,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     // segment name (its own name, if its 3.x, and doc
     // store segment name):
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
+    final Codec currentCodec = newInfo.getCodec();
     try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
+      currentCodec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
     } catch (UnsupportedOperationException uoe) {
-      // OK: 3x codec cannot write a new SI file;
-      // SegmentInfos will write this on commit
+      if (currentCodec instanceof Lucene3xCodec) {
+        // OK: 3x codec cannot write a new SI file;
+        // SegmentInfos will write this on commit
+      } else {
+        throw uoe;
+      }
     }
 
     final Collection<String> siFiles = trackingDir.getCreatedFiles();

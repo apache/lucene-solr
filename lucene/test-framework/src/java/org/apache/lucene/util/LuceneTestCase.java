@@ -333,6 +333,7 @@ public abstract class LuceneTestCase extends Assert {
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
+  // TODO: why do we have this? This should just use the OLD_FORMAT_IMPERSONATION...
   /**
    * @lucene.internal
    */
@@ -340,12 +341,12 @@ public abstract class LuceneTestCase extends Assert {
 
   /**
    * When {@code true}, Codecs for old Lucene version will support writing
-   * indexes in that format. Defaults to {@code true}, can be disabled by
-   * spdecific tests on demand.
+   * indexes in that format. Defaults to {@code false}, can be disabled by
+   * specific tests on demand.
    * 
    * @lucene.internal
    */
-  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
 
   // -----------------------------------------------------------------
   // Class level (suite) rules.
