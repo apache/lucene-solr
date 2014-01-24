@@ -47,7 +47,7 @@ import org.apache.solr.common.util.XML;
  */
 public class UpdateRequest extends AbstractUpdateRequest {
   
-  private static final String VER = "ver";
+  public static final String VER = "ver";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";
   private Map<SolrInputDocument,Map<String,Object>> documents = null;
