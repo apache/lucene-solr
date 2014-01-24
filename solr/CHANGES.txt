@@ -79,8 +79,8 @@ New Features
 * SOLR-5506: Support docValues in CollationField and ICUCollationField.
   (Robert Muir)
   
- * SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
-   solr configuration files.
+* SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
+  solr configuration files.
 
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
   Unload action. (Lyubov Romanchuk, shalin)
@@ -122,6 +122,10 @@ New Features
 
 * SOLR-5594: Allow FieldTypes to specify custom PrefixQuery behavior
   (Anshum Gupta via hossman)
+
+* LUCENE-5395: Upgrade to Spatial4j 0.4. Various new options are now exposed
+  automatically for an RPT field type.  See Spatial4j CHANGES & javadocs.
+  https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
 Bug Fixes
 ----------------------

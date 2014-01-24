@@ -47,7 +47,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
     for (IndexableField field : prefixGridStrategy.createIndexableFields(point)) {
       losAngeles.add(field);
     }
-    losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), ctx.toString(point)));
+    losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), point.toString()));//just for diagnostics
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 

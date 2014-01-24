@@ -57,11 +57,11 @@ public class SpatialExample extends LuceneTestCase {
 
   //Note: Test invoked via TestTestFramework.spatialExample()
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     new SpatialExample().test();
   }
 
-  public void test() throws IOException {
+  public void test() throws Exception {
     init();
     indexPoints();
     search();
@@ -102,7 +102,7 @@ public class SpatialExample extends LuceneTestCase {
     this.directory = new RAMDirectory();
   }
 
-  private void indexPoints() throws IOException {
+  private void indexPoints() throws Exception {
     IndexWriterConfig iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT,null);
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
@@ -110,10 +110,9 @@ public class SpatialExample extends LuceneTestCase {
     indexWriter.addDocument(newSampleDocument(
         2, ctx.makePoint(-80.93, 33.77)));
 
-    //When parsing a string to a shape, the presence of a comma means it's y-x
-    // order (lon, lat)
+    //Spatial4j has a WKT parser which is also "x y" order
     indexWriter.addDocument(newSampleDocument(
-        4, ctx.readShape("-50.7693246, 60.9289094")));
+        4, ctx.readShapeFromWkt("POINT(60.9289094 -50.7693246)")));
 
     indexWriter.addDocument(newSampleDocument(
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));
@@ -131,13 +130,15 @@ public class SpatialExample extends LuceneTestCase {
         doc.add(f);
       }
       //store it too; the format is up to you
-      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+      //  (assume point in this example)
+      Point pt = (Point) shape;
+      doc.add(new StoredField(strategy.getFieldName(), pt.getX()+" "+pt.getY()));
     }
 
     return doc;
   }
 
-  private void search() throws IOException {
+  private void search() throws Exception {
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher indexSearcher = new IndexSearcher(indexReader);
     Sort idSort = new Sort(new SortField("id", SortField.Type.INT));
@@ -155,15 +156,19 @@ public class SpatialExample extends LuceneTestCase {
       // (this computation is usually not redundant)
       Document doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
       String doc1Str = doc1.getField(strategy.getFieldName()).stringValue();
-      Point doc1Point = (Point) ctx.readShape(doc1Str);
-      double doc1DistDEG = ctx.getDistCalc().distance(args.getShape().getCenter(), doc1Point);
+      //assume doc1Str is "x y" as written in newSampleDocument()
+      int spaceIdx = doc1Str.indexOf(' ');
+      double x = Double.parseDouble(doc1Str.substring(0, spaceIdx));
+      double y = Double.parseDouble(doc1Str.substring(spaceIdx+1));
+      double doc1DistDEG = ctx.calcDistance(args.getShape().getCenter(), x, y);
       assertEquals(121.6d, DistanceUtils.degrees2Dist(doc1DistDEG, DistanceUtils.EARTH_MEAN_RADIUS_KM), 0.1);
+      //or more simply:
+      assertEquals(121.6d, doc1DistDEG * DistanceUtils.DEG_TO_KM, 0.1);
     }
     //--Match all, order by distance ascending
     {
       Point pt = ctx.makePoint(60, -50);
-      double degToKm = DistanceUtils.degrees2Dist(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-      ValueSource valueSource = strategy.makeDistanceValueSource(pt, degToKm);//the distance (in km)
+      ValueSource valueSource = strategy.makeDistanceValueSource(pt, DistanceUtils.DEG_TO_KM);//the distance (in km)
       Sort distSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//false=asc dist
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, distSort);
       assertDocMatchedIds(indexSearcher, docs, 4, 20, 2);
@@ -178,7 +183,7 @@ public class SpatialExample extends LuceneTestCase {
     {
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,
           ctx.makeCircle(-80.0, 33.0, 1));
-      SpatialArgs args2 = new SpatialArgsParser().parse("Intersects(Circle(33,-80 d=1))", ctx);
+      SpatialArgs args2 = new SpatialArgsParser().parse("Intersects(BUFFER(POINT(-80 33),1))", ctx);
       assertEquals(args.toString(),args2.toString());
     }
 

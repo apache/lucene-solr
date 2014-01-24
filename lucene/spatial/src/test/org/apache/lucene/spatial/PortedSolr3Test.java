@@ -36,7 +36,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -91,21 +90,21 @@ public class PortedSolr3Test extends StrategyTestCase {
     this.strategy = strategy;
   }
 
-  private void setupDocs() throws IOException {
+  private void setupDocs() throws Exception {
     super.deleteAll();
-    adoc("1", "32.7693246, -79.9289094");
-    adoc("2", "33.7693246, -80.9289094");
-    adoc("3", "-32.7693246, 50.9289094");
-    adoc("4", "-50.7693246, 60.9289094");
-    adoc("5", "0,0");
-    adoc("6", "0.1,0.1");
-    adoc("7", "-0.1,-0.1");
-    adoc("8", "0,179.9");
-    adoc("9", "0,-179.9");
-    adoc("10", "89.9,50");
-    adoc("11", "89.9,-130");
-    adoc("12", "-89.9,50");
-    adoc("13", "-89.9,-130");
+    adoc("1", ctx.makePoint(-79.9289094, 32.7693246));
+    adoc("2", ctx.makePoint(-80.9289094, 33.7693246));
+    adoc("3", ctx.makePoint(50.9289094, -32.7693246));
+    adoc("4", ctx.makePoint(60.9289094, -50.7693246));
+    adoc("5", ctx.makePoint(0, 0));
+    adoc("6", ctx.makePoint(0.1, 0.1));
+    adoc("7", ctx.makePoint(-0.1, -0.1));
+    adoc("8", ctx.makePoint(179.9, 0));
+    adoc("9", ctx.makePoint(-179.9, 0));
+    adoc("10", ctx.makePoint(50, 89.9));
+    adoc("11", ctx.makePoint(-130, 89.9));
+    adoc("12", ctx.makePoint(50, -89.9));
+    adoc("13", ctx.makePoint(-130, -89.9));
     commit();
   }
 
@@ -115,53 +114,52 @@ public class PortedSolr3Test extends StrategyTestCase {
     setupDocs();
     //Try some edge cases
       //NOTE: 2nd arg is distance in kilometers
-    checkHitsCircle("1,1", 175, 3, 5, 6, 7);
-    checkHitsCircle("0,179.8", 200, 2, 8, 9);
-    checkHitsCircle("89.8, 50", 200, 2, 10, 11);//this goes over the north pole
-    checkHitsCircle("-89.8, 50", 200, 2, 12, 13);//this goes over the south pole
+    checkHitsCircle(ctx.makePoint(1, 1), 175, 3, 5, 6, 7);
+    checkHitsCircle(ctx.makePoint(179.8, 0), 200, 2, 8, 9);
+    checkHitsCircle(ctx.makePoint(50, 89.8), 200, 2, 10, 11);//this goes over the north pole
+    checkHitsCircle(ctx.makePoint(50, -89.8), 200, 2, 12, 13);//this goes over the south pole
     //try some normal cases
-    checkHitsCircle("33.0,-80.0", 300, 2);
+    checkHitsCircle(ctx.makePoint(-80.0, 33.0), 300, 2);
     //large distance
-    checkHitsCircle("1,1", 5000, 3, 5, 6, 7);
+    checkHitsCircle(ctx.makePoint(1, 1), 5000, 3, 5, 6, 7);
     //Because we are generating a box based on the west/east longitudes and the south/north latitudes, which then
     //translates to a range query, which is slightly more inclusive.  Thus, even though 0.0 is 15.725 kms away,
     //it will be included, b/c of the box calculation.
-    checkHitsBBox("0.1,0.1", 15, 2, 5, 6);
+    checkHitsBBox(ctx.makePoint(0.1, 0.1), 15, 2, 5, 6);
     //try some more
     deleteAll();
-    adoc("14", "0,5");
-    adoc("15", "0,15");
+    adoc("14", ctx.makePoint(5, 0));
+    adoc("15", ctx.makePoint(15, 0));
     //3000KM from 0,0, see http://www.movable-type.co.uk/scripts/latlong.html
-    adoc("16", "18.71111,19.79750");
-    adoc("17", "44.043900,-95.436643");
+    adoc("16", ctx.makePoint(19.79750, 18.71111));
+    adoc("17", ctx.makePoint(-95.436643, 44.043900));
     commit();
 
-    checkHitsCircle("0,0", 1000, 1, 14);
-    checkHitsCircle("0,0", 2000, 2, 14, 15);
-    checkHitsBBox("0,0", 3000, 3, 14, 15, 16);
-    checkHitsCircle("0,0", 3001, 3, 14, 15, 16);
-    checkHitsCircle("0,0", 3000.1, 3, 14, 15, 16);
+    checkHitsCircle(ctx.makePoint(0, 0), 1000, 1, 14);
+    checkHitsCircle(ctx.makePoint(0, 0), 2000, 2, 14, 15);
+    checkHitsBBox(ctx.makePoint(0, 0), 3000, 3, 14, 15, 16);
+    checkHitsCircle(ctx.makePoint(0, 0), 3001, 3, 14, 15, 16);
+    checkHitsCircle(ctx.makePoint(0, 0), 3000.1, 3, 14, 15, 16);
 
     //really fine grained distance and reflects some of the vagaries of how we are calculating the box
-    checkHitsCircle("43.517030,-96.789603", 109, 0);
+    checkHitsCircle(ctx.makePoint(-96.789603, 43.517030), 109, 0);
 
     // falls outside of the real distance, but inside the bounding box
-    checkHitsCircle("43.517030,-96.789603", 110, 0);
-    checkHitsBBox("43.517030,-96.789603", 110, 1, 17);
+    checkHitsCircle(ctx.makePoint(-96.789603, 43.517030), 110, 0);
+    checkHitsBBox(ctx.makePoint(-96.789603, 43.517030), 110, 1, 17);
   }
 
   //---- these are similar to Solr test methods
 
-  private void checkHitsCircle(String ptStr, double distKM, int assertNumFound, int... assertIds) {
-    _checkHits(false, ptStr, distKM, assertNumFound, assertIds);
+  private void checkHitsCircle(Point pt, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(false, pt, distKM, assertNumFound, assertIds);
   }
-  private void checkHitsBBox(String ptStr, double distKM, int assertNumFound, int... assertIds) {
-    _checkHits(true, ptStr, distKM, assertNumFound, assertIds);
+  private void checkHitsBBox(Point pt, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(true, pt, distKM, assertNumFound, assertIds);
   }
 
-  private void _checkHits(boolean bbox, String ptStr, double distKM, int assertNumFound, int... assertIds) {
+  private void _checkHits(boolean bbox, Point pt, double distKM, int assertNumFound, int... assertIds) {
     SpatialOperation op = SpatialOperation.Intersects;
-    Point pt = (Point) ctx.readShape(ptStr);
     double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     Shape shape = ctx.makeCircle(pt, distDEG);
     if (bbox)

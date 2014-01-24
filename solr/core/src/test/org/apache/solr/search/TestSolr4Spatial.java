@@ -21,12 +21,22 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.impl.RectangleImpl;
+import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.AbstractSpatialFieldType;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.text.ParseException;
 import java.util.Arrays;
 
 /**
@@ -151,20 +161,20 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     assertQ(req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!field f="+fieldName+"}Intersects(Circle(89.9,-130 d=9))"),
+        "fq", "{!geofilt sfield="+fieldName+" pt="+IN+" d=9}"),
         "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
   }
 
   @Test
-  public void checkQueryEmptyIndex() {
+  public void checkQueryEmptyIndex() throws ParseException {
     checkHits(fieldName, "0,0", 100, 0);//doesn't error
   }
 
-  private void checkHits(String fieldName, String pt, double distKM, int count, int ... docIds) {
+  private void checkHits(String fieldName, String pt, double distKM, int count, int ... docIds) throws ParseException {
     checkHits(fieldName, true, pt, distKM, count, docIds);
   }
 
-  private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, int count, int ... docIds) {
+  private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, int count, int ... docIds) throws ParseException {
     String [] tests = new String[docIds != null && docIds.length > 0 ? docIds.length + 1 : 1];
     //test for presence of required ids first
     int i = 0;
@@ -177,20 +187,23 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     // that there may be a more specific detailed id to investigate.
     tests[i++] = "*[count(//doc)=" + count + "]";
 
-    //Test using the Solr 4 syntax
+    //Test using the Lucene spatial syntax
     {
       //never actually need the score but lets test
       String score = new String[]{null, "none","distance","recipDistance"}[random().nextInt(4)];
 
       double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-      String circleStr = "Circle(" + ptStr.replaceAll(" ", "") + " d=" + distDEG + ")";
+      Point point = SpatialUtils.parsePoint(ptStr, SpatialContext.GEO);
+      String circleStr = "BUFFER(POINT(" + point.getX()+" "+point.getY()+")," + distDEG + ")";
       String shapeStr;
       if (exact) {
         shapeStr = circleStr;
       } else {//bbox
         //the GEO is an assumption
         SpatialContext ctx = SpatialContext.GEO;
-        shapeStr = ctx.toString( ctx.readShape(circleStr).getBoundingBox() );
+        Rectangle bbox = ctx.readShapeFromWkt(circleStr).getBoundingBox();
+        shapeStr = "ENVELOPE(" + bbox.getMinX() + ", " + bbox.getMaxX() +
+            ", " + bbox.getMaxY() + ", " + bbox.getMinY() + ")";
       }
 
       //FYI default distErrPct=0.025 works with the tests in this file
@@ -200,7 +213,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
               + "}Intersects(" + shapeStr + ")"),
           tests);
     }
-    //Test using the Solr 3 syntax
+    //Test using geofilt
     {
       assertQ(req(
           "fl", "id", "q", "*:*", "rows", "1000",
@@ -219,8 +232,8 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     String score = random().nextBoolean() ? "none" : "distance";//never actually need the score but lets test
     assertQ(req(
-        "fl", "id", "q","*:*", "rows", "1000",
-        "fq", "{! score="+score+" df="+fieldName+"}[32,-80 TO 33,-79]"),//lower-left to upper-right
+        "fl", "id", "q","*:*", "rows", "1000",    // testing quotes in range too
+        "fq", "{! score="+score+" df="+fieldName+"}[32,-80 TO \"33 , -79\"]"),//lower-left to upper-right
 
         "//result/doc/*[@name='id'][.='" + docId + "']",
         "*[count(//doc)=" + count + "]");
@@ -234,8 +247,9 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     assertU(commit());
 
     //test absence of score=distance means it doesn't score
+
     assertJQ(req(
-        "q", fieldName +":\"Intersects(Circle(3,4 d=9))\"",
+        "q", radiusQuery(3, 4, 9, null, null),
         "fl","id,score")
         , 1e-9
         , "/response/docs/[0]/score==1.0"
@@ -244,7 +258,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     //score by distance
     assertJQ(req(
-        "q", "{! score=distance}"+fieldName +":\"Intersects(Circle(3,4 d=9))\"",
+        "q", radiusQuery(3, 4, 9, "distance", null),
         "fl","id,score",
         "sort","score asc")//want ascending due to increasing distance
         , 1e-3
@@ -255,7 +269,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     );
     //score by recipDistance
     assertJQ(req(
-        "q", "{! score=recipDistance}"+fieldName +":\"Intersects(Circle(3,4 d=9))\"",
+        "q", radiusQuery(3, 4, 9, "recipDistance", null),
         "fl","id,score",
         "sort","score desc")//want descending
         , 1e-3
@@ -268,7 +282,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     //score by distance and don't filter
     assertJQ(req(
         //circle radius is small and shouldn't match either, but we disable filtering
-        "q", "{! score=distance filter=false}"+fieldName +":\"Intersects(Circle(3,4 d=0.000001))\"",
+        "q", radiusQuery(3, 4, 0.000001, "distance", "false"),
         "fl","id,score",
         "sort","score asc")//want ascending due to increasing distance
         , 1e-3
@@ -280,7 +294,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     //query again with the query point closer to #101, and check the new ordering
     assertJQ(req(
-        "q", "{! score=distance}"+fieldName +":\"Intersects(Circle(4,0 d=9))\"",
+        "q", radiusQuery(4, 0, 9, "distance", null),
         "fl","id,score",
         "sort","score asc")//want ascending due to increasing distance
         , 1e-4
@@ -293,7 +307,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         "q","-id:999",//exclude that doc
         "fl","id,score",
         "sort","query($sortQuery) asc", //want ascending due to increasing distance
-        "sortQuery", "{! score=distance}"+fieldName +":\"Intersects(Circle(3,4 d=9))\"" )
+        "sortQuery", radiusQuery(3, 4, 9, "distance", null))
         , 1e-4
         , "/response/docs/[0]/id=='100'"
         , "/response/docs/[1]/id=='101'"  );
@@ -303,10 +317,26 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         "q","-id:999",//exclude that doc
         "fl","id,score",
         "sort","query($sortQuery) asc", //want ascending due to increasing distance
-        "sortQuery", "{! score=distance}"+fieldName +":\"Intersects(Circle(4,0 d=9))\"" )
+        "sortQuery", radiusQuery(4, 0, 9, "distance", null))
         , 1e-4
         , "/response/docs/[0]/id=='101'"
         , "/response/docs/[1]/id=='100'"  );
+  }
+
+  private String radiusQuery(double lat, double lon, double dDEG, String score, String filter) {
+    //Choose between the Solr/Geofilt syntax, and the Lucene spatial module syntax
+    if (random().nextBoolean()) {
+      return "{!geofilt " +
+          "sfield=" + fieldName + " "
+          + (score != null ? "score="+score : "") + " "
+          + (filter != null ? "filter="+filter : "") + " "
+          + "pt=" + lat + "," + lon + " d=" + (dDEG * DistanceUtils.DEG_TO_KM) + "}";
+    } else {
+      return "{! "
+          + (score != null ? "score="+score : "") + " "
+          + (filter != null ? "filter="+filter : "") + " "
+          + "}" + fieldName + ":\"Intersects(BUFFER(POINT(" + lon + " " + lat + ")," + dDEG + "))\"";
+    }
   }
 
   @Test
@@ -318,13 +348,40 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(req(
-        "q", "{! score=distance}"+fieldName +":\"Intersects(Circle(3,4 d=9))\"",
+        "q", radiusQuery(3, 4, 9, "distance", null),
         "fl","id,score",
         "sort","score asc")//want ascending due to increasing distance
         , 1e-4
         , "/response/docs/[0]/id=='101'"
         , "/response/docs/[0]/score==0.99862987"//dist to 3,5
     );
+  }
+
+  @Test
+  public void solr4OldShapeSyntax() throws Exception {
+    assumeFalse("Mostly just valid for prefix-tree", fieldName.equals("pointvector"));
+
+    //we also test that the old syntax is parsed in worldBounds in the schema
+    {
+      IndexSchema schema = h.getCore().getLatestSchema();
+      AbstractSpatialFieldType type = (AbstractSpatialFieldType) schema.getFieldTypeByName("stqpt_u_oldworldbounds");
+      SpatialContext ctx = type.getStrategy("foo").getSpatialContext();
+      assertEquals(new RectangleImpl(0, 1000, 0, 1000, ctx), ctx.getWorldBounds());
+    }
+
+    //syntax supported in Solr 4 but not beyond
+    //   See Spatial4j LegacyShapeReadWriterFormat
+    String rect = "-74.093 41.042 -69.347 44.558";//minX minY maxX maxY
+    String circ = "Circle(4.56,1.23 d=0.0710)";
+
+    //show we can index this (without an error)
+    assertU(adoc("id", "rect", fieldName, rect));
+    assertU(adoc("id", "circ", fieldName, circ));
+    assertU(commit());
+
+    //only testing no error
+    assertJQ(req("q", "{!field f=" + fieldName + "}Intersects(" + rect + ")"));
+    assertJQ(req("q", "{!field f=" + fieldName + "}Intersects(" + circ + ")"));
   }
 
 }

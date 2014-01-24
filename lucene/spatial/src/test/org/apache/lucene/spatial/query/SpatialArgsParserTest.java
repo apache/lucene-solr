@@ -34,7 +34,7 @@ public class SpatialArgsParserTest extends LuceneTestCase {
   public void testArgsParser() throws Exception {
     SpatialArgsParser parser = new SpatialArgsParser();
 
-    String arg = SpatialOperation.IsWithin + "(-10 -20 10 20)";
+    String arg = SpatialOperation.IsWithin + "(Envelope(-10, 10, 20, -20))";
     SpatialArgs out = parser.parse(arg, ctx);
     assertEquals(SpatialOperation.IsWithin, out.getOperation());
     Rectangle bounds = (Rectangle) out.getShape();
@@ -42,7 +42,7 @@ public class SpatialArgsParserTest extends LuceneTestCase {
     assertEquals(10.0, bounds.getMaxX(), 0D);
 
     // Disjoint should not be scored
-    arg = SpatialOperation.IsDisjointTo + " (-10 10 -20 20)";
+    arg = SpatialOperation.IsDisjointTo + " (Envelope(-10,-20,20,10))";
     out = parser.parse(arg, ctx);
     assertEquals(SpatialOperation.IsDisjointTo, out.getOperation());
 
@@ -54,7 +54,7 @@ public class SpatialArgsParserTest extends LuceneTestCase {
     }
 
     try {
-      parser.parse("XXXX(-10 10 -20 20)", ctx);
+      parser.parse("XXXX(Envelope(-10, 10, 20, -20))", ctx);
       fail("unknown operation!");
     }
     catch (Exception ex) {//expected

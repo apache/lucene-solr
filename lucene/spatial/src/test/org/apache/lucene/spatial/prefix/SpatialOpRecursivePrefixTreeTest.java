@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -71,7 +72,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   public void mySetup(int maxLevels) throws IOException {
     //non-geospatial makes this test a little easier (in gridSnap), and using boundary values 2^X raises
     // the prospect of edge conditions we want to test, plus makes for simpler numbers (no decimals).
-    this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
+    SpatialContextFactory factory = new SpatialContextFactory();
+    factory.geo = false;
+    factory.worldBounds = new RectangleImpl(0, 256, -128, 128, null);
+    this.ctx = factory.newSpatialContext();
     //A fairly shallow grid, and default 2.5% distErrPct
     if (maxLevels == -1)
       maxLevels = randomIntBetween(1, 8);
@@ -179,8 +183,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
           doc.add(f);
         }
       }
-      if (storeShape)
-        doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+      if (storeShape)//just for diagnostics
+        doc.add(new StoredField(strategy.getFieldName(), shape.toString()));
     }
     return doc;
   }
@@ -409,6 +413,16 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     @Override
     public Point getCenter() {
       throw new UnsupportedOperationException("TODO unimplemented");//TODO
+    }
+
+    @Override
+    public Shape getBuffered(double distance, SpatialContext ctx) {
+      throw new UnsupportedOperationException("TODO unimplemented");//TODO
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return false;
     }
 
     @Override
