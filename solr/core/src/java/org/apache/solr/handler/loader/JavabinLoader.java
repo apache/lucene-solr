@@ -70,7 +70,7 @@ public class JavabinLoader extends ContentStreamLoader {
       private AddUpdateCommand addCmd = null;
 
       @Override
-      public void update(SolrInputDocument document, UpdateRequest updateRequest) {
+      public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
         if (document == null) {
           // Perhaps commit from the parameters
           try {
@@ -85,6 +85,13 @@ public class JavabinLoader extends ContentStreamLoader {
           addCmd = getAddCommand(req, updateRequest.getParams());
         }
         addCmd.solrDoc = document;
+        if (commitWithin != null) {
+          addCmd.commitWithin = commitWithin;
+        }
+        if (overwrite != null) {
+          addCmd.overwrite = overwrite;
+        }
+        
         try {
           processor.processAdd(addCmd);
           addCmd.clear();

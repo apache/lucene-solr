@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.Map.Entry;
 import java.nio.ByteBuffer;
 
 /**
@@ -65,6 +66,7 @@ public class JavaBinCodec {
           SOLRINPUTDOC = 16,
           SOLRINPUTDOC_CHILDS = 17,
           ENUM_FIELD_VALUE = 18,
+          MAP_ENTRY = 19,
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),
@@ -227,6 +229,8 @@ public class JavaBinCodec {
         return readSolrInputDocument(dis);
       case ENUM_FIELD_VALUE:
         return readEnumFieldValue(dis);
+      case MAP_ENTRY:
+        return readMapEntry(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -284,6 +288,10 @@ public class JavaBinCodec {
     }
     if (val instanceof EnumFieldValue) {
       writeEnumFieldValue((EnumFieldValue) val);
+      return true;
+    }
+    if (val instanceof Map.Entry) {
+      writeMapEntry((Map.Entry)val);
       return true;
     }
     return false;
@@ -480,6 +488,12 @@ public class JavaBinCodec {
     writeInt(enumFieldValue.toInt());
     writeStr(enumFieldValue.toString());
   }
+  
+  public void writeMapEntry(Entry<Object,Object> val) throws IOException {
+    writeTag(MAP_ENTRY);
+    writeVal(val.getKey());
+    writeVal(val.getValue());
+  }
 
   /**
    * read {@link EnumFieldValue} (int+string) from input stream
@@ -490,6 +504,33 @@ public class JavaBinCodec {
     Integer intValue = (Integer) readVal(dis);
     String stringValue = (String) readVal(dis);
     return new EnumFieldValue(intValue, stringValue);
+  }
+  
+
+  public Map.Entry<Object,Object> readMapEntry(DataInputInputStream dis) throws IOException {
+    final Object key = readVal(dis);
+    final Object value = readVal(dis);
+    return new Map.Entry<Object,Object>() {
+
+      @Override
+      public Object getKey() {
+        return key;
+      }
+
+      @Override
+      public Object getValue() {
+        return value;
+      }
+      
+      @Override
+      public String toString() {
+        return "MapEntry[" + key.toString() + ":" + value.toString() + "]";
+      }
+
+      @Override
+      public Object setValue(Object value) {
+        throw new UnsupportedOperationException();
+      }};
   }
 
   /**
