@@ -349,6 +349,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
+      log.info("create jetty " + i); 
       JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
           + cnt) : null, null, "solrconfig.xml", null);
       jettys.add(j);
@@ -502,8 +503,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return solrHome;
   }
   
-  protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
-      List<SolrServer> clients) throws Exception {
+  protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrServer> clients) throws Exception {
+    updateMappingsFromZk(jettys, clients, false);
+  }
+  
+  protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrServer> clients, boolean allowOverSharding) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     zkStateReader.updateClusterState(true);
     cloudJettys.clear();
@@ -522,7 +526,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           int port = new URI(((HttpSolrServer) client).getBaseURL())
               .getPort();
           
-          if (replica.getNodeName().contains(":" + port + "_")) {
+          if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
@@ -579,9 +583,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (Slice slice : coll.getSlices()) {
       // check that things look right
       List<CloudJettyRunner> jetties = shardToJetty.get(slice.getName());
-      assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getName()
-          + " just:" + shardToJetty.keySet(), jetties);
-      assertEquals("slice:" + slice.getName(), slice.getReplicas().size(), jetties.size());
+      if (!allowOverSharding) {
+        assertNotNull("Test setup problem: We found no jetties for shard: "
+            + slice.getName() + " just:" + shardToJetty.keySet(), jetties);
+        
+        assertEquals("slice:" + slice.getName(), slice.getReplicas().size(),
+            jetties.size());
+      }
     }
   }
   
@@ -1137,7 +1145,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void checkShardConsistency(boolean checkVsControl, boolean verbose)
       throws Exception {
 
-    updateMappingsFromZk(jettys, clients);
+    updateMappingsFromZk(jettys, clients, true);
     
     Set<String> theShards = shardToJetty.keySet();
     String failMessage = null;
@@ -1202,43 +1210,51 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String msg = "document count mismatch.  control=" + controlDocs + " sum(shards)="+ cnt + " cloudClient="+cloudClientDocs;
       log.error(msg);
 
-      // re-execute the query getting ids
-      q = params("q","*:*","rows","100000", "fl","id", "tests","checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
-      controlDocList = controlClient.query(q).getResults();
-      if (controlDocs != controlDocList.getNumFound()) {
-        log.error("Something changed! control now " + controlDocList.getNumFound());
-      };
-
-      cloudDocList = cloudClient.query(q).getResults();
-      if (cloudClientDocs != cloudDocList.getNumFound()) {
-        log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
-      };
-
-      Set<Map> differences = showDiff(controlDocList, cloudDocList,"controlDocList","cloudDocList");
-
-      // get versions for the mismatched ids
-      boolean foundId = false;
-      StringBuilder ids = new StringBuilder("id:(");
-      for (Map doc : differences) {
-        ids.append(" "+doc.get("id"));
-        foundId = true;
-      }
-      ids.append(")");
-      
-      if (foundId) {
-        // get versions for those ids that don't match
-        q = params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
-            "sort", "id asc", "tests",
-            "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
-                                                         // debugging via logs
-        
-        SolrDocumentList a = controlClient.query(q).getResults();
-        SolrDocumentList b = cloudClient.query(q).getResults();
-        
-        log.error("controlClient :" + a + "\n\tcloudClient :" + b);
-      }
+      compareResults(controlDocs, cloudClientDocs);
 
       fail(msg);
+    }
+  }
+
+  protected void compareResults(long controlDocs, long cloudClientDocs)
+      throws SolrServerException {
+    SolrParams q;
+    SolrDocumentList controlDocList;
+    SolrDocumentList cloudDocList;
+    // re-execute the query getting ids
+    q = params("q","*:*","rows","100000", "fl","id", "tests","checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
+    controlDocList = controlClient.query(q).getResults();
+    if (controlDocs != controlDocList.getNumFound()) {
+      log.error("Something changed! control now " + controlDocList.getNumFound());
+    };
+
+    cloudDocList = cloudClient.query(q).getResults();
+    if (cloudClientDocs != cloudDocList.getNumFound()) {
+      log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
+    };
+
+    Set<Map> differences = showDiff(controlDocList, cloudDocList,"controlDocList","cloudDocList");
+
+    // get versions for the mismatched ids
+    boolean foundId = false;
+    StringBuilder ids = new StringBuilder("id:(");
+    for (Map doc : differences) {
+      ids.append(" "+doc.get("id"));
+      foundId = true;
+    }
+    ids.append(")");
+    
+    if (foundId) {
+      // get versions for those ids that don't match
+      q = params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
+          "sort", "id asc", "tests",
+          "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
+                                                       // debugging via logs
+      
+      SolrDocumentList a = controlClient.query(q).getResults();
+      SolrDocumentList b = cloudClient.query(q).getResults();
+      
+      log.error("controlClient :" + a + "\n\tcloudClient :" + b);
     }
   }
   
