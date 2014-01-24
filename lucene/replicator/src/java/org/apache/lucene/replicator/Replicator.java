@@ -33,7 +33,7 @@ import java.io.InputStream;
  * <p>
  * A client is always updated to the newest revision available. That is, if a
  * client is on revision <em>r1</em> and revisions <em>r2</em> and <em>r3</em>
- * were published, then when the cllient will next check for update, it will
+ * were published, then when the client will next check for update, it will
  * receive <em>r3</em>.
  * 
  * @lucene.experimental

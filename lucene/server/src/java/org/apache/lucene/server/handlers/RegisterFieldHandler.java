@@ -792,7 +792,10 @@ public class RegisterFieldHandler extends Handler {
     };
   }
 
-  // nocommit can we use SynonmyFilterFactory???
+  // nocommit can we use SynonmyFilterFactory???  we could
+  // make a custom Reader subclass that sneaks the
+  // JSONObject "through", and then a custom
+  // SynFilter.Parser that grabs that JSONObject?
 
   static TokenFilterFactory buildSynonymFilterFactory(IndexState state, Request r) throws IOException {
 
