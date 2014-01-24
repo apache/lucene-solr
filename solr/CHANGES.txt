@@ -127,6 +127,10 @@ Bug Fixes
 * SOLR-5636: SolrRequestParsers does some xpath lookups on every request, which
   can cause concurrency issues. (Mark Miller)
   
+* SOLR-5658: commitWithin and overwrite are not being distributed to replicas
+  now that SolrCloud uses javabin to distribute updates.
+  (Mark Miller, Varun Thacker, Elodie Sannier, shalin)
+
 Optimizations
 ----------------------  
 

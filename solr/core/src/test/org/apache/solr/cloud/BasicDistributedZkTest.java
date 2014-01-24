@@ -21,12 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -335,6 +335,24 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
     query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
 
+    // try commitWithin
+    long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("commitWithin", 10);
+    add(cloudClient, params , getDoc("id", 300));
+    
+    long timeout = System.currentTimeMillis() + 15000;
+    while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
+      if (timeout <= System.currentTimeMillis()) {
+        fail("commitWithin did not work");
+      }
+      Thread.sleep(100);
+    }
+    
+    for (SolrServer client : clients) {
+      assertEquals("commitWithin did not work", before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+    
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
