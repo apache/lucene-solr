@@ -222,6 +222,9 @@ Bug Fixes
 * SOLR-5657: When a SolrCore starts on HDFS, it should gracefully handle HDFS
   being in safe mode. (Mark Miller)
 
+* SOLR-5663: example-DIH uses non-existing column for mapping (case-sensitive)
+  (steffkes)
+
 Optimizations
 ----------------------
 
