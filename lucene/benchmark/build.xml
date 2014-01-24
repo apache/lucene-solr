@@ -67,7 +67,7 @@
         <bunzip2 src="temp/enwiki-20070527-pages-articles.xml.bz2" dest="temp"/>
     </target>
 
-    <target name="geonames-files" depends="check-files">
+    <target name="geonames-files" depends="check-files" description="Get data for spatial.alg">
         <mkdir dir="temp"/>
         <antcall target="get-geonames"/>
         <antcall target="expand-geonames"/>

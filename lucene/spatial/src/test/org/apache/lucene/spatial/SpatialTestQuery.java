@@ -18,10 +18,10 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.io.LineReader;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,20 +41,23 @@ public class SpatialTestQuery {
   public List<String> ids = new ArrayList<String>();
 
   /**
-   * Get Test Queries
+   * Get Test Queries.  The InputStream is closed.
    */
   public static Iterator<SpatialTestQuery> getTestQueries(
       final SpatialArgsParser parser,
       final SpatialContext ctx,
       final String name,
       final InputStream in ) throws IOException {
-    return new LineReader<SpatialTestQuery>(new InputStreamReader(in,"UTF-8")) {
 
-      @Override
-      public SpatialTestQuery parseLine(String line) {
+    List<SpatialTestQuery> results = new ArrayList<SpatialTestQuery>();
+
+    BufferedReader bufInput = new BufferedReader(new InputStreamReader(in,"UTF-8"));
+    try {
+      String line;
+      for (int lineNumber = 1; (line = bufInput.readLine()) != null; lineNumber++) {
         SpatialTestQuery test = new SpatialTestQuery();
         test.line = line;
-        test.lineNumber = getLineNumber();
+        test.lineNumber = lineNumber;
 
         try {
           // skip a comment
@@ -71,13 +74,16 @@ public class SpatialTestQuery {
             test.ids.add(st.nextToken().trim());
           }
           test.args = parser.parse(line.substring(idx + 1).trim(), ctx);
-          return test;
+          results.add(test);
         }
         catch( Exception ex ) {
           throw new RuntimeException( "invalid query line: "+test.line, ex );
         }
       }
-    };
+    } finally {
+      bufInput.close();
+    }
+    return results.iterator();
   }
 
   @Override

@@ -39,6 +39,8 @@ public class GeonamesLineParser extends LineDocSource.LineParser {
 
     docData.setID(Integer.parseInt(parts[0]));//note: overwrites ID assigned by LineDocSource
     docData.setName(parts[1]);
-    docData.setBody(parts[4]+","+parts[5]); // latitude , longitude
+    String latitude = parts[4];
+    String longitude = parts[5];
+    docData.setBody("POINT("+longitude+" "+latitude+")");//WKT is x y order
   }
 }

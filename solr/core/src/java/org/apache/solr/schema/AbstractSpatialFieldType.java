@@ -23,8 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.io.ParseUtils;
+import com.spatial4j.core.io.LegacyShapeReadWriterFormat;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -47,10 +46,12 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.util.MapListener;
+import org.apache.solr.util.SpatialUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,12 +90,32 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Must specify units=\"degrees\" on field types with class "+getClass().getSimpleName());
 
+    //replace legacy rect format with ENVELOPE
+    String wbStr = args.get("worldBounds");
+    if (wbStr != null && !wbStr.toUpperCase().startsWith("ENVELOPE")) {
+      log.warn("Using old worldBounds format? Should use ENVELOPE(xMin, xMax, yMax, yMin).");
+      String[] parts = wbStr.split(" ");//"xMin yMin xMax yMax"
+      if (parts.length == 4) {
+        args.put("worldBounds",
+            "ENVELOPE(" + parts[0] + ", " + parts[2] + ", " + parts[3] + ", " + parts[1] + ")");
+      } //else likely eventual exception
+    }
+
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<String, String>(args);
     ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
     args.keySet().removeAll(argsWrap.getSeenKeys());
 
-    argsParser = new SpatialArgsParser();//might make pluggable some day?
+    argsParser = newSpatialArgsParser();
+  }
+
+  protected SpatialArgsParser newSpatialArgsParser() {
+    return new SpatialArgsParser() {
+      @Override
+      protected Shape parseShape(String str, SpatialContext ctx) throws ParseException {
+        return AbstractSpatialFieldType.this.parseShape(str);
+      }
+    };
   }
 
   //--------------------------------------------------------------
@@ -136,16 +157,39 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return result;
   }
 
-  protected Shape parseShape(String shapeStr) {
+  protected Shape parseShape(String str) {
+    if (str.length() == 0)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty string shape");
+    //In Solr trunk we only support "lat, lon" (or x y) as an additional format; in v4.0 we do the
+    // weird Circle & Rect formats too (Spatial4j LegacyShapeReadWriterFormat).
     try {
-      return ctx.readShape(shapeStr);
-    } catch (InvalidShapeException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      Shape shape = LegacyShapeReadWriterFormat.readShapeOrNull(str, ctx);
+      if (shape != null)
+        return shape;
+      return ctx.readShapeFromWkt(str);
+    } catch (Exception e) {
+      String message = e.getMessage();
+      if (!message.contains(str))
+        message = "Couldn't parse shape '" + str + "' because: " + message;
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
     }
   }
 
+  /**
+   * Returns a String version of a shape to be used for the stored value. This method in Solr is only called if for some
+   * reason a Shape object is passed to the field type (perhaps via a custom UpdateRequestProcessor),
+   * *and* the field is marked as stored.  <em>The default implementation throws an exception.</em>
+   * <p/>
+   * Spatial4j 0.4 is probably the last release to support SpatialContext.toString(shape) but it's deprecated with no
+   * planned replacement.  Shapes do have a toString() method but they are generally internal/diagnostic and not
+   * standard WKT.
+   * The solution is subclassing and calling ctx.toString(shape) or directly using LegacyShapeReadWriterFormat or
+   * passing in some sort of custom wrapped shape that holds a reference to a String or can generate it.
+   */
   protected String shapeToString(Shape shape) {
-    return ctx.toString(shape);
+//    return ctx.toString(shape);
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "Getting a String from a Shape is no longer possible. See javadocs for commentary.");
   }
 
   /** Called from {@link #getStrategy(String)} upon first use by fieldName. } */
@@ -161,27 +205,16 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
 
   /**
-   * Implemented for compatibility with Solr 3 spatial geofilt & bbox query parsers:
+   * Implemented for compatibility with geofilt & bbox query parsers:
    * {@link SpatialQueryable}.
    */
   @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
-    //--WARNING: the code from here to the next marker is identical to LatLonType's impl.
-    double[] point = null;
-    try {
-      point = ParseUtils.parseLatitudeLongitude(options.pointStr);
-    } catch (InvalidShapeException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-
-    // lat & lon in degrees
-    double latCenter = point[0];
-    double lonCenter = point[1];
+    Point pt = SpatialUtils.parsePointSolrException(options.pointStr, ctx);
 
     double distDeg = DistanceUtils.dist2Degrees(options.distance, options.radius);
-    //--END-WARNING
 
-    Shape shape = ctx.makeCircle(lonCenter, latCenter, distDeg);
+    Shape shape = ctx.makeCircle(pt, distDeg);
     if (options.bbox)
       shape = shape.getBoundingBox();
 
@@ -193,12 +226,9 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     if (!minInclusive || !maxInclusive)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be inclusive: " + field.getName());
-    Shape shape1 = parseShape(part1);
-    Shape shape2 = parseShape(part2);
-    if (!(shape1 instanceof Point) || !(shape2 instanceof Point))
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be points: " + field.getName());
-    Point p1 = (Point) shape1;
-    Point p2 = (Point) shape2;
+    Point p1 = SpatialUtils.parsePointSolrException(part1, ctx);
+    Point p2 = SpatialUtils.parsePointSolrException(part2, ctx);
+
     Rectangle bbox = ctx.makeRectangle(p1, p2);
     SpatialArgs spatialArgs = new SpatialArgs(SpatialOperation.Intersects, bbox);
     return getQueryFromSpatialArgs(parser, field, spatialArgs);//won't score by default
@@ -220,6 +250,8 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected SpatialArgs parseSpatialArgs(String externalVal) {
     try {
       return argsParser.parse(externalVal, ctx);
+    } catch (SolrException e) {
+      throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }

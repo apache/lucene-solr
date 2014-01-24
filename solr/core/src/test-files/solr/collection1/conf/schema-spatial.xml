@@ -39,11 +39,13 @@
               prefixTree="geohash" units="degrees" />
 
     <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
-        geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
+        geo="false" distCalculator="cartesian^2" worldBounds="ENVELOPE(0, 1000, 1000, 0)" units="degrees"/>
 
     <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
                numberType="tdouble" units="degrees"/>
 
+    <fieldType name="stqpt_u_oldworldbounds"  class="solr.SpatialTermQueryPrefixTreeFieldType"
+               geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
   </types>
 
 

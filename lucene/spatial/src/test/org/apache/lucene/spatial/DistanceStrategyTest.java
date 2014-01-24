@@ -93,8 +93,8 @@ public class DistanceStrategyTest extends StrategyTestCase {
     adoc("103", (Shape)null);//test score for nothing
     commit();
     //FYI distances are in docid order
-    checkDistValueSource("3,4", 2.8274937f, 5.0898066f, 180f);
-    checkDistValueSource("4,0", 3.6043684f, 0.9975641f, 180f);
+    checkDistValueSource(ctx.makePoint(4, 3), 2.8274937f, 5.0898066f, 180f);
+    checkDistValueSource(ctx.makePoint(0, 4), 3.6043684f, 0.9975641f, 180f);
   }
 
   @Test
@@ -120,8 +120,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     return super.newDoc(id, shape);
   }
 
-  void checkDistValueSource(String ptStr, float... distances) throws IOException {
-    Point pt = (Point) ctx.readShape(ptStr);
+  void checkDistValueSource(Point pt, float... distances) throws IOException {
     float multiplier = random().nextFloat() * 100f;
     float[] dists2 = Arrays.copyOf(distances, distances.length);
     for (int i = 0; i < dists2.length; i++) {
