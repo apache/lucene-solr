@@ -20,11 +20,9 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -37,22 +35,24 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class DocumentExpressionDictionaryTest extends LuceneTestCase {
+public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
   
   static final String FIELD_NAME = "f1";
   static final String WEIGHT_FIELD_NAME_1 = "w1";
   static final String WEIGHT_FIELD_NAME_2 = "w2";
   static final String WEIGHT_FIELD_NAME_3 = "w3";
   static final String PAYLOAD_FIELD_NAME = "p1";
-  
+
   private Map<String, Document> generateIndexDocuments(int ndocs) {
     Map<String, Document> docs = new HashMap<>();
     for(int i = 0; i < ndocs ; i++) {
@@ -82,11 +82,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     writer.commit();
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
-    Set<SortField> sortFields = new HashSet<SortField>(); 
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
-    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "((w1 + w2) - w3)", sortFields, PAYLOAD_FIELD_NAME);
+    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
 
     assertNull(inputIterator.next());
@@ -111,11 +107,8 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Set<SortField> sortFields = new HashSet<SortField>(); 
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
-    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "((w1 + w2) - w3)", sortFields, PAYLOAD_FIELD_NAME);
+    ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
+    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, new SumFloatFunction(toAdd), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
@@ -124,7 +117,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2) - w3);
+      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
@@ -146,11 +139,8 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Set<SortField> sortFields = new HashSet<SortField>(); 
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_3, SortField.Type.LONG));
-    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "w1 + (0.2 * w2) - (w3 - w1)/2", sortFields);
+    ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
+    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new SumFloatFunction(toAdd));
     InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
@@ -159,7 +149,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (long)(w1 + (0.2 * w2) - (w3 - w1)/2));
+      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertEquals(inputIterator.payload(), null);
     }
     assertTrue(docs.isEmpty());
@@ -202,10 +192,9 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     assertTrue("NumDocs should be > 0 but was " + ir.numDocs(), ir.numDocs() > 0);
     assertEquals(ir.numDocs(), docs.size());
-    Set<SortField> sortFields = new HashSet<SortField>(); 
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_1, SortField.Type.LONG));
-    sortFields.add(new SortField(WEIGHT_FIELD_NAME_2, SortField.Type.LONG));
-    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, "w2-w1", sortFields, PAYLOAD_FIELD_NAME);
+    ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2)};
+
+    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new SumFloatFunction(toAdd), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
@@ -213,7 +202,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), w2-w1);
+      assertEquals(inputIterator.weight(), w2+w1);
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
@@ -236,7 +225,7 @@ public class DocumentExpressionDictionaryTest extends LuceneTestCase {
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Dictionary dictionary = new DocumentExpressionDictionary(ir, FIELD_NAME, new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
+    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
