@@ -17,12 +17,17 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
+import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.SimpleBindings;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.suggest.DocumentExpressionDictionary;
+import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.DoubleField;
 import org.apache.solr.schema.FieldType;
@@ -36,7 +41,7 @@ import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Factory for {@link DocumentExpressionDictionary}
+ * Factory for {@link org.apache.lucene.search.suggest.DocumentValueSourceDictionary}
  */
 public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
 
@@ -89,8 +94,22 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
       }
     }
    
-    return new DocumentExpressionDictionary(searcher.getIndexReader(), field, weightExpression, 
-        sortFields, payloadField);
+    return new DocumentValueSourceDictionary(searcher.getIndexReader(), field, fromExpression(weightExpression,
+        sortFields), payloadField);
+  }
+
+  public ValueSource fromExpression(String weightExpression, Set<SortField> sortFields) {
+    Expression expression = null;
+    try {
+      expression = JavascriptCompiler.compile(weightExpression);
+    } catch (ParseException e) {
+      throw new RuntimeException();
+    }
+    SimpleBindings bindings = new SimpleBindings();
+    for (SortField sortField : sortFields) {
+      bindings.add(sortField);
+    }
+    return expression.getValueSource(bindings);
   }
   
   private SortField.Type getSortFieldType(SolrCore core, String sortFieldName) {

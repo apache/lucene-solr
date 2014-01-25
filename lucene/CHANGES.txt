@@ -145,6 +145,12 @@ API Changes
   etc. but it's easy to override the parseShape method if you wish. (David
   Smiley)
 
+* LUCENE-5414: DocumentExpressionDictionary was renamed to 
+  DocumentValueSourceDictionary and all dependencies to the lucene-expression
+  module were removed from lucene-suggest. DocumentValueSourceDictionary now
+  only accepts a ValueSource instead of a convenience ctor for an expression
+  string. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
