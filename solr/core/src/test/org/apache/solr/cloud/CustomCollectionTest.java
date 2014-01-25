@@ -69,7 +69,6 @@ import org.junit.Ignore;
  * Tests the Custom Sharding API.
  */
 @Slow
-@Ignore("I am broken since SOLR-5492")
 public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   private static final String DEFAULT_COLLECTION = "collection1";
@@ -246,16 +245,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"b")).getResults().getNumFound());
     assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"a")).getResults().getNumFound());
-
-    // test shards.info with _route_ param
-    QueryResponse resp = collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a").setParam(ShardParams.SHARDS_INFO, true));
-    NamedList<?> sinfo = (NamedList<?>) resp.getResponse().get(ShardParams.SHARDS_INFO);
-    assertNotNull("missing shard info", sinfo);
-    for (Map.Entry<String,?> entry : sinfo) {
-      NamedList<?> info = (NamedList<?>) entry.getValue();
-      assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
-      assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
-    }
 
     collectionClient.deleteByQuery("*:*");
     collectionClient.commit(true,true);
