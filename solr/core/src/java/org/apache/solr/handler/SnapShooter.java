@@ -122,7 +122,7 @@ public class SnapShooter {
       replicationHandler.snapShootDetails = details;
       if (lock != null) {
         try {
-          lock.release();
+          lock.close();
         } catch (IOException e) {
           LOG.error("Unable to release snapshoot lock: " + directoryName + ".lock");
         }

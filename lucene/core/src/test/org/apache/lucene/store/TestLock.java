@@ -44,7 +44,7 @@ public class TestLock extends LuceneTestCase {
             return false;
         }
         @Override
-        public void release() {
+        public void close() {
             // do nothing
         }
         @Override

@@ -184,16 +184,16 @@ public class TestLockFactory extends LuceneTestCase {
 
       assertTrue("failed to obtain lock", l.obtain());
       assertTrue("succeeded in obtaining lock twice", !l2.obtain());
-      l.release();
+      l.close();
 
       assertTrue("failed to obtain 2nd lock after first one was freed", l2.obtain());
-      l2.release();
+      l2.close();
 
       // Make sure we can obtain first one again, test isLocked():
       assertTrue("failed to obtain lock", l.obtain());
       assertTrue(l.isLocked());
       assertTrue(l2.isLocked());
-      l.release();
+      l.close();
       assertFalse(l.isLocked());
       assertFalse(l2.isLocked());
     }
@@ -207,7 +207,7 @@ public class TestLockFactory extends LuceneTestCase {
       
       Lock l = new NativeFSLockFactory(TEMP_DIR).makeLock("test.lock");
       assertTrue("failed to obtain lock", l.obtain());
-      l.release();
+      l.close();
       assertFalse("failed to release lock", l.isLocked());
       if (lockFile.exists()) {
         lockFile.delete();
@@ -225,12 +225,12 @@ public class TestLockFactory extends LuceneTestCase {
       assertTrue("failed to obtain lock", l.obtain());
       try {
         assertTrue(l2.isLocked());
-        l2.release();
+        l2.close();
         fail("should not have reached here. LockReleaseFailedException should have been thrown");
       } catch (LockReleaseFailedException e) {
         // expected
       } finally {
-        l.release();
+        l.close();
       }
     }
 
@@ -409,7 +409,7 @@ public class TestLockFactory extends LuceneTestCase {
                 return true;
             }
             @Override
-            public void release() {
+            public void close() {
                 // do nothing
             }
             @Override

@@ -795,11 +795,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "init: hit exception on init; releasing write lock");
         }
-        try {
-          writeLock.release();
-        } catch (Throwable t) {
-          // don't mask the original exception
-        }
+        IOUtils.closeWhileHandlingException(writeLock);
         writeLock = null;
       }
     }
@@ -1052,7 +1048,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
 
       if (writeLock != null) {
-        writeLock.release();                          // release write lock
+        writeLock.close();                          // release write lock
         writeLock = null;
       }
       synchronized(this) {
@@ -2362,6 +2358,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
 
+  /** Acquires write locks on all the directories; be sure
+   *  to match with a call to {@link IOUtils#close} in a
+   *  finally clause. */
+  private List<Lock> acquireWriteLocks(Directory... dirs) throws IOException {
+    List<Lock> locks = new ArrayList<Lock>();
+    for(int i=0;i<dirs.length;i++) {
+      boolean success = false;
+      try {
+        Lock lock = dirs[i].makeLock(WRITE_LOCK_NAME);
+        locks.add(lock);
+        lock.obtain(config.getWriteLockTimeout());
+        success = true;
+      } finally {
+        if (success == false) {
+          // Release all previously acquired locks:
+          IOUtils.closeWhileHandlingException(locks);
+        }
+      }
+    }
+    return locks;
+  }
+
   /**
    * Adds all segments from an array of indexes into this index.
    *
@@ -2372,11 +2390,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * with this method.
    *
    * <p>
-   * <b>NOTE:</b> the index in each {@link Directory} must not be
-   * changed (opened by a writer) while this method is
-   * running.  This method does not acquire a write lock in
-   * each input Directory, so it is up to the caller to
-   * enforce this.
+   * <b>NOTE:</b> this method acquires the write lock in
+   * each directory, to ensure that no {@code IndexWriter}
+   * is currently open or tries to open while this is
+   * running.
    *
    * <p>This method is transactional in how Exceptions are
    * handled: it does not commit a new segments_N file until
@@ -2405,11 +2422,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @throws LockObtainFailedException if we were unable to
+   *   acquire the write lock in at least one directory
    */
   public void addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
 
     noDupDirs(dirs);
+
+    List<Lock> locks = acquireWriteLocks(dirs);
+
+    boolean successTop = false;
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -2481,8 +2504,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         checkpoint();
       }
 
+      successTop = true;
+
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "addIndexes(Directory...)");
+    } finally {
+      if (successTop) {
+        IOUtils.close(locks);
+      } else {
+        IOUtils.closeWhileHandlingException(locks);
+      }
     }
   }
   
@@ -4415,7 +4446,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * currently accessing this index.
    */
   public static void unlock(Directory directory) throws IOException {
-    directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
+    directory.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
   }
 
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has

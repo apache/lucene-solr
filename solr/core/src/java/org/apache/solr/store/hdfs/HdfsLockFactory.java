@@ -161,7 +161,7 @@ public class HdfsLockFactory extends LockFactory {
     }
     
     @Override
-    public void release() throws IOException {
+    public void close() throws IOException {
       FileSystem fs = FileSystem.newInstance(lockPath.toUri(), conf);
       try {
         if (fs.exists(new Path(lockPath, lockName))

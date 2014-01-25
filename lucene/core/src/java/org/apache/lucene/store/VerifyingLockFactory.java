@@ -87,10 +87,10 @@ public class VerifyingLockFactory extends LockFactory {
     }
 
     @Override
-    public synchronized void release() throws IOException {
+    public synchronized void close() throws IOException {
       if (isLocked()) {
         verify((byte) 0);
-        lock.release();
+        lock.close();
       }
     }
   }

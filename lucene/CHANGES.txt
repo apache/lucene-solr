@@ -195,6 +195,12 @@ Bug fixes
 * SOLR-5661: PriorityQueue now refuses to allocate itself if the
   incoming maxSize is too large (Raintung Li via Mike McCandless)
 
+* LUCENE-5228: IndexWriter.addIndexes(Directory[]) now acquires a
+  write lock in each Directory, to ensure that no open IndexWriter is
+  changing the incoming indices.  This also means that you cannot pass
+  the same Directory to multiple concurrent addIndexes calls (which is
+  anyways unusual).  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
