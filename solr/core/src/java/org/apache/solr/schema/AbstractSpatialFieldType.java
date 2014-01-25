@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -92,7 +93,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
     //replace legacy rect format with ENVELOPE
     String wbStr = args.get("worldBounds");
-    if (wbStr != null && !wbStr.toUpperCase().startsWith("ENVELOPE")) {
+    if (wbStr != null && !wbStr.toUpperCase(Locale.ROOT).startsWith("ENVELOPE")) {
       log.warn("Using old worldBounds format? Should use ENVELOPE(xMin, xMax, yMax, yMin).");
       String[] parts = wbStr.split(" ");//"xMin yMin xMax yMax"
       if (parts.length == 4) {
