@@ -201,12 +201,12 @@ public class TestDirectory extends LuceneTestCase {
         }
       }
 
-      lock.release();
+      lock.close();
       
       // now lock with different dir
       lock = dirs[(i+1)%dirs.length].makeLock(lockname);
       assertTrue(lock.obtain());
-      lock.release();
+      lock.close();
     }
 
     for (int i=0; i<dirs.length; i++) {

@@ -78,8 +78,8 @@ public class MockLockFactoryWrapper extends LockFactory {
     }
 
     @Override
-    public void release() throws IOException {
-      delegateLock.release();
+    public void close() throws IOException {
+      delegateLock.close();
       dir.openLocks.remove(name);
     }
 

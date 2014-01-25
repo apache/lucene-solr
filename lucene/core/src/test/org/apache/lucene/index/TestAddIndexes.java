@@ -40,8 +40,10 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -1243,4 +1245,27 @@ public class TestAddIndexes extends LuceneTestCase {
     dest.close();
   }
 
+  /** Make sure an open IndexWriter on an incoming Directory
+   *  causes a LockObtainFailedException */
+  public void testLocksBlock() throws Exception {
+    Directory src = newDirectory();
+    RandomIndexWriter w1 = new RandomIndexWriter(random(), src);
+    w1.addDocument(new Document());
+    w1.commit();
+
+    Directory dest = newDirectory();
+
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setWriteLockTimeout(1);
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), dest, iwc);
+
+    try {
+      w2.addIndexes(src);
+      fail("did not hit expected exception");
+    } catch (LockObtainFailedException lofe) {
+      // expected
+    }
+
+    IOUtils.close(w1, w2, src, dest);
+  }
 }
