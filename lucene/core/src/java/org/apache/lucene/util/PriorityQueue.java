@@ -54,7 +54,7 @@ public abstract class PriorityQueue<T> {
         // in this case, but it's very unlikely in practice
         // one will actually insert this many objects into
         // the PQ:
-    	// Throw exception to prevent confusing OOME:
+        // Throw exception to prevent confusing OOME:
         throw new IllegalArgumentException("maxSize must be <= " + ArrayUtil.MAX_ARRAY_LENGTH + "; got: " + maxSize);
       } else {
         // NOTE: we add +1 because all access to heap is
