@@ -138,6 +138,14 @@ public class FuzzyQuery extends MultiTermQuery {
   public int getPrefixLength() {
     return prefixLength;
   }
+  
+  /**
+   * Returns true if transpositions should be treated as a primitive edit operation. 
+   * If this is false, comparisons will implement the classic Levenshtein algorithm.
+   */
+  public boolean getTranspositions() {
+    return transpositions;
+  }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {

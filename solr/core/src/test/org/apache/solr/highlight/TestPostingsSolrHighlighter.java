@@ -155,4 +155,12 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
+  
+  public void testWildcard() {
+    assertQ("simplest test", 
+        req("q", "text:doc*ment", "sort", "id asc", "hl", "true", "hl.highlightMultiTerm", "true"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+  }
 }

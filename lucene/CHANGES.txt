@@ -116,6 +116,9 @@ New Features
   fixes too. More info:
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
+* LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
+  (Mike McCandless, Robert Muir)
+
 Build
 
 * LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
@@ -200,6 +203,9 @@ Bug fixes
   changing the incoming indices.  This also means that you cannot pass
   the same Directory to multiple concurrent addIndexes calls (which is
   anyways unusual).  (Robert Muir, Mike McCandless)
+
+* LUCENE-5415: SpanMultiTermQueryWrapper didn't handle its boost in
+  hashcode/equals/tostring/rewrite.  (Robert Muir)
 
 API Changes
 

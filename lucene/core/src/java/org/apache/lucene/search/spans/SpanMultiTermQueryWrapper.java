@@ -100,6 +100,11 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   public String getField() {
     return query.getField();
   }
+  
+  /** Returns the wrapped query */
+  public Query getWrappedQuery() {
+    return query;
+  }
 
   @Override
   public String toString(String field) {
@@ -107,6 +112,10 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     builder.append("SpanMultiTermQueryWrapper(");
     builder.append(query.toString(field));
     builder.append(")");
+    if (getBoost() != 1F) {
+      builder.append('^');
+      builder.append(getBoost());
+    }
     return builder.toString();
   }
 
@@ -115,22 +124,26 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     final Query q = query.rewrite(reader);
     if (!(q instanceof SpanQuery))
       throw new UnsupportedOperationException("You can only use SpanMultiTermQueryWrapper with a suitable SpanRewriteMethod.");
+    q.setBoost(q.getBoost() * getBoost()); // multiply boost
     return q;
   }
   
   @Override
   public int hashCode() {
-    return 31 * query.hashCode();
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + query.hashCode();
+    return result;
   }
 
   @Override
-  @SuppressWarnings({"rawtypes","unchecked"})
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
+    if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
-    final SpanMultiTermQueryWrapper other = (SpanMultiTermQueryWrapper) obj;
-    return query.equals(other.query);
+    SpanMultiTermQueryWrapper<?> other = (SpanMultiTermQueryWrapper<?>) obj;
+    if (!query.equals(other.query)) return false;
+    return true;
   }
 
   /** Abstract class that defines how the query is rewritten. */
