@@ -72,8 +72,8 @@ public class ConnectionManager implements Watcher {
   private synchronized void disconnected() {
     cancelTimer();
     if (!isClosed) {
-      disconnectedTimer = new Timer(true);
-      disconnectedTimer.schedule(new TimerTask() {
+      Timer newDcTimer = new Timer(true);
+      newDcTimer.schedule(new TimerTask() {
         
         @Override
         public void run() {
@@ -84,7 +84,16 @@ public class ConnectionManager implements Watcher {
       if (isClosed) {
         // we might have closed after getting by isClosed
         // and before starting the new timer
-        cancelTimer();
+        newDcTimer.cancel();
+      } else {
+        disconnectedTimer = newDcTimer;
+        if (isClosed) {
+          // now deal with we may have been closed after getting
+          // by isClosed but before setting disconnectedTimer -
+          // if close happens after isClosed check this time, it 
+          // will handle stopping the timer
+          cancelTimer();
+        }
       }
     }
     connected = false;
@@ -196,7 +205,7 @@ public class ConnectionManager implements Watcher {
   }
   
   // we use a volatile rather than sync
-  // to avoid deadlock on shutdown
+  // to avoid possible deadlock on shutdown
   public void close() {
     this.isClosed = true;
     this.likelyExpired = true;
