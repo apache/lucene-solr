@@ -24,6 +24,7 @@ import java.util.Collections;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.FixedBitSet;
@@ -34,7 +35,7 @@ class DrillSidewaysScorer extends Scorer {
 
   private final Collector drillDownCollector;
 
-  private final DocsEnumsAndFreq[] dims;
+  private final DocsAndCost[] dims;
 
   // DrillDown DocsEnums:
   private final Scorer baseScorer;
@@ -48,7 +49,7 @@ class DrillSidewaysScorer extends Scorer {
   private float collectScore;
 
   DrillSidewaysScorer(Weight w, AtomicReaderContext context, Scorer baseScorer, Collector drillDownCollector,
-                            DocsEnumsAndFreq[] dims) {
+                      DocsAndCost[] dims) {
     super(w);
     this.dims = dims;
     this.context = context;
@@ -67,7 +68,7 @@ class DrillSidewaysScorer extends Scorer {
       drillDownCollector.setScorer(this);
       drillDownCollector.setNextReader(context);
     }
-    for(DocsEnumsAndFreq dim : dims) {
+    for (DocsAndCost dim : dims) {
       dim.sidewaysCollector.setScorer(this);
       dim.sidewaysCollector.setNextReader(context);
     }
@@ -79,25 +80,25 @@ class DrillSidewaysScorer extends Scorer {
 
     // Position all scorers to their first matching doc:
     baseScorer.nextDoc();
-    for(DocsEnumsAndFreq dim : dims) {
-      for (DocsEnum docsEnum : dim.docsEnums) {
-        if (docsEnum != null) {
-          docsEnum.nextDoc();
+    for (DocsAndCost dim : dims) {
+      for (DocIdSetIterator disi : dim.disis) {
+        if (disi != null) {
+          disi.nextDoc();
         }
       }
     }
 
     final int numDims = dims.length;
 
-    DocsEnum[][] docsEnums = new DocsEnum[numDims][];
+    DocIdSetIterator[][] disis = new DocIdSetIterator[numDims][];
     Collector[] sidewaysCollectors = new Collector[numDims];
     long drillDownCost = 0;
-    for(int dim=0;dim<numDims;dim++) {
-      docsEnums[dim] = dims[dim].docsEnums;
+    for (int dim=0;dim<numDims;dim++) {
+      disis[dim] = dims[dim].disis;
       sidewaysCollectors[dim] = dims[dim].sidewaysCollector;
-      for (DocsEnum de : dims[dim].docsEnums) {
-        if (de != null) {
-          drillDownCost += de.cost();
+      for (DocIdSetIterator disi : dims[dim].disis) {
+        if (disi != null) {
+          drillDownCost += disi.cost();
         }
       }
     }
@@ -116,19 +117,19 @@ class DrillSidewaysScorer extends Scorer {
 
     if (baseQueryCost < drillDownCost/10) {
       //System.out.println("baseAdvance");
-      doBaseAdvanceScoring(collector, docsEnums, sidewaysCollectors);
+      doBaseAdvanceScoring(collector, disis, sidewaysCollectors);
     } else if (numDims > 1 && (dims[1].maxCost < baseQueryCost/10)) {
       //System.out.println("drillDownAdvance");
-      doDrillDownAdvanceScoring(collector, docsEnums, sidewaysCollectors);
+      doDrillDownAdvanceScoring(collector, disis, sidewaysCollectors);
     } else {
       //System.out.println("union");
-      doUnionScoring(collector, docsEnums, sidewaysCollectors);
+      doUnionScoring(collector, disis, sidewaysCollectors);
     }
   }
 
   /** Used when drill downs are highly constraining vs
    *  baseQuery. */
-  private void doDrillDownAdvanceScoring(Collector collector, DocsEnum[][] docsEnums, Collector[] sidewaysCollectors) throws IOException {
+  private void doDrillDownAdvanceScoring(Collector collector, DocIdSetIterator[][] disis, Collector[] sidewaysCollectors) throws IOException {
     final int maxDoc = context.reader().maxDoc();
     final int numDims = dims.length;
 
@@ -157,11 +158,11 @@ class DrillSidewaysScorer extends Scorer {
       //if (DEBUG) {
       //  System.out.println("  dim0");
       //}
-      for(DocsEnum docsEnum : docsEnums[0]) {
-        if (docsEnum == null) {
+      for (DocIdSetIterator disi : disis[0]) {
+        if (disi == null) {
           continue;
         }
-        int docID = docsEnum.docID();
+        int docID = disi.docID();
         while (docID < nextChunkStart) {
           int slot = docID & MASK;
 
@@ -176,7 +177,7 @@ class DrillSidewaysScorer extends Scorer {
             counts[slot] = 1;
           }
 
-          docID = docsEnum.nextDoc();
+          docID = disi.nextDoc();
         }
       }
 
@@ -184,11 +185,11 @@ class DrillSidewaysScorer extends Scorer {
       //if (DEBUG) {
       //  System.out.println("  dim1");
       //}
-      for(DocsEnum docsEnum : docsEnums[1]) {
-        if (docsEnum == null) {
+      for (DocIdSetIterator disi : disis[1]) {
+        if (disi == null) {
           continue;
         }
-        int docID = docsEnum.docID();
+        int docID = disi.docID();
         while (docID < nextChunkStart) {
           int slot = docID & MASK;
 
@@ -218,7 +219,7 @@ class DrillSidewaysScorer extends Scorer {
             }
           }
 
-          docID = docsEnum.nextDoc();
+          docID = disi.nextDoc();
         }
       }
 
@@ -272,15 +273,15 @@ class DrillSidewaysScorer extends Scorer {
       
       // TODO: factor this out & share w/ union scorer,
       // except we start from dim=2 instead:
-      for(int dim=2;dim<numDims;dim++) {
+      for (int dim=2;dim<numDims;dim++) {
         //if (DEBUG) {
         //  System.out.println("  dim=" + dim + " [" + dims[dim].dim + "]");
         //}
-        for(DocsEnum docsEnum : docsEnums[dim]) {
-          if (docsEnum == null) {
+        for (DocIdSetIterator disi : disis[dim]) {
+          if (disi == null) {
             continue;
           }
-          int docID = docsEnum.docID();
+          int docID = disi.docID();
           while (docID < nextChunkStart) {
             int slot = docID & MASK;
             if (docIDs[slot] == docID && counts[slot] >= dim) {
@@ -300,7 +301,7 @@ class DrillSidewaysScorer extends Scorer {
               }
             }
             // TODO: sometimes use advance?
-            docID = docsEnum.nextDoc();
+            docID = disi.nextDoc();
           }
         }
       }
@@ -309,7 +310,7 @@ class DrillSidewaysScorer extends Scorer {
       //if (DEBUG) {
       //  System.out.println("  now collect: " + filledCount + " hits");
       //}
-      for(int i=0;i<filledCount;i++) {
+      for (int i=0;i<filledCount;i++) {
         int slot = filledSlots[i];
         collectDocID = docIDs[slot];
         collectScore = scores[slot];
@@ -334,7 +335,7 @@ class DrillSidewaysScorer extends Scorer {
   /** Used when base query is highly constraining vs the
    *  drilldowns; in this case we just .next() on base and
    *  .advance() on the dims. */
-  private void doBaseAdvanceScoring(Collector collector, DocsEnum[][] docsEnums, Collector[] sidewaysCollectors) throws IOException {
+  private void doBaseAdvanceScoring(Collector collector, DocIdSetIterator[][] disis, Collector[] sidewaysCollectors) throws IOException {
     //if (DEBUG) {
     //  System.out.println("  doBaseAdvanceScoring");
     //}
@@ -344,18 +345,18 @@ class DrillSidewaysScorer extends Scorer {
 
     nextDoc: while (docID != NO_MORE_DOCS) {
       int failedDim = -1;
-      for(int dim=0;dim<numDims;dim++) {
+      for (int dim=0;dim<numDims;dim++) {
         // TODO: should we sort this 2nd dimension of
         // docsEnums from most frequent to least?
         boolean found = false;
-        for(DocsEnum docsEnum : docsEnums[dim]) {
-          if (docsEnum == null) {
+        for (DocIdSetIterator disi : disis[dim]) {
+          if (disi == null) {
             continue;
           }
-          if (docsEnum.docID() < docID) {
-            docsEnum.advance(docID);
+          if (disi.docID() < docID) {
+            disi.advance(docID);
           }
-          if (docsEnum.docID() == docID) {
+          if (disi.docID() == docID) {
             found = true;
             break;
           }
@@ -404,7 +405,7 @@ class DrillSidewaysScorer extends Scorer {
     // end instead:
 
     // Tally sideways counts:
-    for(int dim=0;dim<sidewaysCollectors.length;dim++) {
+    for (int dim=0;dim<sidewaysCollectors.length;dim++) {
       sidewaysCollectors[dim].collect(collectDocID);
     }
   }
@@ -416,7 +417,7 @@ class DrillSidewaysScorer extends Scorer {
     sidewaysCollectors[dim].collect(collectDocID);
   }
 
-  private void doUnionScoring(Collector collector, DocsEnum[][] docsEnums, Collector[] sidewaysCollectors) throws IOException {
+  private void doUnionScoring(Collector collector, DocIdSetIterator[][] disis, Collector[] sidewaysCollectors) throws IOException {
     //if (DEBUG) {
     //  System.out.println("  doUnionScoring");
     //}
@@ -478,11 +479,11 @@ class DrillSidewaysScorer extends Scorer {
       //if (DEBUG) {
       //  System.out.println("  dim=0 [" + dims[0].dim + "]");
       //}
-      for(DocsEnum docsEnum : docsEnums[0]) {
-        if (docsEnum == null) {
+      for (DocIdSetIterator disi : disis[0]) {
+        if (disi == null) {
           continue;
         }
-        docID = docsEnum.docID();
+        docID = disi.docID();
         //if (DEBUG) {
         //  System.out.println("    start docID=" + docID);
         //}
@@ -495,19 +496,19 @@ class DrillSidewaysScorer extends Scorer {
             missingDims[slot] = 1;
             counts[slot] = 2;
           }
-          docID = docsEnum.nextDoc();
+          docID = disi.nextDoc();
         }
       }
 
-      for(int dim=1;dim<numDims;dim++) {
+      for (int dim=1;dim<numDims;dim++) {
         //if (DEBUG) {
         //  System.out.println("  dim=" + dim + " [" + dims[dim].dim + "]");
         //}
-        for(DocsEnum docsEnum : docsEnums[dim]) {
-          if (docsEnum == null) {
+        for (DocIdSetIterator disi : disis[dim]) {
+          if (disi == null) {
             continue;
           }
-          docID = docsEnum.docID();
+          docID = disi.docID();
           //if (DEBUG) {
           //  System.out.println("    start docID=" + docID);
           //}
@@ -530,14 +531,14 @@ class DrillSidewaysScorer extends Scorer {
                 counts[slot] = dim+1;
               }
             }
-            docID = docsEnum.nextDoc();
+            docID = disi.nextDoc();
           }
 
           // TODO: sometimes use advance?
 
           /*
             int docBase = nextChunkStart - CHUNK;
-            for(int i=0;i<filledCount;i++) {
+            for (int i=0;i<filledCount;i++) {
               int slot = filledSlots[i];
               docID = docBase + filledSlots[i];
               if (docIDs[slot] == docID && counts[slot] >= dim) {
@@ -570,7 +571,7 @@ class DrillSidewaysScorer extends Scorer {
       //if (DEBUG) {
       //  System.out.println("  now collect: " + filledCount + " hits");
       //}
-      for(int i=0;i<filledCount;i++) {
+      for (int i=0;i<filledCount;i++) {
         // NOTE: This is actually in-order collection,
         // because we only accept docs originally returned by
         // the baseScorer (ie that Scorer is AND'd)
@@ -633,15 +634,15 @@ class DrillSidewaysScorer extends Scorer {
     return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
   }
 
-  static class DocsEnumsAndFreq implements Comparable<DocsEnumsAndFreq> {
-    DocsEnum[] docsEnums;
+  static class DocsAndCost implements Comparable<DocsAndCost> {
+    DocIdSetIterator[] disis;
     // Max cost for all docsEnums for this dim:
     long maxCost;
     Collector sidewaysCollector;
     String dim;
 
     @Override
-    public int compareTo(DocsEnumsAndFreq other) {
+    public int compareTo(DocsAndCost other) {
       if (maxCost < other.maxCost) {
         return -1;
       } else if (maxCost > other.maxCost) {

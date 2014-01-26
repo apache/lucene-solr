@@ -179,7 +179,7 @@ public class DrillSideways {
     if (!useCollectorMethod) {
       // Optimistic: assume subQueries of the DDQ are either
       // TermQuery or BQ OR of TermQuery; if this is wrong
-      // then we detect it and fallback to the mome general
+      // then we detect it and fallback to the more general
       // but slower DrillSidewaysCollector:
       drillDownTerms = new Term[clauses.length-startClause][];
       for(int i=startClause;i<clauses.length;i++) {

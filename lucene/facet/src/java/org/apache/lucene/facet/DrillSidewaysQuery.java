@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -35,7 +36,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
 /** Only purpose is to punch through and return a
- *  SimpleDrillSidewaysScorer */ 
+ *  DrillSidewaysScorer */ 
 
 class DrillSidewaysQuery extends Query {
   final Query baseQuery;
@@ -108,12 +109,12 @@ class DrillSidewaysQuery extends Query {
       public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
                            boolean topScorer, Bits acceptDocs) throws IOException {
 
-        DrillSidewaysScorer.DocsEnumsAndFreq[] dims = new DrillSidewaysScorer.DocsEnumsAndFreq[drillDownTerms.length];
+        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDownTerms.length];
         TermsEnum termsEnum = null;
         String lastField = null;
         int nullCount = 0;
         for(int dim=0;dim<dims.length;dim++) {
-          dims[dim] = new DrillSidewaysScorer.DocsEnumsAndFreq();
+          dims[dim] = new DrillSidewaysScorer.DocsAndCost();
           dims[dim].sidewaysCollector = drillSidewaysCollectors[dim];
           String field = drillDownTerms[dim][0].field();
           dims[dim].dim = drillDownTerms[dim][0].text();
@@ -127,17 +128,17 @@ class DrillSidewaysQuery extends Query {
             }
             lastField = field;
           }
-          dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
+          dims[dim].disis = new DocIdSetIterator[drillDownTerms[dim].length];
           if (termsEnum == null) {
             nullCount++;
             continue;
           }
           for(int i=0;i<drillDownTerms[dim].length;i++) {
             if (termsEnum.seekExact(drillDownTerms[dim][i].bytes())) {
-              DocsEnum docsEnum = termsEnum.docs(null, null, 0);
-              if (docsEnum != null) {
-                dims[dim].docsEnums[i] = docsEnum;
-                dims[dim].maxCost = Math.max(dims[dim].maxCost, docsEnum.cost());
+              DocIdSetIterator disi = termsEnum.docs(null, null, 0);
+              if (disi != null) {
+                dims[dim].disis[i] = disi;
+                dims[dim].maxCost = Math.max(dims[dim].maxCost, disi.cost());
               }
             }
           }
