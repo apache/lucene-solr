@@ -27,10 +27,15 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 
+// nocommit remove this: it's ridiculous if we can't use
+// Lucene's IndexSearcher
+
 /** Extends {@link IndexSearcher}, adding state and public
  *  methods. */
 public class MyIndexSearcher extends IndexSearcher {
 
+  // nocommit move this to an external class that hasa this
+  // and hasa IndexSearcher:
   /** Maps each SSDV facets field to its reader state. */
   public final Map<String,SortedSetDocValuesReaderState> ssdvStates;
 

@@ -45,6 +45,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyle;
 import net.minidev.json.JSONStyleIdent;
+import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
@@ -342,12 +343,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected String prettyPrint(JSONObject o) throws Exception {
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode rootNode = mapper.readValue(o.toString(), JsonNode.class);
-    //ObjectWriter writer = mapper.defaultPrettyPrintingWriter();
-    // ***IMPORTANT!!!*** for Jackson 2.x use the line below instead of the one above: 
-    ObjectWriter writer = mapper.writer().withDefaultPrettyPrinter();
-    return writer.writeValueAsString(rootNode);
+    return o.toJSONString(new JSONStyleIdent());
   }
 
   protected static String httpLoad(String path) throws Exception {

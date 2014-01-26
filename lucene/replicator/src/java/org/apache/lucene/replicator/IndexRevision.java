@@ -95,6 +95,10 @@ public class IndexRevision implements Revision {
    * {@link IndexCommit} found in the {@link Directory} managed by the given
    * writer.
    */
+  // nocommit: accept an incoming IndexCommit?  so we can
+  // replicate a specific snapshot
+  // nocommit: we could "in theory" allow replication w/o
+  // committing ... NRT replication
   public IndexRevision(IndexWriter writer) throws IOException {
     IndexDeletionPolicy delPolicy = writer.getConfig().getIndexDeletionPolicy();
     if (!(delPolicy instanceof SnapshotDeletionPolicy)) {

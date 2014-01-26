@@ -194,7 +194,7 @@ public class LocalReplicator implements Replicator {
       throw new SessionExpiredException("session (" + sessionID + ") expired while obtaining file: source=" + source
           + " file=" + fileName);
     }
-    sessions.get(sessionID).markAccessed();
+    session.markAccessed();
     return session.revision.revision.open(source, fileName);
   }
   

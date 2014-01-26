@@ -2069,6 +2069,12 @@ public class SearchHandler extends Handler {
     // matching finally clause releases this searcher:
     try {
 
+      // nocommit can we ... not do this?  it's awkward that
+      // we have to ... but, the 2-pass (query time
+      // join/grouping) is slower for MTQs if we don't
+      // ... and the whole out-of-order collector or not
+      // ...
+
       q = s.searcher.rewrite(q);
       //System.out.println("after rewrite: " + q);
       diagnostics.put("rewrittenQuery", q.toString());
