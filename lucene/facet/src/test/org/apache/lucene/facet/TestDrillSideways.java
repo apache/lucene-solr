@@ -644,7 +644,7 @@ public class TestDrillSideways extends FacetTestCase {
               final FixedBitSet bits = new FixedBitSet(maxDoc);
               for(int docID=0;docID < maxDoc;docID++) {
                 // Keeps only the even ids:
-                if ((acceptDocs == null || acceptDocs.get(docID)) && ((Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0)) {
+                if ((acceptDocs == null || acceptDocs.get(docID)) && (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0) {
                   bits.set(docID);
                 }
               }
@@ -688,7 +688,7 @@ public class TestDrillSideways extends FacetTestCase {
       // subScorers are on the same docID:
       if (!anyMultiValuedDrillDowns) {
         // Can only do this test when there are no OR'd
-        // drill-down values, beacuse in that case it's
+        // drill-down values, because in that case it's
         // easily possible for one of the DD terms to be on
         // a future docID:
         new DrillSideways(s, config, tr) {

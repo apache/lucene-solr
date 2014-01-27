@@ -362,6 +362,9 @@ public class IndexState implements Closeable {
 
       @Override
       public Similarity get(String name) {
+        if (internalFacetFieldNames.contains(name)) {
+          return defaultSim;
+        }
         return getField(name).sim;
       }
     };

@@ -19,13 +19,8 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -42,13 +37,15 @@ class DrillSidewaysQuery extends Query {
   final Query baseQuery;
   final Collector drillDownCollector;
   final Collector[] drillSidewaysCollectors;
-  final Term[][] drillDownTerms;
+  final Query[] drillDownQueries;
+  final boolean scoreSubDocsAtOnce;
 
-  DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Term[][] drillDownTerms) {
+  DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Query[] drillDownQueries, boolean scoreSubDocsAtOnce) {
     this.baseQuery = baseQuery;
     this.drillDownCollector = drillDownCollector;
     this.drillSidewaysCollectors = drillSidewaysCollectors;
-    this.drillDownTerms = drillDownTerms;
+    this.drillDownQueries = drillDownQueries;
+    this.scoreSubDocsAtOnce = scoreSubDocsAtOnce;
   }
 
   @Override
@@ -69,13 +66,17 @@ class DrillSidewaysQuery extends Query {
     if (newQuery == baseQuery) {
       return this;
     } else {
-      return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
+      return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce);
     }
   }
   
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     final Weight baseWeight = baseQuery.createWeight(searcher);
+    final Weight[] drillDownWeights = new Weight[drillDownQueries.length];
+    for(int dim=0;dim<drillDownQueries.length;dim++) {
+      drillDownWeights[dim] = searcher.rewrite(drillDownQueries[dim]).createWeight(searcher);
+    }
 
     return new Weight() {
       @Override
@@ -109,39 +110,17 @@ class DrillSidewaysQuery extends Query {
       public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
                            boolean topScorer, Bits acceptDocs) throws IOException {
 
-        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDownTerms.length];
-        TermsEnum termsEnum = null;
-        String lastField = null;
+        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDownWeights.length];
         int nullCount = 0;
         for(int dim=0;dim<dims.length;dim++) {
           dims[dim] = new DrillSidewaysScorer.DocsAndCost();
           dims[dim].sidewaysCollector = drillSidewaysCollectors[dim];
-          String field = drillDownTerms[dim][0].field();
-          dims[dim].dim = drillDownTerms[dim][0].text();
-          if (lastField == null || !lastField.equals(field)) {
-            AtomicReader reader = context.reader();
-            Terms terms = reader.terms(field);
-            if (terms != null) {
-              termsEnum = terms.iterator(null);
-            } else {
-              termsEnum = null;
-            }
-            lastField = field;
-          }
-          dims[dim].disis = new DocIdSetIterator[drillDownTerms[dim].length];
-          if (termsEnum == null) {
+          DocIdSetIterator disi = drillDownWeights[dim].scorer(context, true, false, null);
+          if (disi == null) {
             nullCount++;
             continue;
           }
-          for(int i=0;i<drillDownTerms[dim].length;i++) {
-            if (termsEnum.seekExact(drillDownTerms[dim][i].bytes())) {
-              DocIdSetIterator disi = termsEnum.docs(null, null, 0);
-              if (disi != null) {
-                dims[dim].disis[i] = disi;
-                dims[dim].maxCost = Math.max(dims[dim].maxCost, disi.cost());
-              }
-            }
-          }
+          dims[dim].disi = disi;
         }
 
         if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
@@ -160,8 +139,9 @@ class DrillSidewaysQuery extends Query {
         }
 
         return new DrillSidewaysScorer(this, context,
-                                             baseScorer,
-                                             drillDownCollector, dims);
+                                       baseScorer,
+                                       drillDownCollector, dims,
+                                       scoreSubDocsAtOnce);
       }
     };
   }
@@ -175,7 +155,7 @@ class DrillSidewaysQuery extends Query {
     result = prime * result + ((baseQuery == null) ? 0 : baseQuery.hashCode());
     result = prime * result
         + ((drillDownCollector == null) ? 0 : drillDownCollector.hashCode());
-    result = prime * result + Arrays.hashCode(drillDownTerms);
+    result = prime * result + Arrays.hashCode(drillDownQueries);
     result = prime * result + Arrays.hashCode(drillSidewaysCollectors);
     return result;
   }
@@ -192,7 +172,7 @@ class DrillSidewaysQuery extends Query {
     if (drillDownCollector == null) {
       if (other.drillDownCollector != null) return false;
     } else if (!drillDownCollector.equals(other.drillDownCollector)) return false;
-    if (!Arrays.equals(drillDownTerms, other.drillDownTerms)) return false;
+    if (!Arrays.equals(drillDownQueries, other.drillDownQueries)) return false;
     if (!Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors)) return false;
     return true;
   }
