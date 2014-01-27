@@ -229,6 +229,9 @@ Bug Fixes
 * SOLR-5663: example-DIH uses non-existing column for mapping (case-sensitive)
   (steffkes)
 
+* SOLR-5666: Using the hdfs write cache can result in appearance of corrupted
+  index. (Mark Miller)
+
 Optimizations
 ----------------------
 
