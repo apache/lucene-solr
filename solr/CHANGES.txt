@@ -158,6 +158,9 @@ New Features
   automatically for an RPT field type.  See Spatial4j CHANGES & javadocs.
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
+* SOLR-5670: allow _version_ to use DocValues.  (Per Steffensen via yonik)
+
+
 Bug Fixes
 ----------------------
 

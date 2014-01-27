@@ -49,7 +49,7 @@ public class VersionInfo {
    */
   public static SchemaField getAndCheckVersionField(IndexSchema schema) 
     throws SolrException {
-    final String errPrefix = VERSION_FIELD + " field must exist in schema, using indexed=\"true\" stored=\"true\" and multiValued=\"false\"";
+    final String errPrefix = VERSION_FIELD + " field must exist in schema, using indexed=\"true\" or docValues=\"true\", stored=\"true\" and multiValued=\"false\"";
     SchemaField sf = schema.getFieldOrNull(VERSION_FIELD);
 
     if (null == sf) {
@@ -57,10 +57,10 @@ public class VersionInfo {
         (SolrException.ErrorCode.SERVER_ERROR, 
          errPrefix + " (" + VERSION_FIELD + " does not exist)");
     }
-    if ( !sf.indexed() ) {
+    if ( !sf.indexed() && !sf.hasDocValues()) {
       throw new SolrException
         (SolrException.ErrorCode.SERVER_ERROR, 
-         errPrefix + " (" + VERSION_FIELD + " is not indexed");
+         errPrefix + " (" + VERSION_FIELD + " must be either indexed or have docValues");
     }
     if ( !sf.stored() ) {
       throw new SolrException
