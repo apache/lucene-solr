@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
@@ -450,14 +451,16 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   public void doRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllFieldNames();
 
-    final int initialDocs = _TestUtil.nextInt(random(),100,200);
+    final int numInitialDocs = _TestUtil.nextInt(random(),100,200);
     final int totalDocs = atLeast(5000);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
 
-    for (int i = 1; i <= initialDocs; i++) {
+    List<SolrInputDocument> initialDocs = new ArrayList<SolrInputDocument>();
+    for (int i = 1; i <= numInitialDocs; i++) {
       SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
+      initialDocs.add(doc);
       indexDoc(doc);
     }
     commit();
@@ -470,19 +473,43 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
         String rows = "" + _TestUtil.nextInt(random(),13,50);
         SentinelIntSet ids = assertFullWalkNoDups(SOLR_5652,
-                                                  initialDocs, 
+                                                  numInitialDocs,
                                                   params("q", "*:*",
                                                          "fl","id,"+f,
                                                          "rows",rows,
                                                          "sort",sort));
-        assertEquals(initialDocs, ids.size());
+        if (numInitialDocs != ids.size()) {
+          StringBuilder message = new StringBuilder
+              ("Expected " + numInitialDocs + " docs but got " + ids.size() + ". ");
+          message.append("sort=");
+          message.append(sort);
+          message.append(". ");
+          if (ids.size() < numInitialDocs) {
+            message.append("Missing doc(s): ");
+            for (SolrInputDocument doc : initialDocs) {
+              int id = ((Integer)doc.get("id").getValue()).intValue();
+              if ( ! ids.exists(id)) {
+                QueryResponse rsp = cloudClient.query(params("q", "id:" + id,
+                                                             "rows", "1"));
+                if (0 == rsp.getResults().size()) {
+                  message.append("<NOT RETRIEVABLE>:");
+                  message.append(doc.values());
+                } else {
+                  message.append(rsp.getResults().get(0).getFieldValueMap().toString());
+                }
+                message.append("; ");
+              }
+            }
+          }
+          fail(message.toString());
+        }
       }
     }
 
     log.info("SOLR-5652: Ending Loop over smallish num of docs");
 
     // now add a lot more docs, and test a handful of randomized multi-level sorts
-    for (int i = initialDocs+1; i <= totalDocs; i++) {
+    for (int i = numInitialDocs+1; i <= totalDocs; i++) {
       SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
       indexDoc(doc);
     }
@@ -496,7 +523,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : CursorPagingTest.buildRandomQuery();
 
-      SentinelIntSet ids = assertFullWalkNoDups(totalDocs, 
+      SentinelIntSet ids = assertFullWalkNoDups(totalDocs,
                                                 params("q", q,
                                                        "fl",fl,
                                                        "rows",rows,
