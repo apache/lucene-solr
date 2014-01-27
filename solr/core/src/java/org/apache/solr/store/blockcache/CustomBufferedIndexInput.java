@@ -35,6 +35,8 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   private int bufferLength = 0; // end of valid bytes
   private int bufferPosition = 0; // next byte to read
   
+  private Store store;
+  
   @Override
   public byte readByte() throws IOException {
     if (bufferPosition >= bufferLength) refill();
@@ -49,6 +51,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
     super(resourceDesc);
     checkBufferSize(bufferSize);
     this.bufferSize = bufferSize;
+    this.store = BufferStore.instance(bufferSize);
   }
   
   private void checkBufferSize(int bufferSize) {
@@ -179,7 +182,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
     if (newLength <= 0) throw new EOFException("read past EOF");
     
     if (buffer == null) {
-      buffer = BufferStore.takeBuffer(bufferSize);
+      buffer = store.takeBuffer(bufferSize);
       seekInternal(bufferStart);
     }
     readInternal(buffer, 0, newLength);
@@ -191,7 +194,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   @Override
   public final void close() throws IOException {
     closeInternal();
-    BufferStore.putBuffer(buffer);
+    store.putBuffer(buffer);
     buffer = null;
   }
   

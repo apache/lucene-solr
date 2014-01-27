@@ -128,12 +128,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
           new Object[] {slabSize, bankCount,
               ((long) bankCount * (long) slabSize)});
       
-      int _1024Size = params.getInt("solr.hdfs.blockcache.bufferstore.1024",
-          8192);
-      int _8192Size = params.getInt("solr.hdfs.blockcache.bufferstore.8192",
-          8192);
+      int bufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", 128);
+      int bufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
       
-      BufferStore.init(_1024Size, _8192Size, metrics);
+      BufferStore.initNewBuffer(bufferSize, bufferCount);
       long totalMemory = (long) bankCount * (long) numberOfBlocksPerBank
           * (long) blockSize;
       try {
