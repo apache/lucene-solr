@@ -120,6 +120,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     String cursorMark;
     SolrParams params = null;
     
+    final String intsort = "int" + (random().nextBoolean() ? "" : "_dv");
+    final String intmissingsort = defaultCodecSupportsMissingDocValues() ? intsort : "int";
+
     // trivial base case: ensure cursorMark against an empty index doesn't blow up
     cursorMark = CURSOR_MARK_START;
     params = params("q", "*:*", 
@@ -145,7 +148,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "6", "str", "a", "float", "64.5", "int", "7"));
     assertU(adoc("id", "1", "str", "a", "float", "64.5", "int", "7"));
     assertU(adoc("id", "4", "str", "a", "float", "11.1", "int", "6"));
-    assertU(adoc("id", "3", "str", "a", "float", "11.1", "int", "3"));
+    assertU(adoc("id", "3", "str", "a", "float", "11.1")); // int is missing
     assertU(commit());
 
     // base case: ensure cursorMark that matches no docs doesn't blow up
@@ -241,7 +244,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                     "facet", "true",
                     "facet.field", "str",
                     "json.nl", "map",
-                    "sort", "int asc, id asc");
+                    "sort", intsort + " asc, id asc");
     cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
                               ,"/response/numFound==8"
                               ,"/response/start==0"
@@ -267,6 +270,66 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                               ,"/response/start==0"
                               ,"/response/docs==[]"
                               ,"/facet_counts/facet_fields/str=={'a':4,'b':1,'c':3}"
+                              ));
+
+    // int missing first sort with dups, id tie breaker
+    cursorMark = CURSOR_MARK_START;
+    params = params("q", "-int:2001 -int:4055", 
+                    "rows","3",
+                    "fl", "id",
+                    "json.nl", "map",
+                    "sort", intmissingsort + "_first asc, id asc");
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':3},{'id':7},{'id':0}]"
+                              );
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':4},{'id':1},{'id':6}]"
+                              );
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':9},{'id':2}]"
+                              );
+    // no more, so no change to cursorMark, and no new docs
+    assertEquals(cursorMark,
+                 assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8" 
+                              ,"/response/start==0"
+                              ,"/response/docs==[]"
+                              ));
+
+    // int missing last sort with dups, id tie breaker
+    cursorMark = CURSOR_MARK_START;
+    params = params("q", "-int:2001 -int:4055", 
+                    "rows","3",
+                    "fl", "id",
+                    "json.nl", "map",
+                    "sort", intmissingsort + "_last asc, id asc");
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':7},{'id':0},{'id':4}]"
+                              );
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':1},{'id':6},{'id':9}]"
+                              );
+    cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8"
+                              ,"/response/start==0"
+                              ,"/response/docs==[{'id':2},{'id':3}]"
+                              );
+    // no more, so no change to cursorMark, and no new docs
+    assertEquals(cursorMark,
+                 assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
+                              ,"/response/numFound==8" 
+                              ,"/response/start==0"
+                              ,"/response/docs==[]"
                               ));
 
     // string sort with dups, id tie breaker
@@ -298,7 +361,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     params = params("q", "*:*", 
                     "rows","2",
                     "fl", "id",
-                    "sort", "float asc, int desc, id desc");
+                    "sort", "float asc, "+intsort+" desc, id desc");
     cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
                               ,"/response/numFound==10"
                               ,"/response/start==0"
@@ -338,7 +401,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     params = params("q", "id:3 id:7", 
                     "rows","111",
                     "fl", "id",
-                    "sort", "int asc, id asc");
+                    "sort", intsort + " asc, id asc");
     cursorMark = assertCursor(req(params, CURSOR_MARK_PARAM, cursorMark)
                               ,"/response/numFound==2"
                               ,"/response/start==0"
@@ -367,7 +430,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     ids = assertFullWalkNoDups(9, params("q", "*:*", 
                                          "rows", "3",
                                          "fq", "-id:6",
-                                         "sort", "float desc, id asc, int asc"));
+                                         "sort", "float desc, id asc, "+intsort+" asc"));
     assertEquals(9, ids.size());
     assertFalse("matched on id:6 unexpectedly", ids.exists(6));
     ids = assertFullWalkNoDups(9, params("q", "float:[0 TO *] int:7 id:6", 
@@ -451,7 +514,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "str", "a", "float", "11.1", "int", "3"));
     assertU(commit());
 
-    final Collection<String> allFieldNames = getAllFieldNames();
+    final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final SolrInfoMBean filterCacheStats 
       = h.getCore().getInfoRegistry().get("filterCache");
@@ -488,7 +551,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /** randomized testing of a non-trivial number of docs using assertFullWalkNoDups 
    */
   public void testRandomSortsOnLargeIndex() throws Exception {
-    final Collection<String> allFieldNames = getAllFieldNames();
+    final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final int initialDocs = _TestUtil.nextInt(random(),100,200);
     final int totalDocs = atLeast(5000);
@@ -555,16 +618,42 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
   
   /**
-   * An immutable list of the fields in the schema (excluding _version_) in a 
+   * An immutable list of the fields in the schema that can be used for sorting,
    * deterministically random order.
    */
-  private List<String> getAllFieldNames() {
+  private List<String> getAllSortFieldNames() {
+    return pruneAndDeterministicallySort
+      (h.getCore().getLatestSchema().getFields().keySet());
+  }
+
+  
+  /**
+   * <p>
+   * Given a list of field names in the schema, returns an immutable list in 
+   * deterministically random order with the following things removed:
+   * </p>
+   * <ul>
+   *  <li><code>_version_</code> is removed</li>
+   *  <li><code>dv_last</code> and <code>dv_first</code> fields are removed 
+   *      if the codec doesn't support them</li>
+   * </ul>
+   * @see #defaultCodecSupportsMissingDocValues
+   */
+  public static List<String> pruneAndDeterministicallySort(Collection<String> raw) {
+
+    final boolean prune_dv_missing = ! defaultCodecSupportsMissingDocValues();
+
     ArrayList<String> names = new ArrayList<String>(37);
-    for (String f : h.getCore().getLatestSchema().getFields().keySet()) {
-      if (! f.equals("_version_")) {
-        names.add(f);
+    for (String f : raw) {
+      if (f.equals("_version_")) {
+        continue;
       }
+      if (prune_dv_missing && (f.endsWith("_dv_last") || f.endsWith("_dv_first")) ) {
+        continue;
+      }
+      names.add(f);
     }
+
     Collections.sort(names);
     Collections.shuffle(names,random());
     return Collections.<String>unmodifiableList(names);
@@ -628,9 +717,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    Collection<String> allFieldNames = getAllFieldNames();
+    Collection<String> allFieldNames = getAllSortFieldNames();
     String[] fieldNames = new String[allFieldNames.size()];
-    getAllFieldNames().toArray(fieldNames);
+    allFieldNames.toArray(fieldNames);
     String f = fieldNames[_TestUtil.nextInt(random(), 0, fieldNames.length - 1)];
     String order = 0 == _TestUtil.nextInt(random(), 0, 1) ? " asc" : " desc";
     String sort = f + order + (f.equals("id") ? "" : ", id" + order);

@@ -1365,6 +1365,18 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
+  /** Returns true if the default codec supports single valued docvalues with missing values */ 
+  public static boolean defaultCodecSupportsMissingDocValues() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene3x") ||
+        name.equals("Lucene40") || name.equals("Appending") ||
+        name.equals("Lucene41") || 
+        name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
   /** Returns true if the default codec supports SORTED_SET docvalues */ 
   public static boolean defaultCodecSupportsSortedSet() {
     String name = Codec.getDefault().getName();
