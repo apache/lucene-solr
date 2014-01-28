@@ -62,8 +62,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * Default value is 1024.
    */
   public static void setMaxClauseCount(int maxClauseCount) {
-    if (maxClauseCount < 1)
+    if (maxClauseCount < 1) {
       throw new IllegalArgumentException("maxClauseCount must be >= 1");
+    }
     BooleanQuery.maxClauseCount = maxClauseCount;
   }
 
@@ -138,8 +139,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * @see #getMaxClauseCount()
    */
   public void add(BooleanClause clause) {
-    if (clauses.size() >= maxClauseCount)
+    if (clauses.size() >= maxClauseCount) {
       throw new TooManyClauses();
+    }
 
     clauses.add(clause);
   }
@@ -182,7 +184,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         BooleanClause c = clauses.get(i);
         Weight w = c.getQuery().createWeight(searcher);
         weights.add(w);
-        if (!c.isProhibited()) maxCoord++;
+        if (!c.isProhibited()) {
+          maxCoord++;
+        }
       }
     }
 
@@ -195,9 +199,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (int i = 0 ; i < weights.size(); i++) {
         // call sumOfSquaredWeights for all clauses in case of side effects
         float s = weights.get(i).getValueForNormalization();         // sum sub weights
-        if (!clauses.get(i).isProhibited())
+        if (!clauses.get(i).isProhibited()) {
           // only add to sum for non-prohibited clauses
           sum += s;
+        }
       }
 
       sum *= getBoost() * getBoost();             // boost each sub-weight
@@ -258,8 +263,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
             sumExpl.addDetail(r);
             fail = true;
           }
-          if (c.getOccur() == Occur.SHOULD)
+          if (c.getOccur() == Occur.SHOULD) {
             shouldMatchCount++;
+          }
         } else if (c.isRequired()) {
           Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
           r.addDetail(e);
@@ -422,8 +428,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
     if (clone != null) {
       return clone;                               // some clauses rewrote
-    } else
+    } else {
       return this;                                // no clauses rewrote
+    }
   }
 
   // inherit javadoc
@@ -447,17 +454,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    boolean needParens=(getBoost() != 1.0) || (getMinimumNumberShouldMatch()>0) ;
+    boolean needParens= getBoost() != 1.0 || getMinimumNumberShouldMatch() > 0;
     if (needParens) {
       buffer.append("(");
     }
 
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = clauses.get(i);
-      if (c.isProhibited())
+      if (c.isProhibited()) {
         buffer.append("-");
-      else if (c.isRequired())
+      } else if (c.isRequired()) {
         buffer.append("+");
+      }
 
       Query subQuery = c.getQuery();
       if (subQuery != null) {
@@ -472,8 +480,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         buffer.append("null");
       }
 
-      if (i != clauses.size()-1)
+      if (i != clauses.size()-1) {
         buffer.append(" ");
+      }
     }
 
     if (needParens) {
@@ -485,8 +494,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       buffer.append(getMinimumNumberShouldMatch());
     }
 
-    if (getBoost() != 1.0f)
-    {
+    if (getBoost() != 1.0f) {
       buffer.append(ToStringUtils.boost(getBoost()));
     }
 
@@ -496,10 +504,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BooleanQuery))
+    if (!(o instanceof BooleanQuery)) {
       return false;
+    }
     BooleanQuery other = (BooleanQuery)o;
-    return (this.getBoost() == other.getBoost())
+    return this.getBoost() == other.getBoost()
         && this.clauses.equals(other.clauses)
         && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch()
         && this.disableCoord == other.disableCoord;
