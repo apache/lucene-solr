@@ -234,6 +234,10 @@ Bug Fixes
 
 * SOLR-5666: Using the hdfs write cache can result in appearance of corrupted
   index. (Mark Miller)
+	
+* SOLR-5230: Call DelegatingCollector.finish() during grouping.
+  (Joel Bernstein, ehatcher)
+	
 
 Optimizations
 ----------------------

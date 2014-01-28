@@ -286,5 +286,13 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("facet.mincount", "1");
     assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_ti']/int)=2]");
 
+    // SOLR-5230 - ensure CollapsingFieldValueCollector.finish() is called
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("group", "true");
+    params.add("group.field", "id");
+    assertQ(req(params), "*[count(//doc)=2]");
+
   }
 }
