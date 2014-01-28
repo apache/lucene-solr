@@ -453,7 +453,7 @@ public class ToParentBlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      Query rewritten = new ToParentBlockJoinQuery(childQuery,
+      Query rewritten = new ToParentBlockJoinQuery(origChildQuery,
                                 childRewrite,
                                 parentsFilter,
                                 scoreMode);

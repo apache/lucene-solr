@@ -201,7 +201,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childDoc = s.doc(hits.scoreDocs[0].doc);
     //System.out.println("CHILD = " + childDoc + " docID=" + hits.scoreDocs[0].doc);
     assertEquals("java", childDoc.get("skill"));
-    assertEquals(2007, (childDoc.getField("year")).numericValue());
+    assertEquals(2007, childDoc.getField("year").numericValue());
     assertEquals("Lisa", getParentDoc(r, parentsFilter, hits.scoreDocs[0].doc).get("name"));
 
     // Test with filter on child docs:
@@ -209,6 +209,54 @@ public class TestBlockJoin extends LuceneTestCase {
                              new QueryWrapperFilter(new TermQuery(new Term("skill", "foosball"))),
                              1).totalHits);
     
+    r.close();
+    dir.close();
+  }
+
+  public void testBugCausedByRewritingTwice() throws IOException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<Document> docs = new ArrayList<Document>();
+
+    for (int i=0;i<10;i++) {
+      docs.clear();
+      docs.add(makeJob("ruby", i));
+      docs.add(makeJob("java", 2007));
+      docs.add(makeResume("Frank", "United States"));
+      w.addDocuments(docs);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    MultiTermQuery qc = NumericRangeQuery.newIntRange("year", 2007, 2007, true, true);
+    // Hacky: this causes the query to need 2 rewrite
+    // iterations: 
+    qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+
+    int h1 = qc.hashCode();
+    Query qw1 = qc.rewrite(r);
+    int h2 = qw1.hashCode();
+    Query qw2 = qw1.rewrite(r);
+    int h3 = qw2.hashCode();
+
+    assertTrue(h1 != h2);
+    assertTrue(h2 != h3);
+    assertTrue(h3 != h1);
+
+    ToParentBlockJoinQuery qp = new ToParentBlockJoinQuery(qc, parentsFilter, ScoreMode.Max);
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 10, true, true);
+
+    s.search(qp, c);
+    TopGroups<Integer> groups = c.getTopGroups(qp, Sort.INDEXORDER, 0, 10, 0, true);
+    for (GroupDocs<Integer> group : groups.groups) {
+      assertEquals(1, group.totalHits);
+    }
+
     r.close();
     dir.close();
   }

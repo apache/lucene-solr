@@ -139,6 +139,10 @@ Bug fixes
 * LUCENE-5415: SpanMultiTermQueryWrapper didn't handle its boost in
   hashcode/equals/tostring/rewrite.  (Robert Muir)
 
+* LUCENE-5409: ToParentBlockJoinCollector.getTopGroups would fail to
+  return any groups when the joined query required more than one
+  rewrite step (Peng Cheng via Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
