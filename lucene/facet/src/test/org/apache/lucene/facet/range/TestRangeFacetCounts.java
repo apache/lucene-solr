@@ -51,7 +51,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -228,6 +227,10 @@ public class TestRangeFacetCounts extends FacetTestCase {
     final TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
 
     IndexSearcher s = newSearcher(r);
+
+    if (VERBOSE) {
+      System.out.println("TEST: searcher=" + s);
+    }
 
     DrillSideways ds = new DrillSideways(s, config, tr) {
 
@@ -765,16 +768,13 @@ public class TestRangeFacetCounts extends FacetTestCase {
     
     Document doc = new Document();
     writer.addDocument(doc);
-    
-    doc = new Document();
     writer.addDocument(doc);
-    
-    doc = new Document();
     writer.addDocument(doc);
 
+    // Test wants 3 docs in one segment:
     writer.forceMerge(1);
 
-    ValueSource vs = new ValueSource() {
+    final ValueSource vs = new ValueSource() {
         @SuppressWarnings("rawtypes")
         @Override
         public FunctionValues getValues(Map ignored, AtomicReaderContext ignored2) {
@@ -801,6 +801,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
           throw new UnsupportedOperationException();
         }
       };
+
+    FacetsConfig config = new FacetsConfig();
     
     FacetsCollector fc = new FacetsCollector();
 
@@ -808,18 +810,44 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fc);
 
-    Facets facets = new DoubleRangeFacetCounts("field", vs, fc,
+    final DoubleRange[] ranges = new DoubleRange[] {
         new DoubleRange("< 1", 0.0, true, 1.0, false),
         new DoubleRange("< 2", 0.0, true, 2.0, false),
         new DoubleRange("< 5", 0.0, true, 5.0, false),
         new DoubleRange("< 10", 0.0, true, 10.0, false),
         new DoubleRange("< 20", 0.0, true, 20.0, false),
-        new DoubleRange("< 50", 0.0, true, 50.0, false));
+        new DoubleRange("< 50", 0.0, true, 50.0, false)};
+
+    Facets facets = new DoubleRangeFacetCounts("field", vs, fc, ranges);
 
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n", facets.getTopChildren(10, "field").toString());
 
-    // Test drill-down:
-    assertEquals(1, s.search(new ConstantScoreQuery(new DoubleRange("< 2", 0.0, true, 2.0, false).getFilter(vs)), 10).totalHits);
+    DrillDownQuery ddq = new DrillDownQuery(config);
+    ddq.add("field", ranges[1].getFilter(vs));
+
+    // Test simple drill-down:
+    assertEquals(1, s.search(ddq, 10).totalHits);
+
+    // Test drill-sideways after drill-down
+    DrillSideways ds = new DrillSideways(s, config, (TaxonomyReader) null) {
+
+        @Override
+        protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        
+          assert drillSideways.length == 1;
+          return new DoubleRangeFacetCounts("field", vs, drillSideways[0], ranges);
+        }
+
+        @Override
+        protected boolean scoreSubDocsAtOnce() {
+          return random().nextBoolean();
+        }
+      };
+
+
+    DrillSidewaysResult dsr = ds.search(ddq, 10);
+    assertEquals(1, dsr.hits.totalHits);
+    assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n",
+                 dsr.facets.getTopChildren(10, "field").toString());
 
     IOUtils.close(r, writer, dir);
   }

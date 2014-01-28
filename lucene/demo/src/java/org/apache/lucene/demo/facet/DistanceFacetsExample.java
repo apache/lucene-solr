@@ -29,16 +29,18 @@ import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.range.DoubleRange;
 import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SortField;
@@ -59,6 +61,7 @@ public class DistanceFacetsExample implements Closeable {
 
   private final Directory indexDir = new RAMDirectory();
   private IndexSearcher searcher;
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
   public DistanceFacetsExample() {}
@@ -127,10 +130,16 @@ public class DistanceFacetsExample implements Closeable {
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(null);
-
-    q.add("field", new ConstantScoreQuery(range.getFilter(getDistanceValueSource())));
-
-    return searcher.search(q, 10);
+    final ValueSource vs = getDistanceValueSource();
+    q.add("field", range.getFilter(vs));
+    DrillSideways ds = new DrillSideways(searcher, config, (TaxonomyReader) null) {
+        @Override
+        protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        
+          assert drillSideways.length == 1;
+          return new DoubleRangeFacetCounts("field", vs, drillSideways[0], ONE_KM, TWO_KM, FIVE_KM, TEN_KM);
+        }
+      };
+    return ds.search(q, 10).hits;
   }
 
   @Override

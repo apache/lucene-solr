@@ -26,7 +26,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
@@ -102,6 +101,12 @@ public final class DoubleRange extends Range {
   @Override
   public Filter getFilter(final ValueSource valueSource) {
     return new Filter() {
+
+      @Override
+      public String toString() {
+        return "Filter(" + DoubleRange.this.toString();
+      }
+
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
 
@@ -117,50 +122,26 @@ public final class DoubleRange extends Range {
         return new DocIdSet() {
 
           @Override
-          public DocIdSetIterator iterator() {
-            return new DocIdSetIterator() {
-              int doc = -1;
-
+          public Bits bits() {
+            return new Bits() {
               @Override
-              public int nextDoc() throws IOException {
-                assert doc != NO_MORE_DOCS;
-                while (true) {
-                  doc++;
-                  if (doc == maxDoc) {
-                    return doc = NO_MORE_DOCS;
-                  }
-                  if (acceptDocs != null && acceptDocs.get(doc) == false) {
-                    continue;
-                  }
-                  double v = values.doubleVal(doc);
-                  if (accept(v)) {
-                    return doc;
-                  }
+              public boolean get(int docID) {
+                if (acceptDocs != null && acceptDocs.get(docID) == false) {
+                  return false;
                 }
+                return accept(values.doubleVal(docID));
               }
 
               @Override
-              public int advance(int target) throws IOException {
-                if (target == NO_MORE_DOCS) {
-                  doc = target;
-                  return doc;
-                }
-                doc = target-1;
-                return nextDoc();
-              }
-
-              @Override
-              public int docID() {
-                return doc;
-              }
-
-              @Override
-              public long cost() {
-                // Since we do a linear scan over all
-                // documents, our cost is O(maxDoc):
+              public int length() {
                 return maxDoc;
               }
             };
+          }
+
+          @Override
+          public DocIdSetIterator iterator() {
+            return new SlowBitsDocIdSetIterator(bits(), maxDoc, acceptDocs);
           }
         };
       }

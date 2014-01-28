@@ -1,8 +1,5 @@
 package org.apache.lucene.facet.range;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +16,10 @@ import org.apache.lucene.search.Filter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery; // javadocs
 
 /** Base class for a single labeled range.
  *
@@ -37,11 +38,13 @@ public abstract class Range {
   }
 
   /** Returns a new {@link Filter} accepting only documents
-   *  in this range.  Note that this filter is not
-   *  efficient: it's a linear scan of all docs, testing
-   *  each value.  If the {@link ValueSource} is static,
-   *  e.g. an indexed numeric field, then it's more
-   *  efficient to use {@link NumericRangeFilter}. */
+   *  in this range.  This filter is not general-purpose;
+   *  you should either use it with {@link DrillSideways} by
+   *  adding it to {@link DrillDownQuery#add}, or pass it to
+   *  {@link FilteredQuery} using its {@link
+   *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
+   *  {@link ValueSource} is static, e.g. an indexed numeric
+   *  field, then it may be more efficient to use {@link NumericRangeFilter}. */
   public abstract Filter getFilter(final ValueSource valueSource);
 
   /** Invoke this for a useless range. */

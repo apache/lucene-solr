@@ -22,8 +22,10 @@ import java.util.Arrays;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -73,9 +75,17 @@ class DrillSidewaysQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     final Weight baseWeight = baseQuery.createWeight(searcher);
-    final Weight[] drillDownWeights = new Weight[drillDownQueries.length];
+    final Object[] drillDowns = new Object[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
-      drillDownWeights[dim] = searcher.rewrite(drillDownQueries[dim]).createWeight(searcher);
+      Query query = drillDownQueries[dim];
+      Filter filter = DrillDownQuery.getFilter(query);
+      if (filter != null) {
+        drillDowns[dim] = filter;
+      } else {
+        // TODO: would be nice if we could say "we will do no
+        // scoring" here....
+        drillDowns[dim] = searcher.rewrite(query).createWeight(searcher);
+      }
     }
 
     return new Weight() {
@@ -110,29 +120,68 @@ class DrillSidewaysQuery extends Query {
       public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
                            boolean topScorer, Bits acceptDocs) throws IOException {
 
-        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDownWeights.length];
+        // TODO: it could be better if we take acceptDocs
+        // into account instead of baseScorer?
+        Scorer baseScorer = baseWeight.scorer(context, scoreDocsInOrder, false, acceptDocs);
+
+        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
         for(int dim=0;dim<dims.length;dim++) {
           dims[dim] = new DrillSidewaysScorer.DocsAndCost();
           dims[dim].sidewaysCollector = drillSidewaysCollectors[dim];
-          DocIdSetIterator disi = drillDownWeights[dim].scorer(context, true, false, null);
-          if (disi == null) {
-            nullCount++;
-            continue;
+          if (drillDowns[dim] instanceof Filter) {
+            // Pass null for acceptDocs because we already
+            // passed it to baseScorer and baseScorer is
+            // MUST'd here
+            DocIdSet dis = ((Filter) drillDowns[dim]).getDocIdSet(context, null);
+
+            Bits bits = dis.bits();
+            if (bits != null) {
+              // TODO: this logic is too naive: the
+              // existence of bits() in DIS today means
+              // either "I'm a cheap FixedBitSet so apply me down
+              // low as you decode the postings" or "I'm so
+              // horribly expensive so apply me after all
+              // other Query/Filter clauses pass"
+
+              // Filter supports random access; use that to
+              // prevent .advance() on costly filters:
+              dims[dim].bits = bits;
+
+              // TODO: Filter needs to express its expected
+              // cost somehow, before pulling the iterator;
+              // we should use that here to set the order to
+              // check the filters:
+
+            } else {
+              DocIdSetIterator disi = dis.iterator();
+              if (disi == null) {
+                nullCount++;
+                continue;
+              }
+              dims[dim].disi = disi;
+            }
+          } else {
+            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, true, false, null);
+            if (disi == null) {
+              nullCount++;
+              continue;
+            }
+            dims[dim].disi = disi;
           }
-          dims[dim].disi = disi;
         }
 
-        if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
+        // If more than one dim has no matches, then there
+        // are no hits nor drill-sideways counts.  Or, if we
+        // have only one dim and that dim has no matches,
+        // same thing.
+        //if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
+        if (nullCount > 1) {
           return null;
         }
 
         // Sort drill-downs by most restrictive first:
         Arrays.sort(dims);
-
-        // TODO: it could be better if we take acceptDocs
-        // into account instead of baseScorer?
-        Scorer baseScorer = baseWeight.scorer(context, scoreDocsInOrder, false, acceptDocs);
 
         if (baseScorer == null) {
           return null;

@@ -182,8 +182,8 @@ public class DrillSideways {
    * drill down and sideways counts.
    */
   public DrillSidewaysResult search(DrillDownQuery query,
-                                          Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
-                                          boolean doMaxScore) throws IOException {
+                                    Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
+                                    boolean doMaxScore) throws IOException {
     if (filter != null) {
       query = new DrillDownQuery(config, filter, query);
     }
