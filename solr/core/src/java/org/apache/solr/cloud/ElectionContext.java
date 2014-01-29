@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public abstract class ElectionContext {
-  private static Logger log = LoggerFactory.getLogger(ElectionContext.class);
+  static Logger log = LoggerFactory.getLogger(ElectionContext.class);
   final String electionPath;
   final ZkNodeProps leaderProps;
   final String id;
@@ -451,11 +451,11 @@ final class OverseerElectionContext extends ElectionContext {
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException {
-    
+    log.info("I am going to be the leader {}", id);
     final String id = leaderSeqPath
         .substring(leaderSeqPath.lastIndexOf("/") + 1);
     ZkNodeProps myProps = new ZkNodeProps("id", id);
-    
+
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(myProps),
         CreateMode.EPHEMERAL, true);
     

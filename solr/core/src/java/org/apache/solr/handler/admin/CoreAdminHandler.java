@@ -218,10 +218,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
           this.handleRequestBufferUpdatesAction(req, rsp);
           break;
         }
-        case REJOINOVERSEERELECTION:{
+        case OVERSEEROP:{
           ZkController zkController = coreContainer.getZkController();
           if(zkController != null){
-            zkController.rejoinOverseerElection();
+            String op = req.getParams().get("op");
+            if("leader".equals(op)){
+              zkController.forceOverSeer();
+            } else if ("rejoin".equals(op)) zkController.rejoinOverseerElection();
           }
           break;
         }

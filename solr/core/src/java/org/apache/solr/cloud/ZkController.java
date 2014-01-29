@@ -292,6 +292,19 @@ public final class ZkController {
     return leaderVoteWait;
   }
 
+  public void forceOverSeer(){
+    try {
+      zkClient.delete("/overseer_elect/leader",-1, true);
+      log.info("Forcing me to be leader  {} ",getBaseUrl());
+      overseerElector.getContext().runLeaderProcess(true);
+      rejoinOverseerElection();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, " Error becoming overseer ",e);
+
+    }
+
+  }
+
   private void registerAllCoresAsDown(
       final CurrentCoreDescriptorProvider registerOnReconnect, boolean updateLastPublished) {
     List<CoreDescriptor> descriptors = registerOnReconnect

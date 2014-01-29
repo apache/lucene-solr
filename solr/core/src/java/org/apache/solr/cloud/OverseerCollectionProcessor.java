@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -223,18 +222,18 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
-
+    if(overseerDesignates.size() == 1 && overseerDesignates.contains(getLeaderNode(zk))) return;
     log.info("overseer designates {}", overseerDesignates);
 
     List<String> nodeNames = getSortedNodeNames(zk);
     if(nodeNames.size()<2) return;
 
 //
-    Set<String> nodesTobePushedBack =  new HashSet<String>();
+    ArrayList<String> nodesTobePushedBack =  new ArrayList<>();
     //ensure that the node right behind the leader , i.r at position 1 is a Overseer
-    Set<String> availableDesignates = new HashSet<String>();
+    List<String> availableDesignates = new ArrayList<String>();
 
-    log.debug("sorted nodes {}", nodeNames);//TODO to be removed
+    log.info("sorted nodes {}", nodeNames);//TODO to be removed
     for (int i = 0; i < nodeNames.size(); i++) {
       String s = nodeNames.get(i);
 
@@ -243,7 +242,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
         for(int j=0;j<i;j++){
           if(!overseerDesignates.contains(nodeNames.get(j))) {
-            nodesTobePushedBack.add(nodeNames.get(j));
+            if(!nodesTobePushedBack.contains(nodeNames.get(j))) nodesTobePushedBack.add(nodeNames.get(j));
           }
         }
 
@@ -252,9 +251,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     if(!availableDesignates.isEmpty()){
-      for (String s : nodesTobePushedBack) {
+      for (int i = nodesTobePushedBack.size() - 1; i >= 0; i--) {
+         String s = nodesTobePushedBack.get(i);
         log.info("pushing back {} ", s);
-        invokeRejoinOverseer(s);
+        invokeOverseerOp(s, "rejoin");
       }
 
       //wait for a while to ensure the designate has indeed come in front
@@ -295,14 +295,21 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if(leaderNode ==null) return;
     if(!overseerDesignates.contains(leaderNode) && !availableDesignates.isEmpty()){
       //this means there are designated Overseer nodes and I am not one of them , kill myself
-      log.info("I am not an overseerdesignate , rejoining election {} ", leaderNode);
-      invokeRejoinOverseer(leaderNode);
+      String newLeader = availableDesignates.get(0);
+      log.info("I am not an overseerdesignate , forcing a new leader {} ", newLeader);
+      invokeOverseerOp(newLeader, "leader");
     }
 
   }
 
   public static List<String> getSortedNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
-    List<String> children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+    List<String> children = null;
+    try {
+      children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+    } catch (Exception e) {
+      log.warn("error ", e);
+      return new ArrayList<String>();
+    }
     LeaderElector.sortSeqs(children);
     ArrayList<String> nodeNames = new ArrayList<>(children.size());
     for (String c : children) nodeNames.add(LeaderElector.getNodeName(c));
@@ -324,9 +331,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return nodeName;
   }
 
-  private void invokeRejoinOverseer(String nodeName) {
+  private void invokeOverseerOp(String nodeName, String op) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINOVERSEERELECTION.toString());
+    params.set(CoreAdminParams.ACTION, CoreAdminAction.OVERSEEROP.toString());
+    params.set("op", op);
     params.set("qt", adminPath);
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
