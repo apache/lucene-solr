@@ -19,9 +19,21 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexDocument;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 
 public class TestFacetsConfig extends FacetTestCase {
+  
   public void testPathToStringAndBack() throws Exception {
     int iters = atLeast(1000);
     for(int i=0;i<iters;i++) {
@@ -43,4 +55,35 @@ public class TestFacetsConfig extends FacetTestCase {
       assertTrue(Arrays.equals(parts, parts2));
     }
   }
+  
+  public void testAddSameDocTwice() throws Exception {
+    // LUCENE-5367: this was a problem with the previous code, making sure it
+    // works with the new code.
+    Directory indexDir = newDirectory(), taxoDir = newDirectory();
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig facetsConfig = new FacetsConfig();
+    Document doc = new Document();
+    doc.add(new FacetField("a", "b"));
+    IndexDocument facetDoc = facetsConfig.build(taxoWriter, doc);
+    // these two addDocument() used to fail
+    indexWriter.addDocument(facetDoc);
+    indexWriter.addDocument(facetDoc);
+    IOUtils.close(indexWriter, taxoWriter);
+    
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    IndexSearcher searcher = newSearcher(indexReader);
+    FacetsCollector fc = new FacetsCollector();
+    searcher.search(new MatchAllDocsQuery(), fc);
+    
+    Facets facets = getTaxonomyFacetCounts(taxoReader, facetsConfig, fc);
+    FacetResult res = facets.getTopChildren(10, "a");
+    assertEquals(1, res.labelValues.length);
+    assertEquals(2, res.labelValues[0].value);
+    IOUtils.close(indexReader, taxoReader);
+    
+    IOUtils.close(indexDir, taxoDir);
+  }
+  
 }
