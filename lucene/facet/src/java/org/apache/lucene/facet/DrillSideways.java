@@ -220,7 +220,7 @@ public class DrillSideways {
    * drill down and sideways counts.
    */
   public DrillSidewaysResult search(ScoreDoc after,
-                                          DrillDownQuery query, int topN) throws IOException {
+                                    DrillDownQuery query, int topN) throws IOException {
     int limit = searcher.getIndexReader().maxDoc();
     if (limit == 0) {
       limit = 1; // the collector does not alow numHits = 0

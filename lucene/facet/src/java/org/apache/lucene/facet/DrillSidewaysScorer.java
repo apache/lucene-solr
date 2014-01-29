@@ -131,7 +131,7 @@ class DrillSidewaysScorer extends Scorer {
     */
 
     if (bitsUpto > 0 || scoreSubDocsAtOnce || baseQueryCost < drillDownCost/10) {
-      //System.out.println("queryFirst");
+      //System.out.println("queryFirst: baseScorer=" + baseScorer + " disis.length=" + disis.length + " bits.length=" + bits.length);
       doQueryFirstScoring(collector, disis, sidewaysCollectors, bits, bitsSidewaysCollectors);
     } else if (numDims > 1 && (dims[1].disi == null || dims[1].disi.cost() < baseQueryCost/10)) {
       //System.out.println("drillDownAdvance");
@@ -160,20 +160,18 @@ class DrillSidewaysScorer extends Scorer {
         // TODO: should we sort this 2nd dimension of
         // docsEnums from most frequent to least?
         DocIdSetIterator disi = disis[i];
-        if (disi != null) {
-          if (disi.docID() < docID) {
-            disi.advance(docID);
-          }
-          if (disi.docID() > docID) {
-            if (failedCollector != null) {
-              // More than one dim fails on this document, so
-              // it's neither a hit nor a near-miss; move to
-              // next doc:
-              docID = baseScorer.nextDoc();
-              continue nextDoc;
-            } else {
-              failedCollector = sidewaysCollectors[i];
-            }
+        if (disi != null && disi.docID() < docID) {
+          disi.advance(docID);
+        }
+        if (disi == null || disi.docID() > docID) {
+          if (failedCollector != null) {
+            // More than one dim fails on this document, so
+            // it's neither a hit nor a near-miss; move to
+            // next doc:
+            docID = baseScorer.nextDoc();
+            continue nextDoc;
+          } else {
+            failedCollector = sidewaysCollectors[i];
           }
         }
       }
