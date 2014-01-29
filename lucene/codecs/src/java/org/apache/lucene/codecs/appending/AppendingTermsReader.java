@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
+import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.FieldInfos;
@@ -37,12 +38,7 @@ import org.apache.lucene.store.IndexInput;
 public class AppendingTermsReader extends BlockTreeTermsReader {
 
   final static String APPENDING_TERMS_CODEC_NAME = "APPENDING_TERMS_DICT";
-  final static int APPENDING_TERMS_VERSION_START = 0;
-  final static int APPENDING_TERMS_VERSION_CURRENT = APPENDING_TERMS_VERSION_START;
-  
   final static String APPENDING_TERMS_INDEX_CODEC_NAME = "APPENDING_TERMS_INDEX";
-  final static int APPENDING_TERMS_INDEX_VERSION_START = 0;
-  final static int APPENDING_TERMS_INDEX_VERSION_CURRENT = APPENDING_TERMS_INDEX_VERSION_START;
   
   public AppendingTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, 
       IOContext ioContext, String segmentSuffix, int indexDivisor) throws IOException {
@@ -52,15 +48,15 @@ public class AppendingTermsReader extends BlockTreeTermsReader {
   @Override
   protected int readHeader(IndexInput input) throws IOException {
     return CodecUtil.checkHeader(input, APPENDING_TERMS_CODEC_NAME,
-        APPENDING_TERMS_VERSION_START,
-        APPENDING_TERMS_VERSION_CURRENT);  
+                                 BlockTreeTermsWriter.TERMS_VERSION_START,
+                                 BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
   }
 
   @Override
   protected int readIndexHeader(IndexInput input) throws IOException {
     return CodecUtil.checkHeader(input, APPENDING_TERMS_INDEX_CODEC_NAME,
-        APPENDING_TERMS_INDEX_VERSION_START,
-        APPENDING_TERMS_INDEX_VERSION_CURRENT);
+                                 BlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
+                                 BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
   }
   
   @Override

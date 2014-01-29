@@ -68,7 +68,7 @@ final class NodeHash<T> {
   }
 
   // hash code for an unfrozen node.  This must be identical
-  // to the un-frozen case (below)!!
+  // to the frozen case (below)!!
   private long hash(Builder.UnCompiledNode<T> node) {
     final int PRIME = 31;
     //System.out.println("hash unfrozen");

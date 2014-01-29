@@ -48,6 +48,10 @@ import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTOrdPulsing41PostingsFormat;
+import org.apache.lucene.codecs.memory.FSTPostingsFormat;
+import org.apache.lucene.codecs.memory.FSTPulsing41PostingsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -123,6 +127,10 @@ public class RandomCodec extends Lucene46Codec {
 
     add(avoidCodecs,
         new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new FSTPostingsFormat(),
+        new FSTOrdPostingsFormat(),
+        new FSTPulsing41PostingsFormat(1 + random.nextInt(20)),
+        new FSTOrdPulsing41PostingsFormat(1 + random.nextInt(20)),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),

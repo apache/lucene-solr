@@ -40,7 +40,7 @@ public abstract class Outputs<T> {
   // (new object per byte/char/int) if eg used during
   // analysis
 
-  /** Eg common("foo", "foobar") -> "foo" */
+  /** Eg common("foobar", "food") -> "foo" */
   public abstract T common(T output1, T output2);
 
   /** Eg subtract("foobar", "foo") -> "bar" */

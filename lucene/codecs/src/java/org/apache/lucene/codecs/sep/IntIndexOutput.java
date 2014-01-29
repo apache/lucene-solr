@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.sep;
 // TODO: we may want tighter integration w/ IndexOutput --
 // may give better perf:
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.DataOutput;
 
 import java.io.IOException;
 import java.io.Closeable;
@@ -49,12 +49,12 @@ public abstract class IntIndexOutput implements Closeable {
 
     /** Writes "location" of current output pointer of primary
      *  output to different output (out) */
-    public abstract void write(IndexOutput indexOut, boolean absolute) throws IOException;
+    public abstract void write(DataOutput indexOut, boolean absolute) throws IOException;
   }
 
   /** If you are indexing the primary output file, call
    *  this and interact with the returned IndexWriter. */
-  public abstract Index index() throws IOException;
+  public abstract Index index();
 
   @Override
   public abstract void close() throws IOException;

@@ -21,14 +21,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 // TODO: we now inline based on total TF of the term,
 // but it might be better to inline by "net bytes used"
@@ -49,25 +54,42 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
 
   final static String CODEC = "PulsedPostingsWriter";
 
+  // recording field summary
+  final static String SUMMARY_EXTENSION = "smy";
+
   // To add a new version, increment from the last one, and
   // change VERSION_CURRENT to point to your new version:
   final static int VERSION_START = 0;
 
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_META_ARRAY = 1;
 
+  final static int VERSION_CURRENT = VERSION_META_ARRAY;
+
+  private SegmentWriteState segmentState;
   private IndexOutput termsOut;
+
+  private List<FieldMetaData> fields;
 
   private IndexOptions indexOptions;
   private boolean storePayloads;
 
-  private static class PendingTerm {
-    private final byte[] bytes;
-    public PendingTerm(byte[] bytes) {
-      this.bytes = bytes;
+  // information for wrapped PF, in current field
+  private int longsSize;
+  private long[] longs;
+  boolean absolute;
+
+  private static class PulsingTermState extends BlockTermState {
+    private byte[] bytes;
+    private BlockTermState wrappedState;
+    @Override
+    public String toString() {
+      if (bytes != null) {
+        return "inlined";
+      } else {
+        return "not inlined wrapped=" + wrappedState;
+      }
     }
   }
-
-  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
 
   // one entry per position
   private final Position[] pending;
@@ -83,6 +105,15 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     int endOffset;
   }
 
+  private static final class FieldMetaData {
+    int fieldNumber;
+    int longsSize;
+    FieldMetaData(int number, int size) {
+      fieldNumber = number;
+      longsSize = size;
+    }
+  }
+
   // TODO: -- lazy init this?  ie, if every single term
   // was inlined (eg for a "primary key" field) then we
   // never need to use this fallback?  Fallback writer for
@@ -92,23 +123,33 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   /** If the total number of positions (summed across all docs
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
-  public PulsingPostingsWriter(int maxPositions, PostingsWriterBase wrappedPostingsWriter) {
+  public PulsingPostingsWriter(SegmentWriteState state, int maxPositions, PostingsWriterBase wrappedPostingsWriter) {
+
     pending = new Position[maxPositions];
     for(int i=0;i<maxPositions;i++) {
       pending[i] = new Position();
     }
+    fields = new ArrayList<FieldMetaData>();
 
     // We simply wrap another postings writer, but only call
     // on it when tot positions is >= the cutoff:
     this.wrappedPostingsWriter = wrappedPostingsWriter;
+    this.segmentState = state;
   }
 
   @Override
-  public void start(IndexOutput termsOut) throws IOException {
+  public void init(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
     termsOut.writeVInt(pending.length); // encode maxPositions in header
-    wrappedPostingsWriter.start(termsOut);
+    wrappedPostingsWriter.init(termsOut);
+  }
+
+  @Override
+  public BlockTermState newTermState() throws IOException {
+    PulsingTermState state = new PulsingTermState();
+    state.wrappedState = wrappedPostingsWriter.newTermState();
+    return state;
   }
 
   @Override
@@ -123,11 +164,15 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   // Currently, this instance is re-used across fields, so
   // our parent calls setField whenever the field changes
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.getIndexOptions();
     //if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.hasPayloads();
-    wrappedPostingsWriter.setField(fieldInfo);
+    absolute = false;
+    longsSize = wrappedPostingsWriter.setField(fieldInfo);
+    longs = new long[longsSize];
+    fields.add(new FieldMetaData(fieldInfo.number, longsSize));
+    return 0;
     //DEBUG = BlockTreeTermsWriter.DEBUG;
   }
 
@@ -219,18 +264,19 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats) throws IOException {
+  public void finishTerm(BlockTermState _state) throws IOException {
+    PulsingTermState state = (PulsingTermState) _state;
+
     // if (DEBUG) System.out.println("PW   finishTerm docCount=" + stats.docFreq + " pendingCount=" + pendingCount + " pendingTerms.size()=" + pendingTerms.size());
 
     assert pendingCount > 0 || pendingCount == -1;
 
     if (pendingCount == -1) {
-      wrappedPostingsWriter.finishTerm(stats);
-      // Must add null entry to record terms that our
-      // wrapped postings impl added
-      pendingTerms.add(null);
+      state.wrappedState.docFreq = state.docFreq;
+      state.wrappedState.totalTermFreq = state.totalTermFreq;
+      state.bytes = null;
+      wrappedPostingsWriter.finishTerm(state.wrappedState);
     } else {
-
       // There were few enough total occurrences for this
       // term, so we fully inline our postings data into
       // terms dict, now:
@@ -325,61 +371,54 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
         }
       }
 
-      final byte[] bytes = new byte[(int) buffer.getFilePointer()];
-      buffer.writeTo(bytes, 0);
-      pendingTerms.add(new PendingTerm(bytes));
+      state.bytes = new byte[(int) buffer.getFilePointer()];
+      buffer.writeTo(state.bytes, 0);
       buffer.reset();
     }
-
     pendingCount = 0;
+  }
+
+  @Override
+  public void encodeTerm(long[] empty, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+    PulsingTermState state = (PulsingTermState)_state;
+    assert empty.length == 0;
+    this.absolute = this.absolute || absolute;
+    if (state.bytes == null) {
+      wrappedPostingsWriter.encodeTerm(longs, buffer, fieldInfo, state.wrappedState, this.absolute);
+      for (int i = 0; i < longsSize; i++) {
+        out.writeVLong(longs[i]);
+      }
+      buffer.writeTo(out);
+      buffer.reset();
+      this.absolute = false;
+    } else {
+      out.writeVInt(state.bytes.length);
+      out.writeBytes(state.bytes, 0, state.bytes.length);
+      this.absolute = this.absolute || absolute;
+    }
   }
 
   @Override
   public void close() throws IOException {
     wrappedPostingsWriter.close();
-  }
-
-  @Override
-  public void flushTermsBlock(int start, int count) throws IOException {
-    // if (DEBUG) System.out.println("PW: flushTermsBlock start=" + start + " count=" + count + " pendingTerms.size()=" + pendingTerms.size());
-    int wrappedCount = 0;
-    assert buffer.getFilePointer() == 0;
-    assert start >= count;
-
-    final int limit = pendingTerms.size() - start + count;
-
-    for(int idx=pendingTerms.size()-start; idx<limit; idx++) {
-      final PendingTerm term = pendingTerms.get(idx);
-      if (term == null) {
-        wrappedCount++;
-      } else {
-        buffer.writeVInt(term.bytes.length);
-        buffer.writeBytes(term.bytes, 0, term.bytes.length);
-      }
+    if (wrappedPostingsWriter instanceof PulsingPostingsWriter ||
+        VERSION_CURRENT < VERSION_META_ARRAY) {
+      return;
     }
-
-    termsOut.writeVInt((int) buffer.getFilePointer());
-    buffer.writeTo(termsOut);
-    buffer.reset();
-
-    // TDOO: this could be somewhat costly since
-    // pendingTerms.size() could be biggish?
-    int futureWrappedCount = 0;
-    final int limit2 = pendingTerms.size();
-    for(int idx=limit;idx<limit2;idx++) {
-      if (pendingTerms.get(idx) == null) {
-        futureWrappedCount++;
+    String summaryFileName = IndexFileNames.segmentFileName(segmentState.segmentInfo.name, segmentState.segmentSuffix, SUMMARY_EXTENSION);
+    IndexOutput out = null;
+    try {
+      out = segmentState.directory.createOutput(summaryFileName, segmentState.context);
+      CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);
+      out.writeVInt(fields.size());
+      for (FieldMetaData field : fields) {
+        out.writeVInt(field.fieldNumber);
+        out.writeVInt(field.longsSize);
       }
+      out.close();
+    } finally {
+      IOUtils.closeWhileHandlingException(out);
     }
-
-    // Remove the terms we just wrote:
-    pendingTerms.subList(pendingTerms.size()-start, limit).clear();
-
-    // if (DEBUG) System.out.println("PW:   len=" + buffer.getFilePointer() + " fp=" + termsOut.getFilePointer() + " futureWrappedCount=" + futureWrappedCount + " wrappedCount=" + wrappedCount);
-    // TODO: can we avoid calling this if all terms
-    // were inlined...?  Eg for a "primary key" field, the
-    // wrapped codec is never invoked...
-    wrappedPostingsWriter.flushTermsBlock(futureWrappedCount+wrappedCount, wrappedCount);
   }
 
   // Pushes pending positions to the wrapped codec

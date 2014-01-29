@@ -123,11 +123,11 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
  * the postings writer/reader are actually responsible for encoding 
- * and decoding the Postings Metadata and Term Metadata sections described here:</p>
+ * and decoding the PostingsHeader and TermMetadata sections described here:</p>
  *
  * <ul>
- *   <li>Postings Metadata --&gt; Header, PackedBlockSize</li>
- *   <li>Term Metadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
+ *   <li>PostingsHeader --&gt; Header, PackedBlockSize</li>
+ *   <li>TermMetadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
  *                            SkipFPDelta?</li>
  *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>PackedBlockSize, SingletonDocID --&gt; {@link DataOutput#writeVInt VInt}</li>

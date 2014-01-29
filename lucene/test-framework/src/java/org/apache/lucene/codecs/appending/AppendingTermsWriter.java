@@ -36,12 +36,12 @@ public class AppendingTermsWriter extends BlockTreeTermsWriter {
 
   @Override
   protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_CODEC_NAME, AppendingTermsReader.APPENDING_TERMS_VERSION_CURRENT);
+    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_CODEC_NAME, BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
   }
 
   @Override
   protected void writeIndexHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_INDEX_CODEC_NAME, AppendingTermsReader.APPENDING_TERMS_INDEX_VERSION_CURRENT);
+    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_INDEX_CODEC_NAME, BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
   }
 
   @Override

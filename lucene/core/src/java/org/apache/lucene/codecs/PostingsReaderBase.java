@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
 
 /** The core terms dictionaries (BlockTermsReader,
@@ -54,8 +55,10 @@ public abstract class PostingsReaderBase implements Closeable {
   /** Return a newly created empty TermState */
   public abstract BlockTermState newTermState() throws IOException;
 
-  /** Actually decode metadata for next term */
-  public abstract void nextTerm(FieldInfo fieldInfo, BlockTermState state) throws IOException;
+  /** Actually decode metadata for next term 
+   *  @see PostingsWriterBase#encodeTerm 
+   */
+  public abstract void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
@@ -71,9 +74,4 @@ public abstract class PostingsReaderBase implements Closeable {
   
   @Override
   public abstract void close() throws IOException;
-
-  /** Reads data for all terms in the next block; this
-   *  method should merely load the byte[] blob but not
-   *  decode, which is done in {@link #nextTerm}. */
-  public abstract void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState termState) throws IOException;
 }

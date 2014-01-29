@@ -142,6 +142,7 @@ public class BlockTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
+        final int longsSize = version >= BlockTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
         }
@@ -151,7 +152,7 @@ public class BlockTermsReader extends FieldsProducer {
         if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
-        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount));
+        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount, longsSize));
         if (previous != null) {
           throw new CorruptIndexException("duplicate fields: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -230,8 +231,9 @@ public class BlockTermsReader extends FieldsProducer {
     final long sumTotalTermFreq;
     final long sumDocFreq;
     final int docCount;
+    final int longsSize;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
@@ -239,6 +241,7 @@ public class BlockTermsReader extends FieldsProducer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
+      this.longsSize = longsSize;
     }
 
     @Override
@@ -336,6 +339,10 @@ public class BlockTermsReader extends FieldsProducer {
       private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
 
+      private long[] longs;
+      private byte[] bytes;
+      private ByteArrayDataInput bytesReader;
+
       public SegmentTermsEnum() throws IOException {
         in = BlockTermsReader.this.in.clone();
         in.seek(termsStartPointer);
@@ -349,6 +356,7 @@ public class BlockTermsReader extends FieldsProducer {
         termSuffixes = new byte[128];
         docFreqBytes = new byte[64];
         //System.out.println("BTR.enum init this=" + this + " postingsReader=" + postingsReader);
+        longs = new long[longsSize];
       }
 
       @Override
@@ -801,11 +809,20 @@ public class BlockTermsReader extends FieldsProducer {
         //System.out.println("  freq bytes len=" + len);
         in.readBytes(docFreqBytes, 0, len);
         freqReader.reset(docFreqBytes, 0, len);
+
+        // metadata
+        len = in.readVInt();
+        if (bytes == null) {
+          bytes = new byte[ArrayUtil.oversize(len, 1)];
+          bytesReader = new ByteArrayDataInput();
+        } else if (bytes.length < len) {
+          bytes = new byte[ArrayUtil.oversize(len, 1)];
+        }
+        in.readBytes(bytes, 0, len);
+        bytesReader.reset(bytes, 0, len);
+
         metaDataUpto = 0;
-
         state.termBlockOrd = 0;
-
-        postingsReader.readTermsBlock(in, fieldInfo, state);
 
         blocksSinceSeek++;
         indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
@@ -824,9 +841,7 @@ public class BlockTermsReader extends FieldsProducer {
 
           // lazily catch up on metadata decode:
           final int limit = state.termBlockOrd;
-          // We must set/incr state.termCount because
-          // postings impl can look at this
-          state.termBlockOrd = metaDataUpto;
+          boolean absolute = metaDataUpto == 0;
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
             //System.out.println("  decode mdUpto=" + metaDataUpto);
@@ -838,16 +853,21 @@ public class BlockTermsReader extends FieldsProducer {
 
             // TODO: if docFreq were bulk decoded we could
             // just skipN here:
+
+            // docFreq, totalTermFreq
             state.docFreq = freqReader.readVInt();
             //System.out.println("    dF=" + state.docFreq);
             if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               state.totalTermFreq = state.docFreq + freqReader.readVLong();
               //System.out.println("    totTF=" + state.totalTermFreq);
             }
-
-            postingsReader.nextTerm(fieldInfo, state);
+            // metadata
+            for (int i = 0; i < longs.length; i++) {
+              longs[i] = bytesReader.readVLong();
+            }
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state, absolute);
             metaDataUpto++;
-            state.termBlockOrd++;
+            absolute = false;
           }
         } else {
           //System.out.println("  skip! seekPending");

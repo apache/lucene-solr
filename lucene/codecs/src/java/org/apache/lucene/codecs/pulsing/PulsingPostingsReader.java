@@ -20,16 +20,20 @@ package org.apache.lucene.codecs.pulsing;
 import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
@@ -37,6 +41,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format 
@@ -50,27 +55,52 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
   // Fallback reader for non-pulsed terms:
   final PostingsReaderBase wrappedPostingsReader;
+  final SegmentReadState segmentState;
   int maxPositions;
+  int version;
+  TreeMap<Integer, Integer> fields;
 
-  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) {
+  public PulsingPostingsReader(SegmentReadState state, PostingsReaderBase wrappedPostingsReader) {
     this.wrappedPostingsReader = wrappedPostingsReader;
+    this.segmentState = state;
   }
 
   @Override
   public void init(IndexInput termsIn) throws IOException {
-    CodecUtil.checkHeader(termsIn, PulsingPostingsWriter.CODEC,
-      PulsingPostingsWriter.VERSION_START, PulsingPostingsWriter.VERSION_START);
+    version = CodecUtil.checkHeader(termsIn, PulsingPostingsWriter.CODEC,
+                                    PulsingPostingsWriter.VERSION_START, 
+                                    PulsingPostingsWriter.VERSION_CURRENT);
     maxPositions = termsIn.readVInt();
     wrappedPostingsReader.init(termsIn);
+    if (wrappedPostingsReader instanceof PulsingPostingsReader || 
+        version < PulsingPostingsWriter.VERSION_META_ARRAY) {
+      fields = null;
+    } else {
+      fields = new TreeMap<Integer, Integer>();
+      String summaryFileName = IndexFileNames.segmentFileName(segmentState.segmentInfo.name, segmentState.segmentSuffix, PulsingPostingsWriter.SUMMARY_EXTENSION);
+      IndexInput in = null;
+      try { 
+        in = segmentState.directory.openInput(summaryFileName, segmentState.context);
+        CodecUtil.checkHeader(in, PulsingPostingsWriter.CODEC, version, 
+                              PulsingPostingsWriter.VERSION_CURRENT);
+        int numField = in.readVInt();
+        for (int i = 0; i < numField; i++) {
+          int fieldNum = in.readVInt();
+          int longsSize = in.readVInt();
+          fields.put(fieldNum, longsSize);
+        }
+      } finally {
+        IOUtils.closeWhileHandlingException(in);
+      }
+    }
   }
 
   private static class PulsingTermState extends BlockTermState {
+    private boolean absolute = false;
+    private long[] longs;
     private byte[] postings;
     private int postingsSize;                     // -1 if this term was not inlined
     private BlockTermState wrappedTermState;
-
-    ByteArrayDataInput inlinedBytesReader;
-    private byte[] inlinedBytes;
 
     @Override
     public PulsingTermState clone() {
@@ -82,6 +112,11 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       } else {
         assert wrappedTermState != null;
         clone.wrappedTermState = (BlockTermState) wrappedTermState.clone();
+        clone.absolute = absolute;
+        if (longs != null) {
+          clone.longs = new long[longs.length];
+          System.arraycopy(longs, 0, clone.longs, 0, longs.length);
+        }
       }
       return clone;
     }
@@ -99,11 +134,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       } else {
         wrappedTermState.copyFrom(other.wrappedTermState);
       }
-
-      // NOTE: we do not copy the
-      // inlinedBytes/inlinedBytesReader; these are only
-      // stored on the "primary" TermState.  They are
-      // "transient" to cloned term states.
     }
 
     @Override
@@ -117,25 +147,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    //System.out.println("PR.readTermsBlock state=" + _termState);
-    final PulsingTermState termState = (PulsingTermState) _termState;
-    if (termState.inlinedBytes == null) {
-      termState.inlinedBytes = new byte[128];
-      termState.inlinedBytesReader = new ByteArrayDataInput();
-    }
-    int len = termsIn.readVInt();
-    //System.out.println("  len=" + len + " fp=" + termsIn.getFilePointer());
-    if (termState.inlinedBytes.length < len) {
-      termState.inlinedBytes = new byte[ArrayUtil.oversize(len, 1)];
-    }
-    termsIn.readBytes(termState.inlinedBytes, 0, len);
-    termState.inlinedBytesReader.reset(termState.inlinedBytes);
-    termState.wrappedTermState.termBlockOrd = 0;
-    wrappedPostingsReader.readTermsBlock(termsIn, fieldInfo, termState.wrappedTermState);
-  }
-
-  @Override
   public BlockTermState newTermState() throws IOException {
     PulsingTermState state = new PulsingTermState();
     state.wrappedTermState = wrappedPostingsReader.newTermState();
@@ -143,20 +154,20 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+  public void decodeTerm(long[] empty, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute) throws IOException {
     //System.out.println("PR nextTerm");
     PulsingTermState termState = (PulsingTermState) _termState;
-
+    assert empty.length == 0;
+    termState.absolute = termState.absolute || absolute;
     // if we have positions, its total TF, otherwise its computed based on docFreq.
     long count = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
-
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum
       // or D&PEnum is pulled):
-      termState.postingsSize = termState.inlinedBytesReader.readVInt();
+      termState.postingsSize = in.readVInt();
       if (termState.postings == null || termState.postings.length < termState.postingsSize) {
         termState.postings = new byte[ArrayUtil.oversize(termState.postingsSize, 1)];
       }
@@ -164,16 +175,23 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       // (the blob holding all inlined terms' blobs for
       // current term block) into another byte[] (just the
       // blob for this term)...
-      termState.inlinedBytesReader.readBytes(termState.postings, 0, termState.postingsSize);
+      in.readBytes(termState.postings, 0, termState.postingsSize);
       //System.out.println("  inlined bytes=" + termState.postingsSize);
+      termState.absolute = termState.absolute || absolute;
     } else {
       //System.out.println("  not inlined");
+      final int longsSize = fields == null ? 0 : fields.get(fieldInfo.number);
+      if (termState.longs == null) {
+        termState.longs = new long[longsSize];
+      }
+      for (int i = 0; i < longsSize; i++) {
+        termState.longs[i] = in.readVLong();
+      }
       termState.postingsSize = -1;
-      // TODO: should we do full copyFrom?  much heavier...?
       termState.wrappedTermState.docFreq = termState.docFreq;
       termState.wrappedTermState.totalTermFreq = termState.totalTermFreq;
-      wrappedPostingsReader.nextTerm(fieldInfo, termState.wrappedTermState);
-      termState.wrappedTermState.termBlockOrd++;
+      wrappedPostingsReader.decodeTerm(termState.longs, in, fieldInfo, termState.wrappedTermState, termState.absolute);
+      termState.absolute = false;
     }
   }
 

@@ -57,8 +57,8 @@ public final class NestedPulsingPostingsFormat extends PostingsFormat {
     try {
       docsWriter = new Lucene41PostingsWriter(state);
 
-      pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
-      pulsingWriter = new PulsingPostingsWriter(1, pulsingWriterInner);
+      pulsingWriterInner = new PulsingPostingsWriter(state, 2, docsWriter);
+      pulsingWriter = new PulsingPostingsWriter(state, 1, pulsingWriterInner);
       FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, 
           BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
       success = true;
@@ -78,8 +78,8 @@ public final class NestedPulsingPostingsFormat extends PostingsFormat {
     boolean success = false;
     try {
       docsReader = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
-      pulsingReaderInner = new PulsingPostingsReader(docsReader);
-      pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
+      pulsingReaderInner = new PulsingPostingsReader(state, docsReader);
+      pulsingReader = new PulsingPostingsReader(state, pulsingReaderInner);
       FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.directory, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
