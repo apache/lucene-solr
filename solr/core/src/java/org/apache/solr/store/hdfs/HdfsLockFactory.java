@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockReleaseFailedException;
@@ -59,16 +60,31 @@ public class HdfsLockFactory extends LockFactory {
     FileSystem fs = null;
     try {
       fs = FileSystem.newInstance(lockPath.toUri(), configuration);
-      
-      if (fs.exists(lockPath)) {
-        if (lockPrefix != null) {
-          lockName = lockPrefix + "-" + lockName;
-        }
-        
-        Path lockFile = new Path(lockPath, lockName);
-
-        if (fs.exists(lockFile) && !fs.delete(lockFile, false)) {
-          throw new IOException("Cannot delete " + lockFile);
+      while (true) {
+        if (fs.exists(lockPath)) {
+          if (lockPrefix != null) {
+            lockName = lockPrefix + "-" + lockName;
+          }
+          
+          Path lockFile = new Path(lockPath, lockName);
+          try {
+            if (fs.exists(lockFile) && !fs.delete(lockFile, false)) {
+              throw new IOException("Cannot delete " + lockFile);
+            }
+          } catch (RemoteException e) {
+            if (e.getClassName().equals(
+                "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+              log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+              try {
+                Thread.sleep(5000);
+              } catch (InterruptedException e1) {
+                Thread.interrupted();
+              }
+              continue;
+            }
+            throw e;
+          }
+          break;
         }
       }
     } finally {
@@ -99,27 +115,53 @@ public class HdfsLockFactory extends LockFactory {
     @Override
     public boolean obtain() throws IOException {
       FSDataOutputStream file = null;
-      FileSystem fs = null;
+      FileSystem fs = FileSystem.newInstance(lockPath.toUri(), conf);
       try {
-        fs = FileSystem.newInstance(lockPath.toUri(), conf);
-        if (!fs.exists(lockPath)) {
-          fs.mkdirs(lockPath);
+        while (true) {
+          try {
+            if (!fs.exists(lockPath)) {
+              boolean success = fs.mkdirs(lockPath);
+              if (!success) {
+                throw new RuntimeException("Could not create directory: " + lockPath);
+              }
+            } else {
+              // just to check for safe mode
+              fs.mkdirs(lockPath);
+            }
+
+            
+            file = fs.create(new Path(lockPath, lockName), false);
+            break;
+          } catch (FileAlreadyExistsException e) {
+            return false;
+          } catch (RemoteException e) {
+            if (e.getClassName().equals(
+                "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+              log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+              try {
+                Thread.sleep(5000);
+              } catch (InterruptedException e1) {
+                Thread.interrupted();
+              }
+              continue;
+            }
+            log.error("Error creating lock file", e);
+            return false;
+          } catch (IOException e) {
+            log.error("Error creating lock file", e);
+            return false;
+          } finally {
+            IOUtils.closeQuietly(file);
+          }
         }
-        file = fs.create(new Path(lockPath, lockName), false);
-      } catch (FileAlreadyExistsException e) { 
-        return false;
-      }catch (IOException e) {
-        log.error("Error creating lock file", e);
-        return false;
       } finally {
-        IOUtils.closeQuietly(file);
         IOUtils.closeQuietly(fs);
       }
       return true;
     }
     
     @Override
-    public void release() throws IOException {
+    public void close() throws IOException {
       FileSystem fs = FileSystem.newInstance(lockPath.toUri(), conf);
       try {
         if (fs.exists(new Path(lockPath, lockName))

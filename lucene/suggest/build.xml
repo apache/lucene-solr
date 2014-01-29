@@ -31,12 +31,9 @@
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
     <pathelement path="${misc.jar}"/>
-    <pathelement path="${expressions.jar}"/>
     <pathelement path="${queries.jar}"/>
-    <fileset dir="${common.dir}/expressions/lib"/>
     <path refid="base.classpath"/>
   </path>
-
 
   <target name="javadocs" depends="javadocs-queries,javadocs-analyzers-common,compile-core">
     <invoke-module-javadoc>

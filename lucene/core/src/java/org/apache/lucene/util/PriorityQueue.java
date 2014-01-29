@@ -41,11 +41,11 @@ public abstract class PriorityQueue<T> {
   public PriorityQueue(int maxSize, boolean prepopulate) {
     size = 0;
     int heapSize;
-    if (0 == maxSize)
+    if (0 == maxSize) {
       // We allocate 1 extra to avoid if statement in top()
       heapSize = 2;
-    else {
-      if (maxSize == Integer.MAX_VALUE) {
+    } else {
+      if (maxSize > ArrayUtil.MAX_ARRAY_LENGTH) {
         // Don't wrap heapSize to -1, in this case, which
         // causes a confusing NegativeArraySizeException.
         // Note that very likely this will simply then hit
@@ -54,7 +54,8 @@ public abstract class PriorityQueue<T> {
         // in this case, but it's very unlikely in practice
         // one will actually insert this many objects into
         // the PQ:
-        heapSize = Integer.MAX_VALUE;
+        // Throw exception to prevent confusing OOME:
+        throw new IllegalArgumentException("maxSize must be <= " + ArrayUtil.MAX_ARRAY_LENGTH + "; got: " + maxSize);
       } else {
         // NOTE: we add +1 because all access to heap is
         // 1-based not 0-based.  heap[0] is unused.
@@ -183,8 +184,9 @@ public abstract class PriorityQueue<T> {
       size--;
       downHeap();               // adjust heap
       return result;
-    } else
+    } else {
       return null;
+    }
   }
   
   /**

@@ -35,7 +35,7 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.text.ParseException;
 import java.util.HashMap;
 
 public class JtsPolygonTest extends StrategyTestCase {
@@ -59,7 +59,7 @@ public class JtsPolygonTest extends StrategyTestCase {
 
   @Test
   /** LUCENE-4464 */
-  public void testCloseButNoMatch() throws IOException {
+  public void testCloseButNoMatch() throws Exception {
     getAddAndVerifyIndexedDocuments("LUCENE-4464.txt");
     SpatialArgs args = q(
         "POLYGON((-93.18100824442227 45.25676372469945," +
@@ -73,8 +73,8 @@ public class JtsPolygonTest extends StrategyTestCase {
     //did not find poly 1 !
   }
 
-  private SpatialArgs q(String shapeStr, double distErrPct) {
-    Shape shape = ctx.readShape(shapeStr);
+  private SpatialArgs q(String shapeStr, double distErrPct) throws ParseException {
+    Shape shape = ctx.readShapeFromWkt(shapeStr);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, shape);
     args.setDistErrPct(distErrPct);
     return args;
@@ -87,7 +87,7 @@ public class JtsPolygonTest extends StrategyTestCase {
   @Test
   public void testBadPrefixTreePrune() throws Exception {
   
-    Shape area = ctx.readShape("POLYGON((-122.83 48.57, -122.77 48.56, -122.79 48.53, -122.83 48.57))");
+    Shape area = ctx.readShapeFromWkt("POLYGON((-122.83 48.57, -122.77 48.56, -122.79 48.53, -122.83 48.57))");
     
     SpatialPrefixTree trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");

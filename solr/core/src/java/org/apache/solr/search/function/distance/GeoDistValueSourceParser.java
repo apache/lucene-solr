@@ -17,9 +17,8 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
@@ -34,6 +33,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.util.SpatialUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -134,9 +134,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       // note: uses Haversine by default but can be changed via distCalc=...
       SpatialStrategy strategy = ((SpatialStrategyMultiValueSource) mv2).strategy;
       Point queryPoint = strategy.getSpatialContext().makePoint(constants[1], constants[0]);
-      //TODO Spatial4j 0.4 will have a direct constant
-      double multiplier = DistanceUtils.degrees2Dist(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-      return strategy.makeDistanceValueSource(queryPoint, multiplier);
+      return strategy.makeDistanceValueSource(queryPoint, DistanceUtils.DEG_TO_KM);
     }
 
     if (constants != null && other instanceof VectorValueSource) {
@@ -158,15 +156,12 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
   }
 
   private MultiValueSource parsePoint(FunctionQParser fp) throws SyntaxError {
-    String pt = fp.getParam(SpatialParams.POINT);
-    if (pt == null) return null;
-    double[] point = null;
-    try {
-      point = ParseUtils.parseLatitudeLongitude(pt);
-    } catch (InvalidShapeException e) {
-      throw new SyntaxError("Bad spatial pt:" + pt);
-    }
-    return new VectorValueSource(Arrays.<ValueSource>asList(new DoubleConstValueSource(point[0]), new DoubleConstValueSource(point[1])));
+    String ptStr = fp.getParam(SpatialParams.POINT);
+    if (ptStr == null) return null;
+    Point point = SpatialUtils.parsePointSolrException(ptStr, SpatialContext.GEO);
+    //assume Lat Lon order
+    return new VectorValueSource(
+        Arrays.<ValueSource>asList(new DoubleConstValueSource(point.getY()), new DoubleConstValueSource(point.getX())));
   }
 
   private double[] getConstants(MultiValueSource vs) {

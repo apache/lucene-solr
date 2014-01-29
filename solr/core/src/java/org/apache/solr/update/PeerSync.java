@@ -35,7 +35,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -77,9 +76,10 @@ public class PeerSync  {
   private Set<Long> requestedUpdateSet;
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
-  private boolean cantReachIsSuccess;
-  private boolean getNoVersionsIsSuccess;
+  private final boolean cantReachIsSuccess;
+  private final boolean getNoVersionsIsSuccess;
   private final HttpClient client;
+  private final boolean onlyIfActive;
 
   // comparator that sorts by absolute value, putting highest first
   private static Comparator<Long> absComparator = new Comparator<Long>() {
@@ -124,12 +124,17 @@ public class PeerSync  {
   }
   
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess) {
+    this(core, replicas, nUpdates, cantReachIsSuccess, getNoVersionsIsSuccess, false);
+  }
+  
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess, boolean onlyIfActive) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
     this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
+    this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
@@ -431,9 +436,10 @@ public class PeerSync  {
 
     sreq.purpose = 0;
     sreq.params = new ModifiableSolrParams();
-    sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set("qt", "/get");
+    sreq.params.set("distrib", false);
     sreq.params.set("getUpdates", StrUtils.join(toRequest, ','));
+    sreq.params.set("onlyIfActive", onlyIfActive);
     sreq.responses.clear();  // needs to be zeroed for correct correlation to occur
 
     shardHandler.submit(sreq, sreq.shards[0], sreq.params);

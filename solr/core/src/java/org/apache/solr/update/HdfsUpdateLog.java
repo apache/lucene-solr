@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -142,16 +143,33 @@ public class HdfsUpdateLog extends UpdateLog {
     }
     lastDataDir = dataDir;
     tlogDir = new Path(dataDir, TLOG_NAME);
-    
-    try {
-      if (!fs.exists(tlogDir)) {
-        boolean success = fs.mkdirs(tlogDir);
-        if (!success) {
-          throw new RuntimeException("Could not create directory:" + tlogDir);
+    while (true) {
+      try {
+        if (!fs.exists(tlogDir)) {
+          boolean success = fs.mkdirs(tlogDir);
+          if (!success) {
+            throw new RuntimeException("Could not create directory:" + tlogDir);
+          }
+        } else {
+          fs.mkdirs(tlogDir); // To check for safe mode
         }
+        break;
+      } catch (RemoteException e) {
+        if (e.getClassName().equals(
+            "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+          log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException e1) {
+            Thread.interrupted();
+          }
+          continue;
+        }
+        throw new RuntimeException(
+            "Problem creating directory: " + tlogDir, e);
+      } catch (IOException e) {
+        throw new RuntimeException("Problem creating directory: " + tlogDir, e);
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
     
     tlogFiles = getLogList(fs, tlogDir);

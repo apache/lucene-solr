@@ -30,6 +30,7 @@ import java.util.PriorityQueue;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -50,6 +51,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Simple highlighter that does not analyze fields nor use
@@ -63,6 +65,14 @@ import org.apache.lucene.util.UnicodeUtil;
  * the positions of all terms from the query, coalescing those hits that occur in a single passage 
  * into a {@link Passage}, and then scores each Passage using a separate {@link PassageScorer}. 
  * Passages are finally formatted into highlighted snippets with a {@link PassageFormatter}.
+ * <p>
+ * You can customize the behavior by subclassing this highlighter, some important hooks:
+ * <ul>
+ *   <li>{@link #getBreakIterator(String)}: Customize how the text is divided into passages.
+ *   <li>{@link #getScorer(String)}: Customize how passages are ranked.
+ *   <li>{@link #getFormatter(String)}: Customize how snippets are formatted.
+ *   <li>{@link #getIndexAnalyzer(String)}: Enable highlighting of MultiTermQuerys such as {@code WildcardQuery}.
+ * </ul>
  * <p>
  * <b>WARNING</b>: The code is very new and probably still has some exciting bugs!
  * <p>
@@ -335,9 +345,9 @@ public class PostingsHighlighter {
       throw new IllegalArgumentException("invalid number of maxPassagesIn");
     }
     final IndexReader reader = searcher.getIndexReader();
-    query = rewrite(query);
+    Query rewritten = rewrite(query);
     SortedSet<Term> queryTerms = new TreeSet<Term>();
-    query.extractTerms(queryTerms);
+    rewritten.extractTerms(queryTerms);
 
     IndexReaderContext readerContext = reader.getContext();
     List<AtomicReaderContext> leaves = readerContext.leaves();
@@ -389,7 +399,7 @@ public class PostingsHighlighter {
       for(Term term : fieldTerms) {
         terms[termUpto++] = term.bytes();
       }
-      Map<Integer,Object> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages);
+      Map<Integer,Object> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages, query);
         
       Object[] result = new Object[docids.length];
       for (int j = 0; j < docidsIn.length; j++) {
@@ -432,8 +442,18 @@ public class PostingsHighlighter {
   protected char getMultiValuedSeparator(String field) {
     return ' ';
   }
+  
+  /** 
+   * Returns the analyzer originally used to index the content for {@code field}.
+   * <p>
+   * This is used to highlight some MultiTermQueries.
+   * @return Analyzer or null (the default, meaning no special multi-term processing)
+   */
+  protected Analyzer getIndexAnalyzer(String field) {
+    return null;
+  }
     
-  private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
+  private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages, Query query) throws IOException {  
     Map<Integer,Object> highlights = new HashMap<Integer,Object>();
     
     // reuse in the real sense... for docs in same segment we just advance our old enum
@@ -444,6 +464,21 @@ public class PostingsHighlighter {
     PassageFormatter fieldFormatter = getFormatter(field);
     if (fieldFormatter == null) {
       throw new NullPointerException("PassageFormatter cannot be null");
+    }
+    
+    // check if we should do any multitermprocessing
+    Analyzer analyzer = getIndexAnalyzer(field);
+    CharacterRunAutomaton automata[] = new CharacterRunAutomaton[0];
+    if (analyzer != null) {
+      automata = MultiTermHighlighting.extractAutomata(query, field);
+    }
+    
+    final BytesRef allTerms[];
+    if (automata.length > 0) {
+      allTerms = new BytesRef[terms.length + 1];
+      System.arraycopy(terms, 0, allTerms, 0, terms.length);
+    } else {
+      allTerms = terms;
     }
 
     for (int i = 0; i < docids.length; i++) {
@@ -462,9 +497,14 @@ public class PostingsHighlighter {
       }
       if (leaf != lastLeaf) {
         termsEnum = t.iterator(null);
-        postings = new DocsAndPositionsEnum[terms.length];
+        postings = new DocsAndPositionsEnum[allTerms.length];
       }
-      Passage passages[] = highlightDoc(field, terms, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
+      if (automata.length > 0) {
+        DocsAndPositionsEnum dp = MultiTermHighlighting.getDocsEnum(analyzer.tokenStream(field, content), automata);
+        dp.advance(doc - subContext.docBase);
+        postings[terms.length] = dp;
+      }
+      Passage passages[] = highlightDoc(field, allTerms, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
       if (passages.length == 0) {
         passages = getEmptyHighlight(field, bi, maxPassages);
       }
@@ -593,7 +633,13 @@ public class PostingsHighlighter {
       int tf = 0;
       while (true) {
         tf++;
-        current.addMatch(start, end, terms[off.id]);
+        BytesRef term = terms[off.id];
+        if (term == null) {
+          // multitermquery match, pull from payload
+          term = off.dp.getPayload();
+          assert term != null;
+        }
+        current.addMatch(start, end, term);
         if (off.pos == dp.freq()) {
           break; // removed from pq
         } else {

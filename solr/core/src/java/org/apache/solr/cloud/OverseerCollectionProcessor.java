@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -67,6 +68,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -222,71 +224,104 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
 
-    log.debug("overseer designates {}", overseerDesignates);
+    log.info("overseer designates {}", overseerDesignates);
 
-    List<String> children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+    List<String> nodeNames = getSortedNodeNames(zk);
+    if(nodeNames.size()<2) return;
 
-
-    if(children.size()<2) return;
-
-    LeaderElector.sortSeqs(children);
-    ArrayList<String> nodeNames = new ArrayList<>(children.size());
-    for (String c : children) nodeNames.add(LeaderElector.getNodeName(c));
-    boolean overseerDesignateAvailable = false;
+//
+    Set<String> nodesTobePushedBack =  new HashSet<String>();
     //ensure that the node right behind the leader , i.r at position 1 is a Overseer
-    String newOverseerDesignate = null;
-    log.debug("sorted nodes {}", nodeNames);
-    for (int i = 1; i < nodeNames.size(); i++) {
+    Set<String> availableDesignates = new HashSet<String>();
+
+    log.debug("sorted nodes {}", nodeNames);//TODO to be removed
+    for (int i = 0; i < nodeNames.size(); i++) {
       String s = nodeNames.get(i);
+
       if (overseerDesignates.contains(s)) {
-        log.info(" found an overseer designate to be promoted to the front : {}, pushing others back", s);
-        overseerDesignateAvailable = true;
-        newOverseerDesignate = s;
-        for (int j = 1; j < i; j++) {
-          String nodeName = nodeNames.get(j);
-          log.debug("pushing back {} ", nodeName);
-          invokeRejoinOverseer(nodeName);
+        availableDesignates.add(s);
+
+        for(int j=0;j<i;j++){
+          if(!overseerDesignates.contains(nodeNames.get(j))) {
+            nodesTobePushedBack.add(nodeNames.get(j));
+          }
         }
-        break;
+
       }
-      if(overseerDesignateAvailable) break;
+      if(availableDesignates.size()>1) break;
     }
 
-    if(overseerDesignateAvailable){
+    if(!availableDesignates.isEmpty()){
+      for (String s : nodesTobePushedBack) {
+        log.info("pushing back {} ", s);
+        invokeRejoinOverseer(s);
+      }
+
       //wait for a while to ensure the designate has indeed come in front
       boolean prioritizationComplete = false;
-      long timeout = System.currentTimeMillis() + 5000;
+      long timeout = System.currentTimeMillis() + 2500;
 
       for(;System.currentTimeMillis()< timeout ;){
-        children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
-        LeaderElector.sortSeqs(children);
+        List<String> currentNodeNames = getSortedNodeNames(zk);
 
-        String frontRunner = LeaderElector.getNodeName(children.get(1));
-        log.debug("Frontrunner : {}", frontRunner);
-        if(newOverseerDesignate.equals(frontRunner)){
+        int totalLeaders = 0;
+
+        for(int i=0;i<availableDesignates.size();i++) {
+          if(overseerDesignates.contains(currentNodeNames.get(i))) totalLeaders++;
+        }
+        if(totalLeaders == availableDesignates.size()){
           prioritizationComplete = true;
           break;
         }
-        Thread.sleep(50);
+        try {
+          Thread.sleep(50);
+        } catch (InterruptedException e) {
+          log.warn("Thread interrupted",e);
+          break;
+
+        }
       }
 
       if(!prioritizationComplete) {
-        log.warn("Could not make the Overseer designate '{}' the frontrunner", newOverseerDesignate);
+        log.warn("available designates and current state {} {} ", availableDesignates, getSortedNodeNames(zk));
       }
 
     } else {
-      log.warn("No overseer designates are available, overseerDesignates: {}, nodes : ",overseerDesignates,nodeNames);
+      log.warn("No overseer designates are available, overseerDesignates: {}, live nodes : {}",overseerDesignates,nodeNames);
       return;
     }
 
-
-
-    if(!overseerDesignates.contains( nodeNames.get(0)) && overseerDesignateAvailable){
+    String leaderNode = getLeaderNode(zkStateReader.getZkClient());
+    if(leaderNode ==null) return;
+    if(!overseerDesignates.contains(leaderNode) && !availableDesignates.isEmpty()){
       //this means there are designated Overseer nodes and I am not one of them , kill myself
-      invokeRejoinOverseer(nodeNames.get(0));
+      log.info("I am not an overseerdesignate , rejoining election {} ", leaderNode);
+      invokeRejoinOverseer(leaderNode);
     }
 
+  }
 
+  public static List<String> getSortedNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
+    List<String> children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+    LeaderElector.sortSeqs(children);
+    ArrayList<String> nodeNames = new ArrayList<>(children.size());
+    for (String c : children) nodeNames.add(LeaderElector.getNodeName(c));
+    return nodeNames;
+  }
+
+  public static String getLeaderNode(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    byte[] data = new byte[0];
+    try {
+      data = zkClient.getData("/overseer_elect/leader", null, new Stat(), true);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    }
+    Map m = (Map) ZkStateReader.fromJSON(data);
+    String s = (String) m.get("id");
+//    log.info("leader-id {}",s);
+    String nodeName = LeaderElector.getNodeName(s);
+//    log.info("Leader {}", nodeName);
+    return nodeName;
   }
 
   private void invokeRejoinOverseer(String nodeName) {
@@ -517,7 +552,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         Thread.sleep(100);
         removed = !zkStateReader.getClusterState().hasCollection(message.getStr(collection));
         if (removed) {
-          Thread.sleep(100); // just a bit of time so it's more likely other
+          Thread.sleep(500); // just a bit of time so it's more likely other
                              // readers see on return
           break;
         }

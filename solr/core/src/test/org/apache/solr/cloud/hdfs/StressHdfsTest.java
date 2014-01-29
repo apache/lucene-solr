@@ -23,11 +23,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -35,6 +39,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -52,6 +57,9 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;
   
+
+  private boolean testRestartIntoSafeMode;
+  
   @BeforeClass
   public static void setupClass() throws Exception {
 
@@ -67,7 +75,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     System.clearProperty("solr.hdfs.home");
     dfsCluster = null;
   }
-
   
   @Override
   protected String getDataDir(String dataDir) throws IOException {
@@ -77,7 +84,8 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   public StressHdfsTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 13 : random().nextInt(3) + 1;
+    shardCount = TEST_NIGHTLY ? 7 : random().nextInt(2) + 1;
+    testRestartIntoSafeMode = random().nextBoolean();
   }
   
   protected String getSolrXml() {
@@ -90,6 +98,31 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     for (int i = 0; i < cnt; i++) {
       createAndDeleteCollection();
     }
+
+    if (testRestartIntoSafeMode) {
+      createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
+      
+      waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+      
+      ChaosMonkey.stop(jettys.get(0));
+      
+      // enter safe mode and restart a node
+      NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
+      
+      int rnd = LuceneTestCase.random().nextInt(10000);
+      Timer timer = new Timer();
+      timer.schedule(new TimerTask() {
+        
+        @Override
+        public void run() {
+          NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
+        }
+      }, rnd);
+      
+      ChaosMonkey.start(jettys.get(0));
+      
+      waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+    }
   }
 
   private void createAndDeleteCollection() throws SolrServerException,
@@ -97,18 +130,29 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       URISyntaxException {
     
     boolean overshard = random().nextBoolean();
+    int rep;
+    int nShards;
+    int maxReplicasPerNode;
     if (overshard) {
-      createCollection(DELETE_DATA_DIR_COLLECTION, shardCount * 2, 1, 2);
+      nShards = shardCount * 2;
+      maxReplicasPerNode = 8;
+      rep = 1;
     } else {
-      int rep = shardCount / 2;
-      if (rep == 0) rep = 1;
-      createCollection(DELETE_DATA_DIR_COLLECTION, rep, 2, 1);
+      nShards = shardCount / 2;
+      maxReplicasPerNode = 1;
+      rep = 2;
+      if (nShards == 0) nShards = 1;
     }
+    
+    createCollection(DELETE_DATA_DIR_COLLECTION, nShards, rep, maxReplicasPerNode);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
     cloudClient.getZkStateReader().updateClusterState(true);
     
+    for (int i = 1; i < nShards + 1; i++) {
+      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
+    }
     
     // collect the data dirs
     List<String> dataDirs = new ArrayList<String>();

@@ -334,12 +334,12 @@ public abstract class LuceneTestCase extends Assert {
 
   /**
    * When {@code true}, Codecs for old Lucene version will support writing
-   * indexes in that format. Defaults to {@code true}, can be disabled by
-   * spdecific tests on demand.
+   * indexes in that format. Defaults to {@code false}, can be disabled by
+   * specific tests on demand.
    * 
    * @lucene.internal
    */
-  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
 
 
   // -----------------------------------------------------------------
@@ -1363,6 +1363,18 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
+  }
+  
+  /** Returns true if the default codec supports single valued docvalues with missing values */ 
+  public static boolean defaultCodecSupportsMissingDocValues() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene3x") ||
+        name.equals("Lucene40") || name.equals("Appending") ||
+        name.equals("Lucene41") || 
+        name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
   }
   
   /** Returns true if the default codec supports SORTED_SET docvalues */ 

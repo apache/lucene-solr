@@ -57,6 +57,8 @@ API Changes
 * LUCENE-5388: Remove Reader from Tokenizer's constructor. 
   (Benson Margulies via Robert Muir - pull request #16)
 
+* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
@@ -102,7 +104,20 @@ New Features
   using SortField.setMissingValue(SortField.STRING_FIRST), or last,
   using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
   Mike McCandless)
+  
+* LUCENE-5099: QueryNode should have the ability to detach from its node
+  parent. Added QueryNode.removeFromParent() that allows nodes to be 
+  detached from its parent node. (Adriano Crestani)
 
+* LUCENE-5395: Upgrade Spatial4j 0.4: Parses WKT (including ENVELOPE) with
+  extension "BUFFER"; buffering a point results in a Circle. JTS isn't needed
+  for WKT any more but remains required for Polygons. New Shapes:
+  ShapeCollection and BufferedLineString. Various other improvements and bug
+  fixes too. More info:
+  https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
+
+* LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
+  (Mike McCandless, Robert Muir)
 
 Build
 
@@ -136,6 +151,9 @@ Build
   copies.  (Robert Muir, Uwe Schindler)
 
 * LUCENE-5383: fix changes2html to link pull requests (Steve Rowe)
+
+* LUCENE-5411: Upgrade to released JFlex 1.5.0; stop requiring
+  a locally built JFlex snapshot jar. (Steve Rowe)
 
 Bug fixes
 
@@ -173,11 +191,41 @@ Bug fixes
   preventing wrong term positions for fields that use
   StringTokenStream. (Michael Busch)
 
+* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
+  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
+  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
+
+* SOLR-5661: PriorityQueue now refuses to allocate itself if the
+  incoming maxSize is too large (Raintung Li via Mike McCandless)
+
+* LUCENE-5228: IndexWriter.addIndexes(Directory[]) now acquires a
+  write lock in each Directory, to ensure that no open IndexWriter is
+  changing the incoming indices.  This also means that you cannot pass
+  the same Directory to multiple concurrent addIndexes calls (which is
+  anyways unusual).  (Robert Muir, Mike McCandless)
+
+* LUCENE-5415: SpanMultiTermQueryWrapper didn't handle its boost in
+  hashcode/equals/tostring/rewrite.  (Robert Muir)
+
+* LUCENE-5409: ToParentBlockJoinCollector.getTopGroups would fail to
+  return any groups when the joined query required more than one
+  rewrite step (Peng Cheng via Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
   APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
+
+* LUCENE-5395: The SpatialArgsParser now only reads WKT, no more "lat, lon"
+  etc. but it's easy to override the parseShape method if you wish. (David
+  Smiley)
+
+* LUCENE-5414: DocumentExpressionDictionary was renamed to 
+  DocumentValueSourceDictionary and all dependencies to the lucene-expression
+  module were removed from lucene-suggest. DocumentValueSourceDictionary now
+  only accepts a ValueSource instead of a convenience ctor for an expression
+  string. (Simon Willnauer)
 
 Optimizations
 

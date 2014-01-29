@@ -85,7 +85,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
-      public void update(SolrInputDocument document, UpdateRequest req) {
+      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);
       }
@@ -136,7 +136,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
-      public void update(SolrInputDocument document, UpdateRequest req) {
+      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);
       }

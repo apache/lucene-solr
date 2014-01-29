@@ -110,6 +110,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
         case DATE:    return val;
       }
     } catch (Exception e) {
+      e.printStackTrace();
       fail("Caught exception in getStatResult, xPath = " + sb.toString() + " \nraw data: " + rawResponse);
     }
     fail("Unknown type used in getStatResult");

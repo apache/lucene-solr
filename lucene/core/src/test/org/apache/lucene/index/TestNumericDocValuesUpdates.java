@@ -946,9 +946,11 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec(), new Lucene45RWCodec() };
     Directory dir = newDirectory();
     
+    boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
     // create a segment with an old Codec
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     IndexWriter writer = new IndexWriter(dir, conf);
     Document doc = new Document();
     doc.add(new StringField("id", "doc", Store.NO));
@@ -966,7 +968,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     } catch (UnsupportedOperationException e) {
       writer.rollback(); 
     } finally {
-      OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
+      OLD_FORMAT_IMPERSONATION_IS_ACTIVE = oldValue;
     }
     
     dir.close();

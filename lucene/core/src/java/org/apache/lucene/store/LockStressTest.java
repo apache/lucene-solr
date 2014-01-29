@@ -102,7 +102,7 @@ public class LockStressTest {
 
       if (obtained) {
         System.out.print("l");
-        l.release();
+        l.close();
       }
       Thread.sleep(sleepTimeMS);
     }

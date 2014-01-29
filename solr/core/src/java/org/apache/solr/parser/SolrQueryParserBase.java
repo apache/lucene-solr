@@ -28,7 +28,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -419,10 +418,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new PrefixQuery instance
    */
   protected Query newPrefixQuery(Term prefix){
-    PrefixQuery query = new PrefixQuery(prefix);
     SchemaField sf = schema.getField(prefix.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
-    return query;
+    return sf.getType().getPrefixQuery(parser, sf, prefix.text());
   }
 
   /**

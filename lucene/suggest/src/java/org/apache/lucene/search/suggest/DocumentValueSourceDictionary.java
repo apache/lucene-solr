@@ -18,23 +18,15 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.lucene.document.NumericDocValuesField; // javadocs
-import org.apache.lucene.expressions.Bindings;
-import org.apache.lucene.expressions.Expression;
-import org.apache.lucene.expressions.SimpleBindings;
-import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRefIterator;
 
 
@@ -42,9 +34,8 @@ import org.apache.lucene.util.BytesRefIterator;
  * <p>
  * Dictionary with terms and optionally payload information 
  * taken from stored fields in a Lucene index. Similar to 
- * {@link DocumentDictionary}, except it computes the weight
- * of the terms in a document based on a user-defined expression
- * having one or more {@link NumericDocValuesField} in the document.
+ * {@link DocumentDictionary}, except it obtains the weight
+ * of the terms in a document based on a {@link ValueSource}.
  * </p>
  * <b>NOTE:</b> 
  *  <ul>
@@ -57,74 +48,34 @@ import org.apache.lucene.util.BytesRefIterator;
  *      do not have a value for a document, then the document is 
  *      rejected by the dictionary
  *    </li>
- *    <li>
- *      All the fields used in <code>weightExpression</code> should
- *      have values for all documents, if any of the fields do not 
- *      have a value for a document, it will default to 0
- *    </li>
  *  </ul>
+ *  <p>
+ *  In practice the {@link ValueSource} will likely be obtained
+ *  using the lucene expression module. The following example shows
+ *  how to create a {@link ValueSource} from a simple addition of two
+ *  fields:
+ *  <code>
+ *    Expression expression = JavascriptCompiler.compile("f1 + f2");
+ *    SimpleBindings bindings = new SimpleBindings();
+ *    bindings.add(new SortField("f1", SortField.Type.LONG));
+ *    bindings.add(new SortField("f2", SortField.Type.LONG));
+ *    ValueSource valueSource = expression.getValueSource(bindings);
+ *  </code>
+ *  </p>
+ *
  */
-public class DocumentExpressionDictionary extends DocumentDictionary {
+public class DocumentValueSourceDictionary extends DocumentDictionary {
   
   private final ValueSource weightsValueSource;
-
-  /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms and computes the corresponding weights of the term by compiling the
-   * user-defined <code>weightExpression</code> using the <code>sortFields</code>
-   * bindings.
-   */
-  public DocumentExpressionDictionary(IndexReader reader, String field,
-      String weightExpression, Set<SortField> sortFields) {
-    this(reader, field, weightExpression, sortFields, null);
-  }
-
-  /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>payloadField</code> for the corresponding payloads
-   * and computes the corresponding weights of the term by compiling the
-   * user-defined <code>weightExpression</code> using the <code>sortFields</code>
-   * bindings.
-   */
-  public DocumentExpressionDictionary(IndexReader reader, String field,
-      String weightExpression, Set<SortField> sortFields, String payload) {
-    this(reader, field, weightExpression, buildBindings(sortFields), payload);
-  }
-
-  /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>payloadField</code> for the corresponding payloads
-   * and computes the corresponding weights of the term by compiling the
-   * user-defined <code>weightExpression</code> using the provided bindings.
-   */
-  public DocumentExpressionDictionary(IndexReader reader, String field,
-      String weightExpression, Bindings bindings, String payload) {
-    super(reader, field, null, payload);
-    Expression expression = null;
-    try {
-      expression = JavascriptCompiler.compile(weightExpression);
-    } catch (ParseException e) {
-      throw new RuntimeException();
-    }
-    weightsValueSource = expression.getValueSource(bindings);
-  }
-
-  private static Bindings buildBindings(Set<SortField> sortFields) {
-    SimpleBindings bindings = new SimpleBindings();
-    for (SortField sortField: sortFields) {
-      bindings.add(sortField);
-    }
-    return bindings;
-  }
   
-  /** 
+  /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>payloadField</code> for the corresponding payloads
    * and uses the <code>weightsValueSource</code> supplied to determine the 
    * score.
    */
-  public DocumentExpressionDictionary(IndexReader reader, String field,
-      ValueSource weightsValueSource, String payload) {
+  public DocumentValueSourceDictionary(IndexReader reader, String field,
+                                       ValueSource weightsValueSource, String payload) {
     super(reader, field, null, payload);
     this.weightsValueSource = weightsValueSource;  
   }
@@ -134,18 +85,18 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
    * for the terms and uses the <code>weightsValueSource</code> supplied to determine the 
    * score.
    */
-  public DocumentExpressionDictionary(IndexReader reader, String field,
-      ValueSource weightsValueSource) {
+  public DocumentValueSourceDictionary(IndexReader reader, String field,
+                                       ValueSource weightsValueSource) {
     super(reader, field, null, null);
     this.weightsValueSource = weightsValueSource;  
   }
   
   @Override
   public BytesRefIterator getWordsIterator() throws IOException {
-    return new DocumentExpressionInputIterator(payloadField!=null);
+    return new DocumentValueSourceInputIterator(payloadField!=null);
   }
   
-  final class DocumentExpressionInputIterator extends DocumentDictionary.DocumentInputIterator {
+  final class DocumentValueSourceInputIterator extends DocumentDictionary.DocumentInputIterator {
     
     private FunctionValues currentWeightValues;
     /** leaves of the reader */
@@ -155,7 +106,7 @@ public class DocumentExpressionDictionary extends DocumentDictionary {
     /** current leave index */
     private int currentLeafIndex = 0;
     
-    public DocumentExpressionInputIterator(boolean hasPayloads)
+    public DocumentValueSourceInputIterator(boolean hasPayloads)
         throws IOException {
       super(hasPayloads);
       leaves = reader.leaves();

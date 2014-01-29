@@ -128,9 +128,10 @@ class SimpleFSLock extends Lock {
   }
 
   @Override
-  public void release() throws LockReleaseFailedException {
-    if (lockFile.exists() && !lockFile.delete())
+  public void close() throws LockReleaseFailedException {
+    if (lockFile.exists() && !lockFile.delete()) {
       throw new LockReleaseFailedException("failed to delete " + lockFile);
+    }
   }
 
   @Override

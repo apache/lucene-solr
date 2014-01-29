@@ -346,6 +346,10 @@ public class Grouping {
 
     if (allCollectors != null) {
       searchWithTimeLimiter(luceneFilter, allCollectors);
+
+      if(allCollectors instanceof DelegatingCollector) {
+        ((DelegatingCollector) allCollectors).finish();
+      }
     }
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
@@ -382,6 +386,10 @@ public class Grouping {
             secondPhaseCollectors = pf.postFilter;
           }
           searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+
+          if(secondPhaseCollectors instanceof DelegatingCollector) {
+            ((DelegatingCollector) secondPhaseCollectors).finish();
+          }
         }
       }
     }

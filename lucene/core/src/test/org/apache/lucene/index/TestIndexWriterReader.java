@@ -730,8 +730,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
     final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
 
-    final Thread[] threads = new Thread[numThreads];
-    for(int i=0;i<numThreads;i++) {
+    // Only one thread can addIndexes at a time, because
+    // IndexWriter acquires a write lock in each directory:
+    final Thread[] threads = new Thread[1];
+    for(int i=0;i<threads.length;i++) {
       threads[i] = new Thread() {
           @Override
           public void run() {
@@ -764,7 +766,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       lastCount = count;
     }
 
-    for(int i=0;i<numThreads;i++) {
+    for(int i=0;i<threads.length;i++) {
       threads[i].join();
     }
     // final check

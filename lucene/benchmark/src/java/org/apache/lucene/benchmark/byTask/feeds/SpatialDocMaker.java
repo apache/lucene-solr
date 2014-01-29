@@ -190,7 +190,7 @@ public class SpatialDocMaker extends DocMaker {
   public static Shape makeShapeFromString(SpatialStrategy strategy, String name, String shapeStr) {
     if (shapeStr != null && shapeStr.length() > 0) {
       try {
-        return strategy.getSpatialContext().readShape(shapeStr);
+        return strategy.getSpatialContext().readShapeFromWkt(shapeStr);
       } catch (Exception e) {//InvalidShapeException TODO
         System.err.println("Shape "+name+" wasn't parseable: "+e+"  (skipping it)");
         return null;

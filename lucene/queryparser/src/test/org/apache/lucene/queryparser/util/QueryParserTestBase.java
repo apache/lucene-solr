@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -1066,6 +1065,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
   }
   
+  @SuppressWarnings("unused")
   private void assertHits(int expected, String query, IndexSearcher is) throws Exception {
     String oldDefaultField = getDefaultField();
     setDefaultField("date");

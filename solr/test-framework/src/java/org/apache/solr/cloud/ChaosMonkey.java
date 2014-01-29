@@ -79,6 +79,8 @@ public class ChaosMonkey {
   private boolean aggressivelyKillLeaders;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
   private volatile long startTime;
+  
+  private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
 
   private Thread monkeyThread;
   
@@ -319,51 +321,9 @@ public class ChaosMonkey {
   
   public CloudJettyRunner getRandomJetty(String slice, boolean aggressivelyKillLeaders) throws KeeperException, InterruptedException {
     
-
-    int numRunning = 0;
-    int numRecovering = 0;
     int numActive = 0;
     
-    for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
-      boolean running = true;
-      
-      // get latest cloud state
-      zkStateReader.updateClusterState(true);
-      
-      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
-          .get(slice);
-      
-      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
-      if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
-      }
-      
-      String state = props.getStr(ZkStateReader.STATE_PROP);
-      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      
-      
-      if (!cloudJetty.jetty.isRunning()
-          || !state.equals(ZkStateReader.ACTIVE)
-          || !zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        running = false;
-      }
-      
-      if (cloudJetty.jetty.isRunning()
-          && state.equals(ZkStateReader.RECOVERING)
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        numRecovering++;
-      }
-      
-      if (cloudJetty.jetty.isRunning()
-          && state.equals(ZkStateReader.ACTIVE)
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        numActive++;
-      }
-      
-      if (running) {
-        numRunning++;
-      }
-    }
+    numActive = checkIfKillIsLegal(slice, numActive);
     
     // TODO: stale state makes this a tough call
     if (numActive < 2) {
@@ -371,6 +331,21 @@ public class ChaosMonkey {
       monkeyLog("only one active node in shard - monkey cannot kill :(");
       return null;
     }
+    
+    // let's check the deadpool count
+    int numRunning = 0;
+    for (CloudJettyRunner cjetty : shardToJetty.get(slice)) {
+      if (!deadPool.contains(cjetty)) {
+        numRunning++;
+      }
+    }
+    
+    if (numRunning < 2) {
+      // we cannot kill anyone
+      monkeyLog("only one active node in shard - monkey cannot kill :(");
+      return null;
+    }
+    
     Random random = LuceneTestCase.random();
     int chance = random.nextInt(10);
     CloudJettyRunner cjetty;
@@ -439,6 +414,33 @@ public class ChaosMonkey {
   
     return cjetty;
   }
+
+  private int checkIfKillIsLegal(String slice, int numActive)
+      throws KeeperException, InterruptedException {
+    for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
+      
+      // get latest cloud state
+      zkStateReader.updateClusterState(true);
+      
+      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
+          .get(slice);
+      
+      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
+      if (props == null) {
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
+      }
+      
+      String state = props.getStr(ZkStateReader.STATE_PROP);
+      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      
+      if (cloudJetty.jetty.isRunning()
+          && state.equals(ZkStateReader.ACTIVE)
+          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+        numActive++;
+      }
+    }
+    return numActive;
+  }
   
   public SolrServer getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
@@ -473,7 +475,6 @@ public class ChaosMonkey {
     
     stop = false;
     monkeyThread = new Thread() {
-      private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
 
       @Override
       public void run() {

@@ -63,23 +63,17 @@ public class ConnectionManager implements Watcher {
   }
   
   private synchronized void connected() {
-    if (disconnectedTimer != null) {
-      disconnectedTimer.cancel();
-      disconnectedTimer = null;
-    }
+    cancelTimer();
     connected = true;
     likelyExpired = false;
     notifyAll();
   }
 
   private synchronized void disconnected() {
-    if (disconnectedTimer != null) {
-      disconnectedTimer.cancel();
-      disconnectedTimer = null;
-    }
+    cancelTimer();
     if (!isClosed) {
-      disconnectedTimer = new Timer(true);
-      disconnectedTimer.schedule(new TimerTask() {
+      Timer newDcTimer = new Timer(true);
+      newDcTimer.schedule(new TimerTask() {
         
         @Override
         public void run() {
@@ -87,9 +81,33 @@ public class ConnectionManager implements Watcher {
         }
         
       }, (long) (client.getZkClientTimeout() * 0.90));
+      if (isClosed) {
+        // we might have closed after getting by isClosed
+        // and before starting the new timer
+        newDcTimer.cancel();
+      } else {
+        disconnectedTimer = newDcTimer;
+        if (isClosed) {
+          // now deal with we may have been closed after getting
+          // by isClosed but before setting disconnectedTimer -
+          // if close happens after isClosed check this time, it 
+          // will handle stopping the timer
+          cancelTimer();
+        }
+      }
     }
     connected = false;
     notifyAll();
+  }
+
+  private void cancelTimer() {
+    try {
+      this.disconnectedTimer.cancel();
+    } catch (NullPointerException e) {
+      // fine
+    } finally {
+      this.disconnectedTimer = null;
+    }
   }
 
   @Override
@@ -111,10 +129,10 @@ public class ConnectionManager implements Watcher {
       clientConnected.countDown();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
-      if (disconnectedTimer != null) {
-        disconnectedTimer.cancel();
-        disconnectedTimer = null;
-      }
+      // we don't call disconnected because there
+      // is no need to start the timer - if we are expired
+      // likelyExpired can just be set to true
+      cancelTimer();
       
       connected = false;
       likelyExpired = true;
@@ -187,17 +205,11 @@ public class ConnectionManager implements Watcher {
   }
   
   // we use a volatile rather than sync
-  // to avoid deadlock on shutdown
+  // to avoid possible deadlock on shutdown
   public void close() {
     this.isClosed = true;
     this.likelyExpired = true;
-    try {
-      this.disconnectedTimer.cancel();
-    } catch (NullPointerException e) {
-      // fine
-    } finally {
-      this.disconnectedTimer = null;
-    }
+    cancelTimer();
   }
   
   public boolean isLikelyExpired() {

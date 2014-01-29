@@ -28,9 +28,9 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexOutput;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -58,14 +58,37 @@ public class HdfsDirectory extends BaseDirectory {
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
     fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);
-    try {
-      if (!fileSystem.exists(hdfsDirPath)) {
-        fileSystem.mkdirs(hdfsDirPath);
+    
+    while (true) {
+      try {
+        if (!fileSystem.exists(hdfsDirPath)) {
+          boolean success = fileSystem.mkdirs(hdfsDirPath);
+          if (!success) {
+            throw new RuntimeException("Could not create directory: " + hdfsDirPath);
+          }
+        } else {
+          fileSystem.mkdirs(hdfsDirPath); // check for safe mode
+        }
+        
+        break;
+      } catch (RemoteException e) {
+        if (e.getClassName().equals("org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+          LOG.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException e1) {
+            Thread.interrupted();
+          }
+          continue;
+        }
+        org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
+        throw new RuntimeException(
+            "Problem creating directory: " + hdfsDirPath, e);
+      } catch (Exception e) {
+        org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
+        throw new RuntimeException(
+            "Problem creating directory: " + hdfsDirPath, e);
       }
-    } catch (Exception e) {
-      org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
-      throw new RuntimeException("Problem creating directory: " + hdfsDirPath,
-          e);
     }
   }
   

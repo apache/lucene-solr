@@ -155,8 +155,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         if (RUN_LENGTH != -1) {
           runLength = RUN_LENGTH;
         } else {
-          int[] runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
-              30000, 45000, 90000, 120000};
+          int[] runTimes;
+          if (TEST_NIGHTLY) {
+            runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
+                30000, 45000, 90000, 120000};
+          } else {
+            runTimes = new int[] {145000, 240000, 300000};
+          }
           runLength = runTimes[random().nextInt(runTimes.length - 1)];
         }
         
@@ -199,7 +204,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // we expect full throttle fails, but cloud client should not easily fail
       for (StopableThread indexThread : threads) {
         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-          assertEquals("There were expected update fails", 0, ((StopableIndexingThread) indexThread).getFails());
+          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFails() > 1);
         }
       }
       

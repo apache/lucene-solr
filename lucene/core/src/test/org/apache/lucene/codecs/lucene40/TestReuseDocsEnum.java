@@ -37,10 +37,16 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.BeforeClass;
 
 // TODO: really this should be in BaseTestPF or somewhere else? useful test!
 public class TestReuseDocsEnum extends LuceneTestCase {
 
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
+  
   public void testReuseDocsEnumNoReuse() throws IOException {
     Directory dir = newDirectory();
     Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
