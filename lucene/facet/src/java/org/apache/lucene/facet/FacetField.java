@@ -19,12 +19,17 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.Document; // javadoc
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 
-/** Add an instance of this to your {@link Document} for
- *  every facet label. */
+/**
+ * Add an instance of this to your {@link Document} for every facet label.
+ * 
+ * <p>
+ * <b>NOTE:</b> you must call {@link FacetsConfig#build(Document)} before
+ * you add the document to IndexWriter.
+ */
 public class FacetField extends Field {
   static final FieldType TYPE = new FieldType();
   static {
