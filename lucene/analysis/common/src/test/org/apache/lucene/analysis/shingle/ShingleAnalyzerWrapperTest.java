@@ -21,9 +21,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -169,7 +173,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 1,  0,  0,  1,  0,  0,  1,  0,  0,  1,  0,  1,  1 });
 
     analyzer = new ShingleAnalyzerWrapper(
-        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 4, ShingleFilter.TOKEN_SEPARATOR, false, false);
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 4,
+        ShingleFilter.DEFAULT_TOKEN_SEPARATOR, false, false, ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please divide this",   "please divide this sentence", 
                                          "divide this sentence", "divide this sentence into", 
@@ -195,7 +200,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 1,  0,  1,  0,  1,  0,  1,  0,  1,  1 });
 
     analyzer = new ShingleAnalyzerWrapper(
-        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 3, ShingleFilter.TOKEN_SEPARATOR, false, false);
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 3,
+        ShingleFilter.DEFAULT_TOKEN_SEPARATOR, false, false, ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide this sentence into shingles",
                           new String[] { "please divide this", 
                                          "divide this sentence", 
@@ -211,7 +217,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "", true, false);
+        "", true, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
                                          "divide", "divideinto", 
@@ -225,7 +232,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "", false, false);
+        "", false, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "pleasedivide", 
                                          "divideinto", 
@@ -240,7 +248,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        null, true, false);
+        null, true, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
                                          "divide", "divideinto", 
@@ -254,7 +263,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "", false, false);
+        "", false, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "pleasedivide", 
                                          "divideinto", 
@@ -263,12 +273,14 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
   }
+
   public void testAltTokenSeparator() throws Exception {
     ShingleAnalyzerWrapper analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "<SEP>", true, false);
+        "<SEP>", true, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please", "please<SEP>divide", 
                                          "divide", "divide<SEP>into", 
@@ -282,7 +294,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "<SEP>", false, false);
+        "<SEP>", false, false,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please divide into shingles",
                           new String[] { "please<SEP>divide", 
                                          "divide<SEP>into", 
@@ -291,13 +304,64 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
   }
-  
+
+  public void testAltFillerToken() throws Exception {
+    Analyzer delegate = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "into");
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        TokenFilter filter = new StopFilter(TEST_VERSION_CURRENT, tokenizer, stopSet);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+
+    ShingleAnalyzerWrapper analyzer = new ShingleAnalyzerWrapper(
+        delegate,
+        ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_TOKEN_SEPARATOR,
+        true, false, "--");
+    assertAnalyzesTo(analyzer, "please divide into shingles",
+                     new String[] { "please", "please divide",
+                                    "divide", "divide --",
+                                    "-- shingles", "shingles" },
+                     new int[] { 0,  0,  7,  7, 19, 19 },
+                     new int[] { 6, 13, 13, 19, 27, 27 },
+                     new int[] { 1,  0,  1,  0,  1,  1 });
+
+    analyzer = new ShingleAnalyzerWrapper(
+        delegate,
+        ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_TOKEN_SEPARATOR,
+        false, false, null);
+    assertAnalyzesTo(analyzer, "please divide into shingles",
+                     new String[] { "please divide", "divide ", " shingles" },
+                     new int[] {  0,  7, 19 },
+                     new int[] { 13, 19, 27 },
+                     new int[] {  1,  1,  1 });
+
+    analyzer = new ShingleAnalyzerWrapper(
+        delegate,
+        ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
+        ShingleFilter.DEFAULT_TOKEN_SEPARATOR,
+        false, false, "");
+    assertAnalyzesTo(analyzer, "please divide into shingles",
+                     new String[] { "please divide", "divide ", " shingles" },
+                     new int[] {  0,  7, 19 },
+                     new int[] { 13, 19, 27 },
+                     new int[] {  1,  1,  1 });
+  }
+
   public void testOutputUnigramsIfNoShinglesSingleToken() throws Exception {
     ShingleAnalyzerWrapper analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
         ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE,
-        "", false, true);
+        "", false, true,
+        ShingleFilter.DEFAULT_FILLER_TOKEN);
     assertAnalyzesTo(analyzer, "please",
                           new String[] { "please" },
                           new int[] { 0 },
