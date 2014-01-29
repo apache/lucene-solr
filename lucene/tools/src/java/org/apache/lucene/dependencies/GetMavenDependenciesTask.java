@@ -115,6 +115,7 @@ public class GetMavenDependenciesTask extends Task {
      = new HashMap<String,SortedSet<ExternalDependency>>();
   private final DocumentBuilder documentBuilder;
   private File ivyCacheDir;
+  private Pattern internalJarPattern;
 
 
   /**
@@ -180,6 +181,12 @@ public class GetMavenDependenciesTask extends Task {
    */
   @Override
   public void execute() throws BuildException {
+    // Local:   lucene/build/analysis/common/lucene-analyzers-common-5.0-SNAPSHOT.jar
+    // Jenkins: lucene/build/analysis/common/lucene-analyzers-common-5.0-2013-10-31_18-52-24.jar
+    // Also support any custom version, which won't necessarily conform to any predefined pattern.
+    internalJarPattern = Pattern.compile(".*(lucene|solr)([^/]*?)-"
+        + Pattern.quote(getProject().getProperty("version")) + "\\.jar");
+
     setInternalDependencyProperties();            // side-effect: all modules' internal deps are recorded
     setExternalDependencyProperties();            // side-effect: all modules' external deps are recorded
     setGrandparentDependencyManagementProperty(); // uses deps recorded in above two methods
@@ -485,7 +492,7 @@ public class GetMavenDependenciesTask extends Task {
 
   /**
    * Sets the internal dependencies compile and test properties to be inserted 
-   * into modules' POMs.                                                                          k
+   * into modules' POMs.
    * 
    * Also collects shared external dependencies, 
    * e.g. solr-core wants all of solrj's external dependencies 
@@ -614,15 +621,10 @@ public class GetMavenDependenciesTask extends Task {
       }
       artifactId.append(artifact);
     } else {
-      // Local:   lucene/build/analysis/common/lucene-analyzers-common-5.0-SNAPSHOT.jar
-      // Jenkins: lucene/build/analysis/common/lucene-analyzers-common-5.0-2013-10-31_18-52-24.jar
-      // Also support any custom version, which won't necessarily conform to any predefined pattern.
-      Pattern internalJarPattern = Pattern.compile(".*(lucene|solr)([^/]*?)-"
-                                 + Pattern.quote(getProject().getProperty("version")) + "\\.jar");
-
       matcher = internalJarPattern.matcher(dependency);
       if (matcher.matches()) {
-        // Pattern.compile(".*(lucene|solr)([^/]*?)-(?:\\d\\.)+\\d(?:-SNAPSHOT)?\\.jar)")
+        // internalJarPattern is /.*(lucene|solr)([^/]*?)-<version>\.jar/,
+        // where <version> is the value of the Ant "version" property
         artifactId.append(matcher.group(1));
         artifactId.append(matcher.group(2));
       } else {
