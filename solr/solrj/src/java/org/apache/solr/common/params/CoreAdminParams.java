@@ -128,7 +128,7 @@ public abstract class CoreAdminParams
     REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
     TRANSIENT,
-    REJOINOVERSEERELECTION;
+    OVERSEEROP;
     
     public static CoreAdminAction get( String p )
     {
