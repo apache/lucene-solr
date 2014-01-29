@@ -345,15 +345,6 @@ public class FilteredQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query queryRewritten = query.rewrite(reader);
     
-    if (queryRewritten instanceof MatchAllDocsQuery) {
-      // Special case: If the query is a MatchAllDocsQuery, we only
-      // return a CSQ(filter).
-      final Query rewritten = new ConstantScoreQuery(filter);
-      // Combine boost of MatchAllDocsQuery and the wrapped rewritten query:
-      rewritten.setBoost(this.getBoost() * queryRewritten.getBoost());
-      return rewritten;
-    }
-    
     if (queryRewritten != query) {
       // rewrite to a new FilteredQuery wrapping the rewritten query
       final Query rewritten = new FilteredQuery(queryRewritten, filter, strategy);

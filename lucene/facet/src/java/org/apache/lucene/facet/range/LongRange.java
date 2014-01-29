@@ -133,7 +133,7 @@ public final class LongRange extends Range {
 
           @Override
           public DocIdSetIterator iterator() {
-            return new SlowBitsDocIdSetIterator(bits(), maxDoc, acceptDocs);
+            throw new UnsupportedOperationException("this filter can only be accessed via bits()");
           }
         };
       }
