@@ -28,7 +28,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
@@ -37,10 +39,7 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.FloatAssociationFacetField;
 import org.apache.lucene.facet.taxonomy.IntAssociationFacetField;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -166,17 +165,27 @@ public class FacetsConfig {
     seenDims.add(dim);
   }
 
-  /** Translates any added {@link FacetField}s into normal
-   *  fields for indexing; only use this version if you
-   *  did not add any taxonomy-based fields ({@link
-   *  FacetField} or {@link AssociationFacetField}) */
-  public IndexDocument build(IndexDocument doc) throws IOException {
+  /**
+   * Translates any added {@link FacetField}s into normal fields for indexing;
+   * only use this version if you did not add any taxonomy-based fields (
+   * {@link FacetField} or {@link AssociationFacetField}).
+   * 
+   * <p>
+   * <b>NOTE:</b> you should add the returned document to IndexWriter, not the
+   * input one!
+   */
+  public Document build(Document doc) throws IOException {
     return build(null, doc);
   }
 
-  /** Translates any added {@link FacetField}s into normal
-   *  fields for indexing. */
-  public IndexDocument build(TaxonomyWriter taxoWriter, IndexDocument doc) throws IOException {
+  /**
+   * Translates any added {@link FacetField}s into normal fields for indexing.
+   * 
+   * <p>
+   * <b>NOTE:</b> you should add the returned document to IndexWriter, not the
+   * input one!
+   */
+  public Document build(TaxonomyWriter taxoWriter, Document doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
     Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
 
@@ -188,7 +197,7 @@ public class FacetsConfig {
 
     Set<String> seenDims = new HashSet<String>();
 
-    for(IndexableField field : doc.indexableFields()) {
+    for (IndexableField field : doc.indexableFields()) {
       if (field.fieldType() == FacetField.TYPE) {
         FacetField facetField = (FacetField) field;
         FacetsConfig.DimConfig dimConfig = getDimConfig(facetField.dim);
@@ -260,47 +269,28 @@ public class FacetsConfig {
       }
     }
 
-    List<Field> addedIndexedFields = new ArrayList<Field>();
-    List<Field> addedStoredFields = new ArrayList<Field>();
+    Document result = new Document();
 
-    processFacetFields(taxoWriter, byField, addedIndexedFields, addedStoredFields);
-    processSSDVFacetFields(dvByField, addedIndexedFields, addedStoredFields);
-    processAssocFacetFields(taxoWriter, assocByField, addedIndexedFields, addedStoredFields);
+    processFacetFields(taxoWriter, byField, result);
+    processSSDVFacetFields(dvByField, result);
+    processAssocFacetFields(taxoWriter, assocByField, result);
 
     //System.out.println("add stored: " + addedStoredFields);
 
-    final List<IndexableField> allIndexedFields = new ArrayList<IndexableField>();
-    for(IndexableField field : doc.indexableFields()) {
-      IndexableFieldType ft = field.fieldType();
+    for (Field field : doc.getFields()) {
+      FieldType ft = field.fieldType();
       if (ft != FacetField.TYPE && ft != SortedSetDocValuesFacetField.TYPE && ft != AssociationFacetField.TYPE) {
-        allIndexedFields.add(field);
+        result.add(field);
       }
     }
-    allIndexedFields.addAll(addedIndexedFields);
-
-    final List<StorableField> allStoredFields = new ArrayList<StorableField>();
-    for(StorableField field : doc.storableFields()) {
-      allStoredFields.add(field);
-    }
-    allStoredFields.addAll(addedStoredFields);
 
     //System.out.println("all indexed: " + allIndexedFields);
     //System.out.println("all stored: " + allStoredFields);
 
-    return new IndexDocument() {
-        @Override
-        public Iterable<IndexableField> indexableFields() {
-          return allIndexedFields;
-        }
-
-        @Override
-        public Iterable<StorableField> storableFields() {
-          return allStoredFields;
-        }
-      };
+    return result;
   }
 
-  private void processFacetFields(TaxonomyWriter taxoWriter, Map<String,List<FacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
+  private void processFacetFields(TaxonomyWriter taxoWriter, Map<String,List<FacetField>> byField, Document doc) throws IOException {
 
     for(Map.Entry<String,List<FacetField>> ent : byField.entrySet()) {
 
@@ -345,18 +335,18 @@ public class FacetsConfig {
         }
 
         // Drill down:
-        for(int i=1;i<=cp.length;i++) {
-          addedIndexedFields.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
+        for (int i=1;i<=cp.length;i++) {
+          doc.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
 
       // Facet counts:
       // DocValues are considered stored fields:
-      addedStoredFields.add(new BinaryDocValuesField(indexFieldName, dedupAndEncode(ordinals)));
+      doc.add(new BinaryDocValuesField(indexFieldName, dedupAndEncode(ordinals)));
     }
   }
 
-  private void processSSDVFacetFields(Map<String,List<SortedSetDocValuesFacetField>> byField, List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
+  private void processSSDVFacetFields(Map<String,List<SortedSetDocValuesFacetField>> byField, Document doc) throws IOException {
     //System.out.println("process SSDV: " + byField);
     for(Map.Entry<String,List<SortedSetDocValuesFacetField>> ent : byField.entrySet()) {
 
@@ -369,18 +359,19 @@ public class FacetsConfig {
         //System.out.println("add " + fullPath);
 
         // For facet counts:
-        addedStoredFields.add(new SortedSetDocValuesField(indexFieldName, new BytesRef(fullPath)));
+        doc.add(new SortedSetDocValuesField(indexFieldName, new BytesRef(fullPath)));
 
         // For drill-down:
-        addedIndexedFields.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
-        addedIndexedFields.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
+        doc.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
+        doc.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
       }
     }
   }
 
-  private void processAssocFacetFields(TaxonomyWriter taxoWriter, Map<String,List<AssociationFacetField>> byField,
-                                       List<Field> addedIndexedFields, List<Field> addedStoredFields) throws IOException {
-    for(Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
+  private void processAssocFacetFields(TaxonomyWriter taxoWriter,
+      Map<String,List<AssociationFacetField>> byField, Document doc)
+      throws IOException {
+    for (Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
       byte[] bytes = new byte[16];
       int upto = 0;
       String indexFieldName = ent.getKey();
@@ -402,7 +393,7 @@ public class FacetsConfig {
         System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
         upto += field.assoc.length;
       }
-      addedStoredFields.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));
+      doc.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));
     }
   }
 

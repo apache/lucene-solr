@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -65,10 +64,10 @@ public class TestFacetsConfig extends FacetTestCase {
     FacetsConfig facetsConfig = new FacetsConfig();
     Document doc = new Document();
     doc.add(new FacetField("a", "b"));
-    IndexDocument facetDoc = facetsConfig.build(taxoWriter, doc);
+    doc = facetsConfig.build(taxoWriter, doc);
     // these two addDocument() used to fail
-    indexWriter.addDocument(facetDoc);
-    indexWriter.addDocument(facetDoc);
+    indexWriter.addDocument(doc);
+    indexWriter.addDocument(doc);
     IOUtils.close(indexWriter, taxoWriter);
     
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
