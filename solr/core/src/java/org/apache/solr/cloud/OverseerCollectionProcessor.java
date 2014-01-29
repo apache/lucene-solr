@@ -229,7 +229,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if(nodeNames.size()<2) return;
 
 //
-    ArrayList<String> nodesTobePushedBack =  new ArrayList<>();
+    ArrayList<String> nodesTobePushedBack =  new ArrayList<String>();
     //ensure that the node right behind the leader , i.r at position 1 is a Overseer
     List<String> availableDesignates = new ArrayList<String>();
 
