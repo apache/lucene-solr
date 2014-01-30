@@ -1030,6 +1030,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
                  format.equals("FSTOrd41") ||
                  format.equals("SimpleText") ||
                  format.equals("Memory") ||
+                 format.equals("MockRandom") ||
                  format.equals("Direct")));
 
     Directory dir = newDirectory();
