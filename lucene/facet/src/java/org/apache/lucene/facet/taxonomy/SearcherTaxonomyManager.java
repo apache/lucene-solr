@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -69,9 +70,27 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     this.searcherFactory = searcherFactory;
     this.taxoWriter = taxoWriter;
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
-    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes)),
-                                      taxoReader);
-    taxoEpoch = taxoWriter.getTaxonomyEpoch();
+    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes)), taxoReader);
+    this.taxoEpoch = taxoWriter.getTaxonomyEpoch();
+  }
+
+  /**
+   * Creates search and taxonomy readers over the corresponding directories.
+   * 
+   * <p>
+   * <b>NOTE:</b> you should only use this constructor if you commit and call
+   * {@link #maybeRefresh()} in the same thread. Otherwise it could lead to an
+   * unsync'd {@link IndexSearcher} and {@link TaxonomyReader} pair.
+   */
+  public SearcherTaxonomyManager(Directory indexDir, Directory taxoDir, SearcherFactory searcherFactory) throws IOException {
+    if (searcherFactory == null) {
+      searcherFactory = new SearcherFactory();
+    }
+    this.searcherFactory = searcherFactory;
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(indexDir)), taxoReader);
+    this.taxoWriter = null;
+    taxoEpoch = -1;
   }
 
   @Override
@@ -114,7 +133,7 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
       if (tr == null) {
         ref.taxonomyReader.incRef();
         tr = ref.taxonomyReader;
-      } else if (taxoWriter.getTaxonomyEpoch() != taxoEpoch) {
+      } else if (taxoWriter != null && taxoWriter.getTaxonomyEpoch() != taxoEpoch) {
         IOUtils.close(newReader, tr);
         throw new IllegalStateException("DirectoryTaxonomyWriter.replaceTaxonomy was called, which is not allowed when using SearcherTaxonomyManager");
       }

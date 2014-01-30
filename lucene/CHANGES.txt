@@ -122,6 +122,9 @@ New Features
 * LUCENE-5353: ShingleFilter's filler token should be configurable.
   (Ahmet Arslan, Simon Willnauer, Steve Rowe)
 
+* LUCENE-5320: Add SearcherTaxonomyManager over search and taxonomy index
+  directories (i.e. not only NRT). (Shai Erera)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
