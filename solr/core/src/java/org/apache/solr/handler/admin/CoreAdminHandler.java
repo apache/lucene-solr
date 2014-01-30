@@ -295,9 +295,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
           DocRouter.Range currentRange = slice.getRange();
           ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
         }
-        Map m = (Map) collection.get(DOC_ROUTER);
-        if (m != null)  {
-          routeFieldName = (String) m.get("field");
+        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+        if (routerObj != null && routerObj instanceof Map) {
+          Map routerProps = (Map) routerObj;
+          routeFieldName = (String) routerProps.get("field");
         }
       }
 
