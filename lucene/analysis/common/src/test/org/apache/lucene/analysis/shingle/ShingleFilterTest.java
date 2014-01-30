@@ -1195,4 +1195,52 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
                               new int[] {1, 0, 0, 1, 0, 0},
                               20);
   }
+
+  public void testTwoTrailingHolesTriShingleWithTokenFiller() throws IOException {
+    // Analyzing "purple wizard of the", where of and the are removed as a
+    // stopwords, leaving two trailing holes:
+    Token[] inputTokens = new Token[] {createToken("purple", 0, 6), createToken("wizard", 7, 13)};
+    ShingleFilter filter = new ShingleFilter(new CannedTokenStream(2, 20, inputTokens), 2, 3);
+    filter.setFillerToken("--");
+
+    assertTokenStreamContents(filter,
+        new String[]{"purple", "purple wizard", "purple wizard --", "wizard", "wizard --", "wizard -- --"},
+        new int[]{0, 0, 0, 7, 7, 7},
+        new int[]{6, 13, 20, 13, 20, 20},
+        new int[]{1, 0, 0, 1, 0, 0},
+        20);
+
+     filter = new ShingleFilter(new CannedTokenStream(2, 20, inputTokens), 2, 3);
+    filter.setFillerToken("");
+
+    assertTokenStreamContents(filter,
+        new String[]{"purple", "purple wizard", "purple wizard ", "wizard", "wizard ", "wizard  "},
+        new int[]{0, 0, 0, 7, 7, 7},
+        new int[]{6, 13, 20, 13, 20, 20},
+        new int[]{1, 0, 0, 1, 0, 0},
+        20);
+
+
+    filter = new ShingleFilter(new CannedTokenStream(2, 20, inputTokens), 2, 3);
+    filter.setFillerToken(null);
+
+    assertTokenStreamContents(filter,
+        new String[] {"purple", "purple wizard", "purple wizard ", "wizard", "wizard ", "wizard  "},
+        new int[] {0, 0, 0, 7, 7, 7},
+        new int[] {6, 13, 20, 13, 20, 20},
+        new int[] {1, 0, 0, 1, 0, 0},
+        20);
+
+
+    filter = new ShingleFilter(new CannedTokenStream(2, 20, inputTokens), 2, 3);
+    filter.setFillerToken(null);
+    filter.setTokenSeparator(null);
+
+    assertTokenStreamContents(filter,
+        new String[] {"purple", "purplewizard", "purplewizard", "wizard", "wizard", "wizard"},
+        new int[] {0, 0, 0, 7, 7, 7},
+        new int[] {6, 13, 20, 13, 20, 20},
+        new int[] {1, 0, 0, 1, 0, 0},
+        20);
+  }
 }

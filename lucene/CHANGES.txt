@@ -60,6 +60,9 @@ New Features
   encode term metadata, and all dictionary implementations can now plug in any 
   PostingsBaseFormat. (Han Jiang, Mike McCandless)
 
+* LUCENE-5353: ShingleFilter's filler token should be configurable.
+  (Ahmet Arslan, Simon Willnauer, Steve Rowe)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
