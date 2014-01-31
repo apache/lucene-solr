@@ -243,8 +243,9 @@ public final class Document implements Iterable<IndexableField> {
     for (int i = 0; i < fields.size(); i++) {
       IndexableField field = fields.get(i);
       buffer.append(field.toString());
-      if (i != fields.size()-1)
+      if (i != fields.size()-1) {
         buffer.append(" ");
+      }
     }
     buffer.append(">");
     return buffer.toString();

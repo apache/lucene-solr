@@ -155,6 +155,10 @@ Bug fixes
   return any groups when the joined query required more than one
   rewrite step (Peng Cheng via Mike McCandless)
 
+* LUCENE-5398: NormValueSource was incorrectly casting the long value
+  to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
