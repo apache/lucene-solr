@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.expressions.Expression;
@@ -514,6 +515,11 @@ public class SearchHandler extends Handler {
     @Override
     protected PassageScorer getScorer(String fieldName) {
       return scorer;
+    }
+
+    @Override
+    protected Analyzer getIndexAnalyzer(String fieldName) {
+      return state.getField(fieldName).indexAnalyzer;
     }
 
     @Override
@@ -1192,7 +1198,6 @@ public class SearchHandler extends Handler {
     } else if (pr.name.equals("text")) {
       Request r2 = pr.r;
       String queryText = r2.getString("text");
-      //System.out.println("parseQuery text=" + queryText + " field=" + field);
       if (field == null) {
         r.fail("no field specified");
       }
@@ -2066,6 +2071,8 @@ public class SearchHandler extends Handler {
     // Pull the searcher we will use
     final SearcherAndTaxonomy s = getSearcherAndTaxonomy(r, state, diagnostics);
 
+    final Query queryOrig = q;
+
     // matching finally clause releases this searcher:
     try {
 
@@ -2402,7 +2409,7 @@ public class SearchHandler extends Handler {
         }
 
         highlights = highlighter.highlighter.highlightToObjects(fieldsArray,
-                                                                q,
+                                                                queryOrig,
                                                                 s.searcher,
                                                                 highlightDocIDs,
                                                                 maxPassages);

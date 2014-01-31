@@ -127,6 +127,17 @@ public class TestHighlight extends ServerBaseTestCase {
                  renderHighlight(getArray(o, "hits[0].fields.body")));
   }
 
+  // LUCENE-5415
+  public void testHighlightSnippetWildcard() throws Exception {
+    deleteAllDocs();
+    long gen = addDocument(0, "Melanie", "this is a test.  here is a random sentence.  here is another sentence with test in it.", 10.99f, "2012/10/17");
+    search("te*", gen, null, false, true, null, null);
+    JSONArray fragments = getArray("hits[0].fields.body");
+    assertEquals(2, fragments.size());
+    assertEquals("body:te*", getString(fragments, "[0].parts[1].term"));
+    assertEquals("body:te*", getString(fragments, "[1].parts[1].term"));
+  }
+
   /** Highlight entire value as a single passage (eg good
    *  for title fields). */
   public void testWholeHighlight() throws Exception {

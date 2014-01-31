@@ -33,9 +33,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.search.suggest.DocumentDictionary;
-import org.apache.lucene.search.suggest.DocumentExpressionDictionary;
+import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.Lookup;
@@ -424,11 +426,19 @@ public class BuildSuggestHandler extends Handler {
       } else {
         // Weight is an expression; add bindings for all
         // numeric DV fields:
-        dict = new DocumentExpressionDictionary(searcher.searcher.getIndexReader(),
-                                                suggestField,
-                                                source.getString("weightExpression"),
-                                                state.exprBindings,
-                                                payloadField);
+        Expression expr;
+        try {
+          expr = JavascriptCompiler.compile(source.getString("weightExpression"));
+        } catch (Exception e) {
+          source.fail("weightExpression", "expression does not compile", e);
+          // Dead code but compiler disagrees
+          expr = null;
+        }
+        
+        dict = new DocumentValueSourceDictionary(searcher.searcher.getIndexReader(),
+                                                 suggestField,
+                                                 expr.getValueSource(state.exprBindings),
+                                                 payloadField);
       }
 
       // nocommit weird that I have to cast this...?
