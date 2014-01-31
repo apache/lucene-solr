@@ -76,7 +76,7 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
       
       
       if (usually()) {
-        commit(); // to have several segments
+        assertU(commit()); // to have several segments
       }
     }
     

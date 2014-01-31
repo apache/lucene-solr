@@ -99,7 +99,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
       }
       
       if (usually()) {
-        commit(); // to have several segments
+        assertU(commit()); // to have several segments
       }
     }
     

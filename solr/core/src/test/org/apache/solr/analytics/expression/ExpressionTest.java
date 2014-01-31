@@ -64,7 +64,7 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
           "double_dd", "" + d, "date_dtd", dt, "string_sd", s));
 
       if (usually()) {
-        commit(); // to have several segments
+        assertU(commit()); // to have several segments
       }
     }
 
