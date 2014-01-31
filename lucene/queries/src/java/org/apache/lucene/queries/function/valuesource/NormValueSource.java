@@ -71,14 +71,16 @@ public class NormValueSource extends ValueSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return similarity.decodeNormValue((byte)norms.get(doc));
+        return similarity.decodeNormValue(norms.get(doc));
       }
     };
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this.getClass() != o.getClass()) return false;
+    if (this.getClass() != o.getClass()) {
+      return false;
+    }
     return this.field.equals(((NormValueSource)o).field);
   }
 
