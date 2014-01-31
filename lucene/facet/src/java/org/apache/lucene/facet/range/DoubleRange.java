@@ -29,7 +29,9 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
-/** Represents a range over double values. */
+/** Represents a range over double values.
+ *
+ * @lucene.experimental */
 public final class DoubleRange extends Range {
   final double minIncl;
   final double maxIncl;
@@ -99,12 +101,12 @@ public final class DoubleRange extends Range {
   }
 
   @Override
-  public Filter getFilter(final ValueSource valueSource) {
+  public Filter getFilter(final Filter fastMatchFilter, final ValueSource valueSource) {
     return new Filter() {
 
       @Override
       public String toString() {
-        return "Filter(" + DoubleRange.this.toString();
+        return "Filter(" + DoubleRange.this.toString() + ")";
       }
 
       @Override
@@ -119,6 +121,21 @@ public final class DoubleRange extends Range {
 
         final int maxDoc = context.reader().maxDoc();
 
+        final Bits fastMatchBits;
+        if (fastMatchFilter != null) {
+          DocIdSet dis = fastMatchFilter.getDocIdSet(context, null);
+          if (dis == null) {
+            // No documents match
+            return null;
+          }
+          fastMatchBits = dis.bits();
+          if (fastMatchBits == null) {
+            throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
+          }
+        } else {
+          fastMatchBits = null;
+        }
+
         return new DocIdSet() {
 
           @Override
@@ -127,6 +144,9 @@ public final class DoubleRange extends Range {
               @Override
               public boolean get(int docID) {
                 if (acceptDocs != null && acceptDocs.get(docID) == false) {
+                  return false;
+                }
+                if (fastMatchBits != null && fastMatchBits.get(docID) == false) {
                   return false;
                 }
                 return accept(values.doubleVal(docID));

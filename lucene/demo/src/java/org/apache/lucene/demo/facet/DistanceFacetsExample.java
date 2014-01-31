@@ -40,9 +40,13 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -63,6 +67,14 @@ public class DistanceFacetsExample implements Closeable {
   private IndexSearcher searcher;
   private final FacetsConfig config = new FacetsConfig();
 
+  public final static double ORIGIN_LATITUDE = 40.7143528;
+  public final static double ORIGIN_LONGITUDE = -74.0059731;
+
+  // NOTE: this is approximate, because the earth is a bit
+  // wider at the equator than the poles.  See
+  // http://en.wikipedia.org/wiki/Earth_radius
+  public final static double EARTH_RADIUS_KM = 6371.01;
+
   /** Empty constructor */
   public DistanceFacetsExample() {}
   
@@ -70,6 +82,8 @@ public class DistanceFacetsExample implements Closeable {
   public void index() throws IOException {
     IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
+
+    // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
 
     // Add documents with latitude/longitude location:
     Document doc = new Document();
@@ -96,7 +110,7 @@ public class DistanceFacetsExample implements Closeable {
     Expression distance;
     try {
       distance = JavascriptCompiler.compile(
-                  "haversin(40.7143528,-74.0059731,latitude,longitude)");
+                  "haversin(" + ORIGIN_LATITUDE + "," + ORIGIN_LONGITUDE + ",latitude,longitude)");
     } catch (ParseException pe) {
       // Should not happen
       throw new RuntimeException(pe);
@@ -108,6 +122,71 @@ public class DistanceFacetsExample implements Closeable {
     return distance.getValueSource(bindings);
   }
 
+  /** Given a latitude and longitude (in degrees) and the
+   *  maximum great circle (surface of the earth) distance,
+   *  returns a simple Filter bounding box to "fast match"
+   *  candidates. */
+  public static Filter getBoundingBoxFilter(double originLat, double originLng, double maxDistanceKM) {
+
+    // Basic bound box geo math from http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates
+
+    // TODO: maybe switch to recursive prefix tree instead
+    // (in lucene/spatial)?  It should be more efficient
+    // since it's a 2D trie...
+
+    // Degrees -> Radians:
+    double originLatRadians = Math.toRadians(originLat);
+    double originLngRadians = Math.toRadians(originLng);
+
+    double angle = maxDistanceKM / EARTH_RADIUS_KM;
+
+    double minLat = originLatRadians - angle;
+    double maxLat = originLatRadians + angle;
+
+    double minLng;
+    double maxLng;
+    if (minLat > Math.toRadians(-90) && maxLat < Math.toRadians(90)) {
+      double delta = Math.asin(Math.sin(angle)/Math.cos(originLatRadians));
+      minLng = originLngRadians - delta;
+      if (minLng < Math.toRadians(-180)) {
+        minLng += 2 * Math.PI;
+      }
+      maxLng = originLngRadians + delta;
+      if (maxLng > Math.toRadians(180)) {
+        maxLng -= 2 * Math.PI;
+      }
+    } else {
+      // The query includes a pole!
+      minLat = Math.max(minLat, Math.toRadians(-90));
+      maxLat = Math.min(maxLat, Math.toRadians(90));
+      minLng = Math.toRadians(-180);
+      maxLng = Math.toRadians(180);
+    }
+
+    BooleanFilter f = new BooleanFilter();
+
+    // Add latitude range filter:
+    f.add(NumericRangeFilter.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
+          BooleanClause.Occur.MUST);
+
+    // Add longitude range filter:
+    if (minLng > maxLng) {
+      // The bounding box crosses the international date
+      // line:
+      BooleanFilter lonF = new BooleanFilter();
+      lonF.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
+               BooleanClause.Occur.SHOULD);
+      lonF.add(NumericRangeFilter.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
+               BooleanClause.Occur.SHOULD);
+      f.add(lonF, BooleanClause.Occur.MUST);
+    } else {
+      f.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
+            BooleanClause.Occur.MUST);
+    }
+
+    return f;
+  }
+
   /** User runs a query and counts facets. */
   public FacetResult search() throws IOException {
 
@@ -116,6 +195,7 @@ public class DistanceFacetsExample implements Closeable {
     searcher.search(new MatchAllDocsQuery(), fc);
 
     Facets facets = new DoubleRangeFacetCounts("field", getDistanceValueSource(), fc,
+                                               getBoundingBoxFilter(ORIGIN_LATITUDE, ORIGIN_LONGITUDE, 10.0),
                                                ONE_KM,
                                                TWO_KM,
                                                FIVE_KM,
@@ -131,7 +211,7 @@ public class DistanceFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(null);
     final ValueSource vs = getDistanceValueSource();
-    q.add("field", range.getFilter(vs));
+    q.add("field", range.getFilter(getBoundingBoxFilter(ORIGIN_LATITUDE, ORIGIN_LONGITUDE, range.max), vs));
     DrillSideways ds = new DrillSideways(searcher, config, (TaxonomyReader) null) {
         @Override
         protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        

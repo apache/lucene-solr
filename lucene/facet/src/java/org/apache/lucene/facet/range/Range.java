@@ -44,8 +44,24 @@ public abstract class Range {
    *  {@link FilteredQuery} using its {@link
    *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
    *  {@link ValueSource} is static, e.g. an indexed numeric
+   *  field, then it may be more efficient to use {@link
+   *  NumericRangeFilter}.  The provided fastMatchFilter,
+   *  if non-null, will first be consulted, and only if
+   *  that is set for each document will the range then be
+   *  checked. */
+  public abstract Filter getFilter(Filter fastMatchFilter, ValueSource valueSource);
+
+  /** Returns a new {@link Filter} accepting only documents
+   *  in this range.  This filter is not general-purpose;
+   *  you should either use it with {@link DrillSideways} by
+   *  adding it to {@link DrillDownQuery#add}, or pass it to
+   *  {@link FilteredQuery} using its {@link
+   *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
+   *  {@link ValueSource} is static, e.g. an indexed numeric
    *  field, then it may be more efficient to use {@link NumericRangeFilter}. */
-  public abstract Filter getFilter(final ValueSource valueSource);
+  public Filter getFilter(ValueSource valueSource) {
+    return getFilter(null, valueSource);
+  }
 
   /** Invoke this for a useless range. */
   protected void failNoMatch() {

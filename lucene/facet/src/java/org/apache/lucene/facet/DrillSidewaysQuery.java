@@ -135,7 +135,12 @@ class DrillSidewaysQuery extends Query {
             // MUST'd here
             DocIdSet dis = ((Filter) drillDowns[dim]).getDocIdSet(context, null);
 
+            if (dis == null) {
+              continue;
+            }
+
             Bits bits = dis.bits();
+
             if (bits != null) {
               // TODO: this logic is too naive: the
               // existence of bits() in DIS today means

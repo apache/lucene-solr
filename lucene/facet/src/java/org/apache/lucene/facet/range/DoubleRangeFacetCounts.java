@@ -24,12 +24,15 @@ import java.util.List;
 import org.apache.lucene.document.DoubleDocValuesField; // javadocs
 import org.apache.lucene.document.FloatDocValuesField; // javadocs
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
@@ -60,7 +63,16 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
   /** Create {@code RangeFacetCounts}, using the provided
    *  {@link ValueSource}. */
   public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
-    super(field, ranges);
+    this(field, valueSource, hits, null, ranges);
+  }
+
+  /** Create {@code RangeFacetCounts}, using the provided
+   *  {@link ValueSource}, and using the provided Filter as
+   *  a fastmatch: only documents passing the filter are
+   *  checked for the matching ranges.  The filter must be
+   *  random access (implement {@link DocIdSet#bits}). */
+  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Filter fastMatchFilter, DoubleRange... ranges) throws IOException {
+    super(field, ranges, fastMatchFilter);
     count(valueSource, hits.getMatchingDocs());
   }
 
@@ -84,7 +96,26 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
       final int length = hits.bits.length();
       int doc = 0;
       totCount += hits.totalHits;
+      Bits bits;
+      if (fastMatchFilter != null) {
+        DocIdSet dis = fastMatchFilter.getDocIdSet(hits.context, null);
+        if (dis == null) {
+          // No documents match
+          continue;
+        }
+        bits = dis.bits();
+        if (bits == null) {
+          throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
+        }
+      } else {
+        bits = null;
+      }
+
       while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
+        if (bits != null && bits.get(doc) == false) {
+          doc++;
+          continue;
+        }
         // Skip missing docs:
         if (fv.exists(doc)) {
           counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));

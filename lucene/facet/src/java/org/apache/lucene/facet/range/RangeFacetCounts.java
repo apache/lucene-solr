@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.Filter;
 
 /** Base class for range faceting.
  *
@@ -36,17 +36,23 @@ abstract class RangeFacetCounts extends Facets {
   /** Counts, initialized in by subclass. */
   protected final int[] counts;
 
+  /** Optional: if specified, we first test this Filter to
+   *  see whether the document should be checked for
+   *  matching ranges.  If this is null, all documents are
+   *  checked. */
+  protected final Filter fastMatchFilter;
+
   /** Our field name. */
   protected final String field;
 
   /** Total number of hits. */
   protected int totCount;
 
-  /** Create {@code RangeFacetCounts}, using {@link
-   *  LongFieldSource} from the specified field. */
-  protected RangeFacetCounts(String field, Range[] ranges) throws IOException {
+  /** Create {@code RangeFacetCounts} */
+  protected RangeFacetCounts(String field, Range[] ranges, Filter fastMatchFilter) throws IOException {
     this.field = field;
     this.ranges = ranges;
+    this.fastMatchFilter = fastMatchFilter;
     counts = new int[ranges.length];
   }
 
