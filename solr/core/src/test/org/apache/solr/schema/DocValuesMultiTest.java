@@ -45,7 +45,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
 
   public void testDocValues() throws IOException {
     assertU(adoc("id", "1", "floatdv", "4.5", "intdv", "-1", "intdv", "3", "stringdv", "value1", "stringdv", "value2"));
-    commit();
+    assertU(commit());
     SolrCore core = h.getCoreInc();
     try {
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
@@ -150,7 +150,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     }
     for (int i = 0; i < 50; ++i) {
       if (rarely()) {
-        commit(); // to have several segments
+        assertU(commit()); // to have several segments
       }
       assertU(adoc("id", "1000" + i, "floatdv", "" + i, "intdv", "" + i, "doubledv", "" + i, "longdv", "" + i, "datedv", (1900+i) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i));
     }

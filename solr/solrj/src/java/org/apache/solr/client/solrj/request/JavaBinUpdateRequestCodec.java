@@ -176,7 +176,6 @@ public class JavaBinUpdateRequestCodec {
     // must be loaded now
     if(updateRequest.getParams()==null) {
       NamedList params = (NamedList) namedList[0].get("params");
-      System.out.println("unmarchal params:" + params);
       if(params!=null) {
         updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
       }

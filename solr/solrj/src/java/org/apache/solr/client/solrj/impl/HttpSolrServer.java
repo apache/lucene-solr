@@ -595,7 +595,7 @@ public class HttpSolrServer extends SolrServer {
    * </p>
    */
   public void setFollowRedirects(boolean followRedirects) {
-    this.followRedirects = true;
+    this.followRedirects = followRedirects;
     HttpClientUtil.setFollowRedirects(httpClient,  followRedirects);
   }
   

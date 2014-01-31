@@ -237,7 +237,15 @@ Bug Fixes
 	
 * SOLR-5230: Call DelegatingCollector.finish() during grouping.
   (Joel Bernstein, ehatcher)
-	
+
+* SOLR-5679: Shard splitting fails with ClassCastException on collections
+  upgraded from 4.5 and earlier versions. (Brett Hoerner, shalin)
+
+* SOLR-5673: HTTPSolrServer doesn't set own property correctly in
+  setFollowRedirects. (Frank Wesemann via shalin)
+
+* SOLR-5676: SolrCloud updates rejected if talking to secure ZooKeeper.
+  (Greg Chanan via Mark Miller)
 
 Optimizations
 ----------------------

@@ -195,8 +195,8 @@ public class ConnectionManager implements Watcher {
       log.info("zkClient has disconnected");
       disconnected();
       connectionStrategy.disconnected();
-    } else {
-      disconnected();
+    } else if (state == KeeperState.AuthFailed) {
+      log.warn("zkClient received AuthFailed");
     }
   }
 

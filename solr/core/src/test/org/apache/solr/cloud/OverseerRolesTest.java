@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import com.google.protobuf.TextFormat;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -47,7 +49,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACT
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction;
-@Ignore("needs to restart the OverSeer")
+@LuceneTestCase.Slow
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
 
@@ -119,12 +121,16 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       }
       Thread.sleep(100);
     }
-    if(!leaderchanged){
+    /*if(!leaderchanged){
+
       log.warn("expected {}, current order {}",
           overseerDesignate,
           getSortedNodeNames(client.getZkStateReader().getZkClient())+ " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) );
-    }
-    assertTrue("could not set the new overseer",leaderchanged);
+    }*/
+    assertTrue("could not set the new overseer . expected "+
+        overseerDesignate + " current order : " +
+        getSortedNodeNames(client.getZkStateReader().getZkClient()) +
+        " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) ,leaderchanged);
 
 
 

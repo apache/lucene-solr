@@ -47,7 +47,7 @@ public final class ShingleFilter extends TokenFilter {
   /**
    * filler token for when positionIncrement is more than 1
    */
-  public static final char[] FILLER_TOKEN = { '_' };
+  public static final String DEFAULT_FILLER_TOKEN = "_";
 
   /**
    * default maximum shingle size is 2.
@@ -67,7 +67,7 @@ public final class ShingleFilter extends TokenFilter {
   /**
    * The default string to use when joining adjacent tokens to form a shingle
    */
-  public static final String TOKEN_SEPARATOR = " ";
+  public static final String DEFAULT_TOKEN_SEPARATOR = " ";
 
   /**
    * The sequence of input stream tokens (or filler tokens, if necessary)
@@ -95,7 +95,13 @@ public final class ShingleFilter extends TokenFilter {
   /**
    * The string to use when joining adjacent tokens to form a shingle
    */
-  private String tokenSeparator = TOKEN_SEPARATOR;
+  private String tokenSeparator = DEFAULT_TOKEN_SEPARATOR;
+
+  /**
+   * The string to insert for each position at which there is no token
+   * (i.e., when position increment is greater than one).
+   */
+  private char[] fillerToken = DEFAULT_FILLER_TOKEN.toCharArray();
 
   /**
    * By default, we output unigrams (individual tokens) as well as shingles
@@ -284,6 +290,16 @@ public final class ShingleFilter extends TokenFilter {
     this.tokenSeparator = null == tokenSeparator ? "" : tokenSeparator;
   }
 
+  /**
+   * Sets the string to insert for each position at which there is no token
+   * (i.e., when position increment is greater than one).
+   *
+   * @param fillerToken string to insert at each position where there is no token
+   */
+  public void setFillerToken(String fillerToken) {
+    this.fillerToken = null == fillerToken ? new char[0] : fillerToken.toCharArray();
+  }
+
   @Override
   public boolean incrementToken() throws IOException {
     boolean tokenAvailable = false;
@@ -341,7 +357,7 @@ public final class ShingleFilter extends TokenFilter {
   /**
    * <p>Get the next token from the input stream.
    * <p>If the next token has <code>positionIncrement > 1</code>,
-   * <code>positionIncrement - 1</code> {@link #FILLER_TOKEN}s are
+   * <code>positionIncrement - 1</code> {@link #fillerToken}s are
    * inserted first.
    * @param target Where to put the new token; if null, a new instance is created.
    * @return On success, the populated token; null otherwise
@@ -359,7 +375,7 @@ public final class ShingleFilter extends TokenFilter {
       // A filler token occupies no space
       newTarget.offsetAtt.setOffset(newTarget.offsetAtt.startOffset(), 
                                     newTarget.offsetAtt.startOffset());
-      newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+      newTarget.termAtt.copyBuffer(fillerToken, 0, fillerToken.length);
       newTarget.isFiller = true;
       --numFillerTokensToInsert;
     } else if (isNextInputStreamToken) {
@@ -390,7 +406,7 @@ public final class ShingleFilter extends TokenFilter {
           isNextInputStreamToken = true;
           // A filler token occupies no space
           newTarget.offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
-          newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+          newTarget.termAtt.copyBuffer(fillerToken, 0, fillerToken.length);
           newTarget.isFiller = true;
           --numFillerTokensToInsert;
         } else {

@@ -92,6 +92,13 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.position += analyzed ? docState.analyzer.getPositionIncrementGap(fieldInfo.name) : 0;
         }
 
+        /*
+        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
+        * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
+        * but rather a finally that takes note of the problem.
+        */
+
+        boolean succeededInProcessingField = false;
         try (TokenStream stream = field.tokenStream(docState.analyzer)) {
           // reset the TokenStream to the first token
           stream.reset();
@@ -175,6 +182,12 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           // when we come back around to the field...
           fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
+          /* if success was false above there is an exception coming through and we won't get here.*/
+          succeededInProcessingField = true;
+        } finally {
+          if (!succeededInProcessingField && docState.infoStream.isEnabled("DW")) {
+            docState.infoStream.message("DW", "An exception was thrown while processing field " + fieldInfo.name);
+          }
         }
 
         fieldState.offset += analyzed ? docState.analyzer.getOffsetGap(fieldInfo.name) : 0;

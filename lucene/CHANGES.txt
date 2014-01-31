@@ -19,12 +19,6 @@ New Features
   responsible for iterating through all fields, terms, documents and
   positions.  (Robert Muir, Mike McCandless)
 
-* LUCENE-3069: Add two memory resident dictionaries (FST terms dictionary and 
-  FSTOrd terms dictionary) to improve primary key lookups. The PostingsBaseFormat 
-  API is also changed so that term dictionaries get the ability to block 
-  encode term metadata, and all dictionary implementations can now plug in any 
-  PostingsBaseFormat. (Han Jiang, Mike McCandless)
-
 * LUCENE-5268: Full cutover of all postings formats to the "pull"
   FieldsConsumer API, removing PushFieldsConsumer.  Added new
   PushPostingsWriterBase for single-pass push of docs/positions to the
@@ -119,12 +113,24 @@ New Features
 * LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-3069: Add two memory resident dictionaries (FST terms dictionary and 
+  FSTOrd terms dictionary) to improve primary key lookups. The PostingsBaseFormat 
+  API is also changed so that term dictionaries get the ability to block 
+  encode term metadata, and all dictionary implementations can now plug in any 
+  PostingsBaseFormat. (Han Jiang, Mike McCandless)
+
+* LUCENE-5353: ShingleFilter's filler token should be configurable.
+  (Ahmet Arslan, Simon Willnauer, Steve Rowe)
+
+* LUCENE-5320: Add SearcherTaxonomyManager over search and taxonomy index
+  directories (i.e. not only NRT). (Shai Erera)
+
 Build
 
-* LUCENE-5217: Maven config: get dependencies from Ant+Ivy config; disable
-  transitive dependency resolution for all depended-on artifacts by putting
-  an exclusion for each transitive dependency in the <dependencyManagement>
-  section of the grandparent POM. (Steve Rowe)
+* LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
+  disable transitive dependency resolution for all depended-on artifacts by
+  putting an exclusion for each transitive dependency in the
+  <dependencyManagement> section of the grandparent POM. (Steve Rowe)
 
 * LUCENE-5322: Clean up / simplify Maven-related Ant targets.
   (Steve Rowe)
@@ -211,10 +217,16 @@ Bug fixes
   return any groups when the joined query required more than one
   rewrite step (Peng Cheng via Mike McCandless)
 
+* LUCENE-5398: NormValueSource was incorrectly casting the long value
+  to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
-  APIs more approachable to new users.  (Shai Erera, Gilad Barkai, Rob
+  APIs more approachable to new users. Note: when migrating to the new 
+  API, you must pass the Document that is returned from FacetConfig.build() 
+  to IndexWriter.addDocument(). (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
 
 * LUCENE-5395: The SpatialArgsParser now only reads WKT, no more "lat, lon"
@@ -226,6 +238,11 @@ API Changes
   module were removed from lucene-suggest. DocumentValueSourceDictionary now
   only accepts a ValueSource instead of a convenience ctor for an expression
   string. (Simon Willnauer)
+
+* LUCENE-3069: PostingsWriterBase and PostingsReaderBase are no longer
+  responsible for encoding/decoding a block of terms.  Instead, they
+  should encode/decode each term to/from a long[] and byte[].  (Han
+  Jiang, Mike McCandless)
 
 Optimizations
 

@@ -20,7 +20,6 @@ package org.apache.lucene.replicator;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
-import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
@@ -38,7 +36,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
@@ -180,7 +177,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     return new IndexAndTaxonomyRevision(publishIndexWriter, publishTaxoWriter);
   }
   
-  private IndexDocument newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
+  private Document newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
     Document doc = new Document();
     doc.add(new FacetField("A", Integer.toString(id, 16)));
     return config.build(publishTaxoWriter, doc);

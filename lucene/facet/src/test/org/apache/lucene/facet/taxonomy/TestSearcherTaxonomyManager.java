@@ -37,12 +37,82 @@ import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxon
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 
 public class TestSearcherTaxonomyManager extends FacetTestCase {
-  public void test() throws Exception {
+
+  private static class IndexerThread extends Thread {
+    
+    private IndexWriter w;
+    private FacetsConfig config;
+    private TaxonomyWriter tw;
+    private ReferenceManager<SearcherAndTaxonomy> mgr;
+    private int ordLimit;
+    private AtomicBoolean stop;
+
+    public IndexerThread(IndexWriter w, FacetsConfig config, TaxonomyWriter tw,
+        ReferenceManager<SearcherAndTaxonomy> mgr, int ordLimit, AtomicBoolean stop) {
+      this.w = w;
+      this.config = config;
+      this.tw = tw;
+      this.mgr = mgr;
+      this.ordLimit = ordLimit;
+      this.stop = stop;
+    }
+
+    @Override
+    public void run() {
+      try {
+        Set<String> seen = new HashSet<String>();
+        List<String> paths = new ArrayList<String>();
+        while (true) {
+          Document doc = new Document();
+          int numPaths = _TestUtil.nextInt(random(), 1, 5);
+          for(int i=0;i<numPaths;i++) {
+            String path;
+            if (!paths.isEmpty() && random().nextInt(5) != 4) {
+              // Use previous path
+              path = paths.get(random().nextInt(paths.size()));
+            } else {
+              // Create new path
+              path = null;
+              while (true) {
+                path = _TestUtil.randomRealisticUnicodeString(random());
+                if (path.length() != 0 && !seen.contains(path)) {
+                  seen.add(path);
+                  paths.add(path);
+                  break;
+                }
+              }
+            }
+            doc.add(new FacetField("field", path));
+          }
+          try {
+            w.addDocument(config.build(tw, doc));
+            if (mgr != null && random().nextDouble() < 0.1) {
+              w.commit();
+              tw.commit();
+              mgr.maybeRefresh();
+            }
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+          }
+          
+          if (tw.getSize() >= ordLimit) {
+            break;
+          }
+        }
+      } finally {
+        stop.set(true);
+      }
+    }
+
+  }
+
+  public void testNRT() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -54,49 +124,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     // How many unique facets to index before stopping:
     final int ordLimit = TEST_NIGHTLY ? 100000 : 6000;
 
-    Thread indexer = new Thread() {
-        @Override
-        public void run() {
-          try {
-            Set<String> seen = new HashSet<String>();
-            List<String> paths = new ArrayList<String>();
-            while (true) {
-              Document doc = new Document();
-              int numPaths = _TestUtil.nextInt(random(), 1, 5);
-              for(int i=0;i<numPaths;i++) {
-                String path;
-                if (!paths.isEmpty() && random().nextInt(5) != 4) {
-                  // Use previous path
-                  path = paths.get(random().nextInt(paths.size()));
-                } else {
-                  // Create new path
-                  path = null;
-                  while (true) {
-                    path = _TestUtil.randomRealisticUnicodeString(random());
-                    if (path.length() != 0 && !seen.contains(path)) {
-                      seen.add(path);
-                      paths.add(path);
-                      break;
-                    }
-                  }
-                }
-                doc.add(new FacetField("field", path));
-              }
-              try {
-                w.addDocument(config.build(tw, doc));
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
-
-              if (tw.getSize() >= ordLimit) {
-                break;
-              }
-            }
-          } finally {
-            stop.set(true);
-          }
-        }
-      };
+    Thread indexer = new IndexerThread(w, config, tw, null, ordLimit, stop);
 
     final SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(w, true, null, tw);
 
@@ -160,8 +188,60 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
 
     IOUtils.close(mgr, tw, w, taxoDir, dir);
   }
+  
+  public void testDirectory() throws Exception {
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    final IndexWriter w = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
+    // first empty commit
+    w.commit();
+    tw.commit();
+    final SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(indexDir, taxoDir, null);
+    final FacetsConfig config = new FacetsConfig();
+    config.setMultiValued("field", true);
+    final AtomicBoolean stop = new AtomicBoolean();
 
-  public void testReplaceTaxonomy() throws Exception {
+    // How many unique facets to index before stopping:
+    final int ordLimit = TEST_NIGHTLY ? 100000 : 6000;
+
+    Thread indexer = new IndexerThread(w, config, tw, mgr, ordLimit, stop);
+    indexer.start();
+
+    try {
+      while (!stop.get()) {
+        SearcherAndTaxonomy pair = mgr.acquire();
+        try {
+          //System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
+          FacetsCollector sfc = new FacetsCollector();
+          pair.searcher.search(new MatchAllDocsQuery(), sfc);
+          Facets facets = getTaxonomyFacetCounts(pair.taxonomyReader, config, sfc);
+          FacetResult result = facets.getTopChildren(10, "field");
+          if (pair.searcher.getIndexReader().numDocs() > 0) { 
+            //System.out.println(pair.taxonomyReader.getSize());
+            assertTrue(result.childCount > 0);
+            assertTrue(result.labelValues.length > 0);
+          }
+
+          //if (VERBOSE) {
+          //System.out.println("TEST: facets=" + FacetTestUtils.toString(results.get(0)));
+          //}
+        } finally {
+          mgr.release(pair);
+        }
+      }
+    } finally {
+      indexer.join();
+    }
+
+    if (VERBOSE) {
+      System.out.println("TEST: now stop");
+    }
+
+    IOUtils.close(mgr, tw, w, taxoDir, indexDir);
+  }
+  
+  public void testReplaceTaxonomyNRT() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -185,4 +265,43 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
 
     IOUtils.close(mgr, tw, w, taxoDir, dir);
   }
+  
+  public void testReplaceTaxonomyDirectory() throws Exception {
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    IndexWriter w = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
+    w.commit();
+    tw.commit();
+
+    Directory taxoDir2 = newDirectory();
+    DirectoryTaxonomyWriter tw2 = new DirectoryTaxonomyWriter(taxoDir2);
+    tw2.addCategory(new FacetLabel("a", "b"));
+    tw2.close();
+
+    SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(indexDir, taxoDir, null);
+    SearcherAndTaxonomy pair = mgr.acquire();
+    try {
+      assertEquals(1, pair.taxonomyReader.getSize());
+    } finally {
+      mgr.release(pair);
+    }
+    
+    w.addDocument(new Document());
+    tw.replaceTaxonomy(taxoDir2);
+    taxoDir2.close();
+    w.commit();
+    tw.commit();
+
+    mgr.maybeRefresh();
+    pair = mgr.acquire();
+    try {
+      assertEquals(3, pair.taxonomyReader.getSize());
+    } finally {
+      mgr.release(pair);
+    }
+
+    IOUtils.close(mgr, tw, w, taxoDir, indexDir);
+  }
+
 }

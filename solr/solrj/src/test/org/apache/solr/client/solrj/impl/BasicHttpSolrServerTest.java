@@ -412,6 +412,14 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     } catch (Throwable t) {
       fail("Exception was thrown:" + t);
     }
+    //And back again:
+    server.setFollowRedirects(false);
+    try {
+      QueryResponse response = server.query(q);
+      fail("Should have thrown an exception.");
+    } catch (SolrServerException e) {
+      assertTrue(e.getMessage().contains("redirect"));
+    }
     server.shutdown();
   }
   

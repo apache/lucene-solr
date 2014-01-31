@@ -117,18 +117,26 @@ public class FieldFacetAccumulator extends ValueAccumulator {
       }
     } else {
       if(numField){
-        long v = numValues.get(doc);
-        if( v != 0 || numValuesBits.get(doc) ){
-          parent.collectField(doc, name, ((NumericParser)parser).parseNum(numValues.get(doc)));
+        if(numValues != null) {
+          long v = numValues.get(doc);
+          if( v != 0 || numValuesBits.get(doc) ){
+            parent.collectField(doc, name, ((NumericParser)parser).parseNum(v));
+          } else {
+            parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
+          }
         } else {
           parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
         }
       } else {
-        sortValues.get(doc,value);
-        if( BytesRef.EMPTY_BYTES == value.bytes ){
-          parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
+        if(sortValues != null) {
+          sortValues.get(doc,value);
+          if( BytesRef.EMPTY_BYTES == value.bytes ){
+            parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
+          } else {
+            parent.collectField(doc, name, parser.parse(value) );
+          }
         } else {
-          parent.collectField(doc, name, parser.parse(value) );
+          parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
         }
       }
     }

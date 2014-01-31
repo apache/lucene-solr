@@ -17,13 +17,11 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexDocument;
 
 /**
  * Add a document, optionally of a certain size.
@@ -42,7 +40,7 @@ public class AddDocTask extends PerfTask {
    * volatile data passed between setup(), doLogic(), tearDown().
    * the doc is created at setup() and added at doLogic(). 
    */
-  protected IndexDocument doc = null;
+  protected Document doc = null;
 
   @Override
   public void setup() throws Exception {

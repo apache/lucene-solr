@@ -162,7 +162,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                     "41.cfs",
                                     "41.nocfs",
                                     "42.cfs",
-                                    "42.nocfs"
+                                    "42.nocfs",
+                                    // TODO: these are on 4x, but something is wrong (they seem to be a too old DV format):
+                                    //"45.cfs",
+                                    //"45.nocfs",
+                                    "461.cfs",
+                                    "461.nocfs",
   };
   
   final String[] unsupportedNames = {"19.cfs",
