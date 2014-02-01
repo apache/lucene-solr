@@ -247,6 +247,9 @@ Bug Fixes
 * SOLR-5676: SolrCloud updates rejected if talking to secure ZooKeeper.
   (Greg Chanan via Mark Miller)
 
+* SOLR-5634: SolrJ GroupCommand.getNGroups returns null if group.format=simple
+  and group.ngroups=true. (Artem Lukanin via shalin)
+
 Optimizations
 ----------------------
 

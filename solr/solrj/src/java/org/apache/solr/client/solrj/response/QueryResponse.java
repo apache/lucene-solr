@@ -223,7 +223,13 @@ public class QueryResponse extends SolrResponseBase
           _groupResponse.add(groupedCommand);
         } else if (queryCommand != null) {
           Integer iMatches = (Integer) oMatches;
-          GroupCommand groupCommand = new GroupCommand(fieldName, iMatches);
+          GroupCommand groupCommand;
+          if (oNGroups != null) {
+            Integer iNGroups = (Integer) oNGroups;
+            groupCommand = new GroupCommand(fieldName, iMatches, iNGroups);
+          } else {
+            groupCommand = new GroupCommand(fieldName, iMatches);
+          }
           SolrDocumentList docList = (SolrDocumentList) queryCommand;
           groupCommand.add(new Group(fieldName, docList));
           _groupResponse.add(groupCommand);
