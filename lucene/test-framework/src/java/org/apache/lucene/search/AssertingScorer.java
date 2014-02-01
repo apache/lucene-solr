@@ -185,5 +185,10 @@ public class AssertingScorer extends Scorer {
   public long cost() {
     return in.cost();
   }
+
+  @Override
+  public String toString() {
+    return "AssertingScorer(" + in + ")";
+  }
 }
 
