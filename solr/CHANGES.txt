@@ -319,6 +319,9 @@ Other Changes
 * SOLR-5633: HttpShardHandlerFactory should make its http client available to subclasses.
   (Ryan Ernst)
 
+* SOLR-5684: Shutdown SolrServer clients created in BasicDistributedZk2Test and
+  BasicDistributedZkTest. (Tomás Fernández Löbbe via shalin)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components

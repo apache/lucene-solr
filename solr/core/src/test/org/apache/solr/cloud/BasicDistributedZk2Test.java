@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +32,6 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -179,6 +176,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
           + ONE_NODE_COLLECTION));
       server.request(createCmd);
+      server.shutdown();
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
@@ -214,6 +212,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse results = qclient.query(query);
     assertEquals(docs - 1, results.getResults().getNumFound());
+    qclient.shutdown();
     
     qclient = new HttpSolrServer(baseUrl + "/onenodecollection");
     results = qclient.query(query);
@@ -228,6 +227,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     query.set("rows", 0);
     results = qclient.query(query);
     assertEquals(docs, results.getResults().getNumFound());
+    qclient.shutdown();
   }
   
   private long testUpdateAndDelete() throws Exception {
@@ -427,7 +427,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     NamedList<Object> results = client.request(request );
     
     checkForBackupSuccess(client, location);
-    
+
   }
   private void checkForBackupSuccess(final HttpSolrServer client, File location)
       throws InterruptedException, IOException {
