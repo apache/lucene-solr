@@ -26,4 +26,25 @@ public interface SimpleParams {
 
   /** Override the currently enabled/disabled query operators. */
   public static String QO = "q.operators";
+  
+  /** Enables {@code AND} operator (+) */
+  public static final String AND_OPERATOR         = "AND";
+  /** Enables {@code NOT} operator (-) */
+  public static final String NOT_OPERATOR         = "NOT";
+  /** Enables {@code OR} operator (|) */
+  public static final String OR_OPERATOR          = "OR";
+  /** Enables {@code PREFIX} operator (*) */
+  public static final String PREFIX_OPERATOR      = "PREFIX";
+  /** Enables {@code PHRASE} operator (") */
+  public static final String PHRASE_OPERATOR      = "PHRASE";
+  /** Enables {@code PRECEDENCE} operators: {@code (} and {@code )} */
+  public static final String PRECEDENCE_OPERATORS = "PRECEDENCE";
+  /** Enables {@code ESCAPE} operator (\) */
+  public static final String ESCAPE_OPERATOR      = "ESCAPE";
+  /** Enables {@code WHITESPACE} operators: ' ' '\n' '\r' '\t' */
+  public static final String WHITESPACE_OPERATOR  = "WHITESPACE";
+  /** Enables {@code FUZZY} operator (~) */
+  public static final String FUZZY_OPERATOR       = "FUZZY";
+  /** Enables {@code NEAR} operator (~) */
+  public static final String NEAR_OPERATOR        = "NEAR";
 }

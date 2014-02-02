@@ -68,7 +68,12 @@ public class PhraseQuery extends Query {
     results are sorted by exactness.
 
     <p>The slop is zero by default, requiring exact matches.*/
-  public void setSlop(int s) { slop = s; }
+  public void setSlop(int s) {
+    if (s < 0) {
+      throw new IllegalArgumentException("slop value cannot be negative");
+    }
+    slop = s; 
+  }
   /** Returns the slop.  See setSlop(). */
   public int getSlop() { return slop; }
 
