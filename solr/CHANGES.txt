@@ -160,6 +160,8 @@ New Features
 
 * SOLR-5670: allow _version_ to use DocValues.  (Per Steffensen via yonik)
 
+* SOLR-5535: Set "partialResults" header for shards that error out if
+  shards.tolerant is specified. (Steve Davids via shalin)
 
 Bug Fixes
 ----------------------
