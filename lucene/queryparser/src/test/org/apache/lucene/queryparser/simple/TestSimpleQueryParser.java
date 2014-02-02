@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -34,14 +35,17 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.ESCAPE_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.FUZZY_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NOT_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.OR_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PHRASE_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PRECEDENCE_OPERATORS;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PREFIX_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NEAR_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.WHITESPACE_OPERATOR;
 
 /** Tests for {@link SimpleQueryParser} */
@@ -58,11 +62,41 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     return parser.parse(text);
   }
 
+  /**
+   * helper to parse a query with whitespace+lowercase analyzer across "field",
+   * with default operator of MUST
+   */
+  private Query parse(String text, int flags) {
+    Analyzer analyzer = new MockAnalyzer(random());
+    SimpleQueryParser parser = new SimpleQueryParser(analyzer,
+        Collections.singletonMap("field", 1f), flags);
+    parser.setDefaultOperator(Occur.MUST);
+    return parser.parse(text);
+  }
+
   /** test a simple term */
   public void testTerm() throws Exception {
     Query expected = new TermQuery(new Term("field", "foobar"));
 
     assertEquals(expected, parse("foobar"));
+  }
+
+  /** test a fuzzy query */
+  public void testFuzzy() throws Exception {
+    Query regular = new TermQuery(new Term("field", "foobar"));
+    Query expected = new FuzzyQuery(new Term("field", "foobar"), 2);
+
+    assertEquals(expected, parse("foobar~2"));
+    assertEquals(regular, parse("foobar~"));
+    assertEquals(regular, parse("foobar~a"));
+    assertEquals(regular, parse("foobar~1a"));
+
+    BooleanQuery bool = new BooleanQuery();
+    FuzzyQuery fuzzy = new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    bool.add(fuzzy, Occur.MUST);
+    bool.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
+
+    assertEquals(bool, parse("foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
   }
 
   /** test a simple phrase */
@@ -72,6 +106,43 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     expected.add(new Term("field", "bar"));
 
     assertEquals(expected, parse("\"foo bar\""));
+  }
+
+  /** test a simple phrase with various slop settings */
+  public void testPhraseWithSlop() throws Exception {
+    PhraseQuery expectedWithSlop = new PhraseQuery();
+    expectedWithSlop.add(new Term("field", "foo"));
+    expectedWithSlop.add(new Term("field", "bar"));
+    expectedWithSlop.setSlop(2);
+
+    assertEquals(expectedWithSlop, parse("\"foo bar\"~2"));
+
+    PhraseQuery expectedWithMultiDigitSlop = new PhraseQuery();
+    expectedWithMultiDigitSlop.add(new Term("field", "foo"));
+    expectedWithMultiDigitSlop.add(new Term("field", "bar"));
+    expectedWithMultiDigitSlop.setSlop(10);
+
+    assertEquals(expectedWithMultiDigitSlop, parse("\"foo bar\"~10"));
+
+    PhraseQuery expectedNoSlop = new PhraseQuery();
+    expectedNoSlop.add(new Term("field", "foo"));
+    expectedNoSlop.add(new Term("field", "bar"));
+
+    assertEquals("Ignore trailing tilde with no slop", expectedNoSlop, parse("\"foo bar\"~"));
+    assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("\"foo bar\"~a"));
+    assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("\"foo bar\"~1a"));
+    assertEquals("Ignore negative trailing slop", expectedNoSlop, parse("\"foo bar\"~-1"));
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "foo"));
+    pq.add(new Term("field", "bar"));
+    pq.setSlop(12);
+
+    BooleanQuery expectedBoolean = new BooleanQuery();
+    expectedBoolean.add(pq, Occur.MUST);
+    expectedBoolean.add(new TermQuery(new Term("field", "baz")), Occur.MUST);
+
+    assertEquals(expectedBoolean, parse("\"foo bar\"~12 baz"));
   }
 
   /** test a simple prefix */
@@ -533,17 +604,33 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(expected, parseKeyword("\t\tfoo foo foo", ~WHITESPACE_OPERATOR));
   }
 
+  public void testDisableFuzziness() {
+    Query expected = new TermQuery(new Term("field", "foo~1"));
+    assertEquals(expected, parseKeyword("foo~1", ~FUZZY_OPERATOR));
+  }
+
+  public void testDisableSlop() {
+    PhraseQuery expectedPhrase = new PhraseQuery();
+    expectedPhrase.add(new Term("field", "foo"));
+    expectedPhrase.add(new Term("field", "bar"));
+
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(expectedPhrase, Occur.MUST);
+    expected.add(new TermQuery(new Term("field", "~2")), Occur.MUST);
+    assertEquals(expected, parse("\"foo bar\"~2", ~NEAR_OPERATOR));
+  }
+
   // we aren't supposed to barf on any input...
   public void testRandomQueries() throws Exception {
     for (int i = 0; i < 1000; i++) {
       String query = _TestUtil.randomUnicodeString(random());
       parse(query); // no exception
-      parseKeyword(query, _TestUtil.nextInt(random(), 0, 256)); // no exception
+      parseKeyword(query, _TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
   }
 
   public void testRandomQueries2() throws Exception {
-    char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-' };
+    char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~'};
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 1000; i++) {
       sb.setLength(0);
@@ -552,7 +639,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
         sb.append(chars[random().nextInt(chars.length)]);
       }
       parse(sb.toString()); // no exception
-      parseKeyword(sb.toString(), _TestUtil.nextInt(random(), 0, 256)); // no exception
+      parseKeyword(sb.toString(), _TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
   }
 }

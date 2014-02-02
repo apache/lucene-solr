@@ -125,6 +125,9 @@ New Features
 * LUCENE-5320: Add SearcherTaxonomyManager over search and taxonomy index
   directories (i.e. not only NRT). (Shai Erera)
 
+* LUCENE-5410: Add fuzzy and near support via '~' operator to SimpleQueryParser.
+  (Lee Hinman via Robert Muir)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;

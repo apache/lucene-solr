@@ -58,7 +58,12 @@ public class MultiPhraseQuery extends Query {
   /** Sets the phrase slop for this query.
    * @see PhraseQuery#setSlop(int)
    */
-  public void setSlop(int s) { slop = s; }
+  public void setSlop(int s) {
+    if (s < 0) {
+      throw new IllegalArgumentException("slop value cannot be negative");
+    }
+    slop = s; 
+  }
 
   /** Sets the phrase slop for this query.
    * @see PhraseQuery#getSlop()
