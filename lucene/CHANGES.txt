@@ -48,10 +48,17 @@ API Changes
   this term index, pass it directly in your codec, where it can also be configured
   per-field. (Robert Muir)
 
-* LUCENE-5388: Remove Reader from Tokenizer's constructor. 
+* LUCENE-5388: Remove Reader from Tokenizer's constructor and from
+  Analyzer's createComponents. TokenStreams now always get their input
+  via setReader.  
   (Benson Margulies via Robert Muir - pull request #16)
 
-* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
+* LUCENE-5405: If an analysis component throws an exception, Lucene
+  logs the field name to the info stream to assist in
+  diagnosis. (Benson Margulies)
+
+* LUCENE-5406: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public
+  final (gsingers)
 
 Documentation
 
