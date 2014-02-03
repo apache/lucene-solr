@@ -221,6 +221,8 @@ Bug Fixes
 * SOLR-5634: SolrJ GroupCommand.getNGroups returns null if group.format=simple
   and group.ngroups=true. (Artem Lukanin via shalin)
 
+* SOLR-5667: Performance problem when not using hdfs block cache. (Mark Miller)
+
 Optimizations
 ----------------------
 
