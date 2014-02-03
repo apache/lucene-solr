@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -44,6 +45,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.MapSolrParams;
@@ -56,7 +58,9 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +72,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -120,6 +125,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final String COLL_CONF = "collection.configName";
 
   public static final String COLL_PROP_PREFIX = "property.";
+
+  public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of("legacyCloud");
 
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
@@ -396,6 +403,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         deleteReplica(zkStateReader.getClusterState(), message, results);
       } else if (MIGRATE.equals(operation)) {
         migrate(zkStateReader.getClusterState(), message, results);
+      } else if(CollectionParams.CollectionAction.CLUSTERPROP.toString().equalsIgnoreCase(operation)){
+        handleProp(message,results);
       } else if(REMOVEROLE.toString().toLowerCase(Locale.ROOT).equals(operation) || ADDROLE.toString().toLowerCase(Locale.ROOT).equals(operation) ){
         processRoleCommand(message, operation);
       }
@@ -416,6 +425,21 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } 
     
     return new OverseerSolrResponse(results);
+  }
+
+  private void handleProp(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    String name = message.getStr("name");
+    String val = message.getStr("val");
+    Map m = zkStateReader.getClusterProps();
+    if(val ==null) m.remove(name);
+    else m.put(name,val);
+    if(zkStateReader.getZkClient().exists(ZkStateReader.CLUSTER_PROPS,true))
+      zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS,ZkStateReader.toJSON(m),true);
+    else
+      zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS, ZkStateReader.toJSON(m),CreateMode.PERSISTENT, true);
+
+
+
   }
   private void processRoleCommand(ZkNodeProps message, String operation) throws KeeperException, InterruptedException {
     SolrZkClient zkClient = zkStateReader.getZkClient();
