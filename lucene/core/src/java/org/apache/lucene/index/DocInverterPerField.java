@@ -92,11 +92,17 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.position += analyzed ? docState.analyzer.getPositionIncrementGap(fieldInfo.name) : 0;
         }
 
+         /*
+        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
+        * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
+        * but rather a finally that takes note of the problem.
+        */
+
+        boolean succeededInProcessingField = false;
+
         final TokenStream stream = field.tokenStream(docState.analyzer);
         // reset the TokenStream to the first token
         stream.reset();
-
-        boolean success2 = false;
 
         try {
           boolean hasMoreTokens = stream.incrementToken();
@@ -164,6 +170,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
                 // new segment:
                 consumer.add();
                 success = true;
+
               } finally {
                 if (!success) {
                   docState.docWriter.setAborting();
@@ -171,6 +178,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               }
               fieldState.length++;
               fieldState.position++;
+
             } while (stream.incrementToken());
           }
           // trigger streams to perform end-of-stream operations
@@ -179,12 +187,17 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           // when we come back around to the field...
           fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
-          success2 = true;
+          succeededInProcessingField = true;
+          /* if success was false above there is an exception coming through and we won't get here.*/
+          succeededInProcessingField = true;
         } finally {
-          if (!success2) {
+          if (!succeededInProcessingField) {
             IOUtils.closeWhileHandlingException(stream);
           } else {
             stream.close();
+          }
+          if (!succeededInProcessingField && docState.infoStream.isEnabled("DW")) {
+            docState.infoStream.message("DW", "An exception was thrown while processing field " + fieldInfo.name);
           }
         }
 
