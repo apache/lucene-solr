@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -68,6 +69,9 @@ public class ZkStateReader {
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
+  public static final String CLUSTER_PROPS = "/clusterprops.json";
+
+
   public static final String ROLES = "/roles.json";
 
   public static final String RECOVERING = "recovering";
@@ -594,6 +598,19 @@ public class ZkStateReader {
     Aliases aliases = ClusterState.load(data);
 
     ZkStateReader.this.aliases = aliases;
+  }
+  public Map getClusterProps(){
+    Map result = null;
+    try {
+      if(getZkClient().exists(ZkStateReader.CLUSTER_PROPS,true)){
+        result = (Map) ZkStateReader.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
+      } else {
+        result= new LinkedHashMap();
+      }
+      return result;
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading cluster properties",e) ;
+    }
   }
   
 }

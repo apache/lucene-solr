@@ -18,10 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -47,6 +50,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -72,7 +76,9 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -198,7 +204,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testErrorHandling();
     deletePartiallyCreatedCollection();
     deleteCollectionRemovesStaleZkCollectionsNode();
-    
+    clusterPropTest();
+
     // last
     deleteCollectionWithDownNodes();
     if (DEBUG) {
@@ -1185,5 +1192,20 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // insurance
     DirectUpdateHandler2.commitOnClose = true;
+  }
+
+  private void clusterPropTest() throws Exception {
+      Map m = makeMap(
+          "action", CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
+          "name", "legacyCloud",
+          "val", "true");
+      SolrParams params = new MapSolrParams(m);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+    CloudSolrServer client = createCloudClient(null);
+    client.request(request);
+
+    assertEquals("cluster property not set", "true", client.getZkStateReader().getClusterProps().get("legacyCloud"));
+    client.shutdown();
   }
 }

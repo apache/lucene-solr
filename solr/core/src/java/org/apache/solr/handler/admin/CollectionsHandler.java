@@ -187,12 +187,32 @@ public class CollectionsHandler extends RequestHandlerBase {
         handleRole(REMOVEROLE, req, rsp);
         break;
       }
+      case CLUSTERPROP: {
+        this.handleProp(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
     }
 
     rsp.setHttpCaching(false);
+  }
+
+  private void handleProp(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    req.getParams().required().check("name");
+    String name = req.getParams().get("name");
+    if(!OverseerCollectionProcessor.KNOWN_CLUSTER_PROPS.contains(name)){
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Not a known cluster property "+ name);
+    }
+
+    Map<String,Object> props = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT) );
+    copyIfNotNull(req.getParams(),props,
+        "name",
+        "val");
+    handleResponse(CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),new ZkNodeProps(props),rsp);
+
   }
 
   static Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
