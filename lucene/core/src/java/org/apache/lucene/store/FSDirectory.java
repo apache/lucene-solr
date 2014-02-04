@@ -337,7 +337,7 @@ public abstract class FSDirectory extends BaseDirectory {
   /** For debug output. */
   @Override
   public String toString() {
-    return this.getClass().getName() + "@" + directory + " lockFactory=" + getLockFactory();
+    return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + getLockFactory();
   }
 
   /**
