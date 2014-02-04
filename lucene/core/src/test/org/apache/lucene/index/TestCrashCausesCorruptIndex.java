@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,11 +26,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -147,28 +145,22 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * This test class provides direct access to "simulating" a crash right after 
    * realDirectory.createOutput(..) has been called on a certain specified name.
    */
-  private static class CrashAfterCreateOutput extends BaseDirectory {
+  private static class CrashAfterCreateOutput extends FilterDirectory {
         
-    private Directory realDirectory;
     private String crashAfterCreateOutput;
 
     public CrashAfterCreateOutput(Directory realDirectory) throws IOException {
-      this.realDirectory = realDirectory;
+      super(realDirectory);
       setLockFactory(realDirectory.getLockFactory());
     }
         
     public void setCrashAfterCreateOutput(String name) {
       this.crashAfterCreateOutput = name;
     }
-        
-    @Override
-    public void close() throws IOException {
-      realDirectory.close();
-    }
-
+    
     @Override
     public IndexOutput createOutput(String name, IOContext cxt) throws IOException {
-      IndexOutput indexOutput = realDirectory.createOutput(name, cxt);
+      IndexOutput indexOutput = in.createOutput(name, cxt);
       if (null != crashAfterCreateOutput && name.equals(crashAfterCreateOutput)) {
         // CRASH!
         indexOutput.close();
@@ -181,34 +173,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
       return indexOutput;
     }
 
-    @Override
-    public void deleteFile(String name) throws IOException {
-      realDirectory.deleteFile(name);
-    }
-
-    @Override
-    public boolean fileExists(String name) throws IOException {
-      return realDirectory.fileExists(name);
-    }
-
-    @Override
-    public long fileLength(String name) throws IOException {
-      return realDirectory.fileLength(name);
-    }
-
-    @Override
-    public String[] listAll() throws IOException {
-      return realDirectory.listAll();
-    }
-
-    @Override
-    public IndexInput openInput(String name, IOContext cxt) throws IOException {
-      return realDirectory.openInput(name, cxt);
-    }
-
-    @Override
-    public void sync(Collection<String> names) throws IOException {
-      realDirectory.sync(names);
-    }
   }
+  
 }
