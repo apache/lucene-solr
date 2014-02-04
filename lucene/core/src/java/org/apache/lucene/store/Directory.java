@@ -151,12 +151,12 @@ public abstract class Directory implements Closeable {
    * "scopes" to the right index.
    */
   public String getLockID() {
-      return this.toString();
+    return this.toString();
   }
 
   @Override
   public String toString() {
-    return super.toString() + " lockFactory=" + getLockFactory();
+    return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode()) + " lockFactory=" + getLockFactory();
   }
 
   /**
