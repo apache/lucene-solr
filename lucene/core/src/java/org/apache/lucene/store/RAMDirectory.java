@@ -103,6 +103,11 @@ public class RAMDirectory extends BaseDirectory {
   }
 
   @Override
+  public String getLockID() {
+    return "lucene-" + Integer.toHexString(hashCode());
+  }
+  
+  @Override
   public final String[] listAll() {
     ensureOpen();
     // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
@@ -201,4 +206,5 @@ public class RAMDirectory extends BaseDirectory {
     isOpen = false;
     fileMap.clear();
   }
+  
 }
