@@ -137,6 +137,10 @@ New Features
 * SOLR-5623: Better diagnosis of RuntimeExceptions in analysis
   (Benson Margulies)
  
+* SOLR-5530: Added a NoOpResponseParser for SolrJ which puts the entire raw
+  response into an entry in the NamedList.
+  (Upayavira, Vitaliy Zhovtyuk via shalin)
+
 Bug Fixes
 ----------------------
 
