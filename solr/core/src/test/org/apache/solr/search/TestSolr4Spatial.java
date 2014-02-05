@@ -35,7 +35,6 @@ import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.text.ParseException;
 import java.util.Arrays;
@@ -72,7 +71,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  @Test @Ignore("Please fix me!")
+  @Test
   public void testBadShapeParse400() {
     assertQEx(null, req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",

@@ -31,7 +31,6 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.xml.sax.SAXException;
 
 import java.math.BigDecimal;
@@ -392,7 +391,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
 
-  @Test @Ignore("Please fix me!")
+  @Test
   public void testAddBigIntegerValueToTrieField() throws Exception {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
