@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
@@ -46,16 +47,32 @@ import org.apache.lucene.util.FixedBitSet;
  *  counting.  Use the {@code search} utility methods to
  *  perform an "ordinary" search but also collect into a
  *  {@link Collector}. */
-public final class FacetsCollector extends Collector {
+public class FacetsCollector extends Collector {
 
   private AtomicReaderContext context;
   private Scorer scorer;
-  private FixedBitSet bits;
   private int totalHits;
   private float[] scores;
   private final boolean keepScores;
   private final List<MatchingDocs> matchingDocs = new ArrayList<MatchingDocs>();
+  private Docs docs;
   
+  /**
+   * Used during collection to record matching docs and then return a
+   * {@link DocIdSet} that contains them.
+   */
+  protected static abstract class Docs {
+    
+    /** Solr constructor. */
+    public Docs() {}
+    
+    /** Record the given document. */
+    public abstract void addDoc(int docId) throws IOException;
+    
+    /** Return the {@link DocIdSet} which contains all the recorded docs. */
+    public abstract DocIdSet getDocIdSet();
+  }
+
   /**
    * Holds the documents that were matched in the {@link AtomicReaderContext}.
    * If scores were required, then {@code scores} is not null.
@@ -66,7 +83,7 @@ public final class FacetsCollector extends Collector {
     public final AtomicReaderContext context;
 
     /** Which documents were seen. */
-    public final FixedBitSet bits;
+    public final DocIdSet bits;
 
     /** Non-sparse scores array. */
     public final float[] scores;
@@ -75,7 +92,7 @@ public final class FacetsCollector extends Collector {
     public final int totalHits;
 
     /** Sole constructor. */
-    public MatchingDocs(AtomicReaderContext context, FixedBitSet bits, int totalHits, float[] scores) {
+    public MatchingDocs(AtomicReaderContext context, DocIdSet bits, int totalHits, float[] scores) {
       this.context = context;
       this.bits = bits;
       this.scores = scores;
@@ -93,9 +110,30 @@ public final class FacetsCollector extends Collector {
   public FacetsCollector(boolean keepScores) {
     this.keepScores = keepScores;
   }
+  
+  /**
+   * Creates a {@link Docs} to record hits. The default uses {@link FixedBitSet}
+   * to record hits and you can override to e.g. record the docs in your own
+   * {@link DocIdSet}.
+   */
+  protected Docs createDocs(final int maxDoc) {
+    return new Docs() {
+      private final FixedBitSet bits = new FixedBitSet(maxDoc);
+      
+      @Override
+      public void addDoc(int docId) throws IOException {
+        bits.set(docId);
+      }
+      
+      @Override
+      public DocIdSet getDocIdSet() {
+        return bits;
+      }
+    };
+  }
 
   /** True if scores were saved. */
-  public boolean getKeepScores() {
+  public final boolean getKeepScores() {
     return keepScores;
   }
   
@@ -104,9 +142,9 @@ public final class FacetsCollector extends Collector {
    * visited segment.
    */
   public List<MatchingDocs> getMatchingDocs() {
-    if (bits != null) {
-      matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, scores));
-      bits = null;
+    if (docs != null) {
+      matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
+      docs = null;
       scores = null;
       context = null;
     }
@@ -124,7 +162,7 @@ public final class FacetsCollector extends Collector {
 
   @Override
   public final void collect(int doc) throws IOException {
-    bits.set(doc);
+    docs.addDoc(doc);
     if (keepScores) {
       if (totalHits >= scores.length) {
         float[] newScores = new float[ArrayUtil.oversize(totalHits + 1, 4)];
@@ -143,10 +181,10 @@ public final class FacetsCollector extends Collector {
     
   @Override
   public final void setNextReader(AtomicReaderContext context) throws IOException {
-    if (bits != null) {
-      matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, scores));
+    if (docs != null) {
+      matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
     }
-    bits = new FixedBitSet(context.reader().maxDoc());
+    docs = createDocs(context.reader().maxDoc());
     totalHits = 0;
     if (keepScores) {
       scores = new float[64]; // some initial size

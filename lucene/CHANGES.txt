@@ -190,6 +190,10 @@ API Changes
   responsible for encoding/decoding a block of terms.  Instead, they
   should encode/decode each term to/from a long[] and byte[].  (Han
   Jiang, Mike McCandless)
+  
+* LUCENE-5425: FacetsCollector and MatchingDocs use a general DocIdSet, 
+  allowing for custom implementations to be used when faceting.
+  (John Wang, Lei Wang, Shai Erera) 
 
 Optimizations
 

@@ -30,6 +30,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
@@ -81,17 +82,18 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
-      final int length = hits.bits.length();
-      int doc = 0;
+      
       totCount += hits.totalHits;
-      while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
+      DocIdSetIterator docs = hits.bits.iterator();
+      
+      int doc;
+      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         // Skip missing docs:
         if (fv.exists(doc)) {
           counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
         } else {
           missingCount++;
         }
-        doc++;
       }
     }
 
