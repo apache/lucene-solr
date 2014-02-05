@@ -71,7 +71,6 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   /**
    * Parse response from query using NoOpResponseParser.
-   * @throws Exception
    */
   @Test
   public void testQueryParse() throws Exception {
@@ -96,7 +95,6 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   /**
    * Parse response from java.io.Reader.
-   * @throws Exception
    */
   @Test
   public void testReaderResponse() throws Exception {
@@ -114,7 +112,6 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   /**
    * Parse response from java.io.InputStream.
-   * @throws Exception
    */
   @Test
   public void testInputStreamResponse() throws Exception {
