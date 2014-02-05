@@ -235,6 +235,9 @@ Bug Fixes
 * SOLR-5526: Fixed NPE that could arrise when explicitly configuring some built 
   in QParserPlugins (Nikolay Khitrin, Vitaliy Zhovtyuk, hossman)
 
+* SOLR-5598: LanguageIdentifierUpdateProcessor ignores all but the first value
+  of multiValued string fields. (Andreas Hubold, Vitaliy Zhovtyuk via shalin)
+
 Optimizations
 ----------------------
 
