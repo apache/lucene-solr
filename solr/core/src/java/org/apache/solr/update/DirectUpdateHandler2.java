@@ -169,7 +169,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    * handler to decorate RuntimeExceptions with information about the document being handled.
    * @param cmd the command.
    * @return the count.
-   * @throws IOException
    */
   private int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
