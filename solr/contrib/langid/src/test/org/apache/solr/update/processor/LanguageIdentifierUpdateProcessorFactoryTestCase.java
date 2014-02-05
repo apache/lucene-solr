@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -87,7 +86,6 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertLang("uk", "id", "20uk", "name", "Ukrainian", "subject", "Народно-господарський комплекс країни включає такі види промисловості як важке машинобудування, чорна та кольорова металургія, суднобудування, виробництво автобусів, легкових та вантажних автомобілів, тракторів та іншої сільськогосподарської техніки, тепловозів, верстатів, турбін, авіаційних двигунів та літаків, обладнання для електростанцій, нафто-газової та хімічної промисловості тощо. Крім того, Україна є потужним виробником електроенергії. Україна має розвинуте сільське господарство і займає одне з провідних місць серед експортерів деяких видів сільськогосподарської продукції і продовольства (зокрема, соняшникової олії).");
   }
     
-  
   @Test
   public void testMapFieldName() throws Exception {
     parameters = new ModifiableSolrParams();
@@ -153,6 +151,58 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertNotNull(liProcessor.process(doc).getFieldValue("text_no"));
   }
 
+  /**
+   * Test not only 1st value taken into account (empty string),
+   * but all other values of 'text_multivalue' field ('en').
+   */
+  @Test
+  public void testPreExistingMultiValue() throws Exception {
+    SolrInputDocument doc;
+    parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "text_multivalue");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.langsField", "languages");
+    parameters.add("langid.enforceSchema", "false");
+    parameters.add("langid.map", "true");
+    liProcessor = createLangIdProcessor(parameters);
+    
+    doc = englishDoc();
+    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    
+    doc = englishDoc();
+    doc.setField("language", "no");
+    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
+    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+  }
+
+  /**
+   * Test not only 1st value taken into account (ru text),
+   * but all values of 'text_multivalue' field ('ru' and 'en').
+   */
+  @Test
+  public void testPreExistingMultiValueMixedLang() throws Exception {
+    SolrInputDocument doc;
+    parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "text_multivalue");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.langsField", "languages");
+    parameters.add("langid.enforceSchema", "false");
+    parameters.add("langid.map", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    doc = mixedEnglishRussianDoc();
+    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+
+    doc = mixedEnglishRussianDoc();
+    doc.setField("language", "no");
+    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
+    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+  }
+
   @Test
   public void testDefaultFallbackEmptyString() throws Exception {
     SolrInputDocument doc;
@@ -216,6 +266,20 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   private SolrInputDocument englishDoc() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("text", "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.");
+    doc.addField("text_multivalue", new String[]{"", "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License."});
+    return doc;
+  }
+
+  /**
+   * Construct document containing multi-value fields in different languages.
+   * @return solr input document
+   */
+  private SolrInputDocument mixedEnglishRussianDoc() {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("text_multivalue", new String[]{"The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java. Может быть использована для поиска в интернете и других областях компьютерной лингвистики (аналитическая философия).",
+                                                 "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.",
+        "Solr (pronounced \"solar\") is an open source enterprise search platform from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, dynamic clustering, database integration, and rich document (e.g., Word, PDF) handling."
+    });
     return doc;
   }
 
