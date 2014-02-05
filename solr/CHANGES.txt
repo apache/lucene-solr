@@ -163,7 +163,11 @@ New Features
 * SOLR-5535: Set "partialResults" header for shards that error out if
   shards.tolerant is specified. (Steve Davids via shalin)
 
-* SOLR-5610: Support cluster-wide properties with an API called CLUSTERPROP (Noble Paul)
+* SOLR-5610: Support cluster-wide properties with an API called
+  CLUSTERPROP (Noble Paul)
+
+* SOLR-5623: Better diagnosis of RuntimeExceptions in analysis
+  (Benson Margulies)
 
 Bug Fixes
 ----------------------
