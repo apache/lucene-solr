@@ -345,7 +345,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
 
-  @Test @Ignore("Please fix me!")
+  @Test
   public void testClientErrorOnMalformedNumbers() throws Exception {
 
     final String BAD_VALUE = "NOT_A_NUMBER";
