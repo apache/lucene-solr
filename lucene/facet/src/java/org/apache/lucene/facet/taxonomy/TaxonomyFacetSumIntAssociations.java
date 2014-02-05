@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 
 /** Aggregates sum of int values previously indexed with
  *  {@link IntAssociationFacetField}, assuming the default
@@ -54,13 +54,12 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;
       }
-      FixedBitSet bits = hits.bits;
-    
-      final int length = hits.bits.length();
-      int doc = 0;
+      
       BytesRef scratch = new BytesRef();
-      //System.out.println("count seg=" + hits.context.reader());
-      while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
+      DocIdSetIterator docs = hits.bits.iterator();
+      
+      int doc;
+      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         //System.out.println("  doc=" + doc);
         // TODO: use OrdinalsReader?  we'd need to add a
         // BytesRef getAssociation()?
@@ -81,7 +80,6 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
           offset += 4;
           values[ord] += value;
         }
-        ++doc;
       }
     }
 
