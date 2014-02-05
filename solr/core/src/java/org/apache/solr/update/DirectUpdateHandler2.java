@@ -155,6 +155,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
+    try {
+      return addDoc0(cmd);
+    }  catch (RuntimeException t) {
+
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, String.format("Exception writing document id %s to the index; possible analysis error.",
+          cmd.getPrintableId()), t);
+    }
+  }
+
+  /**
+   * This is the implementation of {@link #addDoc0(AddUpdateCommand)}. It is factored out to allow an exception
+   * handler to decorate RuntimeExceptions with information about the document being handled.
+   * @param cmd the command.
+   * @return the count.
+   * @throws IOException
+   */
+  private int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
