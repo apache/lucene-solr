@@ -34,7 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * <br>Example: <code>{!raw f=myfield}Foo Bar</code> creates <code>TermQuery(Term("myfield","Foo Bar"))</code>
  */
 public class RawQParserPlugin extends QParserPlugin {
-  public static String NAME = "raw";
+  public static final String NAME = "raw";
 
   @Override
   public void init(NamedList args) {

@@ -45,7 +45,7 @@ import java.util.Set;
 
 
 public class JoinQParserPlugin extends QParserPlugin {
-  public static String NAME = "join";
+  public static final String NAME = "join";
 
   @Override
   public void init(NamedList args) {

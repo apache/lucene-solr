@@ -69,7 +69,7 @@ import java.util.Map;
  */
 public class SimpleQParserPlugin extends QParserPlugin {
   /** The name that can be used to specify this plugin should be used to parse the query. */
-  public static String NAME = "simple";
+  public static final String NAME = "simple";
 
   /** Map of string operators to their int counterparts in SimpleQueryParser. */
   private static final Map<String, Integer> OPERATORS = new HashMap<String, Integer>();

@@ -256,6 +256,9 @@ Bug Fixes
 
 * SOLR-5667: Performance problem when not using hdfs block cache. (Mark Miller)
 
+* SOLR-5526: Fixed NPE that could arrise when explicitly configuring some built 
+  in QParserPlugins (Nikolay Khitrin, Vitaliy Zhovtyuk, hossman)
+
 Optimizations
 ----------------------
 
