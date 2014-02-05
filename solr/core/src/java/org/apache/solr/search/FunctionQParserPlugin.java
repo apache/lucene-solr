@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * <br>Example: <code>{!func}log(foo)</code>
  */
 public class FunctionQParserPlugin extends QParserPlugin {
-  public static String NAME = "func";
+  public static final String NAME = "func";
 
   @Override
   public void init(NamedList args) {

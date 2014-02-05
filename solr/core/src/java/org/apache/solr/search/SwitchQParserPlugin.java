@@ -135,7 +135,7 @@ import org.apache.commons.lang.StringUtils;
  * &lt;/requestHandler&gt;</pre>
  */
 public class SwitchQParserPlugin extends QParserPlugin {
-  public static String NAME = "switch";
+  public static final String NAME = "switch";
 
   /** 
    * Used as both a local params key to find the "default" if no

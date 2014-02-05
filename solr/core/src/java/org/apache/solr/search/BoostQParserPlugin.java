@@ -37,7 +37,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * {@link org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction}
  */
 public class BoostQParserPlugin extends QParserPlugin {
-  public static String NAME = "boost";
+  public static final String NAME = "boost";
   public static String BOOSTFUNC = "b";
 
   @Override

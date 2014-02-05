@@ -32,7 +32,7 @@ import org.apache.solr.schema.SchemaField;
  * to the Lucene query parser expression <code>myfield:foo*</code>
  */
 public class PrefixQParserPlugin extends QParserPlugin {
-  public static String NAME = "prefix";
+  public static final String NAME = "prefix";
 
   @Override
   public void init(NamedList args) {
