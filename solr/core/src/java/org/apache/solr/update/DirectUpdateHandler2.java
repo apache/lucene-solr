@@ -57,6 +57,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -157,9 +158,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   public int addDoc(AddUpdateCommand cmd) throws IOException {
     try {
       return addDoc0(cmd);
-    }  catch (RuntimeException t) {
-
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, String.format("Exception writing document id %s to the index; possible analysis error.",
+    } catch (SolrException e) {
+      throw e;
+    } catch (RuntimeException t) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error.",
           cmd.getPrintableId()), t);
     }
   }
