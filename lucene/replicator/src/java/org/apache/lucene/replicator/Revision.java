@@ -61,7 +61,7 @@ public interface Revision extends Comparable<Revision> {
   
   /**
    * Returns an {@link IndexInput} for the given fileName and source. It is the
-   * caller's respnsibility to close the {@link IndexInput} when it has been
+   * caller's responsibility to close the {@link IndexInput} when it has been
    * consumed.
    */
   public InputStream open(String source, String fileName) throws IOException;

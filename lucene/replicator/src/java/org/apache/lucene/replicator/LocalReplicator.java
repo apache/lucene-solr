@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -111,18 +112,16 @@ public class LocalReplicator implements Replicator {
   private final Map<String, ReplicationSession> sessions = new HashMap<String, ReplicationSession>();
   
   private void checkExpiredSessions() throws IOException {
-    // make a "to-delete" list so we don't risk deleting from the map while iterating it
-    final ArrayList<ReplicationSession> toExpire = new ArrayList<ReplicationSession>();
-    for (ReplicationSession token : sessions.values()) {
+    Iterator<ReplicationSession> it = sessions.values().iterator();
+    while (it.hasNext()) {
+      ReplicationSession token = it.next();
       if (token.isExpired(expirationThresholdMilllis)) {
-        toExpire.add(token);
+        token.revision.decRef();
+        it.remove();
       }
     }
-    for (ReplicationSession token : toExpire) {
-      releaseSession(token.session.id);
-    }
   }
-  
+
   private void releaseSession(String sessionID) throws IOException {
     ReplicationSession session = sessions.remove(sessionID);
     // if we're called concurrently by close() and release(), could be that one

@@ -994,13 +994,15 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
   
   /**
-   * Used by {@link DirectoryTaxonomyReader} to support NRT.
+   * Expert: used by {@link DirectoryTaxonomyReader} to support NRT.
    * <p>
    * <b>NOTE:</b> you should not use the obtained {@link IndexWriter} in any
    * way, other than opening an IndexReader on it, or otherwise, the taxonomy
    * index may become corrupt!
+   *
+   * @lucene.internal
    */
-  final IndexWriter getInternalIndexWriter() {
+  public final IndexWriter getInternalIndexWriter() {
     return indexWriter;
   }
   

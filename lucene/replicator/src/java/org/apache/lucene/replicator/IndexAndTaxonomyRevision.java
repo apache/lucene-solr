@@ -47,7 +47,7 @@ import org.apache.lucene.store.IOContext;
 public class IndexAndTaxonomyRevision implements Revision {
   
   /**
-   * A {@link DirectoryTaxonomyWriter} which sets the underlying
+   * A utility class creating a {@link DirectoryTaxonomyWriter} and setting the underlying
    * {@link IndexWriter}'s {@link IndexDeletionPolicy} to
    * {@link SnapshotDeletionPolicy}.
    */
@@ -55,7 +55,7 @@ public class IndexAndTaxonomyRevision implements Revision {
     
     private SnapshotDeletionPolicy sdp;
     private IndexWriter writer;
-    
+
     /**
      * @see DirectoryTaxonomyWriter#DirectoryTaxonomyWriter(Directory,
      *      IndexWriterConfig.OpenMode, TaxonomyWriterCache)
@@ -93,12 +93,6 @@ public class IndexAndTaxonomyRevision implements Revision {
     public SnapshotDeletionPolicy getDeletionPolicy() {
       return sdp;
     }
-    
-    /** Returns the {@link IndexWriter} used by this {@link DirectoryTaxonomyWriter}. */
-    public IndexWriter getIndexWriter() {
-      return writer;
-    }
-    
   }
   
   private static final int RADIX = 16;
@@ -107,7 +101,7 @@ public class IndexAndTaxonomyRevision implements Revision {
   public static final String TAXONOMY_SOURCE = "taxo";
   
   private final IndexWriter indexWriter;
-  private final SnapshotDirectoryTaxonomyWriter taxoWriter;
+  private final DirectoryTaxonomyWriter taxoWriter;
   private final IndexCommit indexCommit, taxoCommit;
   private final SnapshotDeletionPolicy indexSDP, taxoSDP;
   private final String version;
@@ -135,7 +129,7 @@ public class IndexAndTaxonomyRevision implements Revision {
    * {@link IndexCommit} found in the {@link Directory} managed by the given
    * writer.
    */
-  public IndexAndTaxonomyRevision(IndexWriter indexWriter, SnapshotDirectoryTaxonomyWriter taxoWriter)
+  public IndexAndTaxonomyRevision(IndexWriter indexWriter, DirectoryTaxonomyWriter taxoWriter)
       throws IOException {
     IndexDeletionPolicy delPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
     if (!(delPolicy instanceof SnapshotDeletionPolicy)) {
@@ -143,8 +137,13 @@ public class IndexAndTaxonomyRevision implements Revision {
     }
     this.indexWriter = indexWriter;
     this.taxoWriter = taxoWriter;
+
     this.indexSDP = (SnapshotDeletionPolicy) delPolicy;
-    this.taxoSDP = taxoWriter.getDeletionPolicy();
+    delPolicy = taxoWriter.getInternalIndexWriter().getConfig().getIndexDeletionPolicy();
+    if (!(delPolicy instanceof SnapshotDeletionPolicy)) {
+      throw new IllegalArgumentException("DirectoryTaxonomyWriter must be created with SnapshotDeletionPolicy");
+    }
+    this.taxoSDP = (SnapshotDeletionPolicy) delPolicy;
     this.indexCommit = indexSDP.snapshot();
     this.taxoCommit = taxoSDP.snapshot();
     this.version = revisionVersion(indexCommit, taxoCommit);
@@ -206,7 +205,7 @@ public class IndexAndTaxonomyRevision implements Revision {
     try {
       indexWriter.deleteUnusedFiles();
     } finally {
-      taxoWriter.getIndexWriter().deleteUnusedFiles();
+      taxoWriter.getInternalIndexWriter().deleteUnusedFiles();
     }
   }
   

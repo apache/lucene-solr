@@ -139,6 +139,9 @@ public class IndexRevision implements Revision {
     assert source.equals(SOURCE) : "invalid source; expected=" + SOURCE + " got=" + source;
     return new IndexInputInputStream(commit.getDirectory().openInput(fileName, IOContext.READONCE));
   }
+
+  // nocommit maybe some safety around this?  if (released
+  // == false) { sdp.release(commit) };
   
   @Override
   public void release() throws IOException {
