@@ -128,7 +128,7 @@ public class DistanceFacetsExample implements Closeable {
    *  candidates. */
   public static Filter getBoundingBoxFilter(double originLat, double originLng, double maxDistanceKM) {
 
-    // Basic bound box geo math from http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates
+    // Basic bounding box geo math from http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates
 
     // TODO: maybe switch to recursive prefix tree instead
     // (in lucene/spatial)?  It should be more efficient
