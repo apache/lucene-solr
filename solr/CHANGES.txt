@@ -282,6 +282,9 @@ Bug Fixes
 * SOLR-4072: Error message is incorrect for linkconfig in ZkCLI.
   (Vamsee Yarlagadda, Adam Hahn, via Mark Miller)
 
+* SOLR-5691: Sharing non thread safe WeakHashMap across thread can cause
+  problems. (Bojan Smid, Mark Miller)
+
 Optimizations
 ----------------------
 
