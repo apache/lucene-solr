@@ -141,6 +141,9 @@ New Features
   response into an entry in the NamedList.
   (Upayavira, Vitaliy Zhovtyuk via shalin)
 
+* SOLR-5682: Make the admin InfoHandler more pluggable / derivable.
+  (Greg Chanan via Mark Miller)
+
 Bug Fixes
 ----------------------
 
