@@ -307,6 +307,9 @@ Optimizations
 * SOLR-5214: Reduce memory usage for shard splitting by merging segments one
   at a time. (Christine Poerschke via shalin)
 
+* SOLR-4227: Wrap XML RequestWriter's OutputStreamWriter in a BufferedWriter
+  to avoid frequent converter invocations. (Conrad Herrmann, shalin)
+
 Other Changes
 ---------------------
 
