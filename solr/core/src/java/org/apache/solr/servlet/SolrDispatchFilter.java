@@ -103,7 +103,6 @@ public class SolrDispatchFilter implements Filter
 
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
-  protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
   
   private static final Charset UTF8 = Charset.forName("UTF-8");
 
@@ -348,12 +347,7 @@ public class SolrDispatchFilter implements Filter
         if( core != null ) {
           final SolrConfig config = core.getSolrConfig();
           // get or create/cache the parser for the core
-          SolrRequestParsers parser = null;
-          parser = parsers.get(config);
-          if( parser == null ) {
-            parser = new SolrRequestParsers(config);
-            parsers.put(config, parser );
-          }
+          SolrRequestParsers parser = config.getRequestParsers();
 
           // Handle /schema/* paths via Restlet
           if( path.startsWith("/schema") ) {
