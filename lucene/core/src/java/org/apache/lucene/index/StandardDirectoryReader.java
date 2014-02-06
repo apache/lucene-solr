@@ -107,6 +107,9 @@ final class StandardDirectoryReader extends DirectoryReader {
           writer.readerPool.release(rld);
         }
       }
+      
+      writer.incRefDeleter(segmentInfos);
+      
       StandardDirectoryReader result = new StandardDirectoryReader(dir,
           readers.toArray(new SegmentReader[readers.size()]), writer,
           segmentInfos, applyAllDeletes);
@@ -362,6 +365,8 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
 
     if (writer != null) {
+      writer.decRefDeleter(segmentInfos);
+      
       // Since we just closed, writer may now be able to
       // delete unused files:
       writer.deletePendingFiles();
