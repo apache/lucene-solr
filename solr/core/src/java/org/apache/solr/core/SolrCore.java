@@ -94,6 +94,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -102,6 +103,7 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -1930,7 +1932,14 @@ public final class SolrCore implements SolrInfoMBean {
     // are expecting them during handleRequest
     toLog.add("webapp", req.getContext().get("webapp"));
     toLog.add("path", req.getContext().get("path"));
-    toLog.add("params", "{" + req.getParamString() + "}");
+
+    final SolrParams params = req.getParams();
+    final String lpList = params.get(CommonParams.LOG_PARAMS_LIST);
+    if (lpList == null) {
+      toLog.add("params", "{" + req.getParamString() + "}");
+    } else if (lpList.length() > 0) {
+      toLog.add("params", "{" + params.toFilteredSolrParams(Arrays.asList(lpList.split(","))).toString() + "}");
+    }
   }
 
   /** Put status, QTime, and possibly request handler and params, in the response header */

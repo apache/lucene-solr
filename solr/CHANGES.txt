@@ -144,6 +144,9 @@ New Features
 * SOLR-5682: Make the admin InfoHandler more pluggable / derivable.
   (Greg Chanan via Mark Miller)
 
+* SOLR-5672: Add logParamsList parameter to support reduced logging.
+  (Christine Poerschke via Mark Miller)
+
 Bug Fixes
 ----------------------
 
