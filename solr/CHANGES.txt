@@ -339,6 +339,9 @@ Other Changes
 * SOLR-5629: SolrIndexSearcher.name should include core name.
   (Shikhar Bhushan via shalin)
 
+* SOLR-5702: Log config name found for collection at info level.
+  (Christine Poerschke via Mark Miller)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
