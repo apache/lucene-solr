@@ -116,7 +116,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testUpdateDocument() throws Exception {
     boolean doFullMerge = true;
 
-    Directory dir1 = getAssertNoDeletesDirectory(newDirectory());
+    Directory dir1 = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     if (iwc.getMaxBufferedDocs() < 20) {
       iwc.setMaxBufferedDocs(20);
