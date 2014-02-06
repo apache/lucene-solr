@@ -256,6 +256,8 @@ Bug Fixes
 * SOLR-5691: Sharing non thread safe WeakHashMap across thread can cause
   problems. (Bojan Smid, Mark Miller)
 
+* SOLR-5693: Running on HDFS does work correctly with NRT search. (Mark Miller)
+
 Optimizations
 ----------------------
 

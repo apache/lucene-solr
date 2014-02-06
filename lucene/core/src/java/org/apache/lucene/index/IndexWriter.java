@@ -4705,6 +4705,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     
   }
   
+  synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
+    deleter.incRef(segmentInfos, false);
+  }
+  
+  synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
+    deleter.decRef(segmentInfos);
+  }
+  
   private boolean processEvents(boolean triggerMerge, boolean forcePurge) throws IOException {
     return processEvents(eventQueue, triggerMerge, forcePurge);
   }
@@ -4742,4 +4750,5 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
      */
     void process(IndexWriter writer, boolean triggerMerge, boolean clearBuffers) throws IOException;
   }
+
 }

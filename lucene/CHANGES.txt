@@ -73,6 +73,10 @@ New Features
   custom implementations for Lucene doc values faceting (John Wang via
   Mike McCandless)
 
+* LUCENE-5434: NRT support for file systems that do no have delete on last
+  close or cannot delete while referenced semantics. 
+  (Mark Miller, Mike McCandless)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
