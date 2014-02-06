@@ -50,7 +50,7 @@ public class FilteredQuery extends Query {
    * @param query  Query to be filtered, cannot be <code>null</code>.
    * @param filter Filter to apply to query results, cannot be <code>null</code>.
    */
-  public FilteredQuery (Query query, Filter filter) {
+  public FilteredQuery(Query query, Filter filter) {
     this(query, filter, RANDOM_ACCESS_FILTER_STRATEGY);
   }
   
@@ -63,7 +63,7 @@ public class FilteredQuery extends Query {
    * 
    * @see FilterStrategy
    */
-  public FilteredQuery (Query query, Filter filter, FilterStrategy strategy) {
+  public FilteredQuery(Query query, Filter filter, FilterStrategy strategy) {
     if (query == null || filter == null)
       throw new IllegalArgumentException("Query and filter cannot be null.");
     if (strategy == null)
@@ -118,7 +118,9 @@ public class FilteredQuery extends Query {
 
       // return this query
       @Override
-      public Query getQuery() { return FilteredQuery.this; }
+      public Query getQuery() {
+        return FilteredQuery.this;
+      }
 
       // return a filtering scorer
       @Override
@@ -130,8 +132,8 @@ public class FilteredQuery extends Query {
           // this means the filter does not accept any documents.
           return null;
         }
+
         return strategy.filteredScorer(context, scoreDocsInOrder, topScorer, weight, filterDocIdSet);
-        
       }
     };
   }
@@ -183,14 +185,12 @@ public class FilteredQuery extends Query {
     
     @Override
     public int advance(int target) throws IOException {
-      
       int doc = scorer.advance(target);
       if (doc != Scorer.NO_MORE_DOCS && !filterbits.get(doc)) {
         return scorerDoc = nextDoc();
       } else {
         return scorerDoc = doc;
       }
-      
     }
 
     @Override
@@ -303,7 +303,9 @@ public class FilteredQuery extends Query {
     }
     
     @Override
-    public final int freq() throws IOException { return scorer.freq(); }
+    public final int freq() throws IOException {
+      return scorer.freq();
+    }
     
     @Override
     public final Collection<ChildScorer> getChildren() {
@@ -342,15 +344,6 @@ public class FilteredQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query queryRewritten = query.rewrite(reader);
-    
-    if (queryRewritten instanceof MatchAllDocsQuery) {
-      // Special case: If the query is a MatchAllDocsQuery, we only
-      // return a CSQ(filter).
-      final Query rewritten = new ConstantScoreQuery(filter);
-      // Combine boost of MatchAllDocsQuery and the wrapped rewritten query:
-      rewritten.setBoost(this.getBoost() * queryRewritten.getBoost());
-      return rewritten;
-    }
     
     if (queryRewritten != query) {
       // rewrite to a new FilteredQuery wrapping the rewritten query
@@ -527,7 +520,7 @@ public class FilteredQuery extends Query {
       
       final Bits filterAcceptDocs = docIdSet.bits();
       // force if RA is requested
-      final boolean useRandomAccess = (filterAcceptDocs != null && (useRandomAccess(filterAcceptDocs, firstFilterDoc)));
+      final boolean useRandomAccess = filterAcceptDocs != null && useRandomAccess(filterAcceptDocs, firstFilterDoc);
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs
         return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
