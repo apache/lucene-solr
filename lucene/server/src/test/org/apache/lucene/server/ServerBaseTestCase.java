@@ -548,6 +548,14 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
    *  that all fragments occur in the failure message
    *  string.  Use this to verify a failure case is hitting
    *  the right error messages back to the user. */
+  protected void assertFailsWith(String command, JSONObject args, String... fragments) throws Exception {
+    assertFailsWith(command, args.toString(), fragments);
+  }
+
+  /** Sends the command + args, expecting a failure such
+   *  that all fragments occur in the failure message
+   *  string.  Use this to verify a failure case is hitting
+   *  the right error messages back to the user. */
   protected void assertFailsWith(String command, String args, String... fragments) throws Exception {
     try {
       send(command, args);

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
@@ -49,7 +50,7 @@ public class MyIndexSearcher extends IndexSearcher {
         String indexFieldName = state.facetsConfig.getDimConfig(field.name).indexFieldName;
         if (ssdvStates.containsKey(indexFieldName) == false) {
           // TODO: log how long this took
-          ssdvStates.put(indexFieldName, new SortedSetDocValuesReaderState(r, indexFieldName));
+          ssdvStates.put(indexFieldName, new DefaultSortedSetDocValuesReaderState(r, indexFieldName));
         }
       }
     }

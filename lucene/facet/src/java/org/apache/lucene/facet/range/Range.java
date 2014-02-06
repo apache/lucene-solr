@@ -17,9 +17,12 @@ package org.apache.lucene.facet.range;
  * limitations under the License.
  */
 
+import org.apache.lucene.facet.DrillDownQuery; // javadocs
+import org.apache.lucene.facet.DrillSideways; // javadocs
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery; // javadocs
+import org.apache.lucene.search.NumericRangeFilter; // javadocs
 
 /** Base class for a single labeled range.
  *
