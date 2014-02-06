@@ -303,6 +303,37 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     dir.close();
   }
 
+  public void testReferenceDecrementIllegally() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
+    SearcherManager sm = new SearcherManager(writer, false, new SearcherFactory());
+    writer.addDocument(new Document());
+    writer.commit();
+    sm.maybeRefreshBlocking();
+
+    IndexSearcher acquire = sm.acquire();
+    IndexSearcher acquire2 = sm.acquire();
+    sm.release(acquire);
+    sm.release(acquire2);
+
+
+    acquire = sm.acquire();
+    acquire.getIndexReader().decRef();
+    sm.release(acquire);
+    try {
+      sm.acquire();
+      fail("acquire should have thrown an IllegalStateException since we modified the refCount outside of the manager");
+    } catch (IllegalStateException ex) {
+      //
+    }
+
+    // sm.close(); -- already closed
+    writer.close();
+    dir.close();
+  }
+
+
   public void testEnsureOpen() throws Exception {
     Directory dir = newDirectory();
     new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();

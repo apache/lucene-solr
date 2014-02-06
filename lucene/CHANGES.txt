@@ -181,6 +181,12 @@ Bug fixes
   to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
   Mike McCandless)
 
+* LUCENE-5436: RefrenceManager#accquire can result in infinite loop if
+  managed resource is abused outside of the RefrenceManager. Decrementing
+  the reference without a corresponding incRef() call can cause an infinite
+  loop. ReferenceManager now throws IllegalStateException if currently managed
+  resources ref count is 0. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
