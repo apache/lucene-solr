@@ -74,7 +74,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(writer.getReader());
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
     
     FacetsCollector c = new FacetsCollector();
 
@@ -110,7 +110,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.addDocument(config.build(doc));
 
     IndexReader r = writer.getReader();
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(r);
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(r);
 
     doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
@@ -176,7 +176,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.close();
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     FacetsCollector c = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
@@ -221,7 +221,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.close();
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     FacetsCollector c = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
@@ -256,7 +256,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IndexSearcher searcher = new IndexSearcher(SlowCompositeReaderWrapper.wrap(writer.getReader()));
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     FacetsCollector c = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
@@ -295,7 +295,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(w.getReader());
     
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
