@@ -244,6 +244,9 @@ Bug Fixes
 * SOLR-5678: SolrZkClient should throw a SolrException when connect times out
   rather than a RuntimeException. (Karl Wright, Anshum Gupta, Mark Miller)
 
+* SOLR-4072: Error message is incorrect for linkconfig in ZkCLI.
+  (Vamsee Yarlagadda, Adam Hahn, via Mark Miller)
+
 Optimizations
 ----------------------
 
