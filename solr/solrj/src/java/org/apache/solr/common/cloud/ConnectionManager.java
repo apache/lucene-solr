@@ -229,7 +229,7 @@ public class ConnectionManager implements Watcher {
         wait(500);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
+        break;
       }
       left = expire - System.currentTimeMillis();
     }
