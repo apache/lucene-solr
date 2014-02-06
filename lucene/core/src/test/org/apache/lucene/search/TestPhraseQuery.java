@@ -678,4 +678,16 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  
+  public void testNegativeSlop() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "two"));
+    query.add(new Term("field", "one"));
+    try {
+      query.setSlop(-2);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
+  }
 }

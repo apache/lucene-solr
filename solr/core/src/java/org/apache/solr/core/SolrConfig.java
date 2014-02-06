@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.core.SolrConfig.PluginOpts.*;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -28,11 +29,11 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
-
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -40,10 +41,8 @@ import org.apache.solr.spelling.QueryConverter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.util.Version;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -89,6 +88,8 @@ public class SolrConfig extends Config {
   private boolean handleSelect;
 
   private boolean addHttpRequestToContext;
+
+  private final SolrRequestParsers solrRequestParsers;
   
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
@@ -285,6 +286,7 @@ public class SolrConfig extends Config {
      addHttpRequestToContext = getBool( 
          "requestDispatcher/requestParsers/@addHttpRequestToContext", false ); 
 
+    solrRequestParsers = new SolrRequestParsers(this);
     Config.log.info("Loaded SolrConfig: " + name);
   }
 
@@ -323,6 +325,10 @@ public class SolrConfig extends Config {
       if(pluginInfo.isEnabled()) result.add(pluginInfo);
     }
     return result;
+  }
+  
+  public SolrRequestParsers getRequestParsers() {
+    return solrRequestParsers;
   }
 
   /* The set of materialized parameters: */

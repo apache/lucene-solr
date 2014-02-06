@@ -36,7 +36,7 @@ import org.apache.solr.search.function.*;
  * <br>Filter query example: <code>fq={!frange l=0 u=2.2}sum(user_ranking,editor_ranking)</code> 
  */
 public class FunctionRangeQParserPlugin extends QParserPlugin {
-  public static String NAME = "frange";
+  public static final String NAME = "frange";
 
   @Override
   public void init(NamedList args) {

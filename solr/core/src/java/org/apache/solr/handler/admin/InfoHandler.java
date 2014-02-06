@@ -109,4 +109,36 @@ public class InfoHandler extends RequestHandlerBase {
   public String getSource() {
     return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/handler/admin/InfoHandler.java $";
   }
+
+  protected PropertiesRequestHandler getPropertiesHandler() {
+    return propertiesHandler;
+  }
+
+  protected ThreadDumpHandler getThreadDumpHandler() {
+    return threadDumpHandler;
+  }
+
+  protected LoggingHandler getLoggingHandler() {
+    return loggingHandler;
+  }
+
+  protected SystemInfoHandler getSystemInfoHandler() {
+    return systemInfoHandler;
+  }
+
+  protected void setPropertiesHandler(PropertiesRequestHandler propertiesHandler) {
+    this.propertiesHandler = propertiesHandler;
+  }
+
+  protected void setThreadDumpHandler(ThreadDumpHandler threadDumpHandler) {
+    this.threadDumpHandler = threadDumpHandler;
+  }
+
+  protected void setLoggingHandler(LoggingHandler loggingHandler) {
+    this.loggingHandler = loggingHandler;
+  }
+
+  protected void setSystemInfoHandler(SystemInfoHandler systemInfoHandler) {
+    this.systemInfoHandler = systemInfoHandler;
+  }
 }

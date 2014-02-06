@@ -34,7 +34,7 @@ import java.util.List;
  * <br>Example: <code>{!lucene q.op=AND df=text sort='price asc'}myfield:foo +bar -baz</code>
  */
 public class LuceneQParserPlugin extends QParserPlugin {
-  public static String NAME = "lucene";
+  public static final String NAME = "lucene";
 
   @Override
   public void init(NamedList args) {

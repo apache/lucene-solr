@@ -181,6 +181,9 @@ public interface CommonParams {
     }
   };
 
+  /** which parameters to log (if not supplied all parameters will be logged) **/
+  public static final String LOG_PARAMS_LIST = "logParamsList";
+
   public static final String EXCLUDE = "ex";
   public static final String TAG = "tag";
   public static final String TERMS = "terms";

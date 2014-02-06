@@ -78,7 +78,68 @@ public final class FixedBitSet extends DocIdSet implements Bits {
 
   @Override
   public DocIdSetIterator iterator() {
-    return new OpenBitSetIterator(bits, wordLength);
+    // define locally so we don't have "enclosing acces" issue
+    final long[] bits = this.bits;
+    final int wordLength = this.wordLength;
+    final int numBits = this.numBits;
+    return new DocIdSetIterator() {
+      int doc = -1;
+      @Override
+      public int nextDoc() throws IOException {
+        if (doc == NO_MORE_DOCS || ++doc >= numBits) {
+          return doc = NO_MORE_DOCS;
+        }
+        int i = doc >> 6;
+        final int subIndex = doc & 0x3f;      // index within the word
+        long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+
+        if (word != 0) {
+          return doc = doc + Long.numberOfTrailingZeros(word);
+        }
+
+        while (++i < wordLength) {
+          word = bits[i];
+          if (word != 0) {
+            return doc = (i << 6) + Long.numberOfTrailingZeros(word);
+          }
+        }
+
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public long cost() {
+        return bits.length;
+      }
+      
+      @Override
+      public int advance(int target) throws IOException {
+        if (doc == NO_MORE_DOCS || target >= numBits) {
+          return doc = NO_MORE_DOCS;
+        }
+        int i = target >> 6;
+        final int subIndex = target & 0x3f;      // index within the word
+        long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+
+        if (word != 0) {
+          return doc = target + Long.numberOfTrailingZeros(word);
+        }
+
+        while (++i < wordLength) {
+          word = bits[i];
+          if (word != 0) {
+            return doc = (i << 6) + Long.numberOfTrailingZeros(word);
+          }
+        }
+
+        return doc = NO_MORE_DOCS;
+      }
+    };
   }
 
   @Override
@@ -166,7 +227,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     long word = bits[i] >> subIndex;  // skip all the bits to the right of index
 
     if (word!=0) {
-      return (i<<6) + subIndex + Long.numberOfTrailingZeros(word);
+      return index + Long.numberOfTrailingZeros(word);
     }
 
     while(++i < wordLength) {

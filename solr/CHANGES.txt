@@ -100,7 +100,7 @@ New Features
 * SOLR-5208: Support for the setting of core.properties key/values at create-time on 
   Collections API (Erick Erickson)
 
-* SOLR-5428: New 'stats.calcdistinct' parameter in StatsComponent returns
+* SOLR-5428: SOLR-5690: New 'stats.calcdistinct' parameter in StatsComponent returns
   set of distinct values and their count. This can also be specified per field
   e.g. 'f.field.stats.calcdistinct'. (Elran Dvir via shalin)
 
@@ -160,6 +160,24 @@ New Features
 
 * SOLR-5670: allow _version_ to use DocValues.  (Per Steffensen via yonik)
 
+* SOLR-5535: Set "partialResults" header for shards that error out if
+  shards.tolerant is specified. (Steve Davids via shalin)
+
+* SOLR-5610: Support cluster-wide properties with an API called
+  CLUSTERPROP (Noble Paul)
+
+* SOLR-5623: Better diagnosis of RuntimeExceptions in analysis
+  (Benson Margulies)
+
+* SOLR-5530: Added a NoOpResponseParser for SolrJ which puts the entire raw
+  response into an entry in the NamedList.
+  (Upayavira, Vitaliy Zhovtyuk via shalin)
+
+* SOLR-5682: Make the admin InfoHandler more pluggable / derivable.
+  (Greg Chanan via Mark Miller)
+
+* SOLR-5672: Add logParamsList parameter to support reduced logging.
+  (Christine Poerschke via Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -247,6 +265,29 @@ Bug Fixes
 * SOLR-5676: SolrCloud updates rejected if talking to secure ZooKeeper.
   (Greg Chanan via Mark Miller)
 
+* SOLR-5634: SolrJ GroupCommand.getNGroups returns null if group.format=simple
+  and group.ngroups=true. (Artem Lukanin via shalin)
+
+* SOLR-5667: Performance problem when not using hdfs block cache. (Mark Miller)
+
+* SOLR-5526: Fixed NPE that could arrise when explicitly configuring some built 
+  in QParserPlugins (Nikolay Khitrin, Vitaliy Zhovtyuk, hossman)
+
+* SOLR-5598: LanguageIdentifierUpdateProcessor ignores all but the first value
+  of multiValued string fields. (Andreas Hubold, Vitaliy Zhovtyuk via shalin)
+
+* SOLR-5593: Replicas should accept the last updates from a leader that has just 
+  lost it's connection to ZooKeeper. (Christine Poerschke via Mark Miller)
+
+* SOLR-5678: SolrZkClient should throw a SolrException when connect times out
+  rather than a RuntimeException. (Karl Wright, Anshum Gupta, Mark Miller)
+
+* SOLR-4072: Error message is incorrect for linkconfig in ZkCLI.
+  (Vamsee Yarlagadda, Adam Hahn, via Mark Miller)
+
+* SOLR-5691: Sharing non thread safe WeakHashMap across thread can cause
+  problems. (Bojan Smid, Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -265,6 +306,9 @@ Optimizations
 
 * SOLR-5214: Reduce memory usage for shard splitting by merging segments one
   at a time. (Christine Poerschke via shalin)
+
+* SOLR-4227: Wrap XML RequestWriter's OutputStreamWriter in a BufferedWriter
+  to avoid frequent converter invocations. (Conrad Herrmann, shalin)
 
 Other Changes
 ---------------------
@@ -318,6 +362,12 @@ Other Changes
 
 * SOLR-5633: HttpShardHandlerFactory should make its http client available to subclasses.
   (Ryan Ernst)
+
+* SOLR-5684: Shutdown SolrServer clients created in BasicDistributedZk2Test and
+  BasicDistributedZkTest. (Tomás Fernández Löbbe via shalin)
+
+* SOLR-5629: SolrIndexSearcher.name should include core name.
+  (Shikhar Bhushan via shalin)
 
 ==================  4.6.1  ==================
 

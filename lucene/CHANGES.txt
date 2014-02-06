@@ -48,10 +48,10 @@ API Changes
   this term index, pass it directly in your codec, where it can also be configured
   per-field. (Robert Muir)
 
-* LUCENE-5388: Remove Reader from Tokenizer's constructor. 
+* LUCENE-5388: Remove Reader from Tokenizer's constructor and from
+  Analyzer's createComponents. TokenStreams now always get their input
+  via setReader.  
   (Benson Margulies via Robert Muir - pull request #16)
-
-* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
 
 Documentation
 
@@ -110,6 +110,13 @@ New Features
   fixes too. More info:
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
+* LUCENE-5405: If an analysis component throws an exception, Lucene
+  logs the field name to the info stream to assist in
+  diagnosis. (Benson Margulies)
+
+* LUCENE-5406: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public
+  final (gsingers)
+
 * LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
   (Mike McCandless, Robert Muir)
 
@@ -124,6 +131,13 @@ New Features
 
 * LUCENE-5320: Add SearcherTaxonomyManager over search and taxonomy index
   directories (i.e. not only NRT). (Shai Erera)
+
+* LUCENE-5410: Add fuzzy and near support via '~' operator to SimpleQueryParser.
+  (Lee Hinman via Robert Muir)
+
+* LUCENE-5426: Make SortedSetDocValuesReaderState abstract to allow
+  custom implementations for Lucene doc values faceting (John Wang via
+  Mike McCandless)
 
 Build
 
@@ -243,6 +257,10 @@ API Changes
   responsible for encoding/decoding a block of terms.  Instead, they
   should encode/decode each term to/from a long[] and byte[].  (Han
   Jiang, Mike McCandless)
+  
+* LUCENE-5425: FacetsCollector and MatchingDocs use a general DocIdSet, 
+  allowing for custom implementations to be used when faceting.
+  (John Wang, Lei Wang, Shai Erera) 
 
 Optimizations
 

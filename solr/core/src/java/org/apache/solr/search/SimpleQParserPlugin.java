@@ -18,11 +18,9 @@ package org.apache.solr.search;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.simple.SimpleQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SimpleParams;
@@ -71,38 +69,23 @@ import java.util.Map;
  */
 public class SimpleQParserPlugin extends QParserPlugin {
   /** The name that can be used to specify this plugin should be used to parse the query. */
-  public static String NAME = "simple";
-
-  /** Enables {@code AND} operator (+) */
-  private static final String AND_OPERATOR         = "AND";
-  /** Enables {@code NOT} operator (-) */
-  private static final String NOT_OPERATOR         = "NOT";
-  /** Enables {@code OR} operator (|) */
-  private static final String OR_OPERATOR          = "OR";
-  /** Enables {@code PREFIX} operator (*) */
-  private static final String PREFIX_OPERATOR      = "PREFIX";
-  /** Enables {@code PHRASE} operator (") */
-  private static final String PHRASE_OPERATOR      = "PHRASE";
-  /** Enables {@code PRECEDENCE} operators: {@code (} and {@code )} */
-  private static final String PRECEDENCE_OPERATORS = "PRECEDENCE";
-  /** Enables {@code ESCAPE} operator (\) */
-  private static final String ESCAPE_OPERATOR      = "ESCAPE";
-  /** Enables {@code WHITESPACE} operators: ' ' '\n' '\r' '\t' */
-  private static final String WHITESPACE_OPERATOR  = "WHITESPACE";
+  public static final String NAME = "simple";
 
   /** Map of string operators to their int counterparts in SimpleQueryParser. */
   private static final Map<String, Integer> OPERATORS = new HashMap<String, Integer>();
 
   /* Setup the map of possible operators. */
   static {
-    OPERATORS.put(AND_OPERATOR,         SimpleQueryParser.AND_OPERATOR);
-    OPERATORS.put(NOT_OPERATOR,         SimpleQueryParser.NOT_OPERATOR);
-    OPERATORS.put(OR_OPERATOR,          SimpleQueryParser.OR_OPERATOR);
-    OPERATORS.put(PREFIX_OPERATOR,      SimpleQueryParser.PREFIX_OPERATOR);
-    OPERATORS.put(PHRASE_OPERATOR,      SimpleQueryParser.PHRASE_OPERATOR);
-    OPERATORS.put(PRECEDENCE_OPERATORS, SimpleQueryParser.PRECEDENCE_OPERATORS);
-    OPERATORS.put(ESCAPE_OPERATOR,      SimpleQueryParser.ESCAPE_OPERATOR);
-    OPERATORS.put(WHITESPACE_OPERATOR,  SimpleQueryParser.WHITESPACE_OPERATOR);
+    OPERATORS.put(SimpleParams.AND_OPERATOR,         SimpleQueryParser.AND_OPERATOR);
+    OPERATORS.put(SimpleParams.NOT_OPERATOR,         SimpleQueryParser.NOT_OPERATOR);
+    OPERATORS.put(SimpleParams.OR_OPERATOR,          SimpleQueryParser.OR_OPERATOR);
+    OPERATORS.put(SimpleParams.PREFIX_OPERATOR,      SimpleQueryParser.PREFIX_OPERATOR);
+    OPERATORS.put(SimpleParams.PHRASE_OPERATOR,      SimpleQueryParser.PHRASE_OPERATOR);
+    OPERATORS.put(SimpleParams.PRECEDENCE_OPERATORS, SimpleQueryParser.PRECEDENCE_OPERATORS);
+    OPERATORS.put(SimpleParams.ESCAPE_OPERATOR,      SimpleQueryParser.ESCAPE_OPERATOR);
+    OPERATORS.put(SimpleParams.WHITESPACE_OPERATOR,  SimpleQueryParser.WHITESPACE_OPERATOR);
+    OPERATORS.put(SimpleParams.FUZZY_OPERATOR,       SimpleQueryParser.FUZZY_OPERATOR);
+    OPERATORS.put(SimpleParams.NEAR_OPERATOR,        SimpleQueryParser.NEAR_OPERATOR);
   }
 
   /** No initialization is necessary so this method is empty. */

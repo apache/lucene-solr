@@ -29,8 +29,8 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 
 /** Aggregates sum of values from {@link
@@ -81,15 +81,15 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
     IntsRef scratch = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
       OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
-      FixedBitSet bits = hits.bits;
-    
-      final int length = hits.bits.length();
-      int doc = 0;
+      
       int scoresIdx = 0;
       float[] scores = hits.scores;
 
       FunctionValues functionValues = valueSource.getValues(context, hits.context);
-      while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
+      DocIdSetIterator docs = hits.bits.iterator();
+      
+      int doc;
+      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ords.get(doc, scratch);
         if (keepScores) {
           scorer.docID = doc;
@@ -99,7 +99,6 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
         for(int i=0;i<scratch.length;i++) {
           values[scratch.ints[i]] += value;
         }
-        ++doc;
       }
     }
 

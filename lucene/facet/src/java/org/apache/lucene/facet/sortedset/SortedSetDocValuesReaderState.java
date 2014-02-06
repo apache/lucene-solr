@@ -18,16 +18,10 @@ package org.apache.lucene.facet.sortedset;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.BytesRef;
 
 /** Wraps a {@link IndexReader} and resolves ords
  *  using existing {@link SortedSetDocValues} APIs without a
@@ -45,14 +39,7 @@ import org.apache.lucene.util.BytesRef;
  *  so you should create it once and re-use that one instance
  *  for a given {@link IndexReader}. */
 
-public final class SortedSetDocValuesReaderState {
-
-  private final String field;
-  private final AtomicReader topReader;
-  private final int valueCount;
-
-  /** {@link IndexReader} passed to the constructor. */
-  public final IndexReader origReader;
+public abstract class SortedSetDocValuesReaderState {
 
   /** Holds start/end range of ords, which maps to one
    *  dimension (someday we may generalize it to map to
@@ -70,86 +57,25 @@ public final class SortedSetDocValuesReaderState {
     }
   }
 
-  private final Map<String,OrdRange> prefixToOrdRange = new HashMap<String,OrdRange>();
-
-  /** Creates this, pulling doc values from the default {@link
-   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */ 
-  public SortedSetDocValuesReaderState(IndexReader reader) throws IOException {
-    this(reader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+  /** Sole constructor. */
+  protected SortedSetDocValuesReaderState() {
   }
-
-  /** Creates this, pulling doc values from the specified
-   *  field. */
-  public SortedSetDocValuesReaderState(IndexReader reader, String field) throws IOException {
-
-    this.field = field;
-    this.origReader = reader;
-
-    // We need this to create thread-safe MultiSortedSetDV
-    // per collector:
-    topReader = SlowCompositeReaderWrapper.wrap(reader);
-    SortedSetDocValues dv = topReader.getSortedSetDocValues(field);
-    if (dv == null) {
-      throw new IllegalArgumentException("field \"" + field + "\" was not indexed with SortedSetDocValues");
-    }
-    if (dv.getValueCount() > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("can only handle valueCount < Integer.MAX_VALUE; got " + dv.getValueCount());
-    }
-    valueCount = (int) dv.getValueCount();
-
-    // TODO: we can make this more efficient if eg we can be
-    // "involved" when OrdinalMap is being created?  Ie see
-    // each term/ord it's assigning as it goes...
-    String lastDim = null;
-    int startOrd = -1;
-    BytesRef spare = new BytesRef();
-
-    // TODO: this approach can work for full hierarchy?;
-    // TaxoReader can't do this since ords are not in
-    // "sorted order" ... but we should generalize this to
-    // support arbitrary hierarchy:
-    for(int ord=0;ord<valueCount;ord++) {
-      dv.lookupOrd(ord, spare);
-      String[] components = FacetsConfig.stringToPath(spare.utf8ToString());
-      if (components.length != 2) {
-        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + spare.utf8ToString());
-      }
-      if (!components[0].equals(lastDim)) {
-        if (lastDim != null) {
-          prefixToOrdRange.put(lastDim, new OrdRange(startOrd, ord-1));
-        }
-        startOrd = ord;
-        lastDim = components[0];
-      }
-    }
-
-    if (lastDim != null) {
-      prefixToOrdRange.put(lastDim, new OrdRange(startOrd, valueCount-1));
-    }
-  }
-
+  
   /** Return top-level doc values. */
-  public SortedSetDocValues getDocValues() throws IOException {
-    return topReader.getSortedSetDocValues(field);
-  }
-
-  /** Returns mapping from prefix to {@link OrdRange}. */
-  public Map<String,OrdRange> getPrefixToOrdRange() {
-    return prefixToOrdRange;
-  }
-
-  /** Returns the {@link OrdRange} for this dimension. */
-  public OrdRange getOrdRange(String dim) {
-    return prefixToOrdRange.get(dim);
-  }
-
+  public abstract SortedSetDocValues getDocValues() throws IOException;
+  
   /** Indexed field we are reading. */
-  public String getField() {
-    return field;
-  }
-
+  public abstract String getField();
+  
+  /** Returns the {@link OrdRange} for this dimension. */
+  public abstract OrdRange getOrdRange(String dim);
+  
+  /** Returns mapping from prefix to {@link OrdRange}. */
+  public abstract Map<String,OrdRange> getPrefixToOrdRange();
+  
+  /** Returns top-level index reader. */
+  public abstract IndexReader getOrigReader();
+  
   /** Number of unique labels. */
-  public int getSize() {
-    return valueCount;
-  }
+  public abstract int getSize();
 }

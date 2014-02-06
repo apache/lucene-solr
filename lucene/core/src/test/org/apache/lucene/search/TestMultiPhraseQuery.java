@@ -568,4 +568,16 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     return terms;
   }
   
+  public void testNegativeSlop() throws Exception {
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    query.add(new Term("field", "two"));
+    query.add(new Term("field", "one"));
+    try {
+      query.setSlop(-2);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
+  }
+  
 }

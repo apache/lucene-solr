@@ -308,6 +308,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                 } else {
                   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
                 }
+              } else {
+                if(rsp.getResponseHeader().get("partialResults") == null) {
+                  rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+                }
               }
             }
 

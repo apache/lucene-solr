@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -291,12 +292,16 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     for (String fieldName : inputFields) {
       log.debug("Appending field "+fieldName);
       if (doc.containsKey(fieldName)) {
-        Object content = doc.getFieldValue(fieldName);
-        if(content instanceof String) {
-          sb.append((String) doc.getFieldValue(fieldName));
-          sb.append(" ");
-        } else {
-          log.warn("Field "+fieldName+" not a String value, not including in detection");
+        Collection<Object> fieldValues = doc.getFieldValues(fieldName);
+        if (fieldValues != null) {
+          for (Object content : fieldValues) {
+            if (content instanceof String) {
+              sb.append((String) content);
+              sb.append(" ");
+            } else {
+              log.warn("Field " + fieldName + " not a String value, not including in detection");
+            }
+          }
         }
       }
     }

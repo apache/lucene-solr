@@ -24,7 +24,7 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.IntsRef;
 
 /** Reads from any {@link OrdinalsReader}; use {@link
@@ -49,16 +49,14 @@ public class TaxonomyFacetCounts extends IntTaxonomyFacets {
     IntsRef scratch  = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
       OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
-      FixedBitSet bits = hits.bits;
-    
-      final int length = hits.bits.length();
-      int doc = 0;
-      while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
+      DocIdSetIterator docs = hits.bits.iterator();
+      
+      int doc;
+      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ords.get(doc, scratch);
         for(int i=0;i<scratch.length;i++) {
           values[scratch.ints[scratch.offset+i]]++;
         }
-        ++doc;
       }
     }
 

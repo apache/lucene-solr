@@ -30,6 +30,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.DocIdSetIterator;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic long ranges from a provided {@link ValueSource},
@@ -74,8 +75,7 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
     int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
-      final int length = hits.bits.length();
-      int doc = 0;
+      
       totCount += hits.totalHits;
       Bits bits;
       if (fastMatchFilter != null) {
@@ -92,7 +92,9 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
         bits = null;
       }
 
-      while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
+      DocIdSetIterator docs = hits.bits.iterator();      
+      int doc;
+      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (bits != null && bits.get(doc) == false) {
           doc++;
           continue;
@@ -103,8 +105,6 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
         } else {
           missingCount++;
         }
-
-        doc++;
       }
     }
     

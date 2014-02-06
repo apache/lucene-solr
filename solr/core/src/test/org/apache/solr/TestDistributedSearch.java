@@ -510,6 +510,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
           }
           else {
+            assertEquals("Expected to find the partialResults header set if a shard is down", Boolean.TRUE, rsp.getHeader().get("partialResults"));
             assertTrue("Expected to find error in the down shard info",info.get("error") != null);
           }
         }
@@ -518,4 +519,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
   
+  @Override
+  public void validateControlData(QueryResponse control) throws Exception {
+    super.validateControlData(control);
+    assertNull("Expected the partialResults header to be null", control.getHeader().get("partialResults"));
+  }
 }

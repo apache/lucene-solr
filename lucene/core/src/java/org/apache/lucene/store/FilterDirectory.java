@@ -101,6 +101,11 @@ public class FilterDirectory extends Directory {
   }
 
   @Override
+  public String getLockID() {
+    return in.getLockID();
+  }
+  
+  @Override
   public LockFactory getLockFactory() {
     return in.getLockFactory();
   }

@@ -28,6 +28,7 @@ import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
@@ -88,7 +89,7 @@ public class SimpleSortedSetFacetsExample {
   private List<FacetResult> search() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(indexReader);
 
     // Aggregatses the facet counts
     FacetsCollector fc = new FacetsCollector();
@@ -113,7 +114,7 @@ public class SimpleSortedSetFacetsExample {
   private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(indexReader);
 
     // Now user drills down on Publish Year/2010:
     DrillDownQuery q = new DrillDownQuery(config);

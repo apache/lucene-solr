@@ -20,6 +20,7 @@ package org.apache.lucene.facet.range;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -911,6 +912,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new DoubleRange("< 50", 0.0, true, 50.0, false)};
 
     Filter fastMatchFilter;
+    final AtomicBoolean filterWasUsed = new AtomicBoolean();
     if (random().nextBoolean()) {
       // Sort of silly:
       fastMatchFilter = new CachingWrapperFilter(new QueryWrapperFilter(new MatchAllDocsQuery())) {
@@ -918,6 +920,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
           protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader)
             throws IOException {
             final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
+            filterWasUsed.set(true);
             cached.or(iterator);
             return cached;
           }
@@ -935,6 +938,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     // Test simple drill-down:
     assertEquals(1, s.search(ddq, 10).totalHits);
+    assertTrue(fastMatchFilter == null || filterWasUsed.get());
+    filterWasUsed.set(false);
 
     // Test drill-sideways after drill-down
     DrillSideways ds = new DrillSideways(s, config, (TaxonomyReader) null) {
@@ -956,6 +961,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals(1, dsr.hits.totalHits);
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
+    assertTrue(fastMatchFilter == null || filterWasUsed.get());
 
     IOUtils.close(r, writer, dir);
   }
