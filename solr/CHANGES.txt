@@ -273,6 +273,9 @@ Bug Fixes
 * SOLR-5593: Replicas should accept the last updates from a leader that has just 
   lost it's connection to ZooKeeper. (Christine Poerschke via Mark Miller)
 
+* SOLR-5678: SolrZkClient should throw a SolrException when connect times out
+  rather than a RuntimeException. (Karl Wright, Anshum Gupta
+
 Optimizations
 ----------------------
 

@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.OutputKeys;
@@ -132,7 +133,7 @@ public class SolrZkClient {
           Thread.currentThread().interrupt();
         }
       }
-      throw new RuntimeException(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     
     try {
@@ -144,7 +145,7 @@ public class SolrZkClient {
       } catch (InterruptedException e1) {
         Thread.currentThread().interrupt();
       }
-      throw new RuntimeException(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     numOpens.incrementAndGet();
   }
