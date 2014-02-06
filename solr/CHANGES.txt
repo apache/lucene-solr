@@ -366,6 +366,9 @@ Other Changes
 * SOLR-5684: Shutdown SolrServer clients created in BasicDistributedZk2Test and
   BasicDistributedZkTest. (Tomás Fernández Löbbe via shalin)
 
+* SOLR-5629: SolrIndexSearcher.name should include core name.
+  (Shikhar Bhushan via shalin)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components

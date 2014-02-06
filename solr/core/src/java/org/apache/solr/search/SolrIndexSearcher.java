@@ -196,7 +196,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this.atomicReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
-    this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
+    this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]" + (name != null ? " " + name : "");
     log.info("Opening " + this.name);
 
     if (directoryFactory.searchersReserveCommitPoints()) {
