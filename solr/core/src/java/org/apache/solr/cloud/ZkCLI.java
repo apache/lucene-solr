@@ -222,7 +222,7 @@ public class ZkCLI {
           ZkController.downloadConfigDir(zkClient, confName, new File(confDir));
         } else if (line.getOptionValue(CMD).equals(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
-            System.out.println("-" + CONFDIR + " and -" + CONFNAME
+            System.out.println("-" + COLLECTION + " and -" + CONFNAME
                 + " are required for " + LINKCONFIG);
             System.exit(1);
           }
