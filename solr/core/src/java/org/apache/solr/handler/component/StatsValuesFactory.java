@@ -494,7 +494,11 @@ class StringStatsValues extends AbstractStatsValues<String> {
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
-      accumulate(values.strVal(docID), 1);
+      String value = values.strVal(docID);
+      if (value != null)
+        accumulate(value, 1);
+      else
+        missing();
     } else {
       missing();
     }
