@@ -141,4 +141,9 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
       return new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, newReader), tr);
     }
   }
+
+  @Override
+  protected int getRefCount(SearcherAndTaxonomy reference) {
+    return reference.searcher.getIndexReader().getRefCount();
+  }
 }
