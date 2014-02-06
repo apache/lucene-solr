@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -66,6 +66,98 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     }
 
     
+  }
+
+  @Test
+  public void testOverriddenHandlers() throws Exception {
+    final CoreContainer cores = h.getCoreContainer();
+    final InfoHandler infoHandler = new InfoHandler(cores);
+    infoHandler.init(null);
+
+    CountPropertiesRequestHandler propHandler = new CountPropertiesRequestHandler();
+    CountThreadDumpHandler threadHandler = new CountThreadDumpHandler();
+    CountLoggingHandler loggingHandler = new CountLoggingHandler(cores);
+    CountSystemInfoHandler systemInfoHandler = new CountSystemInfoHandler(cores);
+
+    // set the request handlers
+    infoHandler.setPropertiesHandler(propHandler);
+    infoHandler.setThreadDumpHandler(threadHandler);
+    infoHandler.setLoggingHandler(loggingHandler);
+    infoHandler.setSystemInfoHandler(systemInfoHandler);
+
+    // verify that the sets are reflected in the gets
+    assertEquals(propHandler, infoHandler.getPropertiesHandler());
+    assertEquals(threadHandler, infoHandler.getThreadDumpHandler());
+    assertEquals(loggingHandler, infoHandler.getLoggingHandler());
+    assertEquals(systemInfoHandler, infoHandler.getSystemInfoHandler());
+
+    // call each handler and verify it was actually called
+    handleRequest(infoHandler, "properties");
+    handleRequest(infoHandler, "threads");
+    handleRequest(infoHandler, "logging");
+    handleRequest(infoHandler, "system");
+
+    assertEquals(1, propHandler.getRequestCount());
+    assertEquals(1, threadHandler.getRequestCount());
+    assertEquals(1, loggingHandler.getRequestCount());
+    assertEquals(1, systemInfoHandler.getRequestCount());
+  }
+
+  // derived request handlers that count the number of request body counts made
+  public static class CountPropertiesRequestHandler extends PropertiesRequestHandler {
+    private int requestCount = 0;
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+    throws IOException {
+      ++requestCount;
+      super.handleRequestBody(req, rsp);
+    }
+
+    public int getRequestCount() { return requestCount; }
+  }
+
+  public static class CountThreadDumpHandler extends ThreadDumpHandler {
+    private int requestCount = 0;
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+    throws IOException {
+      ++requestCount;
+      super.handleRequestBody(req, rsp);
+    }
+
+    public int getRequestCount() { return requestCount; }
+  }
+
+  public static class CountLoggingHandler extends LoggingHandler {
+    private int requestCount = 0;
+
+    CountLoggingHandler(CoreContainer cores) { super(cores); }
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+    throws Exception {
+      ++requestCount;
+      super.handleRequestBody(req, rsp);
+    }
+
+    public int getRequestCount() { return requestCount; }
+  }
+
+  public static class CountSystemInfoHandler extends SystemInfoHandler {
+    private int requestCount = 0;
+
+    CountSystemInfoHandler(CoreContainer cores) { super(cores); }
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+    throws Exception {
+      ++requestCount;
+      super.handleRequestBody(req, rsp);
+    }
+
+    public int getRequestCount() { return requestCount; }
   }
 
   private SolrQueryResponse handleRequest(InfoHandler infoHandler, String path)
