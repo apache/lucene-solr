@@ -18,22 +18,20 @@ package org.apache.lucene.facet;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
-import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
@@ -86,7 +84,7 @@ public final class DrillDownQuery extends Query {
 
   /** Used by DrillSideways */
   DrillDownQuery(FacetsConfig config, Query baseQuery, List<Query> clauses, Map<String,Integer> drillDownDims) {
-    this.query = new BooleanQuery(true);
+    query = new BooleanQuery(true);
     if (baseQuery != null) {
       query.add(baseQuery, Occur.MUST);      
     }
@@ -155,11 +153,12 @@ public final class DrillDownQuery extends Query {
 
   /** Expert: add a custom drill-down subQuery.  Use this
    *  when you have a separate way to drill-down on the
-   *  dimension than the indexed facet ordinals (for
-   *  example, use a {@link NumericRangeQuery} to drill down
-   *  after {@link LongRangeFacetCounts} or {@link DoubleRangeFacetCounts}. */
+   *  dimension than the indexed facet ordinals. */
   public void add(String dim, Query subQuery) {
 
+    if (drillDownDims.containsKey(dim)) {
+      throw new IllegalArgumentException("dimension \"" + dim + "\" already has a drill-down");
+    }
     // TODO: we should use FilteredQuery?
 
     // So scores of the drill-down query don't have an
@@ -170,6 +169,40 @@ public final class DrillDownQuery extends Query {
     query.add(drillDownQuery, Occur.MUST);
 
     drillDownDims.put(dim, drillDownDims.size());
+  }
+
+  /** Expert: add a custom drill-down Filter, e.g. when
+   *  drilling down after range faceting. */
+  public void add(String dim, Filter subFilter) {
+
+    if (drillDownDims.containsKey(dim)) {
+      throw new IllegalArgumentException("dimension \"" + dim + "\" already has a drill-down");
+    }
+
+    // TODO: we should use FilteredQuery?
+
+    // So scores of the drill-down query don't have an
+    // effect:
+    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(subFilter);
+    drillDownQuery.setBoost(0.0f);
+
+    query.add(drillDownQuery, Occur.MUST);
+
+    drillDownDims.put(dim, drillDownDims.size());
+  }
+
+  static Filter getFilter(Query query) {
+    if (query instanceof ConstantScoreQuery) {
+      ConstantScoreQuery csq = (ConstantScoreQuery) query;
+      Filter filter = csq.getFilter();
+      if (filter != null) {
+        return filter;
+      } else {
+        return getFilter(csq.getQuery());
+      }
+    } else {
+      return null;
+    }
   }
 
   @Override
@@ -199,7 +232,63 @@ public final class DrillDownQuery extends Query {
     if (query.clauses().size() == 0) {
       return new MatchAllDocsQuery();
     }
-    return query;
+
+    List<Filter> filters = new ArrayList<Filter>();
+    List<Query> queries = new ArrayList<Query>();
+    List<BooleanClause> clauses = query.clauses();
+    Query baseQuery;
+    int startIndex;
+    if (drillDownDims.size() == query.clauses().size()) {
+      baseQuery = new MatchAllDocsQuery();
+      startIndex = 0;
+    } else {
+      baseQuery = clauses.get(0).getQuery();
+      startIndex = 1;
+    }
+
+    for(int i=startIndex;i<clauses.size();i++) {
+      BooleanClause clause = clauses.get(i);
+      Query queryClause = clause.getQuery();
+      Filter filter = getFilter(queryClause);
+      if (filter != null) {
+        filters.add(filter);
+      } else {
+        queries.add(queryClause);
+      }
+    }
+
+    if (filters.isEmpty()) {
+      return query;
+    } else {
+      // Wrap all filters using FilteredQuery
+      
+      // TODO: this is hackish; we need to do it because
+      // BooleanQuery can't be trusted to handle the
+      // "expensive filter" case.  Really, each Filter should
+      // know its cost and we should take that more
+      // carefully into account when picking the right
+      // strategy/optimization:
+      Query wrapped;
+      if (queries.isEmpty()) {
+        wrapped = baseQuery;
+      } else {
+        // disable coord
+        BooleanQuery wrappedBQ = new BooleanQuery(true);
+        if ((baseQuery instanceof MatchAllDocsQuery) == false) {
+          wrappedBQ.add(baseQuery, BooleanClause.Occur.MUST);
+        }
+        for(Query q : queries) {
+          wrappedBQ.add(q, BooleanClause.Occur.MUST);
+        }
+        wrapped = wrappedBQ;
+      }
+
+      for(Filter filter : filters) {
+        wrapped = new FilteredQuery(wrapped, filter, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
+      }
+
+      return wrapped;
+    }
   }
 
   @Override

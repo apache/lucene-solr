@@ -77,6 +77,13 @@ New Features
   close or cannot delete while referenced semantics. 
   (Mark Miller, Mike McCandless)
 
+* LUCENE-5418: Drilling down or sideways on a Lucene facet range
+  (using Range.getFilter()) is now faster for costly filters (uses
+  random access, not iteration); range facet counts now accept a
+  fast-match filter to avoid computing the value for documents that
+  are out of bounds, e.g. using a bounding box filter with distance
+  range faceting.  (Mike McCandless)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;

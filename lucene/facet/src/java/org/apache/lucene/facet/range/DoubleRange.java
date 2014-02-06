@@ -26,11 +26,12 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
-/** Represents a range over double values. */
+/** Represents a range over double values.
+ *
+ * @lucene.experimental */
 public final class DoubleRange extends Range {
   final double minIncl;
   final double maxIncl;
@@ -99,14 +100,15 @@ public final class DoubleRange extends Range {
     return "DoubleRange(" + minIncl + " to " + maxIncl + ")";
   }
 
-  /** Returns a new {@link Filter} accepting only documents
-   *  in this range.  Note that this filter is not
-   *  efficient: it's a linear scan of all docs, testing
-   *  each value.  If the {@link ValueSource} is static,
-   *  e.g. an indexed numeric field, then it's more
-   *  efficient to use {@link NumericRangeFilter}. */
-  public Filter getFilter(final ValueSource valueSource) {
+  @Override
+  public Filter getFilter(final Filter fastMatchFilter, final ValueSource valueSource) {
     return new Filter() {
+
+      @Override
+      public String toString() {
+        return "Filter(" + DoubleRange.this.toString() + ")";
+      }
+
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
 
@@ -119,48 +121,47 @@ public final class DoubleRange extends Range {
 
         final int maxDoc = context.reader().maxDoc();
 
+        final Bits fastMatchBits;
+        if (fastMatchFilter != null) {
+          DocIdSet dis = fastMatchFilter.getDocIdSet(context, null);
+          if (dis == null) {
+            // No documents match
+            return null;
+          }
+          fastMatchBits = dis.bits();
+          if (fastMatchBits == null) {
+            throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
+          }
+        } else {
+          fastMatchBits = null;
+        }
+
         return new DocIdSet() {
 
           @Override
-          public DocIdSetIterator iterator() {
-            return new DocIdSetIterator() {
-              int doc = -1;
-
+          public Bits bits() {
+            return new Bits() {
               @Override
-              public int nextDoc() throws IOException {
-                while (true) {
-                  doc++;
-                  if (doc == maxDoc) {
-                    return doc = NO_MORE_DOCS;
-                  }
-                  if (acceptDocs != null && acceptDocs.get(doc) == false) {
-                    continue;
-                  }
-                  double v = values.doubleVal(doc);
-                  if (accept(v)) {
-                    return doc;
-                  }
+              public boolean get(int docID) {
+                if (acceptDocs != null && acceptDocs.get(docID) == false) {
+                  return false;
                 }
+                if (fastMatchBits != null && fastMatchBits.get(docID) == false) {
+                  return false;
+                }
+                return accept(values.doubleVal(docID));
               }
 
               @Override
-              public int advance(int target) throws IOException {
-                doc = target-1;
-                return nextDoc();
-              }
-
-              @Override
-              public int docID() {
-                return doc;
-              }
-
-              @Override
-              public long cost() {
-                // Since we do a linear scan over all
-                // documents, our cost is O(maxDoc):
+              public int length() {
                 return maxDoc;
               }
             };
+          }
+
+          @Override
+          public DocIdSetIterator iterator() {
+            throw new UnsupportedOperationException("this filter can only be accessed via bits()");
           }
         };
       }
