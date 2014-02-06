@@ -135,6 +135,10 @@ New Features
 * LUCENE-5410: Add fuzzy and near support via '~' operator to SimpleQueryParser.
   (Lee Hinman via Robert Muir)
 
+* LUCENE-5426: Make SortedSetDocValuesReaderState abstract to allow
+  custom implementations for Lucene doc values faceting (John Wang via
+  Mike McCandless)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;

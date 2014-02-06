@@ -71,8 +71,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       throws IOException {
     this.state = state;
     this.field = state.getField();
+    dv = state.getDocValues();    
     counts = new int[state.getSize()];
-    dv = state.getDocValues();
     //System.out.println("field=" + field);
     count(hits.getMatchingDocs());
   }
@@ -158,6 +158,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     } else {
       ordinalMap = null;
     }
+    
+    IndexReader origReader = state.getOrigReader();
 
     for(MatchingDocs hits : matchingDocs) {
 
@@ -167,7 +169,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       // the top-level reader passed to the
       // SortedSetDocValuesReaderState, else cryptic
       // AIOOBE can happen:
-      if (ReaderUtil.getTopLevelContext(hits.context).reader() != state.origReader) {
+      if (ReaderUtil.getTopLevelContext(hits.context).reader() != origReader) {
         throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
       }
       
