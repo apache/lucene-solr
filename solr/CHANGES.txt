@@ -238,6 +238,9 @@ Bug Fixes
 * SOLR-5598: LanguageIdentifierUpdateProcessor ignores all but the first value
   of multiValued string fields. (Andreas Hubold, Vitaliy Zhovtyuk via shalin)
 
+* SOLR-5593: Replicas should accept the last updates from a leader that has just 
+  lost it's connection to ZooKeeper. (Christine Poerschke via Mark Miller)
+
 Optimizations
 ----------------------
 

@@ -228,6 +228,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
+      DistribPhase phase =
+          DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+
+      if (DistribPhase.FROMLEADER == phase && !couldIbeSubShardLeader(coll)) {
+        if (req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader()) {
+          // locally we think we are leader but the request says it came FROMLEADER
+          // that could indicate a problem, let the full logic below figure it out
+        } else {
+          isLeader = false;     // we actually might be the leader, but we don't want leader-logic for these types of updates anyway.
+          forwardToLeader = false;
+          return nodes;
+        }
+      }
 
       String shardId = slice.getName();
 
@@ -250,9 +263,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection, shardId, leaderReplica.getName(), coreName, null, ZkStateReader.DOWN);
           }
         }
-
-        DistribPhase phase =
-            DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
         doDefensiveChecks(phase);
 
@@ -314,11 +324,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return nodes;
   }
 
+  private boolean couldIbeSubShardLeader(DocCollection coll) {
+    // Could I be the leader of a shard in "construction/recovery" state?
+    String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor()
+        .getShardId();
+    Slice mySlice = coll.getSlice(myShardId);
+    String state = mySlice.getState();
+    return (Slice.CONSTRUCTION.equals(state) || Slice.RECOVERY.equals(state));
+  }
+  
   private boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException {
-    // Am I the leader of a shard in "construction" state?
+    // Am I the leader of a shard in "construction/recovery" state?
     String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
     Slice mySlice = coll.getSlice(myShardId);
-    if (Slice.CONSTRUCTION.equals(mySlice.getState()) || Slice.RECOVERY.equals(mySlice.getState())) {
+    String state = mySlice.getState();
+    if (Slice.CONSTRUCTION.equals(state) || Slice.RECOVERY.equals(state)) {
       Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
       boolean amILeader = myLeader.getName().equals(
           req.getCore().getCoreDescriptor().getCloudDescriptor()
