@@ -17,20 +17,17 @@ package org.apache.lucene.search.suggest.tst;
  * limitations under the License.
  */
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedInputIterator;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -43,6 +40,9 @@ import org.apache.lucene.util.UnicodeUtil;
 public class TSTLookup extends Lookup {
   TernaryTreeNode root = new TernaryTreeNode();
   TSTAutocomplete autocomplete = new TSTAutocomplete();
+
+  /** Number of entries the lookup was built with */
+  private long count = 0;
   
   /** 
    * Creates a new TSTLookup with an empty Ternary Search Tree.
@@ -150,11 +150,11 @@ public class TSTLookup extends Lookup {
   private static final byte HAS_VALUE = 0x10;
 
   // pre-order traversal
-  private void readRecursively(DataInputStream in, TernaryTreeNode node) throws IOException {
-    node.splitchar = in.readChar();
+  private void readRecursively(DataInput in, TernaryTreeNode node) throws IOException {
+    node.splitchar = in.readString().charAt(0);
     byte mask = in.readByte();
     if ((mask & HAS_TOKEN) != 0) {
-      node.token = in.readUTF();
+      node.token = in.readString();
     }
     if ((mask & HAS_VALUE) != 0) {
       node.val = Long.valueOf(in.readLong());
@@ -174,9 +174,9 @@ public class TSTLookup extends Lookup {
   }
 
   // pre-order traversal
-  private void writeRecursively(DataOutputStream out, TernaryTreeNode node) throws IOException {
+  private void writeRecursively(DataOutput out, TernaryTreeNode node) throws IOException {
     // write out the current node
-    out.writeChar(node.splitchar);
+    out.writeString(new String(new char[] {node.splitchar}, 0, 1));
     // prepare a mask of kids
     byte mask = 0;
     if (node.eqKid != null) mask |= EQ_KID;
@@ -185,7 +185,7 @@ public class TSTLookup extends Lookup {
     if (node.token != null) mask |= HAS_TOKEN;
     if (node.val != null) mask |= HAS_VALUE;
     out.writeByte(mask);
-    if (node.token != null) out.writeUTF(node.token);
+    if (node.token != null) out.writeString(node.token);
     if (node.val != null) out.writeLong(((Number)node.val).longValue());
     // recurse and write kids
     if (node.loKid != null) {
@@ -200,26 +200,17 @@ public class TSTLookup extends Lookup {
   }
 
   @Override
-  public synchronized boolean store(OutputStream output) throws IOException {
-    DataOutputStream out = new DataOutputStream(output);
-    try {
-      writeRecursively(out, root);
-      out.flush();
-    } finally {
-      IOUtils.close(output);
-    }
+  public synchronized boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    writeRecursively(output, root);
     return true;
   }
 
   @Override
-  public synchronized boolean load(InputStream input) throws IOException {
-    DataInputStream in = new DataInputStream(input);
+  public synchronized boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
     root = new TernaryTreeNode();
-    try {
-      readRecursively(in, root);
-    } finally {
-      IOUtils.close(in);
-    }
+    readRecursively(input, root);
     return true;
   }
 
@@ -229,4 +220,8 @@ public class TSTLookup extends Lookup {
     return RamUsageEstimator.sizeOf(autocomplete);
   }
   
+  @Override
+  public long getCount() {
+    return count;
+  }
 }

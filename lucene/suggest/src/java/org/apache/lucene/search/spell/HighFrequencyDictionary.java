@@ -57,7 +57,7 @@ public class HighFrequencyDictionary implements Dictionary {
   }
 
   @Override
-  public final BytesRefIterator getWordsIterator() throws IOException {
+  public final InputIterator getEntryIterator() throws IOException {
     return new HighFrequencyIterator();
   }
 

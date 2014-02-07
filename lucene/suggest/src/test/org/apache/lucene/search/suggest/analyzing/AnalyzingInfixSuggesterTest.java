@@ -111,6 +111,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
       };
     suggester.build(new InputArrayIterator(keys));
+    assertEquals(2, suggester.getCount());
     suggester.close();
 
     suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a, 3) {
@@ -124,6 +125,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     assertEquals("a penny saved is a penny <b>ear</b>ned", results.get(0).key);
     assertEquals(10, results.get(0).value);
     assertEquals(new BytesRef("foobaz"), results.get(0).payload);
+    assertEquals(2, suggester.getCount());
     suggester.close();
   }
 

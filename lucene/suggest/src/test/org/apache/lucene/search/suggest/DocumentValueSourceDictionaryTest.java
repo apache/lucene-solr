@@ -85,7 +85,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
     assertEquals(inputIterator.weight(), 0);
@@ -111,7 +111,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, new SumFloatFunction(toAdd), PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -143,7 +143,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new SumFloatFunction(toAdd));
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -197,7 +197,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2)};
 
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new SumFloatFunction(toAdd), PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -228,7 +228,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = (InputIterator) dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());

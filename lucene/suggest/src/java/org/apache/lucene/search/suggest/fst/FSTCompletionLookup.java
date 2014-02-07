@@ -32,6 +32,8 @@ import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.*;
@@ -93,6 +95,9 @@ public class FSTCompletionLookup extends Lookup {
    */
   private FSTCompletion normalCompletion;
 
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /**
    * This constructor prepares for creating a suggested FST using the
    * {@link #build(InputIterator)} method. The number of weight
@@ -140,8 +145,8 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public void build(InputIterator tfit) throws IOException {
-    if (tfit.hasPayloads()) {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     File tempInput = File.createTempFile(
@@ -156,17 +161,18 @@ public class FSTCompletionLookup extends Lookup {
     // Push floats up front before sequences to sort them. For now, assume they are non-negative.
     // If negative floats are allowed some trickery needs to be done to find their byte order.
     boolean success = false;
+    count = 0;
     try {
       byte [] buffer = new byte [0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
       BytesRef spare;
-      while ((spare = tfit.next()) != null) {
+      while ((spare = iterator.next()) != null) {
         if (spare.length + 4 >= buffer.length) {
           buffer = ArrayUtil.grow(buffer, spare.length + 4);
         }
 
         output.reset(buffer);
-        output.writeInt(encodeWeight(tfit.weight()));
+        output.writeInt(encodeWeight(iterator.weight()));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
@@ -207,6 +213,7 @@ public class FSTCompletionLookup extends Lookup {
         builder.add(tmp2, bucket);
 
         line++;
+        count++;
       }
 
       // The two FSTCompletions share the same automaton.
@@ -264,33 +271,31 @@ public class FSTCompletionLookup extends Lookup {
 
 
   @Override
-  public synchronized boolean store(OutputStream output) throws IOException {
-
-    try {
-      if (this.normalCompletion == null || normalCompletion.getFST() == null) 
-        return false;
-      normalCompletion.getFST().save(new OutputStreamDataOutput(output));
-    } finally {
-      IOUtils.close(output);
-    }
+  public synchronized boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (this.normalCompletion == null || normalCompletion.getFST() == null) 
+      return false;
+    normalCompletion.getFST().save(output);
     return true;
   }
 
   @Override
-  public synchronized boolean load(InputStream input) throws IOException {
-    try {
-      this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
-          new InputStreamDataInput(input), NoOutputs.getSingleton()));
-      this.normalCompletion = new FSTCompletion(
-          higherWeightsCompletion.getFST(), false, exactMatchFirst);
-    } finally {
-      IOUtils.close(input);
-    }
+  public synchronized boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
+        input, NoOutputs.getSingleton()));
+    this.normalCompletion = new FSTCompletion(
+        higherWeightsCompletion.getFST(), false, exactMatchFirst);
     return true;
   }
 
   @Override
   public long sizeInBytes() {
     return RamUsageEstimator.sizeOf(this);
+  }
+
+  @Override
+  public long getCount() {
+    return count;
   }
 }

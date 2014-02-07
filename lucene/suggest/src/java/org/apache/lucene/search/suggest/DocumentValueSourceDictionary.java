@@ -92,7 +92,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
   }
   
   @Override
-  public BytesRefIterator getWordsIterator() throws IOException {
+  public InputIterator getEntryIterator() throws IOException {
     return new DocumentValueSourceInputIterator(payloadField!=null);
   }
   

@@ -22,8 +22,6 @@ package org.apache.lucene.search.suggest.analyzing;
 //   - add pruning of low-freq ngrams?
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 //import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,8 +60,6 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
@@ -153,6 +149,10 @@ public class FreeTextSuggester extends Lookup {
   private final int grams;
 
   private final byte separator;
+
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /** The default character used to join multiple tokens
    *  into a single ngram token.  The input tokens produced
    *  by the analyzer must not contain this character. */
@@ -320,6 +320,7 @@ public class FreeTextSuggester extends Lookup {
     IndexReader reader = null;
 
     boolean success = false;
+    count = 0;
     try {
       while (true) {
         BytesRef surfaceForm = iterator.next();
@@ -328,6 +329,7 @@ public class FreeTextSuggester extends Lookup {
         }
         field.setStringValue(surfaceForm.utf8ToString());
         writer.addDocument(doc);
+        count++;
       }
       reader = DirectoryReader.open(writer, false);
 
@@ -397,31 +399,31 @@ public class FreeTextSuggester extends Lookup {
   }
 
   @Override
-  public boolean store(OutputStream output) throws IOException {
-    DataOutput out = new OutputStreamDataOutput(output);
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
-    out.writeByte(separator);
-    out.writeVInt(grams);
-    out.writeVLong(totTokens);
-    fst.save(out);
+  public boolean store(DataOutput output) throws IOException {
+    CodecUtil.writeHeader(output, CODEC_NAME, VERSION_CURRENT);
+    output.writeVLong(count);
+    output.writeByte(separator);
+    output.writeVInt(grams);
+    output.writeVLong(totTokens);
+    fst.save(output);
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    DataInput in = new InputStreamDataInput(input);
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
-    byte separatorOrig = in.readByte();
+  public boolean load(DataInput input) throws IOException {
+    CodecUtil.checkHeader(input, CODEC_NAME, VERSION_START, VERSION_START);
+    count = input.readVLong();
+    byte separatorOrig = input.readByte();
     if (separatorOrig != separator) {
       throw new IllegalStateException("separator=" + separator + " is incorrect: original model was built with separator=" + separatorOrig);
     }
-    int gramsOrig = in.readVInt();
+    int gramsOrig = input.readVInt();
     if (gramsOrig != grams) {
       throw new IllegalStateException("grams=" + grams + " is incorrect: original model was built with grams=" + gramsOrig);
     }
-    totTokens = in.readVLong();
+    totTokens = input.readVLong();
 
-    fst = new FST<Long>(in, PositiveIntOutputs.getSingleton());
+    fst = new FST<Long>(input, PositiveIntOutputs.getSingleton());
 
     return true;
   }
@@ -436,6 +438,11 @@ public class FreeTextSuggester extends Lookup {
     }
   }
 
+  @Override
+  public long getCount() {
+    return count;
+  }
+  
   private int countGrams(BytesRef token) {
     int count = 1;
     for(int i=0;i<token.length;i++) {

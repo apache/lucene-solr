@@ -107,7 +107,7 @@ public class FileDictionary implements Dictionary {
   }
 
   @Override
-  public InputIterator getWordsIterator() {
+  public InputIterator getEntryIterator() {
     try {
       return new FileIterator();
     } catch (IOException e) {

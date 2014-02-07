@@ -17,11 +17,7 @@ package org.apache.lucene.search.suggest.jaspell;
  * limitations under the License.
  */
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,9 +25,10 @@ import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.UnsortedInputIterator;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -45,6 +42,9 @@ public class JaspellLookup extends Lookup {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;
   private int editDistance = 2;
+
+  /** Number of entries the lookup was built with */
+  private long count = 0;
   
   /** 
    * Creates a new empty trie 
@@ -137,8 +137,8 @@ public class JaspellLookup extends Lookup {
   private static final byte HI_KID = 0x04;
   private static final byte HAS_VALUE = 0x08;
  
-  private void readRecursively(DataInputStream in, TSTNode node) throws IOException {
-    node.splitchar = in.readChar();
+  private void readRecursively(DataInput in, TSTNode node) throws IOException {
+    node.splitchar = in.readString().charAt(0);
     byte mask = in.readByte();
     if ((mask & HAS_VALUE) != 0) {
       node.data = Long.valueOf(in.readLong());
@@ -160,11 +160,11 @@ public class JaspellLookup extends Lookup {
     }
   }
 
-  private void writeRecursively(DataOutputStream out, TSTNode node) throws IOException {
+  private void writeRecursively(DataOutput out, TSTNode node) throws IOException {
     if (node == null) {
       return;
     }
-    out.writeChar(node.splitchar);
+    out.writeString(new String(new char[] {node.splitchar}, 0, 1));
     byte mask = 0;
     if (node.relatives[TSTNode.LOKID] != null) mask |= LO_KID;
     if (node.relatives[TSTNode.EQKID] != null) mask |= EQ_KID;
@@ -180,31 +180,22 @@ public class JaspellLookup extends Lookup {
   }
 
   @Override
-  public boolean store(OutputStream output) throws IOException {
+  public boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
     TSTNode root = trie.getRoot();
     if (root == null) { // empty tree
       return false;
     }
-    DataOutputStream out = new DataOutputStream(output);
-    try {
-      writeRecursively(out, root);
-      out.flush();
-    } finally {
-      IOUtils.close(out);
-    }
+    writeRecursively(output, root);
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    DataInputStream in = new DataInputStream(input);
+  public boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
     TSTNode root = trie.new TSTNode('\0', null);
-    try {
-      readRecursively(in, root);
-      trie.setRoot(root);
-    } finally {
-      IOUtils.close(in);
-    }
+    readRecursively(input, root);
+    trie.setRoot(root);
     return true;
   }
 
@@ -212,5 +203,10 @@ public class JaspellLookup extends Lookup {
   @Override
   public long sizeInBytes() {
     return RamUsageEstimator.sizeOf(trie);
+  }
+  
+  @Override
+  public long getCount() {
+    return count;
   }
 }

@@ -45,6 +45,9 @@ public interface InputIterator extends BytesRefIterator {
   /** Returns true if the iterator has payloads */
   public boolean hasPayloads();
   
+  /** Singleton InputIterator that iterates over 0 BytesRefs. */
+  public static final InputIterator EMPTY = new InputIteratorWrapper(BytesRefIterator.EMPTY);
+  
   /**
    * Wraps a BytesRefIterator as a suggester InputIterator, with all weights
    * set to <code>1</code> and carries no payload

@@ -64,6 +64,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
+    assertEquals(2, sug.getCount());
 
     for(int i=0;i<2;i++) {
 
@@ -97,6 +98,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
       sug.load(is);
       is.close();
+      assertEquals(2, sug.getCount());
     }
   }
 
@@ -178,6 +180,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         public boolean hasPayloads() {
           return false;
         }
+
       });
     if (VERBOSE) {
       System.out.println(sug.sizeInBytes() + " bytes");

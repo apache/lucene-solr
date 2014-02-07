@@ -87,7 +87,7 @@ public class DocumentDictionary implements Dictionary {
   }
   
   @Override
-  public BytesRefIterator getWordsIterator() throws IOException {
+  public InputIterator getEntryIterator() throws IOException {
     return new DocumentInputIterator(payloadField!=null);
   }
 
@@ -156,7 +156,7 @@ public class DocumentDictionary implements Dictionary {
         
         currentPayload = tempPayload;
         currentWeight = getWeight(doc, currentDocId);
-
+        
         return tempTerm;
       }
       return null;
@@ -171,7 +171,7 @@ public class DocumentDictionary implements Dictionary {
     public boolean hasPayloads() {
       return hasPayloads;
     }
-
+    
     /** 
      * Returns the value of the <code>weightField</code> for the current document.
      * Retrieves the value for the <code>weightField</code> if its stored (using <code>doc</code>)

@@ -181,6 +181,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     FSTCompletionLookup lookup = new FSTCompletionLookup();
     lookup.build(new InputArrayIterator(input));
+    assertEquals(input.size(), lookup.getCount());
     for (Input tf : input) {
       assertNotNull("Not found: " + tf.term.toString(), lookup.get(_TestUtil.bytesToCharSequence(tf.term, random())));
       assertEquals(tf.term.utf8ToString(), lookup.lookup(_TestUtil.bytesToCharSequence(tf.term, random()), true, 1).get(0).key.toString());
