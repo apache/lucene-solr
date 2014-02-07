@@ -258,6 +258,9 @@ Bug Fixes
 
 * SOLR-5693: Running on HDFS does work correctly with NRT search. (Mark Miller)
 
+* SOLR-5644: SplitShard does not handle not finding a shard leader well.
+  (Mark Miller, Anshum Gupta via shalin)
+
 Optimizations
 ----------------------
 
