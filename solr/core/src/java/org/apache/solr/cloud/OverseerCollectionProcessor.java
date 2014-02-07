@@ -832,7 +832,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     
     // find the leader for the shard
-    Replica parentShardLeader = clusterState.getLeader(collectionName, slice);
+    Replica parentShardLeader = null;
+    try {
+      parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice, 10000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
       range = new PlainIdRouter().fullRange();
