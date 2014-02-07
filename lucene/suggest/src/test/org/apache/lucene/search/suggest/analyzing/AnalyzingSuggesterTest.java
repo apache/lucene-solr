@@ -912,6 +912,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new Input("a c", 4),
         }));
 
+    assertEquals(3, suggester.getCount());
     List<LookupResult> results = suggester.lookup("a", false, 3);
     assertEquals(3, results.size());
     assertEquals("a", results.get(0).key);
@@ -935,6 +936,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     suggester.load(is);
     is.close();
 
+    assertEquals(3, suggester.getCount());
     results = suggester.lookup("a", false, 3);
     assertEquals(3, results.size());
     assertEquals("a", results.get(0).key);

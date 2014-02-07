@@ -109,7 +109,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
     assertEquals(inputIterator.weight(), 0);
@@ -135,7 +135,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -170,7 +170,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
@@ -228,7 +228,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(ir.numDocs(), docs.size());
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
-    InputIterator inputIterator = (InputIterator) dictionary.getWordsIterator();
+    InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
