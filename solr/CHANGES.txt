@@ -345,6 +345,9 @@ Other Changes
 * SOLR-5702: Log config name found for collection at info level.
   (Christine Poerschke via Mark Miller)
 
+* SOLR-5659: Add test for compositeId ending with an '!'.
+  (Markus Jelsma, Anshum Gupta via shalin)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
