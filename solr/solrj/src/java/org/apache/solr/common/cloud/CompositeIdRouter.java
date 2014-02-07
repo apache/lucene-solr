@@ -191,10 +191,11 @@ public class CompositeIdRouter extends HashBasedRouter {
       String[] parts = key.split(SEPARATOR);
       this.key = key;
       pieces = parts.length;
-      hashes = new int[pieces];
       numBits = new int[2];
-      if (key.endsWith("!"))
+      if (key.endsWith("!") && pieces < 3)
         pieces++;
+      hashes = new int[pieces];
+
       if (pieces == 3) {
         numBits[0] = 8;
         numBits[1] = 8;
@@ -204,7 +205,7 @@ public class CompositeIdRouter extends HashBasedRouter {
         triLevel = false;
       }
 
-      for (int i = 0; i < parts.length; i++) {
+      for (int i = 0; i < pieces; i++) {
         if (i < pieces - 1) {
           int commaIdx = parts[i].indexOf(bitsSeparator);
 
@@ -213,7 +214,11 @@ public class CompositeIdRouter extends HashBasedRouter {
             parts[i] = parts[i].substring(0, commaIdx);
           }
         }
-        hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
+        //Last component of an ID that ends with a '!'
+        if(i >= parts.length)
+          hashes[i] = Hash.murmurhash3_x86_32("", 0, "".length(), 0);
+        else
+          hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
       }
       masks = getMasks();
     }
