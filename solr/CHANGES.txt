@@ -315,6 +315,9 @@ Optimizations
 * SOLR-4227: Wrap XML RequestWriter's OutputStreamWriter in a BufferedWriter
   to avoid frequent converter invocations. (Conrad Herrmann, shalin)
 
+* SOLR-5624: Enable QueryResultCache for CollapsingQParserPlugin.
+  (David Boychuck, Joel Bernstein)
+
 Other Changes
 ---------------------
 

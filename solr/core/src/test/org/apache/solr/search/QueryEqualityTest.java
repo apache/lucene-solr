@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -197,9 +198,32 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   public void testQueryCollapse() throws Exception {
     SolrQueryRequest req = req("myField","foo_s");
+
     try {
       assertQueryEquals("collapse", req,
           "{!collapse field=$myField}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField max=a}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField min=a}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField max=a nullPolicy=expand}");
+
+      //Add boosted documents to the request context.
+      Map context = req.getContext();
+      Set boosted = new HashSet();
+      boosted.add("doc1");
+      boosted.add("doc2");
+      context.put("BOOSTED", boosted);
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField min=a}",
+          "{!collapse field=$myField min=a nullPolicy=ignore}");
+
+
     } finally {
       req.close();
     }
