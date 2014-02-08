@@ -23,6 +23,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
@@ -126,13 +127,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   public class CollapsingPostFilter extends ExtendedQueryBase implements PostFilter, ScoreFilter {
 
-    private Object cacheId;
     private String field;
     private String max;
     private String min;
     private boolean needsScores = true;
     private int nullPolicy;
-    private Map context;
+    private Set<String> boosted;
     public static final int NULL_POLICY_IGNORE = 0;
     public static final int NULL_POLICY_COLLAPSE = 1;
     public static final int NULL_POLICY_EXPAND = 2;
@@ -154,15 +154,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return this.cacheId.hashCode()*((1+Float.floatToIntBits(this.getBoost()))*31);
+      int hashCode = field.hashCode();
+      hashCode = max!=null ? hashCode+max.hashCode():hashCode;
+      hashCode = min!=null ? hashCode+min.hashCode():hashCode;
+      hashCode = boosted!=null ? hashCode+boosted.hashCode():hashCode;
+      hashCode = hashCode+nullPolicy;
+      hashCode = hashCode*((1+Float.floatToIntBits(this.getBoost()))*31);
+      return hashCode;
     }
 
     public boolean equals(Object o) {
-      //Uses the unique id for equals to ensure that the query result cache always fails.
+
       if(o instanceof CollapsingPostFilter) {
         CollapsingPostFilter c = (CollapsingPostFilter)o;
-        //Do object comparison to be sure only the same object will return true.
-        if(this.cacheId == c.cacheId && this.getBoost()==c.getBoost()) {
+        if(this.field.equals(c.field) &&
+           ((this.max == null && c.max == null) || (this.max != null && c.max != null && this.max.equals(c.max))) &&
+           ((this.min == null && c.min == null) || (this.min != null && c.min != null && this.min.equals(c.min))) &&
+           this.nullPolicy == c.nullPolicy &&
+           ((this.boosted == null && c.boosted == null) || (this.boosted == c.boosted)) &&
+           this.getBoost()==c.getBoost()) {
           return true;
         }
       }
@@ -178,11 +188,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
-      this.cacheId = new Object();
       this.field = localParams.get("field");
       this.max = localParams.get("max");
       this.min = localParams.get("min");
-      this.context = request.getContext();
       if(this.min != null || this.max != null) {
         this.needsScores = needsScores(params);
       }
@@ -201,6 +209,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     private IntOpenHashSet getBoostDocs(SolrIndexSearcher indexSearcher, Set<String> boosted) throws IOException {
       IntOpenHashSet boostDocs = null;
+
       if(boosted != null) {
         SchemaField idField = indexSearcher.getSchema().getUniqueKeyField();
         String fieldName = idField.getName();
@@ -296,7 +305,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int maxDoc = searcher.maxDoc();
         int leafCount = searcher.getTopReaderContext().leaves().size();
 
-        IntOpenHashSet boostDocs = getBoostDocs(searcher, (Set<String>) (this.context.get(QueryElevationComponent.BOOSTED)));
+        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+        this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
+
+        IntOpenHashSet boostDocs = getBoostDocs(searcher, this.boosted);
 
         if(this.min != null || this.max != null) {
 
@@ -344,7 +356,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if(this.context.containsKey(QueryElevationComponent.BOOSTED)) {
+      if(this.boosted != null) {
         return true;
       }
 

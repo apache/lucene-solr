@@ -140,9 +140,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("qf", "term_s");
     params.add("qt", "/elevate");
     assertQ(req(params), "*[count(//doc)=4]",
-                         "//result/doc[1]/float[@name='id'][.='1.0']");
-
-
+                         "//result/doc[1]/float[@name='id'][.='1.0']",
+                         "//result/doc[2]/float[@name='id'][.='2.0']",
+                         "//result/doc[3]/float[@name='id'][.='3.0']",
+                         "//result/doc[4]/float[@name='id'][.='6.0']");
 
 
     //Test collapse by min int field and sort
