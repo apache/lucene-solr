@@ -352,7 +352,7 @@ Other Changes
   (Markus Jelsma, Anshum Gupta via shalin)
 
 * SOLR-5700: Improve error handling of remote queries (proxied requests).
-  (Greg Chanan via Mark Miller)
+  (Greg Chanan, Steve Davids via Mark Miller)
 
 ==================  4.6.1  ==================
 

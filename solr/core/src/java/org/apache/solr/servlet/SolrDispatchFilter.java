@@ -23,11 +23,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.util.EntityUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
@@ -99,7 +99,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -512,6 +511,7 @@ public class SolrDispatchFilter implements Filter
   private void remoteQuery(String coreUrl, HttpServletRequest req,
       SolrQueryRequest solrReq, HttpServletResponse resp) throws IOException {
     HttpRequestBase method = null;
+    HttpEntity httpEntity = null;
     boolean success = false;
     try {
       String urlstr = coreUrl;
@@ -553,7 +553,7 @@ public class SolrDispatchFilter implements Filter
 
       final HttpResponse response = httpClient.execute(method);
       int httpStatus = response.getStatusLine().getStatusCode();
-      HttpEntity httpEntity = response.getEntity();
+      httpEntity = response.getEntity();
 
       resp.setStatus(httpStatus);
       for (HeaderIterator responseHeaders = response.headerIterator(); responseHeaders.hasNext();) {
@@ -587,6 +587,7 @@ public class SolrDispatchFilter implements Filter
           SolrException.ErrorCode.SERVER_ERROR,
           "Error trying to proxy request for url: " + coreUrl, e));
     } finally {
+      EntityUtils.consumeQuietly(httpEntity);
       if (method != null && !success) {
         method.abort();
       }
