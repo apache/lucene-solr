@@ -295,9 +295,8 @@ public final class ZkController {
   public void forceOverSeer(){
     try {
       zkClient.delete("/overseer_elect/leader",-1, true);
-      log.info("Forcing me to be leader  {} ",getBaseUrl());
-      overseerElector.getContext().runLeaderProcess(true);
-      rejoinOverseerElection();
+      log.info("Forcing me to be leader  {} ", getBaseUrl());
+      overseerElector.getContext().runLeaderProcess(true, Overseer.STATE_UPDATE_DELAY+100);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, " Error becoming overseer ",e);
 

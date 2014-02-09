@@ -71,7 +71,7 @@ public abstract class ElectionContext {
     }
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
+  abstract void runLeaderProcess(boolean weAreReplacement, int pauseTime) throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 
@@ -106,7 +106,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
       InterruptedException, IOException {
     
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
@@ -154,7 +154,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * weAreReplacement: has someone else been the leader already?
    */
   @Override
-  void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
       InterruptedException, IOException {
     log.info("Running the leader process for shard " + shardId);
     
@@ -270,7 +270,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
     boolean success = false;
     try {
-      super.runLeaderProcess(weAreReplacement);
+      super.runLeaderProcess(weAreReplacement, 0);
       success = true;
     } catch (Exception e) {
       SolrException.log(log, "There was a problem trying to register as the leader", e);
@@ -449,7 +449,7 @@ final class OverseerElectionContext extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
       InterruptedException {
     log.info("I am going to be the leader {}", id);
     final String id = leaderSeqPath
@@ -458,6 +458,13 @@ final class OverseerElectionContext extends ElectionContext {
 
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(myProps),
         CreateMode.EPHEMERAL, true);
+    if(pauseBeforeStart >0){
+      try {
+        Thread.sleep(pauseBeforeStart);
+      } catch (InterruptedException e) {
+        log.warn("Wait interrupted ", e);
+      }
+    }
     
     overseer.start(id);
   }
