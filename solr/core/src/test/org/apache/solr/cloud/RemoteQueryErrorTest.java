@@ -21,43 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 /**
  * Verify that remote (proxied) queries return proper error messages
  */
-
 @Slow
 public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
-  @BeforeClass
-  public static void beforeSuperClass() throws Exception {
-  }
-  
-  @AfterClass
-  public static void afterSuperClass() {
-    
-  }
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
 
   public RemoteQueryErrorTest() {
     super();
@@ -83,16 +55,15 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
     checkForCollection("collection2", numShardsNumReplicaList, null);
     waitForRecoveriesToFinish("collection2", true);
 
-    HttpSolrServer solrServer = null;
-    for (JettySolrRunner jetty : jettys) {
-      int port = port = jetty.getLocalPort();
-      solrServer = new HttpSolrServer("http://127.0.0.1:" + port + context + "/collection2");
+    for (SolrServer solrServer : clients) {
       try {
         SolrInputDocument emptyDoc = new SolrInputDocument();
         solrServer.add(emptyDoc);
         fail("Expected unique key exceptoin");
-      } catch (Exception ex) {
-        assert(ex.getMessage().contains("Document is missing mandatory uniqueKey field: id"));
+      } catch (SolrException ex) {
+        assertEquals("Document is missing mandatory uniqueKey field: id", ex.getMessage());
+      } catch(Exception ex) {
+        fail("Expected a SolrException to occur, instead received: " + ex.getClass());
       } finally {
         solrServer.shutdown();
       }
