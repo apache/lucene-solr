@@ -143,6 +143,9 @@ New Features
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
   (Areek Zillur via Robert Muir)
 
+* SOLR-5695: Add support for Lucene's BlendedInfixSuggester.
+  (Areek Zillur)
+  
 * SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
   Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
   Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
