@@ -161,7 +161,7 @@ public  class LeaderElector {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement);
+    context.runLeaderProcess(weAreReplacement,0);
   }
   
   /**
