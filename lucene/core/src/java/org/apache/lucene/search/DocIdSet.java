@@ -36,7 +36,7 @@ public abstract class DocIdSet {
   // expensive Filters (e.g. distance < 1 km) we should use
   // bits() after all other Query/Filters have matched, but
   // this is the opposite of what bits() is for now
-  // (down-low filtering)
+  // (down-low filtering using e.g. FixedBitSet)
 
   /** Optionally provides a {@link Bits} interface for random access
    * to matching documents.

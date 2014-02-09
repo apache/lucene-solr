@@ -43,6 +43,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.DOMUtil;
@@ -339,18 +340,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     elev.put(obj.analyzed, obj);
   }
 
-  ElevationObj getElevationObj(String query, String[] ids, String[] ex) throws IOException {
-    if (ids == null) {
-      ids = new String[0];
-    }
-    if (ex == null) {
-      ex = new String[0];
-    }
-
-    ElevationObj obj = new ElevationObj(query, Arrays.asList(ids), Arrays.asList(ex));
-    return obj;
-  }
-
   String getAnalyzedQuery(String query) throws IOException {
     if (analyzer == null) {
       return query;
@@ -397,9 +386,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     ElevationObj booster = null;
     try {
       if(boostStr != null || exStr != null) {
-        String[] boosts = (boostStr != null) ? boostStr.split(",") : new String[0];
-        String[] excludes = (exStr != null) ? exStr.split(",") : new String[0];
-        booster = getElevationObj(qstr, boosts, excludes);
+        List<String> boosts = (boostStr != null) ? StrUtils.splitSmart(boostStr,",", true) : new ArrayList<String>(0);
+        List<String> excludes = (exStr != null) ? StrUtils.splitSmart(exStr, ",", true) : new ArrayList<String>(0);
+        booster = new ElevationObj(qstr, boosts, excludes);
       } else {
         IndexReader reader = req.getSearcher().getIndexReader();
         qstr = getAnalyzedQuery(qstr);

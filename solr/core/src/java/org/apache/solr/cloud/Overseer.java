@@ -59,10 +59,10 @@ public class Overseer {
   public static final String ADD_ROUTING_RULE = "addroutingrule";
   public static final String REMOVE_ROUTING_RULE = "removeroutingrule";
 
-  private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
-  
+
   static enum LeaderStatus { DONT_KNOW, NO, YES };
 
   private long lastUpdatedTime = 0;
@@ -89,7 +89,7 @@ public class Overseer {
     
     @Override
     public void run() {
-        
+
       LeaderStatus isLeader = amILeader();
       while (isLeader == LeaderStatus.DONT_KNOW) {
         log.debug("am_i_leader unclear {}", isLeader);

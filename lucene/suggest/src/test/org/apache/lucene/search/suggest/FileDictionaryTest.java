@@ -76,7 +76,7 @@ public class FileDictionaryTest extends LuceneTestCase {
     InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
-    InputIterator inputIter = dictionary.getWordsIterator();
+    InputIterator inputIter = dictionary.getEntryIterator();
     assertFalse(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
@@ -98,7 +98,7 @@ public class FileDictionaryTest extends LuceneTestCase {
     InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
-    InputIterator inputIter = dictionary.getWordsIterator();
+    InputIterator inputIter = dictionary.getEntryIterator();
     assertFalse(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
@@ -120,7 +120,7 @@ public class FileDictionaryTest extends LuceneTestCase {
     InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
-    InputIterator inputIter = dictionary.getWordsIterator();
+    InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
@@ -146,7 +146,7 @@ public class FileDictionaryTest extends LuceneTestCase {
     InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
-    InputIterator inputIter = dictionary.getWordsIterator();
+    InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
@@ -173,7 +173,7 @@ public class FileDictionaryTest extends LuceneTestCase {
     InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
     FileDictionary dictionary = new FileDictionary(inputReader, " , ");
     List<List<String>> entries = fileInput.getKey();
-    InputIterator inputIter = dictionary.getWordsIterator();
+    InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;

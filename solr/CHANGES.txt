@@ -78,8 +78,8 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-5308: SOLR-5601: A new 'migrate' collection API to split all documents with a
-  route key into another collection (shalin)
+* SOLR-5308: SOLR-5601: SOLR-5710: A new 'migrate' collection API to split all
+  documents with a route key into another collection (shalin)
 
 * SOLR-5441: Expose number of transaction log files and their size via JMX.
   (Rafał Kuć via shalin)
@@ -143,6 +143,9 @@ New Features
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
   (Areek Zillur via Robert Muir)
 
+* SOLR-5695: Add support for Lucene's BlendedInfixSuggester.
+  (Areek Zillur)
+  
 * SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
   Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
   Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
@@ -288,6 +291,11 @@ Bug Fixes
 * SOLR-5691: Sharing non thread safe WeakHashMap across thread can cause
   problems. (Bojan Smid, Mark Miller)
 
+* SOLR-5693: Running on HDFS does work correctly with NRT search. (Mark Miller)
+
+* SOLR-5644: SplitShard does not handle not finding a shard leader well.
+  (Mark Miller, Anshum Gupta via shalin)
+
 Optimizations
 ----------------------
 
@@ -309,6 +317,9 @@ Optimizations
 
 * SOLR-4227: Wrap XML RequestWriter's OutputStreamWriter in a BufferedWriter
   to avoid frequent converter invocations. (Conrad Herrmann, shalin)
+
+* SOLR-5624: Enable QueryResultCache for CollapsingQParserPlugin.
+  (David Boychuck, Joel Bernstein)
 
 Other Changes
 ---------------------
@@ -368,6 +379,15 @@ Other Changes
 
 * SOLR-5629: SolrIndexSearcher.name should include core name.
   (Shikhar Bhushan via shalin)
+
+* SOLR-5702: Log config name found for collection at info level.
+  (Christine Poerschke via Mark Miller)
+
+* SOLR-5659: Add test for compositeId ending with an '!'.
+  (Markus Jelsma, Anshum Gupta via shalin)
+
+* SOLR-5700: Improve error handling of remote queries (proxied requests).
+  (Greg Chanan, Steve Davids via Mark Miller)
 
 ==================  4.6.1  ==================
 

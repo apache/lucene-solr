@@ -118,6 +118,34 @@
     </lst>
     
   </searchComponent>
+  
+  <searchComponent class="solr.SuggestComponent" name="blended_infix_suggest">
+    <lst name="suggester">
+      <str name="name">blended_infix_suggest_linear</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="blenderType">linear</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+    
+    <lst name="suggester">
+      <str name="name">blended_infix_suggest_reciprocal</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="blenderType">reciprocal</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+    
+  </searchComponent>
+  
   <!-- FuzzyLookup suggest component with FileDictionaryFactory -->
   <searchComponent class="solr.SuggestComponent" name="fuzzy_suggest_analyzing_with_file_dict">
     <lst name="suggester">
@@ -277,6 +305,15 @@
   </requestHandler>
   
   
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/blended_infix_suggest">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>blended_infix_suggest</str>
+    </arr>
+  </requestHandler>
+
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/free_text_suggest">
     <lst name="defaults">
       <str name="suggest">true</str>

@@ -67,12 +67,17 @@ public class DistanceFacetsExample implements Closeable {
   private IndexSearcher searcher;
   private final FacetsConfig config = new FacetsConfig();
 
+  /** The "home" latitude. */
   public final static double ORIGIN_LATITUDE = 40.7143528;
+
+  /** The "home" longitude. */
   public final static double ORIGIN_LONGITUDE = -74.0059731;
 
-  // NOTE: this is approximate, because the earth is a bit
-  // wider at the equator than the poles.  See
-  // http://en.wikipedia.org/wiki/Earth_radius
+  /** Radius of the Earth in KM
+   *
+   * NOTE: this is approximate, because the earth is a bit
+   * wider at the equator than the poles.  See
+   * http://en.wikipedia.org/wiki/Earth_radius */
   public final static double EARTH_RADIUS_KM = 6371.01;
 
   /** Empty constructor */
@@ -128,7 +133,10 @@ public class DistanceFacetsExample implements Closeable {
    *  candidates. */
   public static Filter getBoundingBoxFilter(double originLat, double originLng, double maxDistanceKM) {
 
-    // Basic bounding box geo math from http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates
+    // Basic bounding box geo math from
+    // http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates,
+    // licensed under creative commons 3.0:
+    // http://creativecommons.org/licenses/by/3.0
 
     // TODO: maybe switch to recursive prefix tree instead
     // (in lucene/spatial)?  It should be more efficient

@@ -21,8 +21,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.Before;
 
 // TODO
 //   - mix in forceMerge, addIndexes
@@ -30,6 +32,14 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
+  
+  private boolean useNonNrtReaders = true;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    useNonNrtReaders  = random().nextBoolean();
+  }
   
   @Override
   protected void doSearching(ExecutorService es, long stopTime) throws Exception {
@@ -54,7 +64,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
         }
         r.close();
         writer.commit();
-        final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
+        final Set<String> openDeletedFiles = ((MockDirectoryWrapper) dir).getOpenDeletedFiles();
         if (openDeletedFiles.size() > 0) {
           System.out.println("OBD files: " + openDeletedFiles);
         }
@@ -80,13 +90,20 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
     r.close();
 
     //System.out.println("numDocs=" + r.numDocs() + " openDelFileCount=" + dir.openDeleteFileCount());
-    final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
+    final Set<String> openDeletedFiles = ((MockDirectoryWrapper) dir).getOpenDeletedFiles();
     if (openDeletedFiles.size() > 0) {
       System.out.println("OBD files: " + openDeletedFiles);
     }
     anyOpenDelFiles |= openDeletedFiles.size() > 0;
 
     assertFalse("saw non-zero open-but-deleted count", anyOpenDelFiles);
+  }
+  
+  @Override
+  protected Directory getDirectory(Directory in) {
+    assert in instanceof MockDirectoryWrapper;
+    if (!useNonNrtReaders) ((MockDirectoryWrapper) in).setAssertNoDeleteOpenFile(true);
+    return in;
   }
 
   @Override
@@ -115,11 +132,15 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
   @Override
   protected IndexSearcher getFinalSearcher() throws Exception {
     final IndexReader r2;
-    if (random().nextBoolean()) {
-      r2 = writer.getReader();
+    if (useNonNrtReaders) {
+      if (random().nextBoolean()) {
+        r2 = writer.getReader();
+      } else {
+        writer.commit();
+        r2 = DirectoryReader.open(dir);
+      }
     } else {
-      writer.commit();
-      r2 = DirectoryReader.open(dir);
+      r2 = writer.getReader();
     }
     return newSearcher(r2);
   }

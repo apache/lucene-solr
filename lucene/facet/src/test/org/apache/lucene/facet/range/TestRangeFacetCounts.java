@@ -911,7 +911,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new DoubleRange("< 20", 0.0, true, 20.0, false),
         new DoubleRange("< 50", 0.0, true, 50.0, false)};
 
-    Filter fastMatchFilter;
+    final Filter fastMatchFilter;
     final AtomicBoolean filterWasUsed = new AtomicBoolean();
     if (random().nextBoolean()) {
       // Sort of silly:
@@ -929,17 +929,20 @@ public class TestRangeFacetCounts extends FacetTestCase {
       fastMatchFilter = null;
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: fastMatchFilter=" + fastMatchFilter);
+    }
+
     Facets facets = new DoubleRangeFacetCounts("field", vs, fc, fastMatchFilter, ranges);
 
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n", facets.getTopChildren(10, "field").toString());
+    assertTrue(fastMatchFilter == null || filterWasUsed.get());
 
     DrillDownQuery ddq = new DrillDownQuery(config);
     ddq.add("field", ranges[1].getFilter(fastMatchFilter, vs));
 
     // Test simple drill-down:
     assertEquals(1, s.search(ddq, 10).totalHits);
-    assertTrue(fastMatchFilter == null || filterWasUsed.get());
-    filterWasUsed.set(false);
 
     // Test drill-sideways after drill-down
     DrillSideways ds = new DrillSideways(s, config, (TaxonomyReader) null) {
@@ -947,7 +950,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         @Override
         protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        
           assert drillSideways.length == 1;
-          return new DoubleRangeFacetCounts("field", vs, drillSideways[0], ranges);
+          return new DoubleRangeFacetCounts("field", vs, drillSideways[0], fastMatchFilter, ranges);
         }
 
         @Override
@@ -961,7 +964,6 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals(1, dsr.hits.totalHits);
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
-    assertTrue(fastMatchFilter == null || filterWasUsed.get());
 
     IOUtils.close(r, writer, dir);
   }

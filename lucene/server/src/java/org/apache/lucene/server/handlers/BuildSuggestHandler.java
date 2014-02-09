@@ -317,8 +317,6 @@ public class BuildSuggestHandler extends Handler {
     }
   }
 
-  // nocommit should we add InputIterator.getCount instead?
-
   /** Wraps another {@link InputIterator} and counts how
    *  many suggestions were seen. */
   private static class CountingInputIterator implements InputIterator {
@@ -375,7 +373,7 @@ public class BuildSuggestHandler extends Handler {
 
     Request source = r.getStruct("source");
 
-    InputIterator iterator0 = null;
+    InputIterator iterator = null;
     final SearcherAndTaxonomy searcher;
 
     if (source.hasParam("localFile")) {
@@ -389,7 +387,7 @@ public class BuildSuggestHandler extends Handler {
       searcher = null;
       // Pull suggestions from local file:
       try {
-        iterator0 = new FromFileTermFreqIterator(localFile);
+        iterator = new FromFileTermFreqIterator(localFile);
       } catch (IOException ioe) {
         r.fail("localFile", "cannot open file", ioe);
       }
@@ -441,15 +439,14 @@ public class BuildSuggestHandler extends Handler {
                                                  payloadField);
       }
 
-      // nocommit weird that I have to cast this...?
-      iterator0 = (InputIterator) dict.getWordsIterator();
+      iterator = dict.getEntryIterator();
     }
-
-    final CountingInputIterator iterator = new CountingInputIterator(iterator0);
 
     // nocommit return error if suggester already exists?
 
     // nocommit need a DeleteSuggestHandler
+
+    final InputIterator iterator0 = iterator;
     
     return new FinishRequest() {
 
@@ -457,10 +454,10 @@ public class BuildSuggestHandler extends Handler {
       public String finish() throws IOException {
 
         try {
-          suggester.build(iterator);
+          suggester.build(iterator0);
         } finally {
-          if (iterator instanceof Closeable) {
-            ((Closeable) iterator).close();
+          if (iterator0 instanceof Closeable) {
+            ((Closeable) iterator0).close();
           }
           if (searcher != null) {
             state.manager.release(searcher);
@@ -495,7 +492,7 @@ public class BuildSuggestHandler extends Handler {
           ret.put("sizeInBytes", ((AnalyzingSuggester) suggester).sizeInBytes());
         }
 
-        ret.put("count", iterator.getCount());
+        ret.put("count", suggester.getCount());
         return ret.toString();
       }
     };

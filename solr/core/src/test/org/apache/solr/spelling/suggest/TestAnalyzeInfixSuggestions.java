@@ -1,7 +1,10 @@
 package org.apache.solr.spelling.suggest;
 
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /*
@@ -28,6 +31,16 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4  {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     assertQ(req("qt", URI_DEFAULT, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    File indexPathDir = new File("analyzingInfixSuggesterIndexDir");
+    File indexPathDirTmp = new File("analyzingInfixSuggesterIndexDir.tmp");
+    if (indexPathDir.exists())
+      recurseDelete(indexPathDir);
+    if (indexPathDirTmp.exists())
+      recurseDelete(indexPathDirTmp);
   }
   
   public void testSingle() throws Exception {
@@ -63,4 +76,5 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4  {
       "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[3][.='Add decompose compound <b>Japan</b>ese Katakana token capability to Kuromoji']"
       );
   }
+  
 }

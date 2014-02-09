@@ -156,6 +156,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
     suggester.build(new InputArrayIterator(keys));
 
+    assertEquals(numWords, suggester.getCount());
     Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
       final int topN = _TestUtil.nextInt(random, 1, 10);
@@ -215,6 +216,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
     suggester.build(new InputArrayIterator(new Input[0]));
+    assertEquals(0, suggester.getCount());
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
   }

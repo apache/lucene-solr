@@ -18,8 +18,6 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,12 +29,11 @@ import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -72,6 +69,9 @@ public class WFSTCompletionLookup extends Lookup {
    */
   private final boolean exactFirst;
   
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /**
    * Calls {@link #WFSTCompletionLookup(boolean) WFSTCompletionLookup(true)}
    */
@@ -96,6 +96,7 @@ public class WFSTCompletionLookup extends Lookup {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    count = 0;
     BytesRef scratch = new BytesRef();
     InputIterator iter = new WFSTInputIterator(iterator);
     IntsRef scratchInts = new IntsRef();
@@ -114,31 +115,26 @@ public class WFSTCompletionLookup extends Lookup {
       Util.toIntsRef(scratch, scratchInts);
       builder.add(scratchInts, cost);
       previous.copyBytes(scratch);
+      count++;
     }
     fst = builder.finish();
   }
 
   
   @Override
-  public boolean store(OutputStream output) throws IOException {
-    try {
-      if (fst == null) {
-        return false;
-      }
-      fst.save(new OutputStreamDataOutput(output));
-    } finally {
-      IOUtils.close(output);
+  public boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (fst == null) {
+      return false;
     }
+    fst.save(output);
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    try {
-      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton());
-    } finally {
-      IOUtils.close(input);
-    }
+  public boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.fst = new FST<Long>(input, PositiveIntOutputs.getSingleton());
     return true;
   }
 
@@ -292,5 +288,10 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public long sizeInBytes() {
     return (fst == null) ? 0 : fst.sizeInBytes();
+  }
+  
+  @Override
+  public long getCount() {
+    return count;
   }
 }

@@ -77,6 +77,10 @@ New Features
   (missing the term, weight or payload).  (Areek Zillur via
   Mike McCandless)
 
+* LUCENE-5404: Add .getCount method to all suggesters (Lookup); persist count 
+  metadata on .store(); Dictionary returns InputIterator; Dictionary.getWordIterator
+  renamed to .getEntryIterator. (Areek Zillur)
+
 * SOLR-1871: The RangeMapFloatFunction accepts an arbitrary ValueSource
   as target and default values. (Chris Harris, shalin)
 
@@ -138,6 +142,17 @@ New Features
 * LUCENE-5426: Make SortedSetDocValuesReaderState abstract to allow
   custom implementations for Lucene doc values faceting (John Wang via
   Mike McCandless)
+
+* LUCENE-5434: NRT support for file systems that do no have delete on last
+  close or cannot delete while referenced semantics. 
+  (Mark Miller, Mike McCandless)
+
+* LUCENE-5418: Drilling down or sideways on a Lucene facet range
+  (using Range.getFilter()) is now faster for costly filters (uses
+  random access, not iteration); range facet counts now accept a
+  fast-match filter to avoid computing the value for documents that
+  are out of bounds, e.g. using a bounding box filter with distance
+  range faceting.  (Mike McCandless)
 
 Build
 
@@ -234,6 +249,12 @@ Bug fixes
 * LUCENE-5398: NormValueSource was incorrectly casting the long value
   to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
   Mike McCandless)
+
+* LUCENE-5436: RefrenceManager#accquire can result in infinite loop if
+  managed resource is abused outside of the RefrenceManager. Decrementing
+  the reference without a corresponding incRef() call can cause an infinite
+  loop. ReferenceManager now throws IllegalStateException if currently managed
+  resources ref count is 0. (Simon Willnauer)
 
 API Changes
 
@@ -369,7 +390,7 @@ New Features
 
 * LUCENE-5323: Add .sizeInBytes method to all suggesters (Lookup).
   (Areek Zillur via Mike McCandless)
-
+  
 * LUCENE-5312: Add BlockJoinSorter, a new Sorter implementation that makes sure
   to never split up blocks of documents indexed with IndexWriter.addDocuments.
   (Adrien Grand)

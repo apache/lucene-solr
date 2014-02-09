@@ -19,8 +19,6 @@ package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,8 +36,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -186,6 +182,9 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Whether position holes should appear in the automaton. */
   private boolean preservePositionIncrements;
+
+  /** Number of entries the lookup was built with */
+  private long count = 0;
 
   /**
    * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
@@ -394,6 +393,7 @@ public class AnalyzingSuggester extends Lookup {
     TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
 
     boolean success = false;
+    count = 0;
     byte buffer[] = new byte[8];
     try {
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
@@ -458,6 +458,7 @@ public class AnalyzingSuggester extends Lookup {
 
           writer.write(buffer, 0, output.getPosition());
         }
+        count++;
       }
       writer.close();
 
@@ -571,32 +572,24 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   @Override
-  public boolean store(OutputStream output) throws IOException {
-    DataOutput dataOut = new OutputStreamDataOutput(output);
-    try {
-      if (fst == null) {
-        return false;
-      }
-
-      fst.save(dataOut);
-      dataOut.writeVInt(maxAnalyzedPathsForOneInput);
-      dataOut.writeByte((byte) (hasPayloads ? 1 : 0));
-    } finally {
-      IOUtils.close(output);
+  public boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (fst == null) {
+      return false;
     }
+
+    fst.save(output);
+    output.writeVInt(maxAnalyzedPathsForOneInput);
+    output.writeByte((byte) (hasPayloads ? 1 : 0));
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    DataInput dataIn = new InputStreamDataInput(input);
-    try {
-      this.fst = new FST<Pair<Long,BytesRef>>(dataIn, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
-      maxAnalyzedPathsForOneInput = dataIn.readVInt();
-      hasPayloads = dataIn.readByte() == 1;
-    } finally {
-      IOUtils.close(input);
-    }
+  public boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.fst = new FST<Pair<Long,BytesRef>>(input, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+    maxAnalyzedPathsForOneInput = input.readVInt();
+    hasPayloads = input.readByte() == 1;
     return true;
   }
 
@@ -808,6 +801,11 @@ public class AnalyzingSuggester extends Lookup {
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
+  }
+  
+  @Override
+  public long getCount() {
+    return count;
   }
 
   /** Returns all prefix paths to initialize the search. */
