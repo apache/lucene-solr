@@ -118,6 +118,9 @@ New Features
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
   (Areek Zillur via Robert Muir)
 
+* SOLR-5695: Add support for Lucene's BlendedInfixSuggester.
+  (Areek Zillur)
+  
 * SOLR-5476: Overseer Role for nodes (Noble Paul)
 
 * SOLR-5594: Allow FieldTypes to specify custom PrefixQuery behavior
