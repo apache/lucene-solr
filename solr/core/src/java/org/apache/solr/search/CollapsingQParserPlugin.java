@@ -305,8 +305,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int maxDoc = searcher.maxDoc();
         int leafCount = searcher.getTopReaderContext().leaves().size();
 
-        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-        this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
+        if(this.boosted == null) {
+          SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+          if(info != null) {
+            this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
+          }
+        }
 
         IntOpenHashSet boostDocs = getBoostDocs(searcher, this.boosted);
 
