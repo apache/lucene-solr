@@ -383,6 +383,9 @@ Other Changes
 * SOLR-5659: Add test for compositeId ending with an '!'.
   (Markus Jelsma, Anshum Gupta via shalin)
 
+* SOLR-5700: Improve error handling of remote queries (proxied requests).
+  (Greg Chanan via Mark Miller)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
