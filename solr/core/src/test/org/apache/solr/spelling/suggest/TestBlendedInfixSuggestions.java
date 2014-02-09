@@ -37,9 +37,9 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
     File indexPathDir = new File("blendedInfixSuggesterIndexDir");
     File indexPathDirTmp = new File("blendedInfixSuggesterIndexDir.tmp");
     if (indexPathDir.exists())
-      assertTrue(recurseDelete(indexPathDir));
+      recurseDelete(indexPathDir);
     if (indexPathDirTmp.exists())
-      assertTrue(recurseDelete(indexPathDirTmp));
+      recurseDelete(indexPathDirTmp);
   }
   
   public void testLinearBlenderType() {

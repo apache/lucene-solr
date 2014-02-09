@@ -38,9 +38,9 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4  {
     File indexPathDir = new File("analyzingInfixSuggesterIndexDir");
     File indexPathDirTmp = new File("analyzingInfixSuggesterIndexDir.tmp");
     if (indexPathDir.exists())
-      assertTrue(recurseDelete(indexPathDir));
+      recurseDelete(indexPathDir);
     if (indexPathDirTmp.exists())
-      assertTrue(recurseDelete(indexPathDirTmp));
+      recurseDelete(indexPathDirTmp);
   }
   
   public void testSingle() throws Exception {
