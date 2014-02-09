@@ -49,6 +49,11 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");
 
+  static {
+    // does not yet work with ssl
+    sslConfig = null;
+  }
+  
   @BeforeClass
   public static void beforeTest() throws Exception {
     //this one has handleSelect=true which a test here needs

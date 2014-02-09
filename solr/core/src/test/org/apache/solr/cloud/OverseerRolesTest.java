@@ -17,42 +17,37 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import com.google.protobuf.TextFormat;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 @LuceneTestCase.Slow
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
 
+  static {
+    sslConfig = null;
+  }
+  
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
 

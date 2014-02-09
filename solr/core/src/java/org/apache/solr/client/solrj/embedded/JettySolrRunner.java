@@ -193,10 +193,11 @@ public class JettySolrRunner {
       this.extraRequestFilters = new TreeMap<Class,String>(extraRequestFilters.comparator());
       this.extraRequestFilters.putAll(extraRequestFilters);
     }
-    this.init(solrHome, context, port, stopAtShutdown);
     this.solrConfigFilename = solrConfigFilename;
     this.schemaFilename = schemaFileName;
     this.sslConfig = sslConfig;
+
+    this.init(solrHome, context, port, stopAtShutdown);
   }
   
   public static class SSLConfig {
@@ -359,19 +360,18 @@ public class JettySolrRunner {
         sslcontext.setKeyStorePath(sslConfig.keyStore);
       }
       if (null != sslConfig.keyStorePassword) {
-        sslcontext.setKeyStorePassword(System
-            .getProperty("solr.javax.net.ssl.keyStorePassword"));
+        sslcontext.setKeyStorePassword(sslConfig.keyStorePassword);
       }
       if (null != sslConfig.trustStore) {
         sslcontext.setTrustStore(System
-            .getProperty("solr.javax.net.ssl.trustStore"));
+            .getProperty(sslConfig.trustStore));
       }
       if (null != sslConfig.trustStorePassword) {
         sslcontext.setTrustStorePassword(sslConfig.trustStorePassword);
       }
       sslcontext.setNeedClientAuth(sslConfig.clientAuth);
     } else {
-      boolean jettySsl = Boolean.getBoolean("tests.jettySsl");
+      boolean jettySsl = Boolean.getBoolean(System.getProperty("tests.jettySsl"));
 
       if (jettySsl) {
         if (null != System.getProperty("javax.net.ssl.keyStore")) {

@@ -526,12 +526,7 @@ public class CloudSolrServer extends SolrServer {
         || request.getPath().equals("/admin/cores")) {
       Set<String> liveNodes = clusterState.getLiveNodes();
       for (String liveNode : liveNodes) {
-        int splitPointBetweenHostPortAndContext = liveNode.indexOf("_");
-        theUrlList.add("http://"
-            + liveNode.substring(0, splitPointBetweenHostPortAndContext)
-            + "/"
-            + URLDecoder.decode(liveNode, "UTF-8").substring(
-                splitPointBetweenHostPortAndContext + 1));
+        theUrlList.add(zkStateReader.getBaseUrlForNodeName(liveNode));
       }
     } else {
       String collection = reqParams.get("collection", defaultCollection);

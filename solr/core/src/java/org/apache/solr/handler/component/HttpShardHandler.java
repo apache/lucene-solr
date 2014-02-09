@@ -378,8 +378,6 @@ public class HttpShardHandler extends ShardHandler {
                 sliceShardsStr.append('|');
               }
               String url = ZkCoreNodeProps.getCoreUrl(replica);
-              if (url.startsWith("http://"))
-                url = url.substring(7);
               sliceShardsStr.append(url);
             }
 

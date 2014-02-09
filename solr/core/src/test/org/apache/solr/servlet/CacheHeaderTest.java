@@ -23,17 +23,17 @@ import java.io.Writer;
 import java.util.Arrays;
 import java.util.Date;
 
-import com.google.common.base.Charsets;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.apache.lucene.util._TestUtil;
+import com.google.common.base.Charsets;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
@@ -41,6 +41,11 @@ import org.apache.lucene.util._TestUtil;
 public class CacheHeaderTest extends CacheHeaderTestBase {
     private static final File solrHomeDirectory = new File(TEMP_DIR, "CacheHeaderTest");
 
+  static {
+    // does not yet work with ssl
+    sslConfig = null;
+  }
+    
   @BeforeClass
   public static void beforeTest() throws Exception {
     setupJettyTestHome(solrHomeDirectory, "collection1");

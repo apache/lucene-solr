@@ -36,8 +36,9 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util. _TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -45,7 +46,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -55,8 +55,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +123,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     log.info("Setting hostContext system property: " + hc);
     System.setProperty("hostContext", hc);
   }
-
+  
   /**
    * Clears the "hostContext" system property
    * @see #initHostContext
@@ -369,14 +369,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     boolean stopAtShutdown = true;
     JettySolrRunner jetty = new JettySolrRunner
         (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown,
-          getExtraServlets(), null, getExtraRequestFilters());
+          getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     if (explicitCoreNodeName) {
       jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
     }
     jetty.start();
-
+    
     return jetty;
   }
   
@@ -393,7 +393,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:" + port + context;
+      String urlScheme = isSSLMode() ? "https" : "http";
+      String url = urlScheme + "://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setSoTimeout(60000);
@@ -931,4 +932,5 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
   }
+
 }

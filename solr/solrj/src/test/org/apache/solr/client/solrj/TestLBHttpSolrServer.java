@@ -259,7 +259,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
     }
 
     public String getUrl() {
-      return "http://127.0.0.1:" + port + "/solr";
+      return "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + port + "/solr";
     }
 
     public String getSchemaFile() {
@@ -314,7 +314,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
     }
 
     public void startJetty() throws Exception {
-      jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null);
+      jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null, true, null, sslConfig);
       System.setProperty("solr.data.dir", getDataDir());
       jetty.start();
       int newPort = jetty.getLocalPort();

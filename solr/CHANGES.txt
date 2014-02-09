@@ -182,6 +182,9 @@ New Features
 * SOLR-5672: Add logParamsList parameter to support reduced logging.
   (Christine Poerschke via Mark Miller)
 
+* SOLR-3854: SSL support for SolrCloud. (Sami Siren, hossman, Steve Davids, 
+  Alexey Serba, Mark Miller)
+
 Bug Fixes
 ----------------------
 

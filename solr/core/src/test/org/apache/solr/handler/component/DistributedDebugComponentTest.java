@@ -11,6 +11,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -44,21 +45,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath(), null, null);
-    
-    String url = jetty.getBaseUrl().toString();
-    collection1 = new HttpSolrServer(url);
-    collection2 = new HttpSolrServer(url + "/collection2");
-    
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
-    shard1 = urlCollection1.replaceAll("http://", "");
-    shard2 = urlCollection2.replaceAll("http://", "");
-    
-    //create second core
-    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-    req.setCoreName("collection2");
-    collection1.request(req);
   }
   
   private static File createSolrHome() throws Exception {
@@ -70,12 +56,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @AfterClass
   public static void afterTest() throws Exception {
-    collection1.shutdown();
-    collection2.shutdown();
-    collection1 = null;
-    collection2 = null;
-    jetty.stop();
-    jetty=null;
     cleanUpJettyHome(solrHome);
   }
   
@@ -83,6 +63,20 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    createJetty(solrHome.getAbsolutePath(), null, null);
+    String url = jetty.getBaseUrl().toString();
+    collection1 = new HttpSolrServer(url);
+    collection2 = new HttpSolrServer(url + "/collection2");
+    
+    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
+    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    shard1 = urlCollection1.replaceAll("http" + (sslConfig == null || !sslConfig.useSsl ? "" : "s") + "://", "");
+    shard2 = urlCollection2.replaceAll("http" + (sslConfig == null || !sslConfig.useSsl ? "" : "s") + "://", "");
+    
+    //create second core
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName("collection2");
+    collection1.request(req);
     
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
@@ -95,6 +89,17 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     collection2.add(doc);
     collection2.commit();
     
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    collection1.shutdown();
+    collection2.shutdown();
+    collection1 = null;
+    collection2 = null;
+    jetty.stop();
+    jetty=null;
   }
   
   @Test

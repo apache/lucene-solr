@@ -16,6 +16,12 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.SortedMap;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrException;
@@ -23,19 +29,20 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.util.Map;
-import java.util.SortedMap;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
   protected static RestTestHarness restTestHarness;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    // sslConfig = null;
+  }
+  
   public static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {

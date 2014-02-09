@@ -72,6 +72,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -99,7 +100,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
 
+  static {
+    // does not yet work with ssl
+    sslConfig = null;
+  }
+  
+  @BeforeClass
+  public static void beforeClass() {
 
+  }
+  
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -207,7 +207,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       final String address = "localhost:" + (8963 + i) + "_solr";
       liveNodes.add(address);
       
-      solrZkClientMock.getBaseUrlForNodeName(address);
+      zkStateReaderMock.getBaseUrlForNodeName(address);
       expectLastCall().andAnswer(new IAnswer<Object>() {
         @Override
         public Object answer() throws Throwable {

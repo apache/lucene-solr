@@ -59,6 +59,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -86,10 +87,6 @@ public final class ZkController {
   private static Logger log = LoggerFactory.getLogger(ZkController.class);
 
   static final String NEWL = System.getProperty("line.separator");
-
-
-  private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
-  private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
@@ -149,7 +146,6 @@ public final class ZkController {
 
   private final String localHostPort;      // example: 54065
   private final String localHostContext;   // example: solr
-  private final String localHost;          // example: http://127.0.0.1
   private final String hostName;           // example: 127.0.0.1
   private final String nodeName;           // example: 127.0.0.1:54065_solr
   private final String baseURL;            // example: http://127.0.0.1:54065/solr
@@ -187,11 +183,7 @@ public final class ZkController {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
-    this.localHost = getHostAddress(localHost);
-    this.baseURL = this.localHost + ":" + this.localHostPort + 
-      (this.localHostContext.isEmpty() ? "" : ("/" + this.localHostContext));
-
-    this.hostName = getHostNameFromAddress(this.localHost);
+    this.hostName = normalizeHostName(localHost);
     this.nodeName = generateNodeName(this.hostName, 
                                      this.localHostPort, 
                                      this.localHostContext);
@@ -284,6 +276,8 @@ public final class ZkController {
     cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
+    
+    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
     
     init(registerOnReconnect);
   }
@@ -463,9 +457,9 @@ public final class ZkController {
     return bytes;
   }
 
-  // normalize host to url_prefix://host
+  // normalize host removing any url scheme.
   // input can be null, host, or url_prefix://host
-  private String getHostAddress(String host) throws IOException {
+  private String normalizeHostName(String host) throws IOException {
 
     if (host == null || host.length() == 0) {
       String hostaddress;
@@ -495,30 +489,15 @@ public final class ZkController {
               "Error while looking for a better host name than 127.0.0.1", e);
         }
       }
-      host = "http://" + hostaddress;
+      host = hostaddress;
     } else {
-      Matcher m = URL_PREFIX.matcher(host);
-      if (!m.matches()) {
-        host = "http://" + host;
+      if(URLUtil.hasScheme(host)) {
+        host = URLUtil.removeScheme(host);
       }
     }
 
     return host;
   }
-
-  // extract host from url_prefix://host
-  private String getHostNameFromAddress(String addr) {
-    Matcher m = URL_POST.matcher(addr);
-    if (m.matches()) {
-      return m.group(1);
-    } else {
-      log.error("Unrecognized host:" + addr);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unrecognized host:" + addr);
-    }
-  }
-  
-  
   
   public String getHostName() {
     return hostName;
@@ -1584,7 +1563,7 @@ public final class ZkController {
    * @param hostPort - must consist only of digits, must not be null or the empty string
    * @param hostContext - should not begin or end with a slash (leading/trailin slashes will be ignored), must not be null, may be the empty string to denote the root context
    * @lucene.experimental
-   * @see SolrZkClient#getBaseUrlForNodeName
+   * @see ZkStateReader#getBaseUrlForNodeName
    */
   static String generateNodeName(final String hostName,
                                  final String hostPort,

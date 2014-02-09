@@ -60,9 +60,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   private AtomicInteger id = new AtomicInteger();
   
+  static {
+    // no ssl currently because distrib updates read scheme from zk and no zk in this test
+    sslConfig = null;
+  }
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
-
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
