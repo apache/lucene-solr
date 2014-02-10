@@ -267,6 +267,9 @@ Bug Fixes
 * SOLR-5704: coreRootDirectory was not respected when creating new cores
   via CoreAdminHandler (Jesse Sipprell, Alan Woodward)
 
+* SOLR-5709: Highlighting grouped duplicate docs from different shards with
+  group.limit > 1 throws ArrayIndexOutOfBoundsException. (Steve Rowe)
+
 Optimizations
 ----------------------
 
