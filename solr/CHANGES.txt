@@ -35,6 +35,13 @@ Upgrading from Solr 4.6.0
 
 * CloudSolrServer and LBHttpSolrServer no longer declare MalformedURLException
   as thrown from their constructors.  
+
+* Due to a bug in previous versions the default value of the 'discountOverlap' property
+  of DefaultSimilarity was not being set appropriately if you were using the implicit
+  DefaultSimilarityFactory instead of explicitly configuring it.  To preserve 
+  consistent behavior for people who upgrade, the implicit behavior is now contingent 
+  on the <luceneMatchVersion/> -- discountOverlap=false for 4.6 and below, 
+  discountOverlap=true for 4.7 and above.  See SOLR-5561 for more information.
                       
 Detailed Change List
 ----------------------
@@ -269,6 +276,10 @@ Bug Fixes
 
 * SOLR-5709: Highlighting grouped duplicate docs from different shards with
   group.limit > 1 throws ArrayIndexOutOfBoundsException. (Steve Rowe)
+
+* SOLR-5561: Fix implicit DefaultSimilarityFactory initialization in IndexSchema 
+  to properly specify discountOverlap option.
+  (Isaac Hebsh, Ahmet Arslan, Vitaliy Zhovtyuk, hossman)
 
 Optimizations
 ----------------------

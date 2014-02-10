@@ -38,12 +38,22 @@ import org.apache.solr.schema.SimilarityFactory;
  * @lucene.experimental
  */
 public class DefaultSimilarityFactory extends SimilarityFactory {
-  protected boolean discountOverlaps;
+
+  /** Init param name for specifying the value to use in 
+   * {@link DefaultSimilarity#setDiscountOverlaps(boolean)} 
+   */
+  public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
+
+  /** 
+   * Controls the value of {@link DefaultSimilarity#setDiscountOverlaps(boolean)} 
+   * on newly constructed instances of {@link DefaultSimilarity}
+   */
+  protected boolean discountOverlaps = true;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    discountOverlaps = params.getBool("discountOverlaps", true);
+    discountOverlaps = params.getBool(DISCOUNT_OVERLAPS, true);
   }
 
   @Override
