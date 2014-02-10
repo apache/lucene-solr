@@ -21,6 +21,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_N
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.IOException;
@@ -29,9 +30,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -154,6 +158,39 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     assertTrue("New overseer not the frontrunner : "+ getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
+
+    String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
+
+    log.info("Current Overseer {}", currentOverseer);
+    Pattern pattern = Pattern.compile("(.*):(\\d*)(.*)");
+    Matcher m = pattern.matcher(currentOverseer);
+    if(m.matches()){
+      String hostPort =  m.group(1)+":"+m.group(2);
+
+      log.info("hostPort : {}", hostPort);
+
+      for (JettySolrRunner jetty : jettys) {
+        String s = jetty.getBaseUrl().toString();
+        if(s.contains(hostPort)){
+          log.info("leader node {}",s);
+          ChaosMonkey.stop(jetty);
+
+          timeout = System.currentTimeMillis()+10000;
+          leaderchanged = false;
+          for(;System.currentTimeMillis() < timeout;){
+            currentOverseer =  getLeaderNode(client.getZkStateReader().getZkClient());
+            if(anotherOverseer.equals(currentOverseer)){
+              leaderchanged =true;
+              break;
+            }
+            Thread.sleep(100);
+          }
+          assertTrue("New overseer designate has not become the overseer, expected : "+ anotherOverseer + "actual : "+ currentOverseer, leaderchanged);
+        }
+
+      }
+
+    }
 
     client.shutdown();
 
