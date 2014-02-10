@@ -121,7 +121,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 })
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
-  public static int DEFAULT_CONNECTION_TIMEOUT = 30000;  // default socket connection timeout in ms
+  public static int DEFAULT_CONNECTION_TIMEOUT = 45000;  // default socket connection timeout in ms
 
   protected static volatile SSLConfig sslConfig = new SSLConfig();
 

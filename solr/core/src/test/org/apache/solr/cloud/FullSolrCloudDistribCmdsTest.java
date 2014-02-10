@@ -438,7 +438,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
     try {
-      suss.setConnectionTimeout(30000);
+      suss.setConnectionTimeout(120000);
       for (int i = 0; i < cnt; i++) {
         index_specific(suss, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
       }
