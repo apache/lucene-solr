@@ -392,6 +392,9 @@ Other Changes
 * SOLR-5700: Improve error handling of remote queries (proxied requests).
   (Greg Chanan, Steve Davids via Mark Miller)
 
+* SOLR-5585: Raise Collections API timeout to 3 minutes from one minute.
+  (Mark Miller)
+
 ==================  4.6.1  ==================
 
 Versions of Major Components

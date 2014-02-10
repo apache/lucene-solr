@@ -226,7 +226,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     handleResponse(action.toString().toLowerCase(Locale.ROOT), m, rsp);
   }
 
-  public static long DEFAULT_ZK_TIMEOUT = 60*1000;
+  public static long DEFAULT_ZK_TIMEOUT = 180*1000;
 
   private void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp) throws KeeperException, InterruptedException {
