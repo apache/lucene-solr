@@ -17,6 +17,8 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
@@ -24,10 +26,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.OpenBitSetDISI;
-
-import java.io.IOException;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p>
@@ -127,23 +126,17 @@ public class ChainedFilter extends Filter {
     }
   }
 
-  private OpenBitSetDISI initialResult(AtomicReaderContext context, int logic, int[] index)
+  private FixedBitSet initialResult(AtomicReaderContext context, int logic, int[] index)
       throws IOException {
     AtomicReader reader = context.reader();
-    OpenBitSetDISI result;
-    /**
-     * First AND operation takes place against a completely false
-     * bitset and will always return zero results.
-     */
+    FixedBitSet result = new FixedBitSet(reader.maxDoc());
     if (logic == AND) {
-      result = new OpenBitSetDISI(getDISI(chain[index[0]], context), reader.maxDoc());
+      result.or(getDISI(chain[index[0]], context));
       ++index[0];
     } else if (logic == ANDNOT) {
-      result = new OpenBitSetDISI(getDISI(chain[index[0]], context), reader.maxDoc());
+      result.or(getDISI(chain[index[0]], context));
       result.flip(0, reader.maxDoc()); // NOTE: may set bits for deleted docs.
       ++index[0];
-    } else {
-      result = new OpenBitSetDISI(reader.maxDoc());
     }
     return result;
   }
@@ -157,7 +150,7 @@ public class ChainedFilter extends Filter {
    */
   private DocIdSet getDocIdSet(AtomicReaderContext context, int logic, int[] index)
       throws IOException {
-    OpenBitSetDISI result = initialResult(context, logic, index);
+    FixedBitSet result = initialResult(context, logic, index);
     for (; index[0] < chain.length; index[0]++) {
       // we dont pass acceptDocs, we will filter at the end using an additional filter
       doChain(result, logic, chain[index[0]].getDocIdSet(context, null));
@@ -178,7 +171,7 @@ public class ChainedFilter extends Filter {
       throw new IllegalArgumentException("Invalid number of elements in logic array");
     }
 
-    OpenBitSetDISI result = initialResult(context, logic[0], index);
+    FixedBitSet result = initialResult(context, logic[0], index);
     for (; index[0] < chain.length; index[0]++) {
       // we dont pass acceptDocs, we will filter at the end using an additional filter
       doChain(result, logic[index[0]], chain[index[0]].getDocIdSet(context, null));
@@ -198,23 +191,21 @@ public class ChainedFilter extends Filter {
     return sb.toString();
   }
 
-  private void doChain(OpenBitSetDISI result, int logic, DocIdSet dis)
-      throws IOException {
-
-    if (dis instanceof OpenBitSet) {
-      // optimized case for OpenBitSets
+  private void doChain(FixedBitSet result, int logic, DocIdSet dis) throws IOException {
+    if (dis instanceof FixedBitSet) {
+      // optimized case for FixedBitSets
       switch (logic) {
         case OR:
-          result.or((OpenBitSet) dis);
+          result.or((FixedBitSet) dis);
           break;
         case AND:
-          result.and((OpenBitSet) dis);
+          result.and((FixedBitSet) dis);
           break;
         case ANDNOT:
-          result.andNot((OpenBitSet) dis);
+          result.andNot((FixedBitSet) dis);
           break;
         case XOR:
-          result.xor((OpenBitSet) dis);
+          result.xor((FixedBitSet) dis);
           break;
         default:
           doChain(result, DEFAULT, dis);
@@ -233,16 +224,16 @@ public class ChainedFilter extends Filter {
 
       switch (logic) {
         case OR:
-          result.inPlaceOr(disi);
+          result.or(disi);
           break;
         case AND:
-          result.inPlaceAnd(disi);
+          result.and(disi);
           break;
         case ANDNOT:
-          result.inPlaceNot(disi);
+          result.andNot(disi);
           break;
         case XOR:
-          result.inPlaceXor(disi);
+          result.xor(disi);
           break;
         default:
           doChain(result, DEFAULT, dis);

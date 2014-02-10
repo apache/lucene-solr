@@ -20,21 +20,10 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.BitSet;
 
-import org.apache.lucene.search.DocIdSetIterator;
+public class TestLongBitSet extends LuceneTestCase {
 
-public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
-
-  @Override
-  public FixedBitSet copyOf(BitSet bs, int length) throws IOException {
-    final FixedBitSet set = new FixedBitSet(length);
-    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
-      set.set(doc);
-    }
-    return set;
-  }
-
-  void doGet(BitSet a, FixedBitSet b) {
-    int max = b.length();
+  void doGet(BitSet a, LongBitSet b) {
+    long max = b.length();
     for (int i=0; i<max; i++) {
       if (a.get(i) != b.get(i)) {
         fail("mismatch: BitSet=["+i+"]="+a.get(i));
@@ -42,8 +31,9 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     }
   }
 
-  void doNextSetBit(BitSet a, FixedBitSet b) {
-    int aa=-1,bb=-1;
+  void doNextSetBit(BitSet a, LongBitSet b) {
+    int aa=-1;
+    long bb=-1;
     do {
       aa = a.nextSetBit(aa+1);
       bb = bb < b.length()-1 ? b.nextSetBit(bb+1) : -1;
@@ -51,9 +41,9 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     } while (aa>=0);
   }
 
-  void doPrevSetBit(BitSet a, FixedBitSet b) {
+  void doPrevSetBit(BitSet a, LongBitSet b) {
     int aa = a.size() + random().nextInt(100);
-    int bb = aa;
+    long bb = aa;
     do {
       // aa = a.prevSetBit(aa-1);
       aa--;
@@ -73,40 +63,14 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     } while (aa>=0);
   }
 
-  // test interleaving different FixedBitSetIterator.next()/skipTo()
-  void doIterate(BitSet a, FixedBitSet b, int mode) throws IOException {
-    if (mode==1) doIterate1(a, b);
-    if (mode==2) doIterate2(a, b);
-  }
-
-  void doIterate1(BitSet a, FixedBitSet b) throws IOException {
-    int aa=-1,bb=-1;
-    DocIdSetIterator iterator = b.iterator();
-    do {
-      aa = a.nextSetBit(aa+1);
-      bb = (bb < b.length() && random().nextBoolean()) ? iterator.nextDoc() : iterator.advance(bb + 1);
-      assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
-    } while (aa>=0);
-  }
-
-  void doIterate2(BitSet a, FixedBitSet b) throws IOException {
-    int aa=-1,bb=-1;
-    DocIdSetIterator iterator = b.iterator();
-    do {
-      aa = a.nextSetBit(aa+1);
-      bb = random().nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
-      assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
-    } while (aa>=0);
-  }
-
   void doRandomSets(int maxSize, int iter, int mode) throws IOException {
     BitSet a0=null;
-    FixedBitSet b0=null;
+    LongBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
       int sz = _TestUtil.nextInt(random(), 2, maxSize);
       BitSet a = new BitSet(sz);
-      FixedBitSet b = new FixedBitSet(sz);
+      LongBitSet b = new LongBitSet(sz);
 
       // test the various ways of setting bits
       if (sz>0) {
@@ -148,9 +112,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
       fromIndex = random().nextInt(sz/2);
       toIndex = fromIndex + random().nextInt(sz - fromIndex);
       BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
-      FixedBitSet bb = b.clone(); bb.flip(fromIndex,toIndex);
-
-      doIterate(aa,bb, mode);   // a problem here is from flip or doIterate
+      LongBitSet bb = b.clone(); bb.flip(fromIndex,toIndex);
 
       fromIndex = random().nextInt(sz/2);
       toIndex = fromIndex + random().nextInt(sz - fromIndex);
@@ -178,19 +140,14 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
         BitSet a_xor = (BitSet)a.clone(); a_xor.xor(a0);
         BitSet a_andn = (BitSet)a.clone(); a_andn.andNot(a0);
 
-        FixedBitSet b_and = b.clone(); assertEquals(b,b_and); b_and.and(b0);
-        FixedBitSet b_or = b.clone(); b_or.or(b0);
-        FixedBitSet b_xor = b.clone(); b_xor.xor(b0);
-        FixedBitSet b_andn = b.clone(); b_andn.andNot(b0);
+        LongBitSet b_and = b.clone(); assertEquals(b,b_and); b_and.and(b0);
+        LongBitSet b_or = b.clone(); b_or.or(b0);
+        LongBitSet b_xor = b.clone(); b_xor.xor(b0);
+        LongBitSet b_andn = b.clone(); b_andn.andNot(b0);
 
         assertEquals(a0.cardinality(), b0.cardinality());
         assertEquals(a_or.cardinality(), b_or.cardinality());
 
-        doIterate(a_and,b_and, mode);
-        doIterate(a_or,b_or, mode);
-        doIterate(a_andn,b_andn, mode);
-        doIterate(a_xor,b_xor, mode);
-        
         assertEquals(a_and.cardinality(), b_and.cardinality());
         assertEquals(a_or.cardinality(), b_or.cardinality());
         assertEquals(a_xor.cardinality(), b_xor.cardinality());
@@ -220,8 +177,8 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   public void testEquals() {
     // This test can't handle numBits==0:
     final int numBits = random().nextInt(2000) + 1;
-    FixedBitSet b1 = new FixedBitSet(numBits);
-    FixedBitSet b2 = new FixedBitSet(numBits);
+    LongBitSet b1 = new LongBitSet(numBits);
+    LongBitSet b2 = new LongBitSet(numBits);
     assertTrue(b1.equals(b2));
     assertTrue(b2.equals(b1));
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
@@ -243,8 +200,8 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   public void testHashCodeEquals() {
     // This test can't handle numBits==0:
     final int numBits = random().nextInt(2000) + 1;
-    FixedBitSet b1 = new FixedBitSet(numBits);
-    FixedBitSet b2 = new FixedBitSet(numBits);
+    LongBitSet b1 = new LongBitSet(numBits);
+    LongBitSet b2 = new LongBitSet(numBits);
     assertTrue(b1.equals(b2));
     assertTrue(b2.equals(b1));
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
@@ -263,8 +220,8 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   public void testSmallBitSets() {
     // Make sure size 0-10 bit sets are OK:
     for(int numBits=0;numBits<10;numBits++) {
-      FixedBitSet b1 = new FixedBitSet(numBits);
-      FixedBitSet b2 = new FixedBitSet(numBits);
+      LongBitSet b1 = new LongBitSet(numBits);
+      LongBitSet b2 = new LongBitSet(numBits);
       assertTrue(b1.equals(b2));
       assertEquals(b1.hashCode(), b2.hashCode());
       assertEquals(0, b1.cardinality());
@@ -277,18 +234,18 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     }
   }
   
-  private FixedBitSet makeFixedBitSet(int[] a, int numBits) {
-    FixedBitSet bs;
+  private LongBitSet makeLongFixedBitSet(int[] a, int numBits) {
+    LongBitSet bs;
     if (random().nextBoolean()) {
-      int bits2words = FixedBitSet.bits2words(numBits);
+      int bits2words = LongBitSet.bits2words(numBits);
       long[] words = new long[bits2words + random().nextInt(100)];
       for (int i = bits2words; i < words.length; i++) {
         words[i] = random().nextLong();
       }
-      bs = new FixedBitSet(words, numBits);
+      bs = new LongBitSet(words, numBits);
 
     } else {
-      bs = new FixedBitSet(numBits);
+      bs = new LongBitSet(numBits);
     }
     for (int e: a) {
       bs.set(e);
@@ -305,7 +262,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   }
 
   private void checkPrevSetBitArray(int [] a, int numBits) {
-    FixedBitSet obs = makeFixedBitSet(a, numBits);
+    LongBitSet obs = makeLongFixedBitSet(a, numBits);
     BitSet bs = makeBitSet(a);
     doPrevSetBit(bs, obs);
   }
@@ -318,7 +275,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   
   
   private void checkNextSetBitArray(int [] a, int numBits) {
-    FixedBitSet obs = makeFixedBitSet(a, numBits);
+    LongBitSet obs = makeLongFixedBitSet(a, numBits);
     BitSet bs = makeBitSet(a);
     doNextSetBit(bs, obs);
   }
@@ -334,11 +291,11 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
   }
   
   public void testEnsureCapacity() {
-    FixedBitSet bits = new FixedBitSet(5);
+    LongBitSet bits = new LongBitSet(5);
     bits.set(1);
     bits.set(4);
     
-    FixedBitSet newBits = FixedBitSet.ensureCapacity(bits, 8); // grow within the word
+    LongBitSet newBits = LongBitSet.ensureCapacity(bits, 8); // grow within the word
     assertTrue(newBits.get(1));
     assertTrue(newBits.get(4));
     newBits.clear(1);
@@ -347,11 +304,11 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     assertFalse(newBits.get(1));
 
     newBits.set(1);
-    newBits = FixedBitSet.ensureCapacity(newBits, newBits.length() - 2); // reuse
+    newBits = LongBitSet.ensureCapacity(newBits, newBits.length() - 2); // reuse
     assertTrue(newBits.get(1));
-
+    
     bits.set(1);
-    newBits = FixedBitSet.ensureCapacity(bits, 72); // grow beyond one word
+    newBits = LongBitSet.ensureCapacity(bits, 72); // grow beyond one word
     assertTrue(newBits.get(1));
     assertTrue(newBits.get(4));
     newBits.clear(1);
