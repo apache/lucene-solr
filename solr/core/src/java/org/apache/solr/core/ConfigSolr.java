@@ -74,8 +74,8 @@ public abstract class ConfigSolr {
     }
   }
 
-  public static ConfigSolr fromString(String xml) {
-    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+  public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
   }
 
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
@@ -103,6 +103,17 @@ public abstract class ConfigSolr {
   }
   
   public abstract CoresLocator getCoresLocator();
+
+
+  /**
+   * The directory against which relative core instance dirs are resolved.  If none is
+   * specified in the config, uses solr home.
+   *
+   * @return core root directory
+   */
+  public String getCoreRootDirectory() {
+    return get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir());
+  }
 
   public PluginInfo getShardHandlerFactoryPluginInfo() {
     Node node = config.getNode(getShardHandlerFactoryConfigPath(), false);

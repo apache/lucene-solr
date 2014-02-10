@@ -793,6 +793,10 @@ public class CoreContainer {
     return null;
   }
 
+  public String getCoreRootDirectory() {
+    return cfg.getCoreRootDirectory();
+  }
+
   /**
    * Gets a core by name and increase its refcount.
    *

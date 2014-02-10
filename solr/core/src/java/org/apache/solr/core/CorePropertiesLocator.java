@@ -47,6 +47,7 @@ public class CorePropertiesLocator implements CoresLocator {
 
   public CorePropertiesLocator(String coreDiscoveryRoot) {
     this.rootDirectory = new File(coreDiscoveryRoot);
+    logger.info("Config-defined core root directory: {}", this.rootDirectory.getAbsolutePath());
   }
 
   @Override

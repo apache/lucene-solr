@@ -40,9 +40,7 @@ public class ConfigSolrXml extends ConfigSolr {
       checkForIllegalConfig();
       fillPropMap();
       config.substituteProperties();
-      log.info("Config-defined core root directory: {}", get(CfgProp.SOLR_COREROOTDIRECTORY, ""));
-      String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir());
-      coresLocator = new CorePropertiesLocator(coreRoot);
+      coresLocator = new CorePropertiesLocator(getCoreRootDirectory());
     }
     catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
