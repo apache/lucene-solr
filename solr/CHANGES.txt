@@ -264,6 +264,9 @@ Bug Fixes
 * SOLR-5644: SplitShard does not handle not finding a shard leader well.
   (Mark Miller, Anshum Gupta via shalin)
 
+* SOLR-5704: coreRootDirectory was not respected when creating new cores
+  via CoreAdminHandler (Jesse Sipprell, Alan Woodward)
+
 Optimizations
 ----------------------
 

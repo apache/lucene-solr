@@ -162,7 +162,7 @@ public class CoreDescriptor {
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
     coreProperties.put(CORE_INSTDIR, instanceDir);
-    coreProperties.put(CORE_ABS_INSTDIR, convertToAbsolute(instanceDir, container.getSolrHome()));
+    coreProperties.put(CORE_ABS_INSTDIR, convertToAbsolute(instanceDir, container.getCoreRootDirectory()));
 
     for (String propname : coreProps.stringPropertyNames()) {
 
