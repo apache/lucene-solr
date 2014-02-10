@@ -179,8 +179,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         for (GroupDocs<BytesRef> group : topGroups.groups) {
           for (ScoreDoc scoreDoc : group.scoreDocs) {
             ShardDoc solrDoc = (ShardDoc) scoreDoc;
-            solrDoc.positionInResponse = i++;
-            resultIds.put(solrDoc.id, solrDoc);
+            // Include the first if there are duplicate IDs
+            if ( ! resultIds.containsKey(solrDoc.id)) {
+              solrDoc.positionInResponse = i++;
+              resultIds.put(solrDoc.id, solrDoc);
+            }
           }
         }
       }
