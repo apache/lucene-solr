@@ -53,7 +53,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Iterator;
 
@@ -325,7 +324,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                                    this.needsScores,
                                                    fieldType,
                                                    boostDocs,
-                                                   funcQuery);
+                                                   funcQuery, searcher);
         } else {
           return new CollapsingScoreCollector(maxDoc, leafCount, docValues, this.nullPolicy, boostDocs);
         }
@@ -560,7 +559,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                          boolean needsScores,
                                          FieldType fieldType,
                                          IntOpenHashSet boostDocs,
-                                         FunctionQuery funcQuery) throws IOException{
+                                         FunctionQuery funcQuery, IndexSearcher searcher) throws IOException{
 
       this.maxDoc = maxDoc;
       this.contexts = new AtomicReaderContext[segments];
@@ -570,7 +569,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.needsScores = needsScores;
       this.boostDocs = boostDocs;
       if(funcQuery != null) {
-        this.fieldValueCollapse =  new ValueSourceCollapse(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, funcQuery);
+        this.fieldValueCollapse =  new ValueSourceCollapse(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, funcQuery, searcher);
       } else {
         if(fieldType instanceof TrieIntField) {
           this.fieldValueCollapse = new IntValueCollapse(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs);
@@ -940,7 +939,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private ValueSource valueSource;
     private FunctionValues functionValues;
     private float[] ordVals;
-    private Map rcontext = new HashMap();
+    private Map rcontext;
     private CollapseScore collapseScore = new CollapseScore();
     private float score;
     private boolean cscore;
@@ -952,9 +951,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                boolean max,
                                boolean needsScores,
                                IntOpenHashSet boostDocs,
-                               FunctionQuery funcQuery) throws IOException {
+                               FunctionQuery funcQuery, IndexSearcher searcher) throws IOException {
       super(maxDoc, null, nullPolicy, max, needsScores, boostDocs);
       this.valueSource = funcQuery.getValueSource();
+      this.rcontext = ValueSource.newContext(searcher);
       this.ords = ords;
       this.ordVals = new float[ords.length];
       Arrays.fill(ords, -1);
