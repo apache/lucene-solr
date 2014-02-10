@@ -44,7 +44,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -1423,7 +1423,7 @@ public class CheckIndex {
   
   private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv, Bits docsWithField) {
     final long maxOrd = dv.getValueCount()-1;
-    OpenBitSet seenOrds = new OpenBitSet(dv.getValueCount());
+    LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.setDocument(i);

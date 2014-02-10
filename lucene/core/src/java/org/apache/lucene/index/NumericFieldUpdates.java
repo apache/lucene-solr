@@ -2,10 +2,8 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
 import org.apache.lucene.util.packed.PagedMutable;
@@ -98,11 +96,7 @@ interface NumericFieldUpdates {
       if (docs.size() == size) {
         docs = docs.grow(size + 1);
         values = values.grow(size + 1);
-        int numWords = (int) (docs.size() >> 6);
-        if (docsWithField.getBits().length <= numWords) {
-          numWords = ArrayUtil.oversize(numWords + 1, RamUsageEstimator.NUM_BYTES_LONG);
-          docsWithField = new FixedBitSet(docsWithField, numWords << 6);
-        }
+        docsWithField = FixedBitSet.ensureCapacity(docsWithField, (int) docs.size());
       }
       
       if (value != NumericUpdate.MISSING) {
@@ -208,11 +202,7 @@ interface NumericFieldUpdates {
         }
         docs = docs.grow(size + packedOther.size);
         values = values.grow(size + packedOther.size);
-        int numWords = (int) (docs.size() >> 6);
-        if (docsWithField.getBits().length <= numWords) {
-          numWords = ArrayUtil.oversize(numWords + 1, RamUsageEstimator.NUM_BYTES_LONG);
-          docsWithField = new FixedBitSet(docsWithField, numWords << 6);
-        }
+        docsWithField = FixedBitSet.ensureCapacity(docsWithField, (int) docs.size());
         for (int i = 0; i < packedOther.size; i++) {
           int doc = (int) packedOther.docs.get(i);
           if (packedOther.docsWithField.get(i)) {

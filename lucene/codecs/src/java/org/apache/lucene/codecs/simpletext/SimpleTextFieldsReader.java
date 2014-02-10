@@ -28,8 +28,8 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
@@ -39,9 +39,9 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -55,6 +55,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final TreeMap<String,Long> fields;
   private final IndexInput in;
   private final FieldInfos fieldInfos;
+  private final int maxDoc;
 
   final static BytesRef END          = SimpleTextFieldsWriter.END;
   final static BytesRef FIELD        = SimpleTextFieldsWriter.FIELD;
@@ -67,6 +68,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   final static BytesRef PAYLOAD      = SimpleTextFieldsWriter.PAYLOAD;
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
+    this.maxDoc = state.segmentInfo.getDocCount();
     fieldInfos = state.fieldInfos;
     in = state.directory.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
     boolean success = false;
@@ -498,6 +500,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextTerms extends Terms {
     private final long termsStart;
     private final FieldInfo fieldInfo;
+    private final int maxDoc;
     private long sumTotalTermFreq;
     private long sumDocFreq;
     private int docCount;
@@ -506,7 +509,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRef scratch = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
 
-    public SimpleTextTerms(String field, long termsStart) throws IOException {
+    public SimpleTextTerms(String field, long termsStart, int maxDoc) throws IOException {
+      this.maxDoc = maxDoc;
       this.termsStart = termsStart;
       fieldInfo = fieldInfos.fieldInfo(field);
       loadTerms();
@@ -525,7 +529,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       long lastDocsStart = -1;
       int docFreq = 0;
       long totalTermFreq = 0;
-      OpenBitSet visitedDocs = new OpenBitSet();
+      FixedBitSet visitedDocs = new FixedBitSet(maxDoc);
       final IntsRef scratchIntsRef = new IntsRef();
       while(true) {
         SimpleTextUtil.readLine(in, scratch);
@@ -650,7 +654,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       if (fp == null) {
         return null;
       } else {
-        terms = new SimpleTextTerms(field, fp);
+        terms = new SimpleTextTerms(field, fp, maxDoc);
         termsCache.put(field, (SimpleTextTerms) terms);
       }
     }

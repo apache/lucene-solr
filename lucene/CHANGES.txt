@@ -88,6 +88,9 @@ New Features
   are out of bounds, e.g. using a bounding box filter with distance
   range faceting.  (Mike McCandless)
 
+* LUCENE-5440: Add LongBitSet for managing more than 2.1B bits (otherwise use
+  FixedBitSet). (Shai Erera)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;

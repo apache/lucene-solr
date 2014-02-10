@@ -23,22 +23,113 @@ import java.util.Arrays;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
-// TODO: maybe merge with BitVector?  Problem is BitVector
-// caches its cardinality...
-
-/** BitSet of fixed length (numBits), backed by accessible
- *  ({@link #getBits}) long[], accessed with an int index,
- *  implementing Bits and DocIdSet.  Unlike {@link
- *  OpenBitSet} this bit set does not auto-expand, cannot
- *  handle long index, and does not have fastXX/XX variants
- *  (just X).
- *
- * @lucene.internal
- **/
+/**
+ * BitSet of fixed length (numBits), backed by accessible ({@link #getBits})
+ * long[], accessed with an int index, implementing {@link Bits} and
+ * {@link DocIdSet}. If you need to manage more than 2.1B bits, use
+ * {@link LongBitSet}.
+ */
 public final class FixedBitSet extends DocIdSet implements Bits {
+
+  /**
+   * A {@link DocIdSetIterator} which iterates over set bits in a
+   * {@link FixedBitSet}.
+   */
+  public static final class FixedBitSetIterator extends DocIdSetIterator {
+    
+    final int numBits, numWords;
+    final long[] bits;
+    int doc = -1;
+    
+    public FixedBitSetIterator(long[] bits, int numBits, int wordLength) {
+      this.bits = bits;
+      this.numBits = numBits;
+      this.numWords = wordLength;
+    }
+    
+    @Override
+    public int nextDoc() throws IOException {
+      if (doc == NO_MORE_DOCS || ++doc >= numBits) {
+        return doc = NO_MORE_DOCS;
+      }
+      int i = doc >> 6;
+      final int subIndex = doc & 0x3f;      // index within the word
+      long word = bits[i] >> subIndex;  // skip all the bits to the right of index
+      
+      if (word != 0) {
+        return doc = doc + Long.numberOfTrailingZeros(word);
+      }
+      
+      while (++i < numWords) {
+        word = bits[i];
+        if (word != 0) {
+          return doc = (i << 6) + Long.numberOfTrailingZeros(word);
+        }
+      }
+      
+      return doc = NO_MORE_DOCS;
+    }
+    
+    @Override
+    public int docID() {
+      return doc;
+    }
+    
+    @Override
+    public long cost() {
+      return numBits;
+    }
+    
+    @Override
+    public int advance(int target) throws IOException {
+      if (doc == NO_MORE_DOCS || target >= numBits) {
+        return doc = NO_MORE_DOCS;
+      }
+      int i = target >> 6;
+      final int subIndex = target & 0x3f; // index within the word
+      long word = bits[i] >> subIndex; // skip all the bits to the right of index
+      
+      if (word != 0) {
+        return doc = target + Long.numberOfTrailingZeros(word);
+      }
+      
+      while (++i < numWords) {
+        word = bits[i];
+        if (word != 0) {
+          return doc = (i << 6) + Long.numberOfTrailingZeros(word);
+        }
+      }
+      
+      return doc = NO_MORE_DOCS;
+    }
+  }
+  
   private final long[] bits;
   private final int numBits;
   private final int wordLength;
+
+  /**
+   * If the given {@link FixedBitSet} is large enough to hold {@code numBits},
+   * returns the given bits, otherwise returns a new {@link FixedBitSet} which
+   * can hold the requested number of bits.
+   * 
+   * <p>
+   * <b>NOTE:</b> the returned bitset reuses the underlying {@code long[]} of
+   * the given {@code bits} if possible. Also, calling {@link #length()} on the
+   * returned bits may return a value greater than {@code numBits}.
+   */
+  public static FixedBitSet ensureCapacity(FixedBitSet bits, int numBits) {
+    if (numBits < bits.length()) {
+      return bits;
+    } else {
+      int numWords = bits2words(numBits);
+      long[] arr = bits.getBits();
+      if (numWords >= arr.length) {
+        arr = ArrayUtil.grow(arr, numWords + 1);
+      }
+      return new FixedBitSet(arr, arr.length << 6);
+    }
+  }
 
   /** returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(int numBits) {
@@ -64,82 +155,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     this.bits = storedBits;
   }
   
-  /**
-   * Makes a full copy of the bits, while allowing to expand/shrink the bitset.
-   * If {@code numBits &lt; other.numBits}, then only the first {@code numBits}
-   * are copied from other.
-   */
-  public FixedBitSet(FixedBitSet other, int numBits) {
-    wordLength = bits2words(numBits);
-    bits = new long[wordLength];
-    System.arraycopy(other.bits, 0, bits, 0, Math.min(other.wordLength, wordLength));
-    this.numBits = numBits;
-  }
-
   @Override
   public DocIdSetIterator iterator() {
-    // define locally so we don't have "enclosing acces" issue
-    final long[] bits = this.bits;
-    final int wordLength = this.wordLength;
-    final int numBits = this.numBits;
-    return new DocIdSetIterator() {
-      int doc = -1;
-      @Override
-      public int nextDoc() throws IOException {
-        if (doc == NO_MORE_DOCS || ++doc >= numBits) {
-          return doc = NO_MORE_DOCS;
-        }
-        int i = doc >> 6;
-        final int subIndex = doc & 0x3f;      // index within the word
-        long word = bits[i] >> subIndex;  // skip all the bits to the right of index
-
-        if (word != 0) {
-          return doc = doc + Long.numberOfTrailingZeros(word);
-        }
-
-        while (++i < wordLength) {
-          word = bits[i];
-          if (word != 0) {
-            return doc = (i << 6) + Long.numberOfTrailingZeros(word);
-          }
-        }
-
-        return doc = NO_MORE_DOCS;
-      }
-      
-      @Override
-      public int docID() {
-        return doc;
-      }
-      
-      @Override
-      public long cost() {
-        return bits.length;
-      }
-      
-      @Override
-      public int advance(int target) throws IOException {
-        if (doc == NO_MORE_DOCS || target >= numBits) {
-          return doc = NO_MORE_DOCS;
-        }
-        int i = target >> 6;
-        final int subIndex = target & 0x3f;      // index within the word
-        long word = bits[i] >> subIndex;  // skip all the bits to the right of index
-
-        if (word != 0) {
-          return doc = target + Long.numberOfTrailingZeros(word);
-        }
-
-        while (++i < wordLength) {
-          word = bits[i];
-          if (word != 0) {
-            return doc = (i << 6) + Long.numberOfTrailingZeros(word);
-          }
-        }
-
-        return doc = NO_MORE_DOCS;
-      }
-    };
+    return new FixedBitSetIterator(bits, numBits, wordLength);
   }
 
   @Override
@@ -272,6 +290,12 @@ public final class FixedBitSet extends DocIdSet implements Bits {
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
       obs.advance(numBits);
+    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
+      or(fbs.bits, fbs.numWords);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      fbs.advance(numBits);
     } else {
       int doc;
       while ((doc = iter.nextDoc()) < numBits) {
@@ -292,6 +316,24 @@ public final class FixedBitSet extends DocIdSet implements Bits {
       thisArr[pos] |= otherArr[pos];
     }
   }
+  
+  /** this = this XOR other */
+  public void xor(FixedBitSet other) {
+    final long[] thisBits = this.bits;
+    final long[] otherBits = other.bits;
+    int pos = Math.min(wordLength, other.wordLength);
+    while (--pos >= 0) {
+      thisBits[pos] ^= otherBits[pos];
+    }
+  }
+  
+  /** Does in-place XOR of the bits provided by the iterator. */
+  public void xor(DocIdSetIterator iter) throws IOException {
+    int doc;
+    while ((doc = iter.nextDoc()) < numBits) {
+      flip(doc, doc + 1);
+    }
+  }
 
   /** Does in-place AND of the bits provided by the
    *  iterator. */
@@ -302,6 +344,12 @@ public final class FixedBitSet extends DocIdSet implements Bits {
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
       obs.advance(numBits);
+    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
+      and(fbs.bits, fbs.numWords);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      fbs.advance(numBits);
     } else {
       if (numBits == 0) return;
       int disiDoc, bitSetDoc = nextSetBit(0);
@@ -314,6 +362,15 @@ public final class FixedBitSet extends DocIdSet implements Bits {
         clear(bitSetDoc, numBits);
       }
     }
+  }
+
+  /** returns true if the sets have any elements in common */
+  public boolean intersects(FixedBitSet other) {
+    int pos = Math.min(wordLength, other.wordLength);
+    while (--pos>=0) {
+      if ((bits[pos] & other.bits[pos]) != 0) return true;
+    }
+    return false;
   }
 
   /** this = this AND other */
@@ -341,6 +398,12 @@ public final class FixedBitSet extends DocIdSet implements Bits {
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
       obs.advance(numBits);
+    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
+      andNot(fbs.bits, fbs.numWords);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      fbs.advance(numBits);
     } else {
       int doc;
       while ((doc = iter.nextDoc()) < numBits) {
@@ -467,7 +530,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
 
   @Override
   public FixedBitSet clone() {
-    return new FixedBitSet(this, numBits);
+    long[] bits = new long[this.bits.length];
+    System.arraycopy(this.bits, 0, bits, 0, bits.length);
+    return new FixedBitSet(bits, numBits);
   }
 
   /** returns true if both sets have the same bits set */
