@@ -45,7 +45,8 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
 
   static {
-    sslConfig = null;
+    // SSL does not work with this feature for some reason
+    ALLOW_SSL = false;
   }
   
   @BeforeClass

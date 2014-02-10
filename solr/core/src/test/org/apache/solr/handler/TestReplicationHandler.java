@@ -102,7 +102,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   static {
     // does not yet work with ssl
-    sslConfig = null;
+    ALLOW_SSL = false;
   }
   
   @BeforeClass

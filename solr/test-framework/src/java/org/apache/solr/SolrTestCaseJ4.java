@@ -24,10 +24,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -46,11 +42,6 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -58,7 +49,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util._TestUtil;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -89,8 +79,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -123,7 +113,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 45000;  // default socket connection timeout in ms
 
-  protected static volatile SSLConfig sslConfig = new SSLConfig();
+  // these are meant to be accessed sequentially, but are volatile just to ensure any test
+  // thread will read the latest value
+  protected static volatile boolean ALLOW_SSL = true;
+  protected static volatile SSLTestConfig sslConfig;
 
   @ClassRule
   public static TestRule solrClassRules = 
@@ -146,31 +139,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     startTrackingZkClients();
     ignoreException("ignore_exception");
     newRandomConfig();
-    sslConfig = getSSLConfig();
     
-    
-    if(sslConfig != null && sslConfig.useSsl) {
+    sslConfig = buildSSLConfig();
+    //will use ssl specific or default depending on sslConfig
+    HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
+    if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
-      
-      // Turn off two-way SSL since it isn't configured below...
-      sslConfig.clientAuth = false;
-      HttpClientUtil.setConfigurer(new HttpClientConfigurer(){
-        @SuppressWarnings("deprecation")
-        protected void configure(DefaultHttpClient httpClient, SolrParams config) {
-          super.configure(httpClient, config);
-          SchemeRegistry registry = httpClient.getConnectionManager().getSchemeRegistry();
-          // Make sure no tests cheat by using HTTP
-          registry.unregister("http");
-          try {
-            // Don't complain that we are using self-signed certs during the test
-            registry.register(new Scheme("https", 443, new SSLSocketFactory(new TrustSelfSignedStrategy())));
-          } catch (KeyManagementException | UnrecoverableKeyException
-              | NoSuchAlgorithmException | KeyStoreException ex) {
-            throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
-          }
-        }
-      });
     }
   }
 
@@ -189,41 +164,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.clearProperty("useCompoundFile");
     System.clearProperty("urlScheme");
     
-    if(sslConfig != null && sslConfig.useSsl) {
+    if(isSSLMode()) {
       HttpClientUtil.setConfigurer(new HttpClientConfigurer());
     }
-    
+    // clean up static
+    sslConfig = null;
     IpTables.unblockAllPorts();
   }
   
-  private static File TEST_KEYSTORE;
-  static {
-    TEST_KEYSTORE = (null == ExternalPaths.SOURCE_HOME)
-      ? null : new File(ExternalPaths.SOURCE_HOME, "example/etc/solrtest.keystore");
-  }
-  
-  protected boolean isSSLMode() {
-    return sslConfig != null && sslConfig.useSsl;
-  }
-
-  private static void initSSLConfig(SSLConfig sslConfig, String keystorePath) {
-    sslConfig.useSsl = false;
-    sslConfig.clientAuth = false;
-    sslConfig.keyStore = keystorePath;
-    sslConfig.keyStorePassword = "secret";
-    sslConfig.trustStore = keystorePath;
-    sslConfig.trustStorePassword = "secret";
-  }
-
-  /**
-   * Returns the File object for the example keystore used when this baseclass randomly 
-   * uses SSL.  May be null ifthis test does not appear to be running as part of the 
-   * standard solr distribution and does not have access to the example configs.
-   *
-   * @lucene.internal 
-   */
-  protected static File getExampleKeystoreFile() {
-    return TEST_KEYSTORE;
+  protected static boolean isSSLMode() {
+    return sslConfig != null && sslConfig.isSSLMode();
   }
 
   private static boolean changedFactory = false;
@@ -252,38 +202,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  private static SSLConfig getSSLConfig() {
-    // test has disabled
-    if (sslConfig == null) {
-      SSLConfig sslConfig = new SSLConfig();
-      return sslConfig;
+  private static SSLTestConfig buildSSLConfig() {
+    // test has been disabled
+    if (!ALLOW_SSL) {
+      return new SSLTestConfig();
     }
-    
-    // only randomize SSL if we are a solr test with access to the example keystore
-    if (null == getExampleKeystoreFile()) {
-      log.info("Solr's example keystore not defined (not a solr test?) skipping SSL randomization");
-      return null;
-    }
-
-    assertTrue("test keystore does not exist, randomized ssl testing broken: " +
-               getExampleKeystoreFile().getAbsolutePath(), 
-               getExampleKeystoreFile().exists() );
-    
-    SSLConfig sslConfig = new SSLConfig();
     
     final boolean trySsl = random().nextBoolean();
-    final boolean trySslClientAuth = false; // TODO: random().nextBoolean();
+    final boolean trySslClientAuth = random().nextBoolean();
     
     log.info("Randomized ssl ({}) and clientAuth ({})", trySsl,
         trySslClientAuth);
-    String keystorePath = null == TEST_KEYSTORE ? null : TEST_KEYSTORE
-        .getAbsolutePath();
-    initSSLConfig(sslConfig, keystorePath);
     
-    sslConfig.useSsl = trySsl;
-    sslConfig.clientAuth = trySslClientAuth;
-    
-    return sslConfig;
+    return new SSLTestConfig(trySsl, trySslClientAuth);
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {

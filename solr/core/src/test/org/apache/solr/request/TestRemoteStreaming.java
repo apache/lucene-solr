@@ -50,8 +50,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");
 
   static {
-    // does not yet work with ssl
-    sslConfig = null;
+    // does not yet work with ssl - uses raw URL
+    ALLOW_SSL = false;
   }
   
   @BeforeClass

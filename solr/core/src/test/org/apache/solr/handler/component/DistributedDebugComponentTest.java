@@ -70,8 +70,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     
     String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
     String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
-    shard1 = urlCollection1.replaceAll("http" + (sslConfig == null || !sslConfig.useSsl ? "" : "s") + "://", "");
-    shard2 = urlCollection2.replaceAll("http" + (sslConfig == null || !sslConfig.useSsl ? "" : "s") + "://", "");
+    shard1 = urlCollection1.replaceAll("https?://", "");
+    shard2 = urlCollection2.replaceAll("https?://", "");
     
     //create second core
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();

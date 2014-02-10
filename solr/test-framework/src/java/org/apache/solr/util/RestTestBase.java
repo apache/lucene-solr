@@ -29,7 +29,6 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -38,11 +37,6 @@ abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
   protected static RestTestHarness restTestHarness;
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    // sslConfig = null;
-  }
-  
   public static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
