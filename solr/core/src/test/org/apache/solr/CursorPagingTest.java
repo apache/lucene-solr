@@ -634,21 +634,24 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * </p>
    * <ul>
    *  <li><code>_version_</code> is removed</li>
-   *  <li><code>dv_last</code> and <code>dv_first</code> fields are removed 
-   *      if the codec doesn't support them</li>
+   *  <li>
+   *    <code>*_dv_last</code>, <code>*_dv_first</code> and <code>*_dv</code>
+   *    fields are removed if the codec doesn't support missing DocValues
+   *  </li>
    * </ul>
    * @see #defaultCodecSupportsMissingDocValues
    */
   public static List<String> pruneAndDeterministicallySort(Collection<String> raw) {
 
-    final boolean prune_dv_missing = ! defaultCodecSupportsMissingDocValues();
+    final boolean prune_dv = ! defaultCodecSupportsMissingDocValues();
 
     ArrayList<String> names = new ArrayList<String>(37);
     for (String f : raw) {
       if (f.equals("_version_")) {
         continue;
       }
-      if (prune_dv_missing && (f.endsWith("_dv_last") || f.endsWith("_dv_first")) ) {
+      if (prune_dv && (f.endsWith("_dv_last") || f.endsWith("_dv_first"))
+                       || f.endsWith("_dv")) {
         continue;
       }
       names.add(f);
