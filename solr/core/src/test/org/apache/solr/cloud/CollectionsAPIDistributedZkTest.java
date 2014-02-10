@@ -23,7 +23,6 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -398,7 +397,16 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     createNewSolrServer("", baseUrl).request(request);
     
-    cloudClient.getZkStateReader().updateClusterState(true);
+    long timeout = System.currentTimeMillis() + 10000;
+    while (cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2")) {
+      if (System.currentTimeMillis() > timeout) {
+        throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
+      }
+      
+      Thread.sleep(200);
+      cloudClient.getZkStateReader().updateClusterState(true);
+    }
+
     assertFalse("Still found collection that should be gone", cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
     
   }
