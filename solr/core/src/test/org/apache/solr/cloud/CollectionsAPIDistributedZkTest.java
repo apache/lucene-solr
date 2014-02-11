@@ -197,16 +197,16 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @Override
   public void doTest() throws Exception {
     testSolrJAPICalls();
-    testNodesUsedByCreate();
-    testCollectionsAPI();
-    testCollectionsAPIAddRemoveStress();
-    testErrorHandling();
-    deletePartiallyCreatedCollection();
-    deleteCollectionRemovesStaleZkCollectionsNode();
-    clusterPropTest();
-
-    // last
-    deleteCollectionWithDownNodes();
+//    testNodesUsedByCreate();
+//    testCollectionsAPI();
+//    testCollectionsAPIAddRemoveStress();
+//    testErrorHandling();
+//    deletePartiallyCreatedCollection();
+//    deleteCollectionRemovesStaleZkCollectionsNode();
+//    clusterPropTest();
+//
+//    last
+//    deleteCollectionWithDownNodes();
     if (DEBUG) {
       super.printLayout();
     }

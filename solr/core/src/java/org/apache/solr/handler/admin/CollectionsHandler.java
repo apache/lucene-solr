@@ -71,6 +71,7 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 public class CollectionsHandler extends RequestHandlerBase {
@@ -207,11 +208,11 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
 
     Map<String,Object> props = ZkNodeProps.makeMap(
-        Overseer.QUEUE_OPERATION, CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT) );
+        Overseer.QUEUE_OPERATION, CLUSTERPROP.toLower() );
     copyIfNotNull(req.getParams(),props,
         "name",
         "val");
-    handleResponse(CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),new ZkNodeProps(props),rsp);
+    handleResponse(CLUSTERPROP.toLower(),new ZkNodeProps(props),rsp);
 
   }
 
@@ -219,11 +220,11 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   private void handleRole(CollectionAction action, SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     req.getParams().required().check("role", "node");
-    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toString().toLowerCase(Locale.ROOT));
+    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toLower());
     copyIfNotNull(req.getParams(), map,"role", "node");
     ZkNodeProps m = new ZkNodeProps(map);
     if(!KNOWN_ROLES.contains(m.getStr("role"))) throw new SolrException(ErrorCode.BAD_REQUEST,"Unknown role. Supported roles are ,"+ KNOWN_ROLES);
-    handleResponse(action.toString().toLowerCase(Locale.ROOT), m, rsp);
+    Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(m)) ;
   }
 
   public static long DEFAULT_ZK_TIMEOUT = 180*1000;
