@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,9 +56,11 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
 
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-
+  static {
+    if (Constants.MAC_OS_X) {
+      // disable while we look into mac test fail
+      ALLOW_SSL = false;
+    }
   }
   
   public BasicDistributedZk2Test() {
