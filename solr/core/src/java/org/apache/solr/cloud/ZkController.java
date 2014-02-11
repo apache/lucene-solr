@@ -230,7 +230,8 @@ public final class ZkController {
               if (prevContext != null) {
                 prevContext.cancelElection();
               }
-              
+
+              overseerElector.setup(context);
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
               

@@ -281,6 +281,9 @@ Bug Fixes
   to properly specify discountOverlap option.
   (Isaac Hebsh, Ahmet Arslan, Vitaliy Zhovtyuk, hossman)
 
+* SOLR-5689: On reconnect, ZkController cancels election on first context rather
+  than latest. (Gregory Chanan, Mark Miller via shalin)
+
 Optimizations
 ----------------------
 
