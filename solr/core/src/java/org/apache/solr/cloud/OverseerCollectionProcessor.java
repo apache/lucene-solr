@@ -126,15 +126,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String COLL_PROP_PREFIX = "property.";
 
-  public static final String LEGACY_CLOUD ="legacyCloud";
-
-  public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of(LEGACY_CLOUD);
+  public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of("legacyCloud");
 
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
       MAX_SHARDS_PER_NODE, "1",
-      "external", null);
+      "external",null );
 
 
   // TODO: use from Overseer?
@@ -513,7 +511,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
-    if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams(new MapSolrParams(m));
@@ -832,7 +829,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     
     // find the leader for the shard
-    Replica parentShardLeader = clusterState.getLeader(collectionName, slice);
+    Replica parentShardLeader = null;
+    try {
+      parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice, 10000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
       range = new PlainIdRouter().fullRange();
@@ -1347,7 +1350,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     log.info("Common hash range between source shard: {} and target shard: {} = " + splitRange, sourceSlice.getName(), targetSlice.getName());
 
-    Replica targetLeader = targetSlice.getLeader();
+    Replica targetLeader = zkStateReader.getLeaderRetry(targetCollection.getName(), targetSlice.getName(), 10000);
 
     log.info("Asking target leader node: " + targetLeader.getNodeName() + " core: "
         + targetLeader.getStr("core") + " to buffer updates");
@@ -1391,7 +1394,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     log.info("Routing rule added successfully");
 
     // Create temp core on source shard
-    Replica sourceLeader = sourceSlice.getLeader();
+    Replica sourceLeader = zkStateReader.getLeaderRetry(sourceCollection.getName(), sourceSlice.getName(), 10000);
 
     // create a temporary collection with just one node on the shard leader
     String configName = zkStateReader.readConfigName(sourceCollection.getName());
@@ -1407,7 +1410,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     // refresh cluster state
     clusterState = zkStateReader.getClusterState();
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
-    Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 60000);
+    Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
     String tempCollectionReplica1 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica1";
     String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
@@ -1744,8 +1747,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         // yes, they must use same admin handler path everywhere...
         cloneParams.set("qt", adminPath);
         sreq.purpose = 1;
-        // TODO: this sucks
-        if (replica.startsWith("http://")) replica = replica.substring(7);
         sreq.shards = new String[] {replica};
         sreq.actualShards = sreq.shards;
         sreq.params = cloneParams;
