@@ -161,19 +161,21 @@ final class SloppyPhraseScorer extends Scorer {
         return false; // exhausted
       }
       if (k != k0) { // careful: mark only those currently in the queue
+        bits = FixedBitSet.ensureCapacity(bits, k);
         bits.set(k); // mark that pp2 need to be re-queued
       }
     }
     // collisions resolved, now re-queue
     // empty (partially) the queue until seeing all pps advanced for resolving collisions
     int n = 0;
-    // TODO can't this be checked once and decremented as we clear bits?
-    // in fact, we don't even need to clear any bits, since the bitset is totally discarded
-    // only need to pop as many set bits from the pq.
+    // TODO would be good if we can avoid calling cardinality() in each iteration!
+    int numBits = bits.length(); // larges bit we set
     while (bits.cardinality() > 0) {
       PhrasePositions pp2 = pq.pop();
       rptStack[n++] = pp2;
-      if (pp2.rptGroup >= 0 && bits.get(pp2.rptInd)) {
+      if (pp2.rptGroup >= 0 
+          && pp2.rptInd < numBits  // this bit may not have been set
+          && bits.get(pp2.rptInd)) {
         bits.clear(pp2.rptInd);
       }
     }
