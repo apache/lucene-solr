@@ -284,6 +284,9 @@ Bug Fixes
 * SOLR-5689: On reconnect, ZkController cancels election on first context rather
   than latest. (Gregory Chanan, Mark Miller via shalin)
 
+* SOLR-5649: Clean up some minor ConnectionManager issues. 
+  (Mark Miller, Gregory Chanan)
+
 Optimizations
 ----------------------
 

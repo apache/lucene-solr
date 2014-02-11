@@ -19,7 +19,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
@@ -34,9 +33,8 @@ public class ConnectionManager implements Watcher {
       .getLogger(ConnectionManager.class);
 
   private final String name;
-  private final CountDownLatch clientConnected = new CountDownLatch(1);
   
-  private boolean connected = false;
+  private volatile boolean connected = false;
 
   private final ZkClientConnectionStrategy connectionStrategy;
 
@@ -47,7 +45,6 @@ public class ConnectionManager implements Watcher {
   private final OnReconnect onReconnect;
   private final BeforeReconnect beforeReconnect;
 
-  private volatile KeeperState state = KeeperState.Disconnected;
   private volatile boolean isClosed = false;
   private volatile boolean likelyExpired = true;
   
@@ -122,11 +119,10 @@ public class ConnectionManager implements Watcher {
       return;
     }
     
-    state = event.getState();
+    KeeperState state = event.getState();
     
     if (state == KeeperState.SyncConnected) {
       connected();
-      clientConnected.countDown();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
       // we don't call disconnected because there
@@ -168,8 +164,10 @@ public class ConnectionManager implements Watcher {
                   closeKeeper(keeper);
                   throw new RuntimeException(t);
                 }
-                
-                connected();
+
+                // The new event thread will call connected
+                // we just start the reconnect thread and 
+                // do nothing else
                 
                 if (onReconnect != null) {
                   Thread thread = new Thread() {
