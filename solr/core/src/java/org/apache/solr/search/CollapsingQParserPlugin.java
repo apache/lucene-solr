@@ -153,6 +153,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
+
+      /*
+      *  Checking for boosted here because the request context will not have the elevated docs
+      *  until after the query is constructed. So to be sure there are no elevated docs in the query
+      *  while checking the cache we must check the request context during the call to hashCode().
+      */
+
+      if(this.boosted == null) {
+        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+        if(info != null) {
+          this.boosted = (Set<String>)info.getReq().getContext().get(QueryElevationComponent.BOOSTED);
+        }
+      }
+
       int hashCode = field.hashCode();
       hashCode = max!=null ? hashCode+max.hashCode():hashCode;
       hashCode = min!=null ? hashCode+min.hashCode():hashCode;
