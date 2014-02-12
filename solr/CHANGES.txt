@@ -418,6 +418,10 @@ Other Changes
 * SOLR-5585: Raise Collections API timeout to 3 minutes from one minute.
   (Mark Miller)
 
+* SOLR-5257: Improved error/warn messages when Update XML contains unexpected XML nodes
+  (Vitaliy Zhovtyuk, hossman)
+
+
 ==================  4.6.1  ==================
 
 Versions of Major Components
