@@ -157,6 +157,10 @@ New Features
 * LUCENE-5440: Add LongBitSet for managing more than 2.1B bits (otherwise use
   FixedBitSet). (Shai Erera)
 
+* LUCENE-5437: ASCIIFoldingFilter now has an option to preserve the original token
+  and emit it on the same position as the folded token only if the actual token was
+  folded. (Simon Willnauer, Nik Everett) 
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
