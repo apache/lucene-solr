@@ -91,10 +91,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @Slow
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
-  static {
-    ALLOW_SSL = false;
-  }
-  
   private static final int RECORD_COUNT = 2104;
   private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
@@ -694,7 +690,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       throws Exception {
     
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
-        context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
+        context, 0, solrConfigOverride, schemaOverride, true, null);
 
     jetty.setShards(shardList);
     
