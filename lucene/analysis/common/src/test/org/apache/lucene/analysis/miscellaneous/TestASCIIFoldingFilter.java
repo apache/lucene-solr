@@ -33,6 +33,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
+  /**
+   * Pop one input token's worth of tokens off the filter and verify that they are as expected.
+   */
+  void assertNextTerms(String expectedUnfolded, String expectedFolded, ASCIIFoldingFilter filter,
+      CharTermAttribute termAtt) throws Exception {
+    assertTrue(filter.incrementToken());
+    assertEquals(expectedFolded, termAtt.toString());
+    if (filter.isPreserveOriginal() && !expectedUnfolded.equals(expectedFolded)) {
+      assertTrue(filter.incrementToken());
+      assertEquals(expectedUnfolded, termAtt.toString());
+    }
+  }
 
   // testLain1Accents() is a copy of TestLatin1AccentFilter.testU().
   public void testLatin1Accents() throws Exception {
@@ -40,85 +52,85 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       ("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ"
       +" Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ"
       +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"), MockTokenizer.WHITESPACE, false);
-    ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
+    ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream, random().nextBoolean());
 
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     filter.reset();
-    assertTermEquals("Des", filter, termAtt);
-    assertTermEquals("mot", filter, termAtt);
-    assertTermEquals("cles", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("LA", filter, termAtt);
-    assertTermEquals("CHAINE", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("A", filter, termAtt);
-    assertTermEquals("AE", filter, termAtt);
-    assertTermEquals("C", filter, termAtt);
-    assertTermEquals("E", filter, termAtt);
-    assertTermEquals("E", filter, termAtt);
-    assertTermEquals("E", filter, termAtt);
-    assertTermEquals("E", filter, termAtt);
-    assertTermEquals("I", filter, termAtt);
-    assertTermEquals("I", filter, termAtt);
-    assertTermEquals("I", filter, termAtt);
-    assertTermEquals("I", filter, termAtt);
-    assertTermEquals("IJ", filter, termAtt);
-    assertTermEquals("D", filter, termAtt);
-    assertTermEquals("N", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("O", filter, termAtt);
-    assertTermEquals("OE", filter, termAtt);
-    assertTermEquals("TH", filter, termAtt);
-    assertTermEquals("U", filter, termAtt);
-    assertTermEquals("U", filter, termAtt);
-    assertTermEquals("U", filter, termAtt);
-    assertTermEquals("U", filter, termAtt);
-    assertTermEquals("Y", filter, termAtt);
-    assertTermEquals("Y", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("a", filter, termAtt);
-    assertTermEquals("ae", filter, termAtt);
-    assertTermEquals("c", filter, termAtt);
-    assertTermEquals("e", filter, termAtt);
-    assertTermEquals("e", filter, termAtt);
-    assertTermEquals("e", filter, termAtt);
-    assertTermEquals("e", filter, termAtt);
-    assertTermEquals("i", filter, termAtt);
-    assertTermEquals("i", filter, termAtt);
-    assertTermEquals("i", filter, termAtt);
-    assertTermEquals("i", filter, termAtt);
-    assertTermEquals("ij", filter, termAtt);
-    assertTermEquals("d", filter, termAtt);
-    assertTermEquals("n", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("o", filter, termAtt);
-    assertTermEquals("oe", filter, termAtt);
-    assertTermEquals("ss", filter, termAtt);
-    assertTermEquals("th", filter, termAtt);
-    assertTermEquals("u", filter, termAtt);
-    assertTermEquals("u", filter, termAtt);
-    assertTermEquals("u", filter, termAtt);
-    assertTermEquals("u", filter, termAtt);
-    assertTermEquals("y", filter, termAtt);
-    assertTermEquals("y", filter, termAtt);
-    assertTermEquals("fi", filter, termAtt);
-    assertTermEquals("fl", filter, termAtt);
+    assertNextTerms("Des", "Des", filter, termAtt);
+    assertNextTerms("mot", "mot", filter, termAtt);
+    assertNextTerms("clés", "cles", filter, termAtt);
+    assertNextTerms("À", "A", filter, termAtt);
+    assertNextTerms("LA", "LA", filter, termAtt);
+    assertNextTerms("CHAÎNE", "CHAINE", filter, termAtt);
+    assertNextTerms("À", "A", filter, termAtt);
+    assertNextTerms("Á", "A", filter, termAtt);
+    assertNextTerms("Â", "A", filter, termAtt);
+    assertNextTerms("Ã", "A", filter, termAtt);
+    assertNextTerms("Ä", "A", filter, termAtt);
+    assertNextTerms("Å", "A", filter, termAtt);
+    assertNextTerms("Æ", "AE", filter, termAtt);
+    assertNextTerms("Ç", "C", filter, termAtt);
+    assertNextTerms("È", "E", filter, termAtt);
+    assertNextTerms("É", "E", filter, termAtt);
+    assertNextTerms("Ê", "E", filter, termAtt);
+    assertNextTerms("Ë", "E", filter, termAtt);
+    assertNextTerms("Ì", "I", filter, termAtt);
+    assertNextTerms("Í", "I", filter, termAtt);
+    assertNextTerms("Î", "I", filter, termAtt);
+    assertNextTerms("Ï", "I", filter, termAtt);
+    assertNextTerms("Ĳ", "IJ", filter, termAtt);
+    assertNextTerms("Ð", "D", filter, termAtt);
+    assertNextTerms("Ñ", "N", filter, termAtt);
+    assertNextTerms("Ò", "O", filter, termAtt);
+    assertNextTerms("Ó", "O", filter, termAtt);
+    assertNextTerms("Ô", "O", filter, termAtt);
+    assertNextTerms("Õ", "O", filter, termAtt);
+    assertNextTerms("Ö", "O", filter, termAtt);
+    assertNextTerms("Ø", "O", filter, termAtt);
+    assertNextTerms("Œ", "OE", filter, termAtt);
+    assertNextTerms("Þ", "TH", filter, termAtt);
+    assertNextTerms("Ù", "U", filter, termAtt);
+    assertNextTerms("Ú", "U", filter, termAtt);
+    assertNextTerms("Û", "U", filter, termAtt);
+    assertNextTerms("Ü", "U", filter, termAtt);
+    assertNextTerms("Ý", "Y", filter, termAtt);
+    assertNextTerms("Ÿ", "Y", filter, termAtt);
+    assertNextTerms("à", "a", filter, termAtt);
+    assertNextTerms("á", "a", filter, termAtt);
+    assertNextTerms("â", "a", filter, termAtt);
+    assertNextTerms("ã", "a", filter, termAtt);
+    assertNextTerms("ä", "a", filter, termAtt);
+    assertNextTerms("å", "a", filter, termAtt);
+    assertNextTerms("æ", "ae", filter, termAtt);
+    assertNextTerms("ç", "c", filter, termAtt);
+    assertNextTerms("è", "e", filter, termAtt);
+    assertNextTerms("é", "e", filter, termAtt);
+    assertNextTerms("ê", "e", filter, termAtt);
+    assertNextTerms("ë", "e", filter, termAtt);
+    assertNextTerms("ì", "i", filter, termAtt);
+    assertNextTerms("í", "i", filter, termAtt);
+    assertNextTerms("î", "i", filter, termAtt);
+    assertNextTerms("ï", "i", filter, termAtt);
+    assertNextTerms("ĳ", "ij", filter, termAtt);
+    assertNextTerms("ð", "d", filter, termAtt);
+    assertNextTerms("ñ", "n", filter, termAtt);
+    assertNextTerms("ò", "o", filter, termAtt);
+    assertNextTerms("ó", "o", filter, termAtt);
+    assertNextTerms("ô", "o", filter, termAtt);
+    assertNextTerms("õ", "o", filter, termAtt);
+    assertNextTerms("ö", "o", filter, termAtt);
+    assertNextTerms("ø", "o", filter, termAtt);
+    assertNextTerms("œ", "oe", filter, termAtt);
+    assertNextTerms("ß", "ss", filter, termAtt);
+    assertNextTerms("þ", "th", filter, termAtt);
+    assertNextTerms("ù", "u", filter, termAtt);
+    assertNextTerms("ú", "u", filter, termAtt);
+    assertNextTerms("û", "u", filter, termAtt);
+    assertNextTerms("ü", "u", filter, termAtt);
+    assertNextTerms("ý", "y", filter, termAtt);
+    assertNextTerms("ÿ", "y", filter, termAtt);
+    assertNextTerms("ﬁ", "fi", filter, termAtt);
+    assertNextTerms("ﬂ", "fl", filter, termAtt);
     assertFalse(filter.incrementToken());
   }
 
@@ -1879,7 +1891,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     };
 
     // Construct input text and expected output tokens
-    List<String> expectedOutputTokens = new ArrayList<String>();
+    List<String> expectedUnfoldedTokens = new ArrayList<String>();
+    List<String> expectedFoldedTokens = new ArrayList<String>();
     StringBuilder inputText = new StringBuilder();
     for (int n = 0 ; n < foldings.length ; n += 2) {
       if (n > 0) {
@@ -1887,30 +1900,28 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       }
       inputText.append(foldings[n]);
 
-      // Construct the expected output token: the ASCII string to fold to,
-      // duplicated as many times as the number of characters in the input text.
+      // Construct the expected output tokens: both the unfolded and folded string,
+      // with the folded duplicated as many times as the number of characters in
+      // the input text.
       StringBuilder expected = new StringBuilder();
       int numChars = foldings[n].length();
       for (int m = 0 ; m < numChars; ++m) {
         expected.append(foldings[n + 1]);
       }
-      expectedOutputTokens.add(expected.toString());
+      expectedUnfoldedTokens.add(foldings[n]);
+      expectedFoldedTokens.add(expected.toString());
     }
 
     TokenStream stream = new MockTokenizer(new StringReader(inputText.toString()), MockTokenizer.WHITESPACE, false);
-    ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
+    ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream, random().nextBoolean());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
-    Iterator<String> expectedIter = expectedOutputTokens.iterator();
+    Iterator<String> unfoldedIter = expectedUnfoldedTokens.iterator();
+    Iterator<String> foldedIter = expectedFoldedTokens.iterator();
     filter.reset();
-    while (expectedIter.hasNext()) {
-      assertTermEquals(expectedIter.next(), filter, termAtt);
+    while (foldedIter.hasNext()) {
+      assertNextTerms(unfoldedIter.next(), foldedIter.next(), filter, termAtt);
     }
     assertFalse(filter.incrementToken());
-  }
-  
-  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt) throws Exception {
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, termAtt.toString());
   }
   
   /** blast some random strings through the analyzer */
@@ -1920,7 +1931,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
+        return new TokenStreamComponents(tokenizer,
+          new ASCIIFoldingFilter(tokenizer, random().nextBoolean()));
       } 
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
@@ -1931,7 +1943,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
+        return new TokenStreamComponents(tokenizer,
+          new ASCIIFoldingFilter(tokenizer, random().nextBoolean()));
       }
     };
     checkOneTerm(a, "", "");
