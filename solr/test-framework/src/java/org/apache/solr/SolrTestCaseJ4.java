@@ -45,6 +45,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -213,12 +214,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     final boolean trySsl = random().nextBoolean();
-    final boolean trySslClientAuth = random().nextBoolean();
+    boolean trySslClientAuth = random().nextBoolean();
+    if (Constants.MAC_OS_X) {
+      trySslClientAuth = false;
+    }
     
     log.info("Randomized ssl ({}) and clientAuth ({})", trySsl,
         trySslClientAuth);
     
     return new SSLTestConfig(trySsl, trySslClientAuth);
+  }
+  
+  protected static String buildUrl(final int port, final String context) {
+    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {

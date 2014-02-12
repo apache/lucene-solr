@@ -60,11 +60,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   private AtomicInteger id = new AtomicInteger();
   
-  static {
-    // no ssl currently because distrib updates read scheme from zk and no zk in this test
-    ALLOW_SSL = false;
-  }
-  
   @BeforeClass
   public static void beforeClass() throws Exception {
     // we can't use the Randomized merge policy because the test depends on
@@ -122,7 +117,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
+      String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }

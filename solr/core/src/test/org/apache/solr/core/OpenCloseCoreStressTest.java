@@ -135,7 +135,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private void getServers() throws Exception {
     jetty.start();
-    url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + jetty.getLocalPort() + "/solr/";
+    url = buildUrl(jetty.getLocalPort(), "/solr/");
 
     // Mostly to keep annoying logging messages from being sent out all the time.
 

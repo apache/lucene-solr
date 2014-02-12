@@ -259,7 +259,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
     }
 
     public String getUrl() {
-      return "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + port + "/solr";
+      return buildUrl(port, "/solr");
     }
 
     public String getSchemaFile() {

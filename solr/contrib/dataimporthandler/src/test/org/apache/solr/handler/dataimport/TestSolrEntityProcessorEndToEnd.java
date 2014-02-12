@@ -95,7 +95,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private String getSourceUrl() {
-    return "http" + (isSSLMode() ? "s" : "") +"://127.0.0.1:" + jetty.getLocalPort() + "/solr";
+    return buildUrl(jetty.getLocalPort(), "/solr");
   }
   
   //TODO: fix this test to close its directories
