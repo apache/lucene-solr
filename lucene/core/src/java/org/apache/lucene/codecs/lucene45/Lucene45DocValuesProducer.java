@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -54,6 +55,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
@@ -65,6 +67,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private final Map<Integer,SortedSetEntry> sortedSets;
   private final Map<Integer,NumericEntry> ords;
   private final Map<Integer,NumericEntry> ordIndexes;
+  private final AtomicLong ramBytesUsed;
   private final IndexInput data;
   private final int maxDoc;
   private final int version;
@@ -117,6 +120,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         IOUtils.closeWhileHandlingException(this.data);
       }
     }
+    
+    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
   }
 
   private void readSortedField(int fieldNumber, IndexInput meta, FieldInfos infos) throws IOException {
@@ -287,14 +292,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = 0;    
-    for(MonotonicBlockPackedReader monotonicBlockPackedReader: addressInstances.values()) {
-      sizeInBytes += Integer.SIZE + monotonicBlockPackedReader.ramBytesUsed();
-    }
-    for(MonotonicBlockPackedReader monotonicBlockPackedReader: ordIndexInstances.values()) {
-      sizeInBytes += Integer.SIZE + monotonicBlockPackedReader.ramBytesUsed();
-    }
-    return sizeInBytes;
+    return ramBytesUsed.get();
   }
   
   LongValues getNumeric(NumericEntry entry) throws IOException {
@@ -378,6 +376,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         data.seek(bytes.addressesOffset);
         addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
         addressInstances.put(field.number, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
       addresses = addrInstance;
     }
@@ -428,6 +427,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         }
         addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
         addressInstances.put(field.number, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
       addresses = addrInstance;
     }
@@ -499,6 +499,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         data.seek(entry.offset);
         ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
         ordIndexInstances.put(field.number, ordIndexInstance);
+        ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
       }
       ordIndex = ordIndexInstance;
     }
