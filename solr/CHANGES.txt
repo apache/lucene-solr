@@ -287,6 +287,9 @@ Bug Fixes
 * SOLR-5649: Clean up some minor ConnectionManager issues. 
   (Mark Miller, Gregory Chanan)
 
+* SOLR-5365: Fix bug with compressed files in ExtractingRequestHandler by
+  upgrading commons-compress to 1.7 (Jan Høydahl, hossman)
+
 Optimizations
 ----------------------
 
