@@ -268,8 +268,6 @@ Bug Fixes
 	
 * SOLR-5230: Call DelegatingCollector.finish() during grouping.
   (Joel Bernstein, ehatcher)
-* SOLR-5675: cloud-scripts/zkcli.bat: quote option log4j
-  (Günther Ruck via steffkes)
 
 * SOLR-5679: Shard splitting fails with ClassCastException on collections
   upgraded from 4.5 and earlier versions. (Brett Hoerner, shalin)
@@ -326,6 +324,9 @@ Bug Fixes
 
 * SOLR-5365: Fix bug with compressed files in ExtractingRequestHandler by
   upgrading commons-compress to 1.7 (Jan Høydahl, hossman)
+
+* SOLR-5675: cloud-scripts/zkcli.bat: quote option log4j
+  (Günther Ruck via steffkes
 
 Optimizations
 ----------------------
