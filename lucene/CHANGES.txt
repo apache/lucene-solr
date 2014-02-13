@@ -263,6 +263,9 @@ Bug fixes
   loop. ReferenceManager now throws IllegalStateException if currently managed
   resources ref count is 0. (Simon Willnauer)
 
+* LUCENE-5443: Lucene45DocValuesProducer.ramBytesUsed() may throw
+  ConcurrentModificationException. (Shai Erera, Simon Willnauer)
+  
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
