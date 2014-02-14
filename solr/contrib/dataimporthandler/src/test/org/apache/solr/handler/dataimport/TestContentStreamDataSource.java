@@ -69,8 +69,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + jetty.getLocalPort() + "/solr";
-    HttpSolrServer solrServer = new HttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(buildUrl(jetty.getLocalPort(), "/solr"));
     solrServer.request(req);
     ModifiableSolrParams qparams = new ModifiableSolrParams();
     qparams.add("q", "*:*");
@@ -89,8 +88,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         "clean", "false", UpdateParams.COMMIT, "false", 
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
-    String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + jetty.getLocalPort() + "/solr";
-    HttpSolrServer solrServer = new HttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(buildUrl(jetty.getLocalPort(), "/solr"));
     solrServer.request(req);
     Thread.sleep(100);
     ModifiableSolrParams queryAll = params("q", "*");

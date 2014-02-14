@@ -307,7 +307,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
+      String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -393,9 +393,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String urlScheme = isSSLMode() ? "https" : "http";
-      String url = urlScheme + "://127.0.0.1:" + port + context;
-      HttpSolrServer s = new HttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(buildUrl(port));
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
@@ -405,6 +403,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     catch (Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+  
+  protected String buildUrl(int port) {
+    return buildUrl(port, context);
   }
 
   protected void addFields(SolrInputDocument doc, Object... fields) {

@@ -107,7 +107,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      sb.append("127.0.0.1:").append(j.getLocalPort()).append(context);
+      sb.append(buildUrl(j.getLocalPort()));
     }
 
     shards = sb.toString();
