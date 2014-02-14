@@ -48,6 +48,9 @@ public interface CommonParams {
   /** query string */
   public static final String Q ="q";
   
+  /** distrib string */
+  public static final String DISTRIB = "distrib";
+  
   /** sort order */
   public static final String SORT ="sort";
   

@@ -334,6 +334,9 @@ Bug Fixes
 * SOLR-5731: In ConnectionManager, we should catch and only log exceptions
   from BeforeReconnect. (Mark Miller)
 
+* SOLR-5718: Make LBHttpSolrServer zombie checks non-distrib and non-scoring.
+  (Christine Poerschke via Mark Miller)
+
 Optimizations
 ----------------------
 

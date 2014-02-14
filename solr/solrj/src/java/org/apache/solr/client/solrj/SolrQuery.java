@@ -42,6 +42,8 @@ import java.util.regex.Pattern;
  */
 public class SolrQuery extends ModifiableSolrParams 
 {  
+  public static final String DOCID = "_docid_"; // duplicate of org.apache.solr.search.QueryParsing.DOCID which is not accessible from here
+  
   public enum ORDER { desc, asc;
     public ORDER reverse() {
       return (this == asc) ? desc : asc;
@@ -895,6 +897,10 @@ public class SolrQuery extends ModifiableSolrParams
 
   public void setShowDebugInfo(boolean showDebugInfo) {
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+  }
+
+  public void setDistrib(boolean val) {
+    this.set(CommonParams.DISTRIB, String.valueOf(val));
   }
 
 
