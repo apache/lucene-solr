@@ -52,7 +52,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     System.clearProperty("solr.directoryFactory");
     super.setUp();
 
-    jetty = new JettySolrRunner(getSolrHome(), context, 0 );
+    jetty = new JettySolrRunner(getSolrHome(), context, 0, null, null, true, null, sslConfig);
     jetty.start(false);
     port = jetty.getLocalPort();
 
@@ -93,7 +93,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:"+port+context+"/"+name;
+      String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:"+port+context+"/"+name;
       HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);

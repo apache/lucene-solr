@@ -146,7 +146,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   public void testConnectionRefused() throws MalformedURLException {
     int unusedPort = findUnusedPort(); // XXX even if fwe found an unused port
                                        // it might not be unused anymore
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + unusedPort
+    HttpSolrServer server = new HttpSolrServer("http" + (isSSLMode() ? "s" : "") + "://127.0.0.1:" + unusedPort
         + "/solr");
     server.setConnectionTimeout(500);
     SolrQuery q = new SolrQuery("*:*");

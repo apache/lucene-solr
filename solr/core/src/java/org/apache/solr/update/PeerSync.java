@@ -139,7 +139,7 @@ public class PeerSync  {
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
     // TODO: shutdown
-    shardHandlerFactory = new HttpShardHandlerFactory();
+    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler(client);
   }
 
@@ -269,9 +269,6 @@ public class PeerSync  {
   private void requestVersions(String replica) {
     SyncShardRequest sreq = new SyncShardRequest();
     sreq.purpose = 1;
-    // TODO: this sucks
-    if (replica.startsWith("http://"))
-      replica = replica.substring(7);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();

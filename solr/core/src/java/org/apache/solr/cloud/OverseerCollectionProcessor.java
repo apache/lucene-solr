@@ -511,7 +511,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
-    if (baseUrl.startsWith("http://")) baseUrl = baseUrl.substring(7);
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams(new MapSolrParams(m));
@@ -765,9 +764,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       ShardRequest sreq = new ShardRequest();
       params.set("qt", adminPath);
       sreq.purpose = 1;
-      String replica = zkStateReader.getZkClient()
-          .getBaseUrlForNodeName(nodeName);
-      if (replica.startsWith("http://")) replica = replica.substring(7);
+      String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
       sreq.shards = new String[]{replica};
       sreq.actualShards = sreq.shards;
       sreq.params = params;
@@ -971,7 +968,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       for (String subShardName : subShardNames) {
         // wait for parent leader to acknowledge the sub-shard core
         log.info("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
-        String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getZkClient().getBaseUrlForNodeName(nodeName), subShardName);
+        String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getBaseUrlForNodeName(nodeName), subShardName);
         CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
         cmd.setCoreName(subShardName);
         cmd.setNodeName(nodeName);
@@ -1080,7 +1077,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
           sendShardRequest(subShardNodeName, params);
 
-          String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getZkClient().getBaseUrlForNodeName(subShardNodeName), shardName);
+          String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getBaseUrlForNodeName(subShardNodeName), shardName);
           // wait for the replicas to be seen as active on sub shard leader
           log.info("Asking sub shard leader to wait for: " + shardName + " to be alive on: " + subShardNodeName);
           CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
@@ -1417,7 +1414,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     String tempCollectionReplica1 = tempSourceCollectionName + "_" + tempSourceSlice.getName() + "_replica1";
     String coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
-        zkStateReader.getZkClient().getBaseUrlForNodeName(sourceLeader.getNodeName()), tempCollectionReplica1);
+        zkStateReader.getBaseUrlForNodeName(sourceLeader.getNodeName()), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
     log.info("Asking source leader to wait for: " + tempCollectionReplica1 + " to be alive on: " + sourceLeader.getNodeName());
     CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
@@ -1454,7 +1451,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     sendShardRequest(targetLeader.getNodeName(), params);
 
     coreNodeName = waitForCoreNodeName(clusterState.getCollection(tempSourceCollectionName),
-        zkStateReader.getZkClient().getBaseUrlForNodeName(targetLeader.getNodeName()), tempCollectionReplica2);
+        zkStateReader.getBaseUrlForNodeName(targetLeader.getNodeName()), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     log.info("Asking temp source leader to wait for: " + tempCollectionReplica2 + " to be alive on: " + targetLeader.getNodeName());
     cmd = new CoreAdminRequest.WaitForState();
@@ -1518,8 +1515,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     ShardRequest sreq = new ShardRequest();
     params.set("qt", adminPath);
     sreq.purpose = 1;
-    String replica = zkStateReader.getZkClient().getBaseUrlForNodeName(nodeName);
-    if (replica.startsWith("http://")) replica = replica.substring(7);
+    String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
@@ -1653,9 +1649,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
           sreq.purpose = 1;
-          String replica = zkStateReader.getZkClient()
-            .getBaseUrlForNodeName(nodeName);
-          if (replica.startsWith("http://")) replica = replica.substring(7);
+          String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;
           sreq.params = params;
@@ -1753,8 +1747,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         // yes, they must use same admin handler path everywhere...
         cloneParams.set("qt", adminPath);
         sreq.purpose = 1;
-        // TODO: this sucks
-        if (replica.startsWith("http://")) replica = replica.substring(7);
         sreq.shards = new String[] {replica};
         sreq.actualShards = sreq.shards;
         sreq.params = cloneParams;

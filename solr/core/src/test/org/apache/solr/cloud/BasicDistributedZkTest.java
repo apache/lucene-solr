@@ -440,7 +440,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         // each replica should also give the same numDocs
         ArrayList<String> replicaAlts = new ArrayList<String>(replicaJetties.size() * 2);
         for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
-          String replica = removeProtocol(replicaJetty.url);
+          String replica = replicaJetty.url;
           query.set("shards", replica);
 
           // replicas already shuffled, use this in the alternative check below
@@ -484,7 +484,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           ArrayList<String> replicas = new ArrayList<String>(7);
           for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
             if (0 == random().nextInt(3) || 0 == replicas.size()) {
-              replicas.add(removeProtocol(replicaJetty.url));
+              replicas.add(replicaJetty.url);
             }
           }
           Collections.shuffle(replicas, random());
@@ -1200,12 +1200,5 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // insurance
     DirectUpdateHandler2.commitOnClose = true;
-  }
-
-  /**
-   * Given a URL as a string, removes the leading protocol from that string
-   */
-  private static String removeProtocol(String url) {
-    return url.replaceFirst("^[^:/]{1,20}:/+","");
   }
 }

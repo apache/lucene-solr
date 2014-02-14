@@ -40,7 +40,6 @@ public abstract class ShardHandlerFactory {
    * @return a new, initialized ShardHandlerFactory instance
    */
   public static ShardHandlerFactory newInstance(PluginInfo info, SolrResourceLoader loader) {
-
     if (info == null)
       info = DEFAULT_SHARDHANDLER_INFO;
 
