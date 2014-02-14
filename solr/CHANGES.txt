@@ -330,6 +330,9 @@ Bug Fixes
 
 * SOLR-5721: ConnectionManager can become stuck in likeExpired.
   (Gregory Chanan via Mark Miller)
+  
+* SOLR-5731: In ConnectionManager, we should catch and only log exceptions
+  from BeforeReconnect. (Mark Miller)
 
 Optimizations
 ----------------------
