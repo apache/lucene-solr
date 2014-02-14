@@ -265,6 +265,10 @@ Bug fixes
 
 * LUCENE-5443: Lucene45DocValuesProducer.ramBytesUsed() may throw
   ConcurrentModificationException. (Shai Erera, Simon Willnauer)
+
+* LUCENE-5444: MemoryIndex did't respect the analyzers offset gap and
+  offsets were corrupted if multiple fields with the same name were
+  added to the memory index. (Britta Weber, Simon Willnauer)
   
 API Changes
 
