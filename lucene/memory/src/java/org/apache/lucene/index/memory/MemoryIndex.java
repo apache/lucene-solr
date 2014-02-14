@@ -295,7 +295,7 @@ public class MemoryIndex {
       throw new RuntimeException(ex);
     }
 
-    addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName));
+    addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
   
   /**
@@ -340,7 +340,7 @@ public class MemoryIndex {
   
   /**
    * Equivalent to <code>addField(fieldName, stream, 1.0f)</code>.
-   * 
+   *
    * @param fieldName
    *            a name to be associated with the text
    * @param stream
@@ -370,6 +370,31 @@ public class MemoryIndex {
     addField(fieldName, stream, boost, 0);
   }
 
+
+  /**
+   * Iterates over the given token stream and adds the resulting terms to the index;
+   * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
+   * Lucene {@link org.apache.lucene.document.Field}.
+   * Finally closes the token stream. Note that untokenized keywords can be added with this method via
+   * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
+   *
+   * @param fieldName
+   *            a name to be associated with the text
+   * @param stream
+   *            the token stream to retrieve tokens from.
+   * @param boost
+   *            the boost factor for hits for this field
+   *
+   * @param positionIncrementGap
+   *            the position increment gap if fields with the same name are added more than once
+   *
+   *
+   * @see org.apache.lucene.document.Field#setBoost(float)
+   */
+  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap) {
+    addField(fieldName, stream, boost, positionIncrementGap, 1);
+  }
+
   /**
    * Iterates over the given token stream and adds the resulting terms to the index;
    * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
@@ -377,6 +402,7 @@ public class MemoryIndex {
    * Finally closes the token stream. Note that untokenized keywords can be added with this method via 
    * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
    * 
+   *
    * @param fieldName
    *            a name to be associated with the text
    * @param stream
@@ -385,10 +411,11 @@ public class MemoryIndex {
    *            the boost factor for hits for this field
    * @param positionIncrementGap
    *            the position increment gap if fields with the same name are added more than once
-   *
+   * @param offsetGap
+   *            the offset gap if fields with the same name are added more than once
    * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap) {
+  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap, int offsetGap) {
     try {
       if (fieldName == null)
         throw new IllegalArgumentException("fieldName must not be null");
@@ -403,10 +430,12 @@ public class MemoryIndex {
       final SliceByteStartArray sliceArray;
       Info info = null;
       long sumTotalTermFreq = 0;
+      int offset = 0;
       if ((info = fields.get(fieldName)) != null) {
         numTokens = info.numTokens;
         numOverlapTokens = info.numOverlapTokens;
         pos = info.lastPosition + positionIncrementGap;
+        offset = info.lastOffset + offsetGap;
         terms = info.terms;
         boost *= info.boost;
         sliceArray = info.sliceArray;
@@ -447,8 +476,8 @@ public class MemoryIndex {
           postingsWriter.writeInt(pos);
         } else {
           postingsWriter.writeInt(pos);
-          postingsWriter.writeInt(offsetAtt.startOffset());
-          postingsWriter.writeInt(offsetAtt.endOffset());
+          postingsWriter.writeInt(offsetAtt.startOffset() + offset);
+          postingsWriter.writeInt(offsetAtt.endOffset() + offset);
         }
         sliceArray.end[ord] = postingsWriter.getCurrentOffset();
       }
@@ -456,7 +485,7 @@ public class MemoryIndex {
 
       // ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
       if (numTokens > 0) {
-        fields.put(fieldName, new Info(terms, sliceArray, numTokens, numOverlapTokens, boost, pos, sumTotalTermFreq));
+        fields.put(fieldName, new Info(terms, sliceArray, numTokens, numOverlapTokens, boost, pos, offsetAtt.endOffset() + offset, sumTotalTermFreq));
         sortedFields = null;    // invalidate sorted view, if any
       }
     } catch (Exception e) { // can never happen
@@ -670,7 +699,10 @@ public class MemoryIndex {
     /** the last position encountered in this field for multi field support*/
     private int lastPosition;
 
-    public Info(BytesRefHash terms, SliceByteStartArray sliceArray, int numTokens, int numOverlapTokens, float boost, int lastPosition, long sumTotalTermFreq) {
+    /** the last offset encountered in this field for multi field support*/
+    private int lastOffset;
+
+    public Info(BytesRefHash terms, SliceByteStartArray sliceArray, int numTokens, int numOverlapTokens, float boost, int lastPosition, int lastOffset, long sumTotalTermFreq) {
       this.terms = terms;
       this.sliceArray = sliceArray; 
       this.numTokens = numTokens;
@@ -678,6 +710,7 @@ public class MemoryIndex {
       this.boost = boost;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.lastPosition = lastPosition;
+      this.lastOffset = lastOffset;
     }
 
     public long getSumTotalTermFreq() {
