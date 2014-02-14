@@ -198,7 +198,6 @@ public final class ZkController {
           @Override
           public void command() {
             try {
-              markAllAsNotLeader(registerOnReconnect);
               
               // this is troublesome - we dont want to kill anything the old
               // leader accepted
@@ -269,6 +268,7 @@ public final class ZkController {
             } catch (Exception e) {
               log.error("Error trying to stop any Overseer threads", e);
             }
+            markAllAsNotLeader(registerOnReconnect);
           }
         });
     
