@@ -133,44 +133,13 @@ Bug fixes
 * LUCENE-5285: Improved highlighting of multi-valued fields with
   FastVectorHighlighter. (Nik Everett via Adrien Grand)
 
-* LUCENE-5373: Memory usage of
-  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
-  (Shay Banon, Adrien Grand, Robert Muir)
-
-* LUCENE-5374: IndexWriter processes internal events after the it
-  closed itself internally. This rare condition can happen if an
-  IndexWriter has internal changes that were not fully applied yet
-  like when index / flush requests happen concurrently to the close or
-  rollback call. (Simon Willnauer)
-
-* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
-  (Nik Everett via Adrien Grand)
-
 * LUCENE-5391: UAX29URLEmailTokenizer should not tokenize no-scheme
   domain-only URLs that are followed by an alphanumeric character.
   (Chris Geeringh, Steve Rowe)
 
-* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
-  they were indexed with the term vectors. (Mike McCandless)
-
-* LUCENE-5344: Flexible StandardQueryParser behaves differently than 
-  ClassicQueryParser. (Adriano Crestani)
-  
-* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
-  when the parent query incorrectly returns child documents, and throw
-  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
-
-* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
-  preventing wrong term positions for fields that use
-  StringTokenStream. (Michael Busch)
-
 * LUCENE-5405: If an analysis component throws an exception, Lucene
   logs the field name to the info stream to assist in
   diagnosis. (Benson Margulies)
-
-* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
-  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
-  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
 
 * SOLR-5661: PriorityQueue now refuses to allocate itself if the
   incoming maxSize is too large (Raintung Li via Mike McCandless)
@@ -260,6 +229,41 @@ Documentation
 * LUCENE-5389: Add more guidance in the analyis documentation 
   package overview.
   (Benson Margulies via Robert Muir - pull request #14)
+
+======================= Lucene 4.6.1 =======================
+
+Bug fixes
+
+* LUCENE-5373: Memory usage of
+  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
+  (Shay Banon, Adrien Grand, Robert Muir)
+
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+
+* LUCENE-5374: IndexWriter processes internal events after the it
+  closed itself internally. This rare condition can happen if an
+  IndexWriter has internal changes that were not fully applied yet
+  like when index / flush requests happen concurrently to the close or
+  rollback call. (Simon Willnauer)
+
+* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
+  they were indexed with the term vectors. (Mike McCandless)
+
+* LUCENE-5344: Flexible StandardQueryParser behaves differently than
+  ClassicQueryParser. (Adriano Crestani)
+
+* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
+  when the parent query incorrectly returns child documents, and throw
+  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
+
+* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
+  preventing wrong term positions for fields that use
+  StringTokenStream. (Michael Busch)
+
+* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
+  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
+  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
 
 ======================= Lucene 4.6.0 =======================
 
