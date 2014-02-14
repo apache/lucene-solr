@@ -293,6 +293,9 @@ Bug Fixes
 * SOLR-5675: cloud-scripts/zkcli.bat: quote option log4j
   (Günther Ruck via steffkes
 
+* SOLR-5721: ConnectionManager can become stuck in likeExpired.
+  (Gregory Chanan via Mark Miller)
+
 Optimizations
 ----------------------
 
