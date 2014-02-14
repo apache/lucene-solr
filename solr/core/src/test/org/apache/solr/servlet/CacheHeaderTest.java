@@ -40,11 +40,6 @@ import com.google.common.base.Charsets;
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
     private static final File solrHomeDirectory = new File(TEMP_DIR, "CacheHeaderTest");
-
-  static {
-    // does not yet work with ssl
-    sslConfig = null;
-  }
     
   @BeforeClass
   public static void beforeTest() throws Exception {

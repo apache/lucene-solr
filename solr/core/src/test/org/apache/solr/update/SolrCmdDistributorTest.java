@@ -62,7 +62,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   static {
     // no ssl currently because distrib updates read scheme from zk and no zk in this test
-    sslConfig = null;
+    ALLOW_SSL = false;
   }
   
   @BeforeClass
