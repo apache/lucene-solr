@@ -48,7 +48,6 @@
     <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
     <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test->*"/>
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test->*"/>
-    <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="test->*"/>
 
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop->*"/>
     <!--
