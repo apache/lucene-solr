@@ -120,7 +120,11 @@ public class ConnectionManager implements Watcher {
       log.info("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
       
       if (beforeReconnect != null) {
-        beforeReconnect.command();
+        try {
+          beforeReconnect.command();
+        } catch (Exception e) {
+          log.warn("Exception running beforeReconnect command", e);
+        }
       }
       
       try {
