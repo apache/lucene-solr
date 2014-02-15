@@ -33,9 +33,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import org.junit.AfterClass;
+
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
   protected static RestTestHarness restTestHarness;
+
+  @AfterClass
+  public static void cleanUpHarness() {
+    restTestHarness = null;
+  }
 
   public static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
