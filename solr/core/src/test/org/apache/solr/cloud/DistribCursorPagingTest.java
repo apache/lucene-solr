@@ -532,15 +532,11 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     }
     commit();
 
-    log.info("SOLR-5652: Begining Loop over smallish num of docs");
-    final boolean SOLR_5652 = true;
-
     for (String f : allFieldNames) {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
         String rows = "" + _TestUtil.nextInt(random(),13,50);
-        SentinelIntSet ids = assertFullWalkNoDups(SOLR_5652,
-                                                  numInitialDocs,
+        SentinelIntSet ids = assertFullWalkNoDups(numInitialDocs,
                                                   params("q", "*:*",
                                                          "fl","id,"+f,
                                                          "rows",rows,
@@ -572,8 +568,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-
-    log.info("SOLR-5652: Ending Loop over smallish num of docs");
 
     // now add a lot more docs, and test a handful of randomized multi-level sorts
     for (int i = numInitialDocs+1; i <= totalDocs; i++) {
@@ -710,13 +704,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * </p>
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {
-    return assertFullWalkNoDups(false, maxSize, params);
-  }
-
-  /** :TODO: refactor method into two arg version once SOLR-5652 is resolved */
-  private SentinelIntSet assertFullWalkNoDups(final boolean verbose, 
-                                              final int maxSize, 
-                                              final SolrParams params) throws Exception {
     SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
@@ -734,16 +721,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       if (0 == docsOnThisPage) {
         assertEquals("no more docs, but "+CURSOR_MARK_NEXT+" isn't same",
                      cursorMark, nextCursorMark);
-      }
-
-      if (verbose) { // SOLR-5652
-        // SolrDocument is a bit more verbose then we need
-        StringBuilder s = new StringBuilder();
-        for (SolrDocument doc : docs) {
-          s.append(doc.getFieldValuesMap().toString());
-          s.append("; ");
-        }
-        log.info("SOLR-5652: ({}) gave us these docs: {}", p, s);
       }
 
       for (SolrDocument doc : docs) {
