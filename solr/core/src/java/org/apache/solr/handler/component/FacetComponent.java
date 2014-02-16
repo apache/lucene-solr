@@ -451,7 +451,7 @@ public class FacetComponent extends SearchComponent
           long maxCount = sfc.count;
           for (int shardNum=0; shardNum<rb.shards.length; shardNum++) {
             FixedBitSet fbs = dff.counted[shardNum];
-            if (fbs!=null && !fbs.get(sfc.termNum)) {  // fbs can be null if a shard request failed
+            if (fbs!=null && (sfc.termNum >= fbs.length() || !fbs.get(sfc.termNum))) {  // fbs can be null if a shard request failed
               // if missing from this shard, add the max it could be
               maxCount += dff.maxPossible(sfc,shardNum);
             }
@@ -466,7 +466,7 @@ public class FacetComponent extends SearchComponent
           // add a query for each shard missing the term that needs refinement
           for (int shardNum=0; shardNum<rb.shards.length; shardNum++) {
             FixedBitSet fbs = dff.counted[shardNum];
-            if(fbs!=null && !fbs.get(sfc.termNum) && dff.maxPossible(sfc,shardNum)>0) {
+            if(fbs!=null && (sfc.termNum >= fbs.length() || !fbs.get(sfc.termNum)) && dff.maxPossible(sfc,shardNum)>0) {
               dff.needRefinements = true;
               List<String> lst = dff._toRefine[shardNum];
               if (lst == null) {
