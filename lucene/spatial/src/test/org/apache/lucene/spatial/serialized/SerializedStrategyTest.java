@@ -18,15 +18,12 @@ package org.apache.lucene.spatial.serialized;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.SpatialTestQuery;
 import org.apache.lucene.spatial.StrategyTestCase;
-import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +37,11 @@ public class SerializedStrategyTest extends StrategyTestCase {
     super.setUp();
     this.ctx = SpatialContext.GEO;
     this.strategy = new SerializedDVStrategy(ctx, "serialized");
+  }
+
+  @Override
+  protected boolean needsDocValues() {
+    return (strategy instanceof SerializedDVStrategy);
   }
 
   //called by StrategyTestCase; we can't let it call our makeQuery which will UOE ex.

@@ -90,6 +90,11 @@ public class DistanceStrategyTest extends StrategyTestCase {
     this.strategy = strategy;
   }
 
+  @Override
+  protected boolean needsDocValues() {
+    return (strategy instanceof SerializedDVStrategy);
+  }
+
   @Test
   public void testDistanceOrder() throws IOException {
     adoc("100", ctx.makePoint(2, 1));
