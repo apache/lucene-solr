@@ -17,21 +17,30 @@ package org.apache.solr.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.*;
-import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
-import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.grouping.distributed.shardresultserializer.ShardResultTransformer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.BitDocSet;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetCollector;
+import org.apache.solr.search.DocSetDelegateCollector;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
+import org.apache.solr.search.grouping.distributed.shardresultserializer.ShardResultTransformer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible for executing a search with a number of {@link Command} instances.
@@ -159,9 +168,7 @@ public class CommandHandler {
       searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
     }
 
-    int maxDoc = searcher.maxDoc();
-    long[] bits = termAllGroupHeadsCollector.retrieveGroupHeads(maxDoc).getBits();
-    return new BitDocSet(new OpenBitSet(bits, bits.length));
+    return new BitDocSet(termAllGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
   }
 
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {

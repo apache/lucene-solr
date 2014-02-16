@@ -23,6 +23,8 @@ import java.util.Arrays;
  * BitSet of fixed length (numBits), backed by accessible ({@link #getBits})
  * long[], accessed with a long index. Use it only if you intend to store more
  * than 2.1B bits, otherwise you should use {@link FixedBitSet}.
+ * 
+ * @lucene.internal
  */
 public final class LongBitSet {
 
@@ -188,6 +190,7 @@ public final class LongBitSet {
 
   /** this = this OR other */
   public void or(LongBitSet other) {
+    assert other.numWords <= numWords : "numWords=" + numWords + ", other.numWords=" + other.numWords;
     int pos = Math.min(numWords, other.numWords);
     while (--pos >= 0) {
       bits[pos] |= other.bits[pos];
@@ -196,6 +199,7 @@ public final class LongBitSet {
 
   /** this = this XOR other */
   public void xor(LongBitSet other) {
+    assert other.numWords <= numWords : "numWords=" + numWords + ", other.numWords=" + other.numWords;
     int pos = Math.min(numWords, other.numWords);
     while (--pos >= 0) {
       bits[pos] ^= other.bits[pos];
