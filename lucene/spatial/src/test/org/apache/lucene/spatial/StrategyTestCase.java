@@ -28,6 +28,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -139,7 +140,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
   public void runTestQuery(SpatialMatchConcern concern, SpatialTestQuery q) {
     String msg = q.toString(); //"Query: " + q.args.toString(ctx);
-    SearchResults got = executeQuery(strategy.makeQuery(q.args), Math.max(100, q.ids.size()+1));
+    SearchResults got = executeQuery(makeQuery(q), Math.max(100, q.ids.size()+1));
     if (storeShape && got.numFound > 0) {
       //check stored value is there
       assertNotNull(got.results.get(0).document.get(strategy.getFieldName()));
@@ -181,6 +182,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         assertEquals(msg, q.ids.toString(), found.toString());
       }
     }
+  }
+
+  protected Query makeQuery(SpatialTestQuery q) {
+    return strategy.makeQuery(q.args);
   }
 
   protected void adoc(String id, String shapeStr) throws IOException, ParseException {
