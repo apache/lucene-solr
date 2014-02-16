@@ -395,7 +395,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // setup the server...
       HttpSolrServer s = new HttpSolrServer(buildUrl(port));
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(60000);
+      s.setSoTimeout(90000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
