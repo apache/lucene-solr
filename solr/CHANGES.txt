@@ -305,6 +305,9 @@ Bug Fixes
 * SOLR-5718: Make LBHttpSolrServer zombie checks non-distrib and non-scoring.
   (Christine Poerschke via Mark Miller)
 
+* SOLR-5727: LBHttpSolrServer should only retry on Connection exceptions when 
+  sending updates. Affects CloudSolrServer. (Mark Miller)
+
 Optimizations
 ----------------------
 
