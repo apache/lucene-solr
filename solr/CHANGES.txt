@@ -362,6 +362,10 @@ Optimizations
 * SOLR-5624: Enable QueryResultCache for CollapsingQParserPlugin.
   (David Boychuck, Joel Bernstein)
 
+* LUCENE-5440: DocSet decoupled from OpenBitSet. DocSetBase moved to use 
+  FixedBitSet instead of OpenBitSet. As a result BitDocSet now only works 
+  with FixedBitSet. (Shai Erera)
+
 Other Changes
 ---------------------
 

@@ -66,11 +66,11 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -78,16 +78,16 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -105,7 +105,6 @@ import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1088,7 +1087,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     final int[] docs = deState.scratch;
     int upto = 0;
     int bitsSet = 0;
-    OpenBitSet obs = null;
+    FixedBitSet fbs = null;
 
     DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, DocsEnum.FLAG_NONE);
     if (deState.docsEnum == null) {
@@ -1105,9 +1104,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         int docid;
         
         if (largestPossible > docs.length) {
-          if (obs == null) obs = new OpenBitSet(maxDoc());
+          if (fbs == null) fbs = new FixedBitSet(maxDoc());
           while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            obs.fastSet(docid + base);
+            fbs.set(docid + base);
             bitsSet++;
           }
         } else {
@@ -1119,9 +1118,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     } else {
       int docid;
       if (largestPossible > docs.length) {
-        if (obs == null) obs = new OpenBitSet(maxDoc());
+        if (fbs == null) fbs = new FixedBitSet(maxDoc());
         while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          obs.fastSet(docid);
+          fbs.set(docid);
           bitsSet++;
         }
       } else {
@@ -1132,12 +1131,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
 
     DocSet result;
-    if (obs != null) {
+    if (fbs != null) {
       for (int i=0; i<upto; i++) {
-        obs.fastSet(docs[i]);  
+        fbs.set(docs[i]);  
       }
       bitsSet += upto;
-      result = new BitDocSet(obs, bitsSet);
+      result = new BitDocSet(fbs, bitsSet);
     } else {
       result = upto==0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }

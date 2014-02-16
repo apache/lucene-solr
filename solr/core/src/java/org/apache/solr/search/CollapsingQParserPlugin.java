@@ -17,44 +17,48 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.handler.component.QueryElevationComponent;
-import org.apache.lucene.index.AtomicReaderContext;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.*;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.QueryElevationComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieFloatField;
+import org.apache.solr.schema.TrieIntField;
+import org.apache.solr.schema.TrieLongField;
 
 import com.carrotsearch.hppc.FloatArrayList;
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntCursor;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Iterator;
 
 /**
 
@@ -419,7 +423,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private class CollapsingScoreCollector extends DelegatingCollector {
 
     private AtomicReaderContext[] contexts;
-    private OpenBitSet collapsedSet;
+    private FixedBitSet collapsedSet;
     private SortedDocValues values;
     private int[] ords;
     private float[] scores;
@@ -438,14 +442,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                     IntOpenHashSet boostDocs) {
       this.maxDoc = maxDoc;
       this.contexts = new AtomicReaderContext[segments];
-      this.collapsedSet = new OpenBitSet(maxDoc);
+      this.collapsedSet = new FixedBitSet(maxDoc);
       this.boostDocs = boostDocs;
       if(this.boostDocs != null) {
         //Set the elevated docs now.
         Iterator<IntCursor> it = this.boostDocs.iterator();
         while(it.hasNext()) {
           IntCursor cursor = it.next();
-          this.collapsedSet.fastSet(cursor.value);
+          this.collapsedSet.set(cursor.value);
         }
       }
       this.values = values;
@@ -460,16 +464,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       //Documents must be sent in order to this collector.
       return false;
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
     }
 
+    @Override
     public void collect(int docId) throws IOException {
       int globalDoc = docId+this.docBase;
       int ord = values.getOrd(globalDoc);
@@ -479,7 +486,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ords[ord] = globalDoc;
           scores[ord] = score;
         }
-      } else if (this.collapsedSet.fastGet(globalDoc)) {
+      } else if (this.collapsedSet.get(globalDoc)) {
         //The doc is elevated so score does not matter
         //We just want to be sure it doesn't fall into the null policy
       } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -489,24 +496,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           nullDoc = globalDoc;
         }
       } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
-        collapsedSet.fastSet(globalDoc);
+        collapsedSet.set(globalDoc);
         nullScores.add(scorer.score());
       }
     }
 
+    @Override
     public void finish() throws IOException {
       if(contexts.length == 0) {
         return;
       }
 
       if(nullScore > 0) {
-        this.collapsedSet.fastSet(nullDoc);
+        this.collapsedSet.set(nullDoc);
       }
 
       for(int i=0; i<ords.length; i++) {
         int doc = ords[i];
         if(doc > -1) {
-          collapsedSet.fastSet(doc);
+          collapsedSet.set(doc);
         }
       }
 
@@ -677,7 +685,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected FloatArrayList nullScores;
     protected float nullScore;
     protected float[] scores;
-    protected OpenBitSet collapsedSet;
+    protected FixedBitSet collapsedSet;
     protected IntOpenHashSet boostDocs;
     protected int nullDoc = -1;
     protected boolean needsScores;
@@ -697,26 +705,26 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.nullPolicy = nullPolicy;
       this.max = max;
       this.needsScores = needsScores;
-      this.collapsedSet = new OpenBitSet(maxDoc);
+      this.collapsedSet = new FixedBitSet(maxDoc);
       this.boostDocs = boostDocs;
       if(this.boostDocs != null) {
         Iterator<IntCursor> it = boostDocs.iterator();
         while(it.hasNext()) {
           IntCursor cursor = it.next();
-          this.collapsedSet.fastSet(cursor.value);
+          this.collapsedSet.set(cursor.value);
         }
       }
     }
 
-    public OpenBitSet getCollapsedSet() {
+    public FixedBitSet getCollapsedSet() {
       if(nullDoc > -1) {
-        this.collapsedSet.fastSet(nullDoc);
+        this.collapsedSet.set(nullDoc);
       }
 
       for(int i=0; i<ords.length; i++) {
         int doc = ords[i];
         if(doc > -1) {
-          collapsedSet.fastSet(doc);
+          collapsedSet.set(doc);
         }
       }
 
@@ -790,7 +798,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores[ord] = scorer.score();
           }
         }
-      } else if(this.collapsedSet.fastGet(globalDoc)) {
+      } else if(this.collapsedSet.get(globalDoc)) {
         // Elevated doc so do nothing.
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         if(comp.test(val, nullVal)) {
@@ -801,7 +809,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
-        this.collapsedSet.fastSet(globalDoc);
+        this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
         }
@@ -858,7 +866,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores[ord] = scorer.score();
           }
         }
-      } else if (this.collapsedSet.fastGet(globalDoc)) {
+      } else if (this.collapsedSet.get(globalDoc)) {
         //Elevated doc so do nothing
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         if(comp.test(val, nullVal)) {
@@ -869,7 +877,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
-        this.collapsedSet.fastSet(globalDoc);
+        this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
         }
@@ -927,7 +935,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores[ord] = scorer.score();
           }
         }
-      } else if (this.collapsedSet.fastGet(globalDoc)) {
+      } else if (this.collapsedSet.get(globalDoc)) {
         //Elevated doc so do nothing
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         if(comp.test(val, nullVal)) {
@@ -938,7 +946,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
-        this.collapsedSet.fastSet(globalDoc);
+        this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
         }
@@ -1015,7 +1023,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores[ord] = score;
           }
         }
-      } else if (this.collapsedSet.fastGet(globalDoc)) {
+      } else if (this.collapsedSet.get(globalDoc)) {
         //Elevated doc so do nothing
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         if(comp.test(val, nullVal)) {
@@ -1026,7 +1034,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
-        this.collapsedSet.fastSet(globalDoc);
+        this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(score);
         }
