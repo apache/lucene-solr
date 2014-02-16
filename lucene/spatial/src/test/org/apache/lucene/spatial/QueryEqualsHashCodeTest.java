@@ -19,12 +19,15 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+//import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -39,37 +42,52 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
   @Test
   public void testEqualsHashCode() {
 
-    final SpatialPrefixTree grid = new QuadPrefixTree(ctx,10);
-    final SpatialArgs args1 = makeArgs1();
-    final SpatialArgs args2 = makeArgs2();
+    final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
+    final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
 
-    Collection<ObjGenerator> generators = new ArrayList<ObjGenerator>();
-    generators.add(new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
-        return new RecursivePrefixTreeStrategy(grid, "recursive_quad").makeQuery(args);
-      }
-    });
-    generators.add(new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
-        return new TermQueryPrefixTreeStrategy(grid, "termquery_quad").makeQuery(args);
-      }
-    });
-    generators.add(new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
-        return new PointVectorStrategy(ctx, "pointvector").makeQuery(args);
-      }
-    });
-
-    for (ObjGenerator generator : generators) {
-      testStratQueryEqualsHashcode(args1, args2, generator);
+    Collection<SpatialStrategy> strategies = new ArrayList<SpatialStrategy>();
+    strategies.add(new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash"));
+    strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
+    strategies.add(new PointVectorStrategy(ctx, "pointvector"));
+    //strategies.add(new BBoxStrategy(ctx, "bbox"));
+    strategies.add(new SerializedDVStrategy(ctx, "serialized"));
+    for (SpatialStrategy strategy : strategies) {
+      testEqualsHashcode(strategy);
     }
   }
 
-  private void testStratQueryEqualsHashcode(SpatialArgs args1, SpatialArgs args2, ObjGenerator generator) {
-    Object first = generator.gen(args1);
+  private void testEqualsHashcode(final SpatialStrategy strategy) {
+    final SpatialArgs args1 = makeArgs1();
+    final SpatialArgs args2 = makeArgs2();
+    testEqualsHashcode(args1, args2, new ObjGenerator() {
+      @Override
+      public Object gen(SpatialArgs args) {
+        return strategy.makeQuery(args);
+      }
+    });
+    testEqualsHashcode(args1, args2, new ObjGenerator() {
+      @Override
+      public Object gen(SpatialArgs args) {
+        return strategy.makeFilter(args);
+      }
+    });
+    testEqualsHashcode(args1, args2, new ObjGenerator() {
+      @Override
+      public Object gen(SpatialArgs args) {
+        return strategy.makeDistanceValueSource(args.getShape().getCenter());
+      }
+    });
+  }
+
+  private void testEqualsHashcode(SpatialArgs args1, SpatialArgs args2, ObjGenerator generator) {
+    Object first;
+    try {
+      first = generator.gen(args1);
+    } catch (UnsupportedOperationException e) {
+      return;
+    }
+    if (first == null)
+      return;//unsupported op?
     Object second = generator.gen(args1);//should be the same
     assertEquals(first, second);
     assertEquals(first.hashCode(), second.hashCode());

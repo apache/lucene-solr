@@ -20,20 +20,26 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Assert;
 
 import java.io.FileNotFoundException;
@@ -46,11 +52,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Logger;
 
 public abstract class StrategyTestCase extends SpatialTestCase {
 
+  public static final String DATA_SIMPLE_BBOX = "simple-bbox.txt";
   public static final String DATA_STATES_POLY = "states-poly.txt";
   public static final String DATA_STATES_BBOX = "states-bbox.txt";
   public static final String DATA_COUNTRIES_POLY = "countries-poly.txt";
@@ -60,6 +68,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   public static final String QTEST_States_IsWithin_BBox   = "states-IsWithin-BBox.txt";
   public static final String QTEST_States_Intersects_BBox = "states-Intersects-BBox.txt";
   public static final String QTEST_Cities_Intersects_BBox = "cities-Intersects-BBox.txt";
+  public static final String QTEST_Simple_Queries_BBox = "simple-Queries-BBox.txt";
 
   private Logger log = Logger.getLogger(getClass().getName());
 
@@ -138,7 +147,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
   public void runTestQuery(SpatialMatchConcern concern, SpatialTestQuery q) {
     String msg = q.toString(); //"Query: " + q.args.toString(ctx);
-    SearchResults got = executeQuery(strategy.makeQuery(q.args), Math.max(100, q.ids.size()+1));
+    SearchResults got = executeQuery(makeQuery(q), Math.max(100, q.ids.size()+1));
     if (storeShape && got.numFound > 0) {
       //check stored value is there
       assertNotNull(got.results.get(0).document.get(strategy.getFieldName()));
@@ -180,6 +189,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         assertEquals(msg, q.ids.toString(), found.toString());
       }
     }
+  }
+
+  protected Query makeQuery(SpatialTestQuery q) {
+    return strategy.makeQuery(q.args);
   }
 
   protected void adoc(String id, String shapeStr) throws IOException, ParseException {

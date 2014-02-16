@@ -93,7 +93,11 @@ New Features
 
 * LUCENE-5437: ASCIIFoldingFilter now has an option to preserve the original token
   and emit it on the same position as the folded token only if the actual token was
-  folded. (Simon Willnauer, Nik Everett) 
+  folded. (Simon Willnauer, Nik Everett)
+
+* LUCENE-5408: Add spatial SerializedDVStrategy that serializes a binary
+  representations of a shape into BinaryDocValues. It supports exact geometry
+  relationship calculations. (David Smiley)
 
 Build
 
