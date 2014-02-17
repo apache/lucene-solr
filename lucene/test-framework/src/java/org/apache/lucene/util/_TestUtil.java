@@ -1044,6 +1044,77 @@ public class _TestUtil {
     }
     return out.toString();
   }
+
+  public static String randomAnalysisString(Random random, int maxLength, boolean simple) {
+    assert maxLength >= 0;
+
+    // sometimes just a purely random string
+    if (random.nextInt(31) == 0) {
+      return randomSubString(random, random.nextInt(maxLength), simple);
+    }
+
+    // otherwise, try to make it more realistic with 'words' since most tests use MockTokenizer
+    // first decide how big the string will really be: 0..n
+    maxLength = random.nextInt(maxLength);
+    int avgWordLength = _TestUtil.nextInt(random, 3, 8);
+    StringBuilder sb = new StringBuilder();
+    while (sb.length() < maxLength) {
+      if (sb.length() > 0) {
+        sb.append(' ');
+      }
+      int wordLength = -1;
+      while (wordLength < 0) {
+        wordLength = (int) (random.nextGaussian() * 3 + avgWordLength);
+      }
+      wordLength = Math.min(wordLength, maxLength - sb.length());
+      sb.append(randomSubString(random, wordLength, simple));
+    }
+    return sb.toString();
+  }
+
+  public static String randomSubString(Random random, int wordLength, boolean simple) {
+    if (wordLength == 0) {
+      return "";
+    }
+
+    int evilness = _TestUtil.nextInt(random, 0, 20);
+
+    StringBuilder sb = new StringBuilder();
+    while (sb.length() < wordLength) {;
+      if (simple) {
+        sb.append(random.nextBoolean() ? _TestUtil.randomSimpleString(random, wordLength) : _TestUtil.randomHtmlishString(random, wordLength));
+      } else {
+        if (evilness < 10) {
+          sb.append(_TestUtil.randomSimpleString(random, wordLength));
+        } else if (evilness < 15) {
+          assert sb.length() == 0; // we should always get wordLength back!
+          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
+        } else if (evilness == 16) {
+          sb.append(_TestUtil.randomHtmlishString(random, wordLength));
+        } else if (evilness == 17) {
+          // gives a lot of punctuation
+          sb.append(_TestUtil.randomRegexpishString(random, wordLength));
+        } else {
+          sb.append(_TestUtil.randomUnicodeString(random, wordLength));
+        }
+      }
+    }
+    if (sb.length() > wordLength) {
+      sb.setLength(wordLength);
+      if (Character.isHighSurrogate(sb.charAt(wordLength-1))) {
+        sb.setLength(wordLength-1);
+      }
+    }
+
+    if (random.nextInt(17) == 0) {
+      // mix up case
+      String mixedUp = _TestUtil.randomlyRecaseCodePoints(random, sb.toString());
+      assert mixedUp.length() == sb.length();
+      return mixedUp;
+    } else {
+      return sb.toString();
+    }
+  }
   
   /** List of characters that match {@link Character#isWhitespace} */
   public static final char[] WHITESPACE_CHARACTERS = new char[] {
