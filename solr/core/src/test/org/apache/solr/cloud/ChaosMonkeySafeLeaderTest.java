@@ -137,7 +137,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     for (StopableIndexingThread indexThread : threads) {
-      assertEquals(0, indexThread.getFails());
+      assertEquals(0, indexThread.getFailCount());
     }
     
     // try and wait for any replications and what not to finish...
