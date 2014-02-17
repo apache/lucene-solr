@@ -340,6 +340,9 @@ Bug Fixes
 * SOLR-5727: LBHttpSolrServer should only retry on Connection exceptions when 
   sending updates. Affects CloudSolrServer. (Mark Miller)
 
+* SOLR-5739: Sub-shards created by shard splitting have their update log set
+  to buffering mode on restarts. (Günther Ruck, shalin)
+
 Optimizations
 ----------------------
 

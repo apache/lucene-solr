@@ -64,6 +64,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -866,13 +867,13 @@ public final class SolrCore implements SolrInfoMBean {
             "SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
       }
 
-      if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
+      // ZK pre-Register would have already happened so we read slice properties now
+      ClusterState clusterState = cc.getZkController().getClusterState();
+      Slice slice = clusterState.getSlice(cd.getCloudDescriptor().getCollectionName(),
+          cd.getCloudDescriptor().getShardId());
+      if (Slice.CONSTRUCTION.equals(slice.getState())) {
         // set update log to buffer before publishing the core
         getUpdateHandler().getUpdateLog().bufferUpdates();
-
-        cd.getCloudDescriptor().setShardState(null);
-        cd.getCloudDescriptor().setShardRange(null);
-        cd.getCloudDescriptor().setShardParent(null);
       }
     }
     // For debugging   

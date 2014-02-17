@@ -379,8 +379,12 @@ public class Overseer {
         Map<String, Object> sliceProps = new HashMap<String, Object>();
         String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
         String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
+        String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
         sliceProps.put(Slice.RANGE, shardRange);
         sliceProps.put(Slice.STATE, shardState);
+        if (shardParent != null)  {
+          sliceProps.put(Slice.PARENT, shardParent);
+        }
         slice = new Slice(shardId, replicas, sliceProps);
         clusterState = updateSlice(clusterState, collection, slice);
       } else  {
