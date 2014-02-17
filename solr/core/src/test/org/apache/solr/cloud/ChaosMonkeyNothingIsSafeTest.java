@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -140,7 +142,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         searchThread.start();
       }
       
-      // TODO: only do this sometimes so that we can sometimes compare against control
+      // TODO: we only do this sometimes so that we can sometimes compare against control,
+      // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
         FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
@@ -204,7 +207,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // we expect full throttle fails, but cloud client should not easily fail
       for (StopableThread indexThread : threads) {
         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFails() > 10);
+          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > 10);
         }
       }
       
@@ -261,6 +264,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     int clientIndex = 0;
     private ConcurrentUpdateSolrServer suss;
     private List<SolrServer> clients;  
+    private AtomicInteger fails = new AtomicInteger();
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
         String id, boolean doDeletes) {
@@ -358,8 +362,18 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     }
 
     @Override
-    public int getFails() {
+    public int getFailCount() {
       return fails.get();
+    }
+    
+    @Override
+    public Set<String> getAddFails() {
+      throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public Set<String> getDeleteFails() {
+      throw new UnsupportedOperationException();
     }
     
   };
