@@ -949,6 +949,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + subSlice + " of collection " + collectionName + " on "
             + nodeName);
 
+        Map<String, Object> propMap = new HashMap<String, Object>();
+        propMap.put(Overseer.QUEUE_OPERATION, "createshard");
+        propMap.put(ZkStateReader.SHARD_ID_PROP, subSlice);
+        propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+        propMap.put(ZkStateReader.SHARD_RANGE_PROP, subRange.toString());
+        propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.CONSTRUCTION);
+        propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        inQueue.offer(ZkStateReader.toJSON(m));
+
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
 
