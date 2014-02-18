@@ -157,6 +157,13 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       this.info = info;
     }
 
+    /**
+     * Expert: Returns the {@link SegmentCommitInfo} of this {@link OneMerge}.
+     */
+    public SegmentCommitInfo getInfo() {
+      return info;
+    }
+
     /** Expert: If {@link #getMergeReaders()} reorders document IDs, this method
      *  must be overridden to return a mapping from the <i>natural</i> doc ID
      *  (the doc ID that would result from a natural merge) to the actual doc

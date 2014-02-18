@@ -563,6 +563,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             // do here: it was done previously (after we
             // invoked BDS.applyDeletes), whereas here all we
             // did was move the state to disk:
+            // nocommit can we do this once after the loop
+            // in finally clause ...
             checkpointNoSIS();
           }
         }
@@ -683,6 +685,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
+    this(d, null, conf);
+  }
+
+  // nocommit javadocs
+  public IndexWriter(Directory d, SegmentInfos infosIn, IndexWriterConfig conf) throws IOException {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = new LiveIndexWriterConfig(conf);
     directory = d;
@@ -698,8 +705,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     writeLock = directory.makeLock(WRITE_LOCK_NAME);
 
-    if (!writeLock.obtain(config.getWriteLockTimeout())) // obtain write lock
+    if (!writeLock.obtain(config.getWriteLockTimeout())) { // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
+    }
 
     boolean success = false;
     try {
@@ -716,7 +724,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-      segmentInfos = new SegmentInfos();
+      if (infosIn != null) {
+        segmentInfos = infosIn;
+        // Must increment changeCount so on commit/close we
+        // write the segments:
+        changed();
+      } else {
+        segmentInfos = new SegmentInfos();
+      }
 
       boolean initialIndexExists = true;
 
@@ -725,19 +740,25 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
-        try {
-          segmentInfos.read(directory);
-          segmentInfos.clear();
-        } catch (IOException e) {
-          // Likely this means it's a fresh directory
-          initialIndexExists = false;
+        if (infosIn == null) {
+          try {
+            segmentInfos.read(directory);
+          } catch (IOException e) {
+            // Likely this means it's a fresh directory
+            initialIndexExists = false;
+          }
         }
+        segmentInfos.clear();
 
         // Record that we have a change (zero out all
         // segments) pending:
         changed();
       } else {
-        segmentInfos.read(directory);
+        if (infosIn == null) {
+          segmentInfos.read(directory);
+        } else {
+          initialIndexExists = false;
+        }
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
@@ -746,8 +767,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           // preserve write-once.  This is important if
           // readers are open against the future commit
           // points.
-          if (commit.getDirectory() != directory)
+          if (commit.getDirectory() != directory) {
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
+          }
           SegmentInfos oldInfos = new SegmentInfos();
           oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
@@ -765,6 +787,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       config.getFlushPolicy().init(config);
       docWriter = new DocumentsWriter(this, config, directory);
       eventQueue = docWriter.eventQueue();
+      if (infosIn != null) {
+        System.out.println("IW init infosIn=" + infosIn.toString(directory) + " segmentInfos=" + segmentInfos.toString(directory));
+      }
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
@@ -4654,11 +4679,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     
   }
   
-  synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
+  // nocommit jdocs
+  public synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
     deleter.incRef(segmentInfos, false);
   }
-  
-  synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
+
+  // nocommit jdocs
+  public synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
     deleter.decRef(segmentInfos);
   }
   
@@ -4700,4 +4727,85 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     void process(IndexWriter writer, boolean triggerMerge, boolean clearBuffers) throws IOException;
   }
 
+  // nocommit jdocs
+  // nocommit rename to nrtFlush?
+  public SegmentInfos flushAndIncRef() throws IOException {
+    ensureOpen();
+
+    final long tStart = System.currentTimeMillis();
+
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "flush at flushAndIncRef");
+    }
+    // Do this up front before flushing so that the readers
+    // obtained during this flush are pooled, the first time
+    // this method is called:
+    poolReaders = true;
+    doBeforeFlush();
+    boolean anySegmentFlushed = false;
+    /*
+     * for releasing a NRT reader we must ensure that 
+     * DW doesn't add any segments or deletes until we are
+     * done with creating the NRT DirectoryReader. 
+     * We release the two stage full flush after we are done opening the
+     * directory reader!
+     */
+    boolean success2 = false;
+
+    SegmentInfos result = null;
+    try {
+      synchronized (fullFlushLock) {
+        boolean success = false;
+        try {
+          anySegmentFlushed = docWriter.flushAllThreads(this);
+          if (!anySegmentFlushed) {
+            // prevent double increment since docWriter#doFlush increments the flushcount
+            // if we flushed anything.
+            flushCount.incrementAndGet();
+          }
+          // Prevent segmentInfos from changing while opening the
+          // reader; in theory we could instead do similar retry logic,
+          // just like we do when loading segments_N
+          synchronized(this) {
+            maybeApplyDeletes(true);
+            // Must move the deletes to disk:
+            System.out.println("IW: now readerPool.commit");
+            readerPool.commit(segmentInfos);
+            result = segmentInfos.clone();
+            deleter.incRef(result, false);
+          }
+          success = true;
+        } catch (OutOfMemoryError oom) {
+          handleOOM(oom, "flushAndIncRef");
+          // never reached but javac disagrees:
+          return null;
+        } finally {
+          if (!success) {
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception during flushAndIncRef");
+            }
+          }
+          // Done: finish the full flush!
+          docWriter.finishFullFlush(success);
+          processEvents(false, true);
+          doAfterFlush();
+        }
+      }
+      if (anySegmentFlushed) {
+        maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+      }
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "flushAndIncRef took " + (System.currentTimeMillis() - tStart) + " msec");
+      }
+      success2 = true;
+    } finally {
+      if (!success2) {
+        synchronized(this) {
+          deleter.decRef(result);
+        }
+      }
+    }
+
+    return result;
+  }
 }

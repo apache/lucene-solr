@@ -106,7 +106,7 @@ final class IndexFileDeleter implements Closeable {
 
   /** Change to true to see details of reference counts when
    *  infoStream is enabled */
-  public static boolean VERBOSE_REF_COUNTS = false;
+  public static boolean VERBOSE_REF_COUNTS = true;
 
   // Used only for assert
   private final IndexWriter writer;
@@ -235,6 +235,14 @@ final class IndexFileDeleter implements Closeable {
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
 
+    // Finally, give policy a chance to remove things on
+    // startup:
+    policy.onInit(commits);
+
+    // Always protect the incoming segmentInfos since
+    // sometime it may not be the most recent commit
+    checkpoint(segmentInfos, false);
+
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
     // IndexWriter.
@@ -248,14 +256,6 @@ final class IndexFileDeleter implements Closeable {
         deleteFile(fileName);
       }
     }
-
-    // Finally, give policy a chance to remove things on
-    // startup:
-    policy.onInit(commits);
-
-    // Always protect the incoming segmentInfos since
-    // sometime it may not be the most recent commit
-    checkpoint(segmentInfos, false);
 
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 

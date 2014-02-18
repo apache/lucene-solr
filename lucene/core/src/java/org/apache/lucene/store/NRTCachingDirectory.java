@@ -42,7 +42,14 @@ import org.apache.lucene.util.IOUtils;
  * the segments produced by merging them, as long as they
  * are small enough), in RAM.</p>
  *
- * <p>This is safe to use: when your app calls {IndexWriter#commit},
+ * <p>You should only use this class if you open NRT readers
+ * frequently enough that the flushed files will remain
+ * small relative to maxCachedMB.  This is because some
+ * files (e.g., for stored fields and term vectors) cannot
+ * estimate their size in advance and will grow unbounded,
+ * using unbounded RAM, until an NRT reader is opened.
+ *
+ * <p>When your app calls {IndexWriter#commit},
  * all cached files will be flushed from the cached and sync'd.</p>
  *
  * <p>Here's a simple example usage:
@@ -71,10 +78,10 @@ public class NRTCachingDirectory extends Directory {
   private final long maxMergeSizeBytes;
   private final long maxCachedBytes;
 
-  private static final boolean VERBOSE = false;
+  // nocommit
+  public boolean VERBOSE = false;
 
-  /**
-   *  We will cache a newly created output if 1) it's a
+  /** We will cache a newly created output if 1) it's a
    *  flush or a merge and the estimated size of the merged segment is <=
    *  maxMergeSizeMB, and 2) the total cached bytes is <=
    *  maxCachedMB */
@@ -277,7 +284,16 @@ public class NRTCachingDirectory extends Directory {
       bytes = context.flushInfo.estimatedSegmentSize;
     }
 
-    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.sizeInBytes()) <= maxCachedBytes;
+    boolean result = !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.sizeInBytes()) <= maxCachedBytes;
+
+    if (VERBOSE) {
+      System.out.println(Thread.currentThread().getName() + ": NRTCachingDir.doCacheWrite isMerge=" + (context.mergeInfo != null) + " isFlush=" + (context.flushInfo != null) + " bytes=" + bytes + " cache.sizeInBytes()=" + cache.sizeInBytes() + " vs max=" + maxCachedBytes + "; ret=" + result);
+      if (bytes == 0) {
+        new Throwable().printStackTrace(System.out);
+      }
+    }
+
+    return result;
   }
 
   private final Object uncacheLock = new Object();

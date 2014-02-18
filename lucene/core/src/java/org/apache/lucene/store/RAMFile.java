@@ -72,7 +72,12 @@ public class RAMFile {
    * @return allocated buffer.
    */
   protected byte[] newBuffer(int size) {
-    return new byte[size];
+    try {
+      return new byte[size];
+    } catch (OutOfMemoryError oome) {
+      System.out.println("OOME: my sizeInBytes=" + getSizeInBytes());
+      throw oome;
+    }
   }
 
   public synchronized long getSizeInBytes() {

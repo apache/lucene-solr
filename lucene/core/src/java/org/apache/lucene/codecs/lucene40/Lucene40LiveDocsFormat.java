@@ -87,10 +87,11 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
+    assert filename != null;
     final BitVector liveDocs = new BitVector(dir, filename, context);
+    assert liveDocs.length() == info.info.getDocCount(): "info=" + info + " liveDocs.length()=" + liveDocs.length() + " docCount=" + info.info.getDocCount();
     assert liveDocs.count() == info.info.getDocCount() - info.getDelCount():
-      "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount();
-    assert liveDocs.length() == info.info.getDocCount();
+      "info=" + info + " liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " + info.getDelCount()=" + info.getDelCount();
     return liveDocs;
   }
 

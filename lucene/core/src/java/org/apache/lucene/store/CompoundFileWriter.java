@@ -90,11 +90,11 @@ final class CompoundFileWriter implements Closeable{
     
   }
   
-  private synchronized IndexOutput getOutput() throws IOException {
+  private synchronized IndexOutput getOutput(IOContext context) throws IOException {
     if (dataOut == null) {
       boolean success = false;
       try {
-        dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
+        dataOut = directory.createOutput(dataFileName, context);
         CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
         success = true;
       } finally {
@@ -138,7 +138,7 @@ final class CompoundFileWriter implements Closeable{
       }
       closed = true;
       // open the compound stream
-      getOutput();
+      getOutput(IOContext.DEFAULT);
       assert dataOut != null;
     } catch (IOException e) {
       priorException = e;
@@ -222,7 +222,7 @@ final class CompoundFileWriter implements Closeable{
       final DirectCFSIndexOutput out;
 
       if ((outputLocked = outputTaken.compareAndSet(false, true))) {
-        out = new DirectCFSIndexOutput(getOutput(), entry, false);
+        out = new DirectCFSIndexOutput(getOutput(context), entry, false);
       } else {
         entry.dir = this.directory;
         if (directory.fileExists(name)) {
@@ -254,7 +254,9 @@ final class CompoundFileWriter implements Closeable{
       try {
         while (!pendingEntries.isEmpty()) {
           FileEntry entry = pendingEntries.poll();
-          copyFileEntry(getOutput(), entry);
+          // nocommit not great that i have to lie about
+          // this being a flush...
+          copyFileEntry(getOutput(new IOContext(new FlushInfo(0, entry.length))), entry);
           entries.put(entry.file, entry);
         }
       } finally {

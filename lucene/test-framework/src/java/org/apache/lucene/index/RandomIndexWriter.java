@@ -52,9 +52,13 @@ public class RandomIndexWriter implements Closeable {
 
   
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
+    return mockIndexWriter(dir, null, conf, r);
+  }
+
+  public static IndexWriter mockIndexWriter(Directory dir, SegmentInfos infos, IndexWriterConfig conf, Random r) throws IOException {
     // Randomly calls Thread.yield so we mixup thread scheduling
     final Random random = new Random(r.nextLong());
-    return mockIndexWriter(dir, conf,  new TestPoint() {
+    return mockIndexWriter(dir, infos, conf, new TestPoint() {
       @Override
       public void apply(String message) {
         if (random.nextInt(4) == 2)
@@ -64,8 +68,12 @@ public class RandomIndexWriter implements Closeable {
   }
   
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
+    return mockIndexWriter(dir, null, conf, testPoint);
+  }
+
+  public static IndexWriter mockIndexWriter(Directory dir, SegmentInfos infos, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
     conf.setInfoStream(new TestPointInfoStream(conf.getInfoStream(), testPoint));
-    return new IndexWriter(dir, conf);
+    return new IndexWriter(dir, infos, conf);
   }
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
@@ -88,6 +96,24 @@ public class RandomIndexWriter implements Closeable {
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.r = new Random(r.nextLong());
     w = mockIndexWriter(dir, c, r);
+    flushAt = _TestUtil.nextInt(r, 10, 1000);
+    codec = w.getConfig().getCodec();
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
+      System.out.println("codec default=" + codec.getName());
+    }
+
+    // Make sure we sometimes test indices that don't get
+    // any forced merges:
+    doRandomForceMerge = !(c.getMergePolicy() instanceof NoMergePolicy) && r.nextBoolean();
+  } 
+
+  /** create a RandomIndexWriter with the provided config
+   *  and {@link SegmentInfos} */
+  public RandomIndexWriter(Random r, Directory dir, SegmentInfos infos, IndexWriterConfig c) throws IOException {
+    // TODO: this should be solved in a different way; Random should not be shared (!).
+    this.r = new Random(r.nextLong());
+    w = mockIndexWriter(dir, infos, c, r);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
@@ -325,12 +351,20 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
+    close(true);
+  }
+
+  /**
+   * Close this writer.
+   * @see IndexWriter#close(boolean)
+   */
+  public void close(boolean waitForMerges) throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
       doRandomForceMerge();
     }
-    w.close();
+    w.close(waitForMerges);
   }
 
   /**

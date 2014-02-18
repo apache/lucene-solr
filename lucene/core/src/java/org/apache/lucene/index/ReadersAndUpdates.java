@@ -249,6 +249,8 @@ class ReadersAndUpdates {
     if (pendingDeleteCount == 0) {
       return false;
     }
+
+    System.out.println("  rau.writeUpdates seg=" + info.info + " pendingDelCount=" + pendingDeleteCount);
     
     // We have new deletes
     assert liveDocs.length() == info.info.getDocCount();
@@ -282,6 +284,7 @@ class ReadersAndUpdates {
         }
       }
     }
+    System.out.println("  wrote files del/update: " + trackingDir.getCreatedFiles());
     
     // If we hit an exc in the line above (eg disk full)
     // then info's delGen remains pointing to the previous

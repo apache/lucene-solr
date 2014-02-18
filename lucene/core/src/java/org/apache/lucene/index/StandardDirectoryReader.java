@@ -29,7 +29,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
-final class StandardDirectoryReader extends DirectoryReader {
+/** An {@link DirectoryReader} using {@link SegmentInfos} to
+ *  refer to the sub-readers.
+ *
+ * @lucene.internal */
+
+public final class StandardDirectoryReader extends DirectoryReader {
 
   private final IndexWriter writer;
   private final SegmentInfos segmentInfos;
@@ -129,8 +134,10 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
   }
 
-  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
-  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders) throws IOException {
+  /** This constructor is used by {@link
+   * #doOpenIfChanged(SegmentInfos)}, as well as
+   * near-real-time replication. */
+  public static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders) throws IOException {
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -184,7 +191,11 @@ final class StandardDirectoryReader extends DirectoryReader {
             readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
             assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
-            assert infos.info(i).hasDeletions() || infos.info(i).hasFieldUpdates();
+            
+            // nocommit can we put this back?  the problem
+            // is, sometimes a replica needs to reopen from
+            // a future reader to a past one:
+            //assert infos.info(i).hasDeletions() || infos.info(i).hasFieldUpdates();
             if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()) {
               // only DV updates
               newReaders[i] = new SegmentReader(infos.info(i), newReaders[i], newReaders[i].getLiveDocs(), newReaders[i].numDocs());
