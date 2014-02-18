@@ -38,7 +38,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.After;
 import org.junit.Before;

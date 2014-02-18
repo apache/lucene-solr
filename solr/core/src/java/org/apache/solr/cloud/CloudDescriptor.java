@@ -44,10 +44,7 @@ public class CloudDescriptor {
   volatile boolean isLeader = false;
   volatile String lastPublished = ZkStateReader.ACTIVE;
 
-  public static final String SHARD_STATE = "shardState";
   public static final String NUM_SHARDS = "numShards";
-  public static final String SHARD_RANGE = "shardRange";
-  public static final String SHARD_PARENT = "shardParent";
 
   public CloudDescriptor(String coreName, Properties props, CoreDescriptor cd) {
     this.cd = cd;
@@ -56,10 +53,7 @@ public class CloudDescriptor {
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
     this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
     this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
-    this.shardState = props.getProperty(CloudDescriptor.SHARD_STATE, Slice.ACTIVE);
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
-    this.shardRange = props.getProperty(CloudDescriptor.SHARD_RANGE, null);
-    this.shardParent = props.getProperty(CloudDescriptor.SHARD_PARENT, null);
   }
   
   public String getLastPublished() {
@@ -124,29 +118,5 @@ public class CloudDescriptor {
     this.nodeName = nodeName;
     if(nodeName==null) cd.getPersistableStandardProperties().remove(CoreDescriptor.CORE_NODE_NAME);
     else cd.getPersistableStandardProperties().setProperty(CoreDescriptor.CORE_NODE_NAME, nodeName);
-  }
-
-  public String getShardRange() {
-    return shardRange;
-  }
-
-  public void setShardRange(String shardRange) {
-    this.shardRange = shardRange;
-  }
-
-  public String getShardState() {
-    return shardState;
-  }
-
-  public void setShardState(String shardState) {
-    this.shardState = shardState;
-  }
-
-  public String getShardParent() {
-    return shardParent;
-  }
-
-  public void setShardParent(String shardParent) {
-    this.shardParent = shardParent;
   }
 }
