@@ -20,6 +20,17 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  4.8.0 ==================
+
+Versions of Major Components
+---------------------
+
+Upgrading from Solr 4.7.0
+----------------------
+
+Detailed Change List
+----------------------
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
