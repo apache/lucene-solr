@@ -341,8 +341,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
-  /** Low-level read API, matching {@link
-   * write(DataOutput)}.
+  /** Low-level read API, matching {@link #write(DataOutput)}.
    *
    * @lucene.internal */
   public final void read(Directory directory, DataInput input) throws IOException {

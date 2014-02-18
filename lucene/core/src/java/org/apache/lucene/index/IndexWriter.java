@@ -341,6 +341,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
+    // nocommit we could "simplify" this now?  separate it
+    // into flushAndIncRef and then open SDR on the SIS
+
     final long tStart = System.currentTimeMillis();
 
     if (infoStream.isEnabled("IW")) {
