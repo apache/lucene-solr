@@ -343,6 +343,9 @@ Bug Fixes
 * SOLR-5739: Sub-shards created by shard splitting have their update log set
   to buffering mode on restarts. (Günther Ruck, shalin)
 
+* SOLR-5741: UpdateShardHandler was not correctly setting max total connections
+  on the HttpClient. (Shawn Heisey)
+
 Optimizations
 ----------------------
 
