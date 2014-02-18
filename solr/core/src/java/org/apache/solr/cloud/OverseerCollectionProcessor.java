@@ -966,9 +966,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         params.set(CoreAdminParams.NAME, subShardName);
         params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, subSlice);
-        params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
-        params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
-        params.set(CoreAdminParams.SHARD_PARENT, parentSlice.getName());
         addPropertyParams(message, params);
         sendShardRequest(nodeName, params);
       }

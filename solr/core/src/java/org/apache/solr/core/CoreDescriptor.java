@@ -105,8 +105,7 @@ public class CoreDescriptor {
       CORE_COLLECTION,
       CORE_ROLES,
       CORE_NODE_NAME,
-      CloudDescriptor.NUM_SHARDS,
-      CloudDescriptor.SHARD_STATE
+      CloudDescriptor.NUM_SHARDS
   );
 
   private final CoreContainer coreContainer;

@@ -1034,9 +1034,6 @@ public final class ZkController {
         ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
-        ZkStateReader.SHARD_RANGE_PROP, cd.getCloudDescriptor().getShardRange(),
-        ZkStateReader.SHARD_STATE_PROP, cd.getCloudDescriptor().getShardState(),
-        ZkStateReader.SHARD_PARENT_PROP, cd.getCloudDescriptor().getShardParent(),
         ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
             .getCollectionName(),
         ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
