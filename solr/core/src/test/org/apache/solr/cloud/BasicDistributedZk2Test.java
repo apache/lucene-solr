@@ -54,6 +54,12 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
 
+  static {
+    // disable SSL until this test is hardened more to deal with the 
+    // consequences of how slow it can make some things
+    ALLOW_SSL = false;
+  }
+  
   public BasicDistributedZk2Test() {
     super();
     fixShardCount = true;
