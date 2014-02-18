@@ -46,7 +46,7 @@ public class UpdateShardHandler {
   public UpdateShardHandler(ConfigSolr cfg) {
     
     clientConnectionManager = new PoolingClientConnectionManager();
-    clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnections());
+    clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
     clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     
     
