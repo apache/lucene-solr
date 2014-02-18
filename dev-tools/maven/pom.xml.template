@@ -41,7 +41,7 @@
     <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/branches/branch_4x</vc-anonymous-base-url>
     <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/branches/branch_4x</vc-dev-base-url>
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/branches/branch_4x</vc-browse-base-url>
-    <base.specification.version>4.6.0</base.specification.version>
+    <base.specification.version>4.7.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.6</java.compat.version>
     <jetty.version>8.1.10.v20130312</jetty.version>
@@ -58,7 +58,7 @@
     <tests.codec>random</tests.codec>
     <tests.directory>random</tests.directory>
     <tests.locale>random</tests.locale>
-    <tests.luceneMatchVersion>4.6</tests.luceneMatchVersion>
+    <tests.luceneMatchVersion>4.7</tests.luceneMatchVersion>
     <tests.multiplier>1</tests.multiplier>
     <tests.nightly>false</tests.nightly>
     <tests.postingsformat>random</tests.postingsformat>
