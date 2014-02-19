@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.memory;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests MemoryDocValuesFormat
  */
 public class TestMemoryDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysDocValuesFormat(new MemoryDocValuesFormat());
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new MemoryDocValuesFormat());
 
   @Override
   protected Codec getCodec() {

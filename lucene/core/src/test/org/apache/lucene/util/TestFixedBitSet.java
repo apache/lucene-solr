@@ -104,7 +104,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
     FixedBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
-      int sz = _TestUtil.nextInt(random(), 2, maxSize);
+      int sz = TestUtil.nextInt(random(), 2, maxSize);
       BitSet a = new BitSet(sz);
       FixedBitSet b = new FixedBitSet(sz);
 

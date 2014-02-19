@@ -35,7 +35,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -228,7 +228,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     for (int i = 0; i < randomValues.length; i++) {
       String randomValue;
       do {
-        randomValue = _TestUtil.randomSimpleString(random());
+        randomValue = TestUtil.randomSimpleString(random());
       } while ("".equals(randomValue));
       randomValues[i] = randomValue;
     }

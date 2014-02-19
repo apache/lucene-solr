@@ -11,7 +11,8 @@ import java.nio.charset.CodingErrorAction;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /*
@@ -84,7 +85,7 @@ public class TestCharBlockArray extends FacetTestCase {
 
     assertEqualsInternal("GrowingCharArray<->StringBuilder mismatch.", builder, array);
 
-    File tempDir = _TestUtil.getTempDir("growingchararray");
+    File tempDir = TestUtil.getTempDir("growingchararray");
     File f = new File(tempDir, "GrowingCharArrayTest.tmp");
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f));
     array.flush(out);

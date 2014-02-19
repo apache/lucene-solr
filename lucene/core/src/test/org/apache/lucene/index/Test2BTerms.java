@@ -76,7 +76,7 @@ public class Test2BTerms extends LuceneTestCase {
       addAttribute(TermToBytesRefAttribute.class);
       bytes.length = TOKEN_LEN;
       this.random = random;
-      nextSave = _TestUtil.nextInt(random, 500000, 1000000);
+      nextSave = TestUtil.nextInt(random, 500000, 1000000);
     }
     
     @Override
@@ -89,7 +89,7 @@ public class Test2BTerms extends LuceneTestCase {
       if (--nextSave == 0) {
         savedTerms.add(BytesRef.deepCopyOf(bytes));
         System.out.println("TEST: save term=" + bytes);
-        nextSave = _TestUtil.nextInt(random, 500000, 1000000);
+        nextSave = TestUtil.nextInt(random, 500000, 1000000);
       }
       return true;
     }
@@ -161,11 +161,11 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 
-    final int TERMS_PER_DOC = _TestUtil.nextInt(random(), 100000, 1000000);
+    final int TERMS_PER_DOC = TestUtil.nextInt(random(), 100000, 1000000);
 
     List<BytesRef> savedTerms = null;
 
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BTerms"));
     //MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
@@ -229,7 +229,7 @@ public class Test2BTerms extends LuceneTestCase {
     r.close();
 
     System.out.println("TEST: now CheckIndex...");
-    CheckIndex.Status status = _TestUtil.checkIndex(dir);
+    CheckIndex.Status status = TestUtil.checkIndex(dir);
     final long tc = status.segmentInfos.get(0).termIndexStatus.termCount;
     assertTrue("count " + tc + " is not > " + Integer.MAX_VALUE, tc > Integer.MAX_VALUE);
 
@@ -241,13 +241,13 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("TEST: findTerms");
     final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     final List<BytesRef> savedTerms = new ArrayList<BytesRef>();
-    int nextSave = _TestUtil.nextInt(random(), 500000, 1000000);
+    int nextSave = TestUtil.nextInt(random(), 500000, 1000000);
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       if (--nextSave == 0) {
         savedTerms.add(BytesRef.deepCopyOf(term));
         System.out.println("TEST: add " + term);
-        nextSave = _TestUtil.nextInt(random(), 500000, 1000000);
+        nextSave = TestUtil.nextInt(random(), 500000, 1000000);
       }
     }
     return savedTerms;

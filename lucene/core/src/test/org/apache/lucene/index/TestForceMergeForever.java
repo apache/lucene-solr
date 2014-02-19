@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestForceMergeForever extends LuceneTestCase {
 
@@ -57,7 +57,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     // Try to make an index that requires merging:
-    w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 11));
+    w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
     final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
     for(int docIDX=0;docIDX<numStartDocs;docIDX++) {

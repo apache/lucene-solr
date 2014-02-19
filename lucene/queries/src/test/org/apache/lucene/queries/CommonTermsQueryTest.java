@@ -48,7 +48,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class CommonTermsQueryTest extends LuceneTestCase {
   
@@ -130,8 +131,8 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         randomOccur(random()), random().nextFloat(), random().nextBoolean());
     int terms = atLeast(2);
     for (int i = 0; i < terms; i++) {
-      query.add(new Term(_TestUtil.randomRealisticUnicodeString(random()),
-          _TestUtil.randomRealisticUnicodeString(random())));
+      query.add(new Term(TestUtil.randomRealisticUnicodeString(random()),
+          TestUtil.randomRealisticUnicodeString(random())));
     }
     QueryUtils.checkHashEquals(query);
     QueryUtils.checkUnequal(new CommonTermsQuery(randomOccur(random()),
@@ -145,7 +146,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
           randomOccur(r), r.nextFloat(), r.nextBoolean());
       int leftTerms = atLeast(r, 2);
       for (int i = 0; i < leftTerms; i++) {
-        left.add(new Term(_TestUtil.randomRealisticUnicodeString(r), _TestUtil
+        left.add(new Term(TestUtil.randomRealisticUnicodeString(r), TestUtil
             .randomRealisticUnicodeString(r)));
       }
       left.setHighFreqMinimumNumberShouldMatch(r.nextInt(4));
@@ -156,7 +157,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
           randomOccur(r), r.nextFloat(), r.nextBoolean());
       int rightTerms = atLeast(r, 2);
       for (int i = 0; i < rightTerms; i++) {
-        right.add(new Term(_TestUtil.randomRealisticUnicodeString(r), _TestUtil
+        right.add(new Term(TestUtil.randomRealisticUnicodeString(r), TestUtil
             .randomRealisticUnicodeString(r)));
       }
       right.setHighFreqMinimumNumberShouldMatch(r.nextInt(4));

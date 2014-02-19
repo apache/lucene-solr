@@ -18,7 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
@@ -100,9 +101,9 @@ public class TestIndexInput extends LuceneTestCase {
       final long l1;
       if (rarely()) {
         // a long with lots of zeroes at the end
-        l1 = LONGS[i] = _TestUtil.nextLong(random, 0, Integer.MAX_VALUE) << 32;
+        l1 = LONGS[i] = TestUtil.nextLong(random, 0, Integer.MAX_VALUE) << 32;
       } else {
-        l1 = LONGS[i] = _TestUtil.nextLong(random, 0, Long.MAX_VALUE);
+        l1 = LONGS[i] = TestUtil.nextLong(random, 0, Long.MAX_VALUE);
       }
       bdo.writeVLong(l1);
       bdo.writeLong(l1);

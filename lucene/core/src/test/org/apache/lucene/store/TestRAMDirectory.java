@@ -22,7 +22,8 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -48,7 +49,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    indexDir = _TestUtil.getTempDir("RAMDirIndex");
+    indexDir = TestUtil.getTempDir("RAMDirIndex");
     
     Directory dir = newFSDirectory(indexDir);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(

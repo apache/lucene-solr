@@ -42,7 +42,8 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanQuery extends LuceneTestCase {
   
@@ -217,7 +218,7 @@ public class TestBooleanQuery extends LuceneTestCase {
         System.out.println("iter=" + iter);
       }
       final List<String> terms = new ArrayList<String>(Arrays.asList("a", "b", "c", "d", "e", "f"));
-      final int numTerms = _TestUtil.nextInt(random(), 1, terms.size());
+      final int numTerms = TestUtil.nextInt(random(), 1, terms.size());
       while(terms.size() > numTerms) {
         terms.remove(random().nextInt(terms.size()));
       }
@@ -269,7 +270,7 @@ public class TestBooleanQuery extends LuceneTestCase {
             nextDoc = scorer.nextDoc();
           } else {
             // advance
-            int inc = _TestUtil.nextInt(random(), 1, left-1);
+            int inc = TestUtil.nextInt(random(), 1, left - 1);
             nextUpto = inc + upto;
             nextDoc = scorer.advance(hits.get(nextUpto).doc);
           }

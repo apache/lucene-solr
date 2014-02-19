@@ -87,8 +87,8 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -307,7 +307,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: could cause huge ram usage to use full int range for some filters
         // (e.g. allocate enormous arrays)
         // return Integer.valueOf(random.nextInt());
-        return Integer.valueOf(_TestUtil.nextInt(random, -100, 100));
+        return Integer.valueOf(TestUtil.nextInt(random, -100, 100));
       }
     });
     put(char.class, new ArgProducer() {
@@ -374,7 +374,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         Collection<char[]> col = new ArrayList<char[]>();
         int num = random.nextInt(5);
         for (int i = 0; i < num; i++) {
-          col.add(_TestUtil.randomSimpleString(random).toCharArray());
+          col.add(TestUtil.randomSimpleString(random).toCharArray());
         }
         return col;
       }
@@ -385,7 +385,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
-          set.add(_TestUtil.randomSimpleString(random));
+          set.add(TestUtil.randomSimpleString(random));
         }
         return set;
       }
@@ -467,7 +467,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // a token type
           return StandardTokenizer.TOKEN_TYPES[random.nextInt(StandardTokenizer.TOKEN_TYPES.length)];
         } else {
-          return _TestUtil.randomSimpleString(random);
+          return TestUtil.randomSimpleString(random);
         }
       }
     });
@@ -479,9 +479,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         int num = random.nextInt(5);
         //System.out.println("NormalizeCharMap=");
         for (int i = 0; i < num; i++) {
-          String key = _TestUtil.randomSimpleString(random);
+          String key = TestUtil.randomSimpleString(random);
           if (!keys.contains(key) && key.length() > 0) {
-            String value = _TestUtil.randomSimpleString(random);
+            String value = TestUtil.randomSimpleString(random);
             builder.add(key, value);
             keys.add(key);
             //System.out.println("mapping: '" + key + "' => '" + value + "'");
@@ -508,7 +508,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         CharArrayMap<String> map = new CharArrayMap<String>(TEST_VERSION_CURRENT, num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
-          map.put(_TestUtil.randomSimpleString(random), _TestUtil.randomSimpleString(random));
+          map.put(TestUtil.randomSimpleString(random), TestUtil.randomSimpleString(random));
         }
         return map;
       }
@@ -520,11 +520,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         for (int i = 0; i < num; i++) {
           String input = ""; 
           do {
-            input = _TestUtil.randomRealisticUnicodeString(random);
+            input = TestUtil.randomRealisticUnicodeString(random);
           } while(input.isEmpty());
-          String out = ""; _TestUtil.randomSimpleString(random);
+          String out = ""; TestUtil.randomSimpleString(random);
           do {
-            out = _TestUtil.randomRealisticUnicodeString(random);
+            out = TestUtil.randomRealisticUnicodeString(random);
           } while(out.isEmpty());
           builder.add(input, out);
         }
@@ -559,7 +559,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       
       private String randomNonEmptyString(Random random) {
         while(true) {
-          final String s = _TestUtil.randomUnicodeString(random).trim();
+          final String s = TestUtil.randomUnicodeString(random).trim();
           if (s.length() != 0 && s.indexOf('\u0000') == -1) {
             return s;
           }

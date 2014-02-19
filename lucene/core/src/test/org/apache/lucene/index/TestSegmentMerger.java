@@ -29,7 +29,8 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -102,12 +103,12 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 
-    DocsEnum termDocs = _TestUtil.docs(random(), mergedReader,
-                                       DocHelper.TEXT_FIELD_2_KEY,
-                                       new BytesRef("field"),
-                                       MultiFields.getLiveDocs(mergedReader),
-                                       null,
-                                       0);
+    DocsEnum termDocs = TestUtil.docs(random(), mergedReader,
+        DocHelper.TEXT_FIELD_2_KEY,
+        new BytesRef("field"),
+        MultiFields.getLiveDocs(mergedReader),
+        null,
+        0);
     assertTrue(termDocs != null);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
@@ -153,8 +154,8 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testBuildDocMap() {
-    final int maxDoc = _TestUtil.nextInt(random(), 1, 128);
-    final int numDocs = _TestUtil.nextInt(random(), 0, maxDoc);
+    final int maxDoc = TestUtil.nextInt(random(), 1, 128);
+    final int numDocs = TestUtil.nextInt(random(), 0, maxDoc);
     final int numDeletedDocs = maxDoc - numDocs;
     final FixedBitSet liveDocs = new FixedBitSet(maxDoc);
     for (int i = 0; i < numDocs; ++i) {

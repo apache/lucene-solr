@@ -29,7 +29,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** Tests MultiDocValues versus ordinary segment merging */
@@ -83,7 +84,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomUnicodeString(random()));
+      ref.copyChars(TestUtil.randomUnicodeString(random()));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -122,7 +123,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomUnicodeString(random()));
+      ref.copyChars(TestUtil.randomUnicodeString(random()));
       if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
         iw.addDocument(new Document());
       }
@@ -169,7 +170,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomSimpleString(random(), 2));
+      ref.copyChars(TestUtil.randomSimpleString(random(), 2));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -212,7 +213,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       Document doc = new Document();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomUnicodeString(random()))));
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomUnicodeString(random()))));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -277,7 +278,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       Document doc = new Document();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomSimpleString(random(), 2))));
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {

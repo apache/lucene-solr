@@ -36,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestNumericUtils; // NaN arrays
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +60,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000))
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
     
     final FieldType storedInt = new FieldType(IntField.TYPE_NOT_STORED);
@@ -369,7 +369,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int totalTermCountT=0,totalTermCountC=0,termCountT,termCountC;
-    int num = _TestUtil.nextInt(random(), 10, 20);
+    int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       int lower=(int)(random().nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(random().nextDouble()*noDocs*distance)+startOffset;
@@ -492,7 +492,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private void testRangeSplit(int precisionStep) throws Exception {
     String field="ascfield"+precisionStep;
     // 10 random tests
-    int num = _TestUtil.nextInt(random(), 10, 20);
+    int num = TestUtil.nextInt(random(), 10, 20);
     for (int  i =0;  i< num; i++) {
       int lower=(int)(random().nextDouble()*noDocs - noDocs/2);
       int upper=(int)(random().nextDouble()*noDocs - noDocs/2);
@@ -568,7 +568,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    int num = _TestUtil.nextInt(random(), 10, 20);
+    int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       int lower=(int)(random().nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(random().nextDouble()*noDocs*distance)+startOffset;

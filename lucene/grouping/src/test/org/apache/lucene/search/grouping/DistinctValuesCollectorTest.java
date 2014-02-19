@@ -35,7 +35,7 @@ import org.apache.lucene.search.grouping.term.TermDistinctValuesCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -226,7 +226,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   public void testRandom() throws Exception {
     Random random = random();
-    int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
+    int numberOfRuns = TestUtil.nextInt(random, 3, 6);
     for (int indexIter = 0; indexIter < numberOfRuns; indexIter++) {
       IndexContext context = createIndexContext();
       for (int searchIter = 0; searchIter < 100; searchIter++) {

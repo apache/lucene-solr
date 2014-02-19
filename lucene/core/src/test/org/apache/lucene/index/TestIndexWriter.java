@@ -71,8 +71,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -319,7 +319,7 @@ public class TestIndexWriter extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new Field("field", "aaa" + j, storedTextType));
         writer.addDocument(doc);
-        _TestUtil.syncConcurrentMerges(writer);
+        TestUtil.syncConcurrentMerges(writer);
         int flushCount = writer.getFlushCount();
         if (j == 1)
           lastFlushCount = flushCount;
@@ -378,7 +378,7 @@ public class TestIndexWriter extends LuceneTestCase {
       int lastFlushCount = -1;
       for(int j=1;j<52;j++) {
         writer.deleteDocuments(new Term("field", "aaa" + j));
-        _TestUtil.syncConcurrentMerges(writer);
+        TestUtil.syncConcurrentMerges(writer);
         int flushCount = writer.getFlushCount();
        
         if (j == 1)
@@ -554,12 +554,12 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(1, reader.numDocs());
       Term t = new Term("field", "a");
       assertEquals(1, reader.docFreq(t));
-      DocsEnum td = _TestUtil.docs(random(), reader,
-                                   "field",
-                                   new BytesRef("a"),
-                                   MultiFields.getLiveDocs(reader),
-                                   null,
-                                   DocsEnum.FLAG_FREQS);
+      DocsEnum td = TestUtil.docs(random(), reader,
+          "field",
+          new BytesRef("a"),
+          MultiFields.getLiveDocs(reader),
+          null,
+          DocsEnum.FLAG_FREQS);
       td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
@@ -1156,7 +1156,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
 
         try {
-          _TestUtil.checkIndex(dir);
+          TestUtil.checkIndex(dir);
         } catch (Exception e) {
           failed = true;
           System.out.println("CheckIndex FAILED: unexpected exception");
@@ -1310,12 +1310,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -1351,7 +1351,7 @@ public class TestIndexWriter extends LuceneTestCase {
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
-      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, DocsEnum.FLAG_NONE);
+      final DocsEnum docs = TestUtil.docs(random(), t, null, null, DocsEnum.FLAG_NONE);
       assertEquals(0, docs.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
       count++;
@@ -1497,7 +1497,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
     // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed
     // when listAll() was called in IndexFileDeleter.
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    Directory dir = newFSDirectory(TestUtil.getTempDir("emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
     new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
     dir.close();
   }
@@ -1617,7 +1617,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     indexWriter.close();
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     assertNoUnreferencedFiles(dir, "no tv files");
     DirectoryReader r0 = DirectoryReader.open(dir);
@@ -1823,7 +1823,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testWhetherDeleteAllDeletesWriteLock() throws Exception {
-    Directory d = newFSDirectory(_TestUtil.getTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"));
+    Directory d = newFSDirectory(TestUtil.getTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"));
     // Must use SimpleFSLockFactory... NativeFSLockFactory
     // somehow "knows" a lock is held against write.lock
     // even if you remove that file:
@@ -2072,7 +2072,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   // LUCENE-4398
   public void testRotatingFieldNames() throws Exception {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestIndexWriter.testChangingFields"));
+    Directory dir = newFSDirectory(TestUtil.getTempDir("TestIndexWriter.testChangingFields"));
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(0.2);
     iwc.setMaxBufferedDocs(-1);
@@ -2193,7 +2193,7 @@ public class TestIndexWriter extends LuceneTestCase {
       for (int j = 0; j < numDocs; j++) {
         Document doc = new Document();
         doc.add(newField("id", ""+ (docId++), idFt));
-        doc.add(newField("foo", _TestUtil.randomSimpleString(random()), ft));
+        doc.add(newField("foo", TestUtil.randomSimpleString(random()), ft));
         docs.add(doc);
       }
       boolean success = false;

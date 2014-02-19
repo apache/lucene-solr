@@ -609,7 +609,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
       // must be > 4096 so it spans multiple chunks
-      int termCount = _TestUtil.nextInt(random(), 4097, 8200);
+      int termCount = TestUtil.nextInt(random(), 4097, 8200);
 
       List<String> doc = new ArrayList<String>();
 
@@ -619,7 +619,7 @@ public class TestPhraseQuery extends LuceneTestCase {
           // make new non-empty-string term
           String term;
           while(true) {
-            term = _TestUtil.randomUnicodeString(r);
+            term = TestUtil.randomUnicodeString(r);
             if (term.length() > 0) {
               break;
             }
@@ -643,7 +643,7 @@ public class TestPhraseQuery extends LuceneTestCase {
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));
-          int len = _TestUtil.nextInt(r, 1, 10);
+          int len = TestUtil.nextInt(r, 1, 10);
           int start = r.nextInt(lastDoc.size()-len);
           for(int k=start;k<start+len;k++) {
             String t = lastDoc.get(k);
@@ -667,7 +667,7 @@ public class TestPhraseQuery extends LuceneTestCase {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);
       
-      final int numTerm = _TestUtil.nextInt(r, 2, 20);
+      final int numTerm = TestUtil.nextInt(r, 2, 20);
       final int start = r.nextInt(doc.size()-numTerm);
       PhraseQuery pq = new PhraseQuery();
       StringBuilder sb = new StringBuilder();

@@ -49,7 +49,12 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReader;
@@ -64,7 +69,6 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -72,18 +76,17 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.junit.Assert;
+
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -91,7 +94,10 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 /**
  * General utility methods for Lucene unit tests. 
  */
-public class _TestUtil {
+public final class TestUtil {
+  private TestUtil() {
+    //
+  }
 
   // the max number of retries we're going to do in getTempDir
   private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
@@ -291,7 +297,7 @@ public class _TestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(r, 'a', 'z');
+      buffer[i] = (char) TestUtil.nextInt(r, 'a', 'z');
     }
     return new String(buffer, 0, end);
   }
@@ -304,13 +310,13 @@ public class _TestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(r, minChar, maxChar);
+      buffer[i] = (char) TestUtil.nextInt(r, minChar, maxChar);
     }
     return new String(buffer, 0, end);
   }
 
   public static String randomSimpleString(Random r) {
-    return randomSimpleString(r, 10);
+    return randomSimpleString(r, 0, 10);
   }
 
   /** Returns random string, including full unicode range. */
@@ -875,10 +881,11 @@ public class _TestUtil {
   // TODO: is there a pre-existing way to do this!!!
   public static Document cloneDocument(Document doc1) {
     final Document doc2 = new Document();
-    for(IndexableField f : doc1) {
+    for(IndexableField f : doc1.getFields()) {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValueType();
+      final NumericType numType = field1.fieldType().numericType();
       if (dvType != null) {
         switch(dvType) {
           case NUMERIC:
@@ -892,6 +899,23 @@ public class _TestUtil {
             break;
           default:
             throw new IllegalStateException("unknown Type: " + dvType);
+        }
+      } else if (numType != null) {
+        switch (numType) {
+          case INT:
+            field2 = new IntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case FLOAT:
+            field2 = new FloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case LONG:
+            field2 = new LongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case DOUBLE:
+            field2 = new DoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + numType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
@@ -982,7 +1006,7 @@ public class _TestUtil {
     final String nonBmpString = "AB\uD840\uDC00C";
     while (true) {
       try {
-        Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
+        Pattern p = Pattern.compile(TestUtil.randomRegexpishString(random));
         String replacement = null;
         // ignore bugs in Sun's regex impl
         try {
@@ -1056,7 +1080,7 @@ public class _TestUtil {
     // otherwise, try to make it more realistic with 'words' since most tests use MockTokenizer
     // first decide how big the string will really be: 0..n
     maxLength = random.nextInt(maxLength);
-    int avgWordLength = _TestUtil.nextInt(random, 3, 8);
+    int avgWordLength = TestUtil.nextInt(random, 3, 8);
     StringBuilder sb = new StringBuilder();
     while (sb.length() < maxLength) {
       if (sb.length() > 0) {
@@ -1077,25 +1101,25 @@ public class _TestUtil {
       return "";
     }
 
-    int evilness = _TestUtil.nextInt(random, 0, 20);
+    int evilness = TestUtil.nextInt(random, 0, 20);
 
     StringBuilder sb = new StringBuilder();
     while (sb.length() < wordLength) {;
       if (simple) {
-        sb.append(random.nextBoolean() ? _TestUtil.randomSimpleString(random, wordLength) : _TestUtil.randomHtmlishString(random, wordLength));
+        sb.append(random.nextBoolean() ? TestUtil.randomSimpleString(random, wordLength) : TestUtil.randomHtmlishString(random, wordLength));
       } else {
         if (evilness < 10) {
-          sb.append(_TestUtil.randomSimpleString(random, wordLength));
+          sb.append(TestUtil.randomSimpleString(random, wordLength));
         } else if (evilness < 15) {
           assert sb.length() == 0; // we should always get wordLength back!
-          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
+          sb.append(TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
         } else if (evilness == 16) {
-          sb.append(_TestUtil.randomHtmlishString(random, wordLength));
+          sb.append(TestUtil.randomHtmlishString(random, wordLength));
         } else if (evilness == 17) {
           // gives a lot of punctuation
-          sb.append(_TestUtil.randomRegexpishString(random, wordLength));
+          sb.append(TestUtil.randomRegexpishString(random, wordLength));
         } else {
-          sb.append(_TestUtil.randomUnicodeString(random, wordLength));
+          sb.append(TestUtil.randomUnicodeString(random, wordLength));
         }
       }
     }
@@ -1108,7 +1132,7 @@ public class _TestUtil {
 
     if (random.nextInt(17) == 0) {
       // mix up case
-      String mixedUp = _TestUtil.randomlyRecaseCodePoints(random, sb.toString());
+      String mixedUp = TestUtil.randomlyRecaseCodePoints(random, sb.toString());
       assert mixedUp.length() == sb.length();
       return mixedUp;
     } else {

@@ -62,7 +62,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDrillSideways extends FacetTestCase {
 
@@ -411,7 +411,7 @@ public class TestDrillSideways extends FacetTestCase {
     bChance /= sum;
     cChance /= sum;
 
-    int numDims = _TestUtil.nextInt(random(), 2, 5);
+    int numDims = TestUtil.nextInt(random(), 2, 5);
     //int numDims = 3;
     int numDocs = atLeast(3000);
     //int numDocs = 20;
@@ -424,7 +424,7 @@ public class TestDrillSideways extends FacetTestCase {
     for(int dim=0;dim<numDims;dim++) {
       Set<String> values = new HashSet<String>();
       while (values.size() < valueCount) {
-        String s = _TestUtil.randomRealisticUnicodeString(random());
+        String s = TestUtil.randomRealisticUnicodeString(random());
         //String s = _TestUtil.randomString(random());
         if (s.length() > 0) {
           values.add(s);
@@ -523,7 +523,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     if (random().nextBoolean()) {
       // Randomly delete a few docs:
-      int numDel = _TestUtil.nextInt(random(), 1, (int) (numDocs*0.05));
+      int numDel = TestUtil.nextInt(random(), 1, (int) (numDocs * 0.05));
       if (VERBOSE) {
         System.out.println("delete " + numDel);
       }
@@ -570,7 +570,7 @@ public class TestDrillSideways extends FacetTestCase {
     for(int iter=0;iter<numIters;iter++) {
 
       String contentToken = random().nextInt(30) == 17 ? null : randomContentToken(true);
-      int numDrillDown = _TestUtil.nextInt(random(), 1, Math.min(4, numDims));
+      int numDrillDown = TestUtil.nextInt(random(), 1, Math.min(4, numDims));
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " baseQuery=" + contentToken + " numDrillDown=" + numDrillDown + " useSortedSetDV=" + doUseDV);
       }
@@ -586,7 +586,7 @@ public class TestDrillSideways extends FacetTestCase {
             // Drill down on one value:
             drillDowns[dim] = new String[] {dimValues[dim][random().nextInt(dimValues[dim].length)]};
           } else {
-            int orCount = _TestUtil.nextInt(random(), 1, Math.min(5, dimValues[dim].length));
+            int orCount = TestUtil.nextInt(random(), 1, Math.min(5, dimValues[dim].length));
             drillDowns[dim] = new String[orCount];
             anyMultiValuedDrillDowns |= orCount > 1;
             for(int i=0;i<orCount;i++) {
@@ -956,7 +956,7 @@ public class TestDrillSideways extends FacetTestCase {
     }
 
     for(int dim=0;dim<expected.counts.length;dim++) {
-      int topN = random().nextBoolean() ? dimValues[dim].length : _TestUtil.nextInt(random(), 1, dimValues[dim].length);
+      int topN = random().nextBoolean() ? dimValues[dim].length : TestUtil.nextInt(random(), 1, dimValues[dim].length);
       FacetResult fr = actual.facets.getTopChildren(topN, "dim"+dim);
       if (VERBOSE) {
         System.out.println("    dim" + dim + " topN=" + topN + " (vs " + dimValues[dim].length + " unique values)");

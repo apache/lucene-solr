@@ -34,7 +34,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ public class TermFilterTest extends LuceneTestCase {
     List<Term> terms = new ArrayList<Term>();
     for (int i = 0; i < num; i++) {
       String field = "field" + i;
-      String string = _TestUtil.randomRealisticUnicodeString(random());
+      String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
       Document doc = new Document();
       doc.add(newStringField(field, string, Field.Store.NO));
@@ -122,7 +122,7 @@ public class TermFilterTest extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       String field1 = "field" + i;
       String field2 = "field" + i + num;
-      String value1 = _TestUtil.randomRealisticUnicodeString(random());
+      String value1 = TestUtil.randomRealisticUnicodeString(random());
       String value2 = value1 + "x"; // this must be not equal to value1
 
       TermFilter filter1 = termFilter(field1, value1);

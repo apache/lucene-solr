@@ -56,7 +56,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
@@ -1139,11 +1139,11 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     int numDocs = atLeast(100);
     BytesRefHash hash = new BytesRefHash();
     Map<String, String> docToString = new HashMap<String, String>();
-    int maxLength = _TestUtil.nextInt(random(), 1, 50);
+    int maxLength = TestUtil.nextInt(random(), 1, 50);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newTextField("id", "" + i, Field.Store.YES));
-      String string = _TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
+      String string = TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
       BytesRef br = new BytesRef(string);
       doc.add(new SortedDocValuesField("field", br));
       hash.add(br);
@@ -1175,7 +1175,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       Document doc = new Document();
       String id = "" + i + numDocs;
       doc.add(newTextField("id", id, Field.Store.YES));
-      String string = _TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
+      String string = TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
       BytesRef br = new BytesRef(string);
       hash.add(br);
       docToString.put(id, string);
@@ -1221,7 +1221,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doTestNumericsVsStoredFields(new LongProducer() {
       @Override
       long next() {
-        return _TestUtil.nextLong(random(), minValue, maxValue);
+        return TestUtil.nextLong(random(), minValue, maxValue);
       }
     });
   }
@@ -1285,7 +1285,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doTestMissingVsFieldCache(new LongProducer() {
       @Override
       long next() {
-        return _TestUtil.nextLong(random(), minValue, maxValue);
+        return TestUtil.nextLong(random(), minValue, maxValue);
       }
     });
   }
@@ -1431,7 +1431,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (minLength == maxLength) {
         length = minLength; // fixed length
       } else {
-        length = _TestUtil.nextInt(random(), minLength, maxLength);
+        length = TestUtil.nextInt(random(), minLength, maxLength);
       }
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
@@ -1470,7 +1470,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testBinaryFixedLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 0, 10);
+      int fixedLength = TestUtil.nextInt(random(), 0, 10);
       doTestBinaryVsStoredFields(fixedLength, fixedLength);
     }
   }
@@ -1502,7 +1502,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (minLength == maxLength) {
         length = minLength; // fixed length
       } else {
-        length = _TestUtil.nextInt(random(), minLength, maxLength);
+        length = TestUtil.nextInt(random(), minLength, maxLength);
       }
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
@@ -1558,9 +1558,9 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (minLength == maxLength) {
         length = minLength; // fixed length
       } else {
-        length = _TestUtil.nextInt(random(), minLength, maxLength);
+        length = TestUtil.nextInt(random(), minLength, maxLength);
       }
-      String value = _TestUtil.randomSimpleString(random(), length);
+      String value = TestUtil.randomSimpleString(random(), length);
       indexedField.setStringValue(value);
       dvField.setBytesValue(new BytesRef(value));
       writer.addDocument(doc);
@@ -1592,7 +1592,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testSortedFixedLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedVsStoredFields(fixedLength, fixedLength);
     }
   }
@@ -1600,7 +1600,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testSortedFixedLengthVsFieldCache() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedVsFieldCache(fixedLength, fixedLength);
     }
   }
@@ -2082,13 +2082,13 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (minLength == maxLength) {
         length = minLength; // fixed length
       } else {
-        length = _TestUtil.nextInt(random(), minLength, maxLength);
+        length = TestUtil.nextInt(random(), minLength, maxLength);
       }
-      int numValues = _TestUtil.nextInt(random(), 0, maxValuesPerDoc);
+      int numValues = TestUtil.nextInt(random(), 0, maxValuesPerDoc);
       // create a random set of strings
       Set<String> values = new TreeSet<String>();
       for (int v = 0; v < numValues; v++) {
-        values.add(_TestUtil.randomSimpleString(random(), length));
+        values.add(TestUtil.randomSimpleString(random(), length));
       }
       
       // add ordered to the stored field
@@ -2146,7 +2146,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedSetVsStoredFields(fixedLength, fixedLength, 16);
     }
   }
@@ -2163,7 +2163,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedSetVsStoredFields(fixedLength, fixedLength, 1);
     }
   }
@@ -2256,7 +2256,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     
     // random seekExact(ord)
     for (long i = 0; i < numOrds; i++) {
-      long randomOrd = _TestUtil.nextLong(random(), 0, numOrds-1);
+      long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
       expected.seekExact(randomOrd);
       actual.seekExact(randomOrd);
       assertEquals(expected.ord(), actual.ord());
@@ -2265,7 +2265,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     
     // random seekExact(BytesRef)
     for (long i = 0; i < numOrds; i++) {
-      long randomOrd = _TestUtil.nextLong(random(), 0, numOrds-1);
+      long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
       expected.seekExact(randomOrd);
       actual.seekExact(expected.term());
       assertEquals(expected.ord(), actual.ord());
@@ -2274,7 +2274,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     
     // random seekCeil(BytesRef)
     for (long i = 0; i < numOrds; i++) {
-      BytesRef target = new BytesRef(_TestUtil.randomUnicodeString(random()));
+      BytesRef target = new BytesRef(TestUtil.randomUnicodeString(random()));
       SeekStatus expectedStatus = expected.seekCeil(target);
       assertEquals(expectedStatus, actual.seekCeil(target));
       if (expectedStatus != SeekStatus.END) {
@@ -2299,13 +2299,13 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (minLength == maxLength) {
         length = minLength; // fixed length
       } else {
-        length = _TestUtil.nextInt(random(), minLength, maxLength);
+        length = TestUtil.nextInt(random(), minLength, maxLength);
       }
       int numValues = random().nextInt(17);
       // create a random list of strings
       List<String> values = new ArrayList<String>();
       for (int v = 0; v < numValues; v++) {
-        values.add(_TestUtil.randomSimpleString(random(), length));
+        values.add(TestUtil.randomSimpleString(random(), length));
       }
       
       // add in any order to the indexed field
@@ -2363,7 +2363,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedSetVsUninvertedField(fixedLength, fixedLength);
     }
   }
@@ -2615,17 +2615,17 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // FSDirectory because SimpleText will consume gobbs of
     // space when storing big binary values:
-    Directory d = newFSDirectory(_TestUtil.getTempDir("hugeBinaryValues"));
+    Directory d = newFSDirectory(TestUtil.getTempDir("hugeBinaryValues"));
     boolean doFixed = random().nextBoolean();
     int numDocs;
     int fixedLength = 0;
     if (doFixed) {
       // Sometimes make all values fixed length since some
       // codecs have different code paths for this:
-      numDocs = _TestUtil.nextInt(random(), 10, 20);
-      fixedLength = _TestUtil.nextInt(random(), 65537, 256*1024);
+      numDocs = TestUtil.nextInt(random(), 10, 20);
+      fixedLength = TestUtil.nextInt(random(), 65537, 256 * 1024);
     } else {
-      numDocs = _TestUtil.nextInt(random(), 100, 200);
+      numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     List<byte[]> docBytes = new ArrayList<byte[]>();
@@ -2640,9 +2640,9 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       if (doFixed) {
         numBytes = fixedLength;
       } else if (docID == 0 || random().nextInt(5) == 3) {
-        numBytes = _TestUtil.nextInt(random(), 65537, 3*1024*1024);
+        numBytes = TestUtil.nextInt(random(), 65537, 3 * 1024 * 1024);
       } else {
-        numBytes = _TestUtil.nextInt(random(), 1, 1024*1024);
+        numBytes = TestUtil.nextInt(random(), 1, 1024 * 1024);
       }
       totalBytes += numBytes;
       if (totalBytes > 5 * 1024*1024) {
@@ -2713,17 +2713,17 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // FSDirectory because SimpleText will consume gobbs of
     // space when storing big binary values:
-    Directory d = newFSDirectory(_TestUtil.getTempDir("hugeBinaryValues"));
+    Directory d = newFSDirectory(TestUtil.getTempDir("hugeBinaryValues"));
     boolean doFixed = random().nextBoolean();
     int numDocs;
     int fixedLength = 0;
     if (doFixed) {
       // Sometimes make all values fixed length since some
       // codecs have different code paths for this:
-      numDocs = _TestUtil.nextInt(random(), 10, 20);
+      numDocs = TestUtil.nextInt(random(), 10, 20);
       fixedLength = Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH;
     } else {
-      numDocs = _TestUtil.nextInt(random(), 100, 200);
+      numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     List<byte[]> docBytes = new ArrayList<byte[]>();
@@ -2740,7 +2740,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       } else if (docID == 0 || random().nextInt(5) == 3) {
         numBytes = Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH;
       } else {
-        numBytes = _TestUtil.nextInt(random(), 1, Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+        numBytes = TestUtil.nextInt(random(), 1, Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
       }
       totalBytes += numBytes;
       if (totalBytes > 5 * 1024*1024) {
@@ -2799,7 +2799,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
-      int length = _TestUtil.nextInt(random(), 0, 8);
+      int length = TestUtil.nextInt(random(), 0, 8);
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
       storedBinField.setBytesValue(buffer);
@@ -2824,7 +2824,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     
     // compare
     final DirectoryReader ir = DirectoryReader.open(dir);
-    int numThreads = _TestUtil.nextInt(random(), 2, 7);
+    int numThreads = TestUtil.nextInt(random(), 2, 7);
     Thread threads[] = new Thread[numThreads];
     final CountDownLatch startingGun = new CountDownLatch(1);
     
@@ -2850,7 +2850,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
                 assertEquals(Long.parseLong(expected), numerics.get(j));
               }
             }
-            _TestUtil.checkReader(ir);
+            TestUtil.checkReader(ir);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
@@ -2884,7 +2884,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
-      int length = _TestUtil.nextInt(random(), 0, 8);
+      int length = TestUtil.nextInt(random(), 0, 8);
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
       storedBinField.setBytesValue(buffer);
@@ -2907,7 +2907,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       int numSortedSetFields = random().nextInt(3);
       Set<String> values = new TreeSet<String>();
       for (int j = 0; j < numSortedSetFields; j++) {
-        values.add(_TestUtil.randomSimpleString(random()));
+        values.add(TestUtil.randomSimpleString(random()));
       }
       for (String v : values) {
         doc.add(new SortedSetDocValuesField("dvSortedSet", new BytesRef(v)));
@@ -2929,7 +2929,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     
     // compare
     final DirectoryReader ir = DirectoryReader.open(dir);
-    int numThreads = _TestUtil.nextInt(random(), 2, 7);
+    int numThreads = TestUtil.nextInt(random(), 2, 7);
     Thread threads[] = new Thread[numThreads];
     final CountDownLatch startingGun = new CountDownLatch(1);
     
@@ -2997,7 +2997,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
                 }
               }
             }
-            _TestUtil.checkReader(ir);
+            TestUtil.checkReader(ir);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }

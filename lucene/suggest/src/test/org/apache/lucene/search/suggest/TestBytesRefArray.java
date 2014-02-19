@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestBytesRefArray extends LuceneTestCase {
 
@@ -41,7 +41,7 @@ public class TestBytesRefArray extends LuceneTestCase {
       BytesRef spare = new BytesRef();
       int initSize = list.size();
       for (int i = 0; i < entries; i++) {
-        String randomRealisticUnicodeString = _TestUtil
+        String randomRealisticUnicodeString = TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
         assertEquals(i+initSize, list.append(spare));
@@ -84,7 +84,7 @@ public class TestBytesRefArray extends LuceneTestCase {
       BytesRef spare = new BytesRef();
       final int initSize = list.size();
       for (int i = 0; i < entries; i++) {
-        String randomRealisticUnicodeString = _TestUtil
+        String randomRealisticUnicodeString = TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
         assertEquals(initSize + i, list.append(spare));

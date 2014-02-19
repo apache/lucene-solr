@@ -23,8 +23,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
@@ -37,7 +37,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with an increasing dv field
   public void testNumerics() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BNumerics"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BNumerics"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

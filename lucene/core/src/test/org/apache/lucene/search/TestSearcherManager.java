@@ -42,7 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
@@ -52,7 +52,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   private SearcherLifetimeManager.Pruner pruner;
 
   public void testSearcherManager() throws Exception {
-    pruner = new SearcherLifetimeManager.PruneByAge(TEST_NIGHTLY ? _TestUtil.nextInt(random(), 1, 20) : 1);
+    pruner = new SearcherLifetimeManager.PruneByAge(TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 20) : 1);
     runTest("TestSearcherManager");
   }
 
@@ -110,9 +110,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
           }
 
           while(System.currentTimeMillis() < stopTime) {
-            Thread.sleep(_TestUtil.nextInt(random(), 1, 100));
+            Thread.sleep(TestUtil.nextInt(random(), 1, 100));
             writer.commit();
-            Thread.sleep(_TestUtil.nextInt(random(), 1, 5));
+            Thread.sleep(TestUtil.nextInt(random(), 1, 5));
             boolean block = random().nextBoolean();
             if (block) {
               mgr.maybeRefreshBlocking();

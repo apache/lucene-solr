@@ -24,7 +24,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestBytesStore extends LuceneTestCase {
 
@@ -32,9 +32,9 @@ public class TestBytesStore extends LuceneTestCase {
 
     final int iters = atLeast(10);
     for(int iter=0;iter<iters;iter++) {
-      final int numBytes = _TestUtil.nextInt(random(), 1, 200000);
+      final int numBytes = TestUtil.nextInt(random(), 1, 200000);
       final byte[] expected = new byte[numBytes];
-      final int blockBits = _TestUtil.nextInt(random(), 8, 15);
+      final int blockBits = TestUtil.nextInt(random(), 8, 15);
       final BytesStore bytes = new BytesStore(blockBits);
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter + " numBytes=" + numBytes + " blockBits=" + blockBits);
@@ -98,7 +98,7 @@ public class TestBytesStore extends LuceneTestCase {
           {
             // reverse bytes
             if (pos > 1) {
-              int len = _TestUtil.nextInt(random(), 2, Math.min(100, pos));
+              int len = TestUtil.nextInt(random(), 2, Math.min(100, pos));
               int start;
               if (len == pos) {
                 start = 0;
@@ -127,7 +127,7 @@ public class TestBytesStore extends LuceneTestCase {
             // abs write random byte[]
             if (pos > 2) {
               int randomPos = random().nextInt(pos-1);
-              int len = _TestUtil.nextInt(random(), 1, Math.min(pos - randomPos - 1, 100));
+              int len = TestUtil.nextInt(random(), 1, Math.min(pos - randomPos - 1, 100));
               byte[] temp = new byte[len];
               random().nextBytes(temp);
               if (VERBOSE) {
@@ -144,8 +144,8 @@ public class TestBytesStore extends LuceneTestCase {
             // copyBytes
             if (pos > 1) {
               int src = random().nextInt(pos-1);
-              int dest = _TestUtil.nextInt(random(), src+1, pos-1);
-              int len = _TestUtil.nextInt(random(), 1, Math.min(300, pos - dest));
+              int dest = TestUtil.nextInt(random(), src + 1, pos - 1);
+              int len = TestUtil.nextInt(random(), 1, Math.min(300, pos - dest));
               if (VERBOSE) {
                 System.out.println("    copyBytes src=" + src + " dest=" + dest + " len=" + len);
               }
@@ -193,7 +193,7 @@ public class TestBytesStore extends LuceneTestCase {
 
         if (pos > 0 && random().nextInt(50) == 17) {
           // truncate
-          int len = _TestUtil.nextInt(random(), 1, Math.min(pos, 100));
+          int len = TestUtil.nextInt(random(), 1, Math.min(pos, 100));
           bytes.truncate(pos - len);
           pos -= len;
           Arrays.fill(expected, pos, pos+len, (byte) 0);
@@ -218,7 +218,7 @@ public class TestBytesStore extends LuceneTestCase {
         bytes.writeTo(out);
         out.close();
         IndexInput in = dir.openInput("bytes", IOContext.DEFAULT);
-        bytesToVerify = new BytesStore(in, numBytes, _TestUtil.nextInt(random(), 256, Integer.MAX_VALUE));
+        bytesToVerify = new BytesStore(in, numBytes, TestUtil.nextInt(random(), 256, Integer.MAX_VALUE));
         in.close();
         dir.close();
       } else {
@@ -289,13 +289,13 @@ public class TestBytesStore extends LuceneTestCase {
     }
 
     if (totalLength > 1) {
-      int numOps = _TestUtil.nextInt(random(), 100, 200);
+      int numOps = TestUtil.nextInt(random(), 100, 200);
       for(int op=0;op<numOps;op++) {
 
         int numBytes = random().nextInt(Math.min(1000, totalLength-1));
         int pos;
         if (reversed) {
-          pos = _TestUtil.nextInt(random(), numBytes, totalLength-1);
+          pos = TestUtil.nextInt(random(), numBytes, totalLength - 1);
         } else {
           pos = random().nextInt(totalLength-numBytes);
         }

@@ -29,7 +29,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
@@ -42,7 +43,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.ROOT));
     

@@ -26,8 +26,8 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
@@ -40,7 +40,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   public void testFixedSorted() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BFixedSorted"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BFixedSorted"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -97,7 +97,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   // TODO: must use random.nextBytes (like Test2BTerms) to avoid BytesRefHash probing issues
   public void test2BOrds() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BOrds"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BOrds"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

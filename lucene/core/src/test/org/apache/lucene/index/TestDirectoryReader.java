@@ -43,7 +43,7 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Assume;
 
 public class TestDirectoryReader extends LuceneTestCase {
@@ -92,18 +92,18 @@ public class TestDirectoryReader extends LuceneTestCase {
     // test mixing up TermDocs and TermEnums from different readers.
     TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator(null);
     te2.seekCeil(new BytesRef("wow"));
-    DocsEnum td = _TestUtil.docs(random(), mr2,
-                                 "body",
-                                 te2.term(),
-                                 MultiFields.getLiveDocs(mr2),
-                                 null,
-                                 0);
+    DocsEnum td = TestUtil.docs(random(), mr2,
+        "body",
+        te2.term(),
+        MultiFields.getLiveDocs(mr2),
+        null,
+        0);
 
     TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator(null);
     te3.seekCeil(new BytesRef("wow"));
-    td = _TestUtil.docs(random(), te3, MultiFields.getLiveDocs(mr3),
-                        td,
-                        0);
+    td = TestUtil.docs(random(), te3, MultiFields.getLiveDocs(mr3),
+        td,
+        0);
     
     int ret = 0;
 
@@ -350,12 +350,12 @@ void assertTermDocsCount(String msg,
                                    Term term,
                                    int expected)
   throws IOException {
-  DocsEnum tdocs = _TestUtil.docs(random(), reader,
-                                  term.field(),
-                                  new BytesRef(term.text()),
-                                  MultiFields.getLiveDocs(reader),
-                                  null,
-                                  0);
+  DocsEnum tdocs = TestUtil.docs(random(), reader,
+      term.field(),
+      new BytesRef(term.text()),
+      MultiFields.getLiveDocs(reader),
+      null,
+      0);
   int count = 0;
   if (tdocs != null) {
     while(tdocs.nextDoc()!= DocIdSetIterator.NO_MORE_DOCS) {
@@ -437,7 +437,7 @@ void assertTermDocsCount(String msg,
   
 public void testFilesOpenClose() throws IOException {
       // Create initial data set
-      File dirFile = _TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
+      File dirFile = TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
       Directory dir = newFSDirectory(dirFile);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       addDoc(writer, "test");
@@ -445,7 +445,7 @@ public void testFilesOpenClose() throws IOException {
       dir.close();
 
       // Try to erase the data - this ensures that the writer closed all files
-      _TestUtil.rmDir(dirFile);
+      TestUtil.rmDir(dirFile);
       dir = newFSDirectory(dirFile);
 
       // Now create the data set again, just as before
@@ -462,11 +462,11 @@ public void testFilesOpenClose() throws IOException {
 
       // The following will fail if reader did not close
       // all files
-      _TestUtil.rmDir(dirFile);
+      TestUtil.rmDir(dirFile);
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
-    File dirFile = _TestUtil.getTempDir("deletetest");
+    File dirFile = TestUtil.getTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
@@ -714,8 +714,8 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    File tempDir = _TestUtil.getTempDir("doesnotexist");
-    _TestUtil.rmDir(tempDir);
+    File tempDir = TestUtil.getTempDir("doesnotexist");
+    TestUtil.rmDir(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
@@ -821,7 +821,7 @@ public void testFilesOpenClose() throws IOException {
   // LUCENE-1609: don't load terms index
   public void testNoTermsIndex() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     Document doc = new Document();
     doc.add(newTextField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO));
     doc.add(newTextField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO));
@@ -841,7 +841,7 @@ public void testFilesOpenClose() throws IOException {
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())).
+            setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())).
             setMergePolicy(newLogMergePolicy(10))
     );
     writer.addDocument(doc);
@@ -1140,7 +1140,7 @@ public void testFilesOpenClose() throws IOException {
   @Deprecated
   public void testBackwards() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
     Document doc = new Document();
     doc.add(newTextField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO));
     doc.add(newTextField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO));
@@ -1190,7 +1190,7 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
-    File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    File tempDir = TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
     tempDir.delete();
     Directory dir = newFSDirectory(tempDir);
     System.out.println("dir=" + dir);

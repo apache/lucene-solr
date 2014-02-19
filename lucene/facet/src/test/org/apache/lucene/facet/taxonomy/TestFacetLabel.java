@@ -6,7 +6,7 @@ import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /*
@@ -267,7 +267,7 @@ public class TestFacetLabel extends FacetTestCase {
     String bigComp = null;
     while (true) {
       int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH;
-      bigComp = _TestUtil.randomSimpleString(random(), len, len);
+      bigComp = TestUtil.randomSimpleString(random(), len, len);
       if (bigComp.indexOf('\u001f') != -1) {
         continue;
       }

@@ -14,7 +14,7 @@ import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 
@@ -95,7 +95,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     anlzr = new MockAnalyzer(random());
     IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr).setMergePolicy(newLogMergePolicy());
     if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 7));
+      iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
     }
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores

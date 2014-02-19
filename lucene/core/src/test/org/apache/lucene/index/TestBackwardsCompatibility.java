@@ -63,7 +63,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -196,7 +196,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
    */
   private static IndexUpgrader newIndexUpgrader(Directory dir) {
     final boolean streamType = random().nextBoolean();
-    final int choice = _TestUtil.nextInt(random(), 0, 2);
+    final int choice = TestUtil.nextInt(random(), 0, 2);
     switch (choice) {
       case 0: return new IndexUpgrader(dir, TEST_VERSION_CURRENT);
       case 1: return new IndexUpgrader(dir, TEST_VERSION_CURRENT, 
@@ -215,9 +215,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     names.addAll(Arrays.asList(oldSingleSegmentNames));
     oldIndexDirs = new HashMap<String,Directory>();
     for (String name : names) {
-      File dir = _TestUtil.getTempDir(name);
+      File dir = TestUtil.getTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
-      _TestUtil.unzip(dataFile, dir);
+      TestUtil.unzip(dataFile, dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
     }
   }
@@ -236,8 +236,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: index " + unsupportedNames[i]);
       }
-      File oldIndxeDir = _TestUtil.getTempDir(unsupportedNames[i]);
-      _TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndxeDir);
+      File oldIndxeDir = TestUtil.getTempDir(unsupportedNames[i]);
+      TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndxeDir);
       BaseDirectoryWrapper dir = newFSDirectory(oldIndxeDir);
       // don't checkindex, these are intentionally not supported
       dir.setCheckIndexOnClose(false);
@@ -286,7 +286,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue(bos.toString("UTF-8").contains(IndexFormatTooOldException.class.getName()));
 
       dir.close();
-      _TestUtil.rmDir(oldIndxeDir);
+      TestUtil.rmDir(oldIndxeDir);
     }
   }
   
@@ -379,7 +379,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     
     // true if this is a 4.0+ index
     final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
@@ -585,7 +585,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File("/tmp/idx", dirName);
-    _TestUtil.rmDir(indexDir);
+    TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
@@ -633,8 +633,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testExactFileNames() throws IOException {
 
     String outputDirName = "lucene.backwardscompat0.index";
-    File outputDir = _TestUtil.getTempDir(outputDirName);
-    _TestUtil.rmDir(outputDir);
+    File outputDir = TestUtil.getTempDir(outputDirName);
+    TestUtil.rmDir(outputDir);
 
     try {
       Directory dir = newFSDirectory(outputDir);
@@ -692,7 +692,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       dir.close();
     } finally {
-      _TestUtil.rmDir(outputDir);
+      TestUtil.rmDir(outputDir);
     }
   }
 
@@ -802,7 +802,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // should be found exactly
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       // should hit end of field
@@ -814,12 +814,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
                    terms.seekCeil(new BytesRef("a")));
       assertTrue(terms.term().bytesEquals(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random(), terms,null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       r.close();
@@ -943,9 +943,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testCommandLineArgs() throws Exception {
 
     for (String name : oldIndexDirs.keySet()) {
-      File dir = _TestUtil.getTempDir(name);
+      File dir = TestUtil.getTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
-      _TestUtil.unzip(dataFile, dir);
+      TestUtil.unzip(dataFile, dir);
 
       String path = dir.getAbsolutePath();
       
@@ -1036,11 +1036,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static final String moreTermsIndex = "moreterms.40.zip";
 
   public void testMoreTerms() throws Exception {
-    File oldIndexDir = _TestUtil.getTempDir("moreterms");
-    _TestUtil.unzip(getDataFile(moreTermsIndex), oldIndexDir);
+    File oldIndexDir = TestUtil.getTempDir("moreterms");
+    TestUtil.unzip(getDataFile(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     // TODO: more tests
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     dir.close();
   }
 }

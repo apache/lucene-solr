@@ -31,7 +31,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class DuplicateFilterTest extends LuceneTestCase {
   private static final String KEY_FIELD = "url";
@@ -134,12 +134,12 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random(), reader,
-                                   KEY_FIELD,
-                                   new BytesRef(url),
-                                   MultiFields.getLiveDocs(reader),
-                                   null,
-                                   0);
+      DocsEnum td = TestUtil.docs(random(), reader,
+          KEY_FIELD,
+          new BytesRef(url),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
 
       int lastDoc = 0;
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -158,12 +158,12 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random(), reader,
-                                   KEY_FIELD,
-                                   new BytesRef(url),
-                                   MultiFields.getLiveDocs(reader),
-                                   null,
-                                   0);
+      DocsEnum td = TestUtil.docs(random(), reader,
+          KEY_FIELD,
+          new BytesRef(url),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
 
       int lastDoc = 0;
       td.nextDoc();

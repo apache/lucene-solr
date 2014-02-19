@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -73,7 +73,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     Map<String,String> map = new HashMap<String,String>();
     int numTerms = atLeast(50);
     for (int i = 0; i < numTerms; i++) {
-      String randomRealisticUnicodeString = _TestUtil
+      String randomRealisticUnicodeString = TestUtil
           .randomRealisticUnicodeString(random());
       char[] charArray = randomRealisticUnicodeString.toCharArray();
       StringBuilder builder = new StringBuilder();
@@ -85,7 +85,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
         j += Character.charCount(cp);
       }
       if (builder.length() > 0) {
-        String value = _TestUtil.randomSimpleString(random());
+        String value = TestUtil.randomSimpleString(random());
         map.put(builder.toString(),
             value.isEmpty() ? "a" : value);
         
@@ -116,10 +116,10 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     Map<String,String> map = new HashMap<String,String>();
     int numTerms = atLeast(50);
     for (int i = 0; i < numTerms; i++) {
-      String randomRealisticUnicodeString = _TestUtil
+      String randomRealisticUnicodeString = TestUtil
           .randomRealisticUnicodeString(random());
       if (randomRealisticUnicodeString.length() > 0) {
-        String value = _TestUtil.randomSimpleString(random());
+        String value = TestUtil.randomSimpleString(random());
         map.put(randomRealisticUnicodeString,
             value.isEmpty() ? "a" : value);
       }

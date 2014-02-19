@@ -28,7 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 
@@ -238,7 +238,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   private String createRandomString(Random random) {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < 20; i++) {
-      builder.append(_TestUtil.randomSimpleString(random, 5));
+      builder.append(TestUtil.randomSimpleString(random, 5));
       builder.append(" ");
     }
     return builder.toString();

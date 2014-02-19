@@ -42,7 +42,7 @@ import org.apache.lucene.search.similarities.Similarity.SimWeight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -107,7 +107,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   private static void addSome(Document doc, String values[]) {
     List<String> list = Arrays.asList(values);
     Collections.shuffle(list, random());
-    int howMany = _TestUtil.nextInt(random(), 1, list.size());
+    int howMany = TestUtil.nextInt(random(), 1, list.size());
     for (int i = 0; i < howMany; i++) {
       doc.add(new StringField("field", list.get(i), Field.Store.NO));
       doc.add(new SortedSetDocValuesField("dv", new BytesRef(list.get(i))));

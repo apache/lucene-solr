@@ -55,7 +55,7 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestTaxonomyFacetCounts extends FacetTestCase {
 
@@ -413,7 +413,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
   // LUCENE-4583: make sure if we require > 32 KB for one
   // document, we don't hit exc when using Facet42DocValuesFormat
   public void testManyFacetsInOneDocument() throws Exception {
-    assumeTrue("default Codec doesn't support huge BinaryDocValues", _TestUtil.fieldSupportsHugeBinaryDocValues(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
+    assumeTrue("default Codec doesn't support huge BinaryDocValues", TestUtil.fieldSupportsHugeBinaryDocValues(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
@@ -423,7 +423,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim", true);
     
-    int numLabels = _TestUtil.nextInt(random(), 40000, 100000);
+    int numLabels = TestUtil.nextInt(random(), 40000, 100000);
     
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));
@@ -678,7 +678,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     FacetsConfig config = new FacetsConfig();
     int numDocs = atLeast(1000);
-    int numDims = _TestUtil.nextInt(random(), 1, 7);
+    int numDims = TestUtil.nextInt(random(), 1, 7);
     List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
     for(TestDoc testDoc : testDocs) {
       Document doc = new Document();

@@ -45,7 +45,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests of PerFieldDocValuesFormat
@@ -66,7 +67,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
 
   @Override
   protected boolean codecAcceptsHugeBinaryValues(String field) {
-    return _TestUtil.fieldSupportsHugeBinaryDocValues(field);
+    return TestUtil.fieldSupportsHugeBinaryDocValues(field);
   }
   
   // just a simple trivial test

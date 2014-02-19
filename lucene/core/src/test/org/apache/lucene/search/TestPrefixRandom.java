@@ -35,7 +35,8 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Create an index with random unicode terms
@@ -52,7 +53,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.NO);
@@ -63,7 +64,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     final String codec = Codec.getDefault().getName();
     int num = codec.equals("Lucene3x") ? 200 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
-      field.setStringValue(_TestUtil.randomUnicodeString(random(), 10));
+      field.setStringValue(TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -117,7 +118,7 @@ public class TestPrefixRandom extends LuceneTestCase {
   public void testPrefixes() throws Exception {
       int num = atLeast(100);
       for (int i = 0; i < num; i++)
-        assertSame(_TestUtil.randomUnicodeString(random(), 5));
+        assertSame(TestUtil.randomUnicodeString(random(), 5));
   }
   
   /** check that the # of hits is the same as from a very

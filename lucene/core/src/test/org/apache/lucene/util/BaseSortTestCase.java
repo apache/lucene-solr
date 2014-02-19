@@ -101,7 +101,7 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
       public void set(Entry[] arr, int i) {
         arr[i] = i == 0
             ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value - _TestUtil.nextInt(random(), 1, 5), i);
+            : new Entry(arr[i - 1].value - TestUtil.nextInt(random(), 1, 5), i);
       }
     },
     ASCENDING_SEQUENCES {
@@ -117,7 +117,7 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
       public void set(Entry[] arr, int i) {
         arr[i] = i == 0
             ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value + _TestUtil.nextInt(random(), -8, 10), i);
+            : new Entry(arr[i - 1].value + TestUtil.nextInt(random(), -8, 10), i);
       }
     };
     public abstract void set(Entry[] arr, int i);

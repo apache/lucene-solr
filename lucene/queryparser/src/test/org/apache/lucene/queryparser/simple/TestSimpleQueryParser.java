@@ -34,7 +34,8 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
@@ -623,9 +624,9 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   // we aren't supposed to barf on any input...
   public void testRandomQueries() throws Exception {
     for (int i = 0; i < 1000; i++) {
-      String query = _TestUtil.randomUnicodeString(random());
+      String query = TestUtil.randomUnicodeString(random());
       parse(query); // no exception
-      parseKeyword(query, _TestUtil.nextInt(random(), 0, 1024)); // no exception
+      parseKeyword(query, TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
   }
 
@@ -639,7 +640,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
         sb.append(chars[random().nextInt(chars.length)]);
       }
       parse(sb.toString()); // no exception
-      parseKeyword(sb.toString(), _TestUtil.nextInt(random(), 0, 1024)); // no exception
+      parseKeyword(sb.toString(), TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
   }
 }

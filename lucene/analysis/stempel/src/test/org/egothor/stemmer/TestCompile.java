@@ -65,18 +65,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.net.URI;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestCompile extends LuceneTestCase {
   
   public void testCompile() throws Exception {
-    File dir = _TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.getTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");
@@ -92,7 +91,7 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileBackwards() throws Exception {
-    File dir = _TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.getTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");
@@ -108,7 +107,7 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileMulti() throws Exception {
-    File dir = _TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.getTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");

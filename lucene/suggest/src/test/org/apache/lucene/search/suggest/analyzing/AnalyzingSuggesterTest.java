@@ -25,14 +25,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -57,7 +55,7 @@ import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class AnalyzingSuggesterTest extends LuceneTestCase {
   
@@ -77,20 +75,20 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random()), false, 2);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("f", random()), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
     
     // top N of 1 for 'bar': we return this even though
     // barbar is higher because exactFirst is enabled:
-    results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("bar", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("bar", results.get(0).key.toString());
     assertEquals(10, results.get(0).value, 0.01F);
     
     // top N Of 2 for 'b'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("b", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("b", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -98,7 +96,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     
     // top N of 3 for 'ba'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random()), false, 3);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ba", random()), false, 3);
     assertEquals(3, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -121,7 +119,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     suggester.build(new InputArrayIterator(keys));
     for (int i = 0; i < 2; i++) {
       // top N of 2, but only foo is available
-      List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random()), false, 2);
+      List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("f", random()), false, 2);
       assertEquals(1, results.size());
       assertEquals("foo", results.get(0).key.toString());
       assertEquals(50, results.get(0).value, 0.01F);
@@ -129,14 +127,14 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       
       // top N of 1 for 'bar': we return this even though
       // barbar is higher because exactFirst is enabled:
-      results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random()), false, 1);
+      results = suggester.lookup(TestUtil.stringToCharSequence("bar", random()), false, 1);
       assertEquals(1, results.size());
       assertEquals("bar", results.get(0).key.toString());
       assertEquals(10, results.get(0).value, 0.01F);
       assertEquals(new BytesRef("goodbye"), results.get(0).payload);
       
       // top N Of 2 for 'b'
-      results = suggester.lookup(_TestUtil.stringToCharSequence("b", random()), false, 2);
+      results = suggester.lookup(TestUtil.stringToCharSequence("b", random()), false, 2);
       assertEquals(2, results.size());
       assertEquals("barbar", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);
@@ -146,7 +144,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       assertEquals(new BytesRef("goodbye"), results.get(1).payload);
       
       // top N of 3 for 'ba'
-      results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random()), false, 3);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ba", random()), false, 3);
       assertEquals(3, results.size());
       assertEquals("barbar", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);
@@ -218,19 +216,19 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     suggester.build(new InputArrayIterator(keys));
     
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' since its a stopword, its suggested anyway
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' and 'of' since they are stopwords, its suggested anyway
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
@@ -260,7 +258,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     // pass, and more generally if the analyzer can know
     // that the user's current query has ended at a word, 
     // but, analyzers don't produce SEP tokens!
-    List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence("ab c", random()), false, 2);
+    List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence("ab c", random()), false, 2);
     assertEquals(2, r.size());
 
     // With no PRESERVE_SEPS specified, "ab c" should also
@@ -674,7 +672,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
     
     for (int i = 0; i < numQueries; i++) {
-      int numTokens = _TestUtil.nextInt(random(), 1, 4);
+      int numTokens = TestUtil.nextInt(random(), 1, 4);
       String key;
       String analyzedKey;
       while(true) {
@@ -686,7 +684,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           while (true) {
             // TODO: would be nice to fix this slowCompletor/comparator to
             // use full range, but we might lose some coverage too...
-            s = _TestUtil.randomSimpleString(random());
+            s = TestUtil.randomSimpleString(random());
             if (s.length() > 0) {
               if (token > 0) {
                 key += " ";
@@ -766,8 +764,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         System.out.println("\nTEST: prefix=" + prefix);
       }
 
-      final int topN = _TestUtil.nextInt(random(), 1, 10);
-      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), false, topN);
+      final int topN = TestUtil.nextInt(random(), 1, 10);
+      List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
       List<TermFreq2> matches = new ArrayList<TermFreq2>();
@@ -923,7 +921,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(3, results.get(2).value);
 
     // Try again after save/load:
-    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");
@@ -985,7 +983,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");
@@ -1055,7 +1053,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");

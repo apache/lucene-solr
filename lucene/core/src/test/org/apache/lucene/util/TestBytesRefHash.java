@@ -66,7 +66,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -100,7 +100,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -139,7 +139,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < size; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         final int key = hash.add(ref);
@@ -179,7 +179,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         hash.add(ref);
@@ -218,7 +218,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -255,7 +255,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -318,7 +318,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
+          str = TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();

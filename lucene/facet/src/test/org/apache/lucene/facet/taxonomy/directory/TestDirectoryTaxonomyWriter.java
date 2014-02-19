@@ -29,7 +29,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /*
@@ -445,7 +446,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     int ordinal = -1;
 
     int len = FacetLabel.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
-    bigs = _TestUtil.randomSimpleString(random(), len, len);
+    bigs = TestUtil.randomSimpleString(random(), len, len);
     FacetField ff = new FacetField("dim", bigs);
     FacetLabel cp = new FacetLabel("dim", bigs);
     ordinal = taxoWriter.addCategory(cp);
@@ -455,7 +456,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
     // Add tiny ones to cause a re-hash
     for (int i = 0; i < 3; i++) {
-      String s = _TestUtil.randomSimpleString(random(), 1, 10);
+      String s = TestUtil.randomSimpleString(random(), 1, 10);
       taxoWriter.addCategory(new FacetLabel("dim", s));
       doc = new Document();
       doc.add(new FacetField("dim", s));

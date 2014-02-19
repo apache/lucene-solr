@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
@@ -38,7 +38,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -502,7 +501,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // produce an estimate no more then the total number of docs
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; iter++) {
-      final int val = _TestUtil.nextInt(random(), 1, 17);
+      final int val = TestUtil.nextInt(random(), 1, 17);
       assertQ(req(reusedParams,
                   CommonParams.Q, "teststop:metnoia",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)

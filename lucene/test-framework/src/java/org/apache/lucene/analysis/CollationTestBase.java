@@ -47,7 +47,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Base test class for testing Unicode collation.
@@ -268,7 +269,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
     int numTestPoints = 100;
-    int numThreads = _TestUtil.nextInt(random(), 3, 5);
+    int numThreads = TestUtil.nextInt(random(), 3, 5);
     final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
     
     // create a map<String,SortKey> up front.
@@ -276,7 +277,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // and ensure they are the same as the ones we produced in serial fashion.
 
     for (int i = 0; i < numTestPoints; i++) {
-      String term = _TestUtil.randomSimpleString(random());
+      String term = TestUtil.randomSimpleString(random());
       IOException priorException = null;
       TokenStream ts = analyzer.tokenStream("fake", term);
       try {

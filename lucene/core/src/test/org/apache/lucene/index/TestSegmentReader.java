@@ -28,8 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -128,20 +127,20 @@ public class TestSegmentReader extends LuceneTestCase {
       }
     }
     
-    DocsEnum termDocs = _TestUtil.docs(random(), reader,
-                                       DocHelper.TEXT_FIELD_1_KEY,
-                                       new BytesRef("field"),
-                                       MultiFields.getLiveDocs(reader),
-                                       null,
-                                       0);
+    DocsEnum termDocs = TestUtil.docs(random(), reader,
+        DocHelper.TEXT_FIELD_1_KEY,
+        new BytesRef("field"),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
-    termDocs = _TestUtil.docs(random(), reader,
-                              DocHelper.NO_NORMS_KEY,
-                              new BytesRef(DocHelper.NO_NORMS_TEXT),
-                              MultiFields.getLiveDocs(reader),
-                              null,
-                              0);
+    termDocs = TestUtil.docs(random(), reader,
+        DocHelper.NO_NORMS_KEY,
+        new BytesRef(DocHelper.NO_NORMS_TEXT),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
 
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 

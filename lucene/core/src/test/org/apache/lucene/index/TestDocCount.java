@@ -23,7 +23,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
@@ -51,9 +51,9 @@ public class TestDocCount extends LuceneTestCase {
   
   private Document doc() {
     Document doc = new Document();
-    int numFields = _TestUtil.nextInt(random(), 1, 10);
+    int numFields = TestUtil.nextInt(random(), 1, 10);
     for (int i = 0; i < numFields; i++) {
-      doc.add(newStringField("" + _TestUtil.nextInt(random(), 'a', 'z'), "" + _TestUtil.nextInt(random(), 'a', 'z'), Field.Store.NO));
+      doc.add(newStringField("" + TestUtil.nextInt(random(), 'a', 'z'), "" + TestUtil.nextInt(random(), 'a', 'z'), Field.Store.NO));
     }
     return doc;
   }
@@ -72,7 +72,7 @@ public class TestDocCount extends LuceneTestCase {
       FixedBitSet visited = new FixedBitSet(ir.maxDoc());
       TermsEnum te = terms.iterator(null);
       while (te.next() != null) {
-        DocsEnum de = _TestUtil.docs(random(), te, null, null, DocsEnum.FLAG_NONE);
+        DocsEnum de = TestUtil.docs(random(), te, null, null, DocsEnum.FLAG_NONE);
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           visited.set(de.docID());
         }

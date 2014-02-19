@@ -36,7 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...
@@ -447,7 +447,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     public NodeState(Random random, int nodeID, int numNodes) throws IOException {
       myNodeID = nodeID;
-      dir = newFSDirectory(_TestUtil.getTempDir("ShardSearchingTestBase"));
+      dir = newFSDirectory(TestUtil.getTempDir("ShardSearchingTestBase"));
       // TODO: set warmer
       IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);

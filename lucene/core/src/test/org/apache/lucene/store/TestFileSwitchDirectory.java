@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends LuceneTestCase {
   /**
@@ -88,8 +88,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    File primDir = _TestUtil.getTempDir("foo");
-    File secondDir = _TestUtil.getTempDir("bar");
+    File primDir = TestUtil.getTempDir("foo");
+    File secondDir = TestUtil.getTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
@@ -102,10 +102,10 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File primDir = _TestUtil.getTempDir("foo");
-    File secondDir = _TestUtil.getTempDir("bar");
-    _TestUtil.rmDir(primDir);
-    _TestUtil.rmDir(secondDir);
+    File primDir = TestUtil.getTempDir("foo");
+    File secondDir = TestUtil.getTempDir("bar");
+    TestUtil.rmDir(primDir);
+    TestUtil.rmDir(secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

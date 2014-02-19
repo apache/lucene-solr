@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -202,7 +202,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       if ((ftype.vals instanceof SVal) && rand.nextInt(100) < 20) {
         // validate = false;
         String prefix = ftype.createValue().toString();
-        if (rand.nextInt(100) < 5) prefix =  _TestUtil.randomUnicodeString(rand);
+        if (rand.nextInt(100) < 5) prefix =  TestUtil.randomUnicodeString(rand);
         else if (rand.nextInt(100) < 10) prefix = Character.toString((char)rand.nextInt(256));
         else if (prefix.length() > 0) prefix = prefix.substring(0, rand.nextInt(prefix.length()));
         params.add("facet.prefix", prefix);

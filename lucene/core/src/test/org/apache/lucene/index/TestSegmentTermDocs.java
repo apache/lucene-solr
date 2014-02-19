@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
@@ -63,7 +63,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
-    DocsEnum termDocs = _TestUtil.docs(random(), terms, reader.getLiveDocs(), null, DocsEnum.FLAG_FREQS);
+    DocsEnum termDocs = TestUtil.docs(random(), terms, reader.getLiveDocs(), null, DocsEnum.FLAG_FREQS);
     if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
@@ -82,12 +82,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
       assertTrue(reader != null);
-      DocsEnum termDocs = _TestUtil.docs(random(), reader,
-                                         "textField2",
-                                         new BytesRef("bad"),
-                                         reader.getLiveDocs(),
-                                         null,
-                                         0);
+      DocsEnum termDocs = TestUtil.docs(random(), reader,
+          "textField2",
+          new BytesRef("bad"),
+          reader.getLiveDocs(),
+          null,
+          0);
 
       assertNull(termDocs);
       reader.close();
@@ -96,12 +96,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
       assertTrue(reader != null);
-      DocsEnum termDocs = _TestUtil.docs(random(), reader,
-                                         "junk",
-                                         new BytesRef("bad"),
-                                         reader.getLiveDocs(),
-                                         null,
-                                         0);
+      DocsEnum termDocs = TestUtil.docs(random(), reader,
+          "junk",
+          new BytesRef("bad"),
+          reader.getLiveDocs(),
+          null,
+          0);
       assertNull(termDocs);
       reader.close();
     }
@@ -133,12 +133,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     IndexReader reader = DirectoryReader.open(dir, indexDivisor);
 
-    DocsEnum tdocs = _TestUtil.docs(random(), reader,
-                                    ta.field(),
-                                    new BytesRef(ta.text()),
-                                    MultiFields.getLiveDocs(reader),
-                                    null,
-                                    DocsEnum.FLAG_FREQS);
+    DocsEnum tdocs = TestUtil.docs(random(), reader,
+        ta.field(),
+        new BytesRef(ta.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        DocsEnum.FLAG_FREQS);
     
     // without optimization (assumption skipInterval == 16)
     
@@ -158,12 +158,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(10) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
-    tdocs = _TestUtil.docs(random(), reader,
-                           ta.field(),
-                           new BytesRef(ta.text()),
-                           MultiFields.getLiveDocs(reader),
-                           null,
-                           0);
+    tdocs = TestUtil.docs(random(), reader,
+        ta.field(),
+        new BytesRef(ta.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     
     assertTrue(tdocs.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, tdocs.docID());
@@ -176,12 +176,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     // exactly skipInterval documents and therefore with optimization
     
     // with next
-    tdocs = _TestUtil.docs(random(), reader,
-                           tb.field(),
-                           new BytesRef(tb.text()),
-                           MultiFields.getLiveDocs(reader),
-                           null,
-                           DocsEnum.FLAG_FREQS);
+    tdocs = TestUtil.docs(random(), reader,
+        tb.field(),
+        new BytesRef(tb.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        DocsEnum.FLAG_FREQS);
 
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
@@ -200,12 +200,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(26) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
-    tdocs = _TestUtil.docs(random(), reader,
-                           tb.field(),
-                           new BytesRef(tb.text()),
-                           MultiFields.getLiveDocs(reader),
-                           null,
-                           DocsEnum.FLAG_FREQS);
+    tdocs = TestUtil.docs(random(), reader,
+        tb.field(),
+        new BytesRef(tb.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        DocsEnum.FLAG_FREQS);
     
     assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
@@ -220,12 +220,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     // much more than skipInterval documents and therefore with optimization
     
     // with next
-    tdocs = _TestUtil.docs(random(), reader,
-                           tc.field(),
-                           new BytesRef(tc.text()),
-                           MultiFields.getLiveDocs(reader),
-                           null,
-                           DocsEnum.FLAG_FREQS);
+    tdocs = TestUtil.docs(random(), reader,
+        tc.field(),
+        new BytesRef(tc.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        DocsEnum.FLAG_FREQS);
 
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(26, tdocs.docID());
@@ -246,12 +246,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(76) != DocIdSetIterator.NO_MORE_DOCS);
     
     //without next
-    tdocs = _TestUtil.docs(random(), reader,
-                           tc.field(),
-                           new BytesRef(tc.text()),
-                           MultiFields.getLiveDocs(reader),
-                           null,
-                           0);
+    tdocs = TestUtil.docs(random(), reader,
+        tc.field(),
+        new BytesRef(tc.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(26, tdocs.docID());
     assertTrue(tdocs.advance(40) != DocIdSetIterator.NO_MORE_DOCS);

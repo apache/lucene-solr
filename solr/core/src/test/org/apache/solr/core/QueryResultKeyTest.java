@@ -28,7 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.QueryResultKey;
 import org.junit.Test;
@@ -165,10 +165,10 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
    * the array is garunteed to always have at least 1 element
    */
   private int[] smallArrayOfRandomNumbers() {
-    int size = _TestUtil.nextInt(random(), 1, 5);
+    int size = TestUtil.nextInt(random(), 1, 5);
     int[] result = new int[size];
     for (int i=0; i < size; i++) {
-      result[i] = _TestUtil.nextInt(random(), 1, 5);
+      result[i] = TestUtil.nextInt(random(), 1, 5);
     }
     return result;
   }

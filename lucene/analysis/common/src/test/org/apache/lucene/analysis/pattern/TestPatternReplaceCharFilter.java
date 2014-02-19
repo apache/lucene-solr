@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
 /**
@@ -302,9 +302,9 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
     int numPatterns = 10 + random().nextInt(20);
     Random random = new Random(random().nextLong());
     for (int i = 0; i < numPatterns; i++) {
-      final Pattern p = _TestUtil.randomPattern(random());
+      final Pattern p = TestUtil.randomPattern(random());
 
-      final String replacement = _TestUtil.randomSimpleString(random);
+      final String replacement = TestUtil.randomSimpleString(random);
       Analyzer a = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

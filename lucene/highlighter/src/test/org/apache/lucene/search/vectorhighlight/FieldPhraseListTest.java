@@ -23,7 +23,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class FieldPhraseListTest extends AbstractTestCase {
   
@@ -269,7 +270,7 @@ public class FieldPhraseListTest extends AbstractTestCase {
 
   private WeightedPhraseInfo newInfo( int startOffset, int endOffset, float boost ) {
     LinkedList< TermInfo > infos = new LinkedList< TermInfo >();
-    infos.add( new TermInfo( _TestUtil.randomUnicodeString( random() ), startOffset, endOffset, 0, 0 ) );
+    infos.add( new TermInfo( TestUtil.randomUnicodeString(random()), startOffset, endOffset, 0, 0 ) );
     return new WeightedPhraseInfo( infos, boost );
   }
 

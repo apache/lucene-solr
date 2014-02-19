@@ -37,7 +37,7 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -103,15 +103,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // half the time we use the root context, the other half...
 
       // Remember: randomSimpleString might be the empty string
-      hostContext.append(_TestUtil.randomSimpleString(random(), 2));
+      hostContext.append(TestUtil.randomSimpleString(random(), 2));
       if (random().nextBoolean()) {
         hostContext.append("_");
       }
-      hostContext.append(_TestUtil.randomSimpleString(random(), 3));
+      hostContext.append(TestUtil.randomSimpleString(random(), 3));
       if ( ! "/".equals(hostContext.toString())) {
         // if our random string is empty, this might add a trailing slash, 
         // but our code should be ok with that
-        hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));
+        hostContext.append("/").append(TestUtil.randomSimpleString(random(), 2));
       } else {
         // we got 'lucky' and still just have the root context,
         // NOOP: don't try to add a subdir to nothing (ie "//" is bad)

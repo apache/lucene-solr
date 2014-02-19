@@ -43,8 +43,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 public class TestIndexWriterReader extends LuceneTestCase {
@@ -53,11 +53,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
-    DocsEnum td = _TestUtil.docs(random(), r,
-                                 t.field(), new BytesRef(t.text()),
-                                 MultiFields.getLiveDocs(r),
-                                 null,
-                                 0);
+    DocsEnum td = TestUtil.docs(random(), r,
+        t.field(), new BytesRef(t.text()),
+        MultiFields.getLiveDocs(r),
+        null,
+        0);
 
     if (td != null) {
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -372,7 +372,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory mainDir = getAssertNoDeletesDirectory(newDirectory());
 
     IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    _TestUtil.reduceOpenFiles(mainWriter);
+    TestUtil.reduceOpenFiles(mainWriter);
 
     AddDirectoriesThreads addDirThreads = new AddDirectoriesThreads(numIter, mainWriter);
     addDirThreads.launchThreads(numDirs);
@@ -386,7 +386,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     assertTrue(addDirThreads.failures.size() == 0);
 
-    _TestUtil.checkIndex(mainDir);
+    TestUtil.checkIndex(mainDir);
 
     IndexReader reader = DirectoryReader.open(mainDir);
     assertEquals(addDirThreads.count.intValue(), reader.numDocs());
@@ -415,7 +415,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       this.mainWriter = mainWriter;
       addDir = newDirectory();
       IndexWriter writer = new IndexWriter(addDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
-      _TestUtil.reduceOpenFiles(writer);
+      TestUtil.reduceOpenFiles(writer);
       for (int i = 0; i < NUM_INIT_DOCS; i++) {
         Document doc = DocHelper.createDocument(i, "addindex", 4);
         writer.addDocument(doc);
@@ -661,9 +661,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     // get a reader to put writer into near real-time mode
     DirectoryReader r1 = writer.getReader();
-    _TestUtil.checkIndex(dir1);
+    TestUtil.checkIndex(dir1);
     writer.commit();
-    _TestUtil.checkIndex(dir1);
+    TestUtil.checkIndex(dir1);
     assertEquals(100, r1.numDocs());
 
     for (int i = 0; i < 10; i++) {
@@ -693,7 +693,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     DirectoryReader r = writer.getReader();
     writer.close();
 
-    _TestUtil.checkIndex(dir1);
+    TestUtil.checkIndex(dir1);
 
     // reader should remain usable even after IndexWriter is closed:
     assertEquals(100, r.numDocs());
@@ -1032,7 +1032,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         new MockAnalyzer(random())).setReaderTermsIndexDivisor(-1);
     
     // Don't proceed if picked Codec is in the list of illegal ones.
-    final String format = _TestUtil.getPostingsFormat("f");
+    final String format = TestUtil.getPostingsFormat("f");
     assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
                 (format.equals("FSTPulsing41") ||
                  format.equals("FSTOrdPulsing41") ||
@@ -1050,7 +1050,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.addDocument(doc);
     SegmentReader r = getOnlySegmentReader(DirectoryReader.open(w, true));
     try {
-      _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, DocsEnum.FLAG_NONE);
+      TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, DocsEnum.FLAG_NONE);
       fail("should have failed to seek since terms index was not loaded.");
     } catch (IllegalStateException e) {
       // expected - we didn't load the term index

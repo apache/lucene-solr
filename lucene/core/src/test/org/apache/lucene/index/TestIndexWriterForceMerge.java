@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterForceMerge extends LuceneTestCase {
   public void testPartialMerge() throws IOException {
@@ -36,7 +36,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     final Document doc = new Document();
     doc.add(newStringField("content", "aaa", Field.Store.NO));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
-    for(int numDocs=10;numDocs<500;numDocs += _TestUtil.nextInt(random(), incrMin, 5*incrMin)) {
+    for(int numDocs=10;numDocs<500;numDocs += TestUtil.nextInt(random(), incrMin, 5 * incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
       ldmp.setMinMergeDocs(1);
       ldmp.setMergeFactor(5);

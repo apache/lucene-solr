@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -205,7 +205,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       if (null == sf) {
         // score or function
         results[i] = (Float) random().nextFloat() * random().nextInt(); break;
-      } else if (0 == _TestUtil.nextInt(random(), 0, 7)) {
+      } else if (0 == TestUtil.nextInt(random(), 0, 7)) {
         // emulate missing value for doc
         results[i] = null;
       } else {
@@ -218,11 +218,11 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
         Object val = null;
         if (fieldName.equals("id")) {
-          val = sf.getType().unmarshalSortValue(_TestUtil.randomSimpleString(random()));
+          val = sf.getType().unmarshalSortValue(TestUtil.randomSimpleString(random()));
         } else if (fieldName.startsWith("str")) {
-          val = sf.getType().unmarshalSortValue(_TestUtil.randomRealisticUnicodeString(random()));
+          val = sf.getType().unmarshalSortValue(TestUtil.randomRealisticUnicodeString(random()));
         } else if (fieldName.startsWith("bin")) {
-          byte[] randBytes = new byte[_TestUtil.nextInt(random(), 1, 50)];
+          byte[] randBytes = new byte[TestUtil.nextInt(random(), 1, 50)];
           random().nextBytes(randBytes);
           val = new BytesRef(randBytes);
         } else if (fieldName.startsWith("int")) {

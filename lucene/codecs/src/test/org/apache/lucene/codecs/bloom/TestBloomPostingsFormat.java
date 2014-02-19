@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.bloom;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests for BloomPostingsFormat
  */
 public class TestBloomPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new TestBloomFilteredLucene41Postings());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new TestBloomFilteredLucene41Postings());
 
   @Override
   protected Codec getCodec() {

@@ -17,7 +17,8 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -85,20 +86,20 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
     handle.put("timestamp", SKIPVAL);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
 
-    int numDocs = _TestUtil.nextInt(random(), 100, 1000);
-    int numGroups = _TestUtil.nextInt(random(), 1, numDocs / 50);
+    int numDocs = TestUtil.nextInt(random(), 100, 1000);
+    int numGroups = TestUtil.nextInt(random(), 1, numDocs / 50);
     int[] docsInGroup = new int[numGroups + 1];
-    int percentDuplicates = _TestUtil.nextInt(random(), 1, 25);
+    int percentDuplicates = TestUtil.nextInt(random(), 1, 25);
     for (int docid = 0 ; docid < numDocs ; ++docid) {
-      int group = _TestUtil.nextInt(random(), 1, numGroups);
+      int group = TestUtil.nextInt(random(), 1, numGroups);
       ++docsInGroup[group];
-      boolean makeDuplicate = 0 == _TestUtil.nextInt(random(), 0, numDocs / percentDuplicates);
+      boolean makeDuplicate = 0 == TestUtil.nextInt(random(), 0, numDocs / percentDuplicates);
       if (makeDuplicate) {
         for (int shard = 0 ; shard < shardCount ; ++shard) {
           addDoc(docid, group, shard);
         }
       } else {
-        int shard = _TestUtil.nextInt(random(), 0, shardCount - 1);
+        int shard = TestUtil.nextInt(random(), 0, shardCount - 1);
         addDoc(docid, group, shard);
       }
     }

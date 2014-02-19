@@ -35,8 +35,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSameScoresWithThreads extends LuceneTestCase {
 
@@ -80,7 +80,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
 
     if (!answers.isEmpty()) {
       final CountDownLatch startingGun = new CountDownLatch(1);
-      int numThreads = _TestUtil.nextInt(random(), 2, 5);
+      int numThreads = TestUtil.nextInt(random(), 2, 5);
       Thread[] threads = new Thread[numThreads];
       for(int threadID=0;threadID<numThreads;threadID++) {
         Thread thread = new Thread() {

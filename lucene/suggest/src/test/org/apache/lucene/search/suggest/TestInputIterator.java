@@ -24,12 +24,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestInputIterator extends LuceneTestCase {
   
@@ -55,8 +52,8 @@ public class TestInputIterator extends LuceneTestCase {
       BytesRef key;
       BytesRef payload;
       do {
-        key = new BytesRef(_TestUtil.randomUnicodeString(random));
-        payload = new BytesRef(_TestUtil.randomUnicodeString(random));
+        key = new BytesRef(TestUtil.randomUnicodeString(random));
+        payload = new BytesRef(TestUtil.randomUnicodeString(random));
       } while (sorted.containsKey(key));
       long value = random.nextLong();
       sortedWithoutPayload.put(key, value);

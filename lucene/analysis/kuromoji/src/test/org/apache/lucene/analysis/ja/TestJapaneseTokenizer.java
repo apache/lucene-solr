@@ -35,8 +35,8 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
 @Slow
@@ -215,7 +215,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public void testLargeDocReliability() throws Exception {
     for (int i = 0; i < 100; i++) {
-      String s = _TestUtil.randomUnicodeString(random(), 10000);
+      String s = TestUtil.randomUnicodeString(random(), 10000);
       TokenStream ts = analyzer.tokenStream("foo", s);
       try {
         ts.reset();
@@ -241,7 +241,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + i);
       }
-      String s = _TestUtil.randomUnicodeString(random(), 100);
+      String s = TestUtil.randomUnicodeString(random(), 100);
       TokenStream ts = analyzer.tokenStream("foo", s);
       try {
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);

@@ -46,7 +46,7 @@ import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.fst.Util;
@@ -57,7 +57,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     List<Input> keys = new ArrayList<Input>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
-      keys.add(new Input("boo" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+      keys.add(new Input("boo" + TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
     }
     keys.add(new Input("foo bar boo far", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
@@ -67,7 +67,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       String addRandomEdit = addRandomEdit("foo bar boo", FuzzySuggester.DEFAULT_NON_FUZZY_PREFIX);
-      List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
+      List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
       assertEquals(addRandomEdit, 1, results.size());
       assertEquals("foo bar boo far", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);  
@@ -78,7 +78,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     List<Input> keys = new ArrayList<Input>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
-      keys.add(new Input("буу" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+      keys.add(new Input("буу" + TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
     }
     keys.add(new Input("фуу бар буу фар", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
@@ -88,7 +88,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       String addRandomEdit = addRandomEdit("фуу бар буу", 0);
-      List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
+      List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
       assertEquals(addRandomEdit, 1, results.size());
       assertEquals("фуу бар буу фар", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);
@@ -107,29 +107,29 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
     suggester.build(new InputArrayIterator(keys));
     
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("bariar", random()), false, 2);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("bariar", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
     
-    results = suggester.lookup(_TestUtil.stringToCharSequence("barbr", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("barbr", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
     
-    results = suggester.lookup(_TestUtil.stringToCharSequence("barbara", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("barbara", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbara", results.get(0).key.toString());
     assertEquals(6, results.get(0).value, 0.01F);
     
-    results = suggester.lookup(_TestUtil.stringToCharSequence("barbar", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("barbar", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
     assertEquals("barbara", results.get(1).key.toString());
     assertEquals(6, results.get(1).value, 0.01F);
     
-    results = suggester.lookup(_TestUtil.stringToCharSequence("barbaa", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("barbaa", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -137,20 +137,20 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(1).value, 0.01F);
     
     // top N of 2, but only foo is available
-    results = suggester.lookup(_TestUtil.stringToCharSequence("f", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("f", random()), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
     
     // top N of 1 for 'bar': we return this even though
     // barbar is higher because exactFirst is enabled:
-    results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("bar", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("bar", results.get(0).key.toString());
     assertEquals(10, results.get(0).value, 0.01F);
     
     // top N Of 2 for 'b'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("b", random()), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("b", random()), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -158,7 +158,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     
     // top N of 3 for 'ba'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random()), false, 3);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ba", random()), false, 3);
     assertEquals(3, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -181,19 +181,19 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         FuzzySuggester.DEFAULT_NON_FUZZY_PREFIX, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
     suggester.build(new InputArrayIterator(keys));
     
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' since its a stopword, its suggested anyway
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' and 'of' since they are stopwords, its suggested anyway
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
@@ -214,7 +214,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     // pass, and more generally if the analyzer can know
     // that the user's current query has ended at a word, 
     // but, analyzers don't produce SEP tokens!
-    List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence("ab c", random()), false, 2);
+    List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence("ab c", random()), false, 2);
     assertEquals(2, r.size());
 
     // With no PRESERVE_SEPS specified, "ab c" should also
@@ -613,7 +613,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
     
     for (int i = 0; i < numQueries; i++) {
-      int numTokens = _TestUtil.nextInt(random(), 1, 4);
+      int numTokens = TestUtil.nextInt(random(), 1, 4);
       String key;
       String analyzedKey;
       while(true) {
@@ -625,7 +625,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           while (true) {
             // TODO: would be nice to fix this slowCompletor/comparator to
             // use full range, but we might lose some coverage too...
-            s = _TestUtil.randomSimpleString(random());
+            s = TestUtil.randomSimpleString(random());
             if (s.length() > 0) {
               if (token > 0) {
                 key += " ";
@@ -692,8 +692,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         System.out.println("\nTEST: prefix=" + prefix);
       }
 
-      final int topN = _TestUtil.nextInt(random(), 1, 10);
-      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), false, topN);
+      final int topN = TestUtil.nextInt(random(), 1, 10);
+      List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
       List<LookupResult> matches = new ArrayList<LookupResult>();
@@ -919,7 +919,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
 
   private String randomSimpleString(int maxLen) {
-    final int len = _TestUtil.nextInt(random(), 1, maxLen);
+    final int len = TestUtil.nextInt(random(), 1, maxLen);
     final char[] chars = new char[len];
     for(int j=0;j<len;j++) {
       chars[j] = (char) ('a' + random().nextInt(4));

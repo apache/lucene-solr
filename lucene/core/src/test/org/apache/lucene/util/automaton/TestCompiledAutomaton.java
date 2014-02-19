@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestCompiledAutomaton extends LuceneTestCase {
 
@@ -104,7 +104,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
 
   private String randomString() {
     // return _TestUtil.randomSimpleString(random);
-    return _TestUtil.randomRealisticUnicodeString(random());
+    return TestUtil.randomRealisticUnicodeString(random());
   }
 
   public void testBasic() throws Exception {

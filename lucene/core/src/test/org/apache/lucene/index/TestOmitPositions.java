@@ -28,7 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -53,7 +53,7 @@ public class TestOmitPositions extends LuceneTestCase {
     
     assertNull(MultiFields.getTermPositionsEnum(reader, null, "foo", new BytesRef("test")));
     
-    DocsEnum de = _TestUtil.docs(random(), reader, "foo", new BytesRef("test"), null, null, DocsEnum.FLAG_FREQS);
+    DocsEnum de = TestUtil.docs(random(), reader, "foo", new BytesRef("test"), null, null, DocsEnum.FLAG_FREQS);
     while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(2, de.freq());
     }

@@ -38,12 +38,12 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestLiveFieldValues extends LuceneTestCase {
   public void test() throws Exception {
 
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("livefieldupdates"));
+    Directory dir = newFSDirectory(TestUtil.getTempDir("livefieldupdates"));
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
     final IndexWriter w = new IndexWriter(dir, iwc);
@@ -72,7 +72,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
         }
     };
 
-    int numThreads = _TestUtil.nextInt(random(), 2, 5);
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
     if (VERBOSE) {
       System.out.println(numThreads + " threads");
     }
@@ -81,7 +81,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
     List<Thread> threads = new ArrayList<Thread>();
 
     final int iters = atLeast(1000);
-    final int idCount = _TestUtil.nextInt(random(), 100, 10000);
+    final int idCount = TestUtil.nextInt(random(), 100, 10000);
 
     final double reopenChance = random().nextDouble()*0.01;
     final double deleteChance = random().nextDouble()*0.25;

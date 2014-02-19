@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -38,8 +37,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestNRTCachingDirectory extends LuceneTestCase {
 
@@ -50,7 +49,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
     final LineFileDocs docs = new LineFileDocs(random(),
                                                defaultCodecSupportsDocValues());
-    final int numDocs = _TestUtil.nextInt(random(), 100, 400);
+    final int numDocs = TestUtil.nextInt(random(), 100, 400);
 
     if (VERBOSE) {
       System.out.println("TEST: numDocs=" + numDocs);
@@ -124,8 +123,8 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File tempDir = _TestUtil.getTempDir("doesnotexist");
-    _TestUtil.rmDir(tempDir);
+    File tempDir = TestUtil.getTempDir("doesnotexist");
+    TestUtil.rmDir(tempDir);
     Directory dir = new NRTCachingDirectory(newFSDirectory(tempDir), 2.0, 25.0);
     try {
       DirectoryReader.open(dir);
@@ -138,7 +137,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   
   // LUCENE-3382 test that we can add a file, and then when we call list() we get it back
   public void testDirectoryFilter() throws IOException {
-    Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("foo")), 2.0, 25.0);
+    Directory dir = new NRTCachingDirectory(newFSDirectory(TestUtil.getTempDir("foo")), 2.0, 25.0);
     String name = "file";
     try {
       dir.createOutput(name, newIOContext(random())).close();

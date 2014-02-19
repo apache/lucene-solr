@@ -23,7 +23,7 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import org.apache.commons.io.FileUtils;
@@ -65,7 +65,7 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = _TestUtil.getTempDir("collation1");
+    File tmpFile = TestUtil.getTempDir("collation1");
     tmpFile.delete();
     tmpFile.mkdir();
     

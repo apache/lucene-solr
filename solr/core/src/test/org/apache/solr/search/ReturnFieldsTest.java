@@ -17,12 +17,9 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.*;
-
-import org.apache.lucene.util._TestUtil;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -333,14 +330,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       final boolean aliasId = r.nextBoolean();
       final boolean aliasFoo = r.nextBoolean();
 
-      final String id = _TestUtil.randomWhitespace(r, 0, 3) + 
+      final String id = TestUtil.randomWhitespace(r, 0, 3) +
         (aliasId ? "aliasId:" : "") +
         "id" + 
-        _TestUtil.randomWhitespace(r, 1, 3);
-      final String foo_i = _TestUtil.randomWhitespace(r, 0, 3) + 
+        TestUtil.randomWhitespace(r, 1, 3);
+      final String foo_i = TestUtil.randomWhitespace(r, 0, 3) +
         (aliasFoo ? "aliasFoo:" : "") +
         "foo_i" + 
-        _TestUtil.randomWhitespace(r, 0, 3);
+        TestUtil.randomWhitespace(r, 0, 3);
 
       final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
       ReturnFields rf = new SolrReturnFields(req("fl", fl));

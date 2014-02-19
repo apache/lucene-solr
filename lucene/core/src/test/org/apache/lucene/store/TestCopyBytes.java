@@ -20,7 +20,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import org.junit.Test;
 
@@ -41,8 +41,8 @@ public class TestCopyBytes extends LuceneTestCase {
       
       // make random file
       IndexOutput out = dir.createOutput("test", newIOContext(random()));
-      byte[] bytes = new byte[_TestUtil.nextInt(random(), 1, 77777)];
-      final int size = _TestUtil.nextInt(random(), 1, 1777777);
+      byte[] bytes = new byte[TestUtil.nextInt(random(), 1, 77777)];
+      final int size = TestUtil.nextInt(random(), 1, 1777777);
       int upto = 0;
       int byteUpto = 0;
       while (upto < size) {
@@ -71,7 +71,7 @@ public class TestCopyBytes extends LuceneTestCase {
           upto++;
         } else {
           final int chunk = Math.min(
-              _TestUtil.nextInt(random(), 1, bytes.length), size - upto);
+              TestUtil.nextInt(random(), 1, bytes.length), size - upto);
           out.copyBytes(in, chunk);
           upto += chunk;
         }
@@ -90,7 +90,7 @@ public class TestCopyBytes extends LuceneTestCase {
           upto++;
         } else {
           final int limit = Math.min(
-              _TestUtil.nextInt(random(), 1, bytes.length), size - upto);
+              TestUtil.nextInt(random(), 1, bytes.length), size - upto);
           in2.readBytes(bytes, 0, limit);
           for (int byteIdx = 0; byteIdx < limit; byteIdx++) {
             assertEquals(value(upto), bytes[byteIdx]);
@@ -109,7 +109,7 @@ public class TestCopyBytes extends LuceneTestCase {
   
   // LUCENE-3541
   public void testCopyBytesWithThreads() throws Exception {
-    int datalen = _TestUtil.nextInt(random(), 101, 10000);
+    int datalen = TestUtil.nextInt(random(), 101, 10000);
     byte data[] = new byte[datalen];
     random().nextBytes(data);
     

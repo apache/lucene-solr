@@ -32,7 +32,6 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
@@ -40,7 +39,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSearcherTaxonomyManager extends FacetTestCase {
 
@@ -70,7 +69,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         List<String> paths = new ArrayList<String>();
         while (true) {
           Document doc = new Document();
-          int numPaths = _TestUtil.nextInt(random(), 1, 5);
+          int numPaths = TestUtil.nextInt(random(), 1, 5);
           for(int i=0;i<numPaths;i++) {
             String path;
             if (!paths.isEmpty() && random().nextInt(5) != 4) {
@@ -80,7 +79,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
               // Create new path
               path = null;
               while (true) {
-                path = _TestUtil.randomRealisticUnicodeString(random());
+                path = TestUtil.randomRealisticUnicodeString(random());
                 if (path.length() != 0 && !seen.contains(path)) {
                   seen.add(path);
                   paths.add(path);

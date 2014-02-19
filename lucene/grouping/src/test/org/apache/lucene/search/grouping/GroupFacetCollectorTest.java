@@ -30,7 +30,7 @@ import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -359,7 +359,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testRandom() throws Exception {
     Random random = random();
-    int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
+    int numberOfRuns = TestUtil.nextInt(random, 3, 6);
     for (int indexIter = 0; indexIter < numberOfRuns; indexIter++) {
       boolean multipleFacetsPerDocument = random.nextBoolean();
       IndexContext context = createIndexContext(multipleFacetsPerDocument);
@@ -465,9 +465,9 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   private IndexContext createIndexContext(boolean multipleFacetValuesPerDocument) throws IOException {
     final Random random = random();
-    final int numDocs = _TestUtil.nextInt(random, 138, 1145) * RANDOM_MULTIPLIER;
-    final int numGroups = _TestUtil.nextInt(random, 1, numDocs / 4);
-    final int numFacets = _TestUtil.nextInt(random, 1, numDocs / 6);
+    final int numDocs = TestUtil.nextInt(random, 138, 1145) * RANDOM_MULTIPLIER;
+    final int numGroups = TestUtil.nextInt(random, 1, numDocs / 4);
+    final int numFacets = TestUtil.nextInt(random, 1, numDocs / 6);
 
     if (VERBOSE) {
       System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
@@ -481,7 +481,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     for (int i = 0; i < numFacets; i++) {
       facetValues.add(generateRandomNonEmptyString());
     }
-    final String[] contentBrs = new String[_TestUtil.nextInt(random, 2, 20)];
+    final String[] contentBrs = new String[TestUtil.nextInt(random, 2, 20)];
     if (VERBOSE) {
       System.out.println("TEST: create fake content");
     }

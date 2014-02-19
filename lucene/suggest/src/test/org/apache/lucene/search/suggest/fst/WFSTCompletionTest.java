@@ -24,7 +24,7 @@ import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class WFSTCompletionTest extends LuceneTestCase {
   
@@ -41,25 +41,25 @@ public class WFSTCompletionTest extends LuceneTestCase {
     suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random), false, 2);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("f", random), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // make sure we don't get a dup exact suggestion:
-    results = suggester.lookup(_TestUtil.stringToCharSequence("foo", random), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("foo", random), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // top N of 1 for 'bar': we return this even though barbar is higher
-    results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("bar", random), false, 1);
     assertEquals(1, results.size());
     assertEquals("bar", results.get(0).key.toString());
     assertEquals(10, results.get(0).value, 0.01F);
     
     // top N Of 2 for 'b'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("b", random), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("b", random), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -67,7 +67,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     
     // top N of 3 for 'ba'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random), false, 3);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ba", random), false, 3);
     assertEquals(3, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -138,7 +138,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
       while (true) {
         // TODO: would be nice to fix this slowCompletor/comparator to
         // use full range, but we might lose some coverage too...
-        s = _TestUtil.randomSimpleString(random());
+        s = TestUtil.randomSimpleString(random());
         if (!slowCompletor.containsKey(s)) {
           break;
         }
@@ -159,8 +159,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(numWords, suggester.getCount());
     Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
-      final int topN = _TestUtil.nextInt(random, 1, 10);
-      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random), false, topN);
+      final int topN = TestUtil.nextInt(random, 1, 10);
+      List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random), false, topN);
 
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
       final List<LookupResult> matches = new ArrayList<LookupResult>();
